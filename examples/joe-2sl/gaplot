@@ -1,0 +1,388 @@
+#! /bin/sh
+
+# ============================================================================
+# Documentation
+
+test ${#*} -eq 0 && cat <<EOF && exit
+usage: gaplot [options] variable [file.ext|terminal|-] ["cmds"]
+ 
+Create a gnuplot graph of the variable.
+
+The available variables are:
+
+    rho mu    Current nuclear profile (fit -g)
+    P theta   Current magnetic profile (fit -g)
+    fit       Current best fit (fit -g)
+    res	      Current residuals 
+    A|B|C|D   Current best fit cross section for magnetic models (fit -g)
+    chisq     Most recent stability plot (fit -x #)
+    chisurf   Most recent 2D stability plot (fit -x # -x #)
+    chicontour  chisurf drawn as contour plot
+
+Options are:
+
+    -rq4      Plot reflectivity divided by Q^4
+    -xyerr    Plot uncertainty in x and y (default)
+    -xerr     Plot uncertainty in x only
+    -yerr     Plot uncertainty in y only, not uncertainty in x
+    -noerr    Don't plot error bars
+
+For more help type "less gaplot"
+
+EOF
+
+#If file is specified, it creates a file of that type. Gnuplot supports
+#the following file extensions:
+#
+#    dxf  AutoCAD format
+#    eps  Encapsulated postscript
+#    fig  Xfig format
+#    pbm  Portable bitmap
+#    png  Portable network graphics
+#    ps   Postscript
+#    svg  Scalable vector graphics
+#    tex  Latex drawing commands (not pslatex)
+#
+#    Use png for publishing on the web.
+#    Use emf for importing into openoffice presenter.
+#    Use ps for printing.
+#    Use "|lpr -P<printer>" where <printer> is the name of a postscript
+#    printer in order to print directly from gaplot.
+#    Not all support surface plots.  Try eps.
+#
+#You may have a choice of interactive terminals on your system.  Gnuplot 
+#supports the following:
+#
+#    x11  X windows
+#    aqua OS X
+#    win  Windows
+#    -    Default for the current system
+#
+#The default terminal can be set using "set term XXX" in your gnuplot
+#initialization file (.gnuplot or on Windows, GNUPLOT.INI).  You may also
+#want to specify "set mouse" if your gnuplot version is recent.
+#
+#You can get finer control of the plots by appending a list of gnuplot
+#commands separated by semicolons.  For example, you can override the
+#default y label or limit the y range of the plot.  Here are some useful
+#gnuplot commands:
+#
+#    set notimestamp      # suppress the timestamp on the graph by default
+#    set grid             # turn on graph grid
+#    set lmargin 5        # limit the left margin of the graph to 5 characters
+#    set yrange [1e-7:1]  # seven decades on y scale
+#    set logscale x       # plot log Q
+#    unset logscale y     # plot linear Reflectivity on fit
+#    set ratio 1          # square plot
+#    set size 1,0.5       # Use only half the normal graph height
+#    set term postscript portrait monochrome dashed
+#                         # black and white plot (default is colour)
+# 
+#Start gnuplot and type help for a complete list of commands.  These commands
+#can also be put in a .gnuplot/GNUPLOT.INI file in your directory so that
+#they don't need to be specified every time.
+#
+#Environment variables
+#
+#    GNUPLOT  location of the gnuplot binary
+#    SET  which dataset to plot (e.g., * for all, [12] for 1 and 2)
+# 
+#Example 1: Create a plot for a figure in fit.png
+#
+#    ./gaplot fit fit.png "set lmargin 5; set notimestamp; set yrange [1e-7:1]; set size 1,0.5; set tmargin 2; set grid"
+#
+#Example 2: Limit x-range on the screen
+#
+#    ./gaplot fit - "set xrange [0:0.05]"
+#
+#Example 3: Plot only sets 1 and 2
+#
+#    SET=[12] ./gaplot fit
+#
+#
+# The following plotting commands are used internally:
+#
+# # Current best profile
+# plot 'profile0.dat' u 1:2 t 'rho' w linesp
+# plot 'profile0.dat' u 1:3 t 'mu' w linesp
+# plot 'profile0.dat' u 1:4 t 'P' w linesp
+# plot 'profile0.dat' u 1:5 t 'theta' w linesp
+#
+# # Current best fit
+# plot 'fit0.dat' u 1:3 t 'data' w p, 'fit0.dat' u 1:5 t 'fit' w l
+# plot 'fit0.datA' u 1:3 t 'data' w p, 'fit0.datA' u 1:5 t 'fit' w l
+# plot 'fit0.datB' u 1:3 t 'data' w p, 'fit0.datB' u 1:5 t 'fit' w l
+# plot 'fit0.datC' u 1:3 t 'data' w p, 'fit0.datC' u 1:5 t 'fit' w l
+# plot 'fit0.datD' u 1:3 t 'data' w p, 'fit0.datD' u 1:5 t 'fit' w l
+#
+# # Parameter 1 chisq landscape
+# plot 'chisq.dat' u 1:2
+
+# ===========================================================================
+# Argument processing
+
+: ${GNUPLOT:=gnuplot -persist}
+: ${SET:=*}
+
+## The following should be set in .gnuplot/GNUPLOT.INI
+# MOUSE="set mouse"
+# TERMINAL="set term x11"
+
+# Strip -rq2 -rq4 and -yerr
+USE_ERR="xy"
+while true; do
+  case $1 in
+    -rq2) USE_RQ2=1;;
+    -rq4) USE_RQ4=1;;
+    -xerr) USE_ERR="x";;
+    -yerr) USE_ERR="xy";;
+    -xyerr) USE_ERR="xy";;
+    -noerr) USE_ERR="";;
+    -*) echo "unknown option $1" && exit;;
+    *) break;
+  esac
+  shift
+done
+
+case $1 in
+    rho | mu | [Pp] | theta)          TYPE=profile;;
+    fit | [Aa] | [Bb] | [Cc] | [Dd])  TYPE=fit;;
+    chisq)                            TYPE=chisq;;
+    res)                              TYPE=res;;
+    chisurf|chicontour)               TYPE=chisurf;;
+    *) echo "usage: gaplot rho|mu|P|theta|chisq|chisurf|fit|res|A|B|C|D [file.ps]" && exit;;
+esac
+
+if test "x$2" != x; then
+    # Try to guess file type from extension, otherwise use postscript
+    OUTPUT="set output '$2'"
+    case ${2##*.} in
+	# Display devices
+	[Xx]|[Xx]11) unset OUTPUT; TERMINAL="set term x11";;
+	aqua) unset OUTPUT; TERMINAL="set term aqua"; PAUSE="pause -1";;
+	win|windows) unset OUTPUT; TERMINAL="set term windows";;
+	-) unset OUTPUT;;
+	# Files
+	dxf) TERMINAL="set term dxf";;
+	emf) TERMINAL="set term emf color solid";;
+	fig) TERMINAL="set term fig";;
+	pbm) TERMINAL="set term pbm color medium";;
+	png) TERMINAL="set term png transparent color medium";;
+	svg) TERMINAL="set term svg";;
+	tex) TERMINAL="set term latex";;
+	eps) TERMINAL="set term postscript eps color solid blacktext";;
+	*) TERMINAL="set term postscript landscape color solid blacktext";;
+    esac
+fi
+
+PLOTOPTS="$3"
+
+# =======================================================================
+# Plotting
+
+case $TYPE in
+
+
+
+    profile)
+	case $1 in 
+	    rho)   YLABEL="rho (number density)"; COL=2;; 
+	    mu)    YLABEL="mu (number density)";  COL=3;; 
+	    [Pp])  YLABEL="P (number density)";   COL=4;; 
+	    theta) YLABEL="theta (degrees)";      COL=5;; 
+	esac
+	CMD=plot
+	for f in `ls profile$SET.dat | sort`; do
+	    MODEL=`echo $f | sed -e"s/profile\(.*\).dat/\\1/"`
+	    CMD="$CMD '$f' u 1:$COL t '$1 $MODEL' w l,"
+	done
+	CMD=`echo $CMD | sed -e"s/,$//"`
+	cat <<EOF > gnuplot.cmd
+$MOUSE
+set timestamp
+set title 'Current best profile for each model'
+set xlabel 'Depth (Ang)'
+set ylabel '$YLABEL'
+$TERMINAL
+$PLOTOPTS
+$OUTPUT
+$CMD
+$PAUSE
+EOF
+	;;
+
+
+
+    chisq)
+	CMD="plot 'chisq.dat' t 'chisq' w linesp"
+	TITLE="`head -1 chisq.dat | sed -e 's/^# //;s/[[][^[]*$//'`"
+	XLABEL="${TITLE#Chisq plot for }"
+	cat <<EOF  > gnuplot.cmd
+$MOUSE
+set timestamp
+set title '$TITLE'
+set xlabel '$XLABEL'
+set ylabel "chi^2"
+$TERMINAL
+$PLOTOPS
+$OUTPUT
+$CMD
+$PAUSE
+EOF
+	# XXX FIXME XXX add plots for individual models
+	;;
+
+
+
+    chisurf)
+	CMD="splot 'chisqsurf.dat' u 1:2:(log10(\$3)) t '' w l"
+	TITLE="`head -1 chisqsurf.dat | sed -e 's/^# //;s/[[][^[]*$//'`"
+	XbyY="${TITLE#Chisq plot for }"
+	XLABEL="${XbyY% x *}"
+	YLABEL="${XbyY#* x }"
+	case $1 in
+	    chisurf)    VIEW="unset contour; set pm3d corners2color c1 map";;
+	    chicontour) VIEW="set contour; set view map";;
+	esac
+	cat <<EOF > gnuplot.cmd
+$MOUSE
+set timestamp
+$VIEW
+set hidden3d
+unset surface
+unset parametric
+set size square
+set title '$TITLE (logscale)'
+set xlabel '$XLABEL'
+set ylabel '$YLABEL'
+$TERMINAL
+$PLOTOPTS
+$OUTPUT
+$CMD
+$PAUSE
+EOF
+	;;
+
+
+
+
+    fit)
+	EXT="*"
+	LOGSCALE="set logscale y";
+	case $1 in [Aa]) EXT=A;; [Bb]) EXT=B;; [Cc]) EXT=C;; [Dd]) EXT=D;; esac
+	if test -n "$USE_RQ4"; then
+	    Y="(\$3*\$1**4)"; DY=":(\$4*\$1**4)"; FIT="(\$5*\$1**4)"; 
+            YTITLE="RQ^4";
+	elif test -n "$USE_RQ2"; then
+	    Y="(\$3*\$1**2)"; DY=":(\$4*\$1**2)"; FIT="(\$5*\$1**2)"; 
+            YTITLE="RQ^2";
+            LOGSCALE="";
+        else 
+	    Y="3"; DY=":4"; FIT=5; 
+            YTITLE="Reflectivity";
+	fi
+	if test -z "$USE_ERR"; then
+	    DX=""; DY=""; ERRORBAR="";
+	elif test $USE_ERR = y ; then
+	    echo "y error bars $USE_ERR"
+            DX=""; ERRORBAR="w yerrorbars";
+	elif test $USE_ERR = x ; then
+	    echo "x error bars $USE_ERR"
+            DY=""; DX=":2"; ERRORBAR="w xerrorbars";
+	else
+            DX=":2"; ERRORBAR="w xyerrorbars";
+        fi
+	CMD="plot"
+	LINE=""
+	let LINENUM=1
+	for f in `ls fit$SET.dat$EXT | sort`; do
+	    MODEL=`echo $f | sed -e"s/fit\(.*\)[.]dat\(.*\)/\\1\\2/"`
+	    CMD="$CMD '$f' u 1:$Y$DX$DY t 'Model $MODEL' $ERRORBAR,"
+	    CMD="$CMD '$f' u 1:$FIT not w lines,"
+	    #LINE="$LINE; set style line $LINENUM lt $LINENUM"
+	    let LINENUM=$LINENUM+1
+	done
+	CMD=`echo $CMD | sed -e"s/,$//"`
+	cat <<EOF > gnuplot.cmd
+$MOUSE
+set timestamp
+set bars
+set title 'Current best fit'
+set xlabel 'Q (inverse Angstroms)'
+set ylabel '$YTITLE'
+$LOGSCALE
+$LINE
+$TERMINAL
+$PLOTOPTS
+$OUTPUT
+$CMD
+$PAUSE
+EOF
+	;;
+	
+    res)
+	EXT="*"
+	case $1 in [Aa]) EXT=A;; [Bb]) EXT=B;; [Cc]) EXT=C;; [Dd]) EXT=D;; esac
+        # Plot (data - theory*resolution)/uncertainty
+        Y="(\$3-\$5)/\$4"; DY=""; 
+        YTITLE="Normalised residuals (R-F(Q))/dR";
+	CMD="plot"
+	LINE=""
+	let LINENUM=1
+	for f in `ls fit$SET.dat$EXT | sort`; do
+	    MODEL=`echo $f | sed -e"s/fit\(.*\)[.]dat\(.*\)/\\1\\2/"`
+	    CMD="$CMD '$f' u 1:$Y t 'Model $MODEL' ls $LINENUM,"
+	    LINE="$LINE; set style line $LINENUM lt $LINENUM"
+	    let LINENUM=$LINENUM+1
+	done
+	CMD=`echo $CMD | sed -e"s/,$//"`
+	CMD="$CMD,p1(x) t '' lt 0,m1(x) t '' lt 0"
+	cat <<EOF > gnuplot.cmd
+$MOUSE
+set timestamp
+set bars
+set title 'Normalised residuals for current best fit'
+set xlabel 'Q (inverse Angstroms)'
+set ylabel '$YTITLE'
+set style function lines
+p1(x) = 1
+m1(x) = -1
+$LINE
+$TERMINAL
+$PLOTOPTS
+$OUTPUT
+$CMD
+$PAUSE
+EOF
+	;;
+
+    fitN)
+	# Dead code but leave it around because it is simpler than fit.
+	CMD="plot"
+	for f in `ls fit$SET.dat[ABCD] | sort`; do
+	    MODEL=`echo $f | sed -e"s/fit\(.*\).dat$EXT/\\1/"`
+	    CMD="$CMD '$f' u 1:3:2:4 t 'data $MODEL' w xyerrorbars,"
+	    CMD="$CMD '$f' u 1:5 t 'fit $MODEL' w lines,"
+	done
+	CMD=`echo $CMD | sed -e"s/,$//"`
+	cat <<EOF  > gnuplot.cmd
+$MOUSE
+set timestamp
+set title 'Current best fit for each model'
+set xlabel 'Q (inverse Angstroms)'
+set ylabel 'Reflectivity'
+set logscale y
+$TERMINAL
+$PLOTOPTS
+$OUTPUT
+$CMD
+$PAUSE
+EOF
+	;;
+
+
+
+
+esac
+
+$GNUPLOT gnuplot.cmd
