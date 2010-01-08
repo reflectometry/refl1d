@@ -5,6 +5,7 @@ Process monitors
 Process monitors accept a history object each cycle and
 perform some sort of work on it.
 """
+from numpy import inf
 
 class Monitor:
     """
@@ -29,7 +30,7 @@ def _getfield(history, field):
     """
     trace = getattr(self, field, [])
     try:
-        return trace[-1]
+        return trace[0]
     except IndexError:
         return None
 
@@ -65,16 +66,33 @@ class Logger(Monitor):
         self.table.store(step=history.step,**record)
 
 
-class TimedUpdates(Monitor):
-    def __init__(self, progress_delta=50, improvement_delta=5):
-        self.progress_delta = progress_delta
-        self.improvement_delta = improvement_delta
-        self.progress_time = None
-        self.improvement_time = None
+class TimedUpdate(Monitor):
+    def __init__(self, progress=60, improvement=5):
+        self.progress_delta = progress
+        self.improvement_delta = improvement
+        self.progress_time = -inf
+        self.improvement_time = -inf
+        self.value = inf
+        self.improved = False
 
     def config_history(self, history):
-        history.requires(time=1, value=1)
+        history.requires(time=1, value=1, point=1, step=1)
+
+    def show_improvement(self, history):
+        print "step", history.step, "value", history.value
+
+    def show_progress(self, history):
+        pass
 
     def __call__(self, history):
-        if len(history.time) == 0:
-            history.time
+        t = history.time[0]
+        v = history.value[0]
+        if v < self.value:
+            self.improved = True
+        if t > self.progress_time + self.progress_delta:
+            self.progress_time = t
+            self.show_progress(history)
+        if self.improved and t > self.improvement_time + self.improvement_delta:
+            self.improved = False
+            self.improvement_time = t
+            self.show_improvement(history)

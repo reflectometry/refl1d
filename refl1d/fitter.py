@@ -8,7 +8,7 @@ is a list of fitted parameters only.
 from copy import deepcopy
 from numpy import inf, nan, isnan
 import numpy
-from mystic import parameter, bounds as mbounds
+from mystic import parameter, bounds as mbounds, monitor
 import time
 
 def preview(models=[], weights=None):
@@ -38,12 +38,28 @@ class FitBase:
     def solve(self, **kw):
         raise NotImplementedError
 
+class ConsoleMonitor(monitor.TimedUpdate):
+    def __init__(self, problem, progress=1, improvement=30):
+        monitor.TimedUpdate.__init__(self, progress=progress, 
+                                     improvement=improvement)
+        self.problem = problem
+    def show_progress(self, history):
+        print "step",history.step[0],"chisq",history.value[0]
+    def show_improvement(self, history):
+        #print "step",history.step[0],"chisq",history.value[0]
+        self.problem.setp(history.point[0])
+        parameter.summarize(self.problem.parameters)
+        
 class DEfit(FitBase):
     def solve(self, **kw):
         from mystic.optimizer import de
         from mystic.solver import Minimizer
+        monitors = kw.pop('monitors',None)
+        if monitors == None:
+            monitors = [ConsoleMonitor(self.problem)]
         strategy = de.DifferentialEvolution(**kw)
-        minimize = Minimizer(strategy=strategy, problem=self.problem)
+        minimize = Minimizer(strategy=strategy, problem=self.problem,
+                             monitors=monitors)
         x = minimize()
         return x
 

@@ -148,7 +148,7 @@ class Minimizer:
             while True:
                 result = mapper(self.problem, population)
                 self.update(population, result)
-                print self.history.step, self.history.value
+                #print self.history.step, self.history.value
                 if self.isdone(): break
                 population = self.next()
         except KeyboardInterrupt:
