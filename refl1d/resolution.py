@@ -4,15 +4,15 @@
 Reflectometry resolution calculator.
 
 Given Q = 4 pi sin(theta)/lambda, the resolution in Q is determined by
-the dispersion angle theta and wavelength lambda.  For monochromatic 
-sources, the wavelength resolution is fixed and the angular resolution 
+the dispersion angle theta and wavelength lambda.  For monochromatic
+sources, the wavelength resolution is fixed and the angular resolution
 varies.  For polychromatic sources, the wavelength resolution varies and
 the angular resolution is fixed.
 
-The angular resolution is determined by the geometry (slit positions 
-and openings and sample profile) with perhaps an additional contribution 
+The angular resolution is determined by the geometry (slit positions
+and openings and sample profile) with perhaps an additional contribution
 from sample warp.  For monochromatic instruments, measurements are taken
-with fixed slits at low angles until the beam falls completely onto the 
+with fixed slits at low angles until the beam falls completely onto the
 sample, then opening slits to preserve full illumination.  At some point
 the slits would exceed the beam width, and so are left fixed for all
 angles above.
@@ -22,8 +22,8 @@ reflected onto the detector.  This results in a resolution that is
 tighter than expected given the slit openings.  If the sample width
 is available, we can use that to determine how much of the beam is
 intercepted by the sample, which we then use as an alternative second
-slit.  This simple calculation isn't quite correct for very low Q, but 
-in that case both reflected and transmitted neutrons will arrive at the 
+slit.  This simple calculation isn't quite correct for very low Q, but
+in that case both reflected and transmitted neutrons will arrive at the
 detector, so the computed resolution of dQ=0 at Q=0 is good enough.
 
 When the sample is warped, it make act to either focus or spread the
@@ -32,7 +32,7 @@ to spread the beam.  The degree of spread can be estimated from the
 full-width at half max (FWHM) of a rocking curve at known slit settings.
 The expected FWHM will be (s1+s2) / (2*(d_s1-d_s2)).  The difference
 between this and the measured FWHM is the sample_broadening value.
-A second order effect is that at low angles the warping will cast 
+A second order effect is that at low angles the warping will cast
 shadows, changing the resolution and intensity in very complex ways.
 
 For polychromatic time of flight instruments, the wavelength dispersion
@@ -44,7 +44,7 @@ Usage
 =====
 
 The resolution module defines two instrument types: :class:`Monochromatic`
-and :class:`Polychromatic`.  These represent generic are scanning and 
+and :class:`Polychromatic`.  These represent generic are scanning and
 time of flight instruments respectively.  To perform a simulation or
 load a data set, an actual instrument must be created.  For example::
 
@@ -62,17 +62,14 @@ load a data set, an actual instrument must be created.  For example::
             )
 
 SNS and NCNR instruments have predefined instrument parameters in
-:module:`snsdata` an :module:`ncnrdata` respectively.  Using them, 
-the example above becomes::
-
-    >>> from ncnrdata import ANDR
-    >>> instrument = ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
-
-This instrument can then be used to compute a resolution function for
-arbitrary Q values, following the slit opening pattern defined by the
-instrument::
+:module:`snsdata` an :module:`ncnrdata` respectively.  This instrument can then
+be used to compute a resolution function for arbitrary Q values, following the
+slit opening pattern defined by the instrument.  Using them, the example above
+becomes::
 
     >>> import numpy, pylab
+    >>> from ncnrdata import ANDR
+    >>> instrument = ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
     >>> resolution = instrument.resolution(Q=numpy.linspace(0,0.5,100))
     >>> pylab.plot(resolution.T, resolution.dT)
     >>> pylab.ylabel('angular divergence (degrees FWHM)')
@@ -96,7 +93,7 @@ example loads and plots two data files::
     >>> probe1.plot()
     >>> pylab.hold(True)
     >>> probe2.plot()
- 
+
 Generating a simulation probe is similarly convenient::
 
     >>> from ncnrdata import ANDR
@@ -141,16 +138,28 @@ Polychromatic measurements have the following attributes::
     *sample_width* (mm)
         width of sample; at low angle with tiny samples, stray neutrons
         miss the sample and are not reflected onto the detector, so the
-        sample itself acts as a slit., and so the width of the sample may be 
+        sample itself acts as a slit., and so the width of the sample may be
         needed to compute the resolution correctly.
     *sample_broadening* (degrees FWHM)
         amount of angular divergence (+) or focusing (-) introduced by the
-        sample; this is caused by sample warp, and may be read off the 
+        sample; this is caused by sample warp, and may be read off the
         rocking curve by subtracting (s1+s2)/2/(d_s1-d_s2) from the
         FWHM width of the rocking curve.
 
 Monochromatic measurements have these additional or modified attributes::
 
+    *instrument*
+        name of the instrument
+    *radiation* (xray or neutron)
+        source radiation type
+    *d_s1*, *d_s2* (mm)
+        distance from sample to pre-sample slits 1 and 2; post-sample slits
+        are ignored
+    *wavelength* (Angstrom)
+        wavelength of the instrument
+    *dLoL*
+        constant relative wavelength dispersion; wavelength range and
+        dispersion together determine the bins
     *Tlo*, *Thi* (degrees)
         range of opening slits, or inf if none
     *slits_at_Tlo* (mm)
@@ -160,10 +169,16 @@ Monochromatic measurements have these additional or modified attributes::
         slit 1 and slit 2 openings below Tlo and above Thi; again, these
         can be scalar if slit 1 and slit 2 are the same, otherwise they
         are each a pair (s1,s2)
-    *wavelength* (Angstrom)
-        wavelength of the instrument
-    *T* (vector)
-        measurement angles
+    *sample_width* (mm)
+        width of sample; at low angle with tiny samples, stray neutrons
+        miss the sample and are not reflected onto the detector, so the
+        sample itself acts as a slit., and so the width of the sample may be
+        needed to compute the resolution correctly.
+    *sample_broadening* (degrees FWHM)
+        amount of angular divergence (+) or focusing (-) introduced by the
+        sample; this is caused by sample warp, and may be read off the
+        rocking curve by subtracting (s1+s2)/2/(d_s1-d_s2) from the
+        FWHM width of the rocking curve.
 
 These parameters should be available in the reduced data file, or they
 can be found in the raw NeXus file.
@@ -187,7 +202,7 @@ all loaders can be tried.
 The file loader should return an instrument instance with metadata
 initialized from the file header.  This metadata can be displayed
 to the user along with a plot of the data and the resolution.  When
-metadata values are changed, the resolution can be recomputed and the 
+metadata values are changed, the resolution can be recomputed and the
 display updated.  When the data is accepted, the final resolution
 calculation can be performed.
 
@@ -217,7 +232,7 @@ direct calculation::
 
 Wavelength dispersion dL/L is usually constant (e.g., for AND/R it is 2% FWHM),
 but it can vary on time-of-flight instruments depending on how the data is
-binned.  
+binned.
 
 Angular divergence dT comes primarily from the slit geometry, but can have
 broadening or focusing due to a warped sample.  The slit contribution is
@@ -232,7 +247,7 @@ the computed dT for all angles and slit geometries. You will not
 usually have this information on hand, but you can leave space for users
 to enter it if it is available.
 
-FWHM can be converted to 1-sigma resolution using the scale factor 
+FWHM can be converted to 1-sigma resolution using the scale factor
 of 1/sqrt(8 * log(2))
 
 For opening slits, dT/T is held constant, so if you know s and To at the
@@ -257,7 +272,7 @@ from util import TL2Q, QL2T, dTdL2dQ, dQdT2dLoL, FWHM2sigma, sigma2FWHM
 class Resolution:
     """
     Reflectometry resolution object
-    
+
     *T*, *dT*   (degrees) angle and FWHM divergence
     *L*, *dL*   (Angstroms) wavelength and FWHM dispersion
     *Q*, *dQ*   (inv Angstroms) calculated Q and 1-sigma resolution
@@ -317,9 +332,9 @@ class Monochromatic:
         contain Q, angle, wavelength, measured reflectivity and the
         associated uncertainties.
 
-        You can override instrument parameters using key=value.  In 
-        particular, slit settings *slits_at_Tlo*, *Tlo*, *Thi*, 
-        and *slits_below*, and *slits_above* are used to define the 
+        You can override instrument parameters using key=value.  In
+        particular, slit settings *slits_at_Tlo*, *Tlo*, *Thi*,
+        and *slits_below*, and *slits_above* are used to define the
         angular divergence.
         """
         # Load the data
@@ -332,20 +347,20 @@ class Monochromatic:
             # ignore extra columns like dQ or L
         resolution = self.resolution(Q=Q, **kw)
         return resolution.probe(data=(R,dR))
-    
+
     def simulate(self, T=None, Q=None, **kw):
         """
         Simulate the probe for a measurement.
 
         Select the *Q* values or the angles *T* for the measurement,
         but not both.
-        
-        Returns a probe with Q, angle, wavelength and the 
-        associated uncertainties, but not any data. 
 
-        You can override instrument parameters using key=value.  In 
-        particular, slit settings *slits_at_Tlo*, *Tlo*, *Thi*, 
-        and *slits_below*, and *slits_above* are used to define the 
+        Returns a probe with Q, angle, wavelength and the
+        associated uncertainties, but not any data.
+
+        You can override instrument parameters using key=value.  In
+        particular, slit settings *slits_at_Tlo*, *Tlo*, *Thi*,
+        and *slits_below*, and *slits_above* are used to define the
         angular divergence.
         """
         if (Q is None) == (T is None):
@@ -359,7 +374,7 @@ class Monochromatic:
     def calc_slits(self, T, **kw):
         """
         Determines slit openings from measurement pattern.
-        
+
         *Tlo*,*Thi*      angle range over which slits are opening
         *slits_at_Tlo*   openings at the start of the range
         *slits_below*, *slits_above*   openings below and above the range
@@ -378,7 +393,7 @@ class Monochromatic:
     def calc_dT(self, T, slits, **kw):
         """
         Compute the FWHM angular divergence in radians
-        
+
         *d_s1*, *d_s2*  slit distances
         *sample_width*  size of sample
         *sample_broadening* resolution changes from sample warping
@@ -390,13 +405,13 @@ class Monochromatic:
         dT = divergence(T=T, slits=slits, distance=(d_s1,d_s2),
                         sample_width=sample_width,
                         sample_broadening=sample_broadening)
-        
+
         return dT
 
     def resolution(self, Q, **kw):
         """
         Return the resolution for a given Q.
-        
+
         Resolution is an object with fields T, dT, L, dL, Q, dQ
         """
         L = kw.get('L',self.wavelength)
@@ -419,7 +434,7 @@ sample width = %(sample_width)g mm
 sample broadening = %(sample_broadening)g degrees
 """ % dict(name=self.instrument, L=self.wavelength, dLpercent=self.dLoL*100,
            d_s1=self.d_s1, d_s2=self.d_s2,
-           sample_width=self.sample_width, 
+           sample_width=self.sample_width,
            sample_broadening=self.sample_broadening,
            Tlo=self.Tlo, Thi=self.Thi,
            slits_at_Tlo=str(self.slits_at_Tlo), radiation=self.radiation,
@@ -470,8 +485,8 @@ class Polychromatic:
         contain Q, angle, wavelength, measured reflectivity and the
         associated uncertainties.
 
-        You can override instrument parameters using key=value.  
-        In particular, slit settings *slits* and *T* define the 
+        You can override instrument parameters using key=value.
+        In particular, slit settings *slits* and *T* define the
         angular divergence.
         """
         # Load the data
@@ -484,13 +499,13 @@ class Polychromatic:
 
     def simulate(self, **kw):
         """
-        Simulate the probe for a measurement.  
-        
-        Returns a probe with Q, angle, wavelength and the associated 
+        Simulate the probe for a measurement.
+
+        Returns a probe with Q, angle, wavelength and the associated
         uncertainties, but not any data.
 
-        You can override instrument parameters using key=value.  
-        In particular, slit settings *slits* and *T* define the 
+        You can override instrument parameters using key=value.
+        In particular, slit settings *slits* and *T* define the
         angular divergence and *dLoL* defines the wavelength
         resolution.
         """
@@ -509,14 +524,14 @@ class Polychromatic:
         dT = divergence(T=T, slits=slits, distance=(d_s1,d_s2),
                         sample_width=sample_width,
                         sample_broadening=sample_broadening)
-        
+
         return dT
 
     def resolution(self, L, dL, **kw):
         """
         Return the resolution of the measurement.  Needs *Q*, *L*, *dL*
         specified as keywords.
-        
+
         Resolution is an object with fields T, dT, L, dL, Q, dQ
         """
         radiation = kw.get('radiation',self.radiation)
@@ -536,11 +551,11 @@ slit distances = %(d_s1)g mm and %(d_s2)g mm
 slit openings = %(slits)s mm
 sample width = %(sample_width)g mm
 sample broadening = %(sample_broadening)g degrees FWHM
-""" % dict(name=self.instrument, 
-           L_min=self.wavelength[0], L_max=self.wavelength[1], 
+""" % dict(name=self.instrument,
+           L_min=self.wavelength[0], L_max=self.wavelength[1],
            dLpercent=self.dLoL*100,
            d_s1=self.d_s1, d_s2=self.d_s2, slits = str(self.slits),
-           sample_width=self.sample_width, 
+           sample_width=self.sample_width,
            sample_broadening=self.sample_broadening,
            radiation=self.radiation,
            )
@@ -555,8 +570,8 @@ sample broadening = %(sample_broadening)g degrees FWHM
 == Instrument class %(name)s ==
 radiation = %(radiation)s in %(L_min)g to %(L_max)g Angstrom with %(dLpercent)g%% resolution
 slit distances = %(d_s1)g mm and %(d_s2)g mm
-""" % dict(name=cls.instrument, 
-           L_min=cls.wavelength[0], L_max=cls.wavelength[1], 
+""" % dict(name=cls.instrument,
+           L_min=cls.wavelength[0], L_max=cls.wavelength[1],
            dLpercent=cls.dLoL*100,
            d_s1=cls.d_s1, d_s2=cls.d_s2,
            radiation=cls.radiation,
@@ -569,7 +584,7 @@ slit distances = %(d_s1)g mm and %(d_s2)g mm
 def bins(low, high, dLoL):
     """
     Return bin centers from low to high perserving a fixed resolution.
-    
+
     *low*,*high* are the minimum and maximum wavelength.
     *dLoL* is the desired resolution FWHM dL/L for the bins.
     """
@@ -594,11 +609,11 @@ def binwidths(L):
         L[i] = (E[i]+E[i+1])/2
              = (E[i] + E[i]*(1+dLoL))/2
              = E[i]*(2 + dLoL)/2
-    
+
     so::
-    
+
         L[i+1]/L[i] = E[i+1]/E[i] = (1+dLoL)
-        dL[i] = E[i+1]-E[i] = (1+dLoL)*E[i]-E[i] 
+        dL[i] = E[i+1]-E[i] = (1+dLoL)*E[i]-E[i]
               = dLoL*E[i] = 2*dLoL/(2+dLoL)*L[i]
     """
     if L[1] > L[0]:
@@ -609,11 +624,11 @@ def binwidths(L):
     return dL
 
 
-def divergence(T=None, slits=None, distance=None, 
+def divergence(T=None, slits=None, distance=None,
                sample_width=1e10, sample_broadening=0):
     """
     Calculate divergence due to slit and sample geometry.
-    
+
     Returns FWHM divergence in degrees.
 
     *T*            (degrees) incident angles
@@ -623,18 +638,18 @@ def divergence(T=None, slits=None, distance=None,
     *sample_broadening* (degrees FWHM) additional divergence caused by sample
 
     Uses the following formula::
-    
+
         p = w * sin(radians(T))
         dT = / (s1+s2) / 2 (d1-d2)   if p >= s2
              \ (s1+p) / 2 d1         otherwise
         dT = dT + sample_broadening
-        
+
     where p is the projection of the sample into the beam.
 
     *sample_broadening* can be estimated from W, the FWHM of a rocking curve::
 
         sample_broadening = W - (s1+s2) / 2(d1-d2)
-    
+
     Note: default sample width is large but not infinite so that at T=0,
     sin(0)*sample_width returns 0 rather than NaN.
     """
