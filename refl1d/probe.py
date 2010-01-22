@@ -1,5 +1,5 @@
 # This program is in the public domain
-# Author: Paul Kienzle
+# Tuthor: Paul Kienzle
 """
 Experimental probe.
 
@@ -16,23 +16,7 @@ from calc import convolve
 from . import fresnel
 from material import Vacuum
 from mystic.parameter import Parameter
-
-def real_to_Q(angle=None, wavelength=None):
-    Arad = radians(angle)
-    # Q = 4pi/L sin(A)
-    Q = 4 * pi / wavelength * sin(Arad)
-    return Q
-
-def Qresolution(angle, wavelength):
-    A,dA = angle
-    L,dL = wavelength
-    Arad,dArad = radians(A), radians(dA)
-    # Q = 4pi/L sin(A)
-    # dQ**2 = 4pi/L sqrt( (dL/L)**2 sin(A)**2 +  cos(A)**2 dA**2)
-    # (dQ/Q)**2 = sqrt((dL/L)**2 + (dA/tan(A))**2)
-    Q = 4 * pi / L * sin(Arad)
-    dQ = Q * sqrt((dL/L)**2 + (dArad/tan(Arad))**2)
-    return Q,dQ
+from resolution import TL2Q, dTdL2dQ
 
 class Probe: # Abstract base class
     """
@@ -84,16 +68,57 @@ class Probe: # Abstract base class
     view = "fresnel"
     substrate = None
     surround = None
-    def __init__(self):
+    def __init__(self, T=None, dT=0, L=None, dL=0, data = None):
         self.intensity = Parameter.default(1,name="intensity")
         self.background = Parameter.default(0,name="background", 
                                             limits=[0,inf])
         self.back_absorption = Parameter.default(1, name="back_absorption",
                                                  limits=[0,1])
         self.theta_offset = Parameter.default(0,name="theta_offset")    
+
+        #if L is None:
+        #    L = xsf.xray_wavelength(E)
+        #    dL = L * dE/E
+        #else:
+        #    E = xsf.xray_energy(L)
+        #    dE = E * dL/L
+
+        Q = TL2Q(T=T, L=L)
+        dQ = dTdL2dQ(T=T,dT=dT,L=L,dL=dL)
+
+        # Make sure that we are dealing with vectors
+        T,dT,L,dL = [numpy.ones_like(Q)*v for v in (T,dT,L,dL)]
+
+        # Probe stores sorted values for convenience of resolution calculator
+        idx = numpy.argsort(Q)
+        self.T, self.dT = T[idx],dT[idx]
+        self.L, self.dL = L[idx],dL[idx]
+        self.Qo, self.dQ = Q[idx],dQ[idx]
+        if data != None:
+            R,dR = data
+            if R is not None: R = R[idx]
+            if dR is not None: dR = dR[idx]
+            self.R,self.dR = R,dR
+
+        # By default the calculated points are the measured points.  Use
+        # oversample() for a more accurate resolution calculations.
+        self._set_calc(self.T,self.L)
+
+    def _set_calc(self, T, L):
+        Q = TL2Q(T=T, L=L)
+
+        idx = numpy.argsort(Q)
+        self.calc_T = T[idx]
+        self.calc_L = L[idx]
+        self.calc_Qo = Q[idx]
+
+        # Only keep the scattering factors that you need
+        self._sf_L = numpy.unique(self.calc_L)
+        self._sf_idx = numpy.searchsorted(self._sf_L, L)
+
     def _Q(self):
         if self.theta_offset.value != 0:
-            Q = real_to_Q(angle=self.A+self.theta_offset.value,
+            Q = TL2Q(angle=self.T+self.theta_offset.value,
                           wavelength=self.L)
         else:
             Q = self.Qo
@@ -101,7 +126,7 @@ class Probe: # Abstract base class
     Q = property(_Q)
     def _calc_Q(self):
         if self.theta_offset.value != 0:
-            Q = real_to_Q(angle=self.calc_A+self.theta_offset.value,
+            Q = TL2Q(angle=self.calc_T+self.theta_offset.value,
                           wavelength=self.calc_L)
         else:
             Q = self.calc_Qo
@@ -117,11 +142,13 @@ class Probe: # Abstract base class
         Returns the scattering factors associated with the material given
         the range of wavelengths/energies used in the probe.
         """
+        raise NotImplementedError
     def __len__(self):
         """
         Returns the number of scattering factors that will be returned for
         the probe.
         """
+        return len(self._sf_L)
     def oversample(self, n=6, seed=1):
         """
         Generate an over-sampling of Q to avoid aliasing effects.
@@ -145,6 +172,14 @@ class Probe: # Abstract base class
         The measurement point itself will not be used to avoid accidental
         bias from uniform Q steps.
         """
+        # doc string is inherited from parent (see below)
+        rng = numpy.random.RandomState(seed=seed)
+        T = rng.normal(self.T[:,None],self.dT[:,None],size=(len(self.dT),n))
+        L = rng.normal(self.L[:,None],self.dL[:,None],size=(len(self.dL),n))
+        T = T.flatten()
+        L = L.flatten()
+        self._set_calc(T,L)
+
     def resolution(self, calc_R):
         """
         Apply resolution function associated with the probe.
@@ -266,6 +301,7 @@ class Probe: # Abstract base class
             pylab.plot(Q, R*Q4, hold=True)
         pylab.xlabel('Q (inv Angstroms)')
         pylab.ylabel('R (100 Q)^4')
+
 class XrayProbe(Probe):
     """
     X-Ray probe.
@@ -276,126 +312,22 @@ class XrayProbe(Probe):
     X-ray data is traditionally recorded by angle and energy, rather
     than angle and wavelength as is used by neutron probes.
     """
-    def __init__(self, A=None, dA=0, E=None, dE=0, L=None, dL=0, data=None):
-        Probe.__init__(self)
-        # Use one of wavelength or energy to define the probe.
-        # L = h c / E
-        # dL**2 = (-h c / E**2 dE)**2 = (L * dE/E)**2
-        if L is None:
-            L = xsf.xray_wavelength(E)
-            dL = L * dE/E
-        else:
-            E = xsf.xray_energy(L)
-            dE = E * dL/L
-        Q,dQ = Qresolution(angle=(A,dA),wavelength=(L,dL))
-
-        # Make sure that angle and energy are vectors
-        A,dA,E,dE,L,dL = [numpy.ones_like(Q)*v for v in (A,dA,E,dE,L,dL)]
-
-        # Order by increasing Q
-        idx = numpy.argsort(Q)
-        self.A,self.dA = A[idx],dA[idx]
-        self.E,self.dE = E[idx],dE[idx]
-        self.L,self.dL = L[idx],dL[idx]
-        self.Qo, self.dQ = Q[idx],dQ[idx]
-        if data != None:
-            R,dR = data
-            self.R,self.dR = R[idx],dR[idx]
-            
-        # By default the calculated points are the measured points.  Use
-        # oversample() for a more accurate resolution calculations.
-        self._set_calc(self.A,self.E)
-
-    def oversample(self, n=6, seed=1):
-        # doc string is inherited from parent (see below)
-        rng = numpy.random.RandomState(seed=seed)
-        A = rng.normal(self.A[:,None],self.dA[:,None],size=(len(self.dA),n))
-        E = rng.normal(self.E[:,None],self.dE[:,None],size=(len(self.dE),n))
-        A = A.flatten()
-        E = E.flatten()
-        self._set_calc(A,E)
-    oversample.__doc__ = Probe.oversample.__doc__
-
-    def _set_calc(self, A, E):
-        L = xsf.xray_wavelength(E)
-        Q = real_to_Q(angle=A,wavelength=L)
-
-        # The selection vector determines which values of Q will be used
-        # when calculating and comparing to the data.  This can be a subset
-        # of the complete set of data, for example when the data are
-        # oversampled.  The indices of the selection vector should be
-        # ordered so that the resulting Q vector is increasing.
-        idx = numpy.argsort(Q)
-        self.calc_A = A[idx]
-        self.calc_E = E[idx]
-        self.calc_L = L[idx]
-        self.calc_Qo = Q[idx]
-
-        # Only keep the scattering factors that you need
-        self._sf_E = numpy.unique(self.calc_E)
-        self._sf_idx = numpy.searchsorted(self._sf_E, self.calc_E)
-
     def scattering_factors(self, material):
         # doc string is inherited from parent (see below)
-        coh, absorp = xsf.xray_sld(material, energy = self._sf_E, density=1)
+        coh, absorp = xsf.xray_sld(material, 
+                                   wavelength = self._sf_L, 
+                                   density=1)
         return coh[self._sf_idx], absorp[self._sf_idx], [0]
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
-    def __len__(self):
-        return len(self.calc_A)
 class NeutronProbe(Probe):
-    def __init__(self, A=None, dA=0, L=None, dL=0, data = None):
-        Probe.__init__(self)
-        Q, dQ = Qresolution(angle=(A,dA),wavelength=(L,dL))
-
-        # Make sure that we are dealing with vectors
-        A,dA,L,dL = [numpy.ones_like(Q)*v for v in (A,dA,L,dL)]
-
-        # Probe stores sorted values for convenience of resolution calculator
-        idx = numpy.argsort(Q)
-        self.A, self.dA = A[idx],dA[idx]
-        self.L, self.dL = L[idx],dL[idx]
-        self.Qo, self.dQ = Q[idx],dQ[idx]
-        if data != None:
-            R,dR = data
-            self.R,self.dR = R[idx],dR[idx]
-
-        # By default the calculated points are the measured points.  Use
-        # oversample() for a more accurate resolution calculations.
-        self._set_calc(self.A,self.L)
-
-    def oversample(self, n=6, seed=1):
+    def scattering_factors(self, material):
         # doc string is inherited from parent (see below)
-        rng = numpy.random.RandomState(seed=seed)
-        A = rng.normal(self.A[:,None],self.dA[:,None],size=(len(self.dA),n))
-        L = rng.normal(self.L[:,None],self.dL[:,None],size=(len(self.dL),n))
-        A = A.flatten()
-        L = L.flatten()
-        self._set_calc(A,L)
-    oversample.__doc__ = Probe.oversample.__doc__
-
-    def _set_calc(self, A, L):
-        Q = real_to_Q(angle=A, wavelength=L)
-
-        idx = numpy.argsort(Q)
-        self.calc_A = A[idx]
-        self.calc_L = L[idx]
-        self.calc_Qo = Q[idx]
-
-        # Only keep the scattering factors that you need
-        self._sf_L = numpy.unique(self.calc_L)
-        self._sf_idx = numpy.searchsorted(self._sf_L, L)
-
-    def scattering_factors(self, formula):
-        # doc string is inherited from parent (see below)
-        coh, absorp, incoh = nsf.neutron_sld(formula,
+        coh, absorp, incoh = nsf.neutron_sld(material,
                                              wavelength=self._sf_L,
                                              density=1)
         return coh, absorp[self._sf_idx], incoh
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
-
-    def __len__(self):
-        return len(self.calc_Q)
 
 
 class PolarizedNeutronProbe(Probe):
@@ -403,24 +335,24 @@ class PolarizedNeutronProbe(Probe):
     Polarized beam
     
     *xs* (4 x NeutronProbe) is a sequence pp, pm, mp and mm.
-    *Aguide* (degrees) is the angle of the guide field
+    *Tguide* (degrees) is the angle of the guide field
     """
     polarized = True
-    def __init__(self, xs=None, Aguide=270):
+    def __init__(self, xs=None, Tguide=270):
         Probe.__init__(self)
         pp, pm, mp, mm = xs
         
-        dApp, dApm, dAmp, dAmm = dA
-            
-        Q, dQ = [Qresolution(angle=(Axx,dAxx),wavelength=(Lxx,dLxx))
-                 for Axx,dAxx,Lxx,dLxx in zip(A,dA,L,dL)]
+        dTpp, dTpm, dTmp, dTmm = dT
+        
+        Q = [TL2Q(Tx,Lx) for Tx,Lx in zip(T,L)]
+        dQ = [dTdL2dQ(Tx,dTx,Lx,dLx) for Tx,Lx,dTx,dLx in zip(T,dT,L,dL)]
 
         # Make sure that we are dealing with vectors
-        A,dA,L,dL = [numpy.ones_like(Q)*v for v in (A,dA,L,dL)]
+        T,dT,L,dL = [numpy.ones_like(Q)*v for v in (T,dT,L,dL)]
 
         # Probe stores sorted values for convenience of resolution calculator
         idx = numpy.argsort(Q)
-        self.A, self.dA = A[idx],dA[idx]
+        self.T, self.dT = T[idx],dT[idx]
         self.L, self.dL = L[idx],dL[idx]
         self.Qo, self.dQ = Q[idx],dQ[idx]
         if data != None:
@@ -429,23 +361,23 @@ class PolarizedNeutronProbe(Probe):
 
         # By default the calculated points are the measured points.  Use
         # oversample() for a more accurate resolution calculations.
-        self._set_calc(self.A,self.L)
+        self._set_calc(self.T,self.L)
 
     def oversample(self, n=6, seed=1):
         # doc string is inherited from parent (see below)
         rng = numpy.random.RandomState(seed=seed)
-        A = rng.normal(self.A[:,None],self.dA[:,None],size=(len(self.dA),n))
+        T = rng.normal(self.T[:,None],self.dT[:,None],size=(len(self.dT),n))
         L = rng.normal(self.L[:,None],self.dL[:,None],size=(len(self.dL),n))
-        A = A.flatten()
+        T = T.flatten()
         L = L.flatten()
-        self._set_calc(A,L)
+        self._set_calc(T,L)
     oversample.__doc__ = Probe.oversample.__doc__
 
-    def _set_calc(self, A, L):
-        Q = real_to_Q(angle=A, wavelength=L)
+    def _set_calc(self, T, L):
+        Q = TL2Q(angle=T, wavelength=L)
 
         idx = numpy.argsort(Q)
-        self.calc_A = A[idx]
+        self.calc_T = T[idx]
         self.calc_L = L[idx]
         self.calc_Qo = Q[idx]
 
@@ -539,77 +471,3 @@ def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
     else:
         return Qp, v, None
 
-
-'''
-class XrayData:
-    """
-    X-ray reflectivity is a triple (angle, energy, data).
-
-    Base parameters are
-
-    A,dA (degrees)
-        angle and uncertainty
-    E,dE (keV)
-        energy and uncertainty
-    R,dR (unitless)
-        reflectivity data and uncertainty
-
-    From this we can compute
-
-    L,dL (Angstroms)
-        wavelength
-    Q,dQ (inv Angstrom**2)
-        reciprical space (Angstrom ** -2)
-    probe (XrayProbe)
-        theory function probe for looking up scattering densities
-
-    The resulting data is stored in increasing order by Q.
-    """
-    def __init__(self, angle=None, energy=None, data=None):
-        QdQ,LdL = xray_AE_to_QL(angle=angle,energy=energy)
-        self.A,self.dA = angle
-        self.E,self.dE = energy
-        self.L,self.dL = LdL
-        self.Q,self.dQ = QdQ
-        self.R,self.dR = data
-
-        # Create a default probe for computing scattering values
-        self.probe = XrayProbe(angle=(self.A,self.dA),
-                               energy=(self.E,self.dE),
-                               data=(self.R,self.dR))
-
-
-class NeutronData:
-    """
-    Neutron reflectivity is a triple (angle, wavelength, data).
-
-    Base parameters are
-
-    A,dA (degrees)
-        angle and uncertainty
-    L,dL (Angstrom)
-        wavelength and uncertainty
-    R,dR (unitless)
-        reflectivity data and uncertainty
-
-    From this we can compute
-
-    Q,dQ (inv Angstrom**2)
-        reciprical space (Angstrom ** -2)
-    probe (NeutronProbe)
-        theory function probe for looking up scattering densities
-
-    The resulting data is stored in increasing order by Q.
-    """
-    def __init__(self, angle=None, wavelength=None, data=None):
-        QdQ,LdL = real_to_Q(angle=angle,wavelength=wavelenth)
-        self.A,self.dA = angle
-        self.L,self.dL = LdL
-        self.Q,self.dQ = QdQ
-        self.R,self.dR = data
-
-        # Create a default probe for computing scattering values
-        self.probe = NeutronProbe(angle=(self.A,self.dA),
-                                  wavelength=(self.L,self.dL),
-                                  data=(self.R,self.dR))
-'''
