@@ -16,7 +16,7 @@ def test():
     assert norm(res.sigma2FWHM(1) - FWHM) < 1e-14
     assert norm(res.QL2T(Q=Q,L=L) - degrees(asin(Q*L/4/pi))) < 1e-14
     assert norm(res.TL2Q(T=T,L=L) - 4*pi*sin(Trad)/L) < 1e-14
-    assert norm(res.dTdL2dQ(T=T,dT=dT,L=L,dL=dL) - 4*pi*sin(Trad)/L 
+    assert norm(res.dTdL2dQ(T=T,dT=dT,L=L,dL=dL) - 4*pi*sin(Trad)/L
                 * sqrt( (dL/L)**2 + (dTrad/tan(Trad))**2 )/FWHM) < 1e-14
     Q1 = res.TL2Q(T=T,L=L)
     dQ1 = res.dTdL2dQ(T=T,dT=dT,L=L,dL=dL)
@@ -32,7 +32,7 @@ def test():
     assert norm(dLp-[0.2, 0.24, 0.288, 0.3456]) < 1e-14
 
     # Slit openings are assumed to be linear in angle; since footprint
-    # goes as the sine of the angle, this is correct in the small angle 
+    # goes as the sine of the angle, this is correct in the small angle
     # approximation.
     Tlo,Thi = 0.2,0.5
     sTlo,sbelow,sabove = 0.2,0.4,3
@@ -113,12 +113,13 @@ def test():
     assert isinstance(str(poly),type(""))
     assert isinstance(snsdata.Liquids.defaults(),type(""))
 
+    # Make sure that the string reps don't crash
+    _ = (str(mono),str(ncnrdata.NG1.defaults()),str(ncnrdata.NG1()),
+         str(poly),str(snsdata.Liquids.defaults()))
     if 1:
-        print str(mono)
-        print str(ncnrdata.NG1.defaults())
-        print str(ncnrdata.NG1())
-        print str(poly)
-        print str(snsdata.Liquids.defaults())
+        for s in _: print s
+
+
 
 if __name__ == "__main__":
     test()
