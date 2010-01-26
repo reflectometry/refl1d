@@ -25,20 +25,20 @@ class Microslabs:
 
         slabs.clear()
         for layer in model:
-            w,sigma,rho,mu,rho_M,theta_M = layer.render()
-            slabs.extend(w=w, sigma=sigma, rho=rho, mu=mu,
+            w,sigma,rho,irho,rho_M,theta_M = layer.render()
+            slabs.extend(w=w, sigma=sigma, rho=rho, irho=irho,
                          rho_M=rho_M, theta_M=theta_M)
         w,sigma = slabs.w,slabs.sigma
-        rho,mu = slabs.rho,slabs.mu
+        rho,irho = slabs.rho,slabs.irho
         rho_M,theta_M = slabs.rho_M,slabs.theta_M
-        R = refl(kz,w,rho=rho,mu=mu,sigma=sigma, rho_M=rho_M, theta_M=theta_M)
+        R = refl(kz,w,rho=rho,irho=irho,sigma=sigma, rho_M=rho_M, theta_M=theta_M)
         figure(2)
         plot(kz,R,label='reflectivity')
     """
     def __init__(self, nprobe):
         self._num_slabs = 0
         # _slabs contains the 1D objects w, sigma, rho_M, theta_M of len n
-        # _slabsQ contains the 2D objects rho, mu
+        # _slabsQ contains the 2D objects rho, irho
         self._slabs = numpy.empty(shape=(0,4))
         self._slabsQ = numpy.empty(shape=(0,nprobe,2))
 
@@ -82,7 +82,7 @@ class Microslabs:
             self._slabs.resize((new_ns, 4))
             self._slabsQ.resize((new_ns, nl, 2))
 
-    def extend(self, w=0, sigma=0, rho=0, mu=0, rho_M=0, theta_M=0):
+    def extend(self, w=0, sigma=0, rho=0, irho=0, rho_M=0, theta_M=0):
         """
         Extend the micro slab model with the given layers.
         """
@@ -95,7 +95,7 @@ class Microslabs:
         self._slabs[idx,2] = rho_M
         self._slabs[idx,3] = theta_M
         self._slabsQ[idx,:,0] = rho
-        self._slabsQ[idx,:,1] = mu
+        self._slabsQ[idx,:,1] = irho
 
     def interface(self, I):
         """
@@ -112,7 +112,7 @@ class Microslabs:
         return self._slabs[:self._num_slabs-1,1]
     def _rho(self):
         return self._slabsQ[:self._num_slabs,:,0].T
-    def _mu(self):
+    def _irho(self):
         return self._slabsQ[:self._num_slabs,:,1].T
     def _rho_M(self):
         return self._slabs[:self._num_slabs,2].T
@@ -121,7 +121,7 @@ class Microslabs:
     w = property(_w, doc="Thickness (A)")
     sigma = property(_sigma, doc="1-sigma Gaussian roughness (A)")
     rho = property(_rho, doc="Scattering length density (10^-6 number density)")
-    mu = property(_mu, doc="Absorption (10^-6 number density)")
+    irho = property(_irho, doc="Absorption (10^-6 number density)")
     rho_M = property(_rho_M, doc="Magnetic scattering")
     theta_M = property(_theta_M, doc="Magnetic scattering angle")
 
@@ -167,11 +167,14 @@ class Microslabs:
         Nevot-Croce roughness is not represented.
         """
         rho = numpy.vstack([self.rho[0,:]]*2).T.flatten()
-        mu = numpy.vstack([self.mu[0,:]]*2).T.flatten()
-        ws = numpy.cumsum(self.w[1:-1])
-        z = numpy.vstack([numpy.hstack([-10,0,ws]),
-                          numpy.hstack([0,ws,ws[-1]+10])]).T.flatten()
-        return z,rho,mu
+        irho = numpy.vstack([self.irho[0,:]]*2).T.flatten()
+        if len(self.w) > 2:
+            ws = numpy.cumsum(self.w[1:-1])
+            z = numpy.vstack([numpy.hstack([-10,0,ws]),
+                              numpy.hstack([0,ws,ws[-1]+10])]).T.flatten()
+        else:
+            z = numpy.array([-10,0,0,10])
+        return z,rho,irho
 
     def smooth_profile(self, dz=1, roughness_limit=0):
         """
@@ -192,8 +195,8 @@ class Microslabs:
         z = numpy.arange(left,right,dz)
         roughness = self.limited_sigma(limit=roughness_limit)
         rho = build_profile(z, self.w, roughness, self.rho[0])
-        mu = build_profile(z, self.w, roughness, self.mu[0])
-        return z,rho,mu
+        irho = build_profile(z, self.w, roughness, self.irho[0])
+        return z,rho,irho
 
 
 def build_profile(z, thickness, roughness, value):

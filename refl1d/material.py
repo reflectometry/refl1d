@@ -154,7 +154,7 @@ class Material(Scatterer):
     **WARNING** as of this writing packing_factor does not seem to return
     the correct density.
     """
-    def __init__(self, formula=None, name=None, 
+    def __init__(self, formula=None, name=None,
                  incoherent_as_absorption=_INCOHERENT_AS_ABSORPTION,
                  density=None, packing_factor=None, fitby='bulk_density'):
         self.formula = periodictable.formula(formula, density=density)
@@ -234,7 +234,7 @@ class Compound(Scatterer):
 
     An individual component can be a chemical formula, not just an element.
     """
-    def __init__(self, parts=None, density=None, name=None, 
+    def __init__(self, parts=None, density=None, name=None,
                  incoherent_as_absorption=_INCOHERENT_AS_ABSORPTION):
         # Split [M1,N1,M2,N2,...] into [M1,M2,...], [N1,N2,...]
         formula = [parts[i] for i in range(0, len(parts),2)]

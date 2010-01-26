@@ -4,10 +4,10 @@ Optical matrix form of the reflectivity calculation.
 
 O.S. Heavens, Optical Properties of Thin Solid Films
 """
-from numpy import asarray, isscalar, empty, ones_like
+from numpy import asarray, isscalar, empty, ones, ones_like
 from numpy import sqrt, exp, pi
 
-def refl(kz,depth,rho,mu,sigma=0):
+def refl(kz, depth, rho, irho, sigma=0):
     """
     Reflectometry as a function of kz
 
@@ -16,22 +16,22 @@ def refl(kz,depth,rho,mu,sigma=0):
     depth ([m] angstrom)
         thickness of each layer.  The thickness of the incident medium
         and substrate are ignored.
-    rho,mu ([n x m] uNb)
-        scattering length density and absorption of each layer for each kz
+    rho, irho ([n x m] 1e-6/Angstrom^2)
+        real and imaginary scattering length density for each layer for each kz
+        Note: absorption cross section mu = 2 irho/lambda
     sigma ([m-1] angstrom)
         interfacial roughness.  This is the roughness between a layer
         and the subsequent layer.  There is no interface associated
         with the substrate.  The sigma array should have at least m-1
         entries, though it may have m with the last entry ignored.
     """
-    if isscalar(kz): kz = array([kz], 'd')
-    n = len(kz)
+    if isscalar(kz): kz = asarray([kz], 'd')
     m = len(depth)
 
     # Make everything into arrays
     depth = asarray(depth,'d')
     rho = asarray(rho,'d')
-    mu = mu*ones_like(rho) if isscalar(mu) else asarray(mu,'d')
+    irho = irho*ones_like(rho) if isscalar(irho) else asarray(irho,'d')
     sigma = sigma*ones(m-1,'d') if isscalar(sigma) else asarray(sigma,'d')
 
     ## For kz < 0 we need to reverse the order of the layers
@@ -41,13 +41,13 @@ def refl(kz,depth,rho,mu,sigma=0):
     ## corresponding to rho,mu or of length n-1.
     idx = (kz>=0)
     r = empty(len(kz),'D')
-    r[idx] = calc(kz[idx], depth, rho, mu, sigma)
+    r[idx] = calc(kz[idx], depth, rho, irho, sigma)
     r[~idx] = calc(abs(kz[~idx]),
-                   depth[::-1], rho[:,::-1], mu[:,::-1], sigma[m-2::-1])
+                   depth[::-1], rho[:,::-1], irho[:,::-1], sigma[m-2::-1])
     return r
 
 
-def calc(kz, depth, rho, mu, sigma):
+def calc(kz, depth, rho, irho, sigma):
     if len(kz) == 0: return kz
 
     # Complex index of refraction is relative to the incident medium.
@@ -63,8 +63,8 @@ def calc(kz, depth, rho, mu, sigma):
     B22 = 1
     B21 = 0
     B12 = 0
-    for i in xrange(0,len(depth)-1):
-        k_next = sqrt(kz_sq - 4e-6*pi*(rho[:,i+1] + 0.5j*mu[:,i+1]))
+    for i in xrange(0, len(depth)-1):
+        k_next = sqrt(kz_sq - 4e-6*pi*(rho[:,i+1] + 1j*irho[:,i+1]))
         F = (k - k_next) / (k + k_next)
         F *= exp(-2*k*k_next*sigma[i]**2)
         M11 = exp(1j*k*depth[i]) if i>0 else 1

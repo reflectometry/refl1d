@@ -7,7 +7,7 @@ The following instruments are defined::
 
     Ng1, ANDR, NG7 and Xray
 
-These are :class:`resolution.Monochromatic` classes tuned with 
+These are :class:`resolution.Monochromatic` classes tuned with
 default instrument parameters and loaders for reduced NCNR data.
 See :module:`resolution` for details.
 """
@@ -16,64 +16,61 @@ import numpy
 from numpy import inf, pi
 
 from .resolution import Monochromatic
+from . import util
 
 def load(filename, instrument=None, **kw):
     """
     Return a probe for NCNR data.
     """
-    content = parse_ncnr_file(filename)
+    content = parse_file(filename)
     return _make_probe(geometry=Monochromatic(), content=content, **kw)
 
-def parse_ncnr_file(filename):
+def parse_file(filename):
     """
-    Parse NCNR reduced data.
+    Parse NCNR reduced data file returning *header* and *data*.
 
-    Returns a dictionary with fields for e.g., date, title, and 
-    instrument.  The columns field is a list of column names, and
-    the data field is an array containing the data.
-    
+    *header* dictionary of fields such as 'data', 'title', 'instrument'
+    *data* 2D array of data
+
+    If 'columns' is present in header, it will be a list of the names of
+    the columns.  If 'instrument' is present in the header, the default
+    instrument geometry will be specified.
+
     Slit geometry is set to the default from the instrument if it is not
     available in the reduced file.
     """
-    file = open(filename, 'r')
-
-    # Parse header
-    content = {}
-    for line in file:
-        words = line.split()
-        field,value = parse_line(line)
-        content[field] = value
-        if field == 'columns': break        
-    content['columns'] = content['columns'].split()
-        
-    # Parse data
-    content['data'] = numpy.loadtxt(file).T
+    header, data = util.parse_file(filename)
 
     # Fill in instrument parameters, if not available from the file
-    instrument = INSTRUMENT[content['instrument']]
-    content.setdefault('radiation',instrument.radiation)
-    content.setdefault('wavelength',instrument.wavelength)
-    content.setdefault('dLoL',instrument.wavelength)
-    content.setdefault('d_s1',instrument.d_s1)
-    content.setdefault('d_s2',instrument.d_s2)
-    
-    return content
+    if 'instrument' in header and header['instrument'] in INSTRUMENTS:
+        instrument = INSTRUMENTS[header['instrument']]
+        header.setdefault('radiation',instrument.radiation)
+        header.setdefault('wavelength',str(instrument.wavelength))
+        header.setdefault('dLoL',str(instrument.dLoL))
+        header.setdefault('d_s1',str(instrument.d_s1))
+        header.setdefault('d_s2',str(instrument.d_s2))
 
-def _make_probe(geometry, content, **kw):
-    content.update(**kw)
-    Q,R,dR = content['data']
-    resolution = geometry.resolution(Q, **content)
+    if 'columns' in header: header['columns'] = header['columns'].split()
+    for key in ('wavelength','dLoL','d_s1','d_s2'):
+        if key in header: header[key] = float(header[key])
+
+    return header, data
+
+def _make_probe(geometry, header, data, **kw):
+    header.update(**kw)
+    Q,R,dR = data
+    resolution = geometry.resolution(Q, **header)
     probe = resolution.probe(data=(R,dR))
-    probe.title = content['title']
-    probe.date = content['date']
-    probe.instrument = content['instrument']
+    probe.title = header['title']
+    probe.date = header['date']
+    probe.instrument = header['instrument']
     return probe
 
 class NCNRLoader:
     def load(self, filename, **kw):
-        content = parse_ncnr_file(filename)
-        content.update(**kw)
-        return _make_probe(geometry=self, content=content, **kw)
+        header, data = parse_file(filename)
+        header.update(**kw)
+        return _make_probe(geometry=self, header=header, data=data, **kw)
 
 class ANDR(Monochromatic,NCNRLoader):
     """
@@ -138,10 +135,9 @@ class XRay(Monochromatic,NCNRLoader):
     d_detector = None
 
 # Instrument names assigned by reflpak
-INSTRUMENTS = { 
-    'CG-1': ANDR, 
+INSTRUMENTS = {
+    'CG-1': ANDR,
     'NG-1': NG1,
     'NG-7': NG7,
     'Xray': XRay,
     }
-

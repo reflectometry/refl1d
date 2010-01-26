@@ -50,31 +50,31 @@ class Probe: # Abstract base class
     as measured in radians.  Changes to *theta_offset* will then be penalized
     in the cost function for the fit as if it were another measurement.  Note
     that the uncertainty in the peak position is not the same as the width
-    of the peak.  The peak stays roughly the same as statistics are improved, 
+    of the peak.  The peak stays roughly the same as statistics are improved,
     but the uncertainty in position and width will decrease.
 
     View properties::
 
         *substrate* is the material which makes up the substrate
-        *surround* is the material which makes up the surround
+        *surface* is the material which makes up the surface
         *view* is 'fresnel', 'log', 'linear' or 'Q**4'
 
     Normally *view* is set directly in the class rather than the
     instance since it is not specific to the view.  The fresnel
-    substrate and surround materials are a property of the sample,
+    substrate and surface materials are a property of the sample,
     and should share the same material.
     """
     polarized = False
     view = "fresnel"
     substrate = None
-    surround = None
+    surface = None
     def __init__(self, T=None, dT=0, L=None, dL=0, data = None):
         self.intensity = Parameter.default(1,name="intensity")
-        self.background = Parameter.default(0,name="background", 
+        self.background = Parameter.default(0,name="background",
                                             limits=[0,inf])
         self.back_absorption = Parameter.default(1, name="back_absorption",
                                                  limits=[0,1])
-        self.theta_offset = Parameter.default(0,name="theta_offset")    
+        self.theta_offset = Parameter.default(0,name="theta_offset")
 
         #if L is None:
         #    L = xsf.xray_wavelength(E)
@@ -204,7 +204,7 @@ class Probe: # Abstract base class
         R = R*back*self.intensity.value + self.background.value
         return R
 
-    def fresnel(self, substrate=None, surround=None):
+    def fresnel(self, substrate=None, surface=None):
         """
         Compute the reflectivity for the probe reflecting from a block of
         material with the given substrate.
@@ -213,17 +213,17 @@ class Probe: # Abstract base class
         """
         # Doesn't use ProbeCache, but this routine is not time critical
         Srho,Smu = (0,0) if substrate is None else substrate.sld(self)
-        Vrho,Vmu = (0,0) if surround is None else surround.sld(self)
+        Vrho,Vmu = (0,0) if surface is None else surface.sld(self)
         I = numpy.ones_like(self.Q)
         calculator = fresnel.Fresnel(rho=Srho*I, mu=Smu*I,
                                      Vrho=Vrho*I, Vmu=Vmu*I)
         return calculator(Q=self.Q,L=self.L*I)
 
-    def plot(self, theory=None, substrate=None, surround=None, view=None):
+    def plot(self, theory=None, substrate=None, surface=None, view=None):
         """
         Plot theory against data.
 
-        Need substrate/surround for Fresnel reflectivity
+        Need substrate/surface for Fresnel reflectivity
         """
         view = view if view is not None else self.view
         if view == 'linear':
@@ -232,7 +232,7 @@ class Probe: # Abstract base class
             self.plot_log(theory=theory)
         elif view == 'fresnel':
             self.plot_fresnel(theory=theory, substrate=substrate,
-                              surround=surround)
+                              surface=surface)
         elif view == 'Q**4':
             self.plot_Q4(theory=theory)
         else:
@@ -243,8 +243,8 @@ class Probe: # Abstract base class
         Plot the data associated with probe.
         """
         import pylab
-        if hasattr(self, 'R'):
-            pylab.errorbar(self.Q, self.R, 
+        if hasattr(self, 'R') and self.R is not None:
+            pylab.errorbar(self.Q, self.R,
                            yerr=self.dR, xerr=self.dQ, fmt='.')
         if theory is not None:
             Q,R = theory
@@ -257,8 +257,8 @@ class Probe: # Abstract base class
         Plot the data associated with probe.
         """
         import pylab
-        if hasattr(self,'R'):
-            pylab.errorbar(self.Q, self.R, 
+        if hasattr(self,'R') and self.R is not None:
+            pylab.errorbar(self.Q, self.R,
                            yerr=self.dR, xerr=self.dQ, fmt='.')
         if theory is not None:
             Q,R = theory
@@ -266,26 +266,26 @@ class Probe: # Abstract base class
         pylab.yscale('log')
         pylab.xlabel('Q (inv Angstroms)')
         pylab.ylabel('Reflectivity')
-    def plot_fresnel(self, theory=None, substrate=None, surround=None):
+    def plot_fresnel(self, theory=None, substrate=None, surface=None):
         """
         Plot the Fresnel reflectivity associated with the probe.
         """
         import pylab
-        if substrate is None and surround is None:
-            raise TypeError("Fresnel reflectivity needs substrate or surround")
-        F = self.fresnel(substrate=substrate,surround=surround)
-        if hasattr(self,'R'):
+        if substrate is None and surface is None:
+            raise TypeError("Fresnel reflectivity needs substrate or surface")
+        F = self.fresnel(substrate=substrate,surface=surface)
+        if hasattr(self,'R') and self.R is not None:
             pylab.errorbar(self.Q, self.R/F, self.dR/F, self.dQ, '.')
         if theory is not None:
             Q,R = theory
             pylab.plot(Q, R/F, hold=True)
         pylab.xlabel('Q (inv Angstroms)')
         if substrate is None:
-            name = "air:%s"%(surround.name)
-        elif surround is None or isinstance(surround,Vacuum):
+            name = "air:%s"%(surface.name)
+        elif surface is None or isinstance(surface,Vacuum):
             name = substrate.name
         else:
-            name = "%s:%s"%(substrate.name, surround.name)
+            name = "%s:%s"%(substrate.name, surface.name)
         pylab.ylabel('R/R(%s)'%(name))
     def plot_Q4(self, theory=None):
         """
@@ -294,7 +294,7 @@ class Probe: # Abstract base class
         import pylab
         Q4 = 1e8*self.Q**4
         #Q4[Q4==0] = 1
-        if hasattr(self,'R'):
+        if hasattr(self,'R') and self.R is not None:
             pylab.errorbar(self.Q, self.R*Q4, self.dR*Q4, self.dQ, '.')
         if theory is not None:
             Q,R = theory
@@ -314,8 +314,8 @@ class XrayProbe(Probe):
     """
     def scattering_factors(self, material):
         # doc string is inherited from parent (see below)
-        coh, absorp = xsf.xray_sld(material, 
-                                   wavelength = self._sf_L, 
+        coh, absorp = xsf.xray_sld(material,
+                                   wavelength = self._sf_L,
                                    density=1)
         return coh[self._sf_idx], absorp[self._sf_idx], [0]
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
@@ -333,7 +333,7 @@ class NeutronProbe(Probe):
 class PolarizedNeutronProbe(Probe):
     """
     Polarized beam
-    
+
     *xs* (4 x NeutronProbe) is a sequence pp, pm, mp and mm.
     *Tguide* (degrees) is the angle of the guide field
     """
@@ -341,9 +341,9 @@ class PolarizedNeutronProbe(Probe):
     def __init__(self, xs=None, Tguide=270):
         Probe.__init__(self)
         pp, pm, mp, mm = xs
-        
+
         dTpp, dTpm, dTmp, dTmm = dT
-        
+
         Q = [TL2Q(Tx,Lx) for Tx,Lx in zip(T,L)]
         dQ = [dTdL2dQ(Tx,dTx,Lx,dLx) for Tx,Lx,dTx,dLx in zip(T,dT,L,dL)]
 
@@ -396,13 +396,13 @@ class PolarizedNeutronProbe(Probe):
     def __len__(self):
         return len(self.calc_Q)
 
-    def plot(self, theory=None, substrate=None, surround=None, view=None):
+    def plot(self, theory=None, substrate=None, surface=None, view=None):
         """
         Plot theory against data.
 
-        Need substrate/surround for Fresnel reflectivity
-        
-        An 
+        Need substrate/surface for Fresnel reflectivity
+
+        An
         """
         import pylab
         view = view if view is not None else self.view
@@ -417,7 +417,7 @@ class PolarizedNeutronProbe(Probe):
                         xs.plot_log(theory=theory)
                     elif view == 'fresnel':
                         xs.plot_fresnel(theory=theory, substrate=substrate,
-                                        surround=surround)
+                                        surface=surface)
                     elif view == 'Q**4':
                         xs.plot_Q4(theory=theory)
                     pylab.hold(True)
@@ -431,9 +431,9 @@ class PolarizedNeutronProbe(Probe):
         pp,pm,mp,mm = self.xs
         if pp is None or mm is None:
             raise TypeError("cannot form spin asymmetry plot with ++ and --")
-        
+
         if hasattr(pp,'R'):
-            Q,SA,dSA = spin_asymmetry(pp.Q,pp.R,pp.dR,mm.Q,mm.R,mm.dR) 
+            Q,SA,dSA = spin_asymmetry(pp.Q,pp.R,pp.dR,mm.Q,mm.R,mm.dR)
             pylab.errorbar(Q, SA, dSA, '.')
         if theory is not None:
             Q,pp,pm,mp,mm = theory
@@ -445,19 +445,19 @@ class PolarizedNeutronProbe(Probe):
 def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
     """
     Compute spin asymmetry for R+,R-.
-    
+
     Returns *Q*, *SA*, *dSA*.
 
     Spin asymmetry, *SA*, is::
-    
+
         SA = (R+ - R-)/(R+ + R-)
-    
+
     Uncertainty *dSA* follows from propagation of error::
-    
+
         dSA^2 = SA^2 ( (1/(R+ - R-) - 1/(Rp + R-))^2 dR+^2
                         (1/(R+ - R-) + 1/(Rp + R-))^2 dR-^2 )
 
-    The inputs (*Qp*, *Rp*, *dRp*) and (*Qm*, *Rm*, *dRm*) are measurements 
+    The inputs (*Qp*, *Rp*, *dRp*) and (*Qm*, *Rm*, *dRm*) are measurements
     for the ++ and -- cross sections respectively.  If *dRp*, *dRm* are None,
     then the returned uncertainty will also be None.
     """
@@ -470,4 +470,3 @@ def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
         return Qp, v, sqrt(dvsq)
     else:
         return Qp, v, None
-

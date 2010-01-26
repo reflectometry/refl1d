@@ -66,7 +66,7 @@ from .model import Slab, Stack
 from .interface import Erf
 from .probe import Probe, NeutronProbe, XrayProbe
 from .fitter import preview, DEfit, SNOBfit
-from . import ncnrdata
+from . import ncnrdata, snsdata
 fit = DEfit
 
 # Pull in common materials for reflectometry experiments.
@@ -83,10 +83,10 @@ def plot_sample(sample, instrument=None, roughness_limit=0):
 
     Use a data probe if the data is available.
     """
-    if instrument==None:
+    if instrument == None:
         import numpy
-        ncnrdata
-        probe = NeutronProbe(A=numpy.linspace(0,5,400), L=4.75)
+        T = numpy.arange(0, 5, 0.05)
+        probe = NeutronProbe(T=T, L=4.75)
     experiment = Experiment(sample=sample, probe=probe,
                             roughness_limit=roughness_limit)
     experiment.plot()

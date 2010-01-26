@@ -40,7 +40,7 @@ class FitBase:
 
 class ConsoleMonitor(monitor.TimedUpdate):
     def __init__(self, problem, progress=1, improvement=30):
-        monitor.TimedUpdate.__init__(self, progress=progress, 
+        monitor.TimedUpdate.__init__(self, progress=progress,
                                      improvement=improvement)
         self.problem = problem
     def show_progress(self, history):
@@ -49,7 +49,7 @@ class ConsoleMonitor(monitor.TimedUpdate):
         #print "step",history.step[0],"chisq",history.value[0]
         self.problem.setp(history.point[0])
         parameter.summarize(self.problem.parameters)
-        
+
 class DEfit(FitBase):
     def solve(self, **kw):
         from mystic.optimizer import de
@@ -157,7 +157,7 @@ class FitProblem:
         Set a new value for the parameters into the model.  If the model
         is valid, calls model_update to signal that the model should be
         recalculated.
-        
+
         Returns True if the value is valid and the parameters were set,
         otherwise returns False.
         """
@@ -199,7 +199,7 @@ class FitProblem:
         In the context of a composite fit, the reduced chisq on the individual
         models only considers the points and the fitted parameters within
         the individual model.
-        
+
         Note that this does not include cost factors due to constraints on
         the parameters, such as sample_offset ~ N(0,0.01).
         """
@@ -211,8 +211,8 @@ class FitProblem:
 
         Note that this is not simply the sum-squared residuals, but instead
         is the negative log likelihood of seeing the data given the model plus
-        the negative log likelihood of seeing the model.  The individual 
-        likelihoods are scaled by 1/max(P) so that normalization constants 
+        the negative log likelihood of seeing the model.  The individual
+        likelihoods are scaled by 1/max(P) so that normalization constants
         can be ignored.  The log likelihood is further scaled by 2/DOF so that
         the result looks like the familiar normalized chi-squared.  These
         scale factors will not affect the value of the minimum, though some

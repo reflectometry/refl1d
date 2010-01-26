@@ -271,10 +271,10 @@ class Slab(Layer):
                     material=self.material.parameters())
 
     def render(self, probe, slabs):
-        rho, mu = self.material.sld(probe)
+        rho, irho = self.material.sld(probe)
         w = self.thickness.value
         sigma = self.interface.value
-        slabs.extend(rho=[rho], mu=[mu], w=[w], sigma=[sigma])
+        slabs.extend(rho=[rho], irho=[irho], w=[w], sigma=[sigma])
     def __str__(self):
         if self.thickness.value > 0:
             return "%s/%.3g"%(str(self.material),self.thickness.value)
@@ -287,27 +287,27 @@ class Bspline(Layer):
     """
     A freeform section of the sample modeled with B-splines.
 
-    sld (rho) and absorption (mu) can be modeled with a separate
+    sld (rho) and imaginary sld (irho) can be modeled with a separate
     number of control points.
 
     The control points are equally spaced in the layers.  Values at
     the ends are flat.
     """
-    def __init__(self, thickness=0, rho=[], mu=[], name="BSpline"):
+    def __init__(self, thickness=0, rho=[], irho=[], name="BSpline"):
         self.name = name
         self.thickness = Par.default(thickness, limits=(0,inf),
                                    name=name+" thickness")
         self.rho_points = [Par.default(v) for v in rho]
-        self.mu_points = [Par.default(v) for v in mu]
+        self.irho_points = [Par.default(v) for v in irho]
     def parameters(self):
         return dict(rho=self.rho_points,
-                    mu=self.mu_points,
+                    irho=self.irho_points,
                     thickness=self.thickness)
     def render(self, probe, slabs):
         raise NotImplementedError
         thickness = self.thickness.value
         rho = [v.value for v in self.rho]
-        mu = [v.value for v in self.mu]
+        irho = [v.value for v in self.irho]
         z = slab.steps()
 
 class PBS(Layer):
@@ -316,22 +316,22 @@ class PBS(Layer):
 
     Each control point uses a pair of parameters (x,y).
 
-    sld (rho) and absorption (mu) can be modeled with a separate
+    sld (rho) and imaginary sld (irho) can be modeled with a separate
     number of control points.
     """
-    def __init__(self, thickness=0, rho=[], mu=[], name="BSpline"):
+    def __init__(self, thickness=0, rho=[], irho=[], name="BSpline"):
         self.name = name
         self.thickness = Par.default(thickness, limits=(0,inf),
                                    name=name+" thickness")
         self.rho_points = [(Par.default(x),Par.default(y)) for x,y in rho]
-        self.mu_points = [(Par.default(x),Par.default(y)) for x,y in mu]
+        self.irho_points = [(Par.default(x),Par.default(y)) for x,y in irho]
     def parameters(self):
         return dict(rho=self.rho_points,
-                    mu=self.mu_points,
+                    irho=self.irho_points,
                     thickness=self.thickness)
     def render(self, probe, slabs):
         raise NotImplementedError
         thickness = self.thickness.value
         rho = [v.value for v in self.rho]
-        mu = [v.value for v in self.mu]
+        irho = [v.value for v in self.irho]
         z = slab.steps()

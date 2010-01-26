@@ -29,7 +29,7 @@ class Experiment:
     limits on the roughness,  but be aware that the displayed profile may
     not reflect the actual scattering densities in the material.
     """
-    def __init__(self, sample=None, probe=None, 
+    def __init__(self, sample=None, probe=None,
                  roughness_limit=2.5, dz=1):
         self.sample = sample
         self.probe = probe
@@ -82,10 +82,10 @@ class Experiment:
         if 'calc_r' not in self._cache:
             self._render_slabs()
             w = self._slabs.w
-            rho,mu = self._slabs.rho, self._slabs.mu
+            rho,irho = self._slabs.rho, self._slabs.irho
             sigma = self._slabs.limited_sigma(limit=self.roughness_limit)
-            calc_r = refl(-self.probe.calc_Q/2, 
-                          depth=w, rho=rho, mu=mu, sigma=sigma)
+            calc_r = refl(-self.probe.calc_Q/2,
+                          depth=w, rho=rho, irho=irho, sigma=sigma)
             self._cache['calc_r'] = calc_r
             if numpy.isnan(self.probe.calc_Q).any(): print "calc_Q contains NaN"
             if numpy.isnan(calc_r).any(): print "calc_r contains NaN"
@@ -107,9 +107,9 @@ class Experiment:
     def reflectivity(self, resolution=True, beam=True):
         """
         Calculate predicted reflectivity.
-        
+
         If *resolution* is true include resolution effects.
-        
+
         If *beam* is true, include absorption and intensity effects.
         """
         calc_r = self._reflamp()
@@ -147,9 +147,12 @@ class Experiment:
     def residuals(self):
         if 'residuals' not in self._cache:
             Q,R = self.reflectivity()
-            self._cache['residuals'] = (self.probe.R - R)/self.probe.dR
+            if self.probe.R is not None:
+                self._cache['residuals'] = (self.probe.R - R)/self.probe.dR
+            else:
+                self._cache['residuals'] = numpy.zeros_like(Q)
         return self._cache['residuals']
-    
+
     def nllf(self):
         """
         Return the -log(P(data|model)), scaled to P = 1 if the data
@@ -169,11 +172,11 @@ class Experiment:
 
     def plot_profile(self):
         import pylab
-        z,rho,mu = self.step_profile()
-        pylab.plot(z,rho,'-g',z,mu,'-b')
-        z,rho,mu = self.smooth_profile()
-        pylab.plot(z,rho,':g',z,mu,':b', hold=True)
-        pylab.legend(['rho','mu'])
+        z,rho,irho = self.step_profile()
+        pylab.plot(z,rho,'-g',z,irho,'-b')
+        z,rho,irho = self.smooth_profile()
+        pylab.plot(z,rho,':g',z,irho,':b', hold=True)
+        pylab.legend(['rho','irho'])
         pylab.xlabel('depth (A)')
         pylab.ylabel('SLD (10^6 inv A**2)')
 
@@ -181,7 +184,7 @@ class Experiment:
         Q,R = self.reflectivity()
         self.probe.plot(theory=(Q,R),
                         substrate=self.sample[0].material,
-                        surround=self.sample[-1].material)
+                        surface=self.sample[-1].material)
         if show_resolution:
             import pylab
             Q,R = self.reflectivity(resolution=False)
@@ -319,8 +322,8 @@ class DistributionExperiment:
 
     def plot_profile(self, P):
         import pylab
-        z,rho,mu = self.step_profile(P)
-        pylab.plot(z,rho,'-g',z,mu,'-b')
-        z,rho,mu = self.smooth_profile(P)
-        pylab.plot(z,rho,':g',z,mu,':b')
-        pylab.legend(['rho','mu'])
+        z,rho,irho = self.step_profile(P)
+        pylab.plot(z,rho,'-g',z,irho,'-b')
+        z,rho,irho = self.smooth_profile(P)
+        pylab.plot(z,rho,':g',z,irho,':b')
+        pylab.legend(['rho','irho'])
