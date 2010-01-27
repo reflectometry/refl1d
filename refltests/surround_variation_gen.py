@@ -20,6 +20,7 @@ def gendata(sample, filename, T, slits=None, dLoL=0.03, counts=None):
     dR = sqrt(R/I)
     R += randn(len(Q))*dR
     probe.R, probe.dR = R, dR
+    probe.I = I  # Needed for stitching
 
     # Save to file
     data = numpy.array((probe.Q,probe.dQ,probe.R,probe.dR,probe.L))
@@ -57,12 +58,34 @@ def main():
     slits=(0.2,0.2)
     dLoL=0.03
 
+    sets = []
     for T in [0.7,4]:
         s = 0.2*T
         n = (70*T)**4
         p1 = gendata(sample1,"surround_air_%g.txt"%T, T=T, slits=(s,s), counts=n)
         p2 = gendata(sample2,"surround_d2o_%g.txt"%T, T=T, slits=(s,s), counts=n)
+        sets.append((p1,p2))
     #    p1.plot(); p2.plot()
+    #stitch_sets(sets)
     #import pylab; pylab.show()
+
+def plot_log(data, theory=None):
+    import pylab
+    Q,dQ,R,dR = data
+    #pylab.errorbar(Q, R, yerr=dR, xerr=dQ, fmt='.')
+    pylab.plot(Q, R, "-x",hold=True)
+    if theory is not None:
+        Q,R = theory
+        pylab.plot(Q, R, hold=True)
+    pylab.yscale('log')
+    pylab.xlabel('Q (inv Angstroms)')
+    pylab.ylabel('Reflectivity')
+
+#TODO: move stitch from an example to a test suite    
+def stitch_sets(sets):
+    from refl1d.stitch import stitch
+    p1,p2 = zip(*sets)
+    plot_log(stitch(p1,same_Q=0.001))
+    plot_log(stitch(p2,same_Q=0.001))
 
 if __name__ == "__main__": main()

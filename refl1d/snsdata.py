@@ -95,6 +95,26 @@ class SNSLoader:
         header,data = parse_file(filename)
         return _make_probe(geometry=self, header=header, data=data, **kw)
 
+    def simdata(self, sample, counts=None, **kw):
+        """
+        Simulate a run with a particular sample.
+        """
+        from .experiment import Experiment
+        T = kw.pop('T', self.T)
+        slits = kw.pop('slits', self.slits)
+        if slits is None: slits = (0.2*T, 0.2*T)
+        if counts is None: counts = (70*T)**4
+
+        # Compute reflectivity with resolution and added noise
+        probe = self.simulate(T=T, slits=slits, **kw)
+        M = Experiment(probe=probe, sample=sample)
+        Q, R = M.reflectivity()
+        I = feather(probe.L, counts=counts)
+        dR = numpy.sqrt(R/I)
+        R += numpy.random.randn(len(Q))*dR
+        probe.R, probe.dR = R, dR
+        return probe
+
 print "Insert correct slit distances for Liquids and Magnetic"
 class Liquids(Polychromatic, SNSLoader):
     """
