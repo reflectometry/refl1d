@@ -18,11 +18,11 @@ def stitch(probes, same_Q = 0.001, same_dQ = None):
     same Q,dQ may have different wavelength/angle inputs, particularly for 
     time of flight instruments.
         
-    WARNING: the returned Q values may be data dependent, so two measurements
-    can have different Q after stitching, even if the measurement 
+    WARNING: the returned Q values may be data dependent, with two measured
+    sets having different Q after stitching, even though the measurement 
     conditions are identical!!  
 
-    Either add an intensity factor to the datasets::
+    Either add an intensity weight to the datasets::
 
         probe.I = slitscan
 
@@ -33,6 +33,7 @@ def stitch(probes, same_Q = 0.001, same_dQ = None):
         Q2[0],Q2[-1] = Q1[0],Q1[-1] # Force matching end points
         R2 = numpy.interp(Q1,Q2,R2)
         dR2 = numpy.interp(Q1,Q2,dR2)
+        Q2 = Q1
         
     WARNING: the returned dQ value underestimates the true Q, depending on
     the relative weights of the averaged data points.
