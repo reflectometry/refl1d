@@ -5,7 +5,7 @@ NCNR data loaders.
 
 The following instruments are defined::
 
-    Ng1, ANDR, NG7 and Xray
+    ANDR, NG1, NG7 and Xray
 
 These are :class:`resolution.Monochromatic` classes tuned with
 default instrument parameters and loaders for reduced NCNR data.
@@ -72,43 +72,43 @@ class NCNRLoader:
         header.update(**kw)
         return _make_probe(geometry=self, header=header, data=data, **kw)
 
-class ANDR(Monochromatic,NCNRLoader):
+class ANDR(Monochromatic, NCNRLoader):
     """
     Instrument definition for NCNR AND/R diffractometer/reflectometer.
     """
     instrument = "AND/R"
     radiation = "neutron"
     wavelength = 5.0042
-    dLoL=0.009
+    dLoL = 0.009
     d_s1 = 230.0 + 1856.0
     d_s2 = 230.0
 
-class NG1(Monochromatic,NCNRLoader):
+class NG1(Monochromatic, NCNRLoader):
     """
     Instrument definition for NCNR NG-1 reflectometer.
     """
     instrument = "NG-1"
     radiation = "neutron"
     wavelength = 4.75
-    dLoL=0.015
-    d_s1 = 75*2.54
-    d_s2 = 14*2.54
-    d_s3 = 9*2.54
-    d_s4 = 42*2.54
+    dLoL = 0.015
+    d_s1 = 75*25.4
+    d_s2 = 14*25.4
+    d_s3 = 9*25.4
+    d_s4 = 42*25.4
 
-class NG7(Monochromatic,NCNRLoader):
+class NG7(Monochromatic, NCNRLoader):
     """
     Instrument definition for NCNR NG-7 reflectometer.
     """
     instrument = "NG-7"
     radiation = "neutron"
     wavelength = 4.768
-    dLoL=0.040
+    dLoL = 0.040
     d_s1 = None
     d_s2 = None
     d_detector = 2000
 
-class XRay(Monochromatic,NCNRLoader):
+class XRay(Monochromatic, NCNRLoader):
     """
     Instrument definition for NCNR X-ray reflectometer.
 
@@ -122,7 +122,7 @@ class XRay(Monochromatic,NCNRLoader):
     by setting the slit opening to 0 and using sample_broadening
     to define the entire divergence::
 
-        xray = ncnrdata.Xray(slits_at_To=0)
+        xray = ncnrdata.XRay(slits_at_To=0)
         data = xray.load("exp123.dat", sample_broadening=1e-4)
     """
     instrument = "X-ray"

@@ -9,13 +9,13 @@ sources, the wavelength resolution is fixed and the angular resolution
 varies.  For polychromatic sources, the wavelength resolution varies and
 the angular resolution is fixed.
 
-The angular resolution is determined by the geometry (slit positions
-and openings and sample profile) with perhaps an additional contribution
+The angular resolution is determined by the geometry (slit positions and
+openings and sample profile) with perhaps an additional contribution
 from sample warp.  For monochromatic instruments, measurements are taken
 with fixed slits at low angles until the beam falls completely onto the
-sample, then opening slits to preserve full illumination.  At some point
-the slits would exceed the beam width, and so are left fixed for all
-angles above.
+sample.  Then as the angle increases, slits are opened to preserve full
+illumination.  At some point the slit openings exceed the beam width,
+and thus they are left fixed for all angles above this threshold.
 
 When the sample is tiny, stray neutrons miss the sample and are not
 reflected onto the detector.  This results in a resolution that is
@@ -26,7 +26,7 @@ slit.  This simple calculation isn't quite correct for very low Q, but
 in that case both reflected and transmitted neutrons will arrive at the
 detector, so the computed resolution of dQ=0 at Q=0 is good enough.
 
-When the sample is warped, it make act to either focus or spread the
+When the sample is warped, it may act to either focus or spread the
 incident beam.  Some samples are diffuse scatters, which also acts
 to spread the beam.  The degree of spread can be estimated from the
 full-width at half max (FWHM) of a rocking curve at known slit settings.
@@ -43,10 +43,14 @@ fixed relative resolution dL/L for each bin.
 Usage
 =====
 
-The resolution module defines two instrument types: :class:`Monochromatic`
-and :class:`Polychromatic`.  These represent generic are scanning and
-time of flight instruments respectively.  To perform a simulation or
-load a data set, an actual instrument must be created.  For example::
+:module:`resolution` (this module) defines two instrument types:
+:class:`Monochromatic` and :class:`Polychromatic`.  These represent
+generic scanning and time of flight instruments, respectively.  In
+addition, instruments at SNS and NCNR have many of their parameters
+predefined in :module:`snsdata` and :module:`ncnrdata`.
+
+To perform a simulation or load a data set, an actual instrument must
+be created.  For example::
 
     >>> from resolution import Monochromatic
     >>> instrument = Monochromatic(
@@ -61,11 +65,9 @@ load a data set, an actual instrument must be created.  For example::
             Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1,
             )
 
-SNS and NCNR instruments have predefined instrument parameters in
-:module:`snsdata` an :module:`ncnrdata` respectively.  This instrument can then
-be used to compute a resolution function for arbitrary Q values, following the
-slit opening pattern defined by the instrument.  Using them, the example above
-becomes::
+An instrument such as this can be used to compute a resolution function
+for arbitrary Q values, following the slit opening pattern defined by
+the instrument.  Using them, the example above becomes::
 
     >>> import numpy, pylab
     >>> from ncnrdata import ANDR
@@ -74,10 +76,12 @@ becomes::
     >>> pylab.plot(resolution.T, resolution.dT)
     >>> pylab.ylabel('angular divergence (degrees FWHM)')
     >>> pylab.xlabel('angle (degrees)')
+    >>> pylab.show()
 
-The resolution object *resolution* is of :class:`Resolution`, which is just a
-way of capturing the computed values resolution *T*, *dT*, *L*, *dL*.  It
-can easily be turned into a reflectometry probe for use in modeling::
+The resolution object *resolution* is of :class:`Resolution`.  Using it
+you can compute the resolution *dQ* for a given *Q* based on *T*, *dT*,
+*L*, and *dL*.  Furthermore, it can easily be turned into a reflectometry
+probe for use in modeling::
 
     >>> resolution.probe()
 
@@ -93,6 +97,7 @@ example loads and plots two data files::
     >>> probe1.plot()
     >>> pylab.hold(True)
     >>> probe2.plot()
+    >>> pylab.show()
 
 Generating a simulation probe is similarly convenient::
 
@@ -128,8 +133,8 @@ Polychromatic measurements have the following attributes::
     *slits* (mm or mm,mm)
         slit 1 and slit 2 openings
     *d_s1*, *d_s2* (mm)
-        distance from sample to pre-sample slits 1 and 2; post-sample slits
-        are ignored
+        distance from sample to pre-sample slits 1 and 2; post-sample
+        slits are ignored
     *wavelength* (Angstrom,Angstrom)
         wavelength range for the measurement
     *dLoL*
@@ -138,13 +143,13 @@ Polychromatic measurements have the following attributes::
     *sample_width* (mm)
         width of sample; at low angle with tiny samples, stray neutrons
         miss the sample and are not reflected onto the detector, so the
-        sample itself acts as a slit., and so the width of the sample may be
-        needed to compute the resolution correctly.
+        sample itself acts as a slit, therefore the width of the sample
+        may be needed to compute the resolution correctly
     *sample_broadening* (degrees FWHM)
-        amount of angular divergence (+) or focusing (-) introduced by the
-        sample; this is caused by sample warp, and may be read off the
-        rocking curve by subtracting (s1+s2)/2/(d_s1-d_s2) from the
-        FWHM width of the rocking curve.
+        amount of angular divergence (+) or focusing (-) introduced by
+        the sample; this is caused by sample warp, and may be read off
+        of the rocking curve by subtracting (s1+s2)/2/(d_s1-d_s2) from
+        the FWHM width of the rocking curve
 
 Monochromatic measurements have these additional or modified attributes::
 
@@ -153,8 +158,8 @@ Monochromatic measurements have these additional or modified attributes::
     *radiation* (xray or neutron)
         source radiation type
     *d_s1*, *d_s2* (mm)
-        distance from sample to pre-sample slits 1 and 2; post-sample slits
-        are ignored
+        distance from sample to pre-sample slits 1 and 2; post-sample
+        slits are ignored
     *wavelength* (Angstrom)
         wavelength of the instrument
     *dLoL*
@@ -172,13 +177,13 @@ Monochromatic measurements have these additional or modified attributes::
     *sample_width* (mm)
         width of sample; at low angle with tiny samples, stray neutrons
         miss the sample and are not reflected onto the detector, so the
-        sample itself acts as a slit., and so the width of the sample may be
-        needed to compute the resolution correctly.
+        sample itself acts as a slit, therefore the width of the sample
+        may be needed to compute the resolution correctly
     *sample_broadening* (degrees FWHM)
-        amount of angular divergence (+) or focusing (-) introduced by the
-        sample; this is caused by sample warp, and may be read off the
-        rocking curve by subtracting (s1+s2)/2/(d_s1-d_s2) from the
-        FWHM width of the rocking curve.
+        amount of angular divergence (+) or focusing (-) introduced by
+        the sample; this is caused by sample warp, and may be read off
+        of the rocking curve by subtracting (s1+s2)/2/(d_s1-d_s2) from
+        the FWHM width of the rocking curve
 
 These parameters should be available in the reduced data file, or they
 can be found in the raw NeXus file.
@@ -230,25 +235,25 @@ direct calculation::
     dQ = (4 pi / L) sqrt( sin(T)**2 (dL/L)**2 + cos(T)**2 dT**2 )
 
 
-Wavelength dispersion dL/L is usually constant (e.g., for AND/R it is 2% FWHM),
-but it can vary on time-of-flight instruments depending on how the data is
-binned.
+Wavelength dispersion dL/L is usually constant (e.g., for AND/R it is 2%
+FWHM), but it can vary on time-of-flight instruments depending on how the
+data is binned.
 
 Angular divergence dT comes primarily from the slit geometry, but can have
 broadening or focusing due to a warped sample.  The slit contribution is
 dT = (s1+s2)/(2d) FWHM  where s1,s2 are slit openings and d is the distance
-between slits.  For tiny samples, the sample itself can act as a
-slit.  If s_sample = sin(T)*w is smaller than s2 for some T, then use
+between slits.  For tiny samples, the sample itself can act as a slit.
+If s_sample = sin(T)*w is smaller than s2 for some T, then use
 dT = (s1+s_sample)/(2(d+d_sample)) instead.
 
 The sample broadening can be read off a rocking curve as  w - (s1+s2)/(2d)
 where w is the measured FWHM of the peak. This constant should be added to
-the computed dT for all angles and slit geometries. You will not
+the computed dT for all angles and slit geometries.  You will not
 usually have this information on hand, but you can leave space for users
 to enter it if it is available.
 
-FWHM can be converted to 1-sigma resolution using the scale factor
-of 1/sqrt(8 * log(2))
+FWHM can be converted to 1-sigma resolution using the scale factor of
+1/sqrt(8 * log(2))
 
 For opening slits, dT/T is held constant, so if you know s and To at the
 start of the opening slits region you can compute dT/To, and later scale
@@ -271,7 +276,7 @@ from util import TL2Q, QL2T, dTdL2dQ, dQdT2dLoL, FWHM2sigma, sigma2FWHM
 
 class Resolution:
     """
-    Reflectometry resolution object
+    Reflectometry resolution object.
 
     *T*, *dT*   (degrees) angle and FWHM divergence
     *L*, *dL*   (Angstroms) wavelength and FWHM dispersion
@@ -577,9 +582,6 @@ slit distances = %(d_s1)g mm and %(d_s2)g mm
            radiation=cls.radiation,
            )
         return msg
-
-
-
 
 def bins(low, high, dLoL):
     """
