@@ -18,7 +18,7 @@ from material import Vacuum
 from mystic.parameter import Parameter
 from resolution import TL2Q, dTdL2dQ
 
-class Probe: # Abstract base class
+class Probe(object):
     """
     Defines the incident beam used to study the material.
 
@@ -118,16 +118,14 @@ class Probe: # Abstract base class
 
     def _Q(self):
         if self.theta_offset.value != 0:
-            Q = TL2Q(angle=self.T+self.theta_offset.value,
-                          wavelength=self.L)
+            Q = TL2Q(T=self.T+self.theta_offset.value, L=self.L)
         else:
             Q = self.Qo
         return Q
     Q = property(_Q)
     def _calc_Q(self):
         if self.theta_offset.value != 0:
-            Q = TL2Q(angle=self.calc_T+self.theta_offset.value,
-                          wavelength=self.calc_L)
+            Q = TL2Q(T=self.calc_T+self.theta_offset.value, L=self.calc_L)
         else:
             Q = self.calc_Qo
         return Q
@@ -374,7 +372,7 @@ class PolarizedNeutronProbe(Probe):
     oversample.__doc__ = Probe.oversample.__doc__
 
     def _set_calc(self, T, L):
-        Q = TL2Q(angle=T, wavelength=L)
+        Q = TL2Q(T=T, L=L)
 
         idx = numpy.argsort(Q)
         self.calc_T = T[idx]

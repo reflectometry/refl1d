@@ -63,6 +63,7 @@ from .version import __version__
 from .experiment import Experiment
 from .material import SLD, Material, Compound, Mixture
 from .model import Slab, Stack
+from .polymer import TetheredPolymer, VolumeProfile, layer_thickness
 from .interface import Erf
 from .probe import Probe, NeutronProbe, XrayProbe
 from .fitter import preview, DEfit, SNOBfit

@@ -14,6 +14,9 @@ class Microslabs:
     potentials are probe dependent we store an array of potentials for each
     probe value.
 
+    Some slab models use non-uniform layers, and so need the additional
+    parameter of dz for the step size within the layer.
+
     The space for the slabs is saved even after reset, in preparation for a
     new set of slabs from different fitting parameters.
 
@@ -35,12 +38,31 @@ class Microslabs:
         figure(2)
         plot(kz,R,label='reflectivity')
     """
-    def __init__(self, nprobe):
+    def __init__(self, nprobe, dz=None):
         self._num_slabs = 0
         # _slabs contains the 1D objects w, sigma, rho_M, theta_M of len n
         # _slabsQ contains the 2D objects rho, irho
         self._slabs = numpy.empty(shape=(0,4))
         self._slabsQ = numpy.empty(shape=(0,nprobe,2))
+        self.dz = dz
+
+    def microslabs(self, thickness=0):
+        """
+        Return a set of microslabs of widths w and centers z which slice
+        a layer of the given *thickness* with the minimum step size.
+        
+        The desired step size slabs.dz was defined when the Microslabs 
+        object was created.
+        
+        This is a convenience function.  Layer definitions can choose
+        their own slices so long as the step size is approximately
+        slabs.dz in the varying region.
+        """
+        edges = numpy.arange(0,thickness+self.dz,self.dz)
+        edges[-1] = thickness
+        centers = (edges[1:] + edges[:-1])/2
+        widths = edges[1:] - edges[:-1]
+        return widths, centers
 
     def clear(self):
         """
@@ -94,8 +116,8 @@ class Microslabs:
         self._slabs[idx,1] = sigma
         self._slabs[idx,2] = rho_M
         self._slabs[idx,3] = theta_M
-        self._slabsQ[idx,:,0] = rho
-        self._slabsQ[idx,:,1] = irho
+        self._slabsQ[idx,:,0] = numpy.asarray(rho).T
+        self._slabsQ[idx,:,1] = numpy.asarray(irho).T
 
     def interface(self, I):
         """

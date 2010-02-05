@@ -1,7 +1,7 @@
 # This program is in the public domain
 # Author: Paul Kienzle
 
-from math import log, pi
+from math import log, pi, log10, ceil, floor
 import numpy
 from .abeles import refl
 from . import material, profile
@@ -22,20 +22,30 @@ class Experiment:
 
         *sample* is the model sample
         *roughness_limit* limits the roughness based on layer thickness
+        *dz* step size for profile steps in Angstroms.
 
     The *roughness_limit* value should be reasonably large (e.g., 2.5 or above)
     to make sure that the Nevot-Croce reflectivity calculation matches the
     calculation of the displayed profile.  Use a value of 0 if you want no
     limits on the roughness,  but be aware that the displayed profile may
     not reflect the actual scattering densities in the material.
+    
+    The *dz* step size sets the size of the slabs for non-uniform profiles.
+    Using the relation d = 2 pi / Q_max,  we use a default step size of d/2 
+    rounded to two digits.  For simultaneous fitting you may want to set *dz*
+    explicitly to experiment.nice(pi/Q_max) so that all models use the same
+    profile steps, but that is not required.
     """
     def __init__(self, sample=None, probe=None,
-                 roughness_limit=2.5, dz=1):
+                 roughness_limit=2.5, dz=None):
         self.sample = sample
         self.probe = probe
-        self._probe_cache = material.ProbeCache(probe)
-        self._slabs = profile.Microslabs(len(probe))
         self.roughness_limit = roughness_limit
+        if dz is None: 
+            dz = nice((2*pi/probe.Q.max())/20)
+        print "Qmax",probe.Q.max(), "dz",dz,(2*pi/probe.Q.max())
+        self._slabs = profile.Microslabs(len(probe), dz=dz)
+        self._probe_cache = material.ProbeCache(probe)
         self._cache = {}  # Cache calculated profiles/reflectivities
 
     def parameters(self):
@@ -123,10 +133,13 @@ class Experiment:
             if numpy.isnan(R).any(): print "beam contains NaN"
         return Q, R
 
-    def smooth_profile(self,dz=1):
+    def smooth_profile(self,dz=None):
         """
-        Compute a density profile for the material
+        Compute a density profile for the material.
+        
+        If *dz* is not given, use the step size set for the experiment.
         """
+        if dz is None: dz = self._slabs.dz
         if ('smooth_profile',dz) not in self._cache:
             self._render_slabs()
             prof = self._slabs.smooth_profile(dz=dz,
@@ -327,3 +340,11 @@ class DistributionExperiment:
         z,rho,irho = self.smooth_profile(P)
         pylab.plot(z,rho,':g',z,irho,':b')
         pylab.legend(['rho','irho'])
+
+def nice(v, digits = 2):
+    """Fix v to a value with a given number of digits of precision"""
+    if v == 0.: return v
+    sign = v/abs(v)
+    place = floor(log10(abs(v)))
+    scale = 10**(place-(digits-1))
+    return sign*floor(abs(v)/scale+0.5)*scale

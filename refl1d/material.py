@@ -50,15 +50,17 @@ from mystic import Parameter as Par
 
 _INCOHERENT_AS_ABSORPTION = True
 
-class Scatterer:
+class Scatterer(object):
     """
     A generic scatterer separates the lookup of the scattering factors
     from the calculation of the scattering length density.  This allows
     programs to fit density and alloy composition more efficiently.
 
-    Note: the scatterer base class is extended in model so that materials
-    can be implicitly converted to slabs when used in stack construction
-    expressions.
+    Note: the Scatterer base class is extended by 
+    :class:`model._MaterialStacker` so that materials can be implicitly 
+    converted to slabs when used in stack construction expressions.  It is
+    not done directly to avoid circular dependencies between :module:`model`
+    and :module:`material`.
     """
     def sld(self, sf):
         """
@@ -95,18 +97,26 @@ class SLD(Scatterer):
     Use this when you don't know the composition of the sample.  The
     absorption and scattering length density are stored directly rather
     than trying to guess at the composition from details about the sample.
-
-    Clearly, all bets are off regarding probe dependent effects, and
-    each probe and wavelength will need a separate material.
+    
+    The complex scattering potential is defined by *rho* + 1j *irho*.
+    Note that this differs from *rho* + 1j *mu*/(2 *lambda*) more
+    traditionally used in neutron reflectometry, and *N* *re* (*f1* + 1j *f2*) 
+    traditionally used in X-ray reflectometry.
+    
+    Given that *f1* and *f2* are always wavelength dependent for X-ray
+    reflectometry, it will not make much sense to uses this for wavelength
+    varying X-ray measurements.  Similarly, some isotopes, particularly
+    rare earths, show wavelength dependence for neutrons, and so 
+    time-of-flight measurements should not be fit with a fixed SLD scatterer.
     """
-    def __init__(self, name="X", rho=0, mu=0):
+    def __init__(self, name="SLD", rho=0, irho=0):
         self.name = name
         self.rho = Par.default(rho, name=name+" rho" )
-        self.mu = Par.default(mu, name=name+" mu" )
+        self.irho = Par.default(irho, name=name+" irho" )
     def parameters(self):
-        return dict(rho=self.rho, mu=self.mu)
+        return dict(rho=self.rho, irho=self.irho)
     def sld(self, probe):
-        return self.rho.value,self.mu.value
+        return self.rho.value,self.irho.value
 
 # ============================ Substances =============================
 

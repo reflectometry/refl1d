@@ -1,6 +1,18 @@
 # This program is in the public domain
 # Author: Paul Kienzle
-__all__ = ['Bspline','PBS','Slab','Stack','Experiment']
+"""
+Reflectometry models.
+
+Reflectometry models consist of 1-D stacks of layers.  Layers are joined
+by gaussian interfaces.  The layers themselves may be uniform, or the
+scattering density may vary with depth in the layer.
+
+Note: by importing model, the definition of :class:`material.Scatterer` 
+changes so that materials can be stacked into layers using operator 
+overloading. This will affect all instances of the Scatterer class, and
+all of its subclasses.
+"""
+__all__ = ['Bspline','PBS','Slab','Stack']
 
 from copy import copy, deepcopy
 import numpy
@@ -37,7 +49,7 @@ class Layer: # Abstract base class
         """
     def render(self, probe, slabs):
         """
-        Use the probe to render the layer into a microslab repressentation.
+        Use the probe to render the layer into a microslab representation.
         """
 
     # Define a little algebra for composing samples
@@ -222,7 +234,12 @@ class Repeat(Layer):
         return "Repeat(%s, %d)"%(repr(self.stack),self.repeat.value)
 
 # Extend the materials scatterer class so that any scatter can be
-# implicitly turned into a slab.
+# implicitly turned into a slab.  This is a nasty thing to do
+# since those who have to debug the system later will not know
+# to look elsewhere for the class attributes.  On the flip side,
+# changing the base class definition saves us the equally nasty
+# problem of having to create a sister hierarchy of stackable
+# scatterers mirroring the structure of the materials class.
 class _MaterialStacker:
     """
     Allows materials to be used in a stack algebra, automatically
@@ -272,8 +289,14 @@ class Slab(Layer):
 
     def render(self, probe, slabs):
         rho, irho = self.material.sld(probe)
+        try: irho = irho[0]
+        except: pass
         w = self.thickness.value
         sigma = self.interface.value
+        #print "rho",rho
+        #print "irho",irho
+        #print "w",w
+        #print "sigma",sigma
         slabs.extend(rho=[rho], irho=[irho], w=[w], sigma=[sigma])
     def __str__(self):
         if self.thickness.value > 0:
@@ -308,7 +331,7 @@ class Bspline(Layer):
         thickness = self.thickness.value
         rho = [v.value for v in self.rho]
         irho = [v.value for v in self.irho]
-        z = slab.steps()
+        z = slab.steps(thickness)
 
 class PBS(Layer):
     """
