@@ -6,6 +6,20 @@ import numpy
 
 from . import bounds as mbounds
 
+# TODO: avoid evaluation of subexpressions if parameters do not change.
+# This is especially important if the subexpression invokes an expensive
+# calculation via a parameterized function.  This will require a restructuring
+# of the parameter class.  The park-1.3 solution is viable: given a parameter
+# set, figure out which order the expressions need to be evaluated by
+# building up a dependency graph.  With a little care, we can check which
+# parameters have actually changed since the last calculation update, and
+# restrict the dependency graph to just them.
+# TODO: support full aliasing, so that floating point model attributes can
+# be aliased to a parameter.  The same technique as subexpressions applies:
+# when the parameter is changed, the model will be updated and will need
+# to be re-evaluated.
+
+
 class BaseParameter(object):
 
     # Parameters are fixed unless told otherwise
@@ -21,8 +35,8 @@ class BaseParameter(object):
 
     def pmp(self, *args):
         """
-        Allow the parameter to vary as value +/- percent.  
-        
+        Allow the parameter to vary as value +/- percent.
+
         pmp(percent) -> [value*(100 - percent)/100, value*(100 + percent)/100]
         pmp(plus,minus) -> [value*(100 - minus)/100, value*(100 + plus)/100]
 
@@ -34,7 +48,7 @@ class BaseParameter(object):
     def pm(self, *args):
         """
         Allow the parameter to vary as value +/- delta.
-        
+
         pm(delta) -> [value-delta, value+delta]
         pm(plus,minus) -> [value-minus, value+plus]
 
@@ -45,9 +59,9 @@ class BaseParameter(object):
         return self
     def dev(self, std=1):
         """
-        Allow the parameter to vary according to a normal distribution, with 
+        Allow the parameter to vary according to a normal distribution, with
         deviations added to the overall cost function.
-        
+
         dev(sigma) -> Normal(mean=value,std=sigma)
         """
         if self.fittable: self.fixed = False
@@ -184,24 +198,18 @@ class Parameter(BaseParameter):
     def __repr__(self):
         return "Parameter(%s)"%self
 
-class IntegerParameter(Parameter):
-    discrete = True
-    def rand(self, rng=mbounds.RNG):
-        """
-        Set a random value for the parameter.
-        """
-        self.value = numpy.floor(self.bounds.rand(rng))
-
-    pass
-
-class VectorParameter(Parameter):
-    pass
-
-class WrappedParameter(Parameter):
+class Reference(Parameter):
     """
-    Wrap a model attribute as a parameter.
+    Create an adaptor so that a model attribute can be treated as if it
+    were a parameter.  This allows only direct access, wherein the
+    storage for the parameter value is provided by the underlying model.
+    
+    Indirect access, wherein the storage is provided by the parameter, cannot 
+    be supported since the parameter has no way to detect that the model 
+    is asking for the value of the attribute.  This means that model 
+    attributes cannot be assigned to parameter expressions without some
+    trigger to update the values of the attributes in the model.
     """
-    # Stolen from Chris Farrow...
     def __init__(self, obj, attr, name=None):
         self.obj = obj
         self.attr = attr
@@ -210,7 +218,7 @@ class WrappedParameter(Parameter):
         else:
             self.name = ".".join([obj.__class__.__name__, attr])
     def _getvalue(self):
-        return getattr(self.obj,self.attr)
+        return getattr(self.obj, self.attr)
     def _setvalue(self, value):
         setattr(self.obj, self.attr, value)
     value = property(_getvalue, _setvalue)
@@ -303,21 +311,22 @@ exec _gen_binop('Pow','**')
 
 def substitute(a):
     """
-    Return a with values substituted for all parameters.
+    Return structure a with values substituted for all parameters.
 
     The function traverses lists, tuples and dicts recursively.  Things
     which are not parameters are returned directly.
     """
     if isinstance(a, BaseParameter):
-        return a.value
+        return float(a.value)
     elif isinstance(a, tuple):
-        return tuple(_v(i) for i in a)
+        return tuple(substitute(v) for v in a)
     elif isinstance(a, list):
-        return [_v(i) for i in a]
+        return [substitute(v) for v in a]
     elif isinstance(a, dict):
-        return dict((k,_v(i)) for k,i in a.items())
+        return dict((k,substitute(v)) for k,v in a.items())
     else:
         return a
+
 class Function(BaseParameter):
     """
     Delayed function evaluator.
@@ -331,7 +340,8 @@ class Function(BaseParameter):
         self.op,self.args,self.kw = op,args,kw
     def parameters(self):
         # Figure out which arguments to the function are parameters
-        deps = [p for p in self.args if isinstance(p,BaseParameter)]
+        #deps = [p for p in self.args if isinstance(p,BaseParameter)]
+        deps = flatten((self.args,self.kw))
         # Find out which other parameters these parameters depend on.
         res = []
         for p in deps: res.extend(p.parameters())
@@ -339,7 +349,8 @@ class Function(BaseParameter):
     def _value(self):
         # Expand args and kw, replacing instances of parameters
         # with their values
-        return self.op(*[float(v) for v in self.args], **self.kw)
+        #return self.op(*[float(v) for v in self.args], **self.kw)
+        return self.op(*substitute(self.args), **substitute(self.kw))
     value = property(_value)
     def __str__(self):
         args = [str(v) for v in self.args]
@@ -456,6 +467,8 @@ def varying(s):
 
     return [p for p in unique(s) if not p.fixed]
 
+# ========= trash ===================
+
 class ParameterSet:
     def __init__(self, **kw):
         self.__dict__ = kw
@@ -469,3 +482,38 @@ class ParameterSet:
             else:
                 L.append((prefix+k,v))
         return L
+
+class IntegerParameter(Parameter):
+    discrete = True
+    def rand(self, rng=mbounds.RNG):
+        """
+        Set a random value for the parameter.
+        """
+        self.value = numpy.floor(self.bounds.rand(rng))
+
+    pass
+
+class VectorParameter(Parameter):
+    pass
+
+class Alias(object):
+    """
+    Parameter alias.
+    
+    Rather than modifying a model to contain a parameter slot,
+    allow the parameter to exist outside the model. The resulting
+    parameter will have the full parameter semantics, including
+    the ability to replace a fixed value with a parameter expression.
+    """
+    def __init__(self, obj, attr, p=None, name=None):
+        self.obj = obj
+        self.attr = attr
+        if name is None:
+            name = ".".join([obj.__class__.__name__, attr])
+        self.p = Parameter.default(p, name=name)
+    def update(self):
+        setattr(self.obj,self.attr,self.par.value)
+    def parameters(self):
+        return self.p.parameters()
+
+

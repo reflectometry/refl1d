@@ -35,7 +35,7 @@ or unbounded object for the kind of input.
 New bounds can be defined following the abstract base class
 interface defined in :class:`Bounds`.
 
-For generating bounds given a value, we provide a few helper 
+For generating bounds given a value, we provide a few helper
 functions::
 
     pm(x,dx) or pm(x,-dx,+dx)
@@ -97,8 +97,8 @@ def pmp(v, *args):
 def pm_raw(v, *args):
     """
     Return the tuple [v-dv,v+dv].
-    
-    If called as called as raw_pm(v,plus,minus), return [v-minus,v+plus)]. 
+
+    If called as raw_pm(v,plus,minus), return [v-minus,v+plus)].
     """
     if len(args) == 1:
         dv = args[0]
@@ -112,8 +112,8 @@ def pm_raw(v, *args):
 def pmp_raw(v, *args):
     """
     Return the tuple [v-%v,v+%v]
-    
-    If called as called as raw_pm(v,plus,minus), return [v-minus,v+plus)]. 
+
+    If called as raw_pm(v,plus,minus), return [v-minus,v+plus)].
     """
     if len(args) == 1:
         percent = args[0]
@@ -213,8 +213,8 @@ class Bounds:
         """
         Return the negative log likelihood of seeing this value, with
         likelihood scaled so that the maximum probability is one.
-        
-        For uniform bounds, this either returns zero or inf.  For bounds 
+
+        For uniform bounds, this either returns zero or inf.  For bounds
         based on a probability distribution, this returns values between
         zero and inf.  The scaling is necessary so that indefinite and
         semi-definite ranges return a sensible value.  The scaling does
@@ -227,13 +227,13 @@ class Bounds:
         residuals in the normal distribution.  The primary purpose is to
         graphically display exceptional values in a way that is familiar
         to the user.  For fitting, the scaled likelihood should be used.
-        
+
         To do this, we will match the cumulative density function value
         with that for N(0,1) and find the corresponding percent point
         function from the N(0,1) distribution.  In this way, for example,
         a value to the right of 2.275% of the distribution would correspond
         to a residual of -2, or 2 standard deviations below the mean.
-        
+
         For uniform distributions, with all values equally probable, we
         use a value of +/-4 for values outside the range, and 0 for values
         inside the range.
@@ -259,7 +259,7 @@ def num_format(v):
     elif numpy.isinf(v):
         return "inf" if v>0 else "-inf"
     else:
-        return "NaN"        
+        return "NaN"
 
 class Unbounded(Bounds):
     """
@@ -267,9 +267,9 @@ class Unbounded(Bounds):
 
     The random initial condition is assumed to be between 0 and 1
 
-    The probability is uniformly 1/inf everywhere, which means the negative 
+    The probability is uniformly 1/inf everywhere, which means the negative
     log likelihood of P is inf everywhere.  This isn't a particularly useful
-    result, since minimizing 
+    result, since minimizing
     Likelihood returns 0, so the choice of value doesn't directly affect the fit.
 
     Convert sign*m*2^e to sign*(e+1023+m), yielding a value in [-2048,2048].
@@ -415,9 +415,9 @@ class Bounded(Bounds):
 class Distribution(Bounds):
     """
     Parameter is pulled from a distribution.
-    
-    *dist* must implement the distribution interface from scipy.stats.  
-    In particular, it should define methods rvs, nnlf, cdf and ppf and 
+
+    *dist* must implement the distribution interface from scipy.stats.
+    In particular, it should define methods rvs, nnlf, cdf and ppf and
     attributes args and dist.name.
     """
     N = normal_distribution(0,1)
@@ -455,11 +455,11 @@ class Normal(Distribution):
     film thickness is 35+/-5 according to TEM), then you can use this
     measurement to restrict the values given to the search, and to penalize
     choices of this fitting parameter which are different from this value.
-    
+
     *mean* is the expected value of the parameter and *std* is the 1-sigma
     standard deviation.
     """
-    
+
     def __init__(self, mean=0, std=1):
         self.dist = normal_distribution(mean, std)
     def nllf(self, value):
