@@ -1,5 +1,10 @@
 import sys; sys.path.append('../..')
 
+#TODO: xray has smaller beam spot
+# => smaller roughness
+# => thickness depends on where the beam spot hits the sample
+# Xray thickness variance = neutron roughness - xray roughness
+
 import pylab
 from refl1d import *
 Probe.view = 'log' # log, linear, fresnel, or Q**4
@@ -51,8 +56,8 @@ PdH = Compound(('Pd',1,'H',nH), name='<Pd+kH>')
 PdH.density = (Pd.density / Pd_stretch
                * (1 + nH * (elements.H.mass/elements.Pd.mass)))
 
-sample1 = (sapphire%0.85 + Mg_MgH2a/480%31.6 + Mg_MgH2b/790.286%0.43
-           + Pd/555.35%0.43 + water/100 + air)
+sample1 = (sapphire%0.85 + Mg_MgH2a/480%31.6 + Mg_MgH2b/790.286%0.43 
+           + Pd/555.35%0.43 + air)
 sample2 = sample1[:]
 sample2[3] = PdH%0.43
 sample2[3].thickness = sample1[3].thickness * Pd_stretch
@@ -83,5 +88,5 @@ exp1 = Experiment(probe=probe1, sample=sample1)
 exp2 = Experiment(probe=probe2, sample=sample2)
 models = (exp1,exp2)
 
-#preview(models=models)
-fit(models=models, npop=10)
+preview(models=models)
+#fit(models=models, npop=10)
