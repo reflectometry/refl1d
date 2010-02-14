@@ -12,6 +12,7 @@ default instrument parameters and loaders for reduced NCNR data.
 See :module:`resolution` for details.
 """
 
+import os
 import numpy
 from numpy import inf, pi
 
@@ -22,8 +23,56 @@ def load(filename, instrument=None, **kw):
     """
     Return a probe for NCNR data.
     """
-    content = parse_file(filename)
-    return _make_probe(geometry=Monochromatic(), content=content, **kw)
+    if filename is None: return None
+    if instrument is None: instrument=Monochromatic()
+    header,data = parse_file(filename)
+    header.update(**kw)
+    Q,R,dR = data
+    resolution = instrument.resolution(Q, **header)
+    probe = resolution.probe(data=(R,dR))
+    probe.title = header['title']
+    probe.date = header['date']
+    probe.instrument = header['instrument']
+    return probe
+
+def load_magnetic(filename, **kw):
+    """
+    Return a probe for magnetic NCNR data.
+    
+    *Tguide* is the guide angle.
+    """
+    Tguide = kw.pop('Tguide',270)
+    probes = [load(v, **kw) for v in find_xsec(filename)]
+    return PolarizedNeutronProbe(probes, Tguide=Tguide)
+
+def find_xsec(filename):
+    """
+    Find files containing the polarization cross-sections.
+    
+    Returns tuple with file names for ++ +- -+ -- cross sections, or
+    None if the spin cross section does not exist.
+
+    # TODO: check whether I have the spin states correct
+    'a' corresponds to spin --
+    'b' corresponds to spin -+
+    'c' corresponds to spin +-
+    'd' corresponds to spin ++
+
+    Unfortunately the interpretation is a little more complicated than
+    this as the data acquisition system assigns letter on the basis of
+    flipper state rather than neutron spin state.  Whether flipper on
+    or off corresponds to spin up or down depends on whether the
+    polarizer/analyzer is a supermirror in transmission or reflection
+    mode, or in the case of ^3He polarizers, whether the polarization
+    is up or down.
+    """
+    if filename[-1] in 'abcdABCD':
+        filename = filename[:-1]
+    def check(a):
+        if os.path.exists(filename+a): return filename+a
+        elif os.path.exists(filename+a.upper()): return filename+a.upper()
+        else: return None
+    return (check('d'),check('c'),check('b'),check('a'))
 
 def parse_file(filename):
     """
@@ -56,21 +105,11 @@ def parse_file(filename):
 
     return header, data
 
-def _make_probe(geometry, header, data, **kw):
-    header.update(**kw)
-    Q,R,dR = data
-    resolution = geometry.resolution(Q, **header)
-    probe = resolution.probe(data=(R,dR))
-    probe.title = header['title']
-    probe.date = header['date']
-    probe.instrument = header['instrument']
-    return probe
-
 class NCNRLoader:
     def load(self, filename, **kw):
-        header, data = parse_file(filename)
-        header.update(**kw)
-        return _make_probe(geometry=self, header=header, data=data, **kw)
+        return load(filename, instrument=self)
+    def load_magnetic(self, filename, **kw):
+        pass
 
 class ANDR(Monochromatic, NCNRLoader):
     """

@@ -7,7 +7,41 @@ The experimental probe describes the incoming beam for the experiment.
 
 Scattering properties of the sample are dependent on the type and
 energy of the radiation.
+
+For time-of-flight measurements, each angle should be represented as
+a different probe.  This eliminates the 'stitching' problem, where
+Q = 4 pi sin(T1)/L1 = 4 pi sin(T2)/L2 for some (T1,L1) and (T2,L2).
+With stitching, it is impossible to account for effects such as
+alignment offset since two nominally identical Q values will in
+fact be different.  No information is lost treating the two data sets
+separately --- each points will contribute to the overall cost function
+in accordance with its statistical weight.
 """
+
+# TOF stitching introduces a lot of complexity.
+# Theta offset:
+#   Q1 = 4 pi sin(T1 + offset)/L1
+#   Q2 = 4 pi sin(T2 + offset)/L2
+#   at offset=0, 
+#      Q1=Q2
+#   at offset!=0, 
+#      Q1' ~ Q1 + 4pi offset/L1
+#      Q2' ~ Q2 + 4pi offset/L2 
+#      => Q1' != Q2'
+# Thick layers:
+#   Since a given Q,dQ has multiple T,dT,L,dL, oversampling is going
+#   to be very complicated.
+# Energy dependent SLD:
+#   Just because two points are at the same Q does not mean they have
+#   the same theory function when scattering length density is
+#   energy dependent
+#
+# Not stitching has its own issues.
+# Calculation speed:
+#   overlapping points are recalculated
+#   profiles are recalculated
+#
+# Unstitched seems like the better bet.
 
 import numpy
 from numpy import radians, sin, sqrt, tan, cos, pi, inf, sign
@@ -44,7 +78,7 @@ class Probe(object):
         *back_absorption* is the amount of absorption through the substrate
         *theta_offset* is the offset of the sample from perfect alignment
 
-    All measurement properties are fittable parameters.  *theta_offset* in
+    Measurement properties are fittable parameters.  *theta_offset* in
     particular should be set using probe.theta_offset.dev(dT), with dT
     equal to the uncertainty in the peak position for the rocking curve,
     as measured in radians.  Changes to *theta_offset* will then be penalized
@@ -52,6 +86,12 @@ class Probe(object):
     that the uncertainty in the peak position is not the same as the width
     of the peak.  The peak stays roughly the same as statistics are improved,
     but the uncertainty in position and width will decrease.
+
+    *intensity* and *back_absorption* are generally not needed --- scaling
+    the reflected signal by an appropriate intensity measurement will correct
+    for both of these during reduction.  *background* may be needed,
+    particularly for samples with significant hydrogen content due to its
+    large isotropic incoherent scattering cross section.
 
     View properties::
 
@@ -68,13 +108,15 @@ class Probe(object):
     view = "fresnel"
     substrate = None
     surface = None
-    def __init__(self, T=None, dT=0, L=None, dL=0, data = None):
-        self.intensity = Parameter.default(1,name="intensity")
-        self.background = Parameter.default(0,name="background",
+    def __init__(self, T=None, dT=0, L=None, dL=0, data = None,
+                 intensity=1, background=0, back_absorption=1, theta_offset=0):
+        self.intensity = Parameter.default(intensity,name="intensity")
+        self.background = Parameter.default(background,name="background",
                                             limits=[0,inf])
-        self.back_absorption = Parameter.default(1, name="back_absorption",
+        self.back_absorption = Parameter.default(back_absorption, 
+                                                 name="back_absorption",
                                                  limits=[0,1])
-        self.theta_offset = Parameter.default(0,name="theta_offset")
+        self.theta_offset = Parameter.default(theta_offset,name="theta_offset")
 
         #if L is None:
         #    L = xsf.xray_wavelength(E)
@@ -170,7 +212,6 @@ class Probe(object):
         The measurement point itself will not be used to avoid accidental
         bias from uniform Q steps.
         """
-        # doc string is inherited from parent (see below)
         rng = numpy.random.RandomState(seed=seed)
         T = rng.normal(self.T[:,None],self.dT[:,None],size=(len(self.dT),n))
         L = rng.normal(self.L[:,None],self.dL[:,None],size=(len(self.dL),n))
@@ -210,12 +251,12 @@ class Probe(object):
         Returns F = R(probe.Q), where R is magnitude squared reflectivity.
         """
         # Doesn't use ProbeCache, but this routine is not time critical
-        Srho,Smu = (0,0) if substrate is None else substrate.sld(self)
-        Vrho,Vmu = (0,0) if surface is None else surface.sld(self)
+        Srho,Sirho = (0,0) if substrate is None else substrate.sld(self)
+        Vrho,Virho = (0,0) if surface is None else surface.sld(self)
         I = numpy.ones_like(self.Q)
-        calculator = fresnel.Fresnel(rho=Srho*I, mu=Smu*I,
-                                     Vrho=Vrho*I, Vmu=Vmu*I)
-        return calculator(Q=self.Q,L=self.L*I)
+        calculator = fresnel.Fresnel(rho=Srho*I, irho=Sirho*I,
+                                     Vrho=Vrho*I, Virho=Virho*I)
+        return calculator(Q=self.Q)
 
     def plot(self, theory=None, substrate=None, surface=None, view=None):
         """
@@ -312,25 +353,29 @@ class XrayProbe(Probe):
     """
     def scattering_factors(self, material):
         # doc string is inherited from parent (see below)
-        coh, absorp = xsf.xray_sld(material,
-                                   wavelength = self._sf_L,
-                                   density=1)
-        return coh[self._sf_idx], absorp[self._sf_idx], [0]
+        rho, irho = xsf.xray_sld(material,
+                                 wavelength = self._sf_L,
+                                 density=1)
+        return rho[self._sf_idx], irho[self._sf_idx]
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
 class NeutronProbe(Probe):
     def scattering_factors(self, material):
         # doc string is inherited from parent (see below)
-        coh, absorp, incoh = nsf.neutron_sld(material,
-                                             wavelength=self._sf_L,
-                                             density=1)
-        return coh, absorp[self._sf_idx], incoh
+        rho, irho, rho_incoh = nsf.neutron_sld(material,
+                                               wavelength=self._sf_L,
+                                               density=1)
+        return rho, irho[self._sf_idx], rho_incoh
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
 
+def measurement_union(xs):
+    T = numpy.unique(numpy.hstack([x.T for x in xs if x is not None]))
+    T = numpy.unique(numpy.hstack([x.T for x in xs if x is not None]))
+
 class PolarizedNeutronProbe(Probe):
     """
-    Polarized beam
+    Polarized neutron probe
 
     *xs* (4 x NeutronProbe) is a sequence pp, pm, mp and mm.
     *Tguide* (degrees) is the angle of the guide field
@@ -338,12 +383,26 @@ class PolarizedNeutronProbe(Probe):
     polarized = True
     def __init__(self, xs=None, Tguide=270):
         Probe.__init__(self)
-        pp, pm, mp, mm = xs
+        self.pp, self.pm, self.mp, self.mm = xs
+        
+        # Share measurement parameters across all four cross sections.
+        self.intensity = Parameter.default(1,name="intensity")
+        self.background = Parameter.default(0,name="background",
+                                            limits=[0,inf])
+        self.back_absorption = Parameter.default(1, name="back_absorption",
+                                                 limits=[0,1])
+        self.theta_offset = Parameter.default(0,name="theta_offset")
+        for x in xs:
+            if x is not None:
+                x.intensity = self.intensity
+                x.background = self.background
+                x.back_absorption = self.back_absorption
+                x.theta_offset = self.theta_offset
 
-        dTpp, dTpm, dTmp, dTmm = dT
+        T,dT,L,dL = measurement_union(*xs)
 
-        Q = [TL2Q(Tx,Lx) for Tx,Lx in zip(T,L)]
-        dQ = [dTdL2dQ(Tx,dTx,Lx,dLx) for Tx,Lx,dTx,dLx in zip(T,dT,L,dL)]
+        Q = TL2Q(T,L)
+        dQ = dTdL2dQ(T,dT,L,dL)
 
         # Make sure that we are dealing with vectors
         T,dT,L,dL = [numpy.ones_like(Q)*v for v in (T,dT,L,dL)]
@@ -383,12 +442,12 @@ class PolarizedNeutronProbe(Probe):
         self._sf_L = numpy.unique(self.calc_L)
         self._sf_idx = numpy.searchsorted(self._sf_L, L)
 
-    def scattering_factors(self, formula):
+    def scattering_factors(self, material):
         # doc string is inherited from parent (see below)
-        coh, absorp, incoh = nsf.neutron_sld(formula,
-                                             wavelength=self._sf_L,
-                                             density=1)
-        return coh, absorp[self._sf_idx], incoh
+        rho, irho, rho_incoh = nsf.neutron_sld(material,
+                                               wavelength=self._sf_L,
+                                               density=1)
+        return rho, irho[self._sf_idx], rho_incoh
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
     def __len__(self):
@@ -404,6 +463,8 @@ class PolarizedNeutronProbe(Probe):
         """
         import pylab
         view = view if view is not None else self.view
+        if theory is not None:
+            Q,pp,pm,mp,mm = theory
         if view in ('linear', 'log', 'fresnel', 'Q**4'):
             # Plot available cross sections
             ishold = pylab.ishold()

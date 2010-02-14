@@ -9,12 +9,12 @@ of finding a part of layer B in A.
 
 Example::
 
-    from mystic.param import Parameter as Par
+    from mystic.param import Parameter
     from refl1d import Sample, Slab, Material, Erf
 
     # define a silicon wafer with 1-sigma roughness between 0 and 5
     model = Sample()
-    model.add(Slab(Material('Si'), interface=Erf(Par(0,5,"Si:Air"))
+    model.add(Slab(Material('Si'), interface=Erf(Parameter(0,5,"Si:Air"))
 
 The above example uses an error function interface.  Other interface include::
 
@@ -84,12 +84,16 @@ from numpy import arctanh as atanh
 from scipy.special import erf, erfinv
 
 try:
-    from mystic.parameter import Parameter as Par
+    from mystic.parameter import Parameter
 except ImportError:
     print "Could not import Parameter from mystic; using trivial implementation"
     class Parameter:
         def __init__(self, value, **kw):
             self.value = value
+        @classmethod
+        def default(cls, value, **kw):
+            if isinstance(value, Parameter): return value
+            else: return cls(value)
 
 sech = lambda x: 1/cosh(x)
 asech = lambda x: acosh(1/x)
@@ -175,9 +179,9 @@ class Erf(Interface):
         return self
     def __init__(self, width=0, name="erf"):
         self._scale = 1
-        self.width = Par.default(width, limits=(0,inf), name=name)
+        self.width = Parameter.default(width, limits=(0,inf), name=name)
     def parameters(self):
-        return self.width
+        return dict(width=self.width)
     def cdf(self, z):
         sigma = self.width.value * self._scale
         if sigma <= 0.0:
@@ -212,9 +216,9 @@ class Linear(Interface):
         PPF(z) = w/2*z if |z|<w/2, -w/2 if z<-w/2, w/2 otherwise
     """
     def __init__(self, width=0, name="linear"):
-        self.width = Par.default(width, limits=(0,inf), name=name)
+        self.width = Parameter.default(width, limits=(0,inf), name=name)
     def parameters(self):
-        return self.width
+        return dict(width=self.width)
     def cdf(self, z):
         w = float(self.width.value)
         if w <= 0.0:
@@ -253,7 +257,7 @@ class Tanh(Interface):
 
     where w is the interface roughness and C is a scaling constant.
     C is atanh(erf(1/sqrt(2))) for width w defined by 1-sigma, or
-    C is 2*acosh(sqrt(2)) for widht 2 defined by FWHM.
+    C is 2*acosh(sqrt(2)) for width 2 defined by FWHM.
 
     This profile was derived from the free energy of a nonuniform system::
 
@@ -289,6 +293,9 @@ class Tanh(Interface):
     #    Pw = Po/2 => sech(C/2)**2 = 1/2
     #              => C = 2 acosh(sqrt(2))
     #
+    # To find ws 1-sigma given tanh fwhm of w, use the scale factor
+    # s = C_1_sigma/C_fwhm = 1/2 atanh(erf(1/sqrt(2)))/acosh(sqrt(2))
+    # to form ws = w*s
     C = atanh(erf(1/sqrt(2)))
     Cfwhm = 2*acosh(sqrt(2))
     @classmethod
@@ -301,9 +308,9 @@ class Tanh(Interface):
         return self
     def __init__(self, width=0, name="tanh"):
         self._scale = 1
-        self.width = Par.default(width, limits=(0,inf), name=name)
+        self.width = Parameter.default(width, limits=(0,inf), name=name)
     def parameters(self):
-        return [self.width]
+        return dict(width=self.width)
     def cdf(self, z):
         w = self.width.value * self._scale
         if w <= 0.0:
@@ -354,6 +361,46 @@ def demo_fwhm():
                    arrowprops=arrowprops, bbox=bbox)
     pylab.annotate('tanh FWHM',xy=(w/2,ptanh.pdf(0)/2),
                    xytext=(-35,-35),textcoords="offset points",
+                   arrowprops=arrowprops,bbox=bbox)
+
+    pylab.grid(True)
+    pylab.show()
+
+
+def demo_tanh_to_erf():
+    """
+    Show the available interface functions and the corresponding probability
+    density functions.
+    """
+
+    # Plot the cdf and pdf
+    import pylab
+    w = 10
+    ws = w * Tanh.C/Tanh.Cfwhm
+    ptanh = Tanh.as_fwhm(w)
+    perf = Erf(ws)
+
+    z=pylab.linspace(-2*w,2*w,800)
+    pylab.subplot(211)
+    pylab.plot(z,perf.cdf(z),hold=False)
+    pylab.plot(z,ptanh.cdf(z),hold=True)
+    pylab.title("""FWHM tanh -> 1-sigma erf
+scale by atanh(erf(1/sqrt(2))) / (2 acosh(sqrt(2)))""")
+    pylab.legend(['erf','tanh'])
+    pylab.grid(True)
+    pylab.subplot(212)
+    pylab.plot(z,perf.pdf(z),'b',hold=False)
+    pylab.plot(z,ptanh.pdf(z),'g',hold=True)
+    pylab.legend(['erf','tanh'])
+
+    # Show fwhm
+    arrowprops=dict(arrowstyle='wedge',connectionstyle='arc3',fc='0.6')
+    bbox=dict(boxstyle='round', fc='0.8')
+    pylab.annotate('erf 1-sigma',xy=(ws,perf.pdf(ws)),
+                   xytext=(-2,20),textcoords="offset points",
+                   arrowprops=arrowprops, bbox=bbox)
+    pylab.annotate('tanh FWHM',xy=(w/2,ptanh.pdf(0)/2),
+                   xytext=(-58,-35),textcoords="offset points",
                    arrowprops=arrowprops,bbox=bbox)
 
     pylab.grid(True)
@@ -419,6 +466,7 @@ def test():
 
 if __name__ == "__main__":
     import sys; sys.path.append('..')
-    demo()
+    #demo()
     #demo_fwhm()
+    demo_tanh_to_erf()
     #test()

@@ -12,7 +12,14 @@ changes so that materials can be stacked into layers using operator
 overloading. This will affect all instances of the Scatterer class, and
 all of its subclasses.
 """
-__all__ = ['Bspline','PBS','Slab','Stack']
+
+#TODO: xray has smaller beam spot
+# => smaller roughness
+# => thickness depends on where the beam spot hits the sample
+# Xray thickness variance = neutron roughness - xray roughness
+
+
+__all__ = ['Bspline','PBS','Repeat','Slab','Stack']
 
 from copy import copy, deepcopy
 import numpy
@@ -102,26 +109,22 @@ class Stack(Layer):
     A reflectometry sample is defined by a stack of layers.  Each layer
     has an interface describing how the top of the layer interacts with
     the bottom of the overlaying layer.  The stack may contain
-
-    The sta
     """
-    def __init__(self, repeat=1):
+    def __init__(self, base=None):
         self.interface = None
         self._layers = []
+        if base is not None:
+            self.add(base)
+
     def add(self, other):
         if isinstance(other,Stack):
             self._layers.extend(other._layers)
-        elif isinstance(other,Layer):
-            self._layers.append(other)
-        elif isinstance(other,material.Scatterer):
-            self._layers.append(Slab(other))
-        elif isinstance(other, list):
-            for el in other:
-                if not isinstance(el, Layer):
-                    raise TypeError("Can only stack materials and layers")
-            self._layers.extend(other)
         else:
-            TypeError("Can only stack materials and layers")
+            try:
+                L = iter(other)
+            except:
+                L = [other]
+            self._layers.extend(_check_layer(el) for el in L)
     def __str__(self):
         return " + ".join(str(L) for L in self._layers)
     def __repr__(self):
@@ -148,25 +151,13 @@ class Stack(Layer):
         else:
             return self._layers[idx]
     def __setitem__(self, idx, other):
-        if isinstance(other,Stack):
-            self._layers[idx] = other._layers
-        elif isinstance(other,Layer):
-            self._layers[idx] = other
-        elif isinstance(other,material.Scatterer):
-            self._layers[idx] = Slab(other)
-        elif isinstance(other, list):
-            for el in other:
-                if not isinstance(el, Layer):
-                    raise TypeError("Can only stack materials and layers")
-            self._layers[idx] = other
+        if isinstance(idx, slice):
+            if isinstance(other,Stack):
+                self._layers[idx] = other._layers
+            else:
+                self._layers[idx] = [_check_layer(el) for el in other]
         else:
-            raise TypeError("Can only stack materials and layers")
-        if isinstance(idx,slice):
-            s = Stack()
-            s._layers = self._layers[idx]
-            return s
-        else:
-            return self._layers[idx]
+            self._layers[idx] = _check_layer(other)
     def __delitem__(self, idx):
         del self._layers[idx]
 
@@ -192,6 +183,14 @@ class Stack(Layer):
         s.add(other)
         return s
     render.__doc__ = Layer.render.__doc__
+
+def _check_layer(el):
+    if isinstance(el,Layer):
+        return el
+    elif isinstance(el, material.Scatterer):
+        return Slab(el)
+    else:
+        raise TypeError("Can only stack materials and layers")
 
 class Repeat(Layer):
     """
@@ -327,7 +326,6 @@ class Bspline(Layer):
                     irho=self.irho_points,
                     thickness=self.thickness)
     def render(self, probe, slabs):
-        raise NotImplementedError
         thickness = self.thickness.value
         rho = [v.value for v in self.rho]
         irho = [v.value for v in self.irho]

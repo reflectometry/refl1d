@@ -9,8 +9,8 @@ from numpy import sqrt, exp, pi
 
 def refl(kz, depth, rho, irho, sigma=0):
     """
-    Reflectometry as a function of kz
-
+    Reflectometry as a function of kz for a set of slabs.
+    
     kz ([n] inv angstrom)
         Scattering vector 2*pi*sin(theta)/wavelength. This is Qz/2.
     depth ([m] angstrom)
@@ -24,6 +24,9 @@ def refl(kz, depth, rho, irho, sigma=0):
         and the subsequent layer.  There is no interface associated
         with the substrate.  The sigma array should have at least m-1
         entries, though it may have m with the last entry ignored.
+    
+    Slabs are ordered with the surface SLD at index 0 and substrate at
+    index -1, or reversed if kz < 0.
     """
     if isscalar(kz): kz = asarray([kz], 'd')
     m = len(depth)
@@ -63,7 +66,7 @@ def calc(kz, depth, rho, irho, sigma):
     B22 = 1
     B21 = 0
     B12 = 0
-    for i in xrange(0, len(depth)-1):
+    for i in range(0, len(depth)-1):
         k_next = sqrt(kz_sq - 4e-6*pi*(rho[:,i+1] + 1j*irho[:,i+1]))
         F = (k - k_next) / (k + k_next)
         F *= exp(-2*k*k_next*sigma[i]**2)

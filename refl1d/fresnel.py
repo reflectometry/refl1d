@@ -11,18 +11,21 @@ class Fresnel:
     Function for computing the Fresnel reflectivity for a single interface.
 
     rho,Vrho
-        scattering length density of substrate and vacuum
-    mu,Vmu
-        absorption of substrate and vacuum (note that we do not correct
-        for attenuation of the beam through the incident medium since we
-        do not know the path length).
+        real scattering length density of substrate and vacuum
+    irho,Virho
+        imaginary scattering density of substrate and vacuum
+        irho = mu / (2 lambda)
     sigma (angstrom)
         interfacial roughness
-    """
-    def __init__(self, rho=1e-6, mu=0, sigma=0, Vrho=0, Vmu=0):
-        self.rho,self.Vrho,self.mu,self.Vmu,self.sigma = rho,Vrho,mu,Vmu,sigma
 
-    def reflectivity(self, Q, L=1):
+    Note that we do not correct for attenuation of the beam through the 
+    incident medium since we do not know the path length.
+    """
+    def __init__(self, rho=1e-6, irho=0, sigma=0, Vrho=0, Virho=0):
+        self.rho,self.Vrho,self.irho,self.Virho,self.sigma \
+            = rho,Vrho,irho,Virho,sigma
+
+    def reflectivity(self, Q):
         """
         Compute the Fresnel reflectivity at the given Q/wavelength.
         """
@@ -30,8 +33,7 @@ class Fresnel:
         # In that case we must negate the change in scattering length density
         # and ignore the absorption.
         drho = self.rho-self.Vrho
-        S = 4*pi*choose(Q<0,(-drho,drho)) \
-            + 2j*pi/L*choose(Q<0,(self.Vmu,self.mu))
+        S = 4*pi*(choose(Q<0,(-drho+1j*self.Virho, drho+1j*self.irho)))
         kz = abs(Q)/2
         f = sqrt(kz**2 - S*1e-6)  # fresnel coefficient
 

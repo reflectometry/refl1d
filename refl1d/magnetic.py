@@ -36,3 +36,7 @@ reflectometry technique is sensitive
 Magnetism support is split into two parts: describing the layers
 and anchoring them to the structure.
 """
+
+
+MagneticSlab(Layer):
+    

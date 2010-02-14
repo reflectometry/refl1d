@@ -109,7 +109,7 @@ class SLD(Scatterer):
     rare earths, show wavelength dependence for neutrons, and so 
     time-of-flight measurements should not be fit with a fixed SLD scatterer.
     """
-    def __init__(self, name="SLD", rho=0, irho=0):
+    def __init__(self, rho=0, irho=0, name="SLD"):
         self.name = name
         self.rho = Par.default(rho, name=name+" rho" )
         self.irho = Par.default(irho, name=name+" irho" )

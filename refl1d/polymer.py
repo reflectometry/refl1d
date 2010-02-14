@@ -7,10 +7,14 @@ Analytic Self-consistent Field (SCF) profile[1,2]
 
 layer = TetheredPolymer(polymer,solvent,head,tail,power,
 
+[1] Zhulina, EB; Borisov, OV; Pryamitsyn, VA; Birshtein, TM (1991)
+"Coil-Globule Type Transitions in Polymers. 1. Collapse of Layers
+of Grafted Polymer Chains", Macromolecules 24, 140-149.
+
 [2] Kent, M.S.; Majewski, J.; Smith; G.S.; Lee, L.T.; Satija, S (1999)
 "Tethered chains in poor solvent conditions: An experimental study
 involving Langmuir diblock copolymer monolayers",
-J. of Chemical Physics 110(7) 3553-3565    
+J. of Chemical Physics 110(7), 3553-3565    
 """
 __all__ = ["TetheredPolymer","VolumeProfile","layer_thickness"]
 import inspect
@@ -116,7 +120,7 @@ class VolumeProfile(Layer):
 
         *thickness* the thickness of the solvent layer
         *interface* the roughness of the solvent surface
-        *polymer* the polymer material
+        *material* the polymer material
         *solvent* the solvent material
         *profile* the profile function, suitably parameterized
 
@@ -137,7 +141,7 @@ class VolumeProfile(Layer):
     Fitting parameters are the available named arguments to the function.
     The first argument must be *z*, which is the array of depths at which 
     the profile is to be evaluated.  It is guaranteed to be increasing, with 
-    step size 2*z[0].  
+    step size 2*z[0].
     
     Initial values for the function parameters can be given using name=value.
     These values can be scalars or fitting parameters.  The function will 
@@ -146,14 +150,14 @@ class VolumeProfile(Layer):
     """
     # TODO: test that thickness(z) matches the thickness of the layer
     def __init__(self, thickness=0, interface=0,
-                 polymer=None, solvent=None, profile=None, **kw):
+                 material=None, solvent=None, profile=None, **kw):
         if profile is None or polymer is None or solvent is None:
             raise TypeError("Need polymer, solvent and profile")
         self.thickness = Parameter.default(thickness, name="solvent thickness")
         self.interface = Parameter.default(interface, name="solvent interface")
         self.profile = profile
         self.solvent = solvent
-        self.polymer = polymer
+        self.material = material
 
         vars = inspect.getargspec(profile)[0]
         print "vars",vars
@@ -175,7 +179,7 @@ class VolumeProfile(Layer):
 
     def parameters(self):
         P = dict(solvent=self.solvent.parameters(),
-                 polymer=self.polymer.parameters(),
+                 material=self.polymer.parameters(),
                  thickness=self.thickness,
                  interface=self.interface)
         for k in self._parameters:
