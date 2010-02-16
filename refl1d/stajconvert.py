@@ -8,21 +8,37 @@ from .util import QL2T
 from .probe import NeutronProbe, XrayProbe
 
 def load_mlayer(filename):
-    s = MlayerModel.load(filename)
-    sample = mlayer_to_stack(s)
-    probe = mlayer_probe(s)
+    """
+    Load a staj file as a model
+    """
+    staj = MlayerModel.load(filename)
+    return mlayer_to_model(staj)
+
+def save_mlayer(experiment, filename):
+    """
+    Save a model to a staj file
+    """
+    staj = model_to_mlayer(experiment)
+    #print staj
+    staj.save(filename)
+
+#def load_gj2(filename):
+#    return from_gj2(MlayerMagnetic.load(filename))
+#
+#def save_gj2(filename, model):
+#    to_gj2(model).save(filename)
+
+def mlayer_to_model(staj):
+    """
+    Convert a loaded staj file to a refl1d experiment.
+    
+    Returns a new experiment
+    """
+    sample = _mlayer_to_stack(staj)
+    probe = _mlayer_to_probe(staj)
     return Experiment(sample=sample,probe=probe)
 
-def save_mlayer(filename, model):
-    to_mlayer(model).save(filename)
-
-def load_gj2(filename):
-    return from_gj2(MlayerMagnetic.load(filename))
-
-def save_gj2(filename, model):
-    to_gj2(model).save(filename)
-
-def mlayer_to_stack(s):
+def _mlayer_to_stack(s):
     """
     Return a sample stack based on the model used in the staj file.
     """
@@ -54,7 +70,7 @@ def mlayer_to_stack(s):
 
     return stack
 
-def mlayer_probe(s):
+def _mlayer_to_probe(s):
     """
     Return a model probe based on the data used for the staj file.
     """
@@ -83,3 +99,93 @@ def mlayer_probe(s):
                  theta_offset=s.theta_offset,
                  background=s.background,
                  intensity=s.intensity)
+
+
+def model_to_mlayer(model):
+    """
+    Return an mlayer model based on the a slab stack
+    
+    Raises TypeError if model cannot be stored as a staj file
+    """
+    #TODO: when back reflectivity is handled properly, need to support it here
+    stack = model.sample
+    probe = model.probe
+    staj = MlayerModel(roughness_steps=51)
+
+    # Set up beam info
+    if (probe.L != probe.L[0]).any():
+        # Reason is that mlayer uses mu/(2 lambda) rather than irho
+        raise TypeError("Mlayer only supports monochromatic sources")
+
+    staj.set(wavelength=probe.L[0],
+             intensity=probe.intensity.value,
+             background=probe.background.value,
+             theta_offset=probe.theta_offset.value)
+    if hasattr(probe, 'filename'):
+        staj.data_file = probe.filename
+    else:
+        staj.Qmin, staj.Qmax = min(probe.Q), max(probe.Q)
+        staj.num_Q = len(probe.Q)
+    staj.fit_resolution(probe.Q, probe.dQ)
+
+    # Interpret slabs and repeats
+    sections = []
+    section = []
+    repeats = 0
+    for l in stack:
+        if isinstance(l, Slab):
+            section.append(l)
+        elif isinstance(l, Repeat):
+            sections.append(section)
+            sections.append(l[:])
+            repeats = l.repeats
+            section = []
+        else:
+            raise TypeError("Only slabs supported")
+    sections.append(section)
+    if len(sections) > 3:
+        raise TypeError("Only one repeated section supported")
+    if len(sections) == 3:
+        for l in sections[1]:
+            if not isinstance(l, Slab):
+                raise TypeError("Only slabs supported in repeat section")
+        num_top = len(sections[2]) - 1
+        num_middle = len(sections[1])
+        num_bottom = len(sections[0])
+        if num_top > 9 or num_middle > 9 or num_bottom > 9:
+            raise TypeError("Maximum section length of 9")
+        if num_top < 1 or num_middle < 1 or num_bottom < 1:
+            raise TypeError("Need at least one slab per section, plus vacuum")
+        model.num_top = num_top
+        model.num_middle = num_middle
+        model.num_bottom = num_bottom
+        model.num_repeats = repeats
+        slabs = []
+        slabs.extend(reversed(sections[2]))
+        slabs.extend(reversed(sections[1]))
+        slabs.extend(reversed(sections[0]))
+    else:
+        # must be only one section
+        slabs = list(reversed(sections[0]))
+        if len(slabs) > 28:
+            raise TypeError("Too many slabs (only 28 slabs allowed)")
+
+    # Convert slabs to sld parameters
+    print "\n".join(str(s) for s in slabs)
+    values = []
+    for layer in slabs:
+        rho, irho = layer.material.sld(probe)
+        try: irho = irho[0]
+        except: pass
+        thickness = layer.thickness.value
+        roughness = layer.interface.value
+        values.append((rho,irho,thickness,roughness))
+    vectors = [numpy.array(v) for v in zip(*values)]
+    staj.sigma_roughness = numpy.array([1,2,3])
+    staj.rho,staj.irho,staj.thickness,staj.sigma_roughness = vectors
+
+    # If no repeats, split the model into sections
+    if len(sections) == 1:
+        staj.split_sections()
+
+    return staj

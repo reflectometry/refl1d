@@ -114,7 +114,7 @@ TANH_FWHM = 0.47320111770856327 # 1/2 atanh(erf(1/sqrt(2))) / acosh(sqrt(2))
 #Note that the number of values on the first line determines if the format is
 #for a non-magnetic (6 values) or a magnetic (4 values) Staj file.
 
-class MlayerModel:
+class MlayerModel(object):
     """
     Model definition used by MLayer program.
     
@@ -339,7 +339,7 @@ class MlayerModel:
         Returns the object so that operations can be chained.
         """
         A = numpy.array([abs(Q)/self.wavelength, 
-                         numpy.ones_like(Q)*(4*pi/self.wavelength)])
+                         numpy.ones_like(Q)*(4*pi/self.wavelength)]).T
         s = wsolve.wsolve(A,y=dQ,dy=weight)
         self.wavelength_dispersion = s.x[0]
         self.angular_divergence = s.x[1]
@@ -405,11 +405,11 @@ class MlayerModel:
             if i == 0:
                 name = 'V'
             elif i < self.num_top + 1:
-                name = 'T%d'%(i+1)
+                name = 'T%d'%(i)
             elif i < self.num_top + self.num_middle + 1:
-                name = 'M%d'%(i-self.num_top+1)
+                name = 'M%d'%(i-self.num_top)
             else:
-                name = 'B%d'%(i-self.num_top-self.num_middle+1)
+                name = 'B%d'%(i-self.num_top-self.num_middle)
             line.append(("%s:"+("%15g "*4))%(name,w[i],s[i],rho[i],irho[i]))
         if self.constraints != "":
             line.append("Constraints:")
@@ -444,7 +444,7 @@ class MlayerModel:
         else:
             scale = ERF_FWHM
         self.roughness = v * scale
-    sigma_roughness = property(_get_sigma, _set_sigma)
+    sigma_roughness = property(fget=_get_sigma, fset=_set_sigma)
 
     def _parse(self, lines):
         #1: num_top num_middle num_bottom num_repeats num_fit rough_steps
@@ -495,7 +495,7 @@ class MlayerModel:
 
     def _write(self, fid):
         #1: num_top num_middle num_bottom num_repeats num_fit rough_steps
-        fid.write("%d %d %d %d %d\n"%(self.num_top, self.num_middle, 
+        fid.write("%d %d %d %d %d %d\n"%(self.num_top, self.num_middle, 
                                     self.num_bottom, self.num_repeats, 
                                     len(self.fitpars), self.roughness_steps))
 
@@ -526,7 +526,7 @@ class MlayerModel:
         def _write_layer(idx):
             fid.write("%g %g %g %g %g\n"%(rho[idx], 0., 
                                           w[idx], s[idx],
-                                          irho[idx]))
+                                          mu[idx]))
         offset = 0
         for n in [self.num_top, self.num_middle, self.num_bottom]:
             _write_layer(offset)
@@ -536,7 +536,7 @@ class MlayerModel:
                 # value from the next section.
                 _write_layer(offset)
             for i in range(n):
-                _write_layer(i+offset)
+                _write_layer(i+offset+1)
             offset += n
         #7+nL+1: P1 P2 P3 ...  (fit parameters)
         fid.write(" ".join(str(p) for p in self.fitpars)+"\n")
@@ -647,7 +647,7 @@ class MlayerModel:
 #Note that the number of values on the first line determines if the format is
 #for a non-magnetic (6 values) or a magnetic (4 values) Staj file.
 #
-class MlayerMagnetic:
+class MlayerMagnetic(object):
     """
     Model definition used by GJ2 program.
     

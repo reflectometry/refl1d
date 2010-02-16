@@ -33,6 +33,7 @@ def load(filename, instrument=None, **kw):
     probe.title = header['title']
     probe.date = header['date']
     probe.instrument = header['instrument']
+    probe.filename = filename
     return probe
 
 def load_magnetic(filename, **kw):
