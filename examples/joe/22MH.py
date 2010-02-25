@@ -10,9 +10,9 @@ instrument = ncnrdata.ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
 probe = instrument.load('n5hl2_Short.refl')
 
 # Sample description
-L1 = SLD('L1',rho=-0.35, mu=0.0001234)
-L2 = SLD('L2',rho=2.231, mu=0.05296)
-L3 = SLD('L3',rho=4.3775, mu=0.01305)
+L1 = SLD(name='L1',rho=-0.35, irho=0.0001234)
+L2 = SLD(name='L2',rho=2.231, irho=0.05296)
+L3 = SLD(name='L3',rho=4.3775, irho=0.01305)
 sample = (sapphire%0.85 + L1/480%31.6 + L2/790.286%0.43 + L3/555.35%0.43 + air)
 
 # Experiment

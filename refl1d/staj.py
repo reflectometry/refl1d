@@ -176,14 +176,17 @@ class MlayerModel(object):
 
         *thickness*, *roughness* (Angstroms)
             layer thickness and FWHM roughness
-        *rho*, *irho*
-            complex SLD rho + 1j * irho (x 10^6)
+        *rho*, *irho*, *incoh* (inv A**2 x 10^6)
+            complex coherent rho + 1j * irho and incoherent SLD
+        *mu*
+            computed absorption cross section (2*wavelength*irho + incoh)
         *sigma_roughness* (Angstroms)
             computed 1-sigma equivalent roughness for erf profile
 
-    Note that the file itself stores SLD as 16*pi*rho, irho/(2 wavelength)
+    Note that staj files store SLD as 16*pi*rho, irho/(2 wavelength)+incoh
     with an additional column of 0 for magnetic SLD.  This conversion will
-    happen automatically on read/write.
+    happen automatically on read/write.  Note that there is no way to separate
+    irho and incoh on read so incoh is set to 0.
     
     The layers are ordered from surface to substrate.
     
@@ -257,7 +260,8 @@ class MlayerModel(object):
     num_repeats = 1  
     roughness_steps = 13
     roughness_profile = 'E'
-    thickness = roughness = rho = irho = None
+    thickness = roughness = rho = None
+    irho = incoh = 0
     fitpars = []
     constraints = ""
     output_file = ""
@@ -269,8 +273,8 @@ class MlayerModel(object):
                  'wavelength_dispersion','angular_divergence','intensity',
                  'background','theta_offset',
                  'num_top','num_middle','num_bottom','num_repeats',
-                 'roughness_steps','roughness_profile',
-                 'thickness','roughness','rho','irho','sigma_roughness',
+                 'roughness_steps','roughness_profile','sigma_roughness',
+                 'thickness','roughness','rho','irho','incoh',
                  'fitpars','constraints','output_file')
         for k,v in kw.items():
             if k not in valid:
@@ -395,12 +399,11 @@ class MlayerModel(object):
         line.append("Interface: %s in %d steps"
                     %(profile, self.roughness_steps))
         w,s = self.thickness, self.roughness
-        rho = self.rho
-        irho = self.irho if self.irho is not None else numpy.zeros_like(w)
+        rho,mu = self.rho, self.mu
         line.append("Layers:")
         line.append(("   " + "%15s "*4)
                     %("Width (A)","Interface (FWHM)",
-                      "Rho (1e-6/A)","iRho (1e-6/A)"))
+                      "Rho (1e-6/A)","Mu (1e-6/A)"))
         for i in range(len(self.rho)):
             if i == 0:
                 name = 'V'
@@ -410,7 +413,7 @@ class MlayerModel(object):
                 name = 'M%d'%(i-self.num_top)
             else:
                 name = 'B%d'%(i-self.num_top-self.num_middle)
-            line.append(("%s:"+("%15g "*4))%(name,w[i],s[i],rho[i],irho[i]))
+            line.append(("%s:"+("%15g "*4))%(name,w[i],s[i],rho[i],mu[i]))
         if self.constraints != "":
             line.append("Constraints:")
             line.append(self.constraints)
@@ -431,6 +434,12 @@ class MlayerModel(object):
 
         if self.num_top+self.num_middle+self.num_bottom+1 != len(self.rho):
             raise ValueError("section sizes do not match number of layers")
+
+    def _get_mu(self):
+        return (2*self.wavelength*self.irho + self.incoh)*numpy.ones_like(rho)
+    def _set_mu(self, v):
+        self.irho = v/(2*self.wavelength)
+    mu = property(fget=_get_mu, fset=_set_mu)
 
     def _get_sigma(self):
         if self.roughness_profile == 'H':
@@ -483,8 +492,9 @@ class MlayerModel(object):
         del layers[self.num_top+self.num_middle+1]
         
         A = numpy.array(layers)
-        self.rho = A[:,0]* (1e6/16/pi)
+        self.rho = A[:,0] * (1e6/16/pi)
         self.irho = A[:,4] * (1e6/2/self.wavelength)
+        self.incoh = A[:,0] * 0
         self.thickness = A[:,2]
         self.roughness = A[:,3]
 
@@ -518,10 +528,7 @@ class MlayerModel(object):
         #7 to 7+nL: rho mrho depth rough mu
         #ignore the layer before each section
         rho = self.rho*(16*pi/1e6)
-        if self.irho is not None:
-            mu = self.irho*(2*self.wavelength/1e6)
-        else:
-            mu = numpy.zeros_like(self.rho)
+        mu = 2*self.wavelength*self.irho + self.incoh
         w,s = self.thickness, self.roughness
         def _write_layer(idx):
             fid.write("%g %g %g %g %g\n"%(rho[idx], 0., 

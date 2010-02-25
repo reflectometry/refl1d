@@ -22,11 +22,14 @@ def save_mlayer(experiment, filename):
     #print staj
     staj.save(filename)
 
-#def load_gj2(filename):
-#    return from_gj2(MlayerMagnetic.load(filename))
-#
-#def save_gj2(filename, model):
-#    to_gj2(model).save(filename)
+def load_gj2(filename):
+    staj = MlayerMagnetic.load(filename)
+    return mlayer_to_model(staj)
+
+def save_gj2(filename, model):
+    staj = model_to_mlayer(experiment)
+    #print staj
+    staj.save(filename)
 
 def mlayer_to_model(staj):
     """
@@ -174,15 +177,15 @@ def model_to_mlayer(model):
     print "\n".join(str(s) for s in slabs)
     values = []
     for layer in slabs:
-        rho, irho = layer.material.sld(probe)
-        try: irho = irho[0]
+        rho, mu = layer.material.rhomu(probe)
+        try: mu = mu[0]
         except: pass
         thickness = layer.thickness.value
         roughness = layer.interface.value
-        values.append((rho,irho,thickness,roughness))
+        values.append((rho,mu,thickness,roughness))
     vectors = [numpy.array(v) for v in zip(*values)]
     staj.sigma_roughness = numpy.array([1,2,3])
-    staj.rho,staj.irho,staj.thickness,staj.sigma_roughness = vectors
+    staj.rho,staj.mu,staj.thickness,staj.sigma_roughness = vectors
 
     # If no repeats, split the model into sections
     if len(sections) == 1:

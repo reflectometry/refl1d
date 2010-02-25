@@ -109,7 +109,7 @@ class SLD(Scatterer):
     rare earths, show wavelength dependence for neutrons, and so 
     time-of-flight measurements should not be fit with a fixed SLD scatterer.
     """
-    def __init__(self, rho=0, irho=0, name="SLD"):
+    def __init__(self, name="SLD", rho=0, irho=0):
         self.name = name
         self.rho = Par.default(rho, name=name+" rho" )
         self.irho = Par.default(irho, name=name+" irho" )
@@ -383,7 +383,7 @@ class Mixture(Scatterer):
 
         # Make the fractions into fittable parameters
         fraction = [Par.default(w,limits=(0,100), name=f.name+" count")
-                    for w,f in zip(fraction,material)]
+                    for w,f in zip(fraction,material[1:])]
         self.fraction = fraction
 
         # Specify the volume calculator based on the type of fraction

@@ -66,10 +66,9 @@ from .model import Slab, Stack
 from .polymer import TetheredPolymer, VolumeProfile, layer_thickness
 from .interface import Erf
 from .probe import Probe, NeutronProbe, XrayProbe
-from .fitter import preview, DEfit, SNOBfit
+from .fitter import preview, fit, DEfit, SNOBfit
 from .stajconvert import load_mlayer, save_mlayer
 from . import ncnrdata, snsdata
-fit = DEfit
 
 # Pull in common materials for reflectometry experiments.
 # This could lead to a lot of namespace pollution, and particularly to

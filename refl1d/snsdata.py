@@ -115,7 +115,7 @@ class SNSLoader:
         probe.R, probe.dR = R, dR
         return probe
 
-print "Insert correct slit distances for Liquids and Magnetic"
+# TODO: print "Insert correct slit distances for Liquids and Magnetic"
 class Liquids(Polychromatic, SNSLoader):
     """
     Loader for reduced data from the SNS Liquids instrument.

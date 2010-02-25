@@ -13,28 +13,16 @@ import time
 
 def preview(models=[], weights=None):
     """Preview the models in preparation for fitting"""
-    if isinstance(models,(tuple,list)):
-        problem = MultiFitProblem(models, weights=weights)
-    else:
-        problem = FitProblem(models)
+    problem = _make_problem(models=models, weights=weights)
     xo = [p.value for p in problem.parameters]
     result = Result(problem,xo)
     result.show()
-    return problem
+    return result
 
 class FitBase:
-    def __init__(self, models=[], weights=None, **kw):
+    def __init__(self, problem):
         """Fit the models and show the results"""
-        if isinstance(models,(tuple,list)):
-            self.problem = MultiFitProblem(models, weights=weights)
-        else:
-            self.problem = FitProblem(models)
-        self.time = time.clock()
-        x = self.solve(**kw)
-        self.problem.setp(x)
-        result = Result(self.problem,x)
-        print "time",time.clock()-self.time
-        result.show()
+        self.problem = problem
     def solve(self, **kw):
         raise NotImplementedError
 
@@ -66,7 +54,7 @@ class DEfit(FitBase):
 class SNOBfit(FitBase):
     def solve(self, **kw):
         from snobfit.snobfit import snobfit
-        self.lasttime = self.time-61
+        self.lasttime = time.clock()-61
         bounds = numpy.array([p.bounds.limits
                               for p in self.problem.parameters]).T
         x,fx,calls = snobfit(self.problem, self.problem.guess(), bounds,
@@ -79,11 +67,37 @@ class SNOBfit(FitBase):
             parameter.summarize(self.problem.parameters)
         print k,(fx if improved else "")
 
+def fit(models=[], weights=None, fitter=DEfit, **kw):
+    """
+    Perform a fit
+    """
+    t0 = time.clock()
+    problem = _make_problem(models=models, weights=weights)
+    opt = fitter(problem)
+    x = opt.solve(**kw)
+    print "time",time.clock()-t0
+    result = Result(problem,x)
+    result.show()
+    return result    
+
 class Result:
     def __init__(self, problem, solution):
         problem.setp(solution)
         self.problem = problem
         self.parameters = deepcopy(problem.parameters)
+
+    def save(self, basename):
+        """
+        Save the parameter table and the fitted model.
+        """
+        # TODO: need to do problem.setp(solution) in case the problem has
+        # changed since result was created (e.g., when comparing multiple
+        # fits). Same in showmodel()
+        fid = open(basename+".par","w")
+        parameter.summarize(self.parameters, fid=fid)
+        fid.close()
+        self.problem.save(basename)
+        
 
     def show(self):
         """
@@ -94,11 +108,12 @@ class Result:
         # Show the graph if pylab is available
         try:
             import pylab
+            import atexit
         except:
             pass
         else:
             self.problem.plot()
-            pylab.show()
+            atexit.register(pylab.show)
 
     def showmodel(self):
         print "== Model parameters =="
@@ -107,6 +122,14 @@ class Result:
     def showpars(self):
         print "== Fitted parameters =="
         parameter.summarize(self.parameters)
+
+def _make_problem(models=[], weights=None):
+    if isinstance(models,(tuple,list)):
+        problem = MultiFitProblem(models, weights=weights)
+    else:
+        problem = FitProblem(models)
+    return problem
+
 
 class FitProblem:
     def __init__(self, fitness):
@@ -246,6 +269,9 @@ class FitProblem:
         print parameter.format(self.model_parameters())
         print "[chisq=%g]"%self.chisq()
 
+    def save(self, basename):
+        self.fitness.save(basename)
+
     def plot(self):
         self.fitness.plot()
         import pylab
@@ -286,8 +312,11 @@ class MultiFitProblem(FitProblem):
                               for w,f in zip(self.weights,self.fits)])
         return resid
 
+    def save(self, basename):
+        for i,f in enumerate(self.fits):
+            f.save(basename+"-%d"%(i+1))
+        
     def show(self):
-        L = []
         for i,f in enumerate(self.fits):
             print "-- Model %d"%i
             f.show()

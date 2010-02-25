@@ -67,23 +67,16 @@ be created.  For example::
 
 An instrument such as this can be used to compute a resolution function
 for arbitrary Q values, following the slit opening pattern defined by
-the instrument.  Using them, the example above becomes::
+the instrument.
 
-    >>> import numpy, pylab
-    >>> from ncnrdata import ANDR
-    >>> instrument = ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
-    >>> resolution = instrument.resolution(Q=numpy.linspace(0,0.5,100))
-    >>> pylab.plot(resolution.T, resolution.dT)
-    >>> pylab.ylabel('angular divergence (degrees FWHM)')
-    >>> pylab.xlabel('angle (degrees)')
-    >>> pylab.show()
+    >>> resolution = instrument.resolution(T=linspace(0,5,51)
 
 The resolution object *resolution* is of :class:`Resolution`.  Using it
 you can compute the resolution *dQ* for a given *Q* based on *T*, *dT*,
 *L*, and *dL*.  Furthermore, it can easily be turned into a reflectometry
 probe for use in modeling::
 
-    >>> resolution.probe()
+    >>> probe = resolution.probe()
 
 Since creating the reflectometry probe is the usual case, a couple of
 driver functions are provided.  For example, the following complete
@@ -104,6 +97,10 @@ Generating a simulation probe is similarly convenient::
     >>> from ncnrdata import ANDR
     >>> instrument = ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
     >>> probe = instrument.simulate(T=numpy.arange(0,5,100))
+
+and for magnetic systems in polarized beam::
+
+    >>> probe = instrument.simulate_magnetic(T=numpy.arange(0,5,100))
 
 When loading or simulating a data set, any of the instrument parameters
 and measurement geometry information can be specified, replacing the
@@ -165,15 +162,16 @@ Monochromatic measurements have these additional or modified attributes::
     *dLoL*
         constant relative wavelength dispersion; wavelength range and
         dispersion together determine the bins
-    *Tlo*, *Thi* (degrees)
-        range of opening slits, or inf if none
     *slits_at_Tlo* (mm)
         slit 1 and slit 2 openings at Tlo; this can be a scalar if both
-        slits are open by the same amount, otherwise it is a pair (s1,s2)
+        slits are open by the same amount, otherwise it is a pair (s1,s2).
     *slits_below*, *slits_above*
         slit 1 and slit 2 openings below Tlo and above Thi; again, these
         can be scalar if slit 1 and slit 2 are the same, otherwise they
-        are each a pair (s1,s2)
+        are each a pair (s1,s2).  Below and above default to the values of
+        the slits at Tlo and Thi respectively.
+    *Tlo*, *Thi* (degrees)
+        range of opening slits, or inf if slits are fixed.
     *sample_width* (mm)
         width of sample; at low angle with tiny samples, stray neutrons
         miss the sample and are not reflected onto the detector, so the
@@ -316,11 +314,11 @@ class Monochromatic:
     dLoL = None
     d_s1 = None
     d_s2 = None
-    slits_at_Tlo = None
     # Optional attributes
-    Tlo= 0
+    Tlo= inf  # Use inf for fixed slits.
     Thi= inf
-    slits_below = None
+    slits_at_Tlo = None  # Slit openings at Tlo, and default slits_below
+    slits_below = None  # Slit openings below Tlo, or fixed slits if Tlo=inf
     slits_above = None
     sample_width = 1e10
     sample_broadening = 0
@@ -364,31 +362,62 @@ class Monochromatic:
         associated uncertainties, but not any data.
 
         You can override instrument parameters using key=value.  In
-        particular, slit settings *slits_at_Tlo*, *Tlo*, *Thi*,
-        and *slits_below*, and *slits_above* are used to define the
+        particular, settings for *slits_at_Tlo*, *Tlo*, *Thi*,
+        *slits_below*, and *slits_above* are used to define the
         angular divergence.
         """
         if (Q is None) == (T is None):
             raise ValueError("requires either Q or angle T")
-        if Q is None: # Compute Q from angle T and wavelength L
+        if Q is None: 
+            # Compute Q from angle T and wavelength L
             L = kw.get('wavelength',self.wavelength)
             Q = TL2Q(T,L)
         resolution = self.resolution(Q=numpy.asarray(Q), **kw)
         return resolution.probe()
 
+    def simulate_magnetic(self, T=None, Tguide=270, shared_beam=True, **kw):
+        """
+        Simulate a polarized measurement probe.
+
+        Returns a probe with Q, angle, wavelength and the associated
+        uncertainties, but not any data.
+
+        Guide field angle *Tguide* can be specified, as well as keyword
+        arguments for the geometry of the probe cross sections such as
+        *slits_at_Tlo*, *Tlo*, *Thi*, *slits_below*, and *slits_above* 
+        to define the angular divergence.
+        """
+        from .probe import PolarizedNeutronProbe
+        probes = [self.simulate(T, **kw) for i in range(4)]
+        probe = PolarizedNeutronProbe(probes, Tguide=Tguide)
+        if shared_beam:
+            probe.shared_beam()  # Share the beam parameters by default
+        return probe
+
     def calc_slits(self, T, **kw):
         """
         Determines slit openings from measurement pattern.
 
+        If slits are fixed simply return the same slits for every angle,
+        otherwise use an opening range [Tlo,Thi] and the value of the
+        slits at the start of the opening to define the slits.  Slits
+        below Tlo and above Thi can be specified separately.
+        
         *Tlo*,*Thi*      angle range over which slits are opening
-        *slits_at_Tlo*   openings at the start of the range
+        *slits_at_Tlo*   openings at the start of the range, or fixed opening
         *slits_below*, *slits_above*   openings below and above the range
+        
+        Use fixed_slits is available, otherwise use opening slits.
         """
         Tlo = kw.get('Tlo',self.Tlo)
         Thi = kw.get('Thi',self.Thi)
         slits_at_Tlo = kw.get('slits_at_Tlo',self.slits_at_Tlo)
         slits_below = kw.get('slits_below',self.slits_below)
         slits_above = kw.get('slits_above',self.slits_above)
+
+        # Otherwise we are using opening slits            
+        if Tlo is None or slits_at_Tlo is None:
+            raise TypeError("Resolution calculation requires Tlo and slits_at_Tlo")
         slits = opening_slits(T=T, slits_at_Tlo=slits_at_Tlo,
                               Tlo=Tlo, Thi=Thi,
                               slits_below=slits_below,
@@ -405,6 +434,8 @@ class Monochromatic:
         """
         d_s1 = kw.get('d_s1',self.d_s1)
         d_s2 = kw.get('d_s2',self.d_s2)
+        if d_s1 is None or d_s2 is None: 
+            raise TypeError("Need slit distances d_s1, d_s2 to compute resolution")
         sample_width = kw.get('sample_width',self.sample_width)
         sample_broadening = kw.get('sample_broadening',self.sample_broadening)
         dT = divergence(T=T, slits=slits, distance=(d_s1,d_s2),
@@ -419,14 +450,19 @@ class Monochromatic:
 
         Resolution is an object with fields T, dT, L, dL, Q, dQ
         """
-        L = kw.get('L',self.wavelength)
-        dL = L*kw.get('dLoL',self.dLoL)
+        L = kw.get('L',kw.get('wavelength',self.wavelength))
+        dLoL = kw.get('dLoL',self.dLoL)
+        if L is None: 
+            raise TypeError("Need wavelength L to compute resolution")
+        if dLoL is None: 
+            raise TypeError("Need wavelength dispersion dLoL to compute resolution")
+        
         T = QL2T(Q=asarray(Q),L=L)
         slits = self.calc_slits(T, **kw)
         dT = self.calc_dT(T, slits, **kw)
         radiation = kw.get('radiation',self.radiation)
 
-        return Resolution(T=T,dT=dT,L=L,dL=dL,radiation=radiation)
+        return Resolution(T=T,dT=dT,L=L,dL=dLoL*L,radiation=radiation)
 
     def __str__(self):
         msg = """\
@@ -504,14 +540,14 @@ class Polychromatic:
 
     def simulate(self, **kw):
         """
-        Simulate the probe for a measurement.
+        Simulate a measurement probe.
 
         Returns a probe with Q, angle, wavelength and the associated
         uncertainties, but not any data.
 
         You can override instrument parameters using key=value.
-        In particular, slit settings *slits* and *T* define the
-        angular divergence and *dLoL* defines the wavelength
+        In particular, slit settings *slits* and *T* define 
+        the angular divergence and *dLoL* defines the wavelength
         resolution.
         """
         low,high = kw.get('wavelength',self.wavelength)
@@ -520,6 +556,25 @@ class Polychromatic:
         dL = binwidths(L)
         resolution = self.resolution(L=L, dL=dL, **kw)
         return resolution.probe()
+
+    def simulate_magnetic(self, Tguide=270, shared_beam=True, **kw):
+        """
+        Simulate a polarized measurement probe.
+
+        Returns a probe with Q, angle, wavelength and the associated
+        uncertainties, but not any data.
+
+        Guide field angle *Tguide* can be specified, as well as keyword
+        arguments for the geometry of the probe cross sections such as
+        slit settings *slits* and *T* to define the angular divergence 
+        and *dLoL* to define the wavelength resolution.
+        """
+        from .probe import PolarizedNeutronProbe
+        probes = [self.simulate(T, **kw) for i in range(4)]
+        probe = PolarizedNeutronProbe(probes, Tguide=Tguide)
+        if shared_beam:
+            probe.shared_beam()  # Share the beam parameters by default
+        return probe
 
     def calc_dT(self, T, slits, **kw):
         d_s1 = kw.get('d_s1',self.d_s1)

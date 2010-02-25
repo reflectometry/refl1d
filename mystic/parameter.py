@@ -2,6 +2,7 @@
 # Author: Paul Kienzle
 __all__ = [ 'Parameter', 'ParameterSet']
 
+import sys
 import numpy
 
 from . import bounds as mbounds
@@ -426,18 +427,19 @@ def format(p, indent=0):
     else:
         return "None"
 
-def summarize(pars):
+def summarize(pars, fid=None):
     """
     Print a stylized list of parameter names and values with range bars.
 
     If values are provided, use those values rather than the current values
     of the parameters.
     """
+    if fid is None: fid = sys.stdout
     for p in sorted(pars, cmp=lambda x,y: cmp(x.name,y.name)):
         position = int(p.bounds.get01(p.value)*9.999999999)
         bar = ['.']*10
         bar[position] = '|'
-        print "%40s %s %10g in %s"%(p.name,"".join(bar),p.value,p.bounds)
+        print >>fid, "%40s %s %10g in %s"%(p.name,"".join(bar),p.value,p.bounds)
 
 def unique(s):
     """

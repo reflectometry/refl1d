@@ -1,5 +1,5 @@
 from numpy import pi, inf, nan, sqrt, log, degrees, radians, cos, sin, tan
-from numpy import arcsin as asin, ceil
+from numpy import arcsin as asin, ceil, clip
 
 _FWHM_scale = sqrt(log(256))
 def FWHM2sigma(s):
@@ -27,7 +27,7 @@ def TL2Q(T=None,L=None):
     """
     return 4 * pi * sin(radians(T)) / L
 
-def dTdL2dQ(T, dT, L, dL):
+def dTdL2dQ(T=None, dT=None, L=None, dL=None):
     """
     Convert wavelength dispersion and angular divergence to Q resolution.
 
@@ -42,6 +42,7 @@ def dTdL2dQ(T, dT, L, dL):
     #print T, dT, L, dL
     dQ = (4*pi/L) * sqrt( (sin(T)*dL/L)**2 + (cos(T)*dT)**2 )
 
+    #sqrt((dL/L)**2+(radians(dT)/tan(radians(T)))**2)*probe.Q
     return FWHM2sigma(dQ)
 
 def dQdT2dLoL(Q, dQ, T, dT):
@@ -132,3 +133,22 @@ def indfloat(s):
         if s == '-inf': return -inf
         if s == 'nan': return nan
         raise
+
+
+# Color functions
+def dhsv(color, dh=0, ds=0, dv=0, da=0):
+    """
+    Modify color on hsv scale.
+    
+    *dv* change intensity, e.g., +0.1 to brighten, -0.1 to darken.
+    *dh* change hue, e.g., 
+    """
+    from matplotlib.colors import colorConverter
+    from colorsys import rgb_to_hsv, hsv_to_rgb
+    from numpy import clip, array
+    r,g,b,a = colorConverter.to_rgba(color)
+    a = rgba[3] if len(rgba) > 3 else 1
+    h,s,v = rgb_to_hsv(r,g,b)
+    h,s,v,a = [clip(val,0,1) for val in h+dh,s+ds,v+dv,a+da]
+    r,b,g = hsv_to_rgb(h,s,v)
+    return numpy.array((r,g,b,a))

@@ -38,5 +38,3 @@ and anchoring them to the structure.
 """
 
 
-MagneticSlab(Layer):
-    

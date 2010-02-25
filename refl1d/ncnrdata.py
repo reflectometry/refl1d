@@ -9,6 +9,44 @@ The following instruments are defined::
 
 These are :class:`resolution.Monochromatic` classes tuned with
 default instrument parameters and loaders for reduced NCNR data.
+
+The instruments can be used to load data or to compute resolution functions
+for the purposes.
+
+Example loading data::
+
+    from ncnrdata import ANDR
+    instrument = ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
+    probe = instrument.load('chale207.refl')
+    probe.plot(view='log')
+
+Magnetic data has multiple cross sections and often has fixed slits::
+
+    from ncnrdata import NG1
+    instrument = NG1(slits_at_Tlo=1)
+    probe = instrument.load('n101Gc1.refl')
+    probe.plot(view='SA') # Spin asymmetry view
+
+For simulation, you just need a probe but not the associated data::
+
+    from ncnrdata import ANDR
+    instrument = ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
+    probe = instrument.simulate(T=linspace(0,5,51))
+    pylab.plot(probe.Q, probe.dQ)
+    pylab.ylabel('resolution (1-sigma)')
+    pylab.xlabel('Q (inv A)')
+    pylab.show()
+
+And for magnetic::
+
+    from ncnrdata import NG1
+    instrument = NG1(slits_at_Tlo=1)
+    probe = instrument.simulate_magnetic(T=linspace(0,5,51))
+    pylab.plot(probe.Q, probe.dQ)
+    pylab.ylabel('resolution (1-sigma)')
+    pylab.xlabel('Q (inv A)')
+    pylab.show()
+
 See :module:`resolution` for details.
 """
 
@@ -18,10 +56,13 @@ from numpy import inf, pi
 
 from .resolution import Monochromatic
 from . import util
+from probe import PolarizedNeutronProbe
 
 def load(filename, instrument=None, **kw):
     """
     Return a probe for NCNR data.
+    
+    Keyword arguments are as specified in :class:`resolution.Monochromatic`.
     """
     if filename is None: return None
     if instrument is None: instrument=Monochromatic()
@@ -36,28 +77,31 @@ def load(filename, instrument=None, **kw):
     probe.filename = filename
     return probe
 
-def load_magnetic(filename, **kw):
+def load_magnetic(filename, Tguide=270, shared_beam=True, **kw):
     """
     Return a probe for magnetic NCNR data.
     
-    *Tguide* is the guide angle.
-    """
-    Tguide = kw.pop('Tguide',270)
-    probes = [load(v, **kw) for v in find_xsec(filename)]
-    return PolarizedNeutronProbe(probes, Tguide=Tguide)
-
-def find_xsec(filename):
-    """
-    Find files containing the polarization cross-sections.
+    *filename* (string, or 4x string)
+        If it is a string, then filenameA, filenameB, filenameC, filenameD,
+        are the ++, +-, -+, -- cross sections, otherwise the individual
+        cross sections should the be the file name for the cross section or
+        None if the cross section does not exist.
+    *Tguide* (degrees)
+        Angle of the guide field relative to the beam.  270 is the default.
+    *shared_beam* (True)
+        Use false if beam parameters should be fit separately for the
+        individual cross sections.
     
-    Returns tuple with file names for ++ +- -+ -- cross sections, or
-    None if the spin cross section does not exist.
+    Other keyword arguments are for the individual cross section loaders
+    as specified in :class:`resolution.Monochromatic`.    
 
-    # TODO: check whether I have the spin states correct
-    'a' corresponds to spin --
-    'b' corresponds to spin -+
-    'c' corresponds to spin +-
-    'd' corresponds to spin ++
+    The data sets should are the base filename with an additional character
+    corresponding to the spin state::
+
+        'a' corresponds to spin ++
+        'b' corresponds to spin +-
+        'c' corresponds to spin -+
+        'd' corresponds to spin --
 
     Unfortunately the interpretation is a little more complicated than
     this as the data acquisition system assigns letter on the basis of
@@ -66,14 +110,38 @@ def find_xsec(filename):
     polarizer/analyzer is a supermirror in transmission or reflection
     mode, or in the case of ^3He polarizers, whether the polarization
     is up or down.
+
+    For full control, specify filename as a list of files, with None
+    for the missing cross sections.
     """
+    probes = [load(v, **kw) for v in find_xsec(filename)]
+    if all(p is None for p in probes):
+        raise IOError("Data set has no magnetic cross sections: '%s'"%filename)
+    probe = PolarizedNeutronProbe(probes, Tguide=Tguide)
+    if shared_beam:
+        probe.shared_beam()  # Share the beam parameters by default
+    return probe
+
+def find_xsec(filename):
+    """
+    Find files containing the polarization cross-sections.
+    
+    Returns tuple with file names for ++ +- -+ -- cross sections, or
+    None if the spin cross section does not exist.
+    """
+    # Check if it is a string.  If not, assume it is a length 4 tuple
+    try:
+        filename + 's'
+    except:
+        return filename
+        
     if filename[-1] in 'abcdABCD':
         filename = filename[:-1]
     def check(a):
         if os.path.exists(filename+a): return filename+a
-        elif os.path.exists(filename+a.upper()): return filename+a.upper()
+        elif os.path.exists(filename+a.lower()): return filename+a.lower()
         else: return None
-    return (check('d'),check('c'),check('b'),check('a'))
+    return (check('A'),check('B'),check('C'),check('D'))
 
 def parse_file(filename):
     """
@@ -110,7 +178,7 @@ class NCNRLoader:
     def load(self, filename, **kw):
         return load(filename, instrument=self)
     def load_magnetic(self, filename, **kw):
-        pass
+        return load_magnetic(filename, instrument=self)
 
 class ANDR(Monochromatic, NCNRLoader):
     """

@@ -9,9 +9,9 @@ probe1 = instrument.load('n5hl1_Short.refl')
 probe2 = instrument.load('n5hl2_Short.refl')
 
 ## Sample description
-L1 = SLD('L1',rho=-0.35, mu=0.0001234)
-L2 = SLD('L2',rho=2.231, mu=0.05296)
-L3 = SLD('L3',rho=4.3775, mu=0.01305)
+L1 = SLD(name='L1', rho=-0.35, irho=0.0001234/10)
+L2 = SLD(name='L2', rho=2.231, irho=0.05296/10)
+L3 = SLD(name='L3', rho=4.3775, irho=0.01305/10)
 sample1 = (sapphire%0.85 + L1/480%31.6 + L2/790.286%0.43 + L3/555.35%0.43 + air)
 sample2 = sample1[:]
 sample2[3] = L3/555%.5
@@ -25,7 +25,7 @@ layers = sample1[1:4] + sample2[3:4]
 if 1:  # composition
     for L in layers:
         L.material.rho.pmp(10)
-        L.material.mu.pmp(10)
+        L.material.irho.pmp(10)
 
 if 1:  # size
     for L in layers:
@@ -35,6 +35,6 @@ if 1:  # roughness
     for L in layers:
         L.interface.pmp(10)
 
-#preview((exp1,exp2))
+preview((exp1,exp2))
 #fit(models=(exp1,exp2), npop=20)
-fit(models=exp1, npop=5)
+#fit(models=exp1, npop=5)

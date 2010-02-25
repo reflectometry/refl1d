@@ -126,14 +126,15 @@ class Experiment(ExperimentBase):
             self._slabs.clear()
             self.sample.render(self._probe_cache, self._slabs)
             self._cache['rendered'] = True
+        return self._slabs
 
     def _reflamp(self):
         if 'calc_r' not in self._cache:
-            self._render_slabs()
-            w = self._slabs.w
-            rho,irho = self._slabs.rho, self._slabs.irho
-            sigma = self._slabs.limited_sigma(limit=self.roughness_limit)
-            #sigma = self._slabs.sigma
+            slabs = self._render_slabs()
+            w = slabs.w
+            rho,irho = slabs.rho, slabs.irho
+            sigma = slabs.limited_sigma(limit=self.roughness_limit)
+            #sigma = slabs.sigma
             calc_r = refl(-self.probe.calc_Q/2,
                           depth=w, rho=rho, irho=irho, sigma=sigma)
             #print "w",w
@@ -186,9 +187,9 @@ class Experiment(ExperimentBase):
         If *dz* is not given, use *dz* = 1 A.
         """
         if ('smooth_profile',dz) not in self._cache:
-            self._render_slabs()
-            prof = self._slabs.smooth_profile(dz=dz,
-                                              roughness_limit=self.roughness_limit)
+            slabs = self._render_slabs()
+            prof = slabs.smooth_profile(dz=dz,
+                                        roughness_limit=self.roughness_limit)
             self._cache['smooth_profile',dz] = prof
         return self._cache['smooth_profile',dz]
 
@@ -197,10 +198,54 @@ class Experiment(ExperimentBase):
         Compute a scattering length density profile
         """
         if 'step_profile' not in self._cache:
-            self._render_slabs()
-            prof = self._slabs.step_profile()
+            slabs = self._render_slabs()
+            prof = slabs.step_profile()
             self._cache['step_profile'] = prof
         return self._cache['step_profile']
+        
+    def slabs(self):
+        """
+        Return the slab thickness, roughness, rho, irho for the 
+        rendered model.
+        
+        Note: roughness is for the top of the layer.
+        """
+        slabs = self._render_slabs()
+        return (slabs.w, numpy.hstack((0,slabs.sigma)), 
+                slabs.rho[0], slabs.irho[0])
+
+    def save(self, basename):
+        # Slabs
+        A = numpy.array(self.slabs())
+        fid = open(basename+"-slabs.dat","w")
+        fid.write("# %17s %20s %20s %20s\n"%("thickness","roughness",
+                                              "rho (1e-6/A2)","irho (1e-6/A2)"))
+        numpy.savetxt(fid, A.T, fmt="%20.15g")
+        fid.close()
+
+        # Step profile
+        A = numpy.array(self.step_profile())
+        fid = open(basename+"-steps.dat","w")
+        fid.write("# %10s %12s %12s\n"%("z","rho (1e-6/A2)","irho (1e-6/A2)"))
+        numpy.savetxt(fid, A.T, fmt="%12.8f")
+        fid.close()
+
+        # Smooth profile
+        A = numpy.array(self.smooth_profile())
+        fid = open(basename+"-profile.dat","w")
+        fid.write("# %10s %12s %12s\n"%("z","rho (1e-6/A2)","irho (1e-6/A2)"))
+        numpy.savetxt(fid, A.T, fmt="%12.8f")
+        fid.close()
+
+        # Reflectivity
+        theory = self.reflectivity()[1]
+        A = numpy.array((self.probe.Q,self.probe.dQ,self.probe.R,self.probe.dR,
+                         theory))
+        fid = open(basename+"-refl.dat","w")
+        fid.write("# %17s %20s %20s %20s %20s\n"%("Q (1/A)","dQ (1/A)",
+                                                   "R", "dR", "theory"))
+        numpy.savetxt(fid, A.T, fmt="%20.15g")
+        fid.close()
 
     def plot_profile(self):
         import pylab
