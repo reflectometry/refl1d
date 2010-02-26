@@ -289,7 +289,7 @@ class Slab(Layer):
                     material=self.material.parameters())
 
     def render(self, probe, slabs):
-        rho, irho = self.material.sld(probe)
+        rho, irho, incoh = self.material.sld(probe)
         try: irho = irho[0]
         except: pass
         w = self.thickness.value
@@ -298,7 +298,7 @@ class Slab(Layer):
         #print "irho",irho
         #print "w",w
         #print "sigma",sigma
-        slabs.extend(rho=[rho], irho=[irho], w=[w], sigma=[sigma])
+        slabs.extend(rho=[rho], irho=[irho+incoh], w=[w], sigma=[sigma])
     def __str__(self):
         if self.thickness.value > 0:
             return "%s/%.3g"%(str(self.material),self.thickness.value)

@@ -178,12 +178,14 @@ class MlayerModel(object):
             layer thickness and FWHM roughness
         *rho*, *irho*, *incoh* (inv A**2 x 10^6)
             complex coherent rho + 1j * irho and incoherent SLD
-        *mu*
-            computed absorption cross section (2*wavelength*irho + incoh)
+            
+    Computed attributes are provided for convenience::
         *sigma_roughness* (Angstroms)
-            computed 1-sigma equivalent roughness for erf profile
+            1-sigma equivalent roughness for erf profile
+        *mu*
+            absorption cross section (2*wavelength*irho + incoh)
 
-    Note that staj files store SLD as 16*pi*rho, irho/(2 wavelength)+incoh
+    Note that staj files store SLD as 16*pi*rho, 2*wavelength*irho+incoh
     with an additional column of 0 for magnetic SLD.  This conversion will
     happen automatically on read/write.  Note that there is no way to separate
     irho and incoh on read so incoh is set to 0.
@@ -436,9 +438,10 @@ class MlayerModel(object):
             raise ValueError("section sizes do not match number of layers")
 
     def _get_mu(self):
-        return (2*self.wavelength*self.irho + self.incoh)*numpy.ones_like(rho)
-    def _set_mu(self, v):
-        self.irho = v/(2*self.wavelength)
+        mu = 2*self.wavelength*self.irho + self.incoh
+        return mu*numpy.ones_like(self.rho)
+    def _set_mu(self, mu):
+        self.irho = mu/(2*self.wavelength)
     mu = property(fget=_get_mu, fset=_set_mu)
 
     def _get_sigma(self):
@@ -527,8 +530,8 @@ class MlayerModel(object):
         #nL = num_top+num_middle+num_bottom+3
         #7 to 7+nL: rho mrho depth rough mu
         #ignore the layer before each section
-        rho = self.rho*(16*pi/1e6)
-        mu = 2*self.wavelength*self.irho + self.incoh
+        rho = self.rho*(16*pi*1e-6)
+        mu = self.mu*1e-6
         w,s = self.thickness, self.roughness
         def _write_layer(idx):
             fid.write("%g %g %g %g %g\n"%(rho[idx], 0., 

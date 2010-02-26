@@ -48,8 +48,6 @@ import periodictable
 from periodictable.constants import avogadro_number
 from mystic import Parameter as Par
 
-_INCOHERENT_AS_ABSORPTION = True
-
 class Scatterer(object):
     """
     A generic scatterer separates the lookup of the scattering factors
@@ -83,7 +81,7 @@ class Vacuum(Scatterer):
     def parameters(self):
         return []
     def sld(self, probe):
-        return 0,0
+        return 0,0,0
     def __repr__(self):
         return "Vacuum()"
 
@@ -116,7 +114,7 @@ class SLD(Scatterer):
     def parameters(self):
         return dict(rho=self.rho, irho=self.irho)
     def sld(self, probe):
-        return self.rho.value,self.irho.value
+        return self.rho.value,self.irho.value,0
 
 # ============================ Substances =============================
 
@@ -139,9 +137,9 @@ class Material(Scatterer):
         packing factor or from the named lattice type (bcc, fcc, hcp,
         cubic, or diamond).
 
-    *use_incoherent* (False)
+    *use_incoherent* (True)
 
-        True if incoherent scattering should be treated as absorption.
+        True if incoherent scattering should be interpreted as absorption.
 
     *fitby* (bulk_density)
 
@@ -164,12 +162,11 @@ class Material(Scatterer):
     **WARNING** as of this writing packing_factor does not seem to return
     the correct density.
     """
-    def __init__(self, formula=None, name=None,
-                 incoherent_as_absorption=_INCOHERENT_AS_ABSORPTION,
+    def __init__(self, formula=None, name=None, use_incoherent=True,
                  density=None, packing_factor=None, fitby='bulk_density'):
         self.formula = periodictable.formula(formula, density=density)
         self.name = name if name is not None else str(self.formula)
-        self.incoherent_as_absorption = incoherent_as_absorption
+        self.use_incoherent = use_incoherent
         self.fitby(fitby)
 
     def fitby(self, type):
@@ -221,12 +218,11 @@ class Material(Scatterer):
     def parameters(self):
         return {'density': self.density}
     def sld(self, probe):
-        coh, absorp, incoh = probe.scattering_factors(self.formula)
-        if self.incoherent_as_absorption:
-            absorp = absorp + incoh
+        rho, irho, incoh = probe.scattering_factors(self.formula)
+        if not self.use_incoherent: incoh = 0
         scale = self.density.value
         #print "Material sld ",self.name,scale*coh,scale*absorp
-        return (scale*coh,scale*absorp)
+        return (scale*rho,scale*irho,scale*incoh)
     def __str__(self):
         return self.name
     def __repr__(self):
@@ -244,8 +240,7 @@ class Compound(Scatterer):
 
     An individual component can be a chemical formula, not just an element.
     """
-    def __init__(self, parts=None, density=None, name=None,
-                 incoherent_as_absorption=_INCOHERENT_AS_ABSORPTION):
+    def __init__(self, parts=None, density=None, name=None, use_incoherent=True):
         # Split [M1,N1,M2,N2,...] into [M1,M2,...], [N1,N2,...]
         formula = [parts[i] for i in range(0, len(parts),2)]
         count = [parts[i] for i in range(1, len(parts),2)]
@@ -256,11 +251,11 @@ class Compound(Scatterer):
         if name is None: name = "+".join(str(p) for p in formula)
         density = Par.default(density,limits=(0,inf),name=name+" density")
 
-        self.incoherent_as_absorption = incoherent_as_absorption
         self.formula = formula
         self.count = count
         self.density = density
         self.name = name
+        self.use_incoherent = use_incoherent
 
         # Save masses so we can recompute number density of compound without
         # having to look up things in the periodic table again.
@@ -283,9 +278,7 @@ class Compound(Scatterer):
 
         # Lookup SLD assuming density=1, mass=atomic mass
         slds = [probe.scattering_factors(c) for c in self.formula]
-        coh,absorp,incoh = [numpy.asarray(v) for v in zip(*slds)]
-        if self.incoherent_as_absorption:
-            absorp = absorp + incoh[:,None]
+        rho,irho,incoh = [numpy.asarray(v) for v in zip(*slds)]
 
         # coh[i] = N[i]*b_c[i] = density[i]/mass[i] * C[i] * b_c[i]
         # We know density[i]=1 and mass[i] was previously calculated,
@@ -295,11 +288,14 @@ class Compound(Scatterer):
         #    density/sum(k*mass) * k*mass[i]*coh[i]
         # Test this by verifying Compound(('H',2,'O',1),density=1)
         # has the sample SLD as Material('H2O',density=1) or some such.
-        coh = numpy.sum(coh*(self.__mass*count))
-        absorp = numpy.sum(absorp*(self.__mass*count)[:,None],axis=0)
+        rho = numpy.sum(rho*(self.__mass*count))
+        irho = numpy.sum(irho*(self.__mass*count)[:,None],axis=0)
+        if self.use_incoherent: 
+            incoh = numpy.sum(incoh*(self.__mass*count),axis=0)
+        else:
+            incoh = 0
         scale = self.density.value/numpy.sum(count*self.__mass)
-        #print "Compound sld",self.name,scale*coh,scale*absorp
-        return (scale*coh,scale*absorp)
+        return (scale*rho,scale*irho,scale*incoh)
 
     def __str__(self):
         return "<%s>"%(",".join(str(M) for M in self.formula))
@@ -428,19 +424,20 @@ class Mixture(Scatterer):
         fraction = numpy.hstack((0, [m.value for m in self.fraction]))
         fraction[0] = 100 - sum(fraction)
         if (fraction<0).any():
-            return NaN, NaN
+            return NaN, NaN, NaN
 
         # Lookup SLD
         slds = [c.sld(probe) for c in self.material]
-        coh,absorp = [numpy.asarray(v) for v in zip(*slds)]
+        rho,irho,incoh = [numpy.asarray(v) for v in zip(*slds)]
 
         # Use calculator to convert individual SLDs to overall SLD
         volume_fraction = self._volume(fraction)
-        coh = numpy.sum(coh*volume_fraction)
-        absorp = numpy.sum(absorp*volume_fraction[:,None],axis=0)
+        rho = numpy.sum(rho*volume_fraction)
+        irho = numpy.sum(irho*volume_fraction[:,None],axis=0)
+        incoh = numpy.sum(incoh*volume_fraction)
         #print "Mixture",self.name,coh,absorp
 
-        return (coh,absorp)
+        return rho,irho,incoh
 
     def __str__(self):
         return "<%s>"%(",".join(str(M) for M in self.material))

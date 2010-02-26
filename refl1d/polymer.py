@@ -77,10 +77,10 @@ class TetheredPolymer(Layer):
         thickness, sigma, phi, head, tail, Y \
             = [p.value for p in self.thickness, self.interface, 
                self.phi, self.head, self.tail, self.Y]
-        Mr,Mi = self.polymer.sld(probe)
-        Sr,Si = self.solvent.sld(probe)
-        M = Mr + 1j*Mi
-        S = Sr + 1j*Si
+        Mr,Mi,Minc = self.polymer.sld(probe)
+        Sr,Si,Sinc = self.solvent.sld(probe)
+        M = Mr + 1j*(Mi+Minc)
+        S = Sr + 1j*(Si+Sinc)
         M,S = M[0],S[0]  # Temporary hack
         H = M*phi + S*(1-phi)
         head_width = head if head < thickness else thickness
@@ -186,10 +186,10 @@ class VolumeProfile(Layer):
             P[k] = getattr(self,k)
 
     def render(self, probe, slabs):
-        Mr,Mi = self.polymer.sld(probe)
-        Sr,Si = self.solvent.sld(probe)
-        M = Mr + 1j*Mi
-        S = Sr + 1j*Si
+        Mr,Mi,Minc = self.polymer.sld(probe)
+        Sr,Si,Minc = self.solvent.sld(probe)
+        M = Mr + 1j*(Mi+Minc)
+        S = Sr + 1j*(Si+Sinc)
         M,S = M[0],S[0]  # Temporary hack
         Pw,Pz = slabs.microslabs(self.thickness.value)
         kw = dict((k,getattr(self,k).value) for k in self._parameters)

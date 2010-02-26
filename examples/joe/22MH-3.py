@@ -43,16 +43,13 @@ probe2 = instrument.load('n5hl2_Short.refl')
 # ====== Models =======
 Mg = Material('Mg')
 Pd = Material('Pd')
-MgH2 = Material('MgH2',density=1.45)
-MgO = Material('MgO',density=3.58)
-MgO2 = Material('MgO2',density=3)
-MgO2H2 = Material('Mg(OH)2', density=2.3446)
+MgH2 = Material('MgH2',density=1.45,use_incoherent=True)
 Mg_MgH2a = Mixture.byvolume(Mg,MgH2,30) # 70% Mg / 30% MgH2
 Mg_MgH2b = Mixture.byvolume(Mg,MgH2,10) # 90% Mg / 10% MgH2
 
 nH = Parameter(1, name='#H in <Pd+kH>')
 Pd_stretch = Parameter(1.1, name='<Pd+kH> stretch')
-PdH = Compound(('Pd',1,'H',nH), name='<Pd+kH>')
+PdH = Compound(('Pd',1,'H',nH), name='<Pd+kH>', use_incoherent=True)
 PdH.density = (Pd.density / Pd_stretch
                * (1 + nH * (elements.H.mass/elements.Pd.mass)))
 
@@ -88,8 +85,8 @@ exp1 = Experiment(probe=probe1, sample=sample1)
 exp2 = Experiment(probe=probe2, sample=sample2)
 models = (exp1,exp2)
 
-#preview(models=models).save('PdFit')
-fit(models=models, npop=10).save('PdFit')
+preview(models=models).save('PdFit')
+#fit(models=models, npop=10).save('PdFit')
 
 save_mlayer(experiment=exp1,filename='Pd.staj')
 save_mlayer(experiment=exp2,filename='Pd+H.staj')
