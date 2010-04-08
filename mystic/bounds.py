@@ -38,14 +38,14 @@ interface defined in :class:`Bounds`.
 For generating bounds given a value, we provide a few helper
 functions::
 
-    pm(x,dx) or pm(x,-dx,+dx)
-        return (x-dx,x+dx) limited to 2 significant digits
-    pmp(x,p) or pmp(x,-p,+p)
-        return (x-p*x/100, x+p*x/100) limited to 2 sig. digits
-    pm_raw(x,dx) or raw_pm(x,-dx,+dx) for plus/minus
-        return (x-dx,x+dx)
-    pmp_raw(x,p) or raw_pmp(x,-p,+p) for plus/minus percent
-        return (x-p*x/100, x+p*x/100)
+    v +/- d:  pm(x,dx) or pm(x,-dm,+dp) or pm(x,+dp,-dm)
+        return (x-dm,x+dm) limited to 2 significant digits
+    v +/- p%: pmp(x,p) or pmp(x,-pm,+pp) or pmp(x,+pp,-pm)
+        return (x-pm*x/100, x+pp*x/100) limited to 2 sig. digits
+    pm_raw(x,dx) or raw_pm(x,-dm,+dp) or raw_pm(x,+dp,-dm)
+        return (x-dm,x+dm)
+    pmp_raw(x,p) or raw_pmp(x,-pm,+pp) or raw_pmp(x,+pp,-pm)
+        return (x-pm*x/100, x+pp*x/100)
     nice_range(lo,hi)
         return (lo,hi) limited to 2 significant digits
 """
@@ -73,7 +73,8 @@ def pm(v, *args):
         >>> print "%g - %g"%r
         0.7818 - 0.7866
 
-    If called as pm(value, plus, minus), return (~v-minus, ~v+plus).
+    If called as pm(value, +dp, -dm) or pm(value, -dm, +dp), 
+    return (~v-dm, ~v+dp).
     """
     return nice_range(pm_raw(v,*args))
 
@@ -89,7 +90,8 @@ def pmp(v, *args):
         >>> print "%g - %g"%r
         0.7834 - 0.785
 
-    If called as pmp(value, plus, minus), return (~v-minus%v, ~v+plus%v).
+    If called as pmp(value, +pp, -pm) or pmp(value, -pm, +pp), 
+    return (~v-pm%v, ~v+pp%v).
     """
     return nice_range(pmp_raw(v,*args))
 
@@ -98,31 +100,39 @@ def pm_raw(v, *args):
     """
     Return the tuple [v-dv,v+dv].
 
-    If called as raw_pm(v,plus,minus), return [v-minus,v+plus)].
+    If called as pm_raw(value, +dp, -dm) or pm_raw(value, -dm, +dp), 
+    return (v-dm, v+dp).
     """
     if len(args) == 1:
         dv = args[0]
         return v-dv, v+dv
     elif len(args) == 2:
         plus,minus = args
-        return v-minus, v+plus
+        if plus<minus: plus,minus = minus,plus
+        #if minus > 0 or plus < 0:
+        #    raise TypeError("pm(value, p1, p2) requires both + and - values")
+        return v+minus, v+plus
     else:
-        raise TypeError("pm(value, delta) or pm(value, plus, minus)")
+        raise TypeError("pm(value, delta) or pm(value, -p1, +p2)")
 
 def pmp_raw(v, *args):
     """
     Return the tuple [v-%v,v+%v]
 
-    If called as raw_pm(v,plus,minus), return [v-minus,v+plus)].
+    If called as pmp_raw(value, +pp, -pm) or pmp_raw(value, -pm, +pp), 
+    return (v-pm%v, v+pp%v).
     """
     if len(args) == 1:
         percent = args[0]
         b1,b2 = v*(1-0.01*percent), v*(1+0.01*percent)
     elif len(args) == 2:
         plus,minus = args
-        b1,b2 = v*(1-0.01*minus), v*(1+0.01*plus)
+        if plus<minus: plus,minus = minus,plus
+        #if minus > 0 or plus < 0:
+        #    raise TypeError("pmp(value, p1, p2) requires both + and - values")
+        b1,b2 = v*(1+0.01*minus), v*(1+0.01*plus)
     else:
-        raise TypeError("pm(value, delta) or pm(value, plus, minus)")
+        raise TypeError("pmp(value, delta) or pmp(value, -p1, +p2)")
 
     return (b1,b2) if v>0 else (b2,b1)
 

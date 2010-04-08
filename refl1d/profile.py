@@ -42,8 +42,9 @@ class Microslabs:
         self._num_slabs = 0
         # _slabs contains the 1D objects w, sigma, rho_M, theta_M of len n
         # _slabsQ contains the 2D objects rho, irho
-        self._slabs = numpy.empty(shape=(0,4))
+        self._slabs = numpy.empty(shape=(0,2))
         self._slabsQ = numpy.empty(shape=(0,nprobe,2))
+        self._slabsM = []
         self.dz = dz
 
     def microslabs(self, thickness=0):
@@ -77,7 +78,7 @@ class Microslabs:
         Extend the model so that there are *count* versions of the slabs
         from *start* to the final slab.
 
-        For a list L, this would be L.extend(L[start:]*(count-1))
+        This is equivalent to L.extend(L[start:]*(count-1)) for list L.
         """
         # For now use the dumb implementation; a better implementation
         # would remember the repeats and pre-calculate the matrix product
@@ -93,6 +94,9 @@ class Microslabs:
         self._slabs[toidx] = numpy.tile(self._slabs[fromidx],[repeats,1])
         self._slabsQ[toidx] = numpy.tile(self._slabsQ[fromidx],[repeats,1,1])
         self._num_slabs += repeats*length
+        
+        # if any magnetic sections are within the repeat, they need to be
+        # repeated as well
 
     def _reserve(self, nadd):
         """
@@ -104,7 +108,7 @@ class Microslabs:
             self._slabs.resize((new_ns, 4))
             self._slabsQ.resize((new_ns, nl, 2))
 
-    def extend(self, w=0, sigma=0, rho=0, irho=0, rho_M=0, theta_M=0):
+    def extend(self, w=0, sigma=0, rho=0, irho=0):
         """
         Extend the micro slab model with the given layers.
         """
@@ -114,10 +118,19 @@ class Microslabs:
         self._num_slabs += nadd
         self._slabs[idx,0] = w
         self._slabs[idx,1] = sigma
-        self._slabs[idx,2] = rho_M
-        self._slabs[idx,3] = theta_M
+        #self._slabs[idx,2] = rhoM
+        #self._slabs[idx,3] = thetaM
         self._slabsQ[idx,:,0] = numpy.asarray(rho).T
         self._slabsQ[idx,:,1] = numpy.asarray(irho).T
+
+    def magnetic(self, anchor, w, rhoM=0, thetaM=0):
+        self._slabsM.append(anchor,w,rhoM,thetaM)
+    
+    def thickness(self):
+        """
+        Total thickness of the profile.
+        """
+        return numpy.sum(self._slabs[:self._num_slabs,0])
 
     def interface(self, I):
         """
@@ -136,16 +149,26 @@ class Microslabs:
         return self._slabsQ[:self._num_slabs,:,0].T
     def _irho(self):
         return self._slabsQ[:self._num_slabs,:,1].T
-    def _rho_M(self):
-        return self._slabs[:self._num_slabs,2].T
-    def _theta_M(self):
-        return self._slabs[:self._num_slabs,3].T
+    def _rhoM(self):
+        raise NotImplementedError
+        #return self._slabs[:self._num_slabs,2].T
+    def _thetaM(self):
+        raise NotImplementedError
+        #return self._slabs[:self._num_slabs,3].T
     w = property(_w, doc="Thickness (A)")
     sigma = property(_sigma, doc="1-sigma Gaussian roughness (A)")
     rho = property(_rho, doc="Scattering length density (10^-6 number density)")
     irho = property(_irho, doc="Absorption (10^-6 number density)")
-    rho_M = property(_rho_M, doc="Magnetic scattering")
-    theta_M = property(_theta_M, doc="Magnetic scattering angle")
+    rhoM = property(_rhoM, doc="Magnetic scattering")
+    thetaM = property(_thetaM, doc="Magnetic scattering angle")
+
+    def freeze(self, step=False):
+        """
+        Generate a consistent set of slabs, expanding interfaces where
+        necessary and reconciling differences between the nuclear and
+        the magnetic steps.
+        """
+        raise NotImplementedError
 
     def limited_sigma(self, limit=0):
         """

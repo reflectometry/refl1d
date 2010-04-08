@@ -70,3 +70,12 @@ def countunique(A):
     Returns the unique elements in an array and their frequency.
     """
     return runlength(numpy.sort(A.flatten()))
+
+def zscore(A, axis=None):
+    """
+    Convert an array of data to zscores.
+    
+    Use *axis* to limit the calculation of mean and standard deviation to
+    a particular axis.
+    """
+    return (A - numpy.mean(A,axis=axis))/numpy.std(A,axis=axis,ddof=1)

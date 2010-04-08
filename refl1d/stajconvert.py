@@ -1,7 +1,7 @@
 import numpy
 from numpy import tan, cos, sqrt, radians, pi
 from .experiment import Experiment
-from .staj import MlayerModel, MlayerMagnetic
+from .staj import MlayerModel
 from .model import Slab, Stack
 from .material import SLD
 from .util import QL2T
@@ -18,15 +18,6 @@ def save_mlayer(experiment, filename):
     """
     Save a model to a staj file
     """
-    staj = model_to_mlayer(experiment)
-    #print staj
-    staj.save(filename)
-
-def load_gj2(filename):
-    staj = MlayerMagnetic.load(filename)
-    return mlayer_to_model(staj)
-
-def save_gj2(filename, model):
     staj = model_to_mlayer(experiment)
     #print staj
     staj.save(filename)
@@ -174,7 +165,7 @@ def model_to_mlayer(model):
             raise TypeError("Too many slabs (only 28 slabs allowed)")
 
     # Convert slabs to sld parameters
-    print "\n".join(str(s) for s in slabs)
+    #print "\n".join(str(s) for s in slabs)
     values = []
     for layer in slabs:
         rho,irho,incoh = layer.material.sld(probe)

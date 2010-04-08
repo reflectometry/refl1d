@@ -174,13 +174,13 @@ def parse_file(filename):
 
     return header, data
 
-class NCNRLoader:
+class NCNRLoader(Monochromatic):
     def load(self, filename, **kw):
         return load(filename, instrument=self)
     def load_magnetic(self, filename, **kw):
         return load_magnetic(filename, instrument=self)
 
-class ANDR(Monochromatic, NCNRLoader):
+class ANDR(NCNRLoader):
     """
     Instrument definition for NCNR AND/R diffractometer/reflectometer.
     """
@@ -191,7 +191,7 @@ class ANDR(Monochromatic, NCNRLoader):
     d_s1 = 230.0 + 1856.0
     d_s2 = 230.0
 
-class NG1(Monochromatic, NCNRLoader):
+class NG1(NCNRLoader):
     """
     Instrument definition for NCNR NG-1 reflectometer.
     """
@@ -204,7 +204,7 @@ class NG1(Monochromatic, NCNRLoader):
     d_s3 = 9*25.4
     d_s4 = 42*25.4
 
-class NG7(Monochromatic, NCNRLoader):
+class NG7(NCNRLoader):
     """
     Instrument definition for NCNR NG-7 reflectometer.
     """
@@ -216,7 +216,7 @@ class NG7(Monochromatic, NCNRLoader):
     d_s2 = None
     d_detector = 2000
 
-class XRay(Monochromatic, NCNRLoader):
+class XRay(NCNRLoader):
     """
     Instrument definition for NCNR X-ray reflectometer.
 

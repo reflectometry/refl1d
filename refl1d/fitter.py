@@ -11,14 +11,6 @@ import numpy
 from mystic import parameter, bounds as mbounds, monitor
 import time
 
-def preview(models=[], weights=None):
-    """Preview the models in preparation for fitting"""
-    problem = _make_problem(models=models, weights=weights)
-    xo = [p.value for p in problem.parameters]
-    result = Result(problem,xo)
-    result.show()
-    return result
-
 class FitBase:
     def __init__(self, problem):
         """Fit the models and show the results"""
@@ -51,6 +43,27 @@ class DEfit(FitBase):
         x = minimize()
         return x
 
+class AmoebaFit(FitBase):
+    def solve(self, **kw):
+        from simplex import simplex
+        self.best = numpy.inf
+        self.lasttime = time.clock()
+        self.lastfx = self.best
+        bounds = numpy.array([p.bounds.limits
+                              for p in self.problem.parameters]).T
+        result = simplex(f=self.problem, x0=self.problem.guess(), bounds=bounds,
+                         update_handler=self._monitor, **kw)
+        return result.x
+    def _monitor(self, k, n, x, fx):
+        t = time.clock()
+        improved = self.best > fx
+        if fx < self.lastfx and self.lasttime < t-60:
+            self.lasttime = t
+            self.lastfx = fx
+            parameter.summarize(self.problem.parameters)
+            print "step %d of %d"%(k,n),(fx if improved else "")
+        return True
+        
 class SNOBfit(FitBase):
     def solve(self, **kw):
         from snobfit.snobfit import snobfit
@@ -67,24 +80,70 @@ class SNOBfit(FitBase):
             parameter.summarize(self.problem.parameters)
         print k,(fx if improved else "")
 
+def preview(models=[], weights=None):
+    """Preview the models in preparation for fitting"""
+    problem = _make_problem(models=models, weights=weights)
+    xo = [p.value for p in problem.parameters]
+    result = Result(problem,xo)
+    result.show()
+    return result
+
 def fit(models=[], weights=None, fitter=DEfit, **kw):
     """
     Perform a fit
     """
-    t0 = time.clock()
     problem = _make_problem(models=models, weights=weights)
-    opt = fitter(problem)
-    x = opt.solve(**kw)
-    print "time",time.clock()-t0
+    if fitter is not None:
+        t0 = time.clock()
+        opt = fitter(problem)
+        x = opt.solve(**kw)
+        print "time",time.clock()-t0
+    else:
+        x = [p.value for p in problem.parameters]
     result = Result(problem,x)
     result.show()
-    return result    
+    return result
+
 
 class Result:
     def __init__(self, problem, solution):
         problem.setp(solution)
+        self.samples = numpy.array([solution])
         self.problem = problem
         self.parameters = deepcopy(problem.parameters)
+
+    def resample(self, samples=100, fitter=AmoebaFit, **kw):
+        """
+        Refit the result multiple times with resynthesized data, building
+        up an array in Result.samples which contains the best fit to the
+        resynthesized data.  *samples* is the number of samples to generate.  
+        *fitter* is the (local) optimizer to use. **kw are the parameters
+        for the optimizer.
+        """
+        opt = fitter(self.problem)
+        new_samples = []
+        try: # TODO: some solvers already catch KeyboardInterrupt
+            for i in range(samples):
+                print "== resynth %d of %d"%(i,samples)
+                self.problem.resynth_data()
+                self.problem.setp(self.samples[0])
+                x = opt.solve(**kw)
+                new_samples.append(x)
+                self.problem.setp(x)
+                parameter.summarize(self.problem.parameters)
+                print "[chisq=%g]"%self.problem.chisq()
+        except KeyboardInterrupt:
+            pass
+        self.samples = numpy.vstack([self.samples]+new_samples)
+
+        # Restore the original solution
+        self.problem.restore_data()
+        self.problem.setp(self.samples[-1])
+
+    def show_stats(self):
+        if self.samples.shape[0] > 1:
+            parameter.show_stats(self.parameters, self.samples)
+            parameter.show_correlations(self.parameters, self.samples)
 
     def save(self, basename):
         """
@@ -97,8 +156,13 @@ class Result:
         parameter.summarize(self.parameters, fid=fid)
         fid.close()
         self.problem.save(basename)
+        if self.samples.shape[0] > 1:
+            fid = open(basename+".mc","w")
+            fid.write("# "+"\t".join([p.name for p in self.parameters]))
+            numpy.savetxt(fid, self.samples.T, delimiter="\t")
+            fid.close()
+        return self
         
-
     def show(self):
         """
         Show the model parameters and plots
@@ -114,6 +178,7 @@ class Result:
         else:
             self.problem.plot()
             atexit.register(pylab.show)
+        return self
 
     def showmodel(self):
         print "== Model parameters =="
@@ -155,6 +220,12 @@ class FitProblem:
         Negative log likelihood of seeing data given model.
         """
         return self.fitness.nllf()
+    def resynth_data(self):
+        """Resynthesize data with noise from the uncertainty estimates."""
+        self.fitness.probe.resynth_data()
+    def restore_data(self):
+        """Restore original data after resynthesis."""
+        self.fitness.probe.restore_data()
     def guess(self):
         """
         Return the user values as the guess for the initial model.
@@ -307,6 +378,12 @@ class MultiFitProblem(FitProblem):
     def model_nllf(self):
         """Return cost function for all data sets"""
         return numpy.sum(f.model_nllf() for f in self.fits)
+    def resynth_data(self):
+        """Resynthesize data with noise from the uncertainty estimates."""
+        for f in self.fits: f.resynth_data()
+    def restore_data(self):
+        """Restore original data after resynthesis."""
+        for f in self.fits: f.restore_data()
     def residuals(self):
         resid = numpy.hstack([w*f.residuals()
                               for w,f in zip(self.weights,self.fits)])

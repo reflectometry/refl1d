@@ -143,10 +143,27 @@ class Probe(object):
             if R is not None: R = R[idx]
             if dR is not None: dR = dR[idx]
             self.R,self.dR = R,dR
+            # Remember the original so we can resynthesize as needed
+            self.Ro = R
 
         # By default the calculated points are the measured points.  Use
         # oversample() for a more accurate resolution calculations.
         self._set_calc(self.T,self.L)
+
+    def resynth_data(self):
+        """
+        Generate new data according to the model R ~ N(Ro,dR).
+        
+        The resynthesis step is a precursor to refitting the data, as is
+        required for certain types of monte carlo error analysis.
+        """
+        self.R = self.Ro + numpy.random.randn(*self.Ro.shape)*self.dR
+
+    def restore_data(self):
+        """
+        Restore the original data.
+        """
+        self.R = self.Ro
 
     def _set_calc(self, T, L):
         Q = TL2Q(T=T, L=L)
@@ -253,8 +270,8 @@ class Probe(object):
         Returns F = R(probe.Q), where R is magnitude squared reflectivity.
         """
         # Doesn't use ProbeCache, but this routine is not time critical
-        Srho,Sirho = (0,0) if substrate is None else substrate.sld(self)
-        Vrho,Virho = (0,0) if surface is None else surface.sld(self)
+        Srho,Sirho = (0,0) if substrate is None else substrate.sld(self)[:2]
+        Vrho,Virho = (0,0) if surface is None else surface.sld(self)[:2]
         I = numpy.ones_like(self.Q)
         calculator = fresnel.Fresnel(rho=Srho*I, irho=Sirho*I,
                                      Vrho=Vrho*I, Virho=Virho*I)

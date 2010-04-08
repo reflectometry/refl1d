@@ -980,6 +980,9 @@ class MlayerMagnetic(object):
         maxLayer, self.roughness_steps, _ = nums
     
         #4-7: Qmin  Qmax  nQ (data points in a, b, c and d)
+        # Note that we are only keeping the first one; for simulation all the
+        # others should be the same, and for loading, the datafile will tell
+        # us what Q to use.
         nums = [float(s) for s in lines[3].split()]
         self.Qmin, self.Qmax, self.num_Q = nums[0], nums[1], int(nums[2])
 
@@ -1023,7 +1026,7 @@ class MlayerMagnetic(object):
     def _write(self, fid):
         #1: wavelength  wavelength_dispersion  angular_divergence [aguide]
         fid.write("%g %g %g %g\n"%(self.wavelength, self.wavelength_dispersion,
-                                 self.angular_divergence, self.angle_guide))
+                                 self.angular_divergence, self.guide_angle))
 
         #2: intensity  background
         fid.write("%g %g\n"%(self.intensity, self.background))
