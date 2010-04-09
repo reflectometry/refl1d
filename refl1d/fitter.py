@@ -9,6 +9,7 @@ from copy import deepcopy
 from numpy import inf, nan, isnan
 import numpy
 from mystic import parameter, bounds as mbounds, monitor
+from mystic.formatnum import format_uncertainty
 import time
 
 class FitBase:
@@ -83,8 +84,7 @@ class SNOBfit(FitBase):
 def preview(models=[], weights=None):
     """Preview the models in preparation for fitting"""
     problem = _make_problem(models=models, weights=weights)
-    xo = [p.value for p in problem.parameters]
-    result = Result(problem,xo)
+    result = Result(problem,problem.guess())
     result.show()
     return result
 
@@ -99,7 +99,7 @@ def fit(models=[], weights=None, fitter=DEfit, **kw):
         x = opt.solve(**kw)
         print "time",time.clock()-t0
     else:
-        x = [p.value for p in problem.parameters]
+        x = problem.guess()
     result = Result(problem,x)
     result.show()
     return result
@@ -108,11 +108,12 @@ def fit(models=[], weights=None, fitter=DEfit, **kw):
 class Result:
     def __init__(self, problem, solution):
         problem.setp(solution)
+        self.chisq = [problem.chisq()]
         self.samples = numpy.array([solution])
         self.problem = problem
         self.parameters = deepcopy(problem.parameters)
 
-    def resample(self, samples=100, fitter=AmoebaFit, **kw):
+    def resample(self, samples=100, restart=False, fitter=AmoebaFit, **kw):
         """
         Refit the result multiple times with resynthesized data, building
         up an array in Result.samples which contains the best fit to the
@@ -121,20 +122,27 @@ class Result:
         for the optimizer.
         """
         opt = fitter(self.problem)
-        new_samples = []
+        chisqs = []
+        trials = []
         try: # TODO: some solvers already catch KeyboardInterrupt
             for i in range(samples):
                 print "== resynth %d of %d"%(i,samples)
                 self.problem.resynth_data()
-                self.problem.setp(self.samples[0])
+                if restart:
+                    parameter.randomize(self.problem.parameters)
+                else:
+                    self.problem.setp(self.samples[0])
                 x = opt.solve(**kw)
-                new_samples.append(x)
                 self.problem.setp(x)
+                chisq = self.problem.chisq()
+                trials.append(x)
+                chisqs.append(chisq)
                 parameter.summarize(self.problem.parameters)
-                print "[chisq=%g]"%self.problem.chisq()
+                print "[chisq=%g]"%chisq
         except KeyboardInterrupt:
             pass
-        self.samples = numpy.vstack([self.samples]+new_samples)
+        self.samples = numpy.vstack([self.samples]+trials)
+        self.chisq = self.chisq+chisqs
 
         # Restore the original solution
         self.problem.restore_data()
@@ -142,6 +150,9 @@ class Result:
 
     def show_stats(self):
         if self.samples.shape[0] > 1:
+            chisq = format_uncertainty(numpy.mean(self.chisq),numpy.std(self.chisq,ddof=1))
+            lo,hi = min(self.chisq),max(self.chisq)
+            print "Chisq for samples: %s in [%g,%g]"%(chisq,lo,hi)
             parameter.show_stats(self.parameters, self.samples)
             parameter.show_correlations(self.parameters, self.samples)
 
