@@ -438,7 +438,9 @@ def summarize(pars, fid=None):
     for p in sorted(pars, cmp=lambda x,y: cmp(x.name,y.name)):
         position = int(p.bounds.get01(p.value)*9.999999999)
         bar = ['.']*10
-        bar[position] = '|'
+        if position < 0: bar[0] = '<'
+        elif position > 9: bar[9] = '>'
+        else: bar[position] = '|'
         print >>fid, "%40s %s %10g in %s"%(p.name,"".join(bar),p.value,p.bounds)
 
 def show_stats(pars, samples, fid=None):
@@ -454,7 +456,9 @@ def show_stats(pars, samples, fid=None):
     for name,bounds,v,dv in sorted(data, cmp=lambda x,y: cmp(x[0],y[0])):
         position = int(bounds.get01(v)*9.999999999)
         bar = ['.']*10
-        bar[position] = '|'
+        if position < 0: bar[0] = '<'
+        elif position > 9: bar[9] = '>'
+        else: bar[position] = '|'
         bar = "".join(bar)
         valstr = format_uncertainty(v,dv)
         print >>fid, ("%40s %s %-15s in %s"%(name,bar,valstr,bounds))
@@ -516,6 +520,13 @@ def varying(s):
     """
 
     return [p for p in unique(s) if not p.fixed]
+
+def randomize(s):
+    """
+    Set random values to the parameters in the parameter set, with
+    values chosen according to the bounds.
+    """
+    for p in s: p.value = p.bounds.random(1)[0]
 
 # ========= trash ===================
 
