@@ -85,8 +85,8 @@ exp1 = Experiment(probe=probe1, sample=sample1)
 exp2 = Experiment(probe=probe2, sample=sample2)
 models = (exp1,exp2)
 
-preview(models=models).save('PdFit')
-#fit(models=models, npop=10).save('PdFit')
+#preview(models=models).save('PdFit')
+fit(models=models, npop=10).save('PdFit')
 
 save_mlayer(experiment=exp1,filename='Pd.staj')
 save_mlayer(experiment=exp2,filename='Pd+H.staj')

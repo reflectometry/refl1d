@@ -49,8 +49,9 @@ M = Experiment(probe=probe, sample=sample)
 if 0:
     result = preview(models=M)
 else:
-    result = fit(models=M) #, fitter=None)
-    result.resample(samples=100, restart=True, fitter=DEfit)
+    result = fit(models=M, fitter=None)
+    #result.resample(samples=100, restart=True, fitter=DEfit)
+    result.mcmc(samples=int(1e6))
     result.save('De2_VATR_2')
     result.show()
     result.show_stats()

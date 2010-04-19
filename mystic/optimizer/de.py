@@ -184,9 +184,9 @@ class DifferentialEvolution(solver.Strategy):
         self.npop = npop
 
     def default_termination_conditions(self, problem):
-        success = stop.Cf(tol=1e-5,scaled=False)
+        success = stop.Cf(tol=1e-7,scaled=False)
         #maxiter = 10
-        maxiter = len(problem.parameters)*100
+        maxiter = len(problem.parameters)*200
         #maxfun  = self.npop*maxiter
         failure = stop.Steps(maxiter)
         return success,failure

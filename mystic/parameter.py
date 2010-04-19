@@ -443,56 +443,6 @@ def summarize(pars, fid=None):
         else: bar[position] = '|'
         print >>fid, "%40s %s %10g in %s"%(p.name,"".join(bar),p.value,p.bounds)
 
-def show_stats(pars, samples, fid=None):
-    """
-    Print a stylized list of parameter names and values with range bars.
-
-    Report mean +/- std of the samples as the parameter values.
-    """
-    if fid is None: fid = sys.stdout
-
-    val,err = numpy.mean(samples, axis=0), numpy.std(samples, axis=0, ddof=1)
-    data = [(p.name, p.bounds, v, dv) for p,v,dv in zip(pars,val,err)]
-    for name,bounds,v,dv in sorted(data, cmp=lambda x,y: cmp(x[0],y[0])):
-        position = int(bounds.get01(v)*9.999999999)
-        bar = ['.']*10
-        if position < 0: bar[0] = '<'
-        elif position > 9: bar[9] = '>'
-        else: bar[position] = '|'
-        bar = "".join(bar)
-        valstr = format_uncertainty(v,dv)
-        print >>fid, ("%40s %s %-15s in %s"%(name,bar,valstr,bounds))
-
-def show_correlations(pars, samples, fid=None):
-    """
-    List correlations between parameters in descending order.
-    """
-    if 1: # Use correlation coefficient
-        R = numpy.corrcoef(samples.T)
-        corr = [(i,j,R[i,j]) 
-                for i in range(len(pars))
-                for j in range(i+1, len(pars))]
-        # Trim those which are not significant
-        corr = [(i,j,r) for i,j,r in corr if abs(r) > 0.2]
-        corr = list(sorted(corr, cmp=lambda x,y: cmp(abs(y[2]),abs(x[2]))))
-  
-    else: # Use ??
-        z = util.zscore(samples, axis=0)
-        # Compute all cross correlations
-        corr = [(i,j,xcorr(z[i],z[j]))
-                for i in range(j+1, len(pars))
-                for j in range(len(pars))]
-        # Trim those which are not significant
-        corr = [(i,j,r) for i,j,r in corr if abs(r-2) > 0.5]
-        # Sort the remaining list
-        corr = list(sorted(corr, cmp=lambda x,y: cmp(abs(y[2]-2),abs(x[2]-2))))
-
-    # Print the remaining correlations
-    if len(corr) > 0:
-        print >>fid, "== Parameter correlations =="
-        for i,j,r in corr:
-            print >>fid, pars[i].name, "X", pars[j].name, ":", r
-
 def unique(s):
     """
     Return the unique set of parameters
@@ -527,6 +477,9 @@ def randomize(s):
     values chosen according to the bounds.
     """
     for p in s: p.value = p.bounds.random(1)[0]
+
+def current(s):
+    return [p.value for p in s]
 
 # ========= trash ===================
 
