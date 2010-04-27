@@ -49,13 +49,14 @@ functions::
     nice_range(lo,hi)
         return (lo,hi) limited to 2 significant digits
 """
+from __future__ import division
 __all__ = ['pm','pmp','pm_raw','pmp_raw', 'nice_range', 'init_bounds',
            'Unbounded', 'Bounded', 'BoundedAbove', 'BoundedBelow',
            'Distribution', 'Normal', 'SoftBounded']
 
 import math
 import numpy
-from numpy import (isinf, inf, nan, e, pi)
+from numpy import (isinf, inf, nan, e, pi, log)
 RNG = numpy.random
 
 try:
@@ -278,9 +279,9 @@ class Unbounded(Bounds):
     The random initial condition is assumed to be between 0 and 1
 
     The probability is uniformly 1/inf everywhere, which means the negative
-    log likelihood of P is inf everywhere.  This isn't a particularly useful
-    result, since minimizing
-    Likelihood returns 0, so the choice of value doesn't directly affect the fit.
+    log likelihood of P is inf everywhere.  A value inf will interfere
+    with optimization routines, and so we instead choose P == 1 everywhere.
+    
 
     Convert sign*m*2^e to sign*(e+1023+m), yielding a value in [-2048,2048].
     This can then be converted to a value in [0,1].
@@ -312,6 +313,11 @@ class BoundedBelow(Bounds):
     Logarithmic compression works by converting sign*m*2^e+base to
     sign*(e+1023+m), yielding a value in [0,2048]. This can then be
     converted to a value in [0,1].
+    
+    Note that the likelihood function is problematic: the true probability
+    of seeing any particular value in the range is infintesimal, and that
+    is indistinguishable from values outside the range.    Instead we say
+    that P = 1 in range, and 0 outside.
     """
     def __init__(self, base):
         self.limits = (base,inf)
@@ -355,6 +361,11 @@ class BoundedAbove(Bounds):
     Logarithmic compression works by converting sign*m*2^e+base to
     sign*(e+1023+m), yielding a value in [0,2048].  This can then be
     converted to a value in [0,1].
+    
+    Note that the likelihood function is problematic: the true probability
+    of seeing any particular value in the range is infintesimal, and that
+    is indistinguishable from values outside the range.    Instead we say
+    that P = 1 in range, and 0 outside.
     """
     def __init__(self, base):
         self.limits = (-inf,base)
@@ -397,23 +408,16 @@ class Bounded(Bounds):
     """
     def __init__(self, lo, hi):
         self.limits = (lo,hi)
+        self._nllf_scale = log(hi-lo)
     def random(self, n=1):
         lo,hi = self.limits
         return RNG.uniform(lo, hi, size=n)
     def nllf(self, value):
         lo,hi = self.limits
-        return 0 if lo<=value<=hi else inf
+        return self._nllf_scale if lo<=value<=hi else inf
     def get01(self, x):
         lo,hi = self.limits
         return float(x-lo)/(hi-lo) if hi-lo>0 else 0
-    def nllf(self, value):
-        lo,hi = self.limits
-        if value < lo:
-            return -4
-        elif value <= hi:
-            return 0
-        else:
-            return 4
     def put01(self, v):
         lo,hi = self.limits
         return (hi-lo)*v + lo
@@ -472,14 +476,15 @@ class Normal(Distribution):
 
     def __init__(self, mean=0, std=1):
         self.dist = normal_distribution(mean, std)
+        self._nllf_scale = log(sqrt(2*pi*std**2))
     def nllf(self, value):
         # P(v) = exp(-0.5*(v-mean)**2/std**2)/sqrt(2*pi*std**2)
         # -log(P(v)) = -(-0.5*(v-mean)**2/std**2 - log( (2*pi*std**2) ** 0.5))
-        #            = 0.5*(v-mean)**2/std**2 + log(2*pi)/2 + log(std)
-        # Scaling it P(0) = 1 removes the constant term sqrt(2 pi std^2)
+        #            = 0.5*(v-mean)**2/std**2 + log(2*pi*std**2)/2
         mean,std = self.dist.args
-        return 0.5*((value-mean)/std)**2
+        return 0.5*((value-mean)/std)**2 + self._nllf_scale
     def residual(self, value):
+        mean,std = self.dist.args
         return (value-mean)/std
     def __getstate__(self):
         return self.dist.args # args is mean,std
@@ -503,24 +508,30 @@ class SoftBounded(Bounds):
     constraints, and this acts just like the rectangular distribution,
     but with clipping.
     """
-    def __init__(self, lo, hi, width=1):
-        self._lo,self._hi,self._width=lo,hi,width
+    def __init__(self, lo, hi, std=1):
+        self._lo,self._hi,self._std=lo,hi,std
+        self._nllf_scale = log( hi-lo + sqrt(2*pi*std) )
     def random(self, n=1):
         return RNG.uniform(self._lo, self._hi, size=n)
     def nllf(self, value):
+        # To turn f(x) = 1 if x in [lo,hi] else G(tail)
+        # into a probability p, we need to normalize by \int{f(x)dx},
+        # which is just hi-lo + sqrt(2*pi*std**2).
         if value < self._lo:
-            return (float(self._lo-value)/self._width)**2/2
+            z = self._lo-value
         elif value > self.hi:
-            return (float(value-self._hi)/self._width)**2/2
+            z = value-self._hi
         else:
-            return 0
+            z = 0
+        return (z/self._std)**2/2 + self._nllf_scale
     def residual(self, value):
         if value < self._lo:
-            return -float(self._lo-value)/self._width
+            z = self._lo-value
         elif value > self.hi:
-            return float(value-self._hi)/self._width
+            z = value-self._hi
         else:
-            return 0
+            z = 0
+        return z/self._std
     def get01(self, x):
         v = float(x - self._lo)/(self._hi-self._lo)
         return v if 0 <= v <= 1 else (0 if v < 0 else 1)

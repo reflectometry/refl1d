@@ -1,4 +1,4 @@
-import sys; sys.path.append('../..')
+#import sys; sys.path.append('../..'); sys.path.append('../../dream')
 from math import pi
 
 from refl1d import *
@@ -48,11 +48,14 @@ Pd_slab.interface.range(0,200)
 M = Experiment(probe=probe, sample=sample)
 if 0:
     result = preview(models=M)
-else:
+elif 0:
     result = fit(models=M, fitter=None)
     #result.resample(samples=100, restart=True, fitter=DEfit)
     result.mcmc(samples=int(1e6))
     result.save('De2_VATR_2')
     result.show()
     result.show_stats()
+else:
+    state = draw_samples(models=M, generations=3000)
+    state.save('De2_VATR_2')
 

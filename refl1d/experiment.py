@@ -35,23 +35,26 @@ class ExperimentBase:
         self._cache = {}
 
     def residuals(self):
+        if self.probe.R is None:
+            raise ValueError("No data from which to calculate residuals")
         if 'residuals' not in self._cache:
             Q,R = self.reflectivity()
-            if self.probe.R is not None:
-                self._cache['residuals'] = (self.probe.R - R)/self.probe.dR
-            else:
-                self._cache['residuals'] = numpy.zeros_like(Q)
+            self._cache['residuals'] = (self.probe.R - R)/self.probe.dR
         return self._cache['residuals']
 
     def nllf(self):
         """
-        Return the -log(P(data|model)), scaled to P = 1 if the data
-        exactly matches the model.
+        Return the -log(P(data|model)).
 
-        This is just sum( resid**2/2 + log(2*pi*dR**2)/2 ) with the
-        constant log(2 pi dR^2)/2 removed.
+        Using the assumption that data uncertainty is uncorrelated, with
+        measurements normally distributed with mean R and variance dR**2,
+        this is just sum( resid**2/2 + log(2*pi*dR**2)/2 ).
         """
-        return numpy.sum(self.residuals()**2)/2
+        if 'nllf_scale' not in self._cache:
+            if self.probe.dR is None:
+                raise ValueError("No data from which to calculate nllf")
+            self._cache['nllf_scale'] = numpy.sum(numpy.log(2*pi*self.probe.dR**2))
+        return numpy.sum(self.residuals()**2) + self._cache['nllf_scale']
 
     def plot_reflectivity(self, show_resolution=False):
         Q,R = self.reflectivity()
