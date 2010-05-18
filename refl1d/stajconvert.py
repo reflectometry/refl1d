@@ -1,5 +1,5 @@
 import numpy
-from numpy import tan, cos, sqrt, radians, pi
+from numpy import tan, cos, sqrt, radians, degrees, pi
 from .experiment import Experiment
 from .staj import MlayerModel
 from .model import Slab, Stack
@@ -78,10 +78,11 @@ def _mlayer_to_probe(s):
     # =>  dT = tan(T)*sqrt((dQ/Q)^2 - (dL/L)^2))
     #        = sqrt( (dQ*L/4*pi*sin(T))^2*(sin(T)/cos(T))^2 - (tan(T)*dL/L)^2 )
     #        = sqrt( (dQ*L/4*pi*cos(T))^2 - (tan(T)*dL/L)^2 )
-    dQ = s.resolution(Q)
+    dQ = s.FWHMresolution(Q)
     L,dL = s.wavelength,s.wavelength_dispersion
     T = QL2T(Q=Q,L=s.wavelength)
     dT = sqrt( (dQ*L/(4*pi*cos(radians(T))))**2 - (tan(radians(T))*dL/L)**2 )
+    dT = degrees(dT)
     
     # Hack: X-ray is 1.54; anything above 2 is neutron.  Doesn't matter since
     # materials are set as SLD rather than composition.
@@ -89,10 +90,11 @@ def _mlayer_to_probe(s):
         probe = XrayProbe
     else:
         probe = NeutronProbe
-    return probe(T=T,dT=dT,L=L,dL=dL,data=(R,dR),
-                 theta_offset=s.theta_offset,
-                 background=s.background,
-                 intensity=s.intensity)
+    probe = probe(T=T,dT=dT,L=L,dL=dL,data=(R,dR),
+                  theta_offset=s.theta_offset,
+                  background=s.background,
+                  intensity=s.intensity)
+    return probe
 
 
 def model_to_mlayer(model):
@@ -120,7 +122,7 @@ def model_to_mlayer(model):
     else:
         staj.Qmin, staj.Qmax = min(probe.Q), max(probe.Q)
         staj.num_Q = len(probe.Q)
-    staj.fit_resolution(probe.Q, probe.dQ)
+    staj.fit_FWHMresolution(probe.Q, sigma2FWHM(probe.dQ))
 
     # Interpret slabs and repeats
     sections = []

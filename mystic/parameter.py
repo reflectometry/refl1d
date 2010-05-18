@@ -381,16 +381,18 @@ _abs = function(abs)
 
 
 def flatten(s):
-    if isinstance(s, (tuple,list,set)):
+    if isinstance(s, (tuple,list)):
         return reduce(lambda a,b: a + flatten(b), s, [])
+    elif isinstance(s, set):
+        raise TypeError("parameter flattening cannot order sets")
     elif isinstance(s, dict):
-        return reduce(lambda a,b: a + flatten(b), s.values(), [])
+        return reduce(lambda a,b: a + flatten(s[b]), sorted(s.keys()), [])
     elif isinstance(s, BaseParameter):
         return [s]
     elif s is None:
         return []
     else:
-        raise TypeError,"set contains things other than parameters"
+        raise TypeError("don't understand type "+str(type(s)))
 
 def format(p, indent=0):
     """
@@ -446,13 +448,24 @@ def summarize(pars, fid=None):
 def unique(s):
     """
     Return the unique set of parameters
+    
+    The ordering is stable.  The same parameters/dependencies will always
+    return the same ordering, with the first occurrence first.
     """
     # Walk structures such as dicts and lists
-    pars = set(flatten(s))
+    pars = flatten(s)
     # Also walk parameter expressions
-    all_pars = pars|set(flatten([p.parameters() for p in pars]))
-    # Return the complete set of parameters
-    return all_pars
+    pars = pars + flatten([p.parameters() for p in pars])
+
+    # TODO: implement n log n rather than n^2 uniqueness algorithm
+    # Should be able to do it with a stable sort of ids, and keeping
+    # the first id of each run.
+    result = []
+    for p in pars:
+        if p not in result:
+            result.append(p)
+    # Return the complete set of parameters    
+    return result
 
 def fittable(s):
     """
@@ -464,7 +477,7 @@ def fittable(s):
 
 def varying(s):
     """
-    Return the list of fitted parameters in no particular order.
+    Return the list of fitted parameters in the model.
 
     This is the set of parameters that will vary during the fit.
     """

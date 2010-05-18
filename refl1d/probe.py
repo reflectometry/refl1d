@@ -44,13 +44,13 @@ in accordance with its statistical weight.
 # Unstitched seems like the better bet.
 
 import numpy
-from numpy import radians, sin, sqrt, tan, cos, pi, inf, sign
+from numpy import radians, sin, sqrt, tan, cos, pi, inf, sign, log
 from periodictable import nsf, xsf
 from calc import convolve
 from . import fresnel
 from material import Vacuum
 from mystic.parameter import Parameter
-from resolution import TL2Q, dTdL2dQ
+from .util import TL2Q, dTdL2dQ
 
 class Probe(object):
     """
@@ -85,8 +85,17 @@ class Probe(object):
     in the cost function for the fit as if it were another measurement.  Note
     that the uncertainty in the peak position is not the same as the width
     of the peak.  The peak stays roughly the same as statistics are improved,
-    but the uncertainty in position and width will decrease.
-
+    but the uncertainty in position and width will decrease.[#Daymond2002]   
+    There is an additional uncertainty in the angle due to motor step size, 
+    easily computed from the variance in a uniform distribution.  Combined,
+    the uncertainty in *theta_offset* is::
+    
+        dT = w/sqrt(I) + d/sqrt(12)
+        
+    where *w* is the full-width of the peak in radians at half maximum, *I* 
+    is the integrated intensity under the peak and *d* is the motor step size
+    is radians.
+    
     *intensity* and *back_absorption* are generally not needed --- scaling
     the reflected signal by an appropriate intensity measurement will correct
     for both of these during reduction.  *background* may be needed,
@@ -103,6 +112,11 @@ class Probe(object):
     instance since it is not specific to the view.  The fresnel
     substrate and surface materials are a property of the sample,
     and should share the same material.
+
+    [#Daymond2002] M.R. Daymond, P.J. Withers and M.W. Johnson;
+    The expected uncertainty of diffraction-peak location",
+    Appl. Phys. A 74 [Suppl.], S112 - S114 (2002).
+    http://dx.doi.org/10.1007/s003390201392
     """
     polarized = False
     view = "fresnel"
@@ -149,6 +163,20 @@ class Probe(object):
         # By default the calculated points are the measured points.  Use
         # oversample() for a more accurate resolution calculations.
         self._set_calc(self.T,self.L)
+
+    def log10_to_linear(self):
+        """
+        Convert data from log to linear.
+        
+        Older reflectometry reduction code stored reflectivity in log base 10 
+        format.  Call probe.log10_to_linear() after loading this data to 
+        convert it to linear for subsequent display and fitting.
+        """
+        if self.Ro != None:
+            self.Ro = 10**self.Ro
+            if self.dR != None:
+                self.dR = self.Ro * self.dR/log(10)
+            self.R = self.Ro
 
     def resynth_data(self):
         """

@@ -293,10 +293,7 @@ class MlayerModel(object):
         fin.close()
         
         self = cls()
-        try:
-            self._parse(lines)
-        except:
-            raise ValueError("Improper staj file")
+        self._parse(lines)
         return self
 
     def save(self, filename):
@@ -310,7 +307,7 @@ class MlayerModel(object):
         finally:
             fid.close()
 
-    def resolution(self, Q):
+    def FWHMresolution(self, Q):
         """
         Return the resolution at Q for mlayer with the current settings
         for wavelength, wavelength divergence and angular divergence.
@@ -320,7 +317,7 @@ class MlayerModel(object):
         return (abs(Q) * self.wavelength_dispersion 
                 + 4 * pi * self.angular_divergence) / self.wavelength
         
-    def fit_resolution(self, Q, dQ, weight=1):
+    def fit_FWHMresolution(self, Q, dQ, weight=1):
         """
         Choose the best dL and dT to match the resolution dQ.
         
@@ -476,7 +473,7 @@ class MlayerModel(object):
         self.num_Q = int(nums[4])
         
         #4: profile_type ('E' for error function, 'H' for tanh)
-        self.roughness_profile = lines[3].strip()
+        self.roughness_profile = lines[3].strip().upper()[:1]
         if self.roughness_profile not in ('E','H'):
             raise ValueError("Expected roughness profile type E or H")
 

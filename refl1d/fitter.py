@@ -1,6 +1,5 @@
 """
 Adaptors for fitting.
-
 *WARNING* within models self.parameters() returns a tree of all possible
 parameters associated with the model.  Within fit problems, self.parameters
 is a list of fitted parameters only.
@@ -95,6 +94,9 @@ def preview(models=[], weights=None):
     result = Result(problem, problem.guess())
     result.show()
     return result
+
+def mesh(models=[], weights=None, parameters=None):
+    problem = _make_problem(models=models, weights=weights)
 
 def fit(models=[], weights=None, fitter=DEfit, **kw):
     """

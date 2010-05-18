@@ -71,9 +71,10 @@ def load(filename, instrument=None, **kw):
     Q,R,dR = data
     resolution = instrument.resolution(Q, **header)
     probe = resolution.probe(data=(R,dR))
-    probe.title = header['title']
-    probe.date = header['date']
-    probe.instrument = header['instrument']
+    probe.title = header['title'] if 'title' in header else filename
+    probe.date = header['date'] if 'date' in header else "unknown"
+    probe.instrument = (header['instrument'] if 'instrument' in header 
+                        else instrument.instrument)
     probe.filename = filename
     return probe
 
