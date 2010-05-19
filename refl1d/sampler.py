@@ -16,12 +16,18 @@ class Model(dream.MCMCModel):
         """
         self.model = model
         self.bounds = zip(*[p.bounds.limits for p in model.parameters])
+        self.labels = [p.name for p in model.parameters]
 
     def nllf(self, x, RNG=numpy.random):
         """Negative log likelihood of seeing models given parameters *x*"""
         return self.model.nllf(x)
+    
+    def plot(self, x):
+        """Display the contents of the model in the current figure"""
+        self.model.setp(x)
+        self.model.plot()
 
-def draw_samples(models=None, weights=None, chains=4, **kw):
+def draw_samples(models=None, weights=None, chains=10, **kw):
     """
     Draw random samples from the likelihood surface of the models.
     """
@@ -41,8 +47,6 @@ def random_population(problem, pop_size):
     Generate a random population from the problem parameters.
     """
     # Generate a random population
-    ndim = len(problem.parameters)
-    pop_size = int(pop_size * ndim)
     population = [p.bounds.random(pop_size) for p in problem.parameters]
     population = numpy.array(population).T
 

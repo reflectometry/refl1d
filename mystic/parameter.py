@@ -190,7 +190,7 @@ class Parameter(BaseParameter):
         return self.bounds.residual(self.value)
 
     def valid(self):
-        return not isinf(self.nllf())
+        return not numpy.isinf(self.nllf())
 
     def format(self):
         return "%s=%g in %s"%(self,self.value,self.bounds)
@@ -438,11 +438,14 @@ def summarize(pars, fid=None):
     """
     if fid is None: fid = sys.stdout
     for p in sorted(pars, cmp=lambda x,y: cmp(x.name,y.name)):
-        position = int(p.bounds.get01(p.value)*9.999999999)
-        bar = ['.']*10
-        if position < 0: bar[0] = '<'
-        elif position > 9: bar[9] = '>'
-        else: bar[position] = '|'
+        if not numpy.isfinite(p.value):
+            bar = "*invalid* "
+        else:
+            position = int(p.bounds.get01(p.value)*9.999999999)
+            bar = ['.']*10
+            if position < 0: bar[0] = '<'
+            elif position > 9: bar[9] = '>'
+            else: bar[position] = '|'
         print >>fid, "%40s %s %10g in %s"%(p.name,"".join(bar),p.value,p.bounds)
 
 def unique(s):

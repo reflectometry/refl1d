@@ -232,8 +232,8 @@ class MCMCDraw(object):
         save_state(self,filename)
 
     def show(self, portion=0.8):
-        from views import plot_state
-        plot_state(self, portion=portion)
+        from views import plot_all
+        plot_all(self, portion=portion)
 
     def _generation(self, new_draws, x, logp, accept):
         """
@@ -511,7 +511,10 @@ def _sample(state, portion, vars, selection):
     if selection not in [None, {}]:
         idx = True
         for v,r in selection.items():
-            idx = idx & (points[:,v]>=r[0]) & (points[:,v]<=r[1])
+            if v == 'logp':
+                idx = idx & (logp>=r[0]) & (logp<=r[1])
+            else:
+                idx = idx & (points[:,v]>=r[0]) & (points[:,v]<=r[1])
         points = points[idx,:]
         logp = logp[idx]
     if vars != None:

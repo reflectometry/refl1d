@@ -4,7 +4,7 @@ from .experiment import Experiment
 from .staj import MlayerModel
 from .model import Slab, Stack
 from .material import SLD
-from .util import QL2T
+from .util import QL2T,sigma2FWHM
 from .probe import NeutronProbe, XrayProbe
 
 def load_mlayer(filename):

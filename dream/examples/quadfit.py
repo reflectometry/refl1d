@@ -16,5 +16,6 @@ sampler = Dream(model=model,
                 generations=500,
                 )
 
-state = sampler.sample()
-plot_all(state)
+mc = sampler.sample()
+figure(6); model.plot(mc.best()[0])
+plot_all(mc)

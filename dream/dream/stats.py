@@ -1,7 +1,7 @@
 import numpy
 from numpy import mean, std
 
-def stats(x, weights):
+def stats(x, weights=None):
     if weights == None:
         mean, std = numpy.mean(x), numpy.std(x,ddof=1)
     else:
@@ -11,6 +11,8 @@ def stats(x, weights):
         std = numpy.sqrt(var)
         
     return mean, std
+
+
 
 def credible_interval(x, ci=0.95, weights=None):
     """

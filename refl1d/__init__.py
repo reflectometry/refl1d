@@ -66,7 +66,7 @@ from .model import Slab, Stack
 from .polymer import TetheredPolymer, VolumeProfile, layer_thickness
 from .interface import Erf
 from .probe import Probe, NeutronProbe, XrayProbe
-from .fitter import preview, fit, DEfit, SNOBfit
+from .fitter import preview, fit, DEfit, SNOBfit, mesh
 from .sampler import draw_samples
 from .stajconvert import load_mlayer, save_mlayer
 from . import ncnrdata, snsdata

@@ -95,8 +95,20 @@ def preview(models=[], weights=None):
     result.show()
     return result
 
-def mesh(models=[], weights=None, parameters=None):
+def mesh(models=[], weights=None, vars=None, n=40):
     problem = _make_problem(models=models, weights=weights)
+
+    print "initial chisq",problem.chisq()
+    x,y = [numpy.linspace(p.bounds.limits[0],p.bounds.limits[1],n) for p in vars]
+    p1, p2 = vars
+    def fn(xi,yi):
+        p1.value, p2.value = xi,yi
+        problem.model_update()
+        #parameter.summarize(problem.parameters)
+        return problem.chisq()
+    z = [[fn(xi,yi) for xi in x] for yi in y]
+    return x,y,numpy.asarray(z) 
+    
 
 def fit(models=[], weights=None, fitter=DEfit, **kw):
     """
@@ -463,7 +475,8 @@ class FitProblem:
     def save(self, basename):
         self.fitness.save(basename)
 
-    def plot(self):
+    def plot(self, p=None):
+        if p != None: self.setp(p)
         self.fitness.plot()
         import pylab
         pylab.text(0, 0, 'chisq=%g' % self.chisq(),

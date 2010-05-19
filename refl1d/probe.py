@@ -175,7 +175,7 @@ class Probe(object):
         if self.Ro != None:
             self.Ro = 10**self.Ro
             if self.dR != None:
-                self.dR = self.Ro * self.dR/log(10)
+                self.dR = self.Ro * self.dR * log(10)
             self.R = self.Ro
 
     def resynth_data(self):

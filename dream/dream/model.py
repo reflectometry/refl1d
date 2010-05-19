@@ -123,6 +123,8 @@ class MCMCModel:
         raise NotImplemented
     def log_density(self, pop, RNG=numpy.random):
         return array([-self.nllf(x, RNG) for x in pop])
+    def plot(self, x):
+        pass
 
 class Density(MCMCModel):
     """
@@ -162,7 +164,7 @@ class Simulation(MCMCModel):
     where S is *sigma* and G is *gamma*.  
 
     The values of *sigma* and *gamma* can be uniform or can vary with the
-    individual measument points.
+    individual measurement points.
 
     Certain values of *gamma* select particular distributions::
         G = 0: normal
@@ -181,6 +183,10 @@ class Simulation(MCMCModel):
         err = self.f(x) - self.data
         log_p = self._offset - sum(self._cB * abs(err/self.sigma)**self._pow)
         return -log_p
+    def plot(self, x):
+        import pylab
+        v = pylab.arange(len(self.data))
+        pylab.plot(v,self.data,'x',v,self.f(x),'-')
 
 
 class MVNormal(MCMCModel):
