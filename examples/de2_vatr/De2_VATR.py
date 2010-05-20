@@ -61,7 +61,11 @@ Pd_slab.thickness.pmp(30)
 
 # Do the fit
 M = Experiment(probe=probe, sample=sample)
-if 0:
+if 1:
+    import refl1d.fitter
+    P = refl1d.fitter._make_problem(models=M)
+    for i,p in enumerate(P.parameters): print i+1,p.name
+elif 1:
     import refl1d.fitter
     problem = refl1d.fitter._make_problem(models=M,weights=None)
 

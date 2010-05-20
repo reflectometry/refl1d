@@ -37,5 +37,5 @@ if 0:  # roughness
 
 
 
-#preview(experiment)
-fit(experiment, npop=20)
+preview(experiment)
+#fit(experiment, npop=20)

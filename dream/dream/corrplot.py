@@ -21,8 +21,11 @@ from matplotlib.ticker import MaxNLocator
 #COLORMAP = cm.gist_earth_r #@UndefinedVariable
 #COLORMAP = cm.gist_ncar_r #@UndefinedVariable
 #COLORMAP = cm.Paired #@UndefinedVariable
-COLORMAP = colors.LinearSegmentedColormap.from_list('density',
-                                                    ('w','y','g','b','r'))
+try:
+    COLORMAP = colors.LinearSegmentedColormap.from_list('density',
+                                                        ('w','y','g','b','r'))
+except:
+    COLORMAP = cm.gist_earth_r
 
 class Corr2d:
     """
@@ -121,7 +124,7 @@ def _plot(fig, hists, labels, N):
     fig.subplots_adjust(left=.07, bottom=.07, top=.9, right=0.85,
                         wspace=0.0, hspace=0.0)
     cax = fig.add_axes([0.88, 0.2, 0.04, 0.6])
-    fig.colorbar(mapper, cax=cax, orientation='vertical')
+    # fig.colorbar(mapper, cax=cax, orientation='vertical')
     return ax
 
 def zoom(event,step):

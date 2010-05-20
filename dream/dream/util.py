@@ -22,7 +22,10 @@ def console():
         from matplotlib import interactive
         from matplotlib._pylab_helpers import Gcf
         for fig in Gcf.get_all_fig_managers():
-            fig.show()
+            try: # CRUFT
+                fig.show()
+            except:
+                fig.frame.Show()
         interactive(True)
 
         # Start an ipython shell with the caller's local variables

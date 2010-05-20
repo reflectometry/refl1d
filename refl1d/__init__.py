@@ -58,7 +58,7 @@ details.
 """
 
 from periodictable import elements
-from mystic import Parameter
+from refl1d.mystic import Parameter
 from .version import __version__
 from .experiment import Experiment
 from .material import SLD, Material, Compound, Mixture

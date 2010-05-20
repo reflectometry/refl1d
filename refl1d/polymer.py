@@ -151,7 +151,7 @@ class VolumeProfile(Layer):
     # TODO: test that thickness(z) matches the thickness of the layer
     def __init__(self, thickness=0, interface=0,
                  material=None, solvent=None, profile=None, **kw):
-        if profile is None or polymer is None or solvent is None:
+        if profile is None or material is None or solvent is None:
             raise TypeError("Need polymer, solvent and profile")
         self.thickness = Parameter.default(thickness, name="solvent thickness")
         self.interface = Parameter.default(interface, name="solvent interface")
@@ -179,15 +179,15 @@ class VolumeProfile(Layer):
 
     def parameters(self):
         P = dict(solvent=self.solvent.parameters(),
-                 material=self.polymer.parameters(),
+                 material=self.material.parameters(),
                  thickness=self.thickness,
                  interface=self.interface)
         for k in self._parameters:
             P[k] = getattr(self,k)
 
     def render(self, probe, slabs):
-        Mr,Mi,Minc = self.polymer.sld(probe)
-        Sr,Si,Minc = self.solvent.sld(probe)
+        Mr,Mi,Minc = self.material.sld(probe)
+        Sr,Si,Sinc = self.solvent.sld(probe)
         M = Mr + 1j*(Mi+Minc)
         S = Sr + 1j*(Si+Sinc)
         M,S = M[0],S[0]  # Temporary hack
