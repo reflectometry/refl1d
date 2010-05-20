@@ -109,10 +109,10 @@ from numpy.linalg import cholesky, inv
 import numpy.random
 from . import exppow
 try:
-    import pyina.launchers as launchers
     from pyina.launchers import mpirun_launcher
     from pyina.mappers import equalportion_mapper
     from pyina.ez_map import ez_map2 as pmap
+   #from pyina.ez_map import ez_map as pmap
 except:
     pmap = map
 
@@ -131,6 +131,10 @@ class MCMCModel:
     def nllf(self, x, RNG=numpy.random):
         raise NotImplemented
     def log_density(self, pop, RNG=numpy.random):
+        #FIXME: ez_map2 fails with pickle of numpy.ufunc
+        #FIXME: ez_map fails with IndentationError
+        #mapconf = dict(launcher=mpirun_launcher, mapper=equalportion_mapper)
+        #return array(pmap(lambda x: -self.nllf(x), pop, **mapconf))
         return array(pmap(lambda x: -self.nllf(x), pop))
         #return array([-self.nllf(x, RNG) for x in pop])
     def plot(self, x):
