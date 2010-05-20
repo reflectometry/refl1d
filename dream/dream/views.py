@@ -20,7 +20,7 @@ def plot_all(state, portion=0.8):
     figure(3); plot_R(state, portion=portion)
     figure(4); plot_logp(state, portion=portion)
     figure(5); plot_corrmatrix(state, portion=portion)
-    console()
+    show()
 
 def plot_var(state, var=0, portion=0.8, selection=None, **kw):
     points, logp = state.sample(portion=portion, vars=[var], 

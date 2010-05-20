@@ -108,7 +108,16 @@ from numpy import dot, diag, log, exp, pi, asarray, isscalar
 from numpy.linalg import cholesky, inv
 import numpy.random
 from . import exppow
+try:
+    import pyina.launchers as launchers
+    from pyina.launchers import mpirun_launcher
+    from pyina.mappers import equalportion_mapper
+    from pyina.ez_map import ez_map2 as pmap
+except:
+    pmap = map
 
+
+#TODO: find a better way of sharing RNG
 class MCMCModel:
     """
     MCMCM model abstract base class.
@@ -122,7 +131,8 @@ class MCMCModel:
     def nllf(self, x, RNG=numpy.random):
         raise NotImplemented
     def log_density(self, pop, RNG=numpy.random):
-        return array([-self.nllf(x, RNG) for x in pop])
+        return array(pmap(lambda x: -self.nllf(x), pop))
+        #return array([-self.nllf(x, RNG) for x in pop])
     def plot(self, x):
         pass
 
@@ -179,6 +189,8 @@ class Simulation(MCMCModel):
         self._offset = sum(log(wB/sigma * ones_like(data)))
         self._cB = cB
         self._pow = 2/(1+gamma)
+        #print "cB",cB,"sqrt(2pi)*wB",sqrt(2*pi)*wB
+        #print "offset",self._offset
     def nllf(self, x, RNG=numpy.random):
         err = self.f(x) - self.data
         log_p = self._offset - sum(self._cB * abs(err/self.sigma)**self._pow)
