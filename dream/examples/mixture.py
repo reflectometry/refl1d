@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 Multivariate gaussian mixture model.
 

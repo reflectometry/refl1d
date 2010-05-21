@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 Example model with strong correlations between the fitted parameters.
 

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 Multimodal demonstration using gaussian mixture model.
 
