@@ -1,6 +1,6 @@
-import numpy.random
 from numpy import exp, sqrt, minimum, where, cov, eye, array, dot
 from numpy.linalg import norm, cholesky, inv
+from . import util
 
 def paccept(logp_old, logp_try):
     """
@@ -9,7 +9,7 @@ def paccept(logp_old, logp_try):
     """
     return minimum(exp(logp_try - logp_old), 1)
 
-def metropolis(xtry, logp_try, xold, logp_old, RNG=numpy.random):
+def metropolis(xtry, logp_try, xold, logp_old):
     """
     Metropolis rule for acceptance or rejection
 
@@ -23,7 +23,7 @@ def metropolis(xtry, logp_try, xold, logp_old, RNG=numpy.random):
     Returns x_new, logp_new, alpha, accept
     """
     alpha = paccept(logp_try=logp_try, logp_old=logp_old)
-    accept = alpha > RNG.rand(*alpha.shape)
+    accept = alpha > util.RNG.rand(*alpha.shape)
     logp_new = where(accept, logp_try, logp_old)
     ## The following only works for vectors:
     # xnew = where(accept, xtry, xold)
@@ -33,23 +33,22 @@ def metropolis(xtry, logp_try, xold, logp_old, RNG=numpy.random):
 
     return xnew, logp_new, alpha, accept
 
-def dr_step(x, scale, RNG=numpy.random):
+def dr_step(x, scale):
 
     # Compute the Cholesky Decomposition of X
     Nchains, Npars = x.shape
     R = (2.38/sqrt(Npars)) * cholesky(cov(x.T) + 1e-5*eye(Npars))
 
     # Now do a delayed rejection step for each chain
-    delta_x = dot(RNG.randn(*x.shape), R)/scale
+    delta_x = dot(util.RNG.randn(*x.shape), R)/scale
 
     # Generate ergodicity term
-    eps = 1e-6 * RNG.randn(*x.shape)
+    eps = 1e-6 * util.RNG.randn(*x.shape)
 
     # Update x_old with delta_x and eps;
     return x + delta_x + eps, R
 
-def metropolis_dr(xtry, logp_try, x, logp, xold, logp_old, 
-                  alpha12, R, RNG=numpy.random):
+def metropolis_dr(xtry, logp_try, x, logp, xold, logp_old, alpha12, R):
     """
     Delayed rejection metropolis
     """
@@ -64,7 +63,7 @@ def metropolis_dr(xtry, logp_try, x, logp, xold, logp_old,
                 for x0,x1,x2 in zip(xold, x, xtry)])
     alpha13 = l2*q1*(1-alpha32)/(1-alpha12)
 
-    accept = alpha13 > RNG.rand(*alpha13.shape)
+    accept = alpha13 > util.RNG.rand(*alpha13.shape)
     logp_new = where(accept, logp_try, logp)
     ## The following only works for vectors:
     # xnew = where(accept, xtry, x)

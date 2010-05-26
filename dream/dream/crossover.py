@@ -45,10 +45,9 @@ For Extra.pCR != 'Update' in the matlab interface use::
 
 """
 from __future__ import division
-import numpy.random
 from numpy import hstack, empty, ones, zeros, cumsum, arange, \
     reshape, array, isscalar, asarray, std, sum
-
+from . import util
 
 class Crossover(object):
     """
@@ -65,11 +64,11 @@ class Crossover(object):
         CR, weight = [asarray(v,'d') for v in CR, weight]
         self.CR, self.weight = CR, weight/sum(weight)
 
-    def reset(self, Nsteps, Npop, RNG=numpy.random):
+    def reset(self, Nsteps, Npop):
         """
         Generate CR samples for the next Nsteps over a population of size Npop.
         """
-        self._CR_samples = gen_CR(self.CR, self.weight, Nsteps, Npop, RNG)
+        self._CR_samples = gen_CR(self.CR, self.weight, Nsteps, Npop)
 
     def __getitem__(self, N):
         """
@@ -105,11 +104,11 @@ class AdaptiveCrossover(object):
         self._count = zeros(N)     # No statistics for adaptation
         self._distance = zeros(N)
 
-    def reset(self, Nsteps, Npop, RNG=numpy.random):
+    def reset(self, Nsteps, Npop):
         """
         Generate CR samples for the next Nsteps over a population of size Npop.
         """
-        self._CR_samples = gen_CR(self.CR, self.weight, Nsteps, Npop, RNG)
+        self._CR_samples = gen_CR(self.CR, self.weight, Nsteps, Npop)
         
     def __getitem__(self, step):
         """
@@ -139,7 +138,7 @@ class AdaptiveCrossover(object):
         self.weight  = (self._distance/self._count) * (Npop/sum(self._distance))
 
 
-def gen_CR(CR, weight, Nsteps, Npop, RNG):
+def gen_CR(CR, weight, Nsteps, Npop):
     """
     Generates CR samples for Nsteps generations of size Npop.
     
@@ -149,13 +148,13 @@ def gen_CR(CR, weight, Nsteps, Npop, RNG):
         return CR[0] * ones( (Nsteps,Npop) )
     
     # Determine how many of each CR to use based on the weights
-    L = RNG.multinomial(Nsteps * Npop, weight)
+    L = util.RNG.multinomial(Nsteps * Npop, weight)
     
     # Turn this into index boundaries within a CR location vector
     L = hstack( (0, cumsum(L)) )
     
     # Generate a random location vector for each CR in the sample
-    r = RNG.permutation(Nsteps * Npop)
+    r = util.RNG.permutation(Nsteps * Npop)
 
     # Fill each location in the sample with the correct CR.
     sample = empty(r.shape)
@@ -186,6 +185,6 @@ def distance_per_CR(available_CRs, distances, CRs_used):
 
 if __name__ == "__main__":
     CR, weight = array([.25, .5, .75, .1]), array([.1, .6, .2, .1])
-    print gen_CR(CR, weight, 5, 4, numpy.random)
+    print gen_CR(CR, weight, 5, 4)
     # TODO: needs actual tests
     

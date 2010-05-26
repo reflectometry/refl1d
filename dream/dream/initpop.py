@@ -14,18 +14,17 @@ parameter at each of N levels.
 defined by the covariance matrix, cov.  Covariance defaults to
 diag(dx) if dx is provided as a parameter, or to I if it is not.
 
-Additional options are a random box, RNG.rand(M,N) or RNG.randn(M,N)
-where the random number generator (RNG) to use is numpy.random.
+Additional options are random box: rand(M,N) or random scatter: randn(M,N).
 """
 
 from __future__ import division
 
 __all__ = ['lhs_init', 'cov_init']
 
-import numpy.random
 from numpy import eye, diag, asarray
+from . import util
 
-def lhs_init(N, bounds, RNG=numpy.random):
+def lhs_init(N, bounds):
     """
     Latin Hypercube Sampling
 
@@ -34,11 +33,6 @@ def lhs_init(N, bounds, RNG=numpy.random):
     objects, with bounds.low and bounds.high can be used as well.  
     
     Note: Indefinite ranges are not supported.
-
-    The additional parameter *RNG* is for conditions where you want to 
-    control the random number generator to use.  It can, for example,
-    be used with RNG=numpy.random.RandomState(seed) to always generate
-    the same population.
     """
     try:
         xmin, xmax = bounds
@@ -48,7 +42,7 @@ def lhs_init(N, bounds, RNG=numpy.random):
     # Define the size of xmin
     nvar = len(xmin)
     # Initialize array ran with random numbers
-    ran = RNG.rand(N,nvar)
+    ran = util.RNG.rand(N,nvar)
 
     # Initialize array s with zeros
     s = numpy.empty((N,nvar))
@@ -56,13 +50,13 @@ def lhs_init(N, bounds, RNG=numpy.random):
     # Now fill s
     for j in range(nvar):
         # Random permutation
-        idx = RNG.permutation(N)+1
+        idx = util.RNG.permutation(N)+1
         P = (idx-ran[:,j])/N
         s[:,j] = xmin[j] + P*(xmax[j]-xmin[j])
 
     return s
 
-def cov_init(N, x, cov=None, dx=None, RNG=numpy.random):
+def cov_init(N, x, cov=None, dx=None):
     """
     Initialize *N* sets of random variables from a center at *x* and a 
     covariance matrix *cov*.
@@ -71,18 +65,13 @@ def cov_init(N, x, cov=None, dx=None, RNG=numpy.random):
     model with local minimum x with covariance matrix C::
 
         pop = cov_init(cov=C, x=x, N=20)
-
-    The additional parameter *RNG* is for conditions where you want to 
-    control the random number generator to use.  It can, for example,
-    be used with RNG=numpy.random.RandomState(seed) to always generate
-    the same population.
     """
     #return mean + dot(RNG.randn(N,len(mean)), chol(cov))
     if cov == None and dx == None: 
         cov = eye(len(x))
     elif cov == None:
         cov = diag(asarray(dx)**2)
-    return RNG.multivariate_normal(mean=x, cov=cov, size=N)
+    return util.RNG.multivariate_normal(mean=x, cov=cov, size=N)
 
 def demo():
     from numpy import arange

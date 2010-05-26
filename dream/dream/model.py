@@ -45,22 +45,17 @@ For more complex functions, you can subclass MCMCModel::
             ...
             self.bounds = bounds
             ...
-        def nnlf(self, x, RNG=numpy.random):
+        def nnlf(self, x):
             "Return the negative log likelihood of seeing x"
             p = probability of seeing x
             return -log(p)
 
     M = Model(..., bounds=M_bounds, ...)
 
-The parameter RNG is provided so that you have a source of random numbers
-for your simulation.  The RNG you are called with will have the same
-interface as numpy.random, but will [eventually] work correctly when
-running parallel simulations on different machines with predefined seed values.
-
 The MCMC program uses only two methods from the model::
 
-    apply_bounds(pop, RNG)
-    log_density(pop, RNG)
+    apply_bounds(pop)
+    log_density(pop)
 
 If your model provides these methods, you will not need to subclass MCMCModel
 in order to interact with DREAM.
@@ -106,7 +101,7 @@ __all__ = ['MCMCModel','Density','LogDensity','Simulation','MVNormal','Mixture']
 from numpy import sum, ones_like, array
 from numpy import dot, diag, log, exp, pi, asarray, isscalar
 from numpy.linalg import cholesky, inv
-import numpy.random
+from . import util
 from . import exppow
 try:
     from pyina.launchers import mpirun_launcher
@@ -117,7 +112,6 @@ except:
     pmap = map
 
 
-#TODO: find a better way of sharing RNG
 class MCMCModel:
     """
     MCMCM model abstract base class.
@@ -128,15 +122,15 @@ class MCMCModel:
     """
     labels = None
     bounds = None
-    def nllf(self, x, RNG=numpy.random):
+    def nllf(self, x):
         raise NotImplemented
-    def log_density(self, pop, RNG=numpy.random):
+    def log_density(self, pop):
         #FIXME: ez_map2 fails with pickle of numpy.ufunc
         #FIXME: ez_map fails with IndentationError
         #mapconf = dict(launcher=mpirun_launcher, mapper=equalportion_mapper)
         #return array(pmap(lambda x: -self.nllf(x), pop, **mapconf))
         return array(pmap(lambda x: -self.nllf(x), pop))
-        #return array([-self.nllf(x, RNG) for x in pop])
+        #return array([-self.nllf(x) for x in pop])
     def plot(self, x):
         pass
 
@@ -148,7 +142,7 @@ class Density(MCMCModel):
     """
     def __init__(self, f, bounds=None, labels=None):
         self.f, self.bounds, self.labels = f, bounds, labels
-    def nllf(self, x, RNG=numpy.random):
+    def nllf(self, x):
         return -log(self.f(x))
 
 class LogDensity(MCMCModel):
@@ -159,7 +153,7 @@ class LogDensity(MCMCModel):
     """
     def __init__(self, f, bounds=None, labels=None):
         self.f, self.bounds, self.labels = f, bounds, labels
-    def nllf(self, x, RNG=numpy.random):
+    def nllf(self, x):
         return -self.f(x)
  
 class Simulation(MCMCModel):
@@ -195,7 +189,7 @@ class Simulation(MCMCModel):
         self._pow = 2/(1+gamma)
         #print "cB",cB,"sqrt(2pi)*wB",sqrt(2*pi)*wB
         #print "offset",self._offset
-    def nllf(self, x, RNG=numpy.random):
+    def nllf(self, x):
         err = self.f(x) - self.data
         log_p = self._offset - sum(self._cB * abs(err/self.sigma)**self._pow)
         return -log_p
@@ -215,7 +209,7 @@ class MVNormal(MCMCModel):
         r = cholesky(sigma)
         self._rinv = inv(r)
         self._C = 0.5*len(mu)*log(2*pi) + sum(diag(r))
-    def nllf(self, x, RNG=numpy.random):
+    def nllf(self, x):
         mu,C,rinv = self.mu, self._C, self._rinv
         y = C + 0.5*sum( dot((x-mu), rinv)**2 )
         return y
@@ -240,7 +234,7 @@ class Mixture(MCMCModel):
         self.pairs = zip(models,weights)
         self.weight = sum(w for w in weights)
 
-    def nllf(self, x, RNG=numpy.random):
-        p = [w*exp(-M.nllf(x,RNG)) for M,w in self.pairs]
+    def nllf(self, x):
+        p = [w*exp(-M.nllf(x)) for M,w in self.pairs]
         return -log( sum(p)/self.weight )
 

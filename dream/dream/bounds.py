@@ -6,13 +6,12 @@ function operates on a point x, transforming it so that all dimensions
 are within the bounds.  Options are available, including reflecting,
 wrapping, clipping or randomizing the point, or ignoring the bounds.
 
-The returned bounds object should have an apply(x,RNG) method which 
-transforms the point *x*, possibly using a numpy style random number
-generator RNG.
+The returned bounds object should have an apply(x) method which 
+transforms the point *x*.
 """
 __all__ = ['set_bounds']
-import numpy.random
 from numpy import inf, isinf, asarray
+from . import util
 
 def make_bounds_handler(bounds, style='reflect'):
     """
@@ -55,7 +54,7 @@ def make_bounds_handler(bounds, style='reflect'):
     return f
 
 class Bounds(object):
-    def apply(self, x, RNG=numpy.random):
+    def apply(self, x):
         raise NotImplementedError
     def __call__(self, pop):
         for x in pop: self.apply(x)
@@ -68,7 +67,7 @@ class ReflectBounds(Bounds):
     def __init__(self, low, high):
         self.low, self.high = [asarray(v,'d') for v in low, high]
 
-    def apply(self, y, RNG=numpy.random):
+    def apply(self, y):
         """
         Update x so all values lie within bounds
         
@@ -82,7 +81,7 @@ class ReflectBounds(Bounds):
     
         # Randomize points which are still out of bounds
         idx = (y < minn) | (y > maxn)
-        y[idx] = minn[idx] + RNG.rand(sum(idx))*(maxn[idx]-minn[idx])
+        y[idx] = minn[idx] + util.RNG.rand(sum(idx))*(maxn[idx]-minn[idx])
         return y
 
 class ClipBounds(Bounds):
@@ -92,7 +91,7 @@ class ClipBounds(Bounds):
     def __init__(self, low, high):
         self.low, self.high = [asarray(v,'d') for v in low, high]
 
-    def apply(self, y, RNG=None):
+    def apply(self, y):
         minn, maxn = self.low, self.high
         idx = y < minn; y[idx] = minn[idx]
         idx = y > maxn; y[idx] = maxn[idx]       
@@ -106,7 +105,7 @@ class FoldBounds(Bounds):
     def __init__(self, low, high):
         self.low, self.high = [asarray(v,'d') for v in low, high]
 
-    def apply(self, y, RNG=numpy.random):
+    def apply(self, y):
         minn, maxn = self.low, self.high
 
         # Deal with semi-infinite cases using reflection
@@ -119,7 +118,7 @@ class FoldBounds(Bounds):
         
         # Randomize points which are still out of bounds
         idx = (y < minn) | (y > maxn)
-        y[idx] = minn[idx] + RNG.rand(sum(idx))*(maxn[idx]-minn[idx])
+        y[idx] = minn[idx] + util.RNG.rand(sum(idx))*(maxn[idx]-minn[idx])
 
         return y
 
@@ -130,7 +129,7 @@ class RandomBounds(Bounds):
     def __init__(self, low, high):
         self.low, self.high = [asarray(v,'d') for v in low, high]
 
-    def apply(self, y, RNG=numpy.random):
+    def apply(self, y):
         minn, maxn = self.low, self.high
 
         # Deal with semi-infinite cases using reflection
@@ -139,7 +138,7 @@ class RandomBounds(Bounds):
 
         # The remainder are selected uniformly from the bounded region
         idx = (y < minn) | (y > maxn)
-        y[idx] = minn[idx] + RNG.rand(sum(idx))*(maxn[idx]-minn[idx])
+        y[idx] = minn[idx] + util.RNG.rand(sum(idx))*(maxn[idx]-minn[idx])
 
         return y
 
@@ -150,7 +149,7 @@ class IgnoreBounds(Bounds):
     def __init__(self, low=None, high=None):
         self.low, self.high = [asarray(v,'d') for v in low, high]
 
-    def apply(self, y, RNG=numpy.random):
+    def apply(self, y):
         return y
 
 def test():

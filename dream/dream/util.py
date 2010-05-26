@@ -1,3 +1,5 @@
+import numpy.random as RNG
+
 def console():
     """
     Start the python console with the local variables available.

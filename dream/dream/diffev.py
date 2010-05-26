@@ -1,9 +1,9 @@
 from __future__ import division
-import numpy.random
 from numpy import zeros, dot, cov, eye, sqrt, all, where, sum
 from numpy.linalg import cholesky, LinAlgError
+from . import util
 
-def de_step(x,CR,max_pairs=2,eps=0.05, RNG=numpy.random):
+def de_step(x,CR,max_pairs=2,eps=0.05):
     """
     Generates offspring using METROPOLIS HASTINGS monte-carlo markov chain
     """
@@ -13,20 +13,20 @@ def de_step(x,CR,max_pairs=2,eps=0.05, RNG=numpy.random):
     delta_x = zeros( (Npop,Nvar) )
 
     # Full differential evolution 80% of the time
-    used = RNG.rand(Npop) < 4/5
+    used = util.RNG.rand(Npop) < 4/5
     
     # Chains evolve using information from other chains to create offspring
     for qq in range(Npop):
 
         # Generate a random permutation of individuals excluding the current
-        perm = RNG.permutation(Npop-1)
+        perm = util.RNG.permutation(Npop-1)
         perm[perm>=qq] += 1
 
         if used[qq]:
             
             # Select to number of vector pair differences to use in update
             # using k ~ discrete U[1,max pairs]
-            k = RNG.randint(max_pairs)+1
+            k = util.RNG.randint(max_pairs)+1
             # [PAK: same as k = DEversion[qq,1] in the old code]
             
             # Select 2*k members at random different from the current member
@@ -34,8 +34,8 @@ def de_step(x,CR,max_pairs=2,eps=0.05, RNG=numpy.random):
         
             # Select the dims to update based on the crossover ratio, making
             # sure at least one dim is selected
-            vars = where(RNG.rand(Nvar) > (1-CR[qq]))[0]
-            if len(vars) == 0: vars = [RNG.randint(Nvar)]
+            vars = where(util.RNG.rand(Nvar) > (1-CR[qq]))[0]
+            if len(vars) == 0: vars = [util.RNG.randint(Nvar)]
 
             # Weight the size of the jump inversely proportional to the 
             # number of contributions, both from the parameters being
@@ -47,7 +47,7 @@ def de_step(x,CR,max_pairs=2,eps=0.05, RNG=numpy.random):
             delta = sum(x[r1]-x[r2], axis=0)
 
             # Apply that step with F scaling and noise
-            noise = 1 + eps * (2 * RNG.rand(*delta.shape) - 1)
+            noise = 1 + eps * (2 * util.RNG.rand(*delta.shape) - 1)
             delta_x[qq,vars] = (noise*gamma*delta)[vars]
 
         else:  # 20% of the time, just use one pair and all dimensions
@@ -63,23 +63,23 @@ def de_step(x,CR,max_pairs=2,eps=0.05, RNG=numpy.random):
                 # Compute the Cholesky Decomposition of x_old
                 R = (2.38/sqrt(Nvar)) * cholesky(cov(x.T) + 1e-5*eye(Nvar))
                 # Generate jump using multinormal distribution
-                delta_x[qq] = dot(RNG.randn(*(1,Nvar)), R)
+                delta_x[qq] = dot(util.RNG.randn(*(1,Nvar)), R)
             except LinAlgError:
                 print "Bad cholesky"
-                delta_x[qq] = RNG.randn(Nvar)
+                delta_x[qq] = util.RNG.randn(Nvar)
 
 
     # Update x_old with delta_x and noise
-    x_new = x + delta_x + 1e-6*RNG.randn(*x.shape)
+    x_new = x + delta_x + 1e-6*util.RNG.randn(*x.shape)
 
     return x_new, used
 
 def test():
     from numpy import array,arange
     x = 100*arange(8*10).reshape((8,10))   # pop 10, vars 8
-    x = x + numpy.random.rand(*x.shape)*1e-6
+    x = x + RNG.rand(*x.shape)*1e-6
     CR = array([0,0,.2,.2,.8,.8,1,1])
-    x_new, used = de_step(x,CR,max_pairs=2,eps=0.05, RNG=numpy.random)
+    x_new, used = de_step(x,CR,max_pairs=2,eps=0.05)
     print """\
 The following table shows the expected portion of the dimensions that 
 are changed and the rounded value of the change for each point in the 

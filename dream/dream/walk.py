@@ -9,7 +9,7 @@ Random walk functions.
 from __future__ import division
 __all__ = ['walk']
 from numpy import asarray, ones_like, NaN, isnan
-from numpy.random import randn
+from . import util
 
 def walk(n=1000, mu=0, sigma=1, alpha=0.01, s0=NaN):
     """
@@ -51,16 +51,16 @@ def walk(n=1000, mu=0, sigma=1, alpha=0.01, s0=NaN):
 
     if mu.ndim < 2:
         if isnan(s0): 
-            s0 = mu + randn(nchains)*sigma
+            s0 = mu + util.RNG.randn(nchains)*sigma
         s = [s0*ones_like(mu)]
         for i in range(n-1):
-            s.append(s[-1] + alpha*(mu-s[-1]) + sigma*randn(nchains))
+            s.append(s[-1] + alpha*(mu-s[-1]) + sigma*util.RNG.randn(nchains))
     elif mu.ndim == 2:
         if isnan(s0):
-            s0 = mu[0] + randn(nchains)*sigma
+            s0 = mu[0] + util.RNG.randn(nchains)*sigma
         s = [s0*ones_like(mu[0])]
         for i in range(mu.shape[1]):
-            s.append(s[-1] + alpha*(mu[i]-s[-1]) + sigma*randn(nchains))
+            s.append(s[-1] + alpha*(mu[i]-s[-1]) + sigma*util.RNG.randn(nchains))
     else:
         raise ValueError("mu must be scalar, vector or 2D array")
     return asarray(s)

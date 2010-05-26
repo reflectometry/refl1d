@@ -5,12 +5,12 @@ Given a
 """
 
 from numpy import mean, std, sqrt, argsort, where, argmin, arange
-from numpy.random import randint
 from matplotlib.mlab import prctile
 from scipy.stats import t as student_t
 tinv = student_t.ppf
 from mahal import mahalanobis
 from acr import ACR
+from . import util
 
 def remove_outliers(state, x, logp, test='IQR', portion=0.5):
     """
@@ -34,7 +34,7 @@ def remove_outliers(state, x, logp, test='IQR', portion=0.5):
     for old in outliers:
         # Draw another chain at random, with replacement
         while True:
-            new = randint(Nchains)
+            new = util.RNG.randint(Nchains)
             if new not in outliers: break
         # Update the saved state and current population
         state._replace_outlier(old=old,new=new)
