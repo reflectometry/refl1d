@@ -28,7 +28,6 @@ def remove_outliers(state, x, logp, test='IQR', portion=0.5):
     # Grab the last part of the chain histories
     _, chains = state.logp()
     chain_len, Nchains = chains.shape
-    chain_len = int(chain_len*portion)    
     outliers = identify_outliers(test, chains[-chain_len:], x)
     
     # Loop over each outlier chain, replacing each with another

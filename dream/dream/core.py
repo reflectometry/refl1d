@@ -246,7 +246,7 @@ def run_dream(dream):
         # ---------------------------------------------------------------------
 
         # Calculate Gelman and Rubin convergence diagnostic
-        _, points, _ = state.chains()
+        _, points, _ = state.chains(unroll=True)
         R_stat = gelman(points, portion=0.5)
     
         if state.draws <= 0.1 * dream.draws:

@@ -15,6 +15,7 @@ sampler = Dream(model=LogDensity(rosen),
                 population=randn(20*n+4,n),
                 thinning=1,
                 generations=1000,
+                #cycles=3,
                 )
 
 state = sampler.sample()

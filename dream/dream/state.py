@@ -5,16 +5,25 @@ MCMC keeps track of a number of things during sampling.
 
 The results may be queried as follows::
 
-    logp()            : draws, logp
-    acceptance_rate() : draws, AR
-    sample()          : draws, point, logp
-    R_stat()          : draws, R
-    CR_weight()       : draws, CR_weight
-    best()            : best_x, best_logp
-    outliers()        : outliers
-    thinning
-    generation
+    generation, cycle, thinning
+    sample(condition) returns draws, points, logp
+    logp()            returns draws, logp
+    acceptance_rate() returns draws, AR
+    chains()          returns draws, chains, logp
+    R_stat()          returns draws, R
+    CR_weight()       returns draws, CR_weight
+    best()            returns best_x, best_logp
+    outliers()        returns outliers
     show()/save(file)/load(file)
+
+Data is stored in circular arrays, which keeps the last N generations and
+throws the rest away.  
+
+*generation* is the total number of generations drawn by the sampler.  
+
+*cycle* is the number of times around the circular array.  
+
+*thinning* is the number of generations to user per stored sample.
 
 draws[i] is the number of draws including those required to produce the
 information in the corresponding return vector.  Note that draw numbers 
@@ -28,12 +37,17 @@ a thinned set, with on element of logp[i] for each vector point[i,:].
 AR[i] is the acceptance rate at generation i, showing the proportion of
 proposed points which are accepted into the population.
 
-point[i,:] is the set of points in the differential evolution population
+chains[i,:,:] is the set of points in the differential evolution population
 at thinned generation i.  Ideally, the thinning rate of the MCMC process 
 is chosen so that thinned generations i and i+1 are independent samples 
 from the posterior distribution, though there is a chance that this may
 not be the case, and indeed, some points in generation i+1 may be identical 
 to those in generation i.  Actual generation number is i*thinning.
+
+points[i,:] is the ith point in a returned sample.  The i is just a place
+holder; there is no inherent ordering to the sample once they have been
+extracted from the chains.  Note that the sample may be from a marginal 
+distribution.  
 
 R[i] is the Gelman R statistic measuring convergence of the Markov chain.
 
@@ -198,6 +212,7 @@ class MCMCDraw(object):
     def __init__(self, Ngen, Nthin, Nupdate, Nvar, Npop, Ncr, thinning):
         # Total number of draws so far
         self.draws = 0
+        self.cycle = 0
 
         # Maximum observed likelihood
         self._best_x = None
@@ -231,7 +246,7 @@ class MCMCDraw(object):
     def save(self, filename):
         save_state(self,filename)
 
-    def show(self, portion=0.8):
+    def show(self, portion=None):
         from views import plot_all
         plot_all(self, portion=portion)
 
@@ -259,7 +274,9 @@ class MCMCDraw(object):
         self._gen_acceptance_rate[i] = 100*sum(accept)/new_draws
         self._gen_logp[i] = logp
         i = i+1
-        if i == len(self._gen_draws): i = 0
+        if i == len(self._gen_draws): 
+            i = 0
+            self.cycle += 1
         self._gen_index = i
 
         # Keep every nth iteration
@@ -326,10 +343,14 @@ class MCMCDraw(object):
         Note that draw[i] represents the total number of samples taken,
         including those for the samples in logp[i].
         """
-        end = (self.generation if self.generation == self._gen_index 
-               else len(self._gen_draws))
-        return (self._gen_draws[:end], 
-                self._gen_logp[:end])
+        vectors = self._gen_draws, self._gen_logp
+        N,idx = self.generation, self._gen_index
+        if N == idx:
+            return [v[:idx] for v in vectors]
+        elif idx > 0:
+            return [numpy.roll(v,-idx,axis=0) for v in vectors]
+        else:
+            return vectors
 
     def acceptance_rate(self):
         """
@@ -341,12 +362,107 @@ class MCMCDraw(object):
             plot(draw, AR)
         
         """
-        end = (self.generation if self.generation == self._gen_index 
-               else len(self._gen_draws))
-        return (self._gen_draws[:end], 
-                self._gen_acceptance_rate[:end])
-
+        vectors = self._gen_draws, self._gen_acceptance_rate
+        N,idx = self.generation, self._gen_index
+        if N == idx:
+            return [v[:idx] for v in vectors]
+        elif idx > 0:
+            return [numpy.roll(v,-idx,axis=0) for v in vectors]
+        else:
+            return vectors
             
+    def chains(self, unroll=False):
+        """
+        Returns the observed Markov chains and the corresponding likelihoods.
+        
+        The return value is a tuple (*draws*,*chains*,*logp*).
+
+        *draws* is the number of samples taken up to and including the samples
+        for the current generation.
+        
+        *chains* is a three dimensional array of generations X chains X vars
+        giving the set of points observed for each chain in every generation.
+        Only the thinned samples are returned.
+        
+        *logp* is a two dimensional array of generation X population giving
+        the log likelihood of observing the set of variable values given in
+        chains.
+        
+        NOTE: Unless called with mc.chains(unroll=True), the chains are 
+        returned as a circular array with the starting index somewhere in 
+        the middle.
+        """
+        vectors = self._thin_draws,self._thin_point,self._thin_logp
+        N,idx = self._thin_count, self._thin_index
+        if N == idx:
+            return [v[:idx] for v in vectors]
+        elif unroll and idx > 0:
+            return [numpy.roll(v,-idx,axis=0) for v in vectors]
+        else:
+            return vectors
+
+
+    def R_stat(self):
+        """
+        Return the R-statistics convergence statistic for each variable.
+
+        For example, to plot the convergence of all variables over time::
+        
+            draw, R = state.R_stat()
+            plot(draw, R)
+    
+        See :module:`dream.gelman` and references detailed therein.
+        """
+        vectors = self._update_draws,self._update_R_stat
+        N,idx = self._update_count, self._update_index
+        if N == idx:
+            return [v[:idx] for v in vectors]
+        elif idx > 0:
+            return [numpy.roll(v,-idx,axis=0) for v in vectors]
+        else:
+            return vectors
+    
+    def CR_weight(self):
+        """
+        Return the crossover ratio weights to be used in the next generation.
+
+        For example, to see if the adaptive CR is stable use::
+        
+            draw, weight = state.CR_weight()
+            plot(draw, weight)
+    
+        See :module:`dream.crossover` for details.
+        """
+        vectors = self._update_draws,self._update_CR_weight
+        N,idx = self._update_count, self._update_index
+        if N == idx:
+            return [v[:idx] for v in vectors]
+        elif idx > 0:
+            return [numpy.roll(v,-idx,axis=0) for v in vectors]
+        else:
+            return vectors
+
+    def outliers(self):
+        """
+        Return a list of outlier removal operations.
+        
+        Each outlier operation is a tuple giving the thinned generation
+        in which it occurred, the old chain id and the new chain id.
+        
+        The chains themselves have already been updated to reflect the 
+        removal.
+        
+        Curiously, it is possible for the maximum likelihood seen so far
+        to be removed by this operation.        
+        """
+        return asarray(self._outliers, 'i')
+
+    def best(self):
+        """
+        Return the best point seen and its log likelihood.
+        """        
+        return self._best_x, self._best_logp
+
     def sample(self, portion=1, vars=None, selection=None):
         """
         Return a sample from the posterior distribution.
@@ -418,89 +534,14 @@ class MCMCDraw(object):
         else: # no labels specified, old or new
             pass
 
-    def chains(self):
-        """
-        Returns the observed Markov chains and the corresponding likelihoods.
-        
-        The return value is a tuple (*draws*,*chains*,*logp*).
-
-        *draws* is the number of samples taken up to and including the samples
-        for the current generation.
-        
-        *chains* is a three dimensional array of generations X chains X vars
-        giving the set of points observed for each chain in every generation.
-        Only the thinned samples are returned.
-        
-        *logp* is a two dimensional array of generation X population giving
-        the log likelihood of observing the set of variable values given in
-        chains.
-        """
-        end = (self._thin_count if self._thin_count == self._thin_index 
-               else len(self._thin_draws))
-        return (self._thin_draws[:end],
-                self._thin_point[:end], 
-                self._thin_logp[:end])
-
-
-    def R_stat(self):
-        """
-        Return the R-statistics convergence statistic for each variable.
-
-        For example, to plot the convergence of all variables over time::
-        
-            draw, R = state.R_stat()
-            plot(draw, R)
-    
-        See :module:`dream.gelman` and references detailed therein.
-        """
-        end = (self._update_count if self._update_count == self._update_index 
-               else len(self._update_draws))
-        return (self._update_draws[:end],
-                self._update_R_stat[:end])
-    
-    def CR_weight(self):
-        """
-        Return the crossover ratio weights to be used in the next generation.
-
-        For example, to see if the adaptive CR is stable use::
-        
-            draw, weight = state.CR_weight()
-            plot(draw, weight)
-    
-        See :module:`dream.crossover` for details.
-        """
-        end = (self._update_count if self._update_count == self._update_index 
-               else len(self._update_draws))
-        return (self._update_draws[:end],
-                self._update_CR_weight[:end])
-
-    def outliers(self):
-        """
-        Return a list of outlier removal operations.
-        
-        Each outlier operation is a tuple giving the thinned generation
-        in which it occurred, the old chain id and the new chain id.
-        
-        The chains themselves have already been updated to reflect the 
-        removal.
-        
-        Curiously, it is possible for the maximum likelihood seen so far
-        to be removed by this operation.        
-        """
-        return asarray(self._outliers, 'i')
-
-    def best(self):
-        """
-        Return the best point seen and its log likelihood.
-        """        
-        return self._best_x, self._best_logp
-
 
 
 def _sample(state, portion, vars, selection):
     """
     Return a sample from a set of chains.
     """
+    if portion == None:
+        portion = 0.8 if state.cycle < 1 else 1
     draw, chains, logp = state.chains()
     start = int((1-portion)*len(draw))
     chains = chains[start:]

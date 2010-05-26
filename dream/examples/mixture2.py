@@ -15,7 +15,7 @@ so S < 1e-4 cannot be modeled reliably.
 from pylab import *
 from dream import *
 
-S = 1
+S = 0.001
 model = Mixture(MVNormal([-4, 2],S*eye(2)), 5, 
                 MVNormal([-2,-2],S*eye(2)), 2.5,
                 MVNormal([ 0,-4],S*eye(2)), 1,
@@ -26,6 +26,7 @@ model = Mixture(MVNormal([-4, 2],S*eye(2)), 5,
 sampler = Dream(model=model, population=randn(20,2),
                 #use_delayed_rejection=False,
                 outlier_test='none',
-                thinning=1, generations=1000)
+                thinning=1, generations=1000,
+                cycles=4)
 state = sampler.sample()
 plot_all(state)

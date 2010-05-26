@@ -13,7 +13,7 @@ from .stats import credible_interval, stats
 from .formatnum import format_uncertainty
 from .util import console
 
-def plot_all(state, portion=0.8):
+def plot_all(state, portion=None):
     
     figure(1); plot_vars(state, portion=portion)
     figure(2); plot_trace(state, portion=portion)
@@ -22,12 +22,12 @@ def plot_all(state, portion=0.8):
     figure(5); plot_corrmatrix(state, portion=portion)
     show()
 
-def plot_var(state, var=0, portion=0.8, selection=None, **kw):
+def plot_var(state, var=0, portion=None, selection=None, **kw):
     points, logp = state.sample(portion=portion, vars=[var], 
                                 selection=selection)
     _plot_var(points.flatten(), logp, label=state.labels[var], **kw)
 
-def plot_vars(state, vars=None, portion=0.8, selection=None, **kw):
+def plot_vars(state, vars=None, portion=None, selection=None, **kw):
     points, logp = state.sample(portion=portion, vars=vars, selection=selection)
     if vars==None:
         vars = range(points.shape[1])
@@ -151,7 +151,7 @@ best   = %s
     pylab.xlabel(label)
 
 
-def plot_corrmatrix(state, vars=None, portion=0.8, selection=None):
+def plot_corrmatrix(state, vars=None, portion=None, selection=None):
     points, _ = state.sample(portion=portion, vars=vars, selection=selection)
     labels = state.labels if vars==None else [state.labels[v] for v in vars]
     c = corrplot.Corr2d(points.T, bins=50, labels=labels)
@@ -173,7 +173,7 @@ class kde_2d(kde.gaussian_kde):
         return dxy.reshape(X.shape)
     __call__ = evalxy
     
-def plot_corr(state, vars=(0,1), portion=0.8, selection=None):
+def plot_corr(state, vars=(0,1), portion=None, selection=None):
     p1,p2 = vars
     labels = [state.labels[v] for v in vars]
     points, _ = state.sample(portion=portion, vars=vars, selection=selection)
@@ -211,7 +211,9 @@ def plot_corr(state, vars=(0,1), portion=0.8, selection=None):
     axHistY.xaxis.set_major_locator(MaxNLocator(4,prune="both"))
     setp(axHistY.get_yticklabels(), visible=False)
 
-def plot_trace(state, var=0, portion=0.8):
+def plot_trace(state, var=0, portion=None):
+    if portion == None:
+        portion = 0.8 if state.cycle < 1 else 1
     draw, points, _ = state.chains()
     start = int((1-portion)*len(draw))
     plot(arange(start,len(points))*state.thinning,
@@ -220,7 +222,9 @@ def plot_trace(state, var=0, portion=0.8):
     xlabel('Generation number')
     ylabel('Parameter value')
 
-def plot_R(state, portion=0.8):
+def plot_R(state, portion=None):
+    if portion == None:
+        portion = 0.8 if state.cycle < 1 else 1
     draw, R = state.R_stat()
     start = int((1-portion)*len(draw))
     plot(arange(start,len(R)), R[start:])
@@ -229,7 +233,9 @@ def plot_R(state, portion=0.8):
     xlabel('Generation number')
     ylabel('R')
     
-def plot_logp(state, portion=0.8):
+def plot_logp(state, portion=None):
+    if portion == None:
+        portion = 0.8 if state.cycle < 1 else 1
     draw, logp = state.logp()
     start = int((1-portion)*len(draw))
     plot(arange(start,len(logp)), logp[start:], '.', markersize=1)
@@ -238,7 +244,7 @@ def plot_logp(state, portion=0.8):
     ylabel('Log likelihood at x[k]')
 
 
-def __points(state, portion, vars=None, selection=None):
+def _this_is_cruft__points(state, portion, vars=None, selection=None):
     draw, points, logp = state.chains()
     labels = state.labels
     start = int((1-portion)*len(draw))
