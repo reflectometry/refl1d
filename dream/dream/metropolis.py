@@ -9,7 +9,7 @@ def paccept(logp_old, logp_try):
     """
     return minimum(exp(logp_try - logp_old), 1)
 
-def metropolis(xtry, logp_try, xold, logp_old):
+def metropolis(xtry, logp_try, xold, logp_old, step_alpha):
     """
     Metropolis rule for acceptance or rejection
 
@@ -23,6 +23,7 @@ def metropolis(xtry, logp_try, xold, logp_old):
     Returns x_new, logp_new, alpha, accept
     """
     alpha = paccept(logp_try=logp_try, logp_old=logp_old)
+    alpha *= step_alpha
     accept = alpha > util.RNG.rand(*alpha.shape)
     logp_new = where(accept, logp_try, logp_old)
     ## The following only works for vectors:

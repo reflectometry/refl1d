@@ -24,10 +24,10 @@ model = Mixture(MVNormal(mu1,sigma), w1, MVNormal(mu2,sigma), w2)
 #model = MVNormal(zeros(n),sigma)
 
 # TODO: with large number of samples, the 1/6 weight peak is lost
-sampler = Dream(model=model, population=randn(pop*n,n),
+sampler = Dream(model=model, population=randn(pop,n,n),
                 #use_delayed_rejection=False,
                 #outlier_test='IQR',
-                thinning=1, generations=2000, cycles=1)
+                thinning=1, draws=20000)
 state = sampler.sample()
 save_state(filename='mixture',state=state)
 state = load_state('mixture')

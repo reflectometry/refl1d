@@ -7,7 +7,7 @@ import numpy
 from numpy import arange, squeeze, reshape, linspace, meshgrid, vstack, NaN, inf
 import pylab
 from pylab import (axes, plot, MaxNLocator, setp, title, xlabel, 
-                   ylabel, legend, figure, show)
+                   ylabel, legend, figure, show, suptitle)
 from . import corrplot
 from .stats import credible_interval, stats
 from .formatnum import format_uncertainty
@@ -16,10 +16,15 @@ from .util import console
 def plot_all(state, portion=None):
     
     figure(1); plot_vars(state, portion=portion)
+    if state.title: suptitle(state.title)
     figure(2); plot_trace(state, portion=portion)
+    if state.title: suptitle(state.title)
     figure(3); plot_R(state, portion=portion)
+    if state.title: suptitle(state.title)
     figure(4); plot_logp(state, portion=portion)
+    if state.title: suptitle(state.title)
     figure(5); plot_corrmatrix(state, portion=portion)
+    if state.title: suptitle(state.title)
     show()
 
 def plot_var(state, var=0, portion=None, selection=None, **kw):

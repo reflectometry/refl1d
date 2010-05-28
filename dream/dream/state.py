@@ -78,6 +78,7 @@ import gzip
 import numpy
 from numpy import empty, sum, asarray, inf, argmax, hstack, dstack
 from numpy import savetxt,loadtxt, reshape
+from .util import draw
 
 #EXT = ".mc.gz"
 #CREATE = gzip.open
@@ -209,6 +210,7 @@ class MCMCDraw(object):
     """
     """
     _labels = None
+    title = None
     def __init__(self, Ngen, Nthin, Nupdate, Nvar, Npop, Ncr, thinning):
         # Total number of draws so far
         self.draws = 0
@@ -224,6 +226,7 @@ class MCMCDraw(object):
         self._gen_draws = empty(Ngen, 'i')
         self._gen_logp = empty( (Ngen,Npop) )
         self._gen_acceptance_rate = empty(Ngen)
+        self._gen_current = None
 
         # Per thinned generation iteration
         self.thinning = thinning
@@ -250,7 +253,7 @@ class MCMCDraw(object):
         from views import plot_all
         plot_all(self, portion=portion)
 
-    def _generation(self, new_draws, x, logp, accept):
+    def _generation(self, new_draws, x, logp, accept, force_keep=False):
         """
         Called from dream.py after each generation is completed with
         a set of accepted points and their values.
@@ -278,10 +281,10 @@ class MCMCDraw(object):
             i = 0
             self.cycle += 1
         self._gen_index = i
-
+        
         # Keep every nth iteration
         self._thin_timer += 1
-        if self._thin_timer == self.thinning:
+        if self._thin_timer == self.thinning or force_keep:
             self._thin_timer = 0
             self._thin_count += 1
             i = self._thin_index
@@ -291,6 +294,10 @@ class MCMCDraw(object):
             i = i+1
             if i == len(self._thin_draws): i = 0
             self._thin_index = i
+            self._gen_current = None
+        else:
+            self._gen_current = x
+
 
     def _update(self, R_stat, CR_weight):
         """
@@ -329,6 +336,52 @@ class MCMCDraw(object):
         print "setting labels to",v
         self._labels = v
     labels = property(fget=_get_labels,fset=_set_labels)
+
+    def _draw_pop(self, Npop):
+        """
+        Generate a population from current generation and all history.
+        """
+        _, chains, _ = self.chains()
+        Ngen,Nchain,Nvar = chains.shape
+        points = reshape(chains,(Ngen*Nchain,Nvar))
+
+        # There are two complications with the history buffer:
+        # (1) due to thinning, not every generation is stored
+        # (2) because it is circular, the cursor may be in the middle
+        # If the current generation isn't in the buffer (but is instead
+        # stored separately as _gen_current), then the entire buffer
+        # becomes the history pool.  
+        # otherwise we need to exclude the current generation from
+        # the pool.  If (2) happens, we need to increment everything
+        # above the cursor by the number of chains.
+        if self._gen_current != None:
+            pool_size = Ngen*Nchain
+            cursor = pool_size  # infinite
+        else:
+            pool_size = (Ngen-1)*Nchain
+            k = len(self._thin_draws)
+            cursor = Nchain*((k+self._thin_index-1)%k)
+
+        # Make a return population and fill it with the current generation
+        pop = empty((Npop,Nvar),'d')
+        if self._gen_current != None:
+            pop[:Nchain] = self._gen_current
+        else:
+            pop[:Nchain] = points[cursor:cursor+Nchain]
+
+        if Npop > Nchain:
+            # Find the remainder with unique ancestors.  
+            # Again, because this is a circular buffer, their may be random 
+            # numbers generated at or above the cursor.  All of these must 
+            # be shifted by Nchains to avoid the cursor.
+            perm = draw(Npop-Nchain,pool_size)
+            perm[perm>=cursor] += Nchain
+            #print "perm",perm; raw_input('wait')
+            pop[Nchain:] = points[perm]
+
+        return pop
+
+
 
     def logp(self):
         """

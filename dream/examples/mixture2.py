@@ -23,10 +23,12 @@ model = Mixture(MVNormal([-4, 2],S*eye(2)), 5,
                 MVNormal([ 4, 4],S*eye(2)), 1,
                 )
 
-sampler = Dream(model=model, population=randn(20,2),
+sampler = Dream(model=model, 
+                population=randn(40,2,2),
                 #use_delayed_rejection=False,
                 outlier_test='none',
-                thinning=1, generations=1000,
-                cycles=4)
-state = sampler.sample()
-plot_all(state)
+                draws=15000,burn=5000,
+                thinning=1)
+mc = sampler.sample()
+#plot_all(mc)
+plot_vars(mc, ci=1, nbins=100); show()

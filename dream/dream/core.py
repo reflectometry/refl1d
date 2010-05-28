@@ -117,16 +117,16 @@ class Dream(object):
     """
     model=None
     # Sampling parameters
-    cycles=1
+    burn=0
     draws=100000
     thinning=1
-    burnin=0
     outlier_test="IQR"
     population = None
     # DE parameters
     DE_steps = 10
     DE_pairs = 3
     DE_eps = 0.05
+    DE_snooker_rate = 0.1
     bounds_style = 'reflect'
     # Crossover parameters
     CR = None
@@ -139,8 +139,6 @@ class Dream(object):
         for k,v in kw.items():
             if hasattr(self, k):
                 setattr(self, k, v)
-            elif k == "generations":
-                self.generations = v
             else:
                 raise TypeError("Unknown attribute "+k)
 
@@ -168,10 +166,8 @@ def run_dream(dream):
         raise ValueError("initial population not defined")
 
     # Remember the problem dimensions
-    Npop, _ = dream.population.shape
-    if hasattr(dream, 'generations'):
-        dream.draws = dream.generations*dream.thinning*Npop
-        #print "dream.draws",dream.draws
+    Ngen, Nchain, Nvar = dream.population.shape
+    Npop = Ngen*Nchain
 
     if dream.CR == None:
         dream.CR = AdaptiveCrossover(3)
@@ -179,32 +175,38 @@ def run_dream(dream):
     # Step 2: Calculate posterior density associated with each value in x
     apply_bounds = make_bounds_handler(dream.model.bounds, 
                                        style=dream.bounds_style)
-    x = dream.population
-    apply_bounds(x)
-# ********************** MAP *****************************
-    logp = dream.model.log_density(x)
 
-    # Skip R_stat and pCR until we have some data data to analyze
     # Record initial state
     dream.state = state = allocate_state(dream)
     state.labels = dream.model.labels
-    state._generation(new_draws=Npop, x=x, logp=logp, accept=Npop)
+    for x in dream.population:
+        apply_bounds(x)
+# ********************** MAP *****************************
+        logp = dream.model.log_density(x)
+        state._generation(new_draws=Nchain, x=x, 
+                          logp=logp, accept=Nchain, 
+                          force_keep=True)
+
+    # Skip R_stat and pCR until we have some data data to analyze
     state._update(R_stat=-2, CR_weight=dream.CR.weight)
 
     # Now start drawing samples
-    while state.draws < dream.draws*dream.cycles:
+    while state.draws < dream.draws + dream.burn:
 
         # Age the population using differential evolution
-        dream.CR.reset(Nsteps=dream.DE_steps, Npop=Npop)
+        dream.CR.reset(Nsteps=dream.DE_steps, Npop=Nchain)
         for gen in range(dream.DE_steps):
 
             # Define the current locations and associated posterior densities
             xold,logp_old = x,logp
+            pop = state._draw_pop(Npop)
 
             # Generate candidates for each sequence
-            xtry,used = de_step(xold, dream.CR[gen], 
-                                max_pairs=dream.DE_pairs, 
-                                eps=dream.DE_eps)
+            xtry, step_alpha, used \
+                = de_step(Nchain, pop, dream.CR[gen], 
+                          max_pairs=dream.DE_pairs, 
+                          eps=dream.DE_eps,
+                          snooker_rate=dream.DE_snooker_rate)
 
             # Compute the likelihood of the candidates
             apply_bounds(xtry)
@@ -213,9 +215,19 @@ def run_dream(dream):
             draws = len(logp_try)
 
             # Apply the metropolis acceptance/rejection rule
-            x,logp,alpha,accept = metropolis(xtry, logp_try, xold, logp_old)
+            x,logp,alpha,accept \
+                = metropolis(xtry, logp_try, 
+                             xold, logp_old,
+                             step_alpha)
 
             # Process delayed rejection
+            # PAK NOTE: this updates according to the covariance matrix of the
+            # current sample, which may be useful on unimodal systems, but
+            # doesn't seem to be of any value in general; the DREAM papers
+            # found that the acceptance rate did indeed improve with delayed
+            # rejection, but the overall performance did not.  Worse, this
+            # requires a linear system solution O(nPop^3) which can be near
+            # singular for complex posterior distributions.
             if dream.use_delayed_rejection and not accept.all():
                 # Generate alternate candidates using the covariance of xold
                 xdr, R = dr_step(x=xold, scale=dream.DR_scale)
@@ -252,9 +264,9 @@ def run_dream(dream):
         if state.draws <= 0.1 * dream.draws:
             # Adapt the crossover ratio, but only during burn-in.
             dream.CR.adapt()
-        else:
-            # See whether there are any outlier chains, and remove them to current best value of X
-            remove_outliers(state, x, logp, test=dream.outlier_test)
+        #else:
+        #    # See whether there are any outlier chains, and remove them to current best value of X
+        #    remove_outliers(state, x, logp, test=dream.outlier_test)
             
         # Save update information
         state._update(R_stat=R_stat, CR_weight=dream.CR.weight)
@@ -268,16 +280,16 @@ def allocate_state(dream):
     Estimate the size of the output 
     """
     # Determine problem dimensions from the initial population
-    Npop, Nvar = dream.population.shape
+    Npop, Nchain, Nvar = dream.population.shape
     steps = dream.DE_steps
     thinning = dream.thinning
     Ncr = len(dream.CR.CR)
     draws = dream.draws
     
-    Nupdate = int(draws/(steps*Npop)) + 1
+    Nupdate = int(draws/(steps*Nchain)) + 1
     Ngen = Nupdate * steps
     Nthin = int(Ngen/thinning) + 1
     #print Ngen, Nthin, Nupdate, draws, steps, Npop, Nvar
 
-    return MCMCDraw(Ngen, Nthin, Nupdate, Nvar, Npop, Ncr, thinning)
+    return MCMCDraw(Ngen, Nthin, Nupdate, Nvar, Nchain, Ncr, thinning)
     

@@ -29,21 +29,22 @@ n=2
 model = Simulation(f=fn, data=data, sigma=sigma, bounds=bounds,
                    labels=["x","y"])
 sampler = Dream(model=model,
-                population=randn(5*n+4,n),
+                population=randn(5*n,4,n),
                 thinning=1,
-                generations=1000,
+                draws=20000,
                 )
-post = sampler.sample()
+mc = sampler.sample()
+mc.title = 'Strong anti-correlation'
 
 # Create a derived parameter without the correlation
-post.derive_vars(lambda p: (p[0]+p[1]), labels=['x+y'])
+mc.derive_vars(lambda p: (p[0]+p[1]), labels=['x+y'])
 
 # Compare the MCMC estimate for the derived parameter to a least squares fit
 from wsolve import wpolyfit
 poly = wpolyfit(x,data,degree=1,origin=True)
 print "x+y from linear fit", poly.coeff[0], poly.std[0]
-points,logp = post.sample(portion=0.5)
+points,logp = mc.sample(portion=0.5)
 print "x+y from MCMC",mean(points[:,2]), std(points[:,2],ddof=1)
 
 # Plot the samples
-plot_all(post, portion=0.5)
+plot_all(mc, portion=0.5)

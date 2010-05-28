@@ -15,11 +15,12 @@ def rosen(x):
 
 n=3
 sampler = Dream(model=LogDensity(rosen),
-                population=randn(20*n,n),
+                population=randn(20,n,n),
                 thinning=1,
-                generations=2000,
+                burn=20000,
+                draws=20000,
                 )
 
-state = sampler.sample()
-#plot_corr(state); show()
-plot_state(state, portion=0.5)
+mc = sampler.sample()
+#plot_corr(mc); show()
+mc.show()

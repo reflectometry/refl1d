@@ -12,12 +12,15 @@ def rosen(x):
 
 n=6
 sampler = Dream(model=LogDensity(rosen),
-                population=randn(20*n+4,n),
+                population=randn(2*n,5,n),
                 thinning=1,
-                generations=1000,
+                draws=25000,
+                burn=10000,
+                #DE_snooker_rate=0,
                 #cycles=3,
                 )
 
 state = sampler.sample()
+state.title = "Banana function example"
 #plot_corr(state); show()
 plot_all(state)
