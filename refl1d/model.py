@@ -125,6 +125,11 @@ class Stack(Layer):
             except:
                 L = [other]
             self._layers.extend(_check_layer(el) for el in L)
+    def __copy__(self):
+        newone = Stack()
+        newone.__dict__.update(self.__dict__)
+        newone._layers = self._layers[:]
+        return newone        
     def __len__(self):
         return len(self._layers)
     def __str__(self):

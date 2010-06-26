@@ -237,7 +237,7 @@ class Microslabs:
         w = numpy.sum(self.w[1:-1])
         left = -self.sigma[0]*3
         right = w+self.sigma[-1]*3
-        z = numpy.arange(left,right,dz)
+        z = numpy.arange(left,right+dz,dz)
         roughness = self.limited_sigma(limit=roughness_limit)
         rho = build_profile(z, self.w, roughness, self.rho[0])
         irho = build_profile(z, self.w, roughness, self.irho[0])

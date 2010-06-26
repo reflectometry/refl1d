@@ -7,24 +7,29 @@ import numpy
 from numpy import arange, squeeze, reshape, linspace, meshgrid, vstack, NaN, inf
 import pylab
 from pylab import (axes, plot, MaxNLocator, setp, title, xlabel, 
-                   ylabel, legend, figure, show, suptitle)
+                   ylabel, legend, figure, show, suptitle, savefig)
 from . import corrplot
 from .stats import credible_interval, stats
 from .formatnum import format_uncertainty
 from .util import console
 
-def plot_all(state, portion=None):
+def plot_all(state, portion=None, figfile=None):
     
     figure(1); plot_vars(state, portion=portion)
     if state.title: suptitle(state.title)
+    if figfile != None: savefig(figfile+"-vars")
     figure(2); plot_trace(state, portion=portion)
     if state.title: suptitle(state.title)
+    if figfile != None: savefig(figfile+"-trace")
     figure(3); plot_R(state, portion=portion)
     if state.title: suptitle(state.title)
+    if figfile != None: savefig(figfile+"-R")
     figure(4); plot_logp(state, portion=portion)
     if state.title: suptitle(state.title)
+    if figfile != None: savefig(figfile+"-logp")
     figure(5); plot_corrmatrix(state, portion=portion)
     if state.title: suptitle(state.title)
+    if figfile != None: savefig(figfile+"-corr")
     show()
 
 def plot_var(state, var=0, portion=None, selection=None, **kw):
@@ -247,27 +252,3 @@ def plot_logp(state, portion=None):
     title(r'Log Likelihood History')
     xlabel('Generation number')
     ylabel('Log likelihood at x[k]')
-
-
-def _this_is_cruft__points(state, portion, vars=None, selection=None):
-    draw, points, logp = state.chains()
-    labels = state.labels
-    start = int((1-portion)*len(draw))
-    points = points[start:]
-    logp = logp[start:]    
-    Ngen,Npop,Nvar = points.shape
-    points = reshape(points,(Ngen*Npop,Nvar))
-    logp = reshape(logp,(Ngen*Npop))
-    if labels == None:
-        labels = ["P"+str(i+1) for i in range(points.shape[-1])]
-    if selection is not None:
-        idx = True
-        for v,r in selection.items():
-            idx = idx & (points[:,v]>=r[0]) & (points[:,v]<=r[1])
-        points = points[idx,:]
-        logp = logp[idx]
-    if vars != None:
-        points = points[:,vars]
-        labels = [labels[i] for i in vars]
-    return points, logp, labels
-

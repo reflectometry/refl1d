@@ -52,7 +52,7 @@ if 1:
 # Fit parameters
 #probe.theta_offset.dev(radians(0.01)/sqrt(12))  # accurate to 0.01 degrees
 
-if 0: # Open set
+if 1: # Open set
     for i,L in enumerate(sample[0:-1]):
         if i>0: L.thickness.range(0,1000)
         L.interface.range(0,50)
@@ -88,11 +88,11 @@ elif 1: # d2 X d3
 
 M = Experiment(probe=probe, sample=sample)
 
-from refl1d.mystic.parameter import randomize, varying
-randomize(varying(M.parameters()))
+#from refl1d.mystic.parameter import randomize, varying
+#randomize(varying(M.parameters()))
 
 # Do the fit
-if 0:
+if 1:
     result = preview(models=M)
 elif 0:
     result = fit(models=[M], npop=10)

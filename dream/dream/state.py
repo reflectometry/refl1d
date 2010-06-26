@@ -249,9 +249,9 @@ class MCMCDraw(object):
     def save(self, filename):
         save_state(self,filename)
 
-    def show(self, portion=None):
+    def show(self, portion=None, figfile=None):
         from views import plot_all
-        plot_all(self, portion=portion)
+        plot_all(self, portion=portion, figfile=figfile)
 
     def _generation(self, new_draws, x, logp, accept, force_keep=False):
         """
@@ -594,7 +594,7 @@ def _sample(state, portion, vars, selection):
     Return a sample from a set of chains.
     """
     if portion == None:
-        portion = 0.8 if state.cycle < 1 else 1
+        portion = 0.8 if state.cycle < 1 else 0.95
     draw, chains, logp = state.chains()
     start = int((1-portion)*len(draw))
     chains = chains[start:]

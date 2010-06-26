@@ -27,7 +27,7 @@ def de_step(Nchain,pop,CR,max_pairs=2,eps=0.05,snooker_rate=0.1):
     alg = select([u < snooker_rate, u < snooker_rate+de_rate],
                  [SNOOKER,DE], default=DIRECT)
     use_de_step = (alg == DE)
-    
+
     # Chains evolve using information from other chains to create offspring
     for qq in range(Nchain):
 
@@ -52,7 +52,7 @@ def de_step(Nchain,pop,CR,max_pairs=2,eps=0.05,snooker_rate=0.1):
             # number of contributions, both from the parameters being
             # updated and from the population defining the step direction.
             gamma = 2.38/sqrt(2 * len(vars) * k)
-            # [PAK: same as F=Table_JumpRate[len(vars),k] in the old code]
+            # [PAK: same as F=Table_JumpRate[len(vars),k] in matlab version]
 
             # Find and average step from the selected pairs
             step = sum(pop[r1]-pop[r2], axis=0)

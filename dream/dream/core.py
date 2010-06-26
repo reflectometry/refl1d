@@ -101,6 +101,7 @@
 * Convert to python
 """
 from __future__ import division
+import time
 
 from .state import MCMCDraw
 from .metropolis import metropolis, metropolis_dr, dr_step
@@ -189,6 +190,7 @@ def run_dream(dream):
 
     # Skip R_stat and pCR until we have some data data to analyze
     state._update(R_stat=-2, CR_weight=dream.CR.weight)
+    last_time = time.time()
 
     # Now start drawing samples
     while state.draws < dream.draws + dream.burn:
@@ -272,7 +274,10 @@ def run_dream(dream):
         state._update(R_stat=R_stat, CR_weight=dream.CR.weight)
 
 # ********************** NOTIFY **************************
-        print state.generation, ":", state._best_logp, R_stat
+        current_time = time.time()
+        if current_time >= last_time + 10:
+            last_time = current_time
+            print state.generation, ":", state._best_logp, R_stat
 
 
 def allocate_state(dream):

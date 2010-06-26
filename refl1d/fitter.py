@@ -312,7 +312,10 @@ class Result:
 
 def _make_problem(models=[], weights=None):
     if isinstance(models, (tuple, list)):
-        problem = MultiFitProblem(models, weights=weights)
+        if len(models) > 1:
+            problem = MultiFitProblem(models, weights=weights)
+        else:
+            problem = FitProblem(models[0])
     else:
         problem = FitProblem(models)
     return problem
@@ -475,12 +478,15 @@ class FitProblem:
     def save(self, basename):
         self.fitness.save(basename)
 
-    def plot(self, p=None):
+    def plot(self, p=None, fignum=None, figfile=None):
+        import pylab
+        if fignum != None: pylab.figure(fignum)
         if p != None: self.setp(p)
         self.fitness.plot()
         import pylab
         pylab.text(0, 0, 'chisq=%g' % self.chisq(),
                    transform=pylab.gca().transAxes)
+        if figfile != None: pylab.savefig(figfile+"-model")
 
 class MultiFitProblem(FitProblem):
     """
@@ -532,8 +538,9 @@ class MultiFitProblem(FitProblem):
             f.show()
         print "[overall chisq=%g]" % self.chisq()
 
-    def plot(self):
+    def plot(self,fignum=1,figfile=None):
         import pylab
         for i, f in enumerate(self.fits):
-            pylab.figure(i + 1)
-            f.plot()
+            f.plot(fignum=i+fignum)
+            pylab.suptitle('Model %d'%i)
+            if figfile != None: pylab.savefig(figfile+"-model%d"%i)

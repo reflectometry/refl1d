@@ -56,4 +56,4 @@ def random_population(problem, pop_size):
         population[0] = numpy.asarray(guess)
 
     # Return the population
-    return population
+    return population[None,:,:]

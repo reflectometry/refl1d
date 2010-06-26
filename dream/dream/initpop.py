@@ -21,7 +21,7 @@ from __future__ import division
 
 __all__ = ['lhs_init', 'cov_init']
 
-from numpy import eye, diag, asarray
+from numpy import eye, diag, asarray, empty
 from . import util
 
 def lhs_init(N, bounds):
@@ -45,7 +45,7 @@ def lhs_init(N, bounds):
     ran = util.RNG.rand(N,nvar)
 
     # Initialize array s with zeros
-    s = numpy.empty((N,nvar))
+    s = empty((N,nvar))
 
     # Now fill s
     for j in range(nvar):
@@ -58,8 +58,11 @@ def lhs_init(N, bounds):
 
 def cov_init(N, x, cov=None, dx=None):
     """
-    Initialize *N* sets of random variables from a center at *x* and a 
-    covariance matrix *cov*.
+    Initialize *N* sets of random variables from a gaussian model.
+    
+    The center is at *x* with an uncertainty ellipse specified by the
+    1-sigma independent uncertainty values *dx* or the full covariance 
+    matrix uncertainty *cov*.
 
     For example, create an initial population for 20 sequences for a
     model with local minimum x with covariance matrix C::
