@@ -149,6 +149,42 @@ class Stack(Layer):
         for layer in self._layers:
             layer.render(probe, slabs)
 
+    def plot(self, dz=1, roughness_limit=0):
+        import pylab
+        import profile, material, probe
+        neutron_probe = probe.NeutronProbe(T=numpy.arange(0,5,100), L=5.)
+        xray_probe = probe.XrayProbe(T=numpy.arange(0,5,100), L=1.54)
+        slabs = profile.Microslabs(1, dz=dz)
+        
+        pylab.subplot(211)
+        cache = material.ProbeCache(xray_probe)
+        slabs.clear()
+        self.render(cache, slabs)
+        z,rho,irho = slabs.step_profile()
+        pylab.plot(z,rho,'-g',z,irho,'-b')
+        z,rho,irho = slabs.smooth_profile(dz=1, roughness_limit=roughness_limit)
+        pylab.plot(z,rho,':g',z,irho,':b', hold=True)
+        pylab.legend(['rho','irho'])
+        pylab.xlabel('depth (A)')
+        pylab.ylabel('SLD (10^6 inv A**2)')
+        pylab.text(0.05,0.95,r"Cu-$K_\alpha$ X-ray", va="top",ha="left",
+                   transform=pylab.gca().transAxes)
+        
+        pylab.subplot(212)
+        cache = material.ProbeCache(neutron_probe)
+        slabs.clear()
+        self.render(cache, slabs)
+        z,rho,irho = slabs.step_profile()
+        pylab.plot(z,rho,'-g',z,irho,'-b')
+        z,rho,irho = slabs.smooth_profile(dz=1, roughness_limit=roughness_limit)
+        pylab.plot(z,rho,':g',z,irho,':b', hold=True)
+        pylab.legend(['rho','irho'])
+        pylab.xlabel('depth (A)')
+        pylab.ylabel('SLD (10^6 inv A**2)')
+        pylab.text(0.05,0.95,"5 A neutron", va="top",ha="left",
+                   transform=pylab.gca().transAxes)
+
+        
     # Stacks as lists
     def __getitem__(self, idx):
         if isinstance(idx,slice):
@@ -294,7 +330,7 @@ class Slab(Layer):
                     material=self.material.parameters())
 
     def render(self, probe, slabs):
-        rho, irho, incoh = self.material.sld(probe)
+        rho, irho = self.material.sld(probe)
         try: irho = irho[0]
         except: pass
         w = self.thickness.value
@@ -303,7 +339,7 @@ class Slab(Layer):
         #print "irho",irho
         #print "w",w
         #print "sigma",sigma
-        slabs.extend(rho=[rho], irho=[irho+incoh], w=[w], sigma=[sigma])
+        slabs.extend(rho=[rho], irho=[irho], w=[w], sigma=[sigma])
     def __str__(self):
         if self.thickness.value > 0:
             return "%s/%.3g"%(str(self.material),self.thickness.value)

@@ -59,7 +59,7 @@ class Microslabs:
         their own slices so long as the step size is approximately
         slabs.dz in the varying region.
         """
-        edges = numpy.arange(0,thickness+self.dz,self.dz)
+        edges = numpy.arange(0,thickness+self.dz,self.dz, dtype='d')
         edges[-1] = thickness
         centers = (edges[1:] + edges[:-1])/2
         widths = edges[1:] - edges[:-1]

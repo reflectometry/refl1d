@@ -413,7 +413,7 @@ class XrayProbe(Probe):
         rho, irho = xsf.xray_sld(material,
                                  wavelength = self._sf_L,
                                  density=1)
-        return rho[self._sf_idx], irho[self._sf_idx]
+        return rho[self._sf_idx], irho[self._sf_idx], 0
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
 class NeutronProbe(Probe):

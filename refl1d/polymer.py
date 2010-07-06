@@ -16,6 +16,7 @@ of Grafted Polymer Chains", Macromolecules 24, 140-149.
 involving Langmuir diblock copolymer monolayers",
 J. of Chemical Physics 110(7), 3553-3565    
 """
+from __future__ import division
 __all__ = ["TetheredPolymer","VolumeProfile","layer_thickness"]
 import inspect
 from numpy import real, imag
@@ -77,11 +78,13 @@ class TetheredPolymer(Layer):
         thickness, sigma, phi, head, tail, Y \
             = [p.value for p in self.thickness, self.interface, 
                self.phi, self.head, self.tail, self.Y]
-        Mr,Mi,Minc = self.polymer.sld(probe)
-        Sr,Si,Sinc = self.solvent.sld(probe)
-        M = Mr + 1j*(Mi+Minc)
-        S = Sr + 1j*(Si+Sinc)
-        M,S = M[0],S[0]  # Temporary hack
+        phi /= 100. # % to fraction
+        Mr,Mi = self.polymer.sld(probe)
+        Sr,Si = self.solvent.sld(probe)
+        M = Mr + 1j*Mi
+        S = Sr + 1j*Si
+        try: M,S = M[0],S[0]  # Temporary hack
+        except: pass
         H = M*phi + S*(1-phi)
         head_width = head if head < thickness else thickness
         tail_width = tail if head+tail < thickness else thickness-head_width
@@ -89,7 +92,10 @@ class TetheredPolymer(Layer):
         if solvent_width < 0: solvent_width = 0
 
         Pw,Pz = slabs.microslabs(tail_width)
+        print "Pw",Pw
+        print "Pz",Pz
         profile = phi * (1 - (Pz/tail)**2)**Y
+        print head, tail, head_width, tail_width, solvent_width
         print zip(Pz,profile)
         P = M*profile + S*(1-profile)
         #P.reshape((1,len(profile)))
@@ -111,7 +117,7 @@ def layer_thickness(z):
          2*z[-1]-z[-2] if len(z) > 0 else 2*z[0]
     """
     2*z[-1]-z[-2] if len(z) > 0 else 2*z[0]
-    
+
 class VolumeProfile(Layer):
     """
     Generic volume profile function

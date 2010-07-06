@@ -5,6 +5,7 @@ from math import log, pi, log10, ceil, floor
 import numpy
 from .abeles import refl
 from . import material, profile
+from .fresnel import Fresnel
 
 class ExperimentBase:
     def format_parameters(self):
@@ -173,16 +174,31 @@ class Experiment(ExperimentBase):
 
         If *beam* is true, include absorption and intensity effects.
         """
-        calc_r = self._reflamp()
-        calc_R = abs(calc_r)**2
-        if resolution:
-            Q,R = self.probe.Q, self.probe.resolution(calc_R)
-        else:
-            Q,R = self.probe.calc_Q, calc_R
-        if beam:
-            R = self.probe.beam_parameters(R)
-            if numpy.isnan(R).any(): print "beam contains NaN"
-        return Q, R
+        key = ('reflectivity',resolution,beam)
+        if key not in self._cache:
+            calc_r = self._reflamp()
+            calc_R = abs(calc_r)**2
+            if resolution:
+                Q,R = self.probe.Q, self.probe.resolution(calc_R)
+            else:
+                Q,R = self.probe.calc_Q, calc_R
+            if beam:
+                R = self.probe.beam_parameters(R)
+                if numpy.isnan(R).any(): print "beam contains NaN"
+            self._cache[key] = Q,R
+        return self._cache[key]
+    
+    def fresnel(self):
+        """
+        Calculate the fresnel reflectivity for the model.
+        """
+        slabs = self._render_slabs()
+        rho,irho = slabs.rho, slabs.irho
+        #sigma = slabs.limited_sigma(limit=self.roughness_limit)
+        sigma = slabs.sigma
+        f = Fresnel(rho=rho[0,0], irho=irho[0,0], sigma=sigma[0], 
+                    Vrho=rho[0,-1], Virho=irho[0,-1])
+        return f(self.probe.Q)
 
     def smooth_profile(self,dz=1):
         """

@@ -114,7 +114,7 @@ class SLD(Scatterer):
     def parameters(self):
         return dict(rho=self.rho, irho=self.irho)
     def sld(self, probe):
-        return self.rho.value,self.irho.value,0
+        return self.rho.value,self.irho.value
 
 # ============================ Substances =============================
 
@@ -162,7 +162,7 @@ class Material(Scatterer):
     **WARNING** as of this writing packing_factor does not seem to return
     the correct density.
     """
-    def __init__(self, formula=None, name=None, use_incoherent=True,
+    def __init__(self, formula=None, name=None, use_incoherent=False,
                  density=None, packing_factor=None, fitby='bulk_density'):
         self.formula = periodictable.formula(formula, density=density)
         self.name = name if name is not None else str(self.formula)
@@ -219,10 +219,11 @@ class Material(Scatterer):
         return {'density': self.density}
     def sld(self, probe):
         rho, irho, incoh = probe.scattering_factors(self.formula)
-        if not self.use_incoherent: incoh = 0
+        if self.use_incoherent:
+            raise NotImplementedError("incoherent scattering not supported")
         scale = self.density.value
         #print "Material sld ",self.name,scale*coh,scale*absorp
-        return (scale*rho,scale*irho,scale*incoh)
+        return (scale*rho,scale*irho)
     def __str__(self):
         return self.name
     def __repr__(self):
@@ -240,7 +241,8 @@ class Compound(Scatterer):
 
     An individual component can be a chemical formula, not just an element.
     """
-    def __init__(self, parts=None, density=None, name=None, use_incoherent=True):
+    def __init__(self, parts=None, density=None, name=None, 
+                 use_incoherent=False):
         # Split [M1,N1,M2,N2,...] into [M1,M2,...], [N1,N2,...]
         formula = [parts[i] for i in range(0, len(parts),2)]
         count = [parts[i] for i in range(1, len(parts),2)]
@@ -290,12 +292,10 @@ class Compound(Scatterer):
         # has the sample SLD as Material('H2O',density=1) or some such.
         rho = numpy.sum(rho*(self.__mass*count))
         irho = numpy.sum(irho*(self.__mass*count)[:,None],axis=0)
-        if self.use_incoherent: 
-            incoh = numpy.sum(incoh*(self.__mass*count),axis=0)
-        else:
-            incoh = 0
+        if self.use_incoherent:
+            raise NotImplementedError("incoherent scattering not supported")
         scale = self.density.value/numpy.sum(count*self.__mass)
-        return (scale*rho,scale*irho,scale*incoh)
+        return scale*rho,scale*irho
 
     def __str__(self):
         return "<%s>"%(",".join(str(M) for M in self.formula))
@@ -334,19 +334,17 @@ class Mixture(Scatterer):
     The components of the mixture can vary relative to each other, either
     by mass, by volume or by number::
 
-        Mixture.bymass(M1,F1,M2,F2,...,name='mixture name')
-        Mixture.byvolume(M1,F1,M2,F2,...,name='mixture name')
+        Mixture.bymass(M1,M2,F2,M3,F3...,name='mixture name')
+        Mixture.byvolume(M1,M2,F2,M3,F3...,name='mixture name')
 
-    The materials M1, M2, ... can be chemical formula strings or material
+    The materials M1, M2, M3, ... can be chemical formula strings or material
     objects.  In practice, since the chemical formula parser does not have
     a density database, only elemental materials can be specified by
     densities will be valid.  Be aware that density will need to change from
     bulk values if the formula has isotope substitutions.
 
-    The fractions F1, F2, ... are positive real numbers.  These will be
-    converted to percentages when the mixture is defined, and so will
-    have a fit range of [0,100].  The first fraction is not fittable, and
-    will adjusted so that the total volume of the material sums to 100%.
+    The fractions F2, F3, ... are percentages in [0,100].  The implicit 
+    fraction F1 is 100 - (F2+F3+...).   The SLD is NaN when F1 < 0.
 
     name defaults to M1.name+M2.name+...
     """
@@ -368,30 +366,34 @@ class Mixture(Scatterer):
         """
         return cls(parts, by='volume', **kw)
 
-    def __init__(self, parts, by='volume', name=None):
+    def __init__(self, parts, by='volume', name=None, use_incoherent=False):
         # Split [M1,M2,F2,...] into [M1,M2,...], [F2,...]
         material = [parts[0]] + [parts[i] for i in range(1, len(parts),2)]
         fraction = [parts[i] for i in range(2, len(parts), 2)]
         # Convert M1,M2, ... to materials if necessary
         material = [p if isinstance(p,Material) else Material(p)
                      for p in material]
-        self.material = material
-
-        # Make the fractions into fittable parameters
-        fraction = [Par.default(w,limits=(0,100), name=f.name+" count")
-                    for w,f in zip(fraction,material[1:])]
-        self.fraction = fraction
 
         # Specify the volume calculator based on the type of fraction
         if by == 'volume':
-            self._volume = _VolumeFraction(material)
+            _volume = _VolumeFraction(material)
         elif by == 'mass':
-            self._volume = _MassFraction(material)
+            _volume = _MassFraction(material)
         else:
             raise ValueError('fraction must be one of volume, mass or number')
 
+        # Name defaults to names of individual components
         if name is None: name = "+".join(p.name for p in material)
+
+        # Make the fractions into fittable parameters
+        fraction = [Par.default(w,limits=(0,100), name=f.name+"% "+by)
+                    for w,f in zip(fraction,material[1:])]
+        
+        self._volume = _volume
+        self.material = material
+        self.fraction = fraction
         self.name = name
+        self.use_incoherent = use_incoherent
 
     def parameters(self):
         """
@@ -434,10 +436,11 @@ class Mixture(Scatterer):
         volume_fraction = self._volume(fraction)
         rho = numpy.sum(rho*volume_fraction)
         irho = numpy.sum(irho*volume_fraction[:,None],axis=0)
-        incoh = numpy.sum(incoh*volume_fraction)
+        if self.use_incoherent:
+            raise NotImplementedError("incoherent scattering not supported")
         #print "Mixture",self.name,coh,absorp
 
-        return rho,irho,incoh
+        return rho,irho
 
     def __str__(self):
         return "<%s>"%(",".join(str(M) for M in self.material))
