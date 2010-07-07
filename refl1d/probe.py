@@ -134,6 +134,8 @@ class Probe(object):
                                                  name="back_absorption",
                                                  limits=[0,1])
         self.theta_offset = Parameter.default(theta_offset,name="theta_offset")
+        
+        self.back_reflectivity = back_reflectivity
 
         #if L is None:
         #    L = xsf.xray_wavelength(E)
@@ -267,34 +269,33 @@ class Probe(object):
         L = L.flatten()
         self._set_calc(T,L)
 
-    def _resolution(self, calc_R):
+    def apply_beam(self, calc_R, resolution=True):
         """
-        Apply resolution function associated with the probe.
+        Apply factors such as beam intensity, background, backabsorption,
+        resolution and footprint to the data.
 
         Users who wish to create complex resolution functions, e.g.,
         with wavelength following the TOF feather will need to control
         both the sampling and the resolution calculation.  Probe is the
         natural place for this calculation since it controls both of these.
         """
-        R = convolve(self.calc_Q if not self.back_reflectivity else -self.calc_Q, 
-                     calc_R, self.Q, self.dQ)
-        #R = numpy.interp(self.Q, self.calc_Q, calc_R)
-        return R
-
-    def apply_beam(self, calc_R, resolution=True):
-        """
-        Apply factors such as beam intensity, background, backabsorption,
-        resolution and footprint to the data.
-        """
-        back = (self._calc_Q<0)*(self.back_absorption.value-1)+1
+        # Handle absorption through the substrate, which occurs when Q<0
         # (condition)*C is C when condition is True or 0 when False,
         # (condition)*(C-1)+1 is C when condition is True or 1 when False.
-        if resolution:
-            Q,R = self.probe.Q, self._resolution(calc_R*back)
+        back = (self._calc_Q<0)*(self.back_absorption.value-1)+1
+        calc_R *= back
+
+        # For back reflectivity, reverse the sign of Q after computing
+        if self.back_reflectivity:
+            calc_Q = -self.calc_Q
         else:
-            Q,R = self.probe.calc_Q, calc_R*back
+            calc_Q = self.calc_Q
+        if resolution:
+            Q,R = self.Q, convolve(calc_Q, calc_R*back, self.Q, self.dQ)
+        else:
+            Q,R = calc_Q, calc_R*back
         R = R*self.intensity.value + self.background.value
-        return R
+        return Q,R
 
     def fresnel(self, substrate=None, surface=None):
         """

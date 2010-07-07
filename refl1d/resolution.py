@@ -324,10 +324,21 @@ class Monochromatic:
     sample_broadening = 0
 
     def __init__(self, **kw):
+        # Grab wavelength first so we can translate Qlo/Qhi to Tlo/Thi no 
+        # matter what order the keywords appear.
+        self.wavelength = kw.pop('wavelength',self.wavelength)
+        # Process keywords
         for k,v in kw.items():
-            if not hasattr(self, k):
+            if hasattr(self, k):
+                setattr(self, k, v)
+            elif k == "Qlo":
+                self.Tlo = QL2T(v, self.wavelength)
+            elif k == "Qhi":
+                self.Thi = QL2T(v, self.wavelength)
+            elif k == "slits_at_Qlo":
+                self.slits_at_Tlo = v
+            else:
                 raise TypeError("unexpected keyword argument '%s'"%k)
-            setattr(self, k, v)
 
     def load(self, filename, **kw):
         """

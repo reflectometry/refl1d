@@ -2,7 +2,8 @@ import sys; sys.path.append("../..")
 from pylab import *
 from periodictable import nsf
 from refl1d import *
-from copy import copy # Must follow 'from pylab import *'
+from copy import copy
+
 
 # Attached please find two data sets for a tethered  approximately 10 nm thick 
 # deuterated polystyrene chains in deuterated and hydrogenated toluene. 
@@ -54,11 +55,72 @@ for i,_ in enumerate(D):
     H[i].thickness = D[i].thickness
     H[i].interface = D[i].interface
 
-if 1:
-    D.plot()
-    suptitle('D-toluene')
-    figure()
-    H.plot()
-    suptitle('H-toluene')
-    show()
-                                                  
+
+# Fit parameters
+for i in 0, 1, 2:
+    D[i].interface.range(0,100)
+D[1].thickness.range(0,200)
+D[2].thickness.range(0,200)
+D_polystyrene.rho.range(6.2,6.5)
+SiOx.rho.range(2.07,4.16) # Si - SiO2
+D_toluene.rho.pmp(5)
+H_toluene.rho.pmp(5)
+H_initiator.rho.range(0,1.5)
+D_initiator.rho.range(0,1.5)
+D_polymer_layer.phi.range(0,100)
+D_polymer_layer.head.range(0,200)
+D_polymer_layer.tail.range(0,500)
+D_polymer_layer.Y.range(0,4)
+
+
+# Data files
+instrument = ncnrdata.NG7(Qlo=0.005, slits_at_Qlo=0.075)
+D_probe = instrument.load('10ndt001.refl')
+H_probe = instrument.load('10nht001.refl')
+D_model = Experiment(sample=D, probe=D_probe)
+H_model = Experiment(sample=H, probe=H_probe)
+models = D_model, H_model
+
+
+
+chains,draws,burn = 20,30000,100000
+
+run = 1
+if run == 1:
+    title = "First try"
+
+
+#preview(models=models); show()
+import os, shutil
+outdir = "T%d"%run
+try: os.mkdir(outdir)
+except: pass
+output = os.path.join(outdir,"tethered")
+shutil.copy2(__file__,outdir)
+for m in models:
+    shutil.copy2(m.probe.filename,outdir)
+
+sys.stdout = open(output+".mon","w")
+problem = fitter._make_problem(models=models)
+problem.show()
+
+# Perform fit
+state = draw_samples(models=models,
+                     #DE_snooker_rate = 0,
+                     chains=chains, draws=draws, burn=burn)
+
+# Save results
+state.title = title
+state.save(output)
+problem.setp(state.best()[0])
+problem.save(output)
+for i,m in enumerate(models):
+    save_mlayer(m,output+"_%d.staj"%i)
+sys.stdout = open(output+".out","w")
+problem.show()
+
+# Plot
+problem.plot(fignum=6, figfile=output)
+suptitle(title)
+state.show(figfile=output)
+  
