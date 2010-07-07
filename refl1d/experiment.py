@@ -6,6 +6,7 @@ import numpy
 from .abeles import refl
 from . import material, profile
 from .fresnel import Fresnel
+from .mystic.parameter import Parameter
 
 class ExperimentBase:
     def format_parameters(self):
@@ -39,7 +40,7 @@ class ExperimentBase:
         if self.probe.R is None:
             raise ValueError("No data from which to calculate residuals")
         if 'residuals' not in self._cache:
-            Q,R = self.reflectivity()
+            _,R = self.reflectivity()
             self._cache['residuals'] = (self.probe.R - R)/self.probe.dR
         return self._cache['residuals']
 
@@ -127,14 +128,16 @@ class Experiment(ExperimentBase):
         """
         Build a slab description of the model from the individual layers.
         """
-        if 'rendered' not in self._cache:
+        key = 'rendered'
+        if key not in self._cache:
             self._slabs.clear()
             self.sample.render(self._probe_cache, self._slabs)
-            self._cache['rendered'] = True
+            self._cache[key] = True
         return self._slabs
 
     def _reflamp(self):
-        if 'calc_r' not in self._cache:
+        key = 'calc_r'
+        if key not in self._cache:
             slabs = self._render_slabs()
             w = slabs.w
             rho,irho = slabs.rho, slabs.irho
@@ -148,25 +151,26 @@ class Experiment(ExperimentBase):
             #print "sigma",sigma
             #print "kz",self.probe.calc_Q/2
             #print "R",abs(calc_r**2)
-            self._cache['calc_r'] = calc_r
+            self._cache[key] = calc_r
             if numpy.isnan(self.probe.calc_Q).any(): print "calc_Q contains NaN"
             if numpy.isnan(calc_r).any(): print "calc_r contains NaN"
-        return self._cache['calc_r']
+        return self._cache[key]
 
-    def amplitude(self):
+    def amplitude(self, resolution=True):
         """
         Calculate reflectivity amplitude at the probe points.
         """
-        if 'amplitude' not in self._cache:
+        key = ('amplitude',resolution)
+        if key not in self._cache:
             calc_r = self._reflamp()
-            r_real = self.probe.resolution(calc_r.real)
-            r_imag = self.probe.resolution(calc_r.imag)
+            r_real = self.probe.apply_beam(calc_r.real, resolution)
+            r_imag = self.probe.apply_beam(calc_r.imag, resolution)
             r = r_real + 1j*r_imag
-            self._cache['amplitude'] = self.probe.Q, r
-        return self._cache['amplitude']
+            self._cache[key] = self.probe.Q, r
+        return self._cache[key]
 
 
-    def reflectivity(self, resolution=True, beam=True):
+    def reflectivity(self, resolution=True):
         """
         Calculate predicted reflectivity.
 
@@ -174,18 +178,13 @@ class Experiment(ExperimentBase):
 
         If *beam* is true, include absorption and intensity effects.
         """
-        key = ('reflectivity',resolution,beam)
+        key = ('reflectivity',resolution)
         if key not in self._cache:
             calc_r = self._reflamp()
             calc_R = abs(calc_r)**2
-            if resolution:
-                Q,R = self.probe.Q, self.probe.resolution(calc_R)
-            else:
-                Q,R = self.probe.calc_Q, calc_R
-            if beam:
-                R = self.probe.beam_parameters(R)
-                if numpy.isnan(R).any(): print "beam contains NaN"
+            Q,R = self.probe.apply_beam(calc_R, resolution)
             self._cache[key] = Q,R
+            if numpy.isnan(R).any(): print "beam contains NaN"
         return self._cache[key]
     
     def fresnel(self):
@@ -206,22 +205,24 @@ class Experiment(ExperimentBase):
         
         If *dz* is not given, use *dz* = 1 A.
         """
-        if ('smooth_profile',dz) not in self._cache:
+        key = 'smooth_profile', dz
+        if key not in self._cache:
             slabs = self._render_slabs()
             prof = slabs.smooth_profile(dz=dz,
                                         roughness_limit=self.roughness_limit)
-            self._cache['smooth_profile',dz] = prof
-        return self._cache['smooth_profile',dz]
+            self._cache[key] = prof
+        return self._cache[key]
 
     def step_profile(self):
         """
         Compute a scattering length density profile
         """
-        if 'step_profile' not in self._cache:
+        key = 'step_profile'
+        if key not in self._cache:
             slabs = self._render_slabs()
             prof = slabs.step_profile()
-            self._cache['step_profile'] = prof
-        return self._cache['step_profile']
+            self._cache[key] = prof
+        return self._cache[key]
         
     def slabs(self):
         """
@@ -387,7 +388,7 @@ class Weights:
             return iter([])
         else:
             weights = relative_weights / total_weight
-            idx = weigths > 0
+            idx = weights > 0
             return iter(zip(centers[idx], weights[idx]))
 
 class DistributionExperiment(ExperimentBase):
@@ -403,7 +404,6 @@ class DistributionExperiment(ExperimentBase):
     """
     def __init__(self, experiment=None, P=None, distribution=None):
         self.P = P
-        self.x = x
         self.distribution = distribution
         self.experiment = experiment
     def parameters(self):
@@ -414,7 +414,7 @@ class DistributionExperiment(ExperimentBase):
         for x,w in self.distribution:
             self.P.value = x
             self.experiment.update()
-            Q,Rx = experiment.reflectivity()
+            Q,Rx = self.experiment.reflectivity()
             R += w*Rx
         if R == 0:
             Q = self.experiment.probe.Q
@@ -438,7 +438,7 @@ class DistributionExperiment(ExperimentBase):
         if self.P.value != P:
             self.P.value = P
             self.experiment.update()
-        return self.experiment.step_profile(dz=dz)
+        return self.experiment.step_profile()
 
     def plot_profile(self, P):
         import pylab

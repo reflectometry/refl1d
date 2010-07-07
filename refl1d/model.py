@@ -34,7 +34,7 @@ from mystic import Parameter as Par, IntegerParameter as IntPar
 from .interface import Erf
 from . import material
 
-class Layer: # Abstract base class
+class Layer(object): # Abstract base class
     """
     Component of a material description.
 
@@ -149,7 +149,7 @@ class Stack(Layer):
         for layer in self._layers:
             layer.render(probe, slabs)
 
-    def plot(self, dz=1, roughness_limit=0):
+    def _plot(self, dz=1, roughness_limit=0):
         import pylab
         import profile, material, probe
         neutron_probe = probe.NeutronProbe(T=numpy.arange(0,5,100), L=5.)

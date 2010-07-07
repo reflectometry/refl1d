@@ -147,8 +147,7 @@ def dhsv(color, dh=0, ds=0, dv=0, da=0):
     from colorsys import rgb_to_hsv, hsv_to_rgb
     from numpy import clip, array
     r,g,b,a = colorConverter.to_rgba(color)
-    a = rgba[3] if len(rgba) > 3 else 1
     h,s,v = rgb_to_hsv(r,g,b)
     h,s,v,a = [clip(val,0,1) for val in h+dh,s+ds,v+dv,a+da]
     r,b,g = hsv_to_rgb(h,s,v)
-    return numpy.array((r,g,b,a))
+    return array((r,g,b,a))

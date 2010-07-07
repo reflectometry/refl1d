@@ -78,8 +78,8 @@ class SNOBfit(FitBase):
         self.lasttime = time.clock() - 61
         bounds = numpy.array([p.bounds.limits
                               for p in self.problem.parameters]).T
-        x, fx, calls = snobfit(self.problem, self.problem.guess(), bounds,
-                             fglob=0, callback=self._monitor)
+        x, _, _ = snobfit(self.problem, self.problem.guess(), bounds,
+                          fglob=0, callback=self._monitor)
         return x
     def _monitor(self, k, x, fx, improved):
         t = time.clock()
@@ -483,7 +483,6 @@ class FitProblem:
         if fignum != None: pylab.figure(fignum)
         if p != None: self.setp(p)
         self.fitness.plot()
-        import pylab
         pylab.text(0, 0, 'chisq=%g' % self.chisq(),
                    transform=pylab.gca().transAxes)
         if figfile != None: pylab.savefig(figfile+"-model")

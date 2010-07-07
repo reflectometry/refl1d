@@ -92,11 +92,7 @@ class TetheredPolymer(Layer):
         if solvent_width < 0: solvent_width = 0
 
         Pw,Pz = slabs.microslabs(tail_width)
-        print "Pw",Pw
-        print "Pz",Pz
         profile = phi * (1 - (Pz/tail)**2)**Y
-        print head, tail, head_width, tail_width, solvent_width
-        print zip(Pz,profile)
         P = M*profile + S*(1-profile)
         #P.reshape((1,len(profile)))
 

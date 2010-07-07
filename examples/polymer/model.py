@@ -1,8 +1,8 @@
 import sys; sys.path.append("../..")
-from copy import copy
 from pylab import *
 from periodictable import nsf
 from refl1d import *
+from copy import copy # Must follow 'from pylab import *'
 
 # Attached please find two data sets for a tethered  approximately 10 nm thick 
 # deuterated polystyrene chains in deuterated and hydrogenated toluene. 
@@ -40,11 +40,13 @@ D_toluene = SLD(name="D-toluene",rho=5.66)
 H_initiator = SLD(name="H-toluene+initiator",rho=0)
 D_initiator = SLD(name="D-toluene+initiator",rho=1.5)
 
+# Tethered polymer layer with substituted solvent
 D_polymer_layer = TetheredPolymer(polymer=D_polystyrene, solvent=D_toluene,
                                   phi=100, head=50, tail=200, Y=2)
 H_polymer_layer = copy(D_polymer_layer)
 H_polymer_layer.solvent = H_toluene
 
+# Stacked layers
 D = silicon%2 + SiOx/10%2 + D_initiator/5%2 + D_polymer_layer/500%0 + D_toluene
 H = silicon + SiOx + H_initiator + H_polymer_layer + H_toluene
 # Share thickness and interface
@@ -52,7 +54,7 @@ for i,_ in enumerate(D):
     H[i].thickness = D[i].thickness
     H[i].interface = D[i].interface
 
-if 0:
+if 1:
     D.plot()
     suptitle('D-toluene')
     figure()

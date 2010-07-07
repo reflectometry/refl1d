@@ -123,7 +123,8 @@ class Probe(object):
     substrate = None
     surface = None
     def __init__(self, T=None, dT=0, L=None, dL=0, data = None,
-                 intensity=1, background=0, back_absorption=1, theta_offset=0):
+                 intensity=1, background=0, back_absorption=1, theta_offset=0,
+                 back_reflectivity=False):
         if T is None or L is None:
             raise TypeError("T and L required")
         self.intensity = Parameter.default(intensity,name="intensity")
@@ -217,7 +218,7 @@ class Probe(object):
             Q = TL2Q(T=self.calc_T+self.theta_offset.value, L=self.calc_L)
         else:
             Q = self.calc_Qo
-        return Q
+        return Q if not self.back_reflectivity else -Q
     calc_Q = property(_calc_Q)
     def parameters(self):
         return dict(intensity=self.intensity,
@@ -266,7 +267,7 @@ class Probe(object):
         L = L.flatten()
         self._set_calc(T,L)
 
-    def resolution(self, calc_R):
+    def _resolution(self, calc_R):
         """
         Apply resolution function associated with the probe.
 
@@ -275,19 +276,24 @@ class Probe(object):
         both the sampling and the resolution calculation.  Probe is the
         natural place for this calculation since it controls both of these.
         """
-        R = convolve(self.calc_Q, calc_R, self.Q, self.dQ)
+        R = convolve(self.calc_Q if not self.back_reflectivity else -self.calc_Q, 
+                     calc_R, self.Q, self.dQ)
         #R = numpy.interp(self.Q, self.calc_Q, calc_R)
         return R
 
-    def beam_parameters(self, R):
+    def apply_beam(self, calc_R, resolution=True):
         """
         Apply factors such as beam intensity, background, backabsorption,
-        and footprint to the data.
+        resolution and footprint to the data.
         """
+        back = (self._calc_Q<0)*(self.back_absorption.value-1)+1
         # (condition)*C is C when condition is True or 0 when False,
-        # so (condition)*(C-1)+1 is C when condition is True or 1 when False.
-        back = (self.Q<0)*(self.back_absorption.value-1)+1
-        R = R*back*self.intensity.value + self.background.value
+        # (condition)*(C-1)+1 is C when condition is True or 1 when False.
+        if resolution:
+            Q,R = self.probe.Q, self._resolution(calc_R*back)
+        else:
+            Q,R = self.probe.calc_Q, calc_R*back
+        R = R*self.intensity.value + self.background.value
         return R
 
     def fresnel(self, substrate=None, surface=None):
@@ -510,14 +516,14 @@ class PolarizedNeutronProbe(object):
             if x is not None:
                 x._set_calc(T,L)
 
-    def beam_parameters(self, R):
+    def apply_beam(self, R, resolution=True):
         """
         Apply factors such as beam intensity, background, backabsorption,
         and footprint to the data.
         """
         for xs in self.pp, self.pm, self.mp, self.mm:
             if xs is not None:
-                xs.beam_parameters(R)
+                xs.apply_beam(R, resolution)
 
     def scattering_factors(self, material):
         # doc string is inherited from parent (see below)

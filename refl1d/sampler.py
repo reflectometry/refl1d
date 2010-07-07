@@ -18,7 +18,7 @@ class Model(dream.MCMCModel):
         self.bounds = zip(*[p.bounds.limits for p in model.parameters])
         self.labels = [p.name for p in model.parameters]
 
-    def nllf(self, x, RNG=numpy.random):
+    def nllf(self, x):
         """Negative log likelihood of seeing models given parameters *x*"""
         return self.model.nllf(x)
     

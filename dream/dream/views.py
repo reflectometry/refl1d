@@ -187,7 +187,6 @@ def plot_corr(state, vars=(0,1), portion=None, selection=None):
     p1,p2 = vars
     labels = [state.labels[v] for v in vars]
     points, _ = state.sample(portion=portion, vars=vars, selection=selection)
-    p1,p2 = 0,1
     
     # Form kernel density estimates of the parameters
     xmin,xmax = min(points[:,p1]),max(points[:,p1])
