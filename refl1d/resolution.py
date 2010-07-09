@@ -272,6 +272,9 @@ from numpy import arcsin as asin, ceil
 from numpy import ones_like, arange, isscalar, asarray
 from util import TL2Q, QL2T, dTdL2dQ, dQdT2dLoL, FWHM2sigma, sigma2FWHM
 
+PROBE_KW = ('intensity', 'background', 'back_absorption',
+            'theta_offset', 'back_reflectivity', 'data')
+
 class Resolution:
     """
     Reflectometry resolution object.
@@ -289,19 +292,18 @@ class Resolution:
     def _dQ(self):
         return dTdL2dQ(self.T,self.dT,self.L,self.dL)
     Q,dQ = property(_Q), property(_dQ)
-    def probe(self, data=(None,None)):
+    def probe(self, **kw):
         """
         Return a reflectometry measurement object of the given resolution.
         """
         from .probe import NeutronProbe, XrayProbe
+        kw = dict((k,v) for k,v in kw.items() if k in PROBE_KW)
         if self.radiation == 'neutron':
             return NeutronProbe(T=self.T, dT=self.dT,
-                                L=self.L, dL=self.dL,
-                                data=data)
+                                L=self.L, dL=self.dL, **kw)
         else:
             return XrayProbe(T=self.T, dT=self.dT,
-                             L=self.L, dL=self.dL,
-                             data=data)
+                             L=self.L, dL=self.dL, **kw)
 
 class Monochromatic:
     """
@@ -360,7 +362,7 @@ class Monochromatic:
             Q,R,dR = data[:3]
             # ignore extra columns like dQ or L
         resolution = self.resolution(Q=Q, **kw)
-        return resolution.probe(data=(R,dR))
+        return resolution.probe(data=(R,dR), **kw)
 
     def simulate(self, T=None, Q=None, **kw):
         """
@@ -384,7 +386,7 @@ class Monochromatic:
             L = kw.get('wavelength',self.wavelength)
             Q = TL2Q(T,L)
         resolution = self.resolution(Q=numpy.asarray(Q), **kw)
-        return resolution.probe()
+        return resolution.probe(**kw)
 
     def simulate_magnetic(self, T=None, Tguide=270, shared_beam=True, **kw):
         """
@@ -547,7 +549,7 @@ class Polychromatic:
         dL = binwidths(L)
         T = kw.pop('T',QL2T(Q,L))
         resolution = self.resolution(L=L, dL=dL, T=T, **kw)
-        return resolution.probe(data=(R,dR))
+        return resolution.probe(data=(R,dR), **kw)
 
     def simulate(self, **kw):
         """
@@ -566,7 +568,7 @@ class Polychromatic:
         L = bins(low,high,dLoL)
         dL = binwidths(L)
         resolution = self.resolution(L=L, dL=dL, **kw)
-        return resolution.probe()
+        return resolution.probe(**kw)
 
     def simulate_magnetic(self, Tguide=270, shared_beam=True, **kw):
         """

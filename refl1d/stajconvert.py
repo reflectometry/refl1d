@@ -1,8 +1,7 @@
 import numpy
 from numpy import tan, cos, sqrt, radians, degrees, pi
-from .experiment import Experiment
 from .staj import MlayerModel
-from .model import Slab, Stack
+from .model import Slab, Stack, Repeat
 from .material import SLD
 from .util import QL2T,sigma2FWHM
 from .probe import NeutronProbe, XrayProbe
@@ -28,6 +27,7 @@ def mlayer_to_model(staj):
     
     Returns a new experiment
     """
+    from .experiment import Experiment
     sample = _mlayer_to_stack(staj)
     probe = _mlayer_to_probe(staj)
     return Experiment(sample=sample,probe=probe)

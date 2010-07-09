@@ -103,14 +103,6 @@ from numpy import dot, diag, log, exp, pi, asarray, isscalar
 from numpy.linalg import cholesky, inv
 from . import util
 from . import exppow
-try:
-    from pyina.launchers import mpirun_launcher
-    from pyina.mappers import equalportion_mapper
-    from pyina.ez_map import ez_map2 as pmap
-   #from pyina.ez_map import ez_map as pmap
-except:
-    pmap = map
-
 
 class MCMCModel:
     """
@@ -124,15 +116,12 @@ class MCMCModel:
     bounds = None
     def nllf(self, x):
         raise NotImplemented
-    def log_density(self, pop):
-        #FIXME: ez_map2 fails with pickle of numpy.ufunc
-        #FIXME: ez_map fails with IndentationError
-        #mapconf = dict(launcher=mpirun_launcher, mapper=equalportion_mapper)
-        #return array(pmap(lambda x: -self.nllf(x), pop, **mapconf))
-        return array(pmap(lambda x: -self.nllf(x), pop))
-        #return array([-self.nllf(x) for x in pop])
+    def log_density(self, x):
+        return -self.nllf(x)
     def plot(self, x):
         pass
+    def map(self, pop):
+        return array([-self.log_density(x) for x in pop])
 
 class Density(MCMCModel):
     """

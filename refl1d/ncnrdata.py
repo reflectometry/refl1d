@@ -70,7 +70,7 @@ def load(filename, instrument=None, **kw):
     header.update(**kw)
     Q,R,dR = data
     resolution = instrument.resolution(Q, **header)
-    probe = resolution.probe(data=(R,dR))
+    probe = resolution.probe(data=(R,dR), **header)
     probe.title = header['title'] if 'title' in header else filename
     probe.date = header['date'] if 'date' in header else "unknown"
     probe.instrument = (header['instrument'] if 'instrument' in header 
@@ -177,9 +177,9 @@ def parse_file(filename):
 
 class NCNRLoader(Monochromatic):
     def load(self, filename, **kw):
-        return load(filename, instrument=self)
+        return load(filename, instrument=self, **kw)
     def load_magnetic(self, filename, **kw):
-        return load_magnetic(filename, instrument=self)
+        return load_magnetic(filename, instrument=self, **kw)
 
 class ANDR(NCNRLoader):
     """

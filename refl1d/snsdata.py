@@ -30,7 +30,7 @@ def _make_probe(geometry, header, data, **kw):
     dL = binwidths(L)
     T = kw.pop('angle',util.QL2T(Q[0],L[0]))
     resolution = geometry.resolution(L=L, dL=dL, T=T, **header)
-    probe = resolution.probe(data=(R,dR))
+    probe = resolution.probe(data=(R,dR), **header)
     probe.title = header['title']
     probe.date = header['date']
     probe.instrument = header['instrument']

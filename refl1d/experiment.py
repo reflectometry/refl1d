@@ -2,6 +2,10 @@
 # Author: Paul Kienzle
 
 from math import log, pi, log10, ceil, floor
+import shutil
+import os
+import traceback
+
 import numpy
 from .abeles import refl
 from . import material, profile
@@ -267,6 +271,17 @@ class Experiment(ExperimentBase):
                                                    "R", "dR", "theory"))
         numpy.savetxt(fid, A.T, fmt="%20.15g")
         fid.close()
+
+        # Save staj files
+        datafile = os.path.join(os.path.dirname(basename),self.probe.filename)
+        shutil.copy2(self.probe.filename, datafile)
+        from .stajconvert import save_mlayer
+        try:
+            save_mlayer(self, basename+".staj")
+        except:
+            print "==== could not save staj file ===="
+            traceback.print_exc()
+
 
     def plot_profile(self):
         import pylab

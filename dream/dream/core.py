@@ -183,7 +183,7 @@ def run_dream(dream):
     for x in dream.population:
         apply_bounds(x)
 # ********************** MAP *****************************
-        logp = dream.model.log_density(x)
+        logp = dream.model.map(x)
         state._generation(new_draws=Nchain, x=x, 
                           logp=logp, accept=Nchain, 
                           force_keep=True)
@@ -213,7 +213,7 @@ def run_dream(dream):
             # Compute the likelihood of the candidates
             apply_bounds(xtry)
 # ********************** MAP *****************************
-            logp_try = dream.model.log_density(xtry)
+            logp_try = dream.model.map(xtry)
             draws = len(logp_try)
 
             # Apply the metropolis acceptance/rejection rule
@@ -238,7 +238,7 @@ def run_dream(dream):
                 reject = ~accept
                 apply_bounds(xdr)
 # ********************** MAP *****************************
-                logp_xdr = dream.model.log_density(xdr[reject])
+                logp_xdr = dream.model.map(xdr[reject])
                 draws += len(logp_xdr)
 
                 # Apply the metropolis delayed rejection rule.
