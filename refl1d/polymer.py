@@ -57,9 +57,9 @@ class TetheredPolymer(Layer):
         self.thickness = Parameter.default(thickness, name="solvent thickness")
         self.interface = Parameter.default(interface, name="solvent interface")
         self.phi = Parameter.default(phi, name="polymer fraction")
-        self.head = Parameter.default(head, name="polymer head thickness")
-        self.tail = Parameter.default(tail, name="polymer tail thickness")
-        self.Y = Parameter.default(Y, name="polymer tail decay power")
+        self.head = Parameter.default(head, name="head thickness")
+        self.tail = Parameter.default(tail, name="tail thickness")
+        self.Y = Parameter.default(Y, name="tail decay")
         self.solvent = solvent
         self.polymer = polymer
         # Constraints:
@@ -73,6 +73,7 @@ class TetheredPolymer(Layer):
                     interface=self.interface,
                     head=self.head,
                     tail=self.tail,
+                    phi=self.phi,
                     Y = self.Y)
     def render(self, probe, slabs):
         thickness, sigma, phi, head, tail, Y \

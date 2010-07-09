@@ -31,21 +31,28 @@ class DreamModel(dream.MCMCModel):
         self.name = problem.name
         self.file = problem.file
         self.options = problem.options
+        self.setp = problem.setp
+        self.title = problem.title
 
     def nllf(self, x):
         """Negative log likelihood of seeing models given parameters *x*"""
         #print "eval",x; sys.stdout.flush()
         return self.problem.nllf(x)
 
-    def plot(self, x = None):
+    def plot(self, x = None, **kw):
         """Display the contents of the model in the current figure"""
-        if x: self.problem.setp(x)
-        self.problem.plot()
+        if x is not None: self.problem.setp(x)
+        self.problem.plot(**kw)
         
     def show(self, x = None):
         """Display the contents of the model in the current figure"""
-        if x: self.problem.setp(x)
+        if x is not None: self.problem.setp(x)
         self.problem.show()
+        
+    def save(self, output, x = None):
+        """Display the contents of the model in the current figure"""
+        if x is not None: self.problem.setp(x)
+        self.problem.save(output)
         
     def map(self, pop):
         return numpy.array(self.mapper(pop))
@@ -117,16 +124,16 @@ def start_fit(model, fit_options):
     # Save results
     state.title = model.name
     state.save(output)
-    model.setp(state.best()[0])
-    model.save(output)
+    model.save(output, state.best()[0])
     sys.stdout = open(output+".out","w")
     model.show()
 
     # Plot
     import pylab
     model.plot(fignum=6, figfile=output)
-    pylab.suptitle(":".join(model.store,model.title))
+    pylab.suptitle(":".join((model.store,model.title)))
     state.show(figfile=output)
+    if not "--noplot" in fit_options: pylab.show()
 
 def start_worker(model):
     #sys.stdout = open("dream-%d.log"%os.getpid(),"w")
@@ -167,10 +174,12 @@ def parse_opts():
     return fit_options, model_file, model_options
 
 def main():
+    preview_only = "--preview" in sys.argv
+    if preview_only: sys.argv.remove("--preview")        
     fit_options, model_file, model_options = parse_opts()
     problem = load_problem(model_file, model_options)
     model = DreamModel(problem=problem)
-    if "--preview" in sys.argv[1:]:
+    if preview_only:
         preview(model)
     elif "--worker" in fit_options:
         # This is the worker process.

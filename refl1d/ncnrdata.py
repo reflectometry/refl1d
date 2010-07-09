@@ -213,8 +213,8 @@ class NG7(NCNRLoader):
     radiation = "neutron"
     wavelength = 4.768
     dLoL = 0.040
-    d_s1 = 2000.
-    d_s2 = 1500.
+    d_s2 = 275.   # TODO: check this number
+    d_s1 = d_s2 + 1350.
     d_detector = 2000.
 
 class XRay(NCNRLoader):

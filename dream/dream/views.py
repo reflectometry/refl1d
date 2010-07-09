@@ -30,7 +30,6 @@ def plot_all(state, portion=None, figfile=None):
     figure(5); plot_corrmatrix(state, portion=portion)
     if state.title: suptitle(state.title)
     if figfile != None: savefig(figfile+"-corr")
-    show()
 
 def plot_var(state, var=0, portion=None, selection=None, **kw):
     points, logp = state.sample(portion=portion, vars=[var], 
