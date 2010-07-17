@@ -64,9 +64,10 @@ from .experiment import Experiment
 from .material import SLD, Material, Compound, Mixture
 from .model import Slab, Stack
 from .polymer import TetheredPolymer, VolumeProfile, layer_thickness
+from .freeform import Freeform
 from .interface import Erf
 from .probe import Probe, NeutronProbe, XrayProbe
-from .fitter import preview, fit, DEfit, SNOBfit, mesh
+from .fitter import preview, fit, DEfit, SNOBfit, mesh, FitProblem, MultiFitProblem
 from .sampler import draw_samples
 from .stajconvert import load_mlayer, save_mlayer
 from . import ncnrdata, snsdata

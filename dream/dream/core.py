@@ -101,6 +101,7 @@
 * Convert to python
 """
 from __future__ import division
+import sys
 import time
 
 from .state import MCMCDraw
@@ -278,6 +279,7 @@ def run_dream(dream):
         if current_time >= last_time + 10:
             last_time = current_time
             print state.generation, ":", state._best_logp, R_stat
+            sys.stdout.flush()
 
 
 def allocate_state(dream):

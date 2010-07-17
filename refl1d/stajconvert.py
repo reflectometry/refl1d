@@ -170,15 +170,13 @@ def model_to_mlayer(model):
     #print "\n".join(str(s) for s in slabs)
     values = []
     for layer in slabs:
-        rho,irho,incoh = layer.material.sld(probe)
-        try: irho = irho[0]
-        except: pass
+        rho,irho = layer.material.sld(probe)
         thickness = layer.thickness.value
         roughness = layer.interface.value
-        values.append((rho,irho,incoh,thickness,roughness))
+        values.append((rho,irho,thickness,roughness))
     vectors = [numpy.array(v) for v in zip(*values)]
     staj.sigma_roughness = numpy.array([1,2,3])
-    staj.rho,staj.irho,staj.incoh,staj.thickness,staj.sigma_roughness = vectors
+    staj.rho,staj.irho,staj.thickness,staj.sigma_roughness = vectors
 
     # If no repeats, split the model into sections
     if len(sections) == 1:

@@ -198,7 +198,8 @@ class Experiment(ExperimentBase):
         slabs = self._render_slabs()
         rho,irho = slabs.rho, slabs.irho
         #sigma = slabs.limited_sigma(limit=self.roughness_limit)
-        sigma = slabs.sigma
+        #sigma = slabs.sigma
+        sigma = [0] # Don't do roughness
         f = Fresnel(rho=rho[0,0], irho=irho[0,0], sigma=sigma[0], 
                     Vrho=rho[0,-1], Virho=irho[0,-1])
         return f(self.probe.Q)

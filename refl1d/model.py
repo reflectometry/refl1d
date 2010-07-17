@@ -19,7 +19,7 @@ all of its subclasses.
 # Xray thickness variance = neutron roughness - xray roughness
 
 
-__all__ = ['Bspline','PBS','Repeat','Slab','Stack']
+__all__ = ['Repeat','Slab','Stack']
 
 from copy import copy, deepcopy
 import numpy
@@ -238,8 +238,6 @@ def _check_layer(el):
 class Repeat(Layer):
     """
     Repeat a layer or stack.
-
-
     """
     def __init__(self, stack, repeat=1, interface=None):
         self.repeat = IntPar(repeat, limits=(0,inf),
@@ -331,8 +329,6 @@ class Slab(Layer):
 
     def render(self, probe, slabs):
         rho, irho = self.material.sld(probe)
-        try: irho = irho[0]
-        except: pass
         w = self.thickness.value
         sigma = self.interface.value
         #print "rho",rho
@@ -348,54 +344,3 @@ class Slab(Layer):
     def __repr__(self):
         return "Slab("+repr(self.material)+")"
 
-class Bspline(Layer):
-    """
-    A freeform section of the sample modeled with B-splines.
-
-    sld (rho) and imaginary sld (irho) can be modeled with a separate
-    number of control points.
-
-    The control points are equally spaced in the layers.  Values at
-    the ends are flat.
-    """
-    def __init__(self, thickness=0, rho=[], irho=[], name="BSpline"):
-        self.name = name
-        self.thickness = Par.default(thickness, limits=(0,inf),
-                                   name=name+" thickness")
-        self.rho_points = [Par.default(v) for v in rho]
-        self.irho_points = [Par.default(v) for v in irho]
-    def parameters(self):
-        return dict(rho=self.rho_points,
-                    irho=self.irho_points,
-                    thickness=self.thickness)
-    def render(self, probe, slabs):
-        thickness = self.thickness.value
-        rho = [v.value for v in self.rho]
-        irho = [v.value for v in self.irho]
-        z = slab.steps(thickness)
-
-class PBS(Layer):
-    """
-    A freeform section of the sample modeled with parametric B-splines.
-
-    Each control point uses a pair of parameters (x,y).
-
-    sld (rho) and imaginary sld (irho) can be modeled with a separate
-    number of control points.
-    """
-    def __init__(self, thickness=0, rho=[], irho=[], name="BSpline"):
-        self.name = name
-        self.thickness = Par.default(thickness, limits=(0,inf),
-                                   name=name+" thickness")
-        self.rho_points = [(Par.default(x),Par.default(y)) for x,y in rho]
-        self.irho_points = [(Par.default(x),Par.default(y)) for x,y in irho]
-    def parameters(self):
-        return dict(rho=self.rho_points,
-                    irho=self.irho_points,
-                    thickness=self.thickness)
-    def render(self, probe, slabs):
-        raise NotImplementedError
-        thickness = self.thickness.value
-        rho = [v.value for v in self.rho]
-        irho = [v.value for v in self.irho]
-        z = slab.steps()

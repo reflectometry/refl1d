@@ -39,6 +39,8 @@ D_polystyrene = SLD(name="D-PS",rho=6.2)
 SiOx = SLD(name="SiOx",rho=3.47)
 D_toluene = SLD(name="D-toluene",rho=5.66)
 D_initiator = SLD(name="D-initiator",rho=1.5)
+H_toluene = SLD(name="H-toluene",rho=0.94)
+H_initiator = SLD(name="H-initiator",rho=0)
 
 D_polymer_layer = TetheredPolymer(polymer=D_polystyrene, solvent=D_toluene,
                                   phi=70, head=120, tail=200, Y=2)
@@ -49,8 +51,6 @@ D = silicon%5 + SiOx/100%5 + D_initiator/100%20 + D_polymer_layer/1000%0 + D_tol
 
 
 ### Undeuterated toluene solvent system
-H_toluene = SLD(name="H-toluene",rho=0.94)
-H_initiator = SLD(name="H-initiator",rho=0)
 H_polymer_layer = copy(D_polymer_layer)  # Share tethered polymer parameters...
 H_polymer_layer.solvent = H_toluene      # ... but use different solvent
 H = silicon + SiOx + H_initiator + H_polymer_layer + H_toluene

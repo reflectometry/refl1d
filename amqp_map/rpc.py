@@ -136,7 +136,7 @@ class RPCMixin:
         self._rpc_sync.release()
 
     def _rpc_valid_method(self, method):
-        if self._rpc_provides: return method in self._rpc_publish
+        if self._rpc_provides: return method in self._rpc_provides
         if method.startswith('_') or method.startswith('rpc'): return False
         if not hasattr(self, method): return False
         return callable(getattr(self,method))

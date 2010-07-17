@@ -13,9 +13,41 @@ See :module:`resolution` for details.
 """
 
 import re
+import math
 import numpy
 from .resolution import Polychromatic, binwidths
 from . import util
+
+## Estimated intensity vs. wavelength for liquids reflectometer
+LIQUIDS_FEATHER = numpy.array([
+  (0.821168,28.5669),
+  (0.930657,23.5032),
+  (1.04015,19.0127),
+  (1.14964,16.9108),
+  (1.25912,15.4777),
+  (1.45073,15.6688),
+  (1.61496,16.6242),
+  (1.83394,18.4395),
+  (2.02555,20.6369),
+  (2.29927,23.6943),
+  (2.57299,23.6943),
+  (2.87409,21.1146),
+  (3.22993,15.5732),
+  (3.58577,12.8981),
+  (4.07847,9.4586),
+  (4.5438,6.59236),
+  (5.11861,4.68153),
+  (5.7208,3.05732),
+  (6.37774,1.91083),
+  (7.19891,1.24204),
+  (8.04745,0.955414),
+  (9.06022,0.573248),
+  (10.1825,0.477707),
+  (11.4142,0.382166),
+  (12.8102,0.191083),
+  (14.3431,0.286624),
+]).T
+
 
 def load(filename, instrument=None, **kw):
     """
@@ -99,21 +131,35 @@ class SNSLoader:
         """
         Simulate a run with a particular sample.
         """
+        from reflectometry.reduction.rebin import rebin
         from .experiment import Experiment
+        from .resolution import binedges
         T = kw.pop('T', self.T)
         slits = kw.pop('slits', self.slits)
-        if slits is None: slits = (0.2*T, 0.2*T)
-        if counts is None: counts = (70*T)**4
+        if slits is None: slits = [0.2*Ti for Ti in T]
+        if counts is None: counts = [(100*Ti)**4 for Ti in T]
 
         # Compute reflectivity with resolution and added noise
-        probe = self.simulate(T=T, slits=slits, **kw)
-        M = Experiment(probe=probe, sample=sample)
-        Q, R = M.reflectivity()
-        I = feather(probe.L, counts=counts)
-        dR = numpy.sqrt(R/I)
-        R += numpy.random.randn(len(Q))*dR
-        probe.R, probe.dR = R, dR
-        return probe
+        probes = []
+        for Ti,Si,Ci in zip(T,slits,counts):
+            probe = self.simulate(T=Ti, slits=Si, **kw)
+            M = Experiment(probe=probe, sample=sample)
+            I = rebin(binedges(self.feather[0]),self.feather[1],
+                      binedges(probe.L))
+            I /= sum(I)
+            _, Rth = M.reflectivity()
+            Rcounts = numpy.random.poisson(Rth*I*Ci)
+            Icounts = I*Ci
+            # Z = X/Y
+            # var Z = (var X / X**2 + var Y / Y**2) * Z**2
+            #       = (1/X + 1/Y) * (X/Y)**2
+            #       = (Y + X) * X/Y**3
+            R = Rcounts/Icounts
+            dR = numpy.sqrt((Icounts + Rcounts)*Rcounts/Icounts**3)
+            probe.data = R,dR
+            probes.append(probe)
+
+        return probes
 
 # TODO: print "Insert correct slit distances for Liquids and Magnetic"
 class Liquids(Polychromatic, SNSLoader):
@@ -122,7 +168,11 @@ class Liquids(Polychromatic, SNSLoader):
     """
     instrument = "Liquids"
     radiation = "neutron"
-    wavelength = 2.5,17.5
+    feather = LIQUIDS_FEATHER
+    wavelength = 1.5,5.
+    #wavelength = 0.5,5
+    #wavelength = 5.5,10
+    #wavelength = 10.5,15
     dLoL = 0.02
     d_s1 = 230.0 + 1856.0
     d_s2 = 230.0
@@ -148,7 +198,15 @@ INSTRUMENTS = {
 
 # ===== utils ==============
 
-def feather(L,counts=100000,range=None):
+def intensity_from_spline(Lrange,dLoL,feather):
+    from danse.reflectometry.reduction import rebin
+    L0,L1 = Lrange
+    n = math.ceil(math.log(L1/L0)/math.log(1+dLoL))
+    L = L0*(1+dLoL)**numpy.arange(0,n)
+    return (L[:-1]+L[1:])/2, rebin(feather[0],feather[1],L)
+    
+
+def boltzmann_feather(L,counts=100000,range=None):
     """
     Return expected intensity as a function of wavelength given the TOF
     feather range and the total number of counts.
@@ -163,10 +221,11 @@ def feather(L,counts=100000,range=None):
     x = numpy.arange(12,85)
     B = scipy.stats.boltzmann.pmf(x, 0.05, 1, loc=16)
     BGz = numpy.convolve(B,G,mode='same')
-    if range is None: range = L[0],L[-1]
-    if range[0] > range[1]: range = range[::-1]
-    range = range[0]*(1-1e-15),range[1]*(1+1e-15)
-    z = numpy.linspace(range[0],range[1],len(BGz))
+    #if range is None: range = L[0],L[-1]
+    #if range[0] > range[1]: range = range[::-1]
+    #range = range[0]*(1-1e-15),range[1]*(1+1e-15)
+    #z = numpy.linspace(range[0],range[1],len(BGz))
+    z = numpy.linspace(2,16.5,len(BGz))  # Wavelength range for liquids
     pL = numpy.interp(L,z,BGz,left=0,right=0)
     nL = pL/sum(pL)*counts
     return  nL

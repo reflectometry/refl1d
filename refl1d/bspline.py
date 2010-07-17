@@ -5,6 +5,7 @@ BSpline calculator.
 Given a set of knots, compute the degree 3 Bspline and any derivatives
 that are required.
 """
+from __future__ import division
 import numpy
 
 def max(a,b):
@@ -13,37 +14,70 @@ def max(a,b):
 def min(a,b):
     return (a>b).choose(a,b)
 
-def bspline3(knot,
-             control,
-             t,
-             clamp=True,
-             nderiv=0
-             ):
+def pbs(x, y, xt, flat=True, parametric=False):
+    x = list(sorted(x))
+    assert x[0] == 0 and x[-1] == 1
+    knot = numpy.hstack((0, 0, numpy.linspace(0,1,len(y)), 1, 1))
+    if flat:
+        cx = numpy.hstack((x[0],x[0],x[0],(2*x[0]+x[1])/3, 
+                           x[1:-1],
+                           (2*x[-1]+x[-2])/3, x[-1]))
+    else:
+        cx = numpy.hstack(([x[0]]*3, x, x[-1]))
+    cy = numpy.hstack(([y[0]]*3, y, y[-1]))
+
+    if parametric:
+        return _bspline3(knot,cx,xt),_bspline3(knot,cy,yt)
+
+    # Find parametric t values corresponding to given z values
+    # First try a few newton steps
+    t = numpy.interp(xt,x,numpy.linspace(0,1,len(x)))
+    for _ in range(6):
+        Pt,dPt = _bspline3(knot,cx,t,nderiv=1)
+        idx = dPt!=0
+        t[idx] = (t - (Pt-xt)/dPt)[idx]
+    # Use bisection when newton failed
+    idx = numpy.isnan(t) | (abs(_bspline3(knot,cx,t)-xt)>1e-9)
+    if idx.any():
+        missing = xt[idx]
+        #print missing
+        t_lo, t_hi = 0*missing, 1*missing
+        for _ in range(30): # about 1e-9 tolerance
+            trial = (t_lo+t_hi)/2
+            Ptrial = _bspline3(knot,cx,trial)
+            tidx = Ptrial<missing
+            t_lo[tidx] = trial[tidx]
+            t_hi[~tidx] = trial[~tidx]
+        t[idx] = (t_lo+t_hi)/2
+    #print "err",numpy.max(abs(_bspline3(knot,cx,t)-xt))
+
+    # Return y evaluated at the interpolation points
+    return _bspline3(knot,cy,t)
+
+def bspline(y, xt, flat=True):
     """
     Evaluate the B-spline specified by the given knot sequence and
-    control values at the parametric points t.   The knot sequence
-    should be four elements longer than the control sequence.
-
-    If nderiv is greater than 0, returns derivatives as well as the
-    function value.  For example, nderiv=3 returns f,f',f'',f''',
+    control values at the parametric points t.
 
     If clamp is True, the spline value is clamped to the value of
     the final control point beyond the ends of the knot sequence.
-    If clamp is False, the spline will go to zero at +/- infinity
-    as in the traditional algorithm.
+    If clamp is False, the spline will go to zero at +/- infinity.
     """
-    degree = len(knot) - len(control);
-    if degree != 4:
-        raise ValueError, "must have two extra knots at each end"
-
-    if clamp:
-        # Alternative approach spline is clamped to initial/final control values
-        control = numpy.concatenate(([control[0]]*(degree-1),
-                                     control, [control[-1]]))
-    else:
-        # Traditional approach: spline goes to zero at +/- infinity.
-        control = numpy.concatenate(([0]*(degree-1), control, [0]))
-
+    if flat:
+        knot = numpy.hstack((0, 0, numpy.linspace(0,1,len(y)), 1, 1))
+        cy = numpy.hstack(([y[0]]*3, y, y[-1]))
+    else: 
+        raise NotImplementedError
+        # The following matches first derivative but not second
+        knot = numpy.hstack((0, 0, numpy.linspace(0,1,len(y)), 1, 1))
+        cy = numpy.hstack((y[0], y[0], y[0],
+                           y[0] + (y[1]-y[0])/3,
+                           y[1:-1],
+                           y[-1] + (y[-2]-y[-1])/3, y[-1]))
+    return _bspline3(knot,cy,xt)
+    
+def _bspline3(knot,control,t,nderiv=0):
+    knot,control,t = [numpy.asarray(v) for v in knot, control, t]
 
     # Deal with values outside the range
     valid = (t > knot[0]) & (t <= knot[-1])
@@ -103,3 +137,30 @@ def bspline3(knot,
     elif nderiv == 1: return f,df
     elif nderiv == 2: return f,df,d2f
     else:             return f,df,d2f,d3f
+
+
+
+
+if __name__ == "__main__":
+    from pylab import *
+    hold(True)
+    x = linspace(0,1,7)
+    #x[1],x[-2] = x[0],x[-1] 
+    x[1],x[-2] = x[2],x[-3]
+    x[1],x[-2] = x[2]+0.01,x[-3]-0.01
+    #x[1],x[-2] = x[1]-x[1]/2,x[-1]-x[1]/2
+    #y = [9,6,1,3,8,4,2]
+    #y = [9,11,13,3,-2,0,2]
+    y = [9,11,2,3,8,0,2]
+    #y = [9,9,1,3,8,2,2]
+    t = linspace(0,1,400)
+    plot(linspace(x[0],x[-1],len(x)),y,':oy')
+    #plot(xt,bspline(y,t,flat=False),'-.y') # bspline
+    plot(t,bspline(y,t,flat=True),'-y') # bspline
+
+    yt = pbs(x,y,t,flat=False)
+    plot(t,yt,'-.b') # pbs
+    yt = pbs(x,y,t,flat=True)
+    plot(t,yt,'-b') # pbs
+    plot(sorted(x),y,':ob')
+    show()

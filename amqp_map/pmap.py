@@ -1,47 +1,72 @@
 raise NotImplementedError  # This code is still a work in progress
+
+import threading
+import dill as pickle
 from .rpc import RPCMixin
 
-def start_generic(server):
+def pickle_worker(server):
     """
     Client side driver of the map work.
-
-    The model should already be loaded before calling this.
     """
     # Create the exchange and the worker queue
     channel = server.channel()
+    rpc_channel = server.channel()
     exchange = "park.map"
-    map_queue = ".".join(("map",mapid))
+    map_queue = "map.pickle"
     channel.exchange_declare(exchange=exchange, type="direct",
                              durable=False, auto_delete=True)
     channel.queue_declare(queue=map_queue, durable=False, 
                           exclusive=False, auto_delete=True)
 
+    _rpc_queue,_,_ = channel.queue_declare(queue=service,
+                                           durable=False, 
+                                           exclusive=True, 
+                                           auto_delete=True)
+    channel.queue_bind(queue=_rpc_queue,
+                       exchange="amq.direct", 
+                       routing_key=queue)
 
 
-    cache = {}
-    def _lookup(function):
-        if function not in cache:
+    _cache = {}
+    def _fetch_function(queue, mapid):
+        reply = amqp.Message(dumps(dict(mapid=mapid,
+                                        sendfunction=rpc_queue)))
+        channel.basic_publish(reply, exchange=exchange, 
+                              routing_key=queue)
+        def _receive_function(msg):
+            rpc_channel.basic_cancel(tag)
+            body = pickle.loads(msg.body)
+            _cache[body['mapid']] = pickle.loads(body['function'])
             
-            
-        
-    # Prefetch requires basic_ack, basic_qos and consume with ack
+        tag = channel.basic_consume(queue=queue, 
+                                    callback=_receive_function, 
+                                    no_ack=False)
+        rpc_channel.wait() # Wait for function id
+
     def _process_work(msg):
         # Check for sentinel
         if msg.reply_to == "": channel.basic_cancel(consumer)
         
-        fn = _lookup(msg.function)        
-        
-        body = loads(msg.body)
+        body = pickle.loads(msg.body)
+        mapid = body['mapid']
+        if mapid not in _cache:
+            _fetch_function(msg.reply_to, mapid)
+        function = _cache[mapid]
+        if function == None:
+            channel.basic_ack(msg.delivery_tag)
+            return
+
         # Acknowledge delivery of message
         #print "processing...",body['index'],body['value'] 
         try:
             result = function(body['value'])
-        except exc:
+        except:
             result = None
         #print "done"
         channel.basic_ack(msg.delivery_tag)
-        reply = amqp.Message(dumps(dict(index=body['index'],result=result)))
-        channel.basic_publish(reply, exchange=exchange, 
+        reply = dict(index=body['index'], result=result, mapid=mapid)
+        replymsg = amqp.Message(pickle.dumps(reply))
+        channel.basic_publish(replymsg, exchange=exchange, 
                               routing_key=msg.reply_to)
     #channel.basic_qos(prefetch_size=0, prefetch_count=1, a_global=False)
     consumer = channel.basic_consume(queue=map_queue, callback=_process_work, 
@@ -51,7 +76,7 @@ def start_generic(server):
 
 
 
-class Mapper(object, RPCMixin):
+class PickleMapper(object, RPCMixin):
     def server(self, server):
         # Create the exchange and the worker and reply queues
         channel = server.channel()
@@ -60,7 +85,7 @@ class Mapper(object, RPCMixin):
                                  durable=False, auto_delete=True)
 
         map_channel = channel
-        map_queue = ".".join(("map",mapid))
+        map_queue = "map.pickle"
         map_channel.queue_declare(queue=map_queue, durable=False, 
                                   exclusive=False, auto_delete=True)
         map_channel.queue_bind(queue=map_queue, exchange="park.map",
@@ -87,6 +112,10 @@ class Mapper(object, RPCMixin):
         ## USE_LOCKS_TO_THROTTLE
         self._throttle = threading.Condition()
 
+        ## Start the rpc server
+        self.rpc_init(server, service, provides=("map_function"))
+        self.rpc_daemon()
+
     def close(self):
         self.channel.close()
 
@@ -94,7 +123,7 @@ class Mapper(object, RPCMixin):
         self._reply = loads(msg.body)
         #print "received result",self._reply['index'],self._reply['result']
     @daemon
-    def _send_map(self, items):
+    def _send_map(self, items, mapid):
         for i,v in enumerate(items):
             self.num_queued = i
             #print "queuing %d %s"%(i,v)
@@ -114,30 +143,16 @@ class Mapper(object, RPCMixin):
             #    time.sleep(sleep_time)
             #    sleep_time = min(2*sleep_time, 600)
 
-            body = dumps(dict(index=i,value=v))
+            body = dumps(dict(index=i,value=v,mapid=mapid))
             msg = amqp.Message(body, reply_to=self.reply_queue, delivery_mode=1)
             self.map_channel.basic_publish(msg, exchange=self.exchange,
                                            routing_key=self.map_queue)
 
-    def _cache(self, fn):
-        self._function_str = dumps(fn)
-        self._function_id = md5sum(self._function_str)
-
-    def _process_rpc(self, msg):
-        self._reply = loads(msg.body)
-        #print "received result",self._reply['index'],self._reply['result']
-    @daemon
-    def _rpc_handler(self, items):
-        while True:
-            self.rpc_channel.wait()
-
-    # RPC call
-    def get_function(self, id):
-        if id == self._function_id:
-            return self._function_str
-        else:
-            raise ValueError("Function not being mapped")
-
+    def _send_function(self, function_str, destination):
+        msg = amqp.Message(function_str, delivery_mode=1)
+        self.map_channel.basic_publish(msg, 
+                                       exchange=self.exchange,
+                                       routing_key=destination)
     def cancel(self):
         """
         Stop a running map.
@@ -150,16 +165,38 @@ class Mapper(object, RPCMixin):
         self.reply_channel.basic_publish(msg)
 
     def async(self, fn, items):
-        self._cache(fn)
+        function_str = dumps(fn)
+        current_map = md5sum(function_str)
         items = list(items) # make it indexable
         self.num_items = len(items)
         # Queue items in separate thread so we can start receiving results
         # before all items are even queued
         self.num_processed = 0
-        publisher = self._send_map(items)
+        publisher = self._send_map(items, mapid = current_map)
+        received = set()
         for i in items:
-            self.reply_channel.wait()
-            idx = self._reply['index']
+            while True:
+                self.reply_channel.wait()
+                mapid = self._repy['mapid']
+                if 'sendfunction' in self._reply:
+                    destination = self._reply['sendfunction']
+                    if mapid == current_map:
+                        content = function_str
+                    else:
+                        content = ""
+                    self._send_function(content, mapid, destination)
+                elif 'result' in self._reply:
+                    idx = self._reply['index']
+                    if mapid == current_map:
+                        if idx not in received:
+                            received.add(idx) # Track responses
+                            break
+                        else:
+                            pass # Ignore duplicates
+                    else:
+                        pass # ignore late responders
+                else:
+                    print "ignoring unexpected message"
             result = self._reply['result']
             #print "received %d %g"%(idx,result)
             self.num_processed = i
@@ -177,7 +214,3 @@ class Mapper(object, RPCMixin):
         result = list(self.async(fn, items))
         result = list(sorted(result,lambda x,y: cmp(x[0],y[0])))
         return zip(*result)[1]
-
-map = PickleMapper()
-
-

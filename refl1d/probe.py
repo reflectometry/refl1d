@@ -46,7 +46,7 @@ in accordance with its statistical weight.
 import numpy
 from numpy import radians, sin, sqrt, tan, cos, pi, inf, sign, log
 from periodictable import nsf, xsf
-from calc import convolve
+from .calc import convolve
 from . import fresnel
 from material import Vacuum
 from mystic.parameter import Parameter
@@ -155,17 +155,16 @@ class Probe(object):
         self.T, self.dT = T[idx],dT[idx]
         self.L, self.dL = L[idx],dL[idx]
         self.Qo, self.dQ = Q[idx],dQ[idx]
-        if data != None:
+        if data is not None:
             R,dR = data
             if R is not None: R = R[idx]
             if dR is not None: dR = dR[idx]
-            self.R,self.dR = R,dR
-            # Remember the original so we can resynthesize as needed
-            self.Ro = R
+            data = R,dR
 
         # By default the calculated points are the measured points.  Use
         # oversample() for a more accurate resolution calculations.
         self._set_calc(self.T,self.L)
+        self.data = data
 
     def log10_to_linear(self):
         """
@@ -181,6 +180,14 @@ class Probe(object):
                 self.dR = self.Ro * self.dR * log(10)
             self.R = self.Ro
 
+    def _get_data(self):
+        return self.R0,self.dR
+    def _set_data(self, data):
+        if data != None:
+            self.R,self.dR = data
+            # Remember the original so we can resynthesize as needed
+            self.Ro = self.R
+    data = property(_get_data, _set_data)
     def resynth_data(self):
         """
         Generate new data according to the model R ~ N(Ro,dR).
@@ -269,7 +276,7 @@ class Probe(object):
         L = L.flatten()
         self._set_calc(T,L)
 
-    def apply_beam(self, calc_R, resolution=True):
+    def apply_beam(self, calc_R, resolution=True, calc_Q=None):
         """
         Apply factors such as beam intensity, background, backabsorption,
         resolution and footprint to the data.
@@ -279,17 +286,15 @@ class Probe(object):
         both the sampling and the resolution calculation.  Probe is the
         natural place for this calculation since it controls both of these.
         """
+        if calc_Q is None: calc_Q = self.calc_Q
         # Handle absorption through the substrate, which occurs when Q<0
         # (condition)*C is C when condition is True or 0 when False,
         # (condition)*(C-1)+1 is C when condition is True or 1 when False.
-        back = (self._calc_Q<0)*(self.back_absorption.value-1)+1
+        back = (calc_Q<0)*(self.back_absorption.value-1)+1
         calc_R *= back
 
         # For back reflectivity, reverse the sign of Q after computing
-        if self.back_reflectivity:
-            calc_Q = -self.calc_Q
-        else:
-            calc_Q = self.calc_Q
+        if self.back_reflectivity: calc_Q = -calc_Q
         if resolution:
             Q,R = self.Q, convolve(calc_Q, calc_R*back, self.Q, self.dQ)
         else:
@@ -405,6 +410,81 @@ class Probe(object):
         pylab.xlabel('Q (inv Angstroms)')
         pylab.ylabel('R (100 Q)^4')
 
+class ProbeSet(Probe):
+    def __init__(self, probes):
+        self.probes = probes
+        self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
+            = measurement_union(xs)
+        self._set_calc(self.T,self.L)
+    def shared_beam(self, intensity=1, background=0,
+                    back_absorption=1, theta_offset=0):
+        """
+        Share beam parameters across all segments.
+
+        New parameters are created for *intensity*, *background*,
+        *theta_offset* and *back_absorption* and assigned to the all
+        segments.  These can be replaced in an individual segment if 
+        that parameter is independent.
+        """
+        intensity = Parameter.default(intensity,name="intensity")
+        background = Parameter.default(background,name="background",
+                                       limits=[0,inf])
+        back_absorption = Parameter.default(back_absorption, 
+                                            name="back_absorption",
+                                            limits=[0,1])
+        theta_offset = Parameter.default(theta_offset,name="theta_offset")
+        for p in self.probes:
+            p.intensity = intensity
+            p.background = background
+            p.back_absorption = back_absorption
+            p.theta_offset = theta_offset
+
+    def parameters(self):
+        return [p.paramters() for p in self.probes]
+
+    def resynth_data(self):
+        for p in self.probes: p.resynth_data()
+    resynth_data.__doc__ = Probe.resynth_data.__doc__
+
+    def restore_data(self):
+        for p in self.probes: p.restore_data()
+    restore_data.__doc__ = Probe.restore_data.__doc__
+
+    def _set_calc(self, T, L):
+        self.probes[0]._set_calc(T,L)
+
+    def _Q(self):
+        # TODO: Can different pieces have different theta offset?
+        return self.probes[0].Q
+    Q = property(_Q)
+    def _calc_Q(self):
+        return self.probes[0].calc_Q
+    calc_Q = property(_calc_Q)
+    def apply_beam(self, calc_R, **kw):
+        calc_Q = self.probes[0].calc_Q
+        result = [p.apply_beam(calc_R, calc_Q=calc_Q, **kw) 
+                  for p in self.probes]
+    def fresnel(self, **kw):
+        return self.probes[0].fresnel(**kw)
+    def plot(self, **kw):
+        for p in self.probes: p.plot(**kw)
+    plot.__doc__ = Probe.plot.__doc__
+    def plot_resolution(self, **kw):
+        for p in self.probes: p.plot_resolution(**kw)
+    plot_resolution.__doc__ = Probe.plot_resolution.__doc__
+    def plot_linear(self, theory=None):
+        for p in self.probes: p.plot_linear(**kw)
+    plot_linear.__doc__ = Probe.plot_linear.__doc__
+    def plot_log(self, theory=None):
+        for p in self.probes: p.plot_log(**kw)
+    plot_log.__doc__ = Probe.plot_log.__doc__
+    def plot_fresnel(self, **kw):
+        for p in self.probes: p.plot_fresnel(**kw)
+    plot_fresnel.__doc__ = Probe.plot_fresnel.__doc__
+    def plot_Q4(self, **kw):
+        for p in self.probes: p.plot_Q4(**kw)
+    plot_Q4.__doc__ = Probe.plot_Q4.__doc__
+
 class XrayProbe(Probe):
     """
     X-Ray probe.
@@ -420,6 +500,8 @@ class XrayProbe(Probe):
         rho, irho = xsf.xray_sld(material,
                                  wavelength = self._sf_L,
                                  density=1)
+        # TODO: support wavelength dependent systems
+        return rho[0], irho[0], 0
         return rho[self._sf_idx], irho[self._sf_idx], 0
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
@@ -429,6 +511,8 @@ class NeutronProbe(Probe):
         rho, irho, rho_incoh = nsf.neutron_sld(material,
                                                wavelength=self._sf_L,
                                                density=1)
+        # TODO: support wavelength dependent systems
+        return rho, irho[0], rho_incoh
         return rho, irho[self._sf_idx], rho_incoh
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
@@ -439,7 +523,10 @@ def measurement_union(xs):
         if x is not None:
             TL = TL | set(zip(x.T,x.dT,x.L,x.dL))
     T,dT,L,dL = [numpy.array(sorted(v)) for v in zip(*[v for v in TL])]
-    return T,dT,L,dL
+    Q = TL2Q(T,L)
+    dQ = dTdL2dQ(T,dT,L,dL)
+    idx = numpy.argsort(Q)
+    return T[idx],dT[idx],L[idx],dL[idx],Q[idx],dQ[idx]
 
 class PolarizedNeutronProbe(object):
     """
@@ -454,17 +541,8 @@ class PolarizedNeutronProbe(object):
     def __init__(self, xs=None, Tguide=270):
         self.pp, self.pm, self.mp, self.mm = xs
         
-        T,dT,L,dL = measurement_union(xs)
-
-        Q = TL2Q(T,L)
-        dQ = dTdL2dQ(T,dT,L,dL)
-
-        # Probe stores sorted values for convenience of resolution calculator
-        idx = numpy.argsort(Q)
-        self.T, self.dT = T[idx],dT[idx]
-        self.L, self.dL = L[idx],dL[idx]
-        self.Qo, self.dQ = Q[idx],dQ[idx]
-
+        self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
+            = measurement_union(xs)
         self._set_calc(self.T, self.L)
 
     def shared_beam(self, intensity=1, background=0,

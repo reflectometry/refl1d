@@ -658,6 +658,7 @@ def bins(low, high, dLoL):
     *low*,*high* are the minimum and maximum wavelength.
     *dLoL* is the desired resolution FWHM dL/L for the bins.
     """
+    
     step = 1 + dLoL;
     n = ceil(log(high/low)/log(step))
     edges = low*step**arange(n+1)
@@ -693,6 +694,33 @@ def binwidths(L):
     dL = 2*dLoL/(2+dLoL)*L
     return dL
 
+def binedges(L):
+    """
+    Construct bin edges E assuming that L represents the bin centers of a
+    measured TOF data set.
+
+    The bins L are assumed to be spaced logarithmically with edges::
+
+        E[0] = min wavelength
+        E[i+1] = E[i] + dLoL*E[i]
+
+    and centers::
+
+        L[i] = (E[i]+E[i+1])/2
+             = (E[i] + E[i]*(1+dLoL))/2
+             = E[i]*(2 + dLoL)/2
+
+    so::
+
+        E[i] = L[i]*2/(2+dLoL)
+        E[n+1] = L[n]*2/(2+dLoL)*(1+dLoL)
+    """
+    if L[1] > L[0]:
+        dLoL = L[1]/L[0] - 1
+    else:
+        dLoL = L[0]/L[1] - 1
+    E = L*2/(2+dLoL)
+    return numpy.hstack((E,E[-1]*(1+dLoL)))
 
 def divergence(T=None, slits=None, distance=None,
                sample_width=1e10, sample_broadening=0):
@@ -725,8 +753,11 @@ def divergence(T=None, slits=None, distance=None,
     """
     # TODO: check that the formula is correct for T=0 => dT = s1 / 2 d1
     # TODO: add sample_offset and compute full footprint
-    s1,s2 = slits
     d1,d2 = distance
+    try:
+        s1,s2 = slits
+    except TypeError:
+        s1=s2 = slits
 
     # Compute FWHM angular divergence dT from the slits in radians
     dT = (s1+s2)/2/(d1-d2)

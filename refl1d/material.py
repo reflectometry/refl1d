@@ -81,7 +81,7 @@ class Vacuum(Scatterer):
     def parameters(self):
         return []
     def sld(self, probe):
-        return 0,0,0
+        return 0,0
     def __repr__(self):
         return "Vacuum()"
 
@@ -430,12 +430,12 @@ class Mixture(Scatterer):
 
         # Lookup SLD
         slds = [c.sld(probe) for c in self.material]
-        rho,irho,incoh = [numpy.asarray(v) for v in zip(*slds)]
+        rho,irho = [numpy.asarray(v) for v in zip(*slds)]
 
         # Use calculator to convert individual SLDs to overall SLD
         volume_fraction = self._volume(fraction)
         rho = numpy.sum(rho*volume_fraction)
-        irho = numpy.sum(irho*volume_fraction[:,None],axis=0)
+        irho = numpy.sum(irho*volume_fraction)
         if self.use_incoherent:
             raise NotImplementedError("incoherent scattering not supported")
         #print "Mixture",self.name,coh,absorp

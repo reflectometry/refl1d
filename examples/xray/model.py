@@ -1,4 +1,4 @@
-import sys; sys.path.append('../..'); sys.path.append('../../dream')
+import sys; sys.path.extend(('c:/home/pkienzle/danse/refl1d','c:/home/pkienzle/danse/refl1d/dream'))
 from math import pi
 from refl1d import *
 Probe.view = 'log' # log, linear, fresnel, or Q**4
@@ -10,7 +10,7 @@ Probe.view = 'log' # log, linear, fresnel, or Q**4
 slits = 0.02*(ncnrdata.XRay.d_s1 - ncnrdata.XRay.d_s2)
 instrument = ncnrdata.XRay(dLoL=0.005, slits_at_Tlo=slits)
 probe = instrument.load('e1085009.log')
-probe.log10_to_linear()  # old data was start with log_10 (R) rather than R
+probe.log10_to_linear()  # data was stored as log_10 (R) rather than R
 
 # Values from staj
 Pt = SLD(name='Pt', rho=86.431, irho=42.41/(2*1.54))
@@ -52,7 +52,8 @@ if 1:
 # Fit parameters
 #probe.theta_offset.dev(radians(0.01)/sqrt(12))  # accurate to 0.01 degrees
 
-if 1: # Open set
+store = "T1"
+if 0: # Open set
     for i,L in enumerate(sample[0:-1]):
         if i>0: L.thickness.range(0,1000)
         L.interface.range(0,50)
@@ -64,16 +65,14 @@ elif 0: # jiggle
         L.interface.pmp(0,10)
         L.material.rho.pmp(10)
         L.material.irho.pmp(10)
-elif 0: # grower
+elif 1: # grower
     sample[1].thickness.value = 25
     sample[2].thickness.value = 200
     sample[3].thickness.value = 500
     sample[4].thickness.value = 25
-    for i,L in enumerate(sample[0:-1]):
+    for i,L in enumerate(sample[1:-2]):
         L.interface.value = 20
-        L.material.rho.value = 0.5*int(2*L.material.rho.value)
-        L.material.irho.value = 0.5*int(2*L.material.rho.value)
-        if i > 0: L.thickness.pmp(-50,100)
+        L.thickness.pmp(50)
         L.interface.pmp(100)
         L.material.rho.pmp(10)
         L.material.irho.pmp(10)
@@ -88,11 +87,20 @@ elif 1: # d2 X d3
 
 M = Experiment(probe=probe, sample=sample)
 
+# Needed by dream fitter
+problem = FitProblem(M)
+problem.dream_opts = dict(chains=20,draws=1000,burn=3000)
+problem.name = "Example"
+problem.title = "xray"
+problem.store = store
+
+#Probe.view = 'log'
 #from refl1d.mystic.parameter import randomize, varying
 #randomize(varying(M.parameters()))
 
+
 # Do the fit
-if 1:
+if 0:
     result = preview(models=M)
 elif 0:
     result = fit(models=[M], npop=10)
@@ -115,12 +123,15 @@ elif 0:
     pylab.pcolormesh(y,x,-0.5*image.T, cmap=COLORMAP)
     pylab.colorbar()
     pylab.show()
-else:
-    mc = draw_samples(models=M, chains=10, generations=500)
-    # full is 10n pop using full range 1x1500 gen
-    # full2 is 10n pop using full range repeated, but with randomized initial
-    # grower is 10n pop over 3*1000 gen using nominal grower values
-    # grower2 is 20n pop over 5*2000 gen using nominal grower values
-    mc.save('d1xd2-fit')
-    mc.show(portion=0.5)
-    
+elif 0:
+    mc = draw_samples(models=M, chains=10, draws=5000, burn=1000)
+    output = "xray"
+    sys.stdout = open(output+".out","w")
+    model.show()
+   
+    # Plot
+    import pylab
+    model.plot(fignum=6, figfile=output)
+    pylab.suptitle(":".join((model.store,model.title)))
+    state.show(figfile=output)
+    if not "--noplot" in fit_options: pylab.show()

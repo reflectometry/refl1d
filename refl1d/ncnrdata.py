@@ -180,6 +180,21 @@ class NCNRLoader(Monochromatic):
         return load(filename, instrument=self, **kw)
     def load_magnetic(self, filename, **kw):
         return load_magnetic(filename, instrument=self, **kw)
+    def simdata(self, sample, counts=None, **kw):
+        """
+        Simulate a run with a particular sample.
+        """
+        # TODO: more realistic simulation
+        from .experiment import Experiment
+        probe = self.simulate(**kw)
+        M = Experiment(probe=probe, sample=sample)
+        _, Rth = M.reflectivity()
+        dR = 0.01*M.fresnel()
+        R = Rth + numpy.random.randn(*Rth.shape)*dR
+        probe.data = R,dR
+        
+        return probe
+
 
 class ANDR(NCNRLoader):
     """
