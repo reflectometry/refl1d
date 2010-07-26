@@ -15,7 +15,7 @@
 import sys
 from periodictable import formula
 from refl1d import *
-from refl1d.fitter import MultiFitProblem
+from refl1d.fitter import MultiFitProblem, FitProblem
 from copy import copy
 
 
@@ -110,6 +110,8 @@ H_probe = instrument.load('10nht001.refl', back_reflectivity=True)
 dream_opts = dict(chains=20,draws=300000,burn=1000000)
 store = "T3" 
 if len(sys.argv) > 1: store=sys.argv[1]
+modelnum = "all"
+if len(sys.argv) > 2: modelnum=sys.argv[2]
 if store == "T1":
     dream_opts = dict(chains=20,draws=100000,burn=300000)
     title = "First try; phi=70"
@@ -135,11 +137,11 @@ elif store == "T4":
     title = "free all"
 elif store == "T5":
     dream_opts = dict(chains=20,draws=100000,burn=1000000)
-    title = "fixed SiOx, initiator w>40"
+    title = "fixed SiOx, initiator w>15"
     SiOx.rho.fixed = True
     D_toluene.rho.fixed = True
     H_toluene.rho.fixed = True
-    D[2].thickness.range(40,200)
+    D[2].thickness.range(15,200)
     D_polymer_layer.Y.range(1,4)
 elif store == "T6":
     dream_opts = dict(chains=20,draws=100000,burn=1000000)
@@ -156,9 +158,16 @@ H_model = Experiment(sample=H, probe=H_probe)
 models = D_model, H_model
 
 # Needed by dream fitter
-problem = MultiFitProblem(models=models)
+if modelnum == "all":
+    problem = MultiFitProblem(models=models)
+    problem.name = "tethered"
+elif modelnum == "M0":
+    problem = FitProblem(D_model)
+    problem.name = "Dtoluene"
+elif modelnum == "M1":
+    problem = FitProblem(H_model)
+    problem.name = "Htoluene"
 problem.dream_opts = dream_opts
-problem.name = "tethered"
 problem.title = title
 problem.store = store
 #Probe.view = 'log'

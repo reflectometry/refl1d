@@ -82,25 +82,44 @@ class Layer(object): # Abstract base class
     def __div__(self, other):
         """Return a new layer with a different thickness"""
         c = copy(self)
-        c.thickness = copy(self.thickness)
-        c.thickness.set(other)
+        c.thickness = _parcopy(self.thickness, other)
         return c
-    def __idiv__(self, other):
-        self.thickness.set(other)
-        return self
-    def __rdiv__(self, other):
-        raise NotImplementedError("Use layer/thickness, not thickness/layer")
     def __mod__(self, other):
         """Return a new layer with a different roughness"""
         c = copy(self)
-        c.interface = copy(self.interface)
-        c.interface.set(other)
+        c.interface = _parcopy(self.interface, other)
         return c
-    def __imod__(self, other):
-        self.interface.set(other)
+    def __idiv__(self, other):
+        c.thickness = _parinit(self.thickness, other)
         return self
+    def __imod__(self, other):
+        c.interface = _parinit(self.interface, other)
+        return self
+    def __rdiv__(self, other):
+        raise NotImplementedError("Use layer/thickness, not thickness/layer")
     def __rmod__(self, other):
         raise NotImplementedError("Use layer%roughness, not roughness%layer")
+
+def _parinit(p, v):
+    """
+    If v is a parameter use v, otherwise use p but with value v.
+    """
+    if isinstance(v, Par):
+        p = v
+    else:
+        p.set(v)
+    return p
+def _parcopy(p, v):
+    """
+    If v is a parameter use v, otherwise use a copy of p but with value v.
+    """
+    if isinstance(v, Par):
+        p = v
+    else:
+        p = copy(p)
+        p.set(v)
+    return p
+
 
 class Stack(Layer):
     """
@@ -207,8 +226,9 @@ class Stack(Layer):
     # Define a little algebra for composing samples
     # Stacks can be repeated or extended
     def __mul__(self, other):
-        if not isinstance(other, int) or not other > 1:
-            raise TypeError("Repeat count must be an integer > 1")
+        if isinstance(other, Par): pass
+        elif isinstance(other, int) and other > 1: pass
+        else: raise TypeError("Repeat count must be an integer > 1")
         s = Repeat(stack=self, repeat=other)
         return s
     def __rmul__(self, other):
@@ -223,8 +243,8 @@ class Stack(Layer):
         s.add(other)
         s.add(self)
     def __iadd__(self, other):
-        s.add(other)
-        return s
+        self.add(other)
+        return self
     render.__doc__ = Layer.render.__doc__
 
 def _check_layer(el):
@@ -297,15 +317,13 @@ class _MaterialStacker:
         return s
     def __div__(self, other):
         """Create a slab with the given thickness"""
-        c = Slab(material=self)
-        c.thickness.set(other)
+        c = Slab(material=self, thickness=other)
         return c
     def __rdiv__(self, other):
         raise NotImplementedError("Use layer/thickness, not thickness/layer")
     def __mod__(self, other):
         """Create a slab with the given roughness"""
-        c = Slab(material=self)
-        c.interface.set(other)
+        c = Slab(material=self, interface=other)
         return c
     def __rmod__(self, other):
         raise NotImplementedError("Use layer%roughness, not roughness%layer")
