@@ -52,7 +52,7 @@ def start_kernel(server, jobid, work):
     # Create the exchange and the worker queue
     channel = server.channel()
     exchange = "park.map"
-    map_queue = ".".join(("map-J",jobid))
+    map_queue = "".join(("park.map.J",jobid))
     channel.exchange_declare(exchange=exchange, type="direct",
                              durable=False, auto_delete=True)
     channel.queue_declare(queue=map_queue, durable=False, 
@@ -61,7 +61,12 @@ def start_kernel(server, jobid, work):
     # Prefetch requires basic_ack, basic_qos and consume with ack
     def _process_work(msg):
         # Check for sentinel
-        if msg.reply_to == "": channel.basic_cancel(consumer)
+        if msg.reply_to == "": 
+            #print "Done mapping"
+            channel.basic_cancel(map_queue)
+            # TODO: this is too brutal
+            sys.exit()
+            return
         body = loads(msg.body)
         # Acknowledge delivery of message
         #print "processing...",body['index'],body['value']; sys.stdout.flush()
@@ -75,8 +80,8 @@ def start_kernel(server, jobid, work):
         channel.basic_publish(reply, exchange=exchange, 
                               routing_key=msg.reply_to)
     #channel.basic_qos(prefetch_size=0, prefetch_count=1, a_global=False)
-    consumer = channel.basic_consume(queue=map_queue, callback=_process_work, 
-                                     no_ack=False)
+    channel.basic_consume(queue=map_queue, callback=_process_work, 
+                          no_ack=False, consumer_tag=map_queue)
     #print "kernel waiting on",map_queue,"with",work
     while True:
         channel.wait()
@@ -90,7 +95,7 @@ class Mapper(object):
                                  durable=False, auto_delete=True)
 
         map_channel = channel
-        map_queue = ".".join(("map-J",jobid))
+        map_queue = "".join(("park.map.J",jobid))
         map_channel.queue_declare(queue=map_queue, durable=False, 
                                   exclusive=False, auto_delete=True)
         map_channel.queue_bind(queue=map_queue, exchange="park.map",
@@ -119,6 +124,8 @@ class Mapper(object):
 
     def close(self):
         #TODO: proper shutdown of consumers
+        #print "closing"
+        sys.stdout.flush()
         for i in range(1000):
             msg = amqp.Message("", reply_to="",delivery_mode=1)
             self.map_channel.basic_publish(msg, exchange=self.exchange,
@@ -133,6 +140,7 @@ class Mapper(object):
         for i,v in enumerate(items):
             self.num_queued = i
             #print "queuing %d %s"%(i,v)
+            sys.stdout.flush()
             
             ## USE_LOCKS_TO_THROTTLE
             if  self.num_queued - self.num_processed > config.MAX_QUEUE:
@@ -168,6 +176,8 @@ class Mapper(object):
                                        routing_key=self.map_queue)
 
     def async(self, items):
+        #print "starting map"
+        sys.stdout.flush()
         # TODO: we should be able to flag completion somehow so that the
         # whole list does not need to be formed.
         items = list(items) # make it indexable
@@ -184,6 +194,7 @@ class Mapper(object):
             recvd.add(idx)
             result = self._reply['result']
             #print "received %d %g"%(idx,result)
+            sys.stdout.flush()
             self.num_processed += 1
 
             ## USE_LOCKS_TO_THROTTLE
@@ -195,8 +206,24 @@ class Mapper(object):
             
             yield idx,result
         publisher.join()
-    def __call__(self, items):
+
+    def imap(self, items):
+        complete = {}
+        next_index = 0
+        for i,v in self.async(items):
+            if i == next_index:
+                yield v
+                next_index += 1
+            else:
+                complete[i] = v
+            while next_index in complete:
+                yield complete[next_index]
+                del complete[next_index]
+                next_index += 1
+                
+    def map(self, items):
         result = list(self.async(items))
         result = list(sorted(result,lambda x,y: cmp(x[0],y[0])))
         return zip(*result)[1]
 
+    __call__ = map

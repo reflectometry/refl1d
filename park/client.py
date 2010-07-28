@@ -1,4 +1,10 @@
-import sys
+import time
+import thread
+import base64
+
+import dill
+
+from park import jsonrpc
 
 from park import config
 from park.jsonrpc import ServerProxy
@@ -52,32 +58,71 @@ def default_server():
     return service_stack[-1]
 
 
-def main():
-    server = default_server()
-    i = 1
-    while i < len(sys.argv):
-        if sys.argv[i] == 'jobs':
-            print server.jobs()
-            i += 1
-        elif sys.argv[i] == 'cancel':
-            server.cancel(sys.argv[i+1])
-            i += 2
-        elif sys.argv[i] == 'stored':
-            print server.stored(sys.argv[i+1])
-            i += 2
-        elif sys.argv[i] == 'store':
-            fid = open(sys.argv[i+3])
-            data = fid.read()
-            fid.close()
-            server.fetch(sys.argv[i+1],sys.argv[i+2],data)
-            i += 4
-        elif sys.argv[i] == 'fetch':
-            data = server.fetch(sys.argv[i+1],sys.argv[i+2])
-            print data
-            i += 3
-        else:
-            raise ValueError("unknown command "+sys.argv[i])
-        
+def decode_kernel(env, input):
+    return dill.loads(base64.b64decode(input))
+def encode_kernel(kernel):
+    return base64.b64encode(dill.dumps(kernel))
 
-if __name__ == "__main__":
-    main()
+class Job(object):
+    def __init__(self, requires=[], service=None, kernel=None):
+        self.requires = requires
+        self.service = service
+        if callable(kernel):
+            self.kernel = dict(name="park.client.decode_kernel",
+                               input=encode_kernel(kernel))
+        else:
+            self.kernel = kernel
+    def submit(self, server=None):
+        if server == None:
+            server = default_server()
+        try:
+            job = dict(requires=self.requires,
+                       service=self.service,
+                       kernel=self.kernel)
+            jobid = server.submit(job)
+        except jsonrpc.Fault, exc:
+            parts = exc.args[1]
+            raise RuntimeError("\n".join((parts["message"],parts["traceback"])))
+        except:
+            raise
+        return JobProxy(server,jobid)
+
+class JobProxy(object):
+    """
+    Proxy for remotely executing job.
+    """
+    class JobCancelled(Exception): pass
+    def __init__(self, server, jobid):
+        self.server = server
+        self.jobid = jobid
+    @property
+    def status(self):
+        """
+        Query job status.
+        """
+        return self.server.status()
+
+    def wait(self, pollrate=1):
+        """
+        Wait for job to complete.
+        """
+        while True:
+            status = self.server.status(jobid)
+            if status == "DONE":
+                return self.server.result(jobid)
+            elif status == "ERROR":
+                error = self.server.fetch('error')
+                raise error
+            elif status == "CANCEL":
+                raise JobProxy.JobCancelled()
+            time.sleep(pollrate)
+
+    def after(self, fn, pollrate=1):
+        """
+        Function to call after job is complete.
+        """
+        thread.start_new_thread(self._monitor,(fn, pollrate))
+    def _monitor(self, fn, pollrate):
+        result = self.wait(pollrate=pollrate)
+        fn(result)
+        

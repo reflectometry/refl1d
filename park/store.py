@@ -15,6 +15,7 @@ class Store:
         return os.path.join(config.storagedir(),jobid)
     def _file(self, jobid, key):
         return os.path.join(self._dir(jobid),key)
+    path = _dir
 
     def create(self, jobid):
         path = self._dir(jobid)
@@ -57,7 +58,7 @@ class Store:
         fid = open(path,'a')
         fid.write(value)
         fid.close()
-        
+
     def get(self, jobid, key):
         path = self._file(jobid, key)
         if not os.path.exists(path):
