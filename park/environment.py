@@ -1,5 +1,9 @@
 import os
-import json
+try:
+    import json
+except:
+    import simplejson as json
+
 
 from park.util import import_symbol
 from park import config

@@ -6,7 +6,11 @@
 # GET job/{jobid}/store/{key}
 # etc.
 import re
-import json
+try:
+    import json
+except:
+    import simplejson as json
+
 import base64
 
 from park.jobid import get_jobid
@@ -111,12 +115,12 @@ class JobService:
         self._scheduler.queue_service(jobid, service, kernel, 
                                       jobdir=self._store.path(jobid))
 
-def json_server(service):
+def json_server(service, port=8000):
     from jsonrpc import SimpleJSONRPCServer as Server
-    print 'Running JSON-RPC server on port 8000'
-    server = Server(("localhost", 8000))
+    print 'Running JSON-RPC server on port %d'%port
+    server = Server(("sparkle.ncnr.nist.gov", port))
     server.register_instance(service)
     server.serve_forever()
 
-def start():
-    json_server(JobService(scheduler=Scheduler(), store=Store()))
+def start(port=8000):
+    json_server(JobService(scheduler=Scheduler(), store=Store()), port=port)

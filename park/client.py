@@ -28,14 +28,14 @@ class WithServerProxy(ServerProxy):
         service_stack.append(self)
         return self
 
-    def __leave__(self):
+    def __exit__(self, *args):
         service_stack.pop()
 
 class WithJobService(JobService):
     def __enter__(self):
         service_stack.append(self)
         return  self
-    def __leave__(self):
+    def __exit__(self):
         service_stack.pop()
 
 def _local_service():
@@ -73,7 +73,7 @@ class Job(object):
         else:
             self.kernel = kernel
     def submit(self, server=None):
-        if server == None:
+        if server is None:
             server = default_server()
         try:
             job = dict(requires=self.requires,

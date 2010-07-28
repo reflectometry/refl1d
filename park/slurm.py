@@ -24,7 +24,7 @@ class Scheduler(object):
         """
         Put a command on batch queue, returning its job id.
         """
-        print "submitting job",jobid
+        #print "submitting job",jobid
         num_workers = config.tasks()
 
         script = os.path.join(jobdir,"J"+jobid)

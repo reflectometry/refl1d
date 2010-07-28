@@ -24,6 +24,7 @@ def jobid_path():
 
 def jobserver():
     ## Client is running on the server machine
-    return "http://localhost:8000"
+    return "http://sparkle.ncnr.nist.gov:8000"
+    #return "http://localhost:8000"
     ## Client is running on a machine that can handle local jobs
     #return ""
