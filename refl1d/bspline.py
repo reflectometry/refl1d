@@ -42,7 +42,7 @@ def pbs(x, y, xt, flat=True, parametric=False):
         missing = xt[idx]
         #print missing
         t_lo, t_hi = 0*missing, 1*missing
-        for _ in range(30): # about 1e-9 tolerance
+        for _ in range(30): # bisection with about 1e-9 tolerance
             trial = (t_lo+t_hi)/2
             Ptrial = _bspline3(knot,cx,trial)
             tidx = Ptrial<missing
@@ -52,7 +52,7 @@ def pbs(x, y, xt, flat=True, parametric=False):
     #print "err",numpy.max(abs(_bspline3(knot,cx,t)-xt))
 
     # Return y evaluated at the interpolation points
-    return _bspline3(knot,cy,t)
+    return _bspline3(knot,cx,t), _bspline3(knot,cy,t)
 
 def bspline(y, xt, flat=True):
     """
@@ -140,8 +140,17 @@ def _bspline3(knot,control,t,nderiv=0):
 
 
 
+def speed_test():
+    import time
+    x = linspace(0,1,7)
+    x[1],x[-2] = x[2],x[-3]
+    y = [9,11,2,3,8,0,2]
+    t = linspace(0,1,400)
+    t0 = time.time()
+    for i in range(1000): bspline(y,t,flat=True)
+    print "bspline (ms)",(time.time()-t0)/1000
 
-if __name__ == "__main__":
+def demo():
     from pylab import *
     hold(True)
     x = linspace(0,1,7)
@@ -164,3 +173,7 @@ if __name__ == "__main__":
     plot(t,yt,'-b') # pbs
     plot(sorted(x),y,':ob')
     show()
+    
+if __name__ == "__main__":
+    #demo()
+    speed_test()
