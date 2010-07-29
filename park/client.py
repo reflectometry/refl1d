@@ -2,6 +2,7 @@ import time
 import thread
 import base64
 
+import json
 import dill
 
 from park import jsonrpc
@@ -47,82 +48,156 @@ def connect(server=""):
     else:
         return WithServerProxy(server)
 
+# Set up the default server based on config.jobserver().  If the
+# default server is "", then a direct server will be used, otherwise
+# a remote server will be used.  In the case where the client is
+# running on a machine that acts as a remote server, the default
+# job server should be set to the server address so that local jobs
+# go through the same job queue as remote jobs.
 service_stack = [connect(config.jobserver())]
-def default_server():
+def default_server(server=None):
     """
-    Return the current default service if no service is specified.
+    Return the current default server if no server is specified.
 
     This is usually local_service, but it can be a remote service
-    if the function is called in the context of "with remote:"
+    if the function is called in the context of "with server:"
     """
-    return service_stack[-1]
+    if server is None:
+        return service_stack[-1]
+    else:
+        return server
 
-
-def decode_kernel(env, input):
-    return dill.loads(base64.b64decode(input))
-def encode_kernel(kernel):
+def user_kernel(env, input):
+    if config.allow_user_code():
+        return kernel_loads(input)
+    else:
+        raise TypeError("server does not allow user code to run")
+def make_kernel(kernel):
+    if callable(kernel):
+        kernel = dict(name="park.client.user_kernel",
+                      input=kernel_dumps(kernel))
+    return kernel
+def kernel_dumps(kernel):
     return base64.b64encode(dill.dumps(kernel))
+def kernel_loads(input):
+    return dill.loads(base64.b64decode(input))
 
-class Job(object):
+class JobDescription(object):
     def __init__(self, requires=[], service=None, kernel=None):
         self.requires = requires
         self.service = service
-        if callable(kernel):
-            self.kernel = dict(name="park.client.decode_kernel",
-                               input=encode_kernel(kernel))
-        else:
-            self.kernel = kernel
+        self.kernel = make_kernel(kernel)
     def submit(self, server=None):
-        if server is None:
-            server = default_server()
-        try:
-            job = dict(requires=self.requires,
-                       service=self.service,
-                       kernel=self.kernel)
-            jobid = server.submit(job)
-        except jsonrpc.Fault, exc:
-            parts = exc.args[1]
-            raise RuntimeError("\n".join((parts["message"],parts["traceback"])))
-        except:
-            raise
-        return JobProxy(server,jobid)
+        server = default_server(server)
+        job = dict(requires=self.requires,
+                   service=self.service,
+                   kernel=self.kernel)
+        jobid = server.submit(job)
+#        try:
+#            jobid = server.submit(job)
+#        except jsonrpc.Fault, exc:
+#            parts = exc.args[1]
+#            raise RuntimeError("\n".join((parts["message"],parts["traceback"])))
+        return Job(server, jobid, job=job)
 
-class JobProxy(object):
+class Job(object):
     """
     Proxy for remotely executing job.
     """
-    class JobCancelled(Exception): pass
-    def __init__(self, server, jobid):
+    def __init__(self, server, jobid, job=None):
         self.server = server
         self.jobid = jobid
-    @property
+        if job: self._job = job
+
     def status(self):
         """
-        Query job status.
+        Query remote server for job status.  Returns one of:
+        
+            PENDING, ACTIVE, COMPLETE, ERROR
         """
-        return self.server.status()
+        return self.server.status(self.jobid)
+
+    @property
+    def job(self):
+        """
+        Query remote server for job description.
+        """
+        if not hasattr(self, '_job'):
+            job = json.loads(self.server.fetch(self.jobid,'job'))
+            self._job = JobDescription(**job)
+        return self._job
+
+    @property
+    def result(self):
+        """
+        Check if job is complete, and return the value or return None if
+        job is not yet complete.  
+        
+        Raises RuntimeError if the job terminated with an error.
+        
+        Example:
+        
+            while job.result is None: time.sleep(1)
+            print job.result
+        """
+        if hasattr(self, '_result'):
+            return self._result
+        elif hasattr(self, '_error'):
+            raise RuntimeError("job raised remote error")
+
+        status = self.status()
+        if status in ['ACTIVE','PENDING']:
+            return None
+        elif status == "COMPLETE":
+            self._result = self.server.result(self.jobid)
+            return self._result
+        elif status == "ERROR":
+            self._error = self.server.fetch(self.jobid,'error')
+            raise RuntimeError("job raised remote error")
+        else:
+            raise RuntimeError("unknown job status %s"%status)
+
+    @property
+    def error(self):
+        """
+        Return the error if one has been encounter, or return None.
+        
+        This does not check for job completion first, and so it should
+        be used after job.result or job.wait() raises an error.
+        
+        Example:
+        
+            try:
+                print job.wait()
+            except:
+                print job.error
+        """
+        if hasattr(self, '_error'):
+            return self._error
+        else:
+            return None
 
     def wait(self, pollrate=1):
         """
         Wait for job to complete.
         """
-        while True:
-            status = self.server.status(jobid)
-            if status == "DONE":
-                return self.server.result(jobid)
-            elif status == "ERROR":
-                error = self.server.fetch('error')
-                raise error
-            elif status == "CANCEL":
-                raise JobProxy.JobCancelled()
+        while self.result is None:
             time.sleep(pollrate)
+        return self.result
 
     def after(self, fn, pollrate=1):
         """
-        Function to call after job is complete.
+        Asynchronous job completion notification.
+
+        *fn* : f(job, result) -> None
+             Function to call when the job is complete.
+
+        If *result* is None then an error occurred during job processing,
+        or during communication with the job server.
         """
-        thread.start_new_thread(self._monitor,(fn, pollrate))
-    def _monitor(self, fn, pollrate):
-        result = self.wait(pollrate=pollrate)
-        fn(result)
-        
+        thread.start_new_thread(self._after,(fn, pollrate))
+    def _after(self, fn, pollrate):
+        try:
+            fn(self, self.wait(pollrate=pollrate))
+        except:
+            fn(self, None)

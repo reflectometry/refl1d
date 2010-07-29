@@ -174,7 +174,16 @@ class ServerProxy:
 
     def __getattr__(self, name):
         # magic method dispatcher
-        return xmlrpclib._Method(self.__request, name)
+        #return xmlrpclib._Method(self.__request, name)
+        return _Method(self.__request, name)
+
+class _Method(xmlrpclib._Method):
+    def __call__(self, *args, **kw):
+        try:
+            return xmlrpclib._Method.__call__(self, *args, **kw)
+        except Fault, exc:
+            parts = exc.args[1]
+            raise RuntimeError("\n".join((parts["message"],parts["traceback"])))
 
 
 if __name__ == '__main__':

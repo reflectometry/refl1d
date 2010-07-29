@@ -51,11 +51,11 @@ class JobService:
 
     def stored(self, jobid):
         _validate_jobid(jobid)
-        return self._store.keys(jobid)
+        return self._store.keys(jobid)     
 
-    def results(self, jobid):
+    def result(self, jobid):
         self._scheduler.deactivate(jobid)
-        return self._store.get(jobid,'results')
+        return self._store.get(jobid,'result')
 
     def store(self, jobid, key, value):
         """
@@ -73,7 +73,8 @@ class JobService:
         Delete a job and all associated data.
         """
         _validate_jobid(jobid)
-        self._scheduler.cancel(jobid)
+        jobdir = self._store.path(jobid)
+        self._scheduler.cancel(jobid,jobdir)
         self._store.destroy(jobid)
 
     def cancel(self, jobid):
@@ -81,7 +82,8 @@ class JobService:
         Cancel a job but don't delete its data.
         """
         _validate_jobid(jobid)
-        self._scheduler.cancel(jobid)
+        jobdir = self._store.path(jobid)
+        self._scheduler.cancel(jobid,jobdir)
 
     def prepare(self, job):
         """
@@ -108,12 +110,16 @@ class JobService:
         jobid = self.prepare(job)
         self._queue(jobid, job)
         return jobid
-        
+
+    def status(self, jobid):
+        jobdir = self._store.path(jobid)
+        return self._scheduler.status(jobid, jobdir)
+
     def _queue(self, jobid, job):
+        jobdir = self._store.path(jobid)
         service,kernel = environment.commands(jobid, job)
         #print "submitting",job,"\nas",jobid,"\nusing",service,"\nand",kernel
-        self._scheduler.queue_service(jobid, service, kernel, 
-                                      jobdir=self._store.path(jobid))
+        self._scheduler.queue_service(jobid, service, kernel, jobdir)
 
 def json_server(service, port=8000):
     from jsonrpc import SimpleJSONRPCServer as Server

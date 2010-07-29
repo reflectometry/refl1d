@@ -4,6 +4,13 @@ import subprocess
 from park import config
 from park import environment
 
+# Queue status words
+_ACTIVE = ["RUNNING", "COMPLETING"]
+_INACTIVE = ["PENDING", "SUSPENDED"]
+_ERROR = ["CANCELLED", "FAILED", "TIMEOUT", "NODE_FAIL"]
+_COMPLETE = ["COMPLETED"]
+
+
 class Scheduler(object):
     def jobs(self):
         """
@@ -39,24 +46,68 @@ class Scheduler(object):
         if not err.startswith('sbatch: Submitted batch job '):
             raise RuntimeError(err)
         slurmid = err[28:].strip()
-        write_slurmid(jobid,slurmid)
+        write_slurmid(jobdir,slurmid)
 
-    def status(self, jobid, workdir):
-        return "UNKNOWN"
+    def status(self, jobid, jobdir):
+        """
+        Returns the follow states:
+        PENDING   --  Job is waiting to be processed
+        ACTIVE    --  Job is busy being processed through the queue
+        COMPLETE  --  Job has completed successfully
+        ERROR     --  Job has either been canceled by the user or an 
+                      error has been raised
+        """
 
-    def cancel(self, jobid):
+        state = ''
+        inqueue = False
+        hasresult = _find_result(jobdir)
+        slurmid = read_slurmid(jobdir)
+
+        out,_ = _slurm_exec('squeue', '-h', '--format=%i %T')
+        out = out.strip()
+        if out != "":
+            for line in out.split('\n'):
+                line = line.split()
+                if slurmid == line[0]:
+                    state = line[1]
+                    inqueue = True
+                    break
+
+        if inqueue:
+            if state in _ACTIVE:
+                return "ACTIVE"
+            elif state in _INACTIVE:
+                return "PENDING"
+            elif state in _COMPLETE:
+                return "COMPLETE"
+            elif state in _ERROR:
+                return "ERROR"
+            else:
+                raise RuntimeError("unexpected state from squeue: %s"%state)
+        else:
+            if hasresult:
+                return "COMPLETE"
+            else:
+                return "ERROR"
+
+    def cancel(self, jobid, jobdir):
         #print "canceling",jobid
-        slurmid = read_slurmid(jobid)
+        slurmid = read_slurmid(jobdir)
         _slurm_exec('scancel',slurmid)
 
-def read_slurmid(jobid):
-    fid = open(os.path.join(config.storagedir(),jobid,'slurmid'), 'r')
+def _find_result(dir):
+    import os
+    pth = os.path.join(dir, 'result')
+    return os.path.isfile(pth)
+
+def read_slurmid(jobdir):
+    fid = open(os.path.join(jobdir,'slurmid'), 'r')
     slurmid = fid.read()
     fid.close()
     return slurmid
 
-def write_slurmid(jobid,slurmid):
-    fid = open(os.path.join(config.storagedir(),jobid,'slurmid'), 'w')
+def write_slurmid(jobdir,slurmid):
+    fid = open(os.path.join(jobdir,'slurmid'), 'w')
     slurmid = fid.write(slurmid)
     fid.close()
 

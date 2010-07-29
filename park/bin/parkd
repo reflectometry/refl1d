@@ -7,4 +7,4 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..'))
 sys.path.append(ROOT)
 
 import park.server
-park.server.start(8000)
+park.server.start(8001)

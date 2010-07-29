@@ -22,6 +22,12 @@ def storagedir():
 def jobid_path():
     return os.path.join(_root(),'jobid')
 
+def allow_user_code():
+    """
+    server allows user code to run.
+    """
+    return True
+
 def jobserver():
     ## Client is running on the server machine
     return "http://sparkle.ncnr.nist.gov:8000"
