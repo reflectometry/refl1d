@@ -73,6 +73,7 @@ def start_kernel(server, jobid, work):
         try:
             result = work(body['value'])
         except Exception,exc:
+            # TODO: do we really want to ignore kernel errors?
             result = None
         #print "done"
         channel.basic_ack(msg.delivery_tag)
@@ -87,6 +88,13 @@ def start_kernel(server, jobid, work):
         channel.wait()
 
 class Mapper(object):
+    """
+    Map work items to workers using a message server and a job-specific queue.
+    
+    *server* is a handle to an open amqp server.
+    
+    *jobid* is the id to use for the messages.
+    """
     def __init__(self, server, jobid):
         # Create the exchange and the worker and reply queues
         channel = server.channel()
@@ -123,9 +131,11 @@ class Mapper(object):
         self._throttle = threading.Condition()
 
     def close(self):
+        """
+        Terminate the map, and close the queues.
+        """
         #TODO: proper shutdown of consumers
-        #print "closing"
-        sys.stdout.flush()
+        #print "closing"; sys.stdout.flush()
         for i in range(1000):
             msg = amqp.Message("", reply_to="",delivery_mode=1)
             self.map_channel.basic_publish(msg, exchange=self.exchange,
@@ -133,14 +143,22 @@ class Mapper(object):
         self.map_channel.close()
         self.reply_channel.close()
     def _process_result(self, msg):
+        """
+        Run in background, receiving results from the workers.
+        """
         self._reply = loads(msg.body)
         #print "received result",self._reply['index'],self._reply['result']
     @daemon
     def _send_map(self, items):
+        """
+        Run in background, posting new items to be mapped as results
+        come available.
+        """
+        # TODO: need map call number in addition to item number in order
+        # to handle cancel properly.
         for i,v in enumerate(items):
             self.num_queued = i
-            #print "queuing %d %s"%(i,v)
-            sys.stdout.flush()
+            #print "queuing %d %s"%(i,v); sys.stdout.flush()
             
             ## USE_LOCKS_TO_THROTTLE
             if  self.num_queued - self.num_processed > config.MAX_QUEUE:
@@ -164,7 +182,7 @@ class Mapper(object):
 
     def cancel(self):
         """
-        Stop a running map.
+        Stop a running map.  ** Not Implemented **
         """
         raise NotImplementedError()
         # Need to clear the queued items and notify async that no more results.
@@ -176,8 +194,12 @@ class Mapper(object):
                                        routing_key=self.map_queue)
 
     def async(self, items):
-        #print "starting map"
-        sys.stdout.flush()
+        """
+        Return i,f(v) for i,v in enumerate(items) in the order that they
+        are received.  The received order is not necessarily the order in 
+        which the items occur in the list.
+        """
+        #print "starting map"; sys.stdout.flush()
         # TODO: we should be able to flag completion somehow so that the
         # whole list does not need to be formed.
         items = list(items) # make it indexable
@@ -193,8 +215,7 @@ class Mapper(object):
             if idx in recvd: continue
             recvd.add(idx)
             result = self._reply['result']
-            #print "received %d %g"%(idx,result)
-            sys.stdout.flush()
+            #print "received %d %g"%(idx,result); sys.stdout.flush()
             self.num_processed += 1
 
             ## USE_LOCKS_TO_THROTTLE
@@ -208,6 +229,9 @@ class Mapper(object):
         publisher.join()
 
     def imap(self, items):
+        """
+        Return f(v) for v in items in order as they become available.
+        """
         complete = {}
         next_index = 0
         for i,v in self.async(items):
@@ -222,6 +246,9 @@ class Mapper(object):
                 next_index += 1
                 
     def map(self, items):
+        """
+        Return [f(v) for v in items]
+        """
         result = list(self.async(items))
         result = list(sorted(result,lambda x,y: cmp(x[0],y[0])))
         return zip(*result)[1]
