@@ -113,8 +113,8 @@ import inspect
 
 import numpy
 
-from mystic import stop
-from mystic.history import History
+from . import stop
+from .history import History
 
 def cpu_time():
     """Current cpu time for this process"""
@@ -147,6 +147,7 @@ class Minimizer:
         try:
             while True:
                 result = mapper(self.problem, population)
+                #print "map result",result
                 self.update(population, result)
                 #print self.history.step, self.history.value
                 if self.isdone(): break

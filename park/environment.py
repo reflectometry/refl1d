@@ -16,15 +16,19 @@ from park import config
 # TODO: build python if necessary
 
 class Environment:
-    def __init__(self, mapper=None, store=None):
+    def __init__(self, jobid=None, mapper=None, store=None):
+        self.jobid = jobid
         self.mapper = mapper
         self.store = store
 
-    def run_service(self, jobid, module, input):
+    def get_workfile(self, key):
+        return self.store.get_workfile(self.jobid,key)
+
+    def run_service(self, module, input):
         service = import_symbol(module)
         result = service(self, json.loads(input))
         self.mapper.close()
-        self.store.put(jobid, 'result', json.dumps(result))
+        self.store.put(self.jobid, 'result', json.dumps(result))
 
     def get_kernel(self, module, input):
         kernel = import_symbol(module)

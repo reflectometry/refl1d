@@ -36,13 +36,16 @@ class Scheduler(object):
 
         script = os.path.join(jobdir,"J"+jobid)
         commands = ['export %s="%s"'%(k,v) for k,v in config.env().items()]
-        commands += ["srun -n 1 nice %s >service.out&"%(service,),
-                     "srun -n %d nice %s"%(num_workers,kernel)]
+        commands += ["srun -n 1 -K -o service.out nice %s &"%(service,),
+                     "srun -n %d -K -o kernel.out nice %s"%(num_workers,kernel)]
         create_batchfile(script,commands)
 
-        _,err = _slurm_exec('sbatch', '-n',str(num_workers),
-                            '-o', 'output',
-                            '-D',jobdir,script)
+        _,err = _slurm_exec('sbatch', 
+                            '-n',str(num_workers), # Number of tasks
+                            #'-K', # Kill if any process returns error
+                            #'-o', 'job%j.out',  # output file
+                            '-D',jobdir,  # Start directory
+                            script)
         if not err.startswith('sbatch: Submitted batch job '):
             raise RuntimeError(err)
         slurmid = err[28:].strip()

@@ -6,13 +6,9 @@
 # GET job/{jobid}/store/{key}
 # etc.
 import re
-try:
-    import json
-except:
-    import simplejson as json
-
 import base64
 
+from park import json
 from park.jobid import get_jobid
 from park.slurm import Scheduler
 from park.store import Store
@@ -66,7 +62,7 @@ class JobService:
         _validate_jobid(jobid)
         _validate_jobid(key)
         value = base64.b64decode(value)
-        self._store.put(jobid, key, value)
+        self._store.put_workfile(jobid, key, value)
 
     def delete(self, jobid):
         """

@@ -4,10 +4,7 @@
 # would set the 'error' attribute to a string. This implementation
 # sets it to a dictionary with keys: message/traceback/type
 
-try:
-    import json
-except:
-    import simplejson as json
+from park import json
 import SocketServer
 import sys
 import traceback

@@ -10,5 +10,7 @@ def import_symbol(path):
     __import__(module_name)
     module = sys.modules[module_name]
     symbol = getattr(module,symbol_name)
+    #if not hasattr(symbol, 'park_export'):
+    #    raise TypeError("Symbol %s not marked @park.export"%path)
     return symbol
 

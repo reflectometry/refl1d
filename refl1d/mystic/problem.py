@@ -1,4 +1,4 @@
-from mystic.bounds import init_bounds, Unbounded
+from .parameter import Parameter
 
 class Problem:
     """
@@ -13,12 +13,15 @@ class Problem:
 
 class Function(Problem):
     def __init__(self, f, ndim=None, po=None, bounds=None, args=()):
-        if bounds != None:
-            self.parameters = [init_bounds(p) for p in bounds]
-        elif po != None:
-            self.parameters = [Unbounded() for p in po]
+        if bounds and po:
+            self.parameters = [Parameter(value=v,bounds=b)
+                               for v,b in zip(po,bounds)]
+        elif bounds:
+            self.parameters = [Parameter(b) for b in bounds]
+        elif po:
+            self.parameters = [Parameter(v) for v in po]
         elif ndim != None:
-            self.parameters = [Unbounded() for i in range(ndim)]
+            self.parameters = [Parameter() for _ in range(ndim)]
         else:
             raise TypeError("Need ndim, po or bounds to get problem dimension")
         if ((ndim != None and ndim != len(self.parameters))

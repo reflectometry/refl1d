@@ -48,6 +48,9 @@ from .. import solver
 from ..util import choose_without_replacement
 from ..functional import minimizer_function
 
+CROSSOVER = 'c_exp','c_bin'
+MUTATE = 'best1','best1u','best2','randtobest1','rand1','rand2'
+
 #############################################################################
 #  Code below are the different crossovers/mutation strategies
 #############################################################################

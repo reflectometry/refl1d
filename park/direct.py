@@ -1,4 +1,5 @@
 from __future__ import with_statement
+import tempfile
 import threading
 import thread
 
@@ -69,6 +70,7 @@ class Scheduler(object):
 class Store:
     def __init__(self):
         self._store = {}
+        self._work = {}
     def create(self, jobid):
         self._store[jobid] = {}
     def destroy(self, jobid):
@@ -83,3 +85,12 @@ class Store:
         return self._store[jobid][key]
     def delete(self, jobid, key):
         del self._store[jobid][key]
+    def put_workfile(self, jobid, key, value):
+        fid = tempfile.NamedTemporaryFile(suffix=key, prefix='park', delete=False)
+        if not jobid in self._work:
+            self._work[jobid] = {}
+        self._work[jobid][key] = fid.name
+        fid.write(value)
+        fid.close()
+    def get_workfile(self, jobid, key):
+        return self._work[jobid][key]

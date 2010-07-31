@@ -2,9 +2,7 @@ import time
 import thread
 import base64
 
-import json
-import dill
-
+from park import json, export
 from park import jsonrpc
 
 from park import config
@@ -67,38 +65,56 @@ def default_server(server=None):
     else:
         return server
 
+@export
 def user_kernel(env, input):
     if config.allow_user_code():
         return kernel_loads(input)
     else:
         raise TypeError("server does not allow user code to run")
+@export
+def named_kernel(env, input):
+    from park.util import import_symbol
+    return import_symbol(input)
 def make_kernel(kernel):
     if callable(kernel):
         kernel = dict(name="park.client.user_kernel",
                       input=kernel_dumps(kernel))
+    elif not isinstance(kernel,dict):
+        kernel = dict(name="park.client.named_kernel",input=kernel)
     return kernel
 def kernel_dumps(kernel):
+    import dill
     return base64.b64encode(dill.dumps(kernel))
 def kernel_loads(input):
+    import dill
     return dill.loads(base64.b64decode(input))
 
 class JobDescription(object):
     def __init__(self, requires=[], service=None, kernel=None):
         self.requires = requires
+        kernel = make_kernel(kernel)
+        files = kernel.pop('files',{})
+        files.update(service.pop('files',{}))
         self.service = service
-        self.kernel = make_kernel(kernel)
+        self.kernel = kernel
+        self.files = files
     def submit(self, server=None):
         server = default_server(server)
         job = dict(requires=self.requires,
                    service=self.service,
                    kernel=self.kernel)
-        jobid = server.submit(job)
-#        try:
-#            jobid = server.submit(job)
-#        except jsonrpc.Fault, exc:
-#            parts = exc.args[1]
-#            raise RuntimeError("\n".join((parts["message"],parts["traceback"])))
+        jobid = server.prepare(job)
+        for key,filename in self.files.items():
+            data = fileload(filename)
+            server.store(jobid,key,base64.b64encode(data))
+        server.start(jobid)
         return Job(server, jobid, job=job)
+
+def fileload(filename):
+    fid = open(filename,'rb')
+    data = fid.read()
+    fid.close()
+    return data
 
 class Job(object):
     """
@@ -201,3 +217,20 @@ class Job(object):
             fn(self, self.wait(pollrate=pollrate))
         except:
             fn(self, None)
+
+# Debugging helper: fake completed job
+class CompletedJob:
+    def __init__(self, job, result, error):
+        self.job = job
+        self.result = result
+        self.error = error
+    def status(self):
+        return "COMPLETE" if self.result else "ERROR"
+    def wait(self, pollrate=1):
+        if self.result is not None:
+            return self.result
+        else:
+            raise RuntimeError("job raised remote error")
+    def after(self, fn, pollrate=1):
+        thread.start_new_thread(fn, (self, self.result))
+

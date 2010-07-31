@@ -151,7 +151,7 @@ def speed_test():
     print "bspline (ms)",(time.time()-t0)/1000
 
 def demo():
-    from pylab import *
+    from pylab import hold, linspace, plot, show
     hold(True)
     x = linspace(0,1,7)
     #x[1],x[-2] = x[0],x[-1] 

@@ -68,7 +68,12 @@ from .freeform import Freeform
 from .interface import Erf
 from .probe import Probe, NeutronProbe, XrayProbe
 from .fitter import preview, fit, DEfit, SNOBfit, mesh, FitProblem, MultiFitProblem
-from .sampler import draw_samples
+try:
+    from .sampler import draw_samples
+except Exception, exc:
+    import traceback
+    print traceback.print_exc()
+    print "==== exception ignored"
 from .stajconvert import load_mlayer, save_mlayer
 from . import ncnrdata, snsdata
 

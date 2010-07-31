@@ -6,5 +6,7 @@ import sys
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..'))
 sys.path.append(ROOT)
 
+port = int(sys.argv[1]) if len(sys.argv)>1 else 8000
+
 import park.server
-park.server.start(8001)
+park.server.start(port=port)

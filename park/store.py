@@ -15,6 +15,8 @@ class Store:
         return os.path.join(config.storagedir(),jobid)
     def _file(self, jobid, key):
         return os.path.join(self._dir(jobid),key)
+    def _workfile(self, jobid, key):
+        return os.path.join(self._dir(jobid),'work',key)
     path = _dir
 
     def create(self, jobid):
@@ -42,10 +44,10 @@ class Store:
         
         # Store the value in a file
         path = self._file(jobid, key)
-        fid = open(path,'w')
+        fid = open(path,'wb')
         fid.write(value)
         fid.close()
-        
+
     def add(self, jobid, key, value):
         # Make sure we are storing a string
         try:
@@ -55,7 +57,7 @@ class Store:
         
         # Store the value in a file
         path = self._file(jobid, key)
-        fid = open(path,'a')
+        fid = open(path,'ab')
         fid.write(value)
         fid.close()
 
@@ -63,7 +65,19 @@ class Store:
         path = self._file(jobid, key)
         if not os.path.exists(path):
             raise ValueError("key not stored: %s"%key)
-        fid = open(path,'r')
+        fid = open(path,'rb')
         value = fid.read()
         fid.close()
         return value
+
+    def put_workfile(self, jobid, key, value):
+        # Store the value in a file
+        path = self._workfile(jobid, key)
+        if not os.path.exists(os.path.dirname(path)): 
+            os.mkdir(os.path.dirname(path))
+        fid = open(path, 'wb')
+        fid.write(value)
+        fid.close()
+
+    def get_workfile(self, jobid, key):
+        return self._workfile(jobid, key)
