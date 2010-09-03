@@ -115,8 +115,6 @@ class PolymerBrush(Layer):
             right = numpy.searchsorted(Pr, Pr[-1]-delta)
         if left > right: raise RuntimeError("broken profile search")
 
-        print left,right
-
         if left > 0:
             slabs.extend(rho=[Pr[0:1]], irho=[Pi[0:1]], 
                          w=[numpy.sum(Pw[:left])])
