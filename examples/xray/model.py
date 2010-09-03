@@ -100,7 +100,7 @@ problem.store = store
 
 
 # Do the fit
-if 0:
+if 1:
     result = preview(models=M)
 elif 0:
     result = fit(models=[M], npop=10)

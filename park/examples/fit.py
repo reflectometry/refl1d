@@ -1,3 +1,4 @@
+import sys; sys.path.append("../..")
 import numpy
 
 import park

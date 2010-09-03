@@ -1,3 +1,4 @@
+import numpy
 from .parameter import Parameter
 
 class Problem:
@@ -13,12 +14,12 @@ class Problem:
 
 class Function(Problem):
     def __init__(self, f, ndim=None, po=None, bounds=None, args=()):
-        if bounds and po:
+        if bounds != None and po != None:
             self.parameters = [Parameter(value=v,bounds=b)
                                for v,b in zip(po,bounds)]
-        elif bounds:
+        elif bounds != None:
             self.parameters = [Parameter(b) for b in bounds]
-        elif po:
+        elif po != None:
             self.parameters = [Parameter(v) for v in po]
         elif ndim != None:
             self.parameters = [Parameter() for _ in range(ndim)]
@@ -53,10 +54,10 @@ class FitProblem(Problem):
     def residuals(self, p, deriv=False):
         if deriv:
             fx, dfx = self.curve(p, self.x, deriv)
-            return (fx-y)/dy, dfx/dy
+            return (fx-self.y)/self.dy, dfx/self.dy
         else:
             fx = self.curve(p, self.x, deriv)
-            return (fx-y)/dy
+            return (fx-self.y)/self.dy
     def f(self, p):
         return numpy.sum(self.residuals(p, deriv=False)**2)
     def fdf(self, p):

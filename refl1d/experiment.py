@@ -147,16 +147,16 @@ class Experiment(ExperimentBase):
             rho,irho = slabs.rho, slabs.irho
             #sigma = slabs.limited_sigma(limit=self.roughness_limit)
             sigma = slabs.sigma
-            calc_r = refl(-self.probe.calc_Q/2,
-                          depth=w, rho=rho, irho=irho, sigma=sigma)
+            calc_q = self.probe.calc_Q
+            calc_r = refl(-calc_q/2, depth=w, rho=rho, irho=irho, sigma=sigma)
             #print "w",w
             #print "rho",rho
             #print "irho",irho
             #print "sigma",sigma
             #print "kz",self.probe.calc_Q/2
             #print "R",abs(calc_r**2)
-            self._cache[key] = calc_r
-            if numpy.isnan(self.probe.calc_Q).any(): print "calc_Q contains NaN"
+            self._cache[key] = calc_q,calc_r
+            if numpy.isnan(calc_q).any(): print "calc_Q contains NaN"
             if numpy.isnan(calc_r).any(): print "calc_r contains NaN"
         return self._cache[key]
 
@@ -166,9 +166,9 @@ class Experiment(ExperimentBase):
         """
         key = ('amplitude',resolution)
         if key not in self._cache:
-            calc_r = self._reflamp()
-            r_real = self.probe.apply_beam(calc_r.real, resolution)
-            r_imag = self.probe.apply_beam(calc_r.imag, resolution)
+            calc_q,calc_r = self._reflamp()
+            r_real = self.probe.apply_beam(calc_q, calc_r.real, resolution)
+            r_imag = self.probe.apply_beam(calc_q, calc_r.imag, resolution)
             r = r_real + 1j*r_imag
             self._cache[key] = self.probe.Q, r
         return self._cache[key]
@@ -184,9 +184,9 @@ class Experiment(ExperimentBase):
         """
         key = ('reflectivity',resolution)
         if key not in self._cache:
-            calc_r = self._reflamp()
+            calc_q, calc_r = self._reflamp()
             calc_R = abs(calc_r)**2
-            Q,R = self.probe.apply_beam(calc_R, resolution)
+            Q,R = self.probe.apply_beam(calc_q, calc_R, resolution)
             self._cache[key] = Q,R
             if numpy.isnan(R).any(): print "beam contains NaN"
         return self._cache[key]

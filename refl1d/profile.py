@@ -49,15 +49,23 @@ class Microslabs:
 
     def microslabs(self, thickness=0):
         """
-        Return a set of microslabs of widths w and centers z which slice
-        a layer of the given *thickness* with the minimum step size.
+        Return a set of microslabs for a layer of the given *thickness*.
         
-        The desired step size slabs.dz was defined when the Microslabs 
+        The step size slabs.dz was defined when the Microslabs 
         object was created.
         
         This is a convenience function.  Layer definitions can choose
         their own slices so long as the step size is approximately
         slabs.dz in the varying region.
+
+        :Parameters:
+            *thickness* : float | A
+                Layer thickness
+        :Returns:
+            *widths*: vector | A
+                Microslab widths
+            *centers*: vector | A
+                Microslab centers
         """
         edges = numpy.arange(0,thickness+self.dz,self.dz, dtype='d')
         edges[-1] = thickness

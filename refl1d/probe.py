@@ -159,7 +159,8 @@ class Probe(object):
             R,dR = data
             if R is not None: R = R[idx]
             if dR is not None: dR = dR[idx]
-            data = R,dR
+            self.Ro = self.R = R
+            self.dR = dR
 
         # By default the calculated points are the measured points.  Use
         # oversample() for a more accurate resolution calculations.
@@ -276,7 +277,7 @@ class Probe(object):
         L = L.flatten()
         self._set_calc(T,L)
 
-    def apply_beam(self, calc_R, resolution=True, calc_Q=None):
+    def apply_beam(self, calc_Q, calc_R, resolution=True):
         """
         Apply factors such as beam intensity, background, backabsorption,
         resolution and footprint to the data.
@@ -286,7 +287,6 @@ class Probe(object):
         both the sampling and the resolution calculation.  Probe is the
         natural place for this calculation since it controls both of these.
         """
-        if calc_Q is None: calc_Q = self.calc_Q
         # Handle absorption through the substrate, which occurs when Q<0
         # (condition)*C is C when condition is True or 0 when False,
         # (condition)*(C-1)+1 is C when condition is True or 1 when False.
@@ -413,9 +413,59 @@ class Probe(object):
 class ProbeSet(Probe):
     def __init__(self, probes):
         self.probes = probes
-        self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
-            = measurement_union(xs)
-        self._set_calc(self.T,self.L)
+        self.R = numpy.hstack(p.R for p in self.probes)
+        self.dR = numpy.hstack(p.dR for p in self.probes)
+
+    def parameters(self):
+        return [p.paramters() for p in self.probes]
+    parameters.__doc__ = Probe.parameters.__doc__
+
+    def resynth_data(self):
+        for p in self.probes: p.resynth_data()
+        self.R = numpy.hstack(p.R for p in self.probes)
+    resynth_data.__doc__ = Probe.resynth_data.__doc__
+
+    def restore_data(self):
+        for p in self.probes: p.restore_data()
+        self.R = numpy.hstack(p.R for p in self.probes)
+    restore_data.__doc__ = Probe.restore_data.__doc__
+
+    def _Q(self):
+        return numpy.hstack(p.Q for p in self.probes)
+    Q = property(_Q)
+    def _calc_Q(self):
+        return numpy.hstack(p.calc_Q for p in self.probes)
+    calc_Q = property(_calc_Q)
+    def oversample(self, **kw):
+        for p in self.probes: p.oversample(**kw)
+    oversample.__doc__ = Probe.oversample.__doc__
+    def scattering_factors(self, material):
+        return self.probes[0].scattering_factors(material)
+        result = [p.scattering_factors(material) for p in self.probes]
+        return [numpy.hstack(v) for v in zip(*result)]
+    scattering_factors.__doc__ = Probe.scattering_factors.__doc__
+    def apply_beam(self, calc_Q, calc_R, **kw):
+        result = [p.apply_beam(calc_Q, calc_R, **kw) for p in self.probes]
+        return [numpy.hstack(v) for v in zip(*result)]
+    def plot(self, **kw):
+        for p in self.probes: p.plot(**kw)
+    plot.__doc__ = Probe.plot.__doc__
+    def plot_resolution(self, **kw):
+        for p in self.probes: p.plot_resolution(**kw)
+    plot_resolution.__doc__ = Probe.plot_resolution.__doc__
+    def plot_linear(self, **kw):
+        for p in self.probes: p.plot_linear(**kw)
+    plot_linear.__doc__ = Probe.plot_linear.__doc__
+    def plot_log(self, **kw):
+        for p in self.probes: p.plot_log(**kw)
+    plot_log.__doc__ = Probe.plot_log.__doc__
+    def plot_fresnel(self, **kw):
+        for p in self.probes: p.plot_fresnel(**kw)
+    plot_fresnel.__doc__ = Probe.plot_fresnel.__doc__
+    def plot_Q4(self, **kw):
+        for p in self.probes: p.plot_Q4(**kw)
+    plot_Q4.__doc__ = Probe.plot_Q4.__doc__
+
     def shared_beam(self, intensity=1, background=0,
                     back_absorption=1, theta_offset=0):
         """
@@ -438,52 +488,45 @@ class ProbeSet(Probe):
             p.background = background
             p.back_absorption = back_absorption
             p.theta_offset = theta_offset
+    def stitch(self, tol=0.01):
+        r"""
+        Stitch together multiple datasets into a single dataset.
 
-    def parameters(self):
-        return [p.paramters() for p in self.probes]
+        *Not implemented*
 
-    def resynth_data(self):
-        for p in self.probes: p.resynth_data()
-    resynth_data.__doc__ = Probe.resynth_data.__doc__
+        Points within *tol* of each other and with the same resolution 
+        are combined by interpolating them to a common Q value then averaged 
+        using Gaussian error propagation.
+        
+        :Returns: probe | Probe
+            Combined data set.
 
-    def restore_data(self):
-        for p in self.probes: p.restore_data()
-    restore_data.__doc__ = Probe.restore_data.__doc__
+        :Algorithm:
+        
+        To interpolate a set of points to a common value, first find the
+        common *Q* value:
+        
+        .. math::
+        
+            \hat Q = \sum{Q_k} / n
 
-    def _set_calc(self, T, L):
-        self.probes[0]._set_calc(T,L)
+        Then for each dataset *k*, find the interval [i,i+1] containing the 
+        value *Q*, and use it to compute interpolated value for *R*:
 
-    def _Q(self):
-        # TODO: Can different pieces have different theta offset?
-        return self.probes[0].Q
-    Q = property(_Q)
-    def _calc_Q(self):
-        return self.probes[0].calc_Q
-    calc_Q = property(_calc_Q)
-    def apply_beam(self, calc_R, **kw):
-        calc_Q = self.probes[0].calc_Q
-        result = [p.apply_beam(calc_R, calc_Q=calc_Q, **kw) 
-                  for p in self.probes]
-    def fresnel(self, **kw):
-        return self.probes[0].fresnel(**kw)
-    def plot(self, **kw):
-        for p in self.probes: p.plot(**kw)
-    plot.__doc__ = Probe.plot.__doc__
-    def plot_resolution(self, **kw):
-        for p in self.probes: p.plot_resolution(**kw)
-    plot_resolution.__doc__ = Probe.plot_resolution.__doc__
-    def plot_linear(self, theory=None):
-        for p in self.probes: p.plot_linear(**kw)
-    plot_linear.__doc__ = Probe.plot_linear.__doc__
-    def plot_log(self, theory=None):
-        for p in self.probes: p.plot_log(**kw)
-    plot_log.__doc__ = Probe.plot_log.__doc__
-    def plot_fresnel(self, **kw):
-        for p in self.probes: p.plot_fresnel(**kw)
-    plot_fresnel.__doc__ = Probe.plot_fresnel.__doc__
-    def plot_Q4(self, **kw):
-        for p in self.probes: p.plot_Q4(**kw)
-    plot_Q4.__doc__ = Probe.plot_Q4.__doc__
+        .. math::
+        
+            w_k &=& (\hat Q - Q_k_i)/(Q_k_{i+1} - Q_k_i) \\
+            \hat R_k &=& w_k R_k_{i+1} + (1-w_k) R_k_{i+1} \\
+            \hat \sigma_{R_k} &=& \sqrt{ w^2_k \sigma^2_{R_k_i} + (1-w_k)^2 \sigma^2_{R_k_{i+1}} } / n
+
+        Average the resulting *R* using Gaussian error propagation:
+        
+        .. math::
+
+            \hat R &=& \sum{\hat R_k}/n \\
+            \hat \sigma_R &=& \sqrt{\sum \hat \sigma_{R_k}^2}/n
+        """
+        raise NotImplementedError
 
 class XrayProbe(Probe):
     """
@@ -522,7 +565,8 @@ def measurement_union(xs):
     for x in xs:
         if x is not None:
             TL = TL | set(zip(x.T,x.dT,x.L,x.dL))
-    T,dT,L,dL = [numpy.array(sorted(v)) for v in zip(*[v for v in TL])]
+    T,dT,L,dL = [numpy.array(sorted(v)) 
+                 for v in zip(*[w for w in TL])]
     Q = TL2Q(T,L)
     dQ = dTdL2dQ(T,dT,L,dL)
     idx = numpy.argsort(Q)

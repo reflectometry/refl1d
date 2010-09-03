@@ -42,8 +42,9 @@ D_initiator = SLD(name="D-initiator",rho=1.5)
 H_toluene = SLD(name="H-toluene",rho=0.94)
 H_initiator = SLD(name="H-initiator",rho=0)
 
-D_polymer_layer = TetheredPolymer(polymer=D_polystyrene, solvent=D_toluene,
-                                  phi=70, head=120, tail=200, Y=2)
+D_polymer_layer = PolymerBrush(polymer=D_polystyrene, solvent=D_toluene,
+                               phi=70, base=120, length=200, power=2,
+                               sigma=10)
 
 # Stack materials into samples
 D = silicon%5 + SiOx/100%5 + D_initiator/100%20 + D_polymer_layer/1000%0 + D_toluene
@@ -70,11 +71,12 @@ if 0:
     D_initiator.rho.value = 1.2
     D[2].thickness.value = 0
     
-    D_polymer_layer.Y.value = 1.93
-    D_polymer_layer.head.value = 64
+    D_polymer_layer.power.value = 1.93
+    D_polymer_layer.base.value = 64
     D_polymer_layer.phi.value = 64
     D_polystyrene.rho.value = 6.42
-    D_polymer_layer.tail.value = 128
+    D_polymer_layer.length.value = 128
+    D_polymer_layer.sigma.value = 5
     
     H_initiator.rho.value = 0.2
 
@@ -91,9 +93,10 @@ SiOx.rho.range(2.07,4.16) # Si - SiO2
 D_toluene.rho.pmp(5)
 D_initiator.rho.range(0,1.5)
 D_polymer_layer.phi.range(50,80)
-D_polymer_layer.head.range(0,100)
-D_polymer_layer.tail.range(0,500)
-D_polymer_layer.Y.range(1.5,2.5)
+D_polymer_layer.base.range(0,100)
+D_polymer_layer.length.range(0,500)
+D_polymer_layer.power.range(1.5,2.5)
+D_polymer_layer.sigma.range(0,20)
 
 ## Undeuterated system adds two extra parameters
 H_toluene.rho.pmp(5)
@@ -108,8 +111,9 @@ H_probe = instrument.load('10nht001.refl', back_reflectivity=True)
 
 # ================== Model variations ====================
 dream_opts = dict(chains=20,draws=300000,burn=1000000)
-store = "T3" 
+store = "T7" 
 if len(sys.argv) > 1: store=sys.argv[1]
+if store < "T7": raise RuntimeError("Brush model changed")
 modelnum = "all"
 if len(sys.argv) > 2: modelnum=sys.argv[2]
 if store == "T1":
@@ -149,6 +153,9 @@ elif store == "T6":
     D_polymer_layer.Y.range(1,4)
     D_initiator.rho.range(-1,5)
     H_initiator.rho.range(-1,5)
+elif store == "T7":
+    dream_opts = dict(chains=20,draws=100000,burn=1000000)
+    title = "decay tail"
 else:
     raise RuntimeError("store %s not defined"%store)
 

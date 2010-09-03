@@ -11,33 +11,34 @@ layer = TetheredPolymer(polymer,solvent,head,tail,power,
 "Coil-Globule Type Transitions in Polymers. 1. Collapse of Layers
 of Grafted Polymer Chains", Macromolecules 24, 140-149.
 
-[2] Kent, M.S.; Majewski, J.; Smith; G.S.; Lee, L.T.; Satija, S (1999)
-"Tethered chains in poor solvent conditions: An experimental study
-involving Langmuir diblock copolymer monolayers",
-J. of Chemical Physics 110(7), 3553-3565    
+[2] Karima, A; Douglas, JF; Horkay, F; Fetters, LJ; Satija, SK (1996)
+"Comparative swelling of gels and polymer brush layers", 
+Physica B 221, 331-336 DOI: 10.1016/0921-4526(95)00946-9
 """
 from __future__ import division
 __all__ = ["TetheredPolymer","VolumeProfile","layer_thickness"]
 import inspect
-from numpy import real, imag
+import numpy
+from numpy import real, imag, exp
 from mystic import Parameter
 from .model import Layer
 
 
-class TetheredPolymer(Layer):
+class PolymerBrush(Layer):
     """
-    Tethered polymer in a solvent
+    Polymer brushes in a solvent
 
     Parameters::
 
         *thickness* the thickness of the solvent layer
         *interface* the roughness of the solvent surface
         *polymer* the polymer material
-        *solvent* the solvent material
-        *phi* volume fraction of the polymer head
-        *head* the thickness of the polymer head
-        *tail* the length of the polymer decay tail
-        *power* the rate of decay along the tail
+        *solvent* the solvent material or vacuum
+        *phi* volume fraction of the polymer brush at the interface
+        *base* the thickness of the brush interface
+        *length* the length of the brush above the interface
+        *power* the rate of brush thinning
+        *sigma* brush roughness (rms)
 
     The materials can either use the scattering length density directly,
     such as PDMS = SLD(0.063, 0.00006) or they can use chemical composition 
@@ -45,40 +46,43 @@ class TetheredPolymer(Layer):
 
     These parameters combine in the following profile formula::
     
-        profile(z) = phi   for z <= head
-                   = phi * (1 - ((z-head)/tail)**2)**power
-                           for head <= z <= head+tail
-                   = 0     for z >= head+tail
-        sld = material.sld * profile + solvent.sld * (1 - profile)
+        brush(z) = phi   for z <= base
+                 = phi * (1 - ((z-base)/length)**2)**power
+                         for base <= z <= base+length
+                 = 0     for z >= base+length
+        profile(z) = conv(brush(z), gaussian(sigma))
+        sld(z) = material.sld * profile(z) + solvent.sld * (1 - profile(z))
     """
     def __init__(self, thickness=0, interface=0,
                  polymer=None, solvent=None, phi=None, 
-                 head=None, tail=None, Y=None):
+                 base=None, length=None, power=None, sigma=None):
         self.thickness = Parameter.default(thickness, name="solvent thickness")
         self.interface = Parameter.default(interface, name="solvent interface")
-        self.phi = Parameter.default(phi, name="polymer fraction")
-        self.head = Parameter.default(head, name="head thickness")
-        self.tail = Parameter.default(tail, name="tail thickness")
-        self.Y = Parameter.default(Y, name="tail decay")
+        self.phi = Parameter.default(phi, name="phi")
+        self.base = Parameter.default(base, name="base")
+        self.length = Parameter.default(length, name="length")
+        self.power = Parameter.default(power, name="power")
+        self.sigma = Parameter.default(sigma, name="sigma")
         self.solvent = solvent
         self.polymer = polymer
         # Constraints:
         #   phi in [0,1] 
-        #   head,tail,thickness,interface>0
-        #   head+tail >= thickness
+        #   base,length,sigma,thickness,interface>0
+        #   base+length+3*sigma <= thickness
     def parameters(self):
         return dict(solvent=self.solvent.parameters(),
                     polymer=self.polymer.parameters(),
                     thickness=self.thickness,
                     interface=self.interface,
-                    head=self.head,
-                    tail=self.tail,
                     phi=self.phi,
-                    Y = self.Y)
+                    base=self.base,
+                    length=self.length,
+                    power = self.power,
+                    sigma = self.sigma)
     def render(self, probe, slabs):
-        thickness, sigma, phi, head, tail, Y \
+        thickness, interface, phi, base, length, power, sigma \
             = [p.value for p in self.thickness, self.interface, 
-               self.phi, self.head, self.tail, self.Y]
+               self.phi, self.base, self.length, self.power, self.sigma]
         phi /= 100. # % to fraction
         Mr,Mi = self.polymer.sld(probe)
         Sr,Si = self.solvent.sld(probe)
@@ -86,21 +90,43 @@ class TetheredPolymer(Layer):
         S = Sr + 1j*Si
         try: M,S = M[0],S[0]  # Temporary hack
         except: pass
-        H = M*phi + S*(1-phi)
-        head_width = head if head < thickness else thickness
-        tail_width = tail if head+tail < thickness else thickness-head_width
-        solvent_width = thickness - (head_width+tail_width)
-        if solvent_width < 0: solvent_width = 0
+        L0 = base if base < thickness else thickness
+        L1 = length if base+length < thickness else thickness-L0
 
-        Pw,Pz = slabs.microslabs(tail_width)
-        profile = phi * (1 - (Pz/tail)**2)**Y
-        P = M*profile + S*(1-profile)
-        #P.reshape((1,len(profile)))
+        Pw,Pz = slabs.microslabs(thickness)
+        brush_profile = phi * (1 - ((Pz-L0)/(L1-L0))**2)**power
+        brush_profile[Pz<L0] = phi
+        brush_profile[Pz>L1] = 0
+        # TODO: we could use Nevot-Croce rather than smearing the profile
+        vf = smear(Pz, brush_profile, sigma)
+        P = M*vf + S*(1-vf)
+        Pr, Pi = real(P), imag(P)
 
-        slabs.extend(rho = [real(H)], irho = [imag(H)], w = [head_width])
-        slabs.extend(rho = [real(P)], irho = [imag(P)], w = Pw)
-        slabs.extend(rho = [real(S)], irho = [imag(S)], w = [solvent_width],
-                     sigma=[sigma])
+        # Optimization: find portion of the profile that is varying
+        # Rely on the fact that the profile is monotonic
+        delta = 0.001
+        if abs(Pr[0]-Pr[-1]) <= delta:
+            left, right = 0, 0
+        elif Pr[0] > Pr[-1]: # decreasing
+            left = len(Pr) - numpy.searchsorted(Pr[::-1],Pr[0]-delta)
+            right = len(Pr) - numpy.searchsorted(Pr[::-1],Pr[-1]+delta)
+        else: # increasing
+            left = numpy.searchsorted(Pr, Pr[0]+delta)
+            right = numpy.searchsorted(Pr, Pr[-1]-delta)
+        if left > right: raise RuntimeError("broken profile search")
+
+        print left,right
+
+        if left > 0:
+            slabs.extend(rho=[Pr[0:1]], irho=[Pi[0:1]], 
+                         w=[numpy.sum(Pw[:left])])
+        if left < right:
+            slabs.extend(rho=[Pr[left:right]], irho=[Pi[left:right]], 
+                         w=Pw[left:right])
+        if right < len(P):
+            slabs.extend(rho=[Pr[-1:]], irho=[Pi[-1:]], 
+                         w=[numpy.sum(Pw[:right])],
+                         sigma = [interface])
 
 def layer_thickness(z):
     """
@@ -207,3 +233,26 @@ class VolumeProfile(Layer):
         P = M*phi + S*(1-phi)
         slabs.extend(rho = [real(P)], irho = [imag(P)], w = Pw)
         slabs.interface(self.interface.value)
+
+
+def smear(z, P, sigma):
+    """
+    Gaussian smearing
+
+    :Parameters:
+        *z* | vector
+            equally spaced sample times
+        *P* | vector 
+            sample values
+        *sigma* | real
+            root-mean-squared convolution width
+    :Returns:
+        *Ps* | vector
+            smeared sample values
+    """
+    dz = z[1]-z[0]
+    if 3*sigma < dz: return P
+    w = int(3*sigma/dz)
+    G = exp(-0.5*(numpy.arange(-w,w+1)*(dz/sigma))**2)
+    full = numpy.hstack( ([P[0]]*w, P, [P[-1]]*w) )
+    return numpy.convolve(full,G/numpy.sum(G),'valid')
