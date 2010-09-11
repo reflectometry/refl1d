@@ -124,7 +124,10 @@ def start_fit(model, fit_options):
     # Save results
     state.title = model.name
     state.save(output)
-    model.save(output, state.best()[0])
+    try:
+        model.save(output, state.best()[0])
+    except:
+        pass
     sys.stdout = open(output+".out","w")
     model.show()
 

@@ -34,7 +34,7 @@ class PolymerBrush(Layer):
         *interface* the roughness of the solvent surface
         *polymer* the polymer material
         *solvent* the solvent material or vacuum
-        *phi* volume fraction of the polymer brush at the interface
+        *base_vf* volume fraction of the polymer brush at the interface
         *base* the thickness of the brush interface
         *length* the length of the brush above the interface
         *power* the rate of brush thinning
@@ -46,19 +46,19 @@ class PolymerBrush(Layer):
 
     These parameters combine in the following profile formula::
     
-        brush(z) = phi   for z <= base
-                 = phi * (1 - ((z-base)/length)**2)**power
-                         for base <= z <= base+length
-                 = 0     for z >= base+length
+        brush(z) = base_vf   for z <= base
+                 = base_vf * (1 - ((z-base)/length)**2)**power
+                             for base <= z <= base+length
+                 = 0         for z >= base+length
         profile(z) = conv(brush(z), gaussian(sigma))
         sld(z) = material.sld * profile(z) + solvent.sld * (1 - profile(z))
     """
     def __init__(self, thickness=0, interface=0,
-                 polymer=None, solvent=None, phi=None, 
+                 polymer=None, solvent=None, base_vf=None, 
                  base=None, length=None, power=None, sigma=None):
         self.thickness = Parameter.default(thickness, name="solvent thickness")
         self.interface = Parameter.default(interface, name="solvent interface")
-        self.phi = Parameter.default(phi, name="phi")
+        self.base_vf = Parameter.default(base_vf, name="base_vf")
         self.base = Parameter.default(base, name="base")
         self.length = Parameter.default(length, name="length")
         self.power = Parameter.default(power, name="power")
@@ -66,7 +66,7 @@ class PolymerBrush(Layer):
         self.solvent = solvent
         self.polymer = polymer
         # Constraints:
-        #   phi in [0,1] 
+        #   base_vf in [0,1] 
         #   base,length,sigma,thickness,interface>0
         #   base+length+3*sigma <= thickness
     def parameters(self):
@@ -74,16 +74,16 @@ class PolymerBrush(Layer):
                     polymer=self.polymer.parameters(),
                     thickness=self.thickness,
                     interface=self.interface,
-                    phi=self.phi,
+                    base_vf=self.base_vf,
                     base=self.base,
                     length=self.length,
                     power = self.power,
                     sigma = self.sigma)
     def render(self, probe, slabs):
-        thickness, interface, phi, base, length, power, sigma \
+        thickness, interface, base_vf, base, length, power, sigma \
             = [p.value for p in self.thickness, self.interface, 
-               self.phi, self.base, self.length, self.power, self.sigma]
-        phi /= 100. # % to fraction
+               self.base_vf, self.base, self.length, self.power, self.sigma]
+        base_vf /= 100. # % to fraction
         Mr,Mi = self.polymer.sld(probe)
         Sr,Si = self.solvent.sld(probe)
         M = Mr + 1j*Mi
@@ -94,8 +94,8 @@ class PolymerBrush(Layer):
         L1 = length if base+length < thickness else thickness-L0
 
         Pw,Pz = slabs.microslabs(thickness)
-        brush_profile = phi * (1 - ((Pz-L0)/(L1-L0))**2)**power
-        brush_profile[Pz<L0] = phi
+        brush_profile = base_vf * (1 - ((Pz-L0)/(L1-L0))**2)**power
+        brush_profile[Pz<L0] = base_vf
         brush_profile[Pz>L1] = 0
         # TODO: we could use Nevot-Croce rather than smearing the profile
         vf = smear(Pz, brush_profile, sigma)
@@ -125,6 +125,8 @@ class PolymerBrush(Layer):
             slabs.extend(rho=[Pr[-1:]], irho=[Pi[-1:]], 
                          w=[numpy.sum(Pw[:right])],
                          sigma = [interface])
+
+
 
 def layer_thickness(z):
     """
@@ -186,6 +188,7 @@ class VolumeProfile(Layer):
         self.solvent = solvent
         self.material = material
 
+        # Query profile function for the list of arguments
         vars = inspect.getargspec(profile)[0]
         print "vars",vars
         if inspect.ismethod(profile): vars = vars[1:]  # Chop self

@@ -65,6 +65,7 @@ from .material import SLD, Material, Compound, Mixture
 from .model import Slab, Stack
 from .polymer import PolymerBrush, VolumeProfile, layer_thickness
 from .freeform import Freeform
+from .cheby import FreeformCheby, ChebyVF
 from .interface import Erf
 from .probe import Probe, NeutronProbe, XrayProbe
 from .fitter import preview, fit, DEfit, SNOBfit, mesh, FitProblem, MultiFitProblem

@@ -18,6 +18,7 @@ from refl1d import *
 from refl1d.fitter import MultiFitProblem
 from copy import copy
 import numpy
+from numpy import cos, log, exp, arange, pi
 
 
 ## =============== Models ======================
@@ -43,33 +44,44 @@ D_initiator = SLD(name="D-initiator",rho=1.5)
 H_toluene = SLD(name="H-toluene",rho=0.94)
 H_initiator = SLD(name="H-initiator",rho=0)
 
-n = 3
-H_polymer_layer = Freeform(left=D_initiator, right=H_toluene,
-                           rho=[0]*n, rhoz=[0.5]*n)
+n = 20
+x = cos(pi*(arange(n)+0.5)/n)
+fx = (x+1)/2   # line from 0 to 1
+D_polymer_layer = ChebyVF(material=D_polystyrene, solvent=D_toluene,
+                          vf=fx, method="interp")
 
 # Stack materials into samples
 # Note: only need D_toluene to compute Fresnel reflectivity --- should fix
-# this later so that we can use a pure freeform layer
-H = silicon%5 + SiOx/100%5 + H_initiator/100%20 + H_polymer_layer/300 + H_toluene
+# this later so that we can use a pure freeform layer on top.
+D = silicon%5 + SiOx/100%5 + D_initiator/100%20 + D_polymer_layer/1000%0 + D_toluene
+
+### Undeuterated toluene solvent system
+H_polymer_layer = copy(D_polymer_layer)  # Share tethered polymer parameters...
+H_polymer_layer.solvent = H_toluene      # ... but use different solvent
+H = silicon + SiOx + H_initiator + H_polymer_layer + H_toluene
+for i,_ in enumerate(D):
+    H[i].thickness = D[i].thickness
+    H[i].interface = D[i].interface
 
 
 # ================= Fitting parameters ==================
 
 for i in 0, 1, 2:
-    H[i].interface.range(0,100)
-H[1].thickness.range(0,200)
-H[2].thickness.range(0,200)
-H[3].thickness.range(0,500)
-# TODO: how to warn the user that they are setting something that isn't a
-# fit parameter?
+    D[i].interface.range(0,100)
+D[1].thickness.range(0,200)
+D[2].thickness.range(0,200)
+D_polystyrene.rho.range(6.2,6.5)
 SiOx.rho.range(2.07,4.16) # Si - SiO2
 #SiOx.rho.pmp(10) # SiOx +/- 10%
-H_toluene.rho.pmp(5)
-H_initiator.rho.range(0,1.5)
+D_toluene.rho.pmp(5)
+D_initiator.rho.range(0,1.5)
+for p in D_polymer_layer.vf:
+    p.range(0,1)
 
-for i in range(n):
-    H_polymer_layer.rho[i].range(-1,7)
-    H_polymer_layer.rhoz[i].range(0,1)
+## Undeuterated system adds two extra parameters
+H_toluene.rho.pmp(5)
+H_initiator.rho.range(-0.5,0.5)
+
 
 
 # ================= Data files ===========================
@@ -80,24 +92,33 @@ H_probe = instrument.load('10nht001.refl', back_reflectivity=True)
 
 # ================== Model variations ====================
 dream_opts = dict(chains=20,draws=300000,burn=1000000)
-store = "F2" 
+store = "F0" 
+if len(sys.argv) > 1: store=sys.argv[1]
+modelnum = "all"
+if len(sys.argv) > 2: modelnum=sys.argv[2]
 if len(sys.argv) > 1: store=sys.argv[1]
 if store == "F1":
     dream_opts = dict(chains=20,draws=10000,burn=300000)
-    title = "First try"
-elif store == "F2":
-    dream_opts = dict(chains=20,draws=10000,burn=3000000)
     title = "First try"
 else:
     raise RuntimeError("store %s not defined"%store)
 
 # Join models and data
+D_model = Experiment(sample=D, probe=D_probe)
 H_model = Experiment(sample=H, probe=H_probe)
+models = D_model, H_model
 
 # Needed by dream fitter
-problem = FitProblem(H_model)
+if modelnum == "all":
+    problem = MultiFitProblem(models=models)
+    problem.name = "tethered"
+elif modelnum == "M0":
+    problem = FitProblem(D_model)
+    problem.name = "Dtoluene"
+elif modelnum == "M1":
+    problem = FitProblem(H_model)
+    problem.name = "Htoluene"
 problem.dream_opts = dream_opts
-problem.name = "freeform"
 problem.title = title
 problem.store = store
 #Probe.view = 'log'

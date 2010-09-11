@@ -43,7 +43,7 @@ H_toluene = SLD(name="H-toluene",rho=0.94)
 H_initiator = SLD(name="H-initiator",rho=0)
 
 D_polymer_layer = PolymerBrush(polymer=D_polystyrene, solvent=D_toluene,
-                               phi=70, base=120, length=200, power=2,
+                               base_vf=70, base=120, length=200, power=2,
                                sigma=10)
 
 # Stack materials into samples
@@ -73,7 +73,7 @@ if 0:
     
     D_polymer_layer.power.value = 1.93
     D_polymer_layer.base.value = 64
-    D_polymer_layer.phi.value = 64
+    D_polymer_layer.base_vf.value = 64
     D_polystyrene.rho.value = 6.42
     D_polymer_layer.length.value = 128
     D_polymer_layer.sigma.value = 5
@@ -92,7 +92,7 @@ SiOx.rho.range(2.07,4.16) # Si - SiO2
 #SiOx.rho.pmp(10) # SiOx +/- 10%
 D_toluene.rho.pmp(5)
 D_initiator.rho.range(0,1.5)
-D_polymer_layer.phi.range(50,80)
+D_polymer_layer.base_vf.range(50,80)
 D_polymer_layer.base.range(0,100)
 D_polymer_layer.length.range(0,500)
 D_polymer_layer.power.range(1.5,2.5)
@@ -111,51 +111,23 @@ H_probe = instrument.load('10nht001.refl', back_reflectivity=True)
 
 # ================== Model variations ====================
 dream_opts = dict(chains=20,draws=300000,burn=1000000)
-store = "T7" 
+store = "T0" 
 if len(sys.argv) > 1: store=sys.argv[1]
-if store < "T7": raise RuntimeError("Brush model changed")
 modelnum = "all"
 if len(sys.argv) > 2: modelnum=sys.argv[2]
 if store == "T1":
-    dream_opts = dict(chains=20,draws=100000,burn=300000)
-    title = "First try; phi=70"
-elif store == "T2":
-    dream_opts = dict(chains=20,draws=100000,burn=300000)
-    title = "fixed SiOx, H/D-toluene rho"
-    SiOx.rho.fixed = True
-    D_toluene.rho.fixed = True
-    H_toluene.rho.fixed = True    
-elif store == "T3":
-    dream_opts = dict(chains=20,draws=100000,burn=1000000)
-    #dream_opts = dict(chains=20,draws=1000,burn=0)
-    title = "fixed SiOx, no initiator"
-    SiOx.rho.fixed = True
-    D_toluene.rho.fixed = True
-    H_toluene.rho.fixed = True
-    D_polymer_layer.Y.range(1,4)
-    del D[2]
-    del H[2]
-elif store == "T4":
-    dream_opts = dict(chains=20,draws=100000,burn=1000000)
-    D_polymer_layer.Y.range(1,4)
-    title = "free all"
-elif store == "T5":
-    dream_opts = dict(chains=20,draws=100000,burn=1000000)
-    title = "fixed SiOx, initiator w>15"
-    SiOx.rho.fixed = True
-    D_toluene.rho.fixed = True
-    H_toluene.rho.fixed = True
-    D[2].thickness.range(15,200)
-    D_polymer_layer.Y.range(1,4)
-elif store == "T6":
-    dream_opts = dict(chains=20,draws=100000,burn=1000000)
-    title = "free all, initiator rho in [-1,5]"
-    D_polymer_layer.Y.range(1,4)
-    D_initiator.rho.range(-1,5)
-    H_initiator.rho.range(-1,5)
-elif store == "T7":
-    dream_opts = dict(chains=20,draws=100000,burn=1000000)
+    dream_opts = dict(chains=20,draws=300000,burn=3000000)
     title = "decay tail"
+elif store == "T2":
+    dream_opts = dict(chains=20,draws=300000,burn=3000000)
+    title = "decay tail; loose parameters (=T2)"
+    D_toluene.rho.pmp(15)
+    D_initiator.rho.range(-1,3)
+    D_polymer_layer.base_vf.range(30,100)
+    D_polymer_layer.base.range(0,200)
+    D_polymer_layer.length.range(0,500)
+    D_polymer_layer.power.range(1.,4.)
+    D_polymer_layer.sigma.range(0,50)
 else:
     raise RuntimeError("store %s not defined"%store)
 
