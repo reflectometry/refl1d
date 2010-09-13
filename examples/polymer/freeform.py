@@ -100,6 +100,11 @@ if len(sys.argv) > 1: store=sys.argv[1]
 if store == "F1":
     dream_opts = dict(chains=20,draws=10000,burn=300000)
     title = "First try"
+elif store == "F2":
+    title = "longer run"
+elif store == "F3":
+    H_polymer_layer.method = D_polymer_layer.method = "direct"
+    title = "direct coeff"
 else:
     raise RuntimeError("store %s not defined"%store)
 

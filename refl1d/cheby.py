@@ -62,14 +62,20 @@ class ChebyVF(Layer):
     """
     Material in a solvent
 
-    Parameters::
+    :Parameters:
 
-        *thickness* the thickness of the solvent layer
-        *interface* the roughness of the solvent surface
-        *material* the material of interest
-        *solvent* the solvent or vacuum
-        *vf* the control points for volume fraction
-        *method* freeform profile method
+        *thickness* : float | Angstrom
+            the thickness of the solvent layer
+        *interface* : float | Angstrom
+            the rms roughness of the solvent surface
+        *material* : Material
+            the material of interest
+        *solvent* : Material
+            the solvent or vacuum
+        *vf* : [float] 
+            the control points for volume fraction
+        *method* = 'interp' : string | 'direct' or 'interp'
+            freeform profile method 
 
     *method* is 'direct' if the *vf* values refer to chebyshev
     polynomial coefficients or 'interp' if *vf* values refer to
