@@ -74,7 +74,7 @@ class BaseParameter(object):
         Allow the parameter to vary within the given range.
         """
         if self.fittable: self.fixed = False
-        self.bounds = mbounds.Bounded(low,high)
+        self.bounds = mbounds.init_bounds((low,high))
         return self
 
     # Functional form of parameter value access

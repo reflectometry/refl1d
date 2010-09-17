@@ -166,8 +166,9 @@ def init_bounds(v):
         return v
 
     # if it is a tuple
-    if lo == None: lo = inf
+    if lo == None: lo = -inf
     if hi == None: hi = inf
+    if lo >= hi: raise ValueError("invalid bounds")
     if isinf(lo) and isinf(hi):
         return Unbounded()
     elif isinf(lo):

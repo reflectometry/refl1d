@@ -17,6 +17,7 @@ from periodictable import formula
 from refl1d import *
 from refl1d.fitter import MultiFitProblem, FitProblem
 from copy import copy
+Probe.view = "log"
 
 
 ## =============== Models ======================

@@ -18,7 +18,7 @@ from refl1d import *
 from refl1d.fitter import MultiFitProblem
 from copy import copy
 import numpy
-from numpy import cos, log, exp, arange, pi
+from numpy import cos, log, exp, arange, pi, inf
 
 
 ## =============== Models ======================
@@ -44,7 +44,7 @@ D_initiator = SLD(name="D-initiator",rho=1.5)
 H_toluene = SLD(name="H-toluene",rho=0.94)
 H_initiator = SLD(name="H-initiator",rho=0)
 
-n = 20
+n = 10
 x = cos(pi*(arange(n)+0.5)/n)
 fx = (x+1)/2   # line from 0 to 1
 D_polymer_layer = ChebyVF(material=D_polystyrene, solvent=D_toluene,
@@ -103,10 +103,27 @@ if store == "F1":
 elif store == "F2":
     title = "longer run"
 elif store == "F3":
-    H_polymer_layer.method = D_polymer_layer.method = "direct"
     title = "direct coeff"
+    H_polymer_layer.method = D_polymer_layer.method = "direct"
+### number of control points changed to 30
+elif store == "F4":
+    title = "direct coeff, but not bounded in [0-1], n=30"
+    H_polymer_layer.method = D_polymer_layer.method = "direct"
+    for p in D_polymer_layer.vf:
+        p.range(-inf,inf)
+elif store == "F5":
+    title = "longer run, n=30"
+elif store == "F6":
+    title = "direct coeff, n=10"
+    H_polymer_layer.method = D_polymer_layer.method = "direct"
+    for p in D_polymer_layer.vf:
+        p.range(-inf,inf)
+elif store == "F7":
+    title = "longer run, n=10"
 else:
     raise RuntimeError("store %s not defined"%store)
+
+
 
 # Join models and data
 D_model = Experiment(sample=D, probe=D_probe)

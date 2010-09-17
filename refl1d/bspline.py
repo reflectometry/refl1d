@@ -2,7 +2,7 @@
 """
 BSpline calculator.
 
-Given a set of knots, compute the degree 3 Bspline and any derivatives
+Given a set of knots, compute the degree 3 B-spline and any derivatives
 that are required.
 """
 from __future__ import division
@@ -27,7 +27,7 @@ def pbs(x, y, xt, flat=True, parametric=False):
     cy = numpy.hstack(([y[0]]*3, y, y[-1]))
 
     if parametric:
-        return _bspline3(knot,cx,xt),_bspline3(knot,cy,yt)
+        return _bspline3(knot,cx,xt),_bspline3(knot,cy,xt)
 
     # Find parametric t values corresponding to given z values
     # First try a few newton steps

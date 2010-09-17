@@ -113,17 +113,18 @@ class ChebyVF(Layer):
                     length=self.length,
                     vf=self.vf)
     def render(self, probe, slabs):
-        thickness = self.thickness.value
-        Pw,Pz = slabs.microslabs(thickness)
-        t = Pz/thickness
-        vf = cheby_profile([p.value for p in self.vf], t, self.method)
-        vf = numpy.clip(vf,0,1)
         Mr,Mi = self.material.sld(probe)
         Sr,Si = self.solvent.sld(probe)
         M = Mr + 1j*Mi
         S = Sr + 1j*Si
         try: M,S = M[0],S[0]  # Temporary hack
         except: pass
+        
+        thickness = self.thickness.value
+        Pw,Pz = slabs.microslabs(thickness)
+        t = Pz/thickness
+        vf = cheby_profile([p.value for p in self.vf], t, self.method)
+        vf = numpy.clip(vf,0,1)
         P = M*vf + S*(1-vf)
         Pr, Pi = real(P), imag(P)        
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
@@ -141,6 +142,7 @@ def cheby_profile(control, t, method):
         w = exp((-0.5j*pi/n)*numpy.arange(n))
         y = numpy.hstack((c[0::2], c[1::2][::-1]))
         c = (2./n) * real(fft(y)*w)
+
     # Crenshaw recursion from numerical recipes sec. 5.8
     y = 4*t - 2
     d = dd = 0

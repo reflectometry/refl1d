@@ -1,7 +1,7 @@
 # This program is in the public domain
 # Author: Paul Kienzle
 """
-Reflectometry resolution calculator.
+Reflectometry resolution calculations.
 
 Given Q = 4 pi sin(theta)/lambda, the resolution in Q is determined by
 the dispersion angle theta and wavelength lambda.  For monochromatic
@@ -244,10 +244,13 @@ between slits.  For tiny samples, the sample itself can act as a slit.
 If s_sample = sin(T)*w is smaller than s2 for some T, then use
 dT = (s1+s_sample)/(2(d+d_sample)) instead.
 
-The sample broadening can be read off a rocking curve as  w - (s1+s2)/(2d)
-where w is the measured FWHM of the peak. This constant should be added to
-the computed dT for all angles and slit geometries.  You will not
-usually have this information on hand, but you can leave space for users
+The sample broadening can be read off a rocking curve as  
+
+    w - degrees(0.5*(s1+s2)/(d1-d2))
+    
+where w is the measured FWHM of the peak in degrees. This constant should 
+be added to the computed dT for all angles and slit geometries.  You will 
+not usually have this information on hand, but you can leave space for users
 to enter it if it is available.
 
 FWHM can be converted to 1-sigma resolution using the scale factor of
@@ -439,11 +442,29 @@ class Monochromatic:
 
     def calc_dT(self, T, slits, **kw):
         """
-        Compute the FWHM angular divergence in radians
+        Compute the angular divergence for given slits and angles
+        
+        :Parameters:
+            *T* : [float] | degrees
+                measurement angles
+            *slits* : float OR (float,float) | mm
+                total slit opening from edge to edge, not beam center to edge
+            *d_s1*, *d_s2* : float | mm
+                distance from sample to slit 1 and slit 2
+            *sample_width* : float | mm
+                size of sample
+            *sample_broadening* : float | degrees FWHM
+                resolution changes from sample warp
 
-        *d_s1*, *d_s2*  slit distances
-        *sample_width*  size of sample
-        *sample_broadening* resolution changes from sample warping
+        :Returns:
+            *dT* : [float] | degrees FWHM
+                angluar divergence
+
+        *sample_broadening* can be estimated from W, the full width at half
+        maximum of a rocking curve measured in degrees:
+
+            sample_broadening = W - degrees( 0.5*(s1+s2) / (d1-d2))
+
         """
         d_s1 = kw.get('d_s1',self.d_s1)
         d_s2 = kw.get('d_s2',self.d_s2)
@@ -459,9 +480,18 @@ class Monochromatic:
 
     def resolution(self, Q, **kw):
         """
-        Return the resolution for a given Q.
+        Calculate resolution
+        
+        :Parameters:
+            *Q* : [float] | inv A
+                Q values for which resolution is needed
+        
+        :Return:
+            *geometry* : Resolution
+                Measurement geometry with resolution information
+                
 
-        Resolution is an object with fields T, dT, L, dL, Q, dQ
+        Resolution objects have T, dT, L, dL, Q, dQ
         """
         L = kw.get('L',kw.get('wavelength',self.wavelength))
         dLoL = kw.get('dLoL',self.dLoL)
@@ -727,31 +757,42 @@ def divergence(T=None, slits=None, distance=None,
     """
     Calculate divergence due to slit and sample geometry.
 
-    Returns FWHM divergence in degrees.
+    :Parameters:
+        *T*         : float OR [float] | degrees
+            incident angles
+        *slits*     : float OR (float,float) | mm
+            s1,s2 slit openings for slit 1 and slit 2
+        *distance*  : (float,float) | mm
+            d1,d2 distance from sample to slit 1 and slit 2
+        *sample_width*      : float | mm
+            w, width of the sample
+        *sample_broadening* : float | degrees FWHM
+            additional divergence caused by sample
+    
+    :Returns:
+        *dT*  : float OR [float] | degrees FWHM
+            calculated angular divergence
 
-    *T*            (degrees) incident angles
-    *slits*        (mm) s1,s2 slit openings for slit 1 and slit 2
-    *distance*     (mm) d1,d2 distance from sample to slit 1 and slit 2
-    *sample_width* (mm) w, width of the sample
-    *sample_broadening* (degrees FWHM) additional divergence caused by sample
-
-    Uses the following formula::
+    Algorithm:
+    
+    Uses the following formula:
 
         p = w * sin(radians(T))
-        dT = / (s1+s2) / 2 (d1-d2)   if p >= s2
-             \ (s1+p) / 2 d1         otherwise
-        dT = dT + sample_broadening
+        dT = /  1/2 (s1+s2) / (d1-d2)   if p >= s2
+             \  1/2 (s1+p) /  d1        otherwise
+        dT = degrees(dT) + sample_broadening
 
     where p is the projection of the sample into the beam.
 
-    *sample_broadening* can be estimated from W, the FWHM of a rocking curve::
+    *sample_broadening* can be estimated from W, the FWHM of a rocking curve:
 
-        sample_broadening = W - (s1+s2) / 2(d1-d2)
+        sample_broadening = W - degrees( 0.5*(s1+s2) / (d1-d2))
 
-    Note: default sample width is large but not infinite so that at T=0,
-    sin(0)*sample_width returns 0 rather than NaN.
+    :Note: 
+        default sample width is large but not infinite so that at T=0,
+        sin(0)*sample_width returns 0 rather than NaN.
     """
-    # TODO: check that the formula is correct for T=0 => dT = s1 / 2 d1
+    # TODO: check that the formula is correct for T=0 => dT = s1 / d1
     # TODO: add sample_offset and compute full footprint
     d1,d2 = distance
     try:
@@ -759,19 +800,19 @@ def divergence(T=None, slits=None, distance=None,
     except TypeError:
         s1=s2 = slits
 
-    # Compute FWHM angular divergence dT from the slits in radians
-    dT = (s1+s2)/2/(d1-d2)
+    # Compute FWHM angular divergence dT from the slits in degrees
+    dT = degrees(0.5*(s1+s2)/(d1-d2))
 
     # For small samples, use the sample projection instead.
     sample_s = sample_width * sin(radians(T))
     if isscalar(sample_s):
-        if sample_s < s2: dT = (s1+sample_s)/(2*d1)
+        if sample_s < s2: dT = degrees(0.5*(s1+sample_s)/d1)
     else:
         idx = sample_s < s2
         #print s1,s2,d1,d2,T,dT,sample_s
         s1 = ones_like(sample_s)*s1
         dT = ones_like(sample_s)*dT
-        dT[idx] = (s1[idx] + sample_s[idx])/(2*d1)
+        dT[idx] = degrees(0.5*(s1[idx] + sample_s[idx])/d1)
 
     return dT + sample_broadening
 
