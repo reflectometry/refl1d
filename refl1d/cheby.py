@@ -16,6 +16,54 @@ profile for S microslabs.
 
 
 """
+#TODO: clipping volume fraction to [0,1] distorts parameter space
+# Option 0: clip to [0,1]
+# - Bayesian analysis: parameter values outside the domain will be equally 
+#   probable out to infinity
+# - Newton methods: the fit space is flat outside the domain, which leads 
+#   to a degenerate hessian.
+# - Direct methods: won't fail, but will be subject to random walk
+#   performance outside the domain.
+# - trivial to implement!
+# Option 1: compress (-inf,0.001] and [0.999,inf) into (0,0.001], [0.999,1)
+# - won't address any of the problems of clipping
+# Option 2: have chisq return inf for points outside the domain
+# - Bayesian analysis: correctly assigns probability zero
+# - Newton methods: degenerate Hessian outside domain
+# - Direct methods: random walk outside domain
+# - easy to implement
+# Option 3: clip outside domain but add penalty based on amount of clipping
+#   A profile based on clipping may have lower chisq than any profile that
+#   can be described by a valid model (e.g., by having a sharper transition
+#   than would be allowed by the model), leading to a minimum outside D.
+#   Adding a penalty constant outside D would help, but there is no constant 
+#   that works everywhere.  We could use a constant greater than the worst 
+#   chisq seen so far in D, which can guarantee an arbitrarily low P(x) and
+#   a global minimum within D, but for Newton methods, the boundary may still
+#   have spurious local minima and objective value now depends on history.
+#   Linear compression of profile to fit within the domain would avoid
+#   unreachable profile shapes (this is just a linear transform on chebyshev
+#   coefficients), and the addition of the penalty value would reduce 
+#   parameter correlations that result from having transformed parameters 
+#   resulting in identical profiles.  Returning T = ||A(x)|| from render, 
+#   with A being a transform that brings the profile within [0,1], the 
+#   objective function can return P'(x) = P(x)/(10*(1+sum(T_i)^4) for all
+#   slabs i, or P(x) if no slabs return a penalty value.  So long as T is
+#   monotonic with increasing badness, with value of 0 within D, and so long
+#   as no values of x outside D can generate models that cannot be
+#   expressed for any x within D, then any optimizer should return a valid
+#   result at the global minimum.  There may still be local minima outside
+#   the boundary, so information that the the value is outside the domain
+#   still needs to pass through a local optimizer to the fitting program.
+#   This approach could be used to transform a box constrained
+#   problem to an unconstrained problem using clipping+penalty on the
+#   parameter values and removing the need for constrained Newton optimizers.
+# - Bayesian analysis: parameters outside D have incorrect probability, but
+#   with a sufficiently large penalty, P(x) ~ 0; if the penalty value is
+#   too low, details of the correlations outside D may leak into D.
+# - Newton methods: Hessian should point back to domain
+# - Direct methods: random walk should be biased toward the domain
+# - moderately complicated
 import numpy
 from numpy import inf, real, imag, exp, pi
 from numpy.fft import fft
@@ -126,7 +174,7 @@ class ChebyVF(Layer):
         vf = cheby_profile([p.value for p in self.vf], t, self.method)
         vf = numpy.clip(vf,0,1)
         P = M*vf + S*(1-vf)
-        Pr, Pi = real(P), imag(P)        
+        Pr, Pi = real(P), imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
 
 def cheby_profile(control, t, method):
