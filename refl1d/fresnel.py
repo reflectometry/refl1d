@@ -10,18 +10,22 @@ class Fresnel:
     """
     Function for computing the Fresnel reflectivity for a single interface.
 
-    rho,Vrho
-        real scattering length density of substrate and vacuum
-    irho,Virho
-        imaginary scattering density of substrate and vacuum
-        irho = mu / (2 lambda)
-    sigma (angstrom)
-        interfacial roughness
+    :Parameters:
+        *rho*, *irho* = 0 : float | 1e6 * inv Angstrom^2
+            real and imaginary scattering length density of backing medium
+        *Vrho*, *Virho* = 0 : float | 1e6 * inv Angstrom^2
+            real and imaginary scattering length density of incident medium
+        *sigma* = 0 : float | Angstrom
+            interfacial roughness
+            
+    :Returns:
+        fresnel : Fresnel
+            callable object for computing Fresnel reflectivity at Q
 
     Note that we do not correct for attenuation of the beam through the 
     incident medium since we do not know the path length.
     """
-    def __init__(self, rho=1e-6, irho=0, sigma=0, Vrho=0, Virho=0):
+    def __init__(self, rho=0, irho=0, sigma=0, Vrho=0, Virho=0):
         self.rho,self.Vrho,self.irho,self.Virho,self.sigma \
             = rho,Vrho,irho,Virho,sigma
 
@@ -32,38 +36,11 @@ class Fresnel:
         # If Q < 0, then we are going from substrate into incident medium.
         # In that case we must negate the change in scattering length density
         # and ignore the absorption.
-        drho = self.rho-self.Vrho
-        S = 4*pi*(choose(Q<0,(-drho+1j*self.Virho, drho+1j*self.irho)))
+        Qp_rho = 1e-6*(self.rho-self.Vrho + 1j*self.irho)
+        Qm_rho = 1e-6*(self.Vrho-self.rho + 1j*self.Virho)
+        rho = choose(Q<0, (Qm_rho,Qp_rho))
         kz = abs(Q)/2
-        f = sqrt(kz**2 - S*1e-6)  # fresnel coefficient
-class Fresnel:
-    """
-    Function for computing the Fresnel reflectivity for a single interface.
-
-    rho,Vrho
-        scattering length density of substrate and vacuum
-    irho,Virho
-        absorption of substrate and vacuum (note that we do not correct
-        for attenuation of the beam through the incident medium since we
-        do not know the path length).
-    sigma (angstrom)
-        interfacial roughness
-    """
-    def __init__(self, rho=1e-6, irho=0, sigma=0, Vrho=0, Virho=0):
-        self.rho,self.Vrho,self.irho,self.Virho,self.sigma \
-            = rho,Vrho,irho,Virho,sigma
-
-    def reflectivity(self, Q, L=1):
-        """
-        Compute the Fresnel reflectivity at the given Q/wavelength.
-        """
-        # If Q < 0, then we are going from substrate into incident medium.
-        # In that case we must negate the change in scattering length density
-        # and ignore the absorption.
-        drho = self.rho-self.Vrho
-        rho = choose(Q<0,[drho,-drho]) + 1j*choose(Q<0,[self.irho,self.Virho])
-        kz = abs(Q)/2
-        f = sqrt(kz**2 - 4*pi*rho*1e-6)  # fresnel coefficient
+        f = sqrt(kz**2 - 4*pi*rho)  # fresnel coefficient
 
         # Compute reflectivity amplitude, with adjustment for roughness
         amp = (kz-f)/(kz+f) * exp(-2*self.sigma**2*kz*f)
@@ -83,26 +60,25 @@ class Fresnel:
     __call__ = reflectivity
 
 def test():
-    return #TODO: Skip this test until reflectivity.model1d is fixed
-
-    # Rough silicon with an anomolously large absorbtion
-    f = Fresnel(rho=2.07e-6, mu=1e-6, sigma=20)
-
     import numpy
-    import reflectometry.model1d as reflfit
-    m = reflfit.Model()
-    m.incident('Air',rho=0,mu=0)
-    m.interface(sigma=f.sigma)
-    m.substrate('Si',rho=f.rho*1e6,mu=f.mu*1e6)
+    import abeles
+    
+    # Rough silicon with an anomolously large absorbtion
+    rho,irho = 2.07,0.01
+    Vrho,Virho = -1,0.1
+    sigma = 20
+    fresnel = Fresnel(rho=rho, irho=irho, Vrho=Vrho, Virho=Virho, sigma=sigma)
 
-    L = 4.75 # Angstrom
-    Q = numpy.linspace(0,0.1,11,'d')
-    Rf = f(Q,L)
-    Rm = m.reflectivity(Q,L,dz=0.01)
-    #print numpy.vstack((Q,Rf,Rm)).T
+    Mw = [0,0]
+    Mrho = [[rho,Vrho]]
+    Mirho = [[irho,Virho]]
+    Msigma = [sigma]
 
-    # This is failing because reflectometry.model1d is failing; why that
-    # is so has not yet been determined.
+    Q = numpy.linspace(-0.1,0.1,11,'d')
+    Rf = fresnel(Q)
+    rm = abeles.refl(Q/2, depth=Mw, rho=Mrho, irho=Mirho, sigma=Msigma)
+    Rm = abs(rm)**2
+
     relerr = numpy.linalg.norm((Rf-Rm)/Rm)
     assert relerr < 1e-10, "relative error is %g"%relerr
 
