@@ -258,6 +258,10 @@ def _check_layer(el):
 class Repeat(Layer):
     """
     Repeat a layer or stack.
+    
+    If an interface parameter is provide, the roughness between the 
+    multilayers may be different from the roughness between the repeated
+    stack and the following layer.
     """
     def __init__(self, stack, repeat=1, interface=None):
         self.repeat = IntPar(repeat, limits=(0,inf),
@@ -265,7 +269,7 @@ class Repeat(Layer):
         self.stack = stack
         self.interface = interface
     def parameters(self):
-        if interface is not None:
+        if self.interface is not None:
             return dict(stack=self.stack.parameters,
                         repeat=self.repeat,
                         interface=self.interface)
@@ -273,20 +277,12 @@ class Repeat(Layer):
             return dict(stack=self.stack.parameters,
                         repeat=self.repeat)
     def render(self, probe, slabs):
-        # For repeats, may need to control the roughness between the
-        # multilayer repeats separately from the roughness after
-        # the stack.
-        mark = len(slabs)
         nr = self.repeat.value
-        if self.interface is None:
-            if nr > 0:
-                self.stack.render(probe, slabs)
-                slabs.repeat(mark, nr)
-        else:
-            if nr > 1:
-                self.stack.render(probe, slabs)
-                slabs.repeat(mark, nr-1)
-            self.stack.render(probe,slabs)
+        if nr <= 0: return
+        mark = len(slabs)
+        self.stack.render(probe, slabs)
+        slabs.repeat(mark, nr)
+        if self.interface != None:
             slabs.interface(self.interface)
     def __str__(self):
         return "(%s)x%d"%(str(self.stack),self.repeat.value)
