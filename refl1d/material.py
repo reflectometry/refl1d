@@ -410,6 +410,11 @@ class Mixture(Scatterer):
         of the individual components.
         """
         fraction = numpy.array([0.]+[m.value for m in self.fraction])
+        # TODO: handle invalid fractions using penalty functions
+        # S = sum(fraction)
+        # scale = S/100 if S > 100 else 1
+        # fraction[0] = 100 - S/scale
+        # penalty = scale - 1
         fraction[0] = 100 - sum(fraction)
         if (fraction<0).any():
             return NaN
@@ -425,8 +430,13 @@ class Mixture(Scatterer):
         # Convert fractions into an array, with the final fraction
         fraction = numpy.hstack((0, [m.value for m in self.fraction]))
         fraction[0] = 100 - sum(fraction)
+        # TODO: handle invalid fractions using penalty functions
+        # S = sum(fraction)
+        # scale = S/100 if S > 100 else 1
+        # fraction[0] = 100 - S/scale
+        # penalty = scale - 1
         if (fraction<0).any():
-            return NaN, NaN, NaN
+            return NaN, NaN
 
         # Lookup SLD
         slds = [c.sld(probe) for c in self.material]
