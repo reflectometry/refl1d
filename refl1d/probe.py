@@ -52,6 +52,10 @@ from material import Vacuum
 from mystic.parameter import Parameter
 from .util import TL2Q, dTdL2dQ
 
+PROBE_KW = ('T', 'dT', 'L', 'dL', 'data',
+            'intensity', 'background', 'back_absorption',
+            'theta_offset', 'back_reflectivity', 'data')
+
 class Probe(object):
     """
     Defines the incident beam used to study the material.

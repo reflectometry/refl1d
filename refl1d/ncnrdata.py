@@ -54,7 +54,7 @@ import os
 import numpy
 from numpy import inf, pi
 
-from .resolution import Monochromatic
+from .instrument import Monochromatic
 from . import util
 from probe import PolarizedNeutronProbe
 
@@ -175,28 +175,13 @@ def parse_file(filename):
 
     return header, data
 
-class NCNRLoader(Monochromatic):
+class NCNRLoader:
     def load(self, filename, **kw):
         return load(filename, instrument=self, **kw)
     def load_magnetic(self, filename, **kw):
         return load_magnetic(filename, instrument=self, **kw)
-    def simdata(self, sample, counts=None, **kw):
-        """
-        Simulate a run with a particular sample.
-        """
-        # TODO: more realistic simulation
-        from .experiment import Experiment
-        probe = self.simulate(**kw)
-        M = Experiment(probe=probe, sample=sample)
-        _, Rth = M.reflectivity()
-        dR = 0.01*M.fresnel()
-        R = Rth + numpy.random.randn(*Rth.shape)*dR
-        probe.data = R,dR
-        
-        return probe
 
-
-class ANDR(NCNRLoader):
+class ANDR(Monochromatic,NCNRLoader):
     """
     Instrument definition for NCNR AND/R diffractometer/reflectometer.
     """
@@ -207,7 +192,7 @@ class ANDR(NCNRLoader):
     d_s1 = 230.0 + 1856.0
     d_s2 = 230.0
 
-class NG1(NCNRLoader):
+class NG1(Monochromatic,NCNRLoader):
     """
     Instrument definition for NCNR NG-1 reflectometer.
     """
@@ -220,7 +205,7 @@ class NG1(NCNRLoader):
     d_s3 = 9*25.4
     d_s4 = 42*25.4
 
-class NG7(NCNRLoader):
+class NG7(Monochromatic,NCNRLoader):
     """
     Instrument definition for NCNR NG-7 reflectometer.
     """
@@ -232,7 +217,7 @@ class NG7(NCNRLoader):
     d_s1 = d_s2 + 1350.
     d_detector = 2000.
 
-class XRay(NCNRLoader):
+class XRay(Monochromatic,NCNRLoader):
     """
     Instrument definition for NCNR X-ray reflectometer.
 

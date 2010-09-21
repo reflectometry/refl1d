@@ -1,13 +1,13 @@
 # This program is in the public domain
 # Author: Paul Kienzle
 """
-Reflectometry resolution calculations.
+Reflectometry instrument definitions.
 
-Given Q = 4 pi sin(theta)/lambda, the resolution in Q is determined by
-the dispersion angle theta and wavelength lambda.  For monochromatic
-sources, the wavelength resolution is fixed and the angular resolution
-varies.  For polychromatic sources, the wavelength resolution varies and
-the angular resolution is fixed.
+Given Q = 4 pi sin(theta)/lambda, the instrumental resolution in Q is 
+determined by the dispersion angle theta and wavelength lambda.  For 
+monochromatic instruments, the wavelength resolution is fixed and the 
+angular resolution varies.  For polychromatic instruments, the wavelength 
+resolution varies and the angular resolution is fixed.
 
 The angular resolution is determined by the geometry (slit positions and
 openings and sample profile) with perhaps an additional contribution
@@ -23,8 +23,8 @@ tighter than expected given the slit openings.  If the sample width
 is available, we can use that to determine how much of the beam is
 intercepted by the sample, which we then use as an alternative second
 slit.  This simple calculation isn't quite correct for very low Q, but
-in that case both reflected and transmitted neutrons will arrive at the
-detector, so the computed resolution of dQ=0 at Q=0 is good enough.
+data in this region will be contaminated by the direct beam, so we
+won't be using those points.
 
 When the sample is warped, it may act to either focus or spread the
 incident beam.  Some samples are diffuse scatters, which also acts
@@ -36,24 +36,21 @@ A second order effect is that at low angles the warping will cast
 shadows, changing the resolution and intensity in very complex ways.
 
 For polychromatic time of flight instruments, the wavelength dispersion
-is determined by the reduction process, which bins different time
-channels between fastest and slowest, usually in a way that sets a
-fixed relative resolution dL/L for each bin.
+is determined by the reduction process which usually bins the time
+channels in a way that sets a fixed relative resolution dL/L for each bin.
 
 Usage
 =====
 
-:module:`resolution` (this module) defines two instrument types:
+:module:`instrument` (this module) defines two instrument types:
 :class:`Monochromatic` and :class:`Polychromatic`.  These represent
-generic scanning and time of flight instruments, respectively.  In
-addition, instruments at SNS and NCNR have many of their parameters
-predefined in :module:`snsdata` and :module:`ncnrdata`.
+generic scanning and time of flight instruments, respectively.  
 
-To perform a simulation or load a data set, an actual instrument must
-be created.  For example::
+To perform a simulation or load a data set, an instrument must first
+be defined.  For example:
 
-    >>> from resolution import Monochromatic
-    >>> instrument = Monochromatic(
+    >>> from instrument import Monochromatic
+    >>> andr = Monochromatic(
             # instrument parameters
             instrument = "AND/R",
             radiation = "neutron",
@@ -65,126 +62,43 @@ be created.  For example::
             Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1,
             )
 
-An instrument such as this can be used to compute a resolution function
-for arbitrary Q values, following the slit opening pattern defined by
-the instrument.
-
-    >>> resolution = instrument.resolution(T=linspace(0,5,51)
-
-The resolution object *resolution* is of :class:`Resolution`.  Using it
-you can compute the resolution *dQ* for a given *Q* based on *T*, *dT*,
-*L*, and *dL*.  Furthermore, it can easily be turned into a reflectometry
-probe for use in modeling::
-
-    >>> probe = resolution.probe()
-
-Since creating the reflectometry probe is the usual case, a couple of
-driver functions are provided.  For example, the following complete
-example loads and plots two data files::
-
-    >>> import pylab
-    >>> from ncnrdata import ANDR
-    >>> instrument = ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
-    >>> probe1 = instrument.load('blg117.refl')
-    >>> probe2 = instrument.load('blg126.refl')
-    >>> probe1.plot()
-    >>> pylab.hold(True)
-    >>> probe2.plot()
-    >>> pylab.show()
-
-Generating a simulation probe is similarly convenient::
+Fixed parameters for various instruments are defined in :module:`snsdata` 
+and :module:`ncnrdata`, so the above is equivalent to:
 
     >>> from ncnrdata import ANDR
-    >>> instrument = ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
-    >>> probe = instrument.simulate(T=numpy.arange(0,5,100))
+    >>> andr = ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
 
-and for magnetic systems in polarized beam::
+With a particular measurement geometry defined by the instrument we can 
+compute the expected resolution function for arbitrary angles:
 
-    >>> probe = instrument.simulate_magnetic(T=numpy.arange(0,5,100))
+    >>> T,dT,L,dL = andr.resolution(T=linspace(0,5,51))
+    >>> Q,dQ = dTdL2dQ(T=T,dT=dT,L=L,dL=dL)
+
+More commonly, though, the instrument would be used to generate a
+measurement probe for use in modeling or to read in a previously
+measured data set:
+
+    >>> simulation_probe = andr.probe(T=linspace(0,5,51))
+    >>> measured_probe = andr.load('blg117.refl')
+
+For magnetic systems a polarized beam probe is needed::
+
+    >>> probe = andr.magnetic_probe(T=numpy.arange(0,5,100))
 
 When loading or simulating a data set, any of the instrument parameters
 and measurement geometry information can be specified, replacing the
 defaults within the instrument.  For example, to include sample broadening
 effects in the resolution::
 
-    >>> from ncnrdata import ANDR
-    >>> instrument = ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
-    >>> probe1 = instrument.load('blg117.refl', sample_broadening=0.1)
+    >>> probe1 = andr.load('blg117.refl', sample_broadening=0.1)
 
-Properties of the instrument can be displayed::
+Properties of the instrument can be displayed, both for the generic
+instrument (which defines slit distances and wavelength in this case) 
+or for the specific measurement geometry (which adds detail about the
+slit opening as a function of angle)::
 
     >>> print ANDR.defaults()
-    >>> print instrument.defaults()
-
-Details
-=======
-
-Polychromatic measurements have the following attributes::
-
-    *instrument*
-        name of the instrument
-    *radiation* (xray or neutron)
-        source radiation type
-    *T* (degrees)
-        sample angle
-    *slits* (mm or mm,mm)
-        slit 1 and slit 2 openings
-    *d_s1*, *d_s2* (mm)
-        distance from sample to pre-sample slits 1 and 2; post-sample
-        slits are ignored
-    *wavelength* (Angstrom,Angstrom)
-        wavelength range for the measurement
-    *dLoL*
-        constant relative wavelength dispersion; wavelength range and
-        dispersion together determine the bins
-    *sample_width* (mm)
-        width of sample; at low angle with tiny samples, stray neutrons
-        miss the sample and are not reflected onto the detector, so the
-        sample itself acts as a slit, therefore the width of the sample
-        may be needed to compute the resolution correctly
-    *sample_broadening* (degrees FWHM)
-        amount of angular divergence (+) or focusing (-) introduced by
-        the sample; this is caused by sample warp, and may be read off
-        of the rocking curve by subtracting (s1+s2)/2/(d_s1-d_s2) from
-        the FWHM width of the rocking curve
-
-Monochromatic measurements have these additional or modified attributes::
-
-    *instrument*
-        name of the instrument
-    *radiation* (xray or neutron)
-        source radiation type
-    *d_s1*, *d_s2* (mm)
-        distance from sample to pre-sample slits 1 and 2; post-sample
-        slits are ignored
-    *wavelength* (Angstrom)
-        wavelength of the instrument
-    *dLoL*
-        constant relative wavelength dispersion; wavelength range and
-        dispersion together determine the bins
-    *slits_at_Tlo* (mm)
-        slit 1 and slit 2 openings at Tlo; this can be a scalar if both
-        slits are open by the same amount, otherwise it is a pair (s1,s2).
-    *slits_below*, *slits_above*
-        slit 1 and slit 2 openings below Tlo and above Thi; again, these
-        can be scalar if slit 1 and slit 2 are the same, otherwise they
-        are each a pair (s1,s2).  Below and above default to the values of
-        the slits at Tlo and Thi respectively.
-    *Tlo*, *Thi* (degrees)
-        range of opening slits, or inf if slits are fixed.
-    *sample_width* (mm)
-        width of sample; at low angle with tiny samples, stray neutrons
-        miss the sample and are not reflected onto the detector, so the
-        sample itself acts as a slit, therefore the width of the sample
-        may be needed to compute the resolution correctly
-    *sample_broadening* (degrees FWHM)
-        amount of angular divergence (+) or focusing (-) introduced by
-        the sample; this is caused by sample warp, and may be read off
-        of the rocking curve by subtracting (s1+s2)/2/(d_s1-d_s2) from
-        the FWHM width of the rocking curve
-
-These parameters should be available in the reduced data file, or they
-can be found in the raw NeXus file.
+    >>> print andr.defaults()
 
 GUI Usage
 =========
@@ -199,21 +113,21 @@ files can be checked in a predefined order.  If the file cannot be
 loaded, then the next loader is tried.  This should be extended with
 the concept of a magic signature such as those used by graphics and
 sound file applications: preread the first block and run it through
-the signature check before trying to load it.  For unrecognized extensions,
-all loaders can be tried.
+the signature check before trying to load it.  For unrecognized 
+extensions, all loaders can be tried.
 
 The file loader should return an instrument instance with metadata
 initialized from the file header.  This metadata can be displayed
 to the user along with a plot of the data and the resolution.  When
 metadata values are changed, the resolution can be recomputed and the
-display updated.  When the data is accepted, the final resolution
+display updated.  When the data set is accepted, the final resolution
 calculation can be performed.
 
-Calculations
-============
+Algorithms
+==========
 
 Resolution in Q is computed from uncertainty in wavelength L and angle T
-using propogation of errors::
+using propagation of errors::
 
     dQ**2 = (df/dL)**2 dL**2 + (df/dT)**2 dT**2
 
@@ -221,7 +135,7 @@ where::
 
     f(L,T) = 4 pi sin(T)/L
     df/dL = -4 pi sin(T)/L**2 = -Q/L
-    df/dT = 4 pi cos(T)/L = (4 pi sin(T) / L) / (sin(T)/cos(T)) = Q/tan(T)
+    df/dT = 4 pi cos(T)/L = cos(T) Q/sin(T) = Q/tan(T)
 
 yielding the traditional form::
 
@@ -238,17 +152,25 @@ FWHM), but it can vary on time-of-flight instruments depending on how the
 data is binned.
 
 Angular divergence dT comes primarily from the slit geometry, but can have
-broadening or focusing due to a warped sample.  The slit contribution is
-dT = (s1+s2)/(2d) FWHM  where s1,s2 are slit openings and d is the distance
-between slits.  For tiny samples, the sample itself can act as a slit.
-If s_sample = sin(T)*w is smaller than s2 for some T, then use
-dT = (s1+s_sample)/(2(d+d_sample)) instead.
+broadening or focusing due to a warped sample.  The FWHM divergence due
+to slits is::
 
-The sample broadening can be read off a rocking curve as  
+    dT_slits = degrees(0.5*(s1+s2)/(d1-d2))
 
-    w - degrees(0.5*(s1+s2)/(d1-d2))
+where s1,s2 are slit openings edge to edge and d1,d2 are the distances
+between the sample and the slits.  For tiny samples of width m, the sample 
+itself can act as a slit.  If s = sin(T)*m is smaller than s2 for some T, 
+then use::
+
+    dT_slits = degrees(0.5*(s1+sin(T)*m)/d1)
     
-where w is the measured FWHM of the peak in degrees. This constant should 
+The sample broadening can be read off a rocking curve using::
+
+    dT_sample = w - dT_slits
+    
+where w is the measured FWHM of the peak in degrees and dT_slits is the
+slit contribution to the divergence. Broadening can be negative for concave 
+samples which have a focusing effect on the beam.  This constant should 
 be added to the computed dT for all angles and slit geometries.  You will 
 not usually have this information on hand, but you can leave space for users
 to enter it if it is available.
@@ -256,9 +178,9 @@ to enter it if it is available.
 FWHM can be converted to 1-sigma resolution using the scale factor of
 1/sqrt(8 * log(2))
 
-For opening slits, dT/T is held constant, so if you know s and To at the
-start of the opening slits region you can compute dT/To, and later scale
-that to your particular T::
+For opening slits we assume dT/T is held constant, so if you know s and To 
+at the start of the opening slits region you can compute dT/To, and later 
+scale that to your particular T::
 
     dT(Q) = dT/To * T(Q)
 
@@ -275,42 +197,49 @@ from numpy import arcsin as asin, ceil
 from numpy import ones_like, arange, isscalar, asarray
 from util import TL2Q, QL2T, dTdL2dQ, dQdT2dLoL, FWHM2sigma, sigma2FWHM
 
-PROBE_KW = ('intensity', 'background', 'back_absorption',
-            'theta_offset', 'back_reflectivity', 'data')
-
-class Resolution:
-    """
-    Reflectometry resolution object.
-
-    *T*, *dT*   (degrees) angle and FWHM divergence
-    *L*, *dL*   (Angstroms) wavelength and FWHM dispersion
-    *Q*, *dQ*   (inv Angstroms) calculated Q and 1-sigma resolution
-    """
-    def __init__(self, T, dT, L, dL, radiation="neutron"):
-        self.T, self.dT = T, dT
-        self.L, self.dL = L, dL
-        self.radiation = radiation
-    def _Q(self):
-        return TL2Q(self.T,self.L)
-    def _dQ(self):
-        return dTdL2dQ(self.T,self.dT,self.L,self.dL)
-    Q,dQ = property(_Q), property(_dQ)
-    def probe(self, **kw):
-        """
-        Return a reflectometry measurement object of the given resolution.
-        """
-        from .probe import NeutronProbe, XrayProbe
-        kw = dict((k,v) for k,v in kw.items() if k in PROBE_KW)
-        if self.radiation == 'neutron':
-            return NeutronProbe(T=self.T, dT=self.dT,
-                                L=self.L, dL=self.dL, **kw)
-        else:
-            return XrayProbe(T=self.T, dT=self.dT,
-                             L=self.L, dL=self.dL, **kw)
 
 class Monochromatic:
     """
-    Resolution calculator for scanning reflectometers.
+    Instrument representation for scanning reflectometers.
+
+    :Parameters:
+        *instrument* : string
+            name of the instrument
+        *radiation* : string | xray or neutron
+            source radiation type
+        *d_s1*, *d_s2* : float | mm
+            distance from sample to pre-sample slits 1 and 2; post-sample
+            slits are ignored
+        *wavelength* : float | Angstrom
+            wavelength of the instrument
+        *dLoL* : float
+            constant relative wavelength dispersion; wavelength range and
+            dispersion together determine the bins
+        *slits_at_Tlo* : float OR (float,float) | mm
+            slit 1 and slit 2 openings at Tlo; this can be a scalar if both
+            slits are open by the same amount, otherwise it is a pair (s1,s2).
+        *slits_at_Qlo* : float OR (float,float) | mm
+            equivalent to slits_at_Tlo, for instruments that are controlled by
+            Q rather than theta
+        *Tlo*, *Thi* : float | degrees
+            range of opening slits, or inf if slits are fixed.
+        *Qlo*, *Qhi* : float | inv Angstroms
+            range of opening slits when instrument is controlled by Q.
+        *slits_below*, *slits_above* : float OR (float,float) | mm
+            slit 1 and slit 2 openings below Tlo and above Thi; again, these
+            can be scalar if slit 1 and slit 2 are the same, otherwise they
+            are each a pair (s1,s2).  Below and above default to the values of
+            the slits at Tlo and Thi respectively.
+        *sample_width* : float | mm
+            width of sample; at low angle with tiny samples, stray neutrons
+            miss the sample and are not reflected onto the detector, so the
+            sample itself acts as a slit, therefore the width of the sample
+            may be needed to compute the resolution correctly
+        *sample_broadening* : float | degrees FWHM
+            amount of angular divergence (+) or focusing (-) introduced by
+            the sample; this is caused by sample warp, and may be read off
+            of the rocking curve by subtracting (s1+s2)/2/(d_s1-d_s2) from
+            the FWHM width of the rocking curve
     """
     instrument = "monochromatic"
     radiation = "unknown"
@@ -320,28 +249,19 @@ class Monochromatic:
     d_s1 = None
     d_s2 = None
     # Optional attributes
-    Tlo= inf  # Use inf for fixed slits.
-    Thi= inf
-    slits_at_Tlo = None  # Slit openings at Tlo, and default slits_below
-    slits_below = None  # Slit openings below Tlo, or fixed slits if Tlo=inf
+    Tlo= 90  # Use 90 for fixed slits.
+    Thi= 90
+    slits_at_Tlo = None    # Slit openings at Tlo, and default for slits_below
+    slits_below = None     # Slit openings below Tlo, or fixed slits if Tlo=90
     slits_above = None
-    sample_width = 1e10
+    sample_width = 1e10    # Large but finite value
     sample_broadening = 0
 
     def __init__(self, **kw):
-        # Grab wavelength first so we can translate Qlo/Qhi to Tlo/Thi no 
-        # matter what order the keywords appear.
-        self.wavelength = kw.pop('wavelength',self.wavelength)
-        # Process keywords
+        self._translate_Q_to_theta(kw)
         for k,v in kw.items():
             if hasattr(self, k):
                 setattr(self, k, v)
-            elif k == "Qlo":
-                self.Tlo = QL2T(v, self.wavelength)
-            elif k == "Qhi":
-                self.Thi = QL2T(v, self.wavelength)
-            elif k == "slits_at_Qlo":
-                self.slits_at_Tlo = v
             else:
                 raise TypeError("unexpected keyword argument '%s'"%k)
 
@@ -355,43 +275,59 @@ class Monochromatic:
         particular, slit settings *slits_at_Tlo*, *Tlo*, *Thi*,
         and *slits_below*, and *slits_above* are used to define the
         angular divergence.
+        
+        Note that this function ignores any resolution information
+        stored in the file, such as dQ, dT or dL columns, and instead
+        uses the defined instrument parameters to calculate the resolution.
         """
         # Load the data
         data = numpy.loadtxt(filename).T
         if data.shape[0] == 2:
             Q,R = data
             dR = None
-        elif data.shape[0] > 2:
-            Q,R,dR = data[:3]
-            # ignore extra columns like dQ or L
-        resolution = self.resolution(Q=Q, **kw)
-        return resolution.probe(data=(R,dR), **kw)
+        elif data.shape[0] == 3:
+            Q,R,dR = data
+        elif data.shape[0] == 4:
+            Q,dQ,R,dR = data
+        elif data.shape[0] == 5:
+            Q,dQ,R,dR,L = data
+        kw["Q"] = Q
+        self._translate_Q_to_theta(kw)
+        T,dT,L,dL = self.resolution(**kw)
+        return make_probe(T=T,dT=dT,L=L,dL=dL,data=(R,dR), 
+                          radiation=self.radiation, **kw)
 
-    def simulate(self, T=None, Q=None, **kw):
+    def probe(self, **kw):
         """
-        Simulate the probe for a measurement.
+        Return a probe for use in simulation.
 
-        Select the *Q* values or the angles *T* for the measurement,
-        but not both.
+        :Parameters:
+            *Q* : [float] | Angstroms
+                Q values to be measured.
+            *T* : [float] | degrees
+                Angles to be measured.
 
-        Returns a probe with Q, angle, wavelength and the
-        associated uncertainties, but not any data.
+        Additional keyword parameters 
+                
+        :Returns:
+            *probe* : Probe
+                Measurement probe with complete resolution information.  The
+                probe will not have any data.
+
+        If both *Q* and *T* are specified then *Q* takes precedents.
 
         You can override instrument parameters using key=value.  In
         particular, settings for *slits_at_Tlo*, *Tlo*, *Thi*,
         *slits_below*, and *slits_above* are used to define the
         angular divergence.
         """
-        if (Q is None) == (T is None):
-            raise ValueError("requires either Q or angle T")
-        if Q is None: 
-            # Compute Q from angle T and wavelength L
-            L = kw.get('wavelength',self.wavelength)
-            Q = TL2Q(T,L)
-        resolution = self.resolution(Q=numpy.asarray(Q), **kw)
-        return resolution.probe(**kw)
+        self._translate_Q_to_theta(kw)
+        T,dT,L,dL = self.resolution(**kw)
+        T = kw.pop('T')
+        return make_probe(T=T,dT=dT,L=L,dL=dL,
+                          radiation=self.radiation, **kw)
 
-    def simulate_magnetic(self, T=None, Tguide=270, shared_beam=True, **kw):
+    def magnetic_probe(self, Tguide=270, shared_beam=True, **kw):
         """
         Simulate a polarized measurement probe.
 
@@ -404,11 +340,70 @@ class Monochromatic:
         to define the angular divergence.
         """
         from .probe import PolarizedNeutronProbe
-        probes = [self.simulate(T, **kw) for i in range(4)]
+        probes = [self.probe(**kw) for _ in range(4)]
         probe = PolarizedNeutronProbe(probes, Tguide=Tguide)
         if shared_beam:
             probe.shared_beam()  # Share the beam parameters by default
         return probe
+
+    def simulate(self, sample, uncertainty=0.01, **kw):
+        """
+        Simulate a run with a particular sample.
+        
+        :Parameters:
+            *sample* : Stack
+                Model of the sample.
+            *uncertainty* = 0.01 : float
+                Relative uncertainty in the measurement.
+
+        Additional :meth:`probe` keyword parameters are required to define
+        the set of angles to be measured
+
+        :Returns:
+            *experiment* : Experiment
+                Sample + probe with simulated data.
+
+        The relative uncertainty is used to calculate the number of incident
+        beam intensity for the measurement as follows::
+        
+            I = (100 Q)^4 / s^2
+            
+        """
+        from .experiment import Experiment
+        probe = self.probe(**kw)
+        M = Experiment(probe=probe, sample=sample)
+        _, Rth = M.reflectivity()
+        dR = uncertainty*M.fresnel()
+        R = Rth + numpy.random.randn(*Rth.shape)*dR
+        probe.data = R,dR
+        
+        return M
+
+    def resolution(self, T, **kw):
+        """
+        Calculate resolution at each angle.
+        
+        :Parameters:
+            *T* : [float] | degrees
+                Q values for which resolution is needed
+        
+        :Return:
+            *T*,*dT* : [float] | degrees
+                Angles and angular divergence.
+            *L*,*dL* : [float] | Angstroms
+                Wavelengths and wavelength dispersion.
+        """
+        L = kw.get('L',kw.get('wavelength',self.wavelength))
+        dLoL = kw.get('dLoL',self.dLoL)
+        if L is None: 
+            raise TypeError("Need wavelength L to compute resolution")
+        if dLoL is None: 
+            raise TypeError("Need wavelength dispersion dLoL to compute resolution")
+        
+        slits = self.calc_slits(T, **kw)
+        dT = self.calc_dT(T, slits, **kw)
+        
+        return T,dT,L,dLoL*L
 
     def calc_slits(self, T, **kw):
         """
@@ -434,10 +429,10 @@ class Monochromatic:
         # Otherwise we are using opening slits            
         if Tlo is None or slits_at_Tlo is None:
             raise TypeError("Resolution calculation requires Tlo and slits_at_Tlo")
-        slits = opening_slits(T=T, slits_at_Tlo=slits_at_Tlo,
-                              Tlo=Tlo, Thi=Thi,
-                              slits_below=slits_below,
-                              slits_above=slits_above)
+        slits = slit_widths(T=T, slits_at_Tlo=slits_at_Tlo,
+                            Tlo=Tlo, Thi=Thi,
+                            slits_below=slits_below,
+                            slits_above=slits_above)
         return slits
 
     def calc_dT(self, T, slits, **kw):
@@ -478,34 +473,21 @@ class Monochromatic:
 
         return dT
 
-    def resolution(self, Q, **kw):
+    def _translate_Q_to_theta(self, kw):
         """
-        Calculate resolution
-        
-        :Parameters:
-            *Q* : [float] | inv A
-                Q values for which resolution is needed
-        
-        :Return:
-            *geometry* : Resolution
-                Measurement geometry with resolution information
-                
-
-        Resolution objects have T, dT, L, dL, Q, dQ
+        Rewrite keyword arguments with Q values translated to theta values.
         """
-        L = kw.get('L',kw.get('wavelength',self.wavelength))
-        dLoL = kw.get('dLoL',self.dLoL)
-        if L is None: 
-            raise TypeError("Need wavelength L to compute resolution")
-        if dLoL is None: 
-            raise TypeError("Need wavelength dispersion dLoL to compute resolution")
-        
-        T = QL2T(Q=asarray(Q),L=L)
-        slits = self.calc_slits(T, **kw)
-        dT = self.calc_dT(T, slits, **kw)
-        radiation = kw.get('radiation',self.radiation)
-
-        return Resolution(T=T,dT=dT,L=L,dL=dLoL*L,radiation=radiation)
+        # Grab wavelength first so we can translate Qlo/Qhi to Tlo/Thi no 
+        # matter what order the keywords appear.
+        wavelength = kw.get('wavelength',self.wavelength)
+        if "Q" in kw:
+            kw["T"] = QL2T(kw.pop("Q"), wavelength)
+        if "Qlo" in kw:
+            kw["Tlo"] = QL2T(kw.pop("Qlo"), wavelength)
+        if "Qhi" in kw:
+            kw["Thi"] = QL2T(kw.pop("Qhi"), wavelength)            
+        if "slits_at_Qlo" in kw:
+            kw["slits_at_Tlo"] = kw.pop("slits_at_Qlo")
 
     def __str__(self):
         msg = """\
@@ -542,7 +524,35 @@ slit distances = %(d_s1)g mm and %(d_s2)g mm
 
 class Polychromatic:
     """
-    Resolution calculator for multi-wavelength reflectometers.
+    Instrument representation for multi-wavelength reflectometers.
+
+    :Parameters:
+        *instrument* : string
+            name of the instrument
+        *radiation* : string | xray, neutron
+            source radiation type
+        *T* : float | degrees
+            sample angle
+        *slits* : float OR (float,float) | mm
+            slit 1 and slit 2 openings
+        *d_s1*, *d_s2* : float | mm
+            distance from sample to pre-sample slits 1 and 2; post-sample
+            slits are ignored
+        *wavelength* : (float,float) | Angstrom
+            wavelength range for the measurement
+        *dLoL* : float
+            constant relative wavelength dispersion; wavelength range and
+            dispersion together determine the bins
+        *sample_width* : float | mm
+            width of sample; at low angle with tiny samples, stray neutrons
+            miss the sample and are not reflected onto the detector, so the
+            sample itself acts as a slit, therefore the width of the sample
+            may be needed to compute the resolution correctly
+        *sample_broadening* : float | degrees FWHM
+            amount of angular divergence (+) or focusing (-) introduced by
+            the sample; this is caused by sample warp, and may be read off
+            of the rocking curve by subtracting 0.5*(s1+s2)/(d_s1-d_s2) from
+            the FWHM width of the rocking curve
     """
     instrument = "polychromatic"
     radiation = "neutron" # unless someone knows how to do TOF Xray...
@@ -578,10 +588,11 @@ class Polychromatic:
         Q,dQ,R,dR,L = data
         dL = binwidths(L)
         T = kw.pop('T',QL2T(Q,L))
-        resolution = self.resolution(L=L, dL=dL, T=T, **kw)
-        return resolution.probe(data=(R,dR), **kw)
+        T,dT,L,dL = self.resolution(L=L, dL=dL, T=T, **kw)
+        return make_probe(T=T,dT=dT,L=L,dL=dL,data=(R,dR),
+                          radiation=self.radiation, **kw)
 
-    def simulate(self, **kw):
+    def probe(self, **kw):
         """
         Simulate a measurement probe.
 
@@ -595,12 +606,14 @@ class Polychromatic:
         """
         low,high = kw.get('wavelength',self.wavelength)
         dLoL = kw.get('dLoL',self.dLoL)
+        T = kw.pop('T',self.T)
         L = bins(low,high,dLoL)
         dL = binwidths(L)
-        resolution = self.resolution(L=L, dL=dL, **kw)
-        return resolution.probe(**kw)
+        T,dT,L,dL = self.resolution(L=L, dL=dL, T=T, **kw)
+        return make_probe(T=T,dT=dT,L=L,dL=dL,
+                          radiation=self.radiation, **kw)
 
-    def simulate_magnetic(self, Tguide=270, shared_beam=True, **kw):
+    def magnetic_probe(self, Tguide=270, shared_beam=True, **kw):
         """
         Simulate a polarized measurement probe.
 
@@ -613,11 +626,115 @@ class Polychromatic:
         and *dLoL* to define the wavelength resolution.
         """
         from .probe import PolarizedNeutronProbe
-        probes = [self.simulate(T, **kw) for i in range(4)]
+        probes = [self.probe(**kw) for _ in range(4)]
         probe = PolarizedNeutronProbe(probes, Tguide=Tguide)
         if shared_beam:
             probe.shared_beam()  # Share the beam parameters by default
         return probe
+
+    def simulate(self, sample, uncertainty=0.01, **kw):
+        """
+        Simulate a run with a particular sample.
+        
+        :Parameters:
+            *sample* : Stack
+                Reflectometry model
+            *T* : [float] | degrees
+                List of angles to be measured, such as [0.15,0.4,1,2].
+            *slits* : [float] or [(float,float)] | mm
+                Slit settings for each angle. Default is 0.2*T
+            *uncertainty* = 0.01 : float or [float]
+                Incident intensity is set so that the worst dF/F is better
+                than *uncertainty*, where F is the idealized Fresnel
+                reflectivity of the sample.
+            *dLoL* = 0.02: float
+                Wavelength resolution
+            *normalize* = True : boolean
+                Whether to normalize the intensities
+            *theta_offset* = 0 : float | degrees
+                Sample alignment error
+            *background* = 0 : float
+                Background counts per incident neutron (background is
+                assumed to be independent of measurement geometry).
+            *back_reflectivity* = False : boolean
+                Whether beam travels through incident medium 
+                or through substrate.
+            *back_absorption* = 1 : float
+                Absorption factor for beam traveling through substrate.
+                Only needed for back reflectivity measurements.
+        """
+        from reflectometry.reduction.rebin import rebin
+        from .experiment import Experiment
+        from .instrument import binedges
+        from .probe import ProbeSet
+        T = kw.pop('T', self.T)
+        slits = kw.pop('slits', self.slits)
+        if slits is None: slits = [0.2*Ti for Ti in T]
+
+        dLoL = kw.pop('dLoL', self.dLoL)
+        normalize = kw.pop('normalize', True)
+        theta_offset = kw.pop('theta_offset', 0)
+        background = kw.pop('background', 0)
+        back_reflectivity = kw.pop('back_reflectivity', False)
+        back_absorption = kw.pop('back_absorption', 1)
+
+        # Compute reflectivity with resolution and added noise
+        probes = []
+        for Ti,Si in zip(T,slits):
+            probe = self.probe(T=Ti, slits=Si, dLoL=dLoL)
+            probe.back_reflectivity = back_reflectivity
+            probe.theta_offset.value = theta_offset
+            probe.back_absorption.value = back_absorption
+            M = Experiment(probe=probe, sample=sample)
+            # Note: probe.L is reversed because L is sorted by increasing
+            # Q in probe.
+            I = rebin(binedges(self.feather[0]),self.feather[1],
+                      binedges(probe.L[::-1]))[::-1]
+            Ci = max(1./(uncertainty**2 * I * M.fresnel()))
+            Icounts = Ci*I
+
+            _, Rth = M.reflectivity()
+            Rcounts = numpy.random.poisson(Rth*Icounts)
+            if background > 0:
+                Rcounts += numpy.random.poisson(Icounts*background, 
+                                                size=Rcounts.shape)
+            # Set intensity/background _after_ calculating the theory function
+            # since we don't want the theory function altered by them.
+            probe.background.value = background
+            # Correct for the feather.  This has to be done otherwise we
+            # won't see the correct reflectivity.  Even if corrected for
+            # the feather, though, we haven't necessarily corrected for
+            # the overall number of counts in the measurement.
+            # Z = X/Y
+            # var Z = (var X / X**2 + var Y / Y**2) * Z**2
+            #       = (1/X + 1/Y) * (X/Y)**2
+            #       = (Y + X) * X/Y**3
+            R = Rcounts/Icounts
+            dR = numpy.sqrt((Icounts + Rcounts)*Rcounts/Icounts**3)
+            
+            if not normalize:
+                #Ci = 1./max(R)
+                R, dR = R*Ci, dR*Ci
+                probe.background.value *= Ci
+                probe.intensity.value = Ci
+
+            probe.data = R,dR
+            probes.append(probe)
+
+        return Experiment(sample=sample, probe=ProbeSet(probes))
+
+    def resolution(self, L, dL, **kw):
+        """
+        Return the resolution of the measurement.  Needs *T*, *L*, *dL*
+        specified as keywords.
+        """
+        T = kw.pop('T', self.T)
+        slits = kw.pop('slits', self.slits)
+        dT = self.calc_dT(T,slits,**kw)
+
+        # Compute the FWHM angular divergence in radians
+        # Return the resolution
+        return T,dT,L,dL
 
     def calc_dT(self, T, slits, **kw):
         d_s1 = kw.get('d_s1',self.d_s1)
@@ -629,22 +746,6 @@ class Polychromatic:
                         sample_broadening=sample_broadening)
 
         return dT
-
-    def resolution(self, L, dL, **kw):
-        """
-        Return the resolution of the measurement.  Needs *Q*, *L*, *dL*
-        specified as keywords.
-
-        Resolution is an object with fields T, dT, L, dL, Q, dQ
-        """
-        radiation = kw.get('radiation',self.radiation)
-        T = kw.pop('T', self.T)
-        slits = kw.pop('slits', self.slits)
-        dT = self.calc_dT(T,slits,**kw)
-
-        # Compute the FWHM angular divergence in radians
-        # Return the resolution
-        return Resolution(T=T,dT=dT,L=L,dL=dL,radiation=radiation)
 
     def __str__(self):
         msg = """\
@@ -680,6 +781,18 @@ slit distances = %(d_s1)g mm and %(d_s2)g mm
            radiation=cls.radiation,
            )
         return msg
+
+def make_probe(**kw):
+    """
+    Return a reflectometry measurement object of the given resolution.
+    """
+    from .probe import NeutronProbe, XrayProbe, PROBE_KW
+    radiation = kw.pop('radiation')
+    kw = dict((k,v) for k,v in kw.items() if k in PROBE_KW)
+    if radiation == 'neutron':
+        return NeutronProbe(**kw)
+    else:
+        return XrayProbe(**kw)
 
 def bins(low, high, dLoL):
     """
@@ -747,10 +860,12 @@ def binedges(L):
     """
     if L[1] > L[0]:
         dLoL = L[1]/L[0] - 1
+        last = (1+dLoL)
     else:
         dLoL = L[0]/L[1] - 1
+        last = 1./(1+dLoL)
     E = L*2/(2+dLoL)
-    return numpy.hstack((E,E[-1]*(1+dLoL)))
+    return numpy.hstack((E,E[-1]*last))
 
 def divergence(T=None, slits=None, distance=None,
                sample_width=1e10, sample_broadening=0):
@@ -816,21 +931,39 @@ def divergence(T=None, slits=None, distance=None,
 
     return dT + sample_broadening
 
-def opening_slits(T=None,slits_at_Tlo=None,Tlo=None,Thi=None,
+def slit_widths(T=None,slits_at_Tlo=None,Tlo=90,Thi=90,
                   slits_below=None, slits_above=None):
     """
-    Compute the slit openings for the standard scanning reflectometer
+    Compute the slit widths for the standard scanning reflectometer
     fixed-opening-fixed geometry.
+
+    :Parameters:
+        *T* : [float] | degrees
+            Specular measurement angles.
+        *Tlo*, *Thi* : float | degrees
+            Start and end of the opening region.  The default if *Tlo* is
+            not specified is to use fixed slits at *slits_below* for all
+            angles.
+        *slits_below*, *slits_above* : float OR [float,float] | mm
+            Slits outside opening region.  The default is to use the
+            values of the slits at the ends of the opening region.
+        *slits_at_Tlo : float OR [float,float] | mm
+            Slits at the start of the opening region.
+    
+    :Returns:
+        *s1*, *s2* : [float] | mm
+            Slit widths for each theta.
 
     Slits are assumed to be fixed below angle *Tlo* and above angle *Thi*,
     and opening at a constant dT/T between them.
 
-    Slit openings are recorded at *Tlo* as a tuple (s1,s2) or constant s=s1=s2.
-    *Tlo* is optional for completely fixed slits.  *Thi* is optional if there
-    is no top limit to the fixed slits.
+    Slit openings are defined by a tuple (s1,s2) or constant s=s1=s2.
+    With no *Tlo*, the slits are fixed with widths defined by *slits_below*,
+    which defaults to *slits_at_Tlo*.  With no *Thi*, slits are continuously
+    opening above *Tlo*.
 
-    *slits_below* are the slits at *T* < *Tlo*.
-    *slits_above* are the slits at *T* > *Thi*.
+    Note that this function works equally well if angles are measured in
+    radians and/or slits are measured in inches.
     """
 
     # Slits at T<Tlo
@@ -844,26 +977,24 @@ def opening_slits(T=None,slits_at_Tlo=None,Tlo=None,Thi=None,
     s2 = ones_like(T) * b2
 
     # Slits at Tlo<=T<=Thi
-    if Tlo != None:
-        try:
-            m1,m2 = slits_at_Tlo
-        except TypeError:
-            m1=m2 = slits_at_Tlo
-        idx = (abs(T) >= Tlo) & (abs(T) <= Thi)
-        s1[idx] = m1 * T[idx]/Tlo
-        s2[idx] = m2 * T[idx]/Tlo
+    try:
+        m1,m2 = slits_at_Tlo
+    except TypeError:
+        m1=m2 = slits_at_Tlo
+    idx = abs(T) >= Tlo
+    s1[idx] = m1 * T[idx]/Tlo
+    s2[idx] = m2 * T[idx]/Tlo
 
     # Slits at T > Thi
-    if Thi != None:
-        if slits_above is None:
-            slits_above = m1 * Thi/Tlo, m2 * Thi/Tlo
-        try:
-            t1,t2 = slits_above
-        except TypeError:
-            t1=t2 = slits_above
-        idx = abs(T) > Thi
-        s1[idx] = t1
-        s2[idx] = t2
+    if slits_above is None:
+        slits_above = m1 * Thi/Tlo, m2 * Thi/Tlo
+    try:
+        t1,t2 = slits_above
+    except TypeError:
+        t1=t2 = slits_above
+    idx = abs(T) > Thi
+    s1[idx] = t1
+    s2[idx] = t2
 
     return s1,s2
 
@@ -885,7 +1016,7 @@ def resolution(Q=None,s=None,d=None,L=None,dLoL=None,Tlo=None,Thi=None,
 
     """
     T = QL2T(Q=Q,L=L)
-    slits = opening_slits(T=T, s=s, Tlo=Tlo, Thi=Thi)
+    slits = slit_widths(T=T, s=s, Tlo=Tlo, Thi=Thi)
     dT = divergence(T=T,slits=slits, sample_width=sample_width,
                     sample_distance=sample_distance) + broadening
     Q,dQ = Qresolution(L, dLoL*L, T, dT)
