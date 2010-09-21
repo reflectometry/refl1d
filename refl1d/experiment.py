@@ -167,8 +167,8 @@ class Experiment(ExperimentBase):
         key = ('amplitude',resolution)
         if key not in self._cache:
             calc_q,calc_r = self._reflamp()
-            r_real = self.probe.apply_beam(calc_q, calc_r.real, resolution)
-            r_imag = self.probe.apply_beam(calc_q, calc_r.imag, resolution)
+            r_real = self.probe.apply_beam(calc_q, calc_r.real, resolution=resolution)
+            r_imag = self.probe.apply_beam(calc_q, calc_r.imag, resolution=resolution)
             r = r_real + 1j*r_imag
             self._cache[key] = self.probe.Q, r
         return self._cache[key]
@@ -186,9 +186,10 @@ class Experiment(ExperimentBase):
         if key not in self._cache:
             calc_q, calc_r = self._reflamp()
             calc_R = abs(calc_r)**2
-            Q,R = self.probe.apply_beam(calc_q, calc_R, resolution)
+            if numpy.isnan(calc_R).any(): print "calc_r contains NaN"
+            Q,R = self.probe.apply_beam(calc_q, calc_R, resolution=resolution)
             self._cache[key] = Q,R
-            if numpy.isnan(R).any(): print "beam contains NaN"
+            if numpy.isnan(R).any(): print "apply_beam causes NaN"
         return self._cache[key]
     
     def fresnel(self):

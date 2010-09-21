@@ -67,7 +67,7 @@ from .polymer import PolymerBrush, VolumeProfile, layer_thickness
 from .freeform import Freeform
 from .cheby import FreeformCheby, ChebyVF
 from .interface import Erf
-from .probe import Probe, NeutronProbe, XrayProbe
+from .probe import Probe, ProbeSet, NeutronProbe, XrayProbe
 from .fitter import preview, fit, DEfit, SNOBfit, mesh, FitProblem, MultiFitProblem
 try:
     from .sampler import draw_samples

@@ -294,12 +294,15 @@ class Probe(object):
         calc_R *= back
 
         # For back reflectivity, reverse the sign of Q after computing
-        if self.back_reflectivity: calc_Q = -calc_Q
+        if self.back_reflectivity: 
+            calc_Q = -calc_Q
         if resolution:
-            Q,R = self.Q, convolve(calc_Q, calc_R*back, self.Q, self.dQ)
+            if calc_Q[-1] < calc_Q[0]:
+                calc_Q, calc_R = [v[::-1] for v in calc_Q, calc_R]
+            Q,R = self.Q, convolve(calc_Q, calc_R, self.Q, self.dQ)
         else:
-            Q,R = calc_Q, calc_R*back
-        R = R*self.intensity.value + self.background.value
+            Q,R = calc_Q, calc_R
+        R = self.intensity.value*R + self.background.value
         return Q,R
 
     def fresnel(self, substrate=None, surface=None):
@@ -382,6 +385,7 @@ class Probe(object):
         if substrate is None and surface is None:
             raise TypeError("Fresnel reflectivity needs substrate or surface")
         F = self.fresnel(substrate=substrate,surface=surface)
+        F *= self.intensity.value
         if hasattr(self,'R') and self.R is not None:
             pylab.errorbar(self.Q, self.R/F, self.dR/F, self.dQ, '.')
         if theory is not None:
@@ -401,6 +405,7 @@ class Probe(object):
         """
         import pylab
         Q4 = 1e8*self.Q**4
+        Q4 /= self.intensity.value
         #Q4[Q4==0] = 1
         if hasattr(self,'R') and self.R is not None:
             pylab.errorbar(self.Q, self.R*Q4, self.dR*Q4, self.dQ, '.')
@@ -409,124 +414,6 @@ class Probe(object):
             pylab.plot(Q, R*Q4, hold=True)
         pylab.xlabel('Q (inv Angstroms)')
         pylab.ylabel('R (100 Q)^4')
-
-class ProbeSet(Probe):
-    def __init__(self, probes):
-        self.probes = probes
-        self.R = numpy.hstack(p.R for p in self.probes)
-        self.dR = numpy.hstack(p.dR for p in self.probes)
-
-    def parameters(self):
-        return [p.paramters() for p in self.probes]
-    parameters.__doc__ = Probe.parameters.__doc__
-
-    def resynth_data(self):
-        for p in self.probes: p.resynth_data()
-        self.R = numpy.hstack(p.R for p in self.probes)
-    resynth_data.__doc__ = Probe.resynth_data.__doc__
-
-    def restore_data(self):
-        for p in self.probes: p.restore_data()
-        self.R = numpy.hstack(p.R for p in self.probes)
-    restore_data.__doc__ = Probe.restore_data.__doc__
-
-    def _Q(self):
-        return numpy.hstack(p.Q for p in self.probes)
-    Q = property(_Q)
-    def _calc_Q(self):
-        return numpy.hstack(p.calc_Q for p in self.probes)
-    calc_Q = property(_calc_Q)
-    def oversample(self, **kw):
-        for p in self.probes: p.oversample(**kw)
-    oversample.__doc__ = Probe.oversample.__doc__
-    def scattering_factors(self, material):
-        return self.probes[0].scattering_factors(material)
-        result = [p.scattering_factors(material) for p in self.probes]
-        return [numpy.hstack(v) for v in zip(*result)]
-    scattering_factors.__doc__ = Probe.scattering_factors.__doc__
-    def apply_beam(self, calc_Q, calc_R, **kw):
-        result = [p.apply_beam(calc_Q, calc_R, **kw) for p in self.probes]
-        return [numpy.hstack(v) for v in zip(*result)]
-    def plot(self, **kw):
-        for p in self.probes: p.plot(**kw)
-    plot.__doc__ = Probe.plot.__doc__
-    def plot_resolution(self, **kw):
-        for p in self.probes: p.plot_resolution(**kw)
-    plot_resolution.__doc__ = Probe.plot_resolution.__doc__
-    def plot_linear(self, **kw):
-        for p in self.probes: p.plot_linear(**kw)
-    plot_linear.__doc__ = Probe.plot_linear.__doc__
-    def plot_log(self, **kw):
-        for p in self.probes: p.plot_log(**kw)
-    plot_log.__doc__ = Probe.plot_log.__doc__
-    def plot_fresnel(self, **kw):
-        for p in self.probes: p.plot_fresnel(**kw)
-    plot_fresnel.__doc__ = Probe.plot_fresnel.__doc__
-    def plot_Q4(self, **kw):
-        for p in self.probes: p.plot_Q4(**kw)
-    plot_Q4.__doc__ = Probe.plot_Q4.__doc__
-
-    def shared_beam(self, intensity=1, background=0,
-                    back_absorption=1, theta_offset=0):
-        """
-        Share beam parameters across all segments.
-
-        New parameters are created for *intensity*, *background*,
-        *theta_offset* and *back_absorption* and assigned to the all
-        segments.  These can be replaced in an individual segment if 
-        that parameter is independent.
-        """
-        intensity = Parameter.default(intensity,name="intensity")
-        background = Parameter.default(background,name="background",
-                                       limits=[0,inf])
-        back_absorption = Parameter.default(back_absorption, 
-                                            name="back_absorption",
-                                            limits=[0,1])
-        theta_offset = Parameter.default(theta_offset,name="theta_offset")
-        for p in self.probes:
-            p.intensity = intensity
-            p.background = background
-            p.back_absorption = back_absorption
-            p.theta_offset = theta_offset
-    def stitch(self, tol=0.01):
-        r"""
-        Stitch together multiple datasets into a single dataset.
-
-        *Not implemented*
-
-        Points within *tol* of each other and with the same resolution 
-        are combined by interpolating them to a common Q value then averaged 
-        using Gaussian error propagation.
-        
-        :Returns: probe | Probe
-            Combined data set.
-
-        :Algorithm:
-        
-        To interpolate a set of points to a common value, first find the
-        common *Q* value:
-        
-        .. math::
-        
-            \hat Q = \sum{Q_k} / n
-
-        Then for each dataset *k*, find the interval [i,i+1] containing the 
-        value *Q*, and use it to compute interpolated value for *R*:
-
-        .. math::
-        
-            w_k &=& (\hat Q - Q_k_i)/(Q_k_{i+1} - Q_k_i) \\
-            \hat R_k &=& w_k R_k_{i+1} + (1-w_k) R_k_{i+1} \\
-            \hat \sigma_{R_k} &=& \sqrt{ w^2_k \sigma^2_{R_k_i} + (1-w_k)^2 \sigma^2_{R_k_{i+1}} } / n
-
-        Average the resulting *R* using Gaussian error propagation:
-        
-        .. math::
-
-            \hat R &=& \sum{\hat R_k}/n \\
-            \hat \sigma_R &=& \sqrt{\sum \hat \sigma_{R_k}^2}/n
-        """
-        raise NotImplementedError
 
 class XrayProbe(Probe):
     """
@@ -756,3 +643,138 @@ def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
         return Qp, v, sqrt(dvsq)
     else:
         return Qp, v, None
+
+
+
+
+class ProbeSet(Probe):
+    def __init__(self, probes):
+        self.probes = probes
+        self.R = numpy.hstack(p.R for p in self.probes)
+        self.dR = numpy.hstack(p.dR for p in self.probes)
+        self._len = sum([len(p) for p in self.probes])
+
+    def parameters(self):
+        return [p.paramters() for p in self.probes]
+    parameters.__doc__ = Probe.parameters.__doc__
+
+    def resynth_data(self):
+        for p in self.probes: p.resynth_data()
+        self.R = numpy.hstack(p.R for p in self.probes)
+    resynth_data.__doc__ = Probe.resynth_data.__doc__
+
+    def restore_data(self):
+        for p in self.probes: p.restore_data()
+        self.R = numpy.hstack(p.R for p in self.probes)
+    restore_data.__doc__ = Probe.restore_data.__doc__
+
+    def __len__(self):
+        return self._len
+    def _Q(self):
+        return numpy.hstack(p.Q for p in self.probes)
+    Q = property(_Q)
+    def _calc_Q(self):
+        return numpy.unique(numpy.hstack(p.calc_Q for p in self.probes))
+    calc_Q = property(_calc_Q)
+    def oversample(self, **kw):
+        for p in self.probes: p.oversample(**kw)
+    oversample.__doc__ = Probe.oversample.__doc__
+    def scattering_factors(self, material):
+        return self.probes[0].scattering_factors(material)
+        result = [p.scattering_factors(material) for p in self.probes]
+        return [numpy.hstack(v) for v in zip(*result)]
+    scattering_factors.__doc__ = Probe.scattering_factors.__doc__
+    def apply_beam(self, calc_Q, calc_R, **kw):
+        result = [p.apply_beam(calc_Q, calc_R, **kw) for p in self.probes]
+        return [numpy.hstack(v) for v in zip(*result)]
+    def plot(self, theory=None, **kw):
+        for p,th in self._plotparts(theory): p.plot(theory=th, **kw)
+    plot.__doc__ = Probe.plot.__doc__
+    def plot_resolution(self, **kw):
+        for p in self.probes: p.plot_resolution(**kw)
+    plot_resolution.__doc__ = Probe.plot_resolution.__doc__
+    def plot_linear(self, theory=None, **kw):
+        for p,th in self._plotparts(theory): p.plot_linear(theory=th, **kw)
+    plot_linear.__doc__ = Probe.plot_linear.__doc__
+    def plot_log(self, theory=None, **kw):
+        for p,th in self._plotparts(theory): p.plot_log(theory=th, **kw)
+    plot_log.__doc__ = Probe.plot_log.__doc__
+    def plot_fresnel(self, theory=None, **kw):
+        for p,th in self._plotparts(theory): p.plot_fresnel(theory=th, **kw)
+    plot_fresnel.__doc__ = Probe.plot_fresnel.__doc__
+    def plot_Q4(self, theory=None, **kw):
+        for p,th in self._plotparts(theory): p.plot_Q4(theory=th, **kw)
+    plot_Q4.__doc__ = Probe.plot_Q4.__doc__
+    def _plotparts(self, theory):
+        if theory == None:
+            for p in self.probes: yield p
+        else:
+            offset = 0
+            Q,R = theory
+            for p in self.probes:
+                n = len(p)
+                yield p,(Q[offset:offset+n],R[offset:offset+n])
+                offset += n
+
+    def shared_beam(self, intensity=1, background=0,
+                    back_absorption=1, theta_offset=0):
+        """
+        Share beam parameters across all segments.
+
+        New parameters are created for *intensity*, *background*,
+        *theta_offset* and *back_absorption* and assigned to the all
+        segments.  These can be replaced in an individual segment if 
+        that parameter is independent.
+        """
+        intensity = Parameter.default(intensity,name="intensity")
+        background = Parameter.default(background,name="background",
+                                       limits=[0,inf])
+        back_absorption = Parameter.default(back_absorption, 
+                                            name="back_absorption",
+                                            limits=[0,1])
+        theta_offset = Parameter.default(theta_offset,name="theta_offset")
+        for p in self.probes:
+            p.intensity = intensity
+            p.background = background
+            p.back_absorption = back_absorption
+            p.theta_offset = theta_offset
+    def stitch(self, tol=0.01):
+        r"""
+        Stitch together multiple datasets into a single dataset.
+
+        *Not implemented*
+
+        Points within *tol* of each other and with the same resolution 
+        are combined by interpolating them to a common Q value then averaged 
+        using Gaussian error propagation.
+        
+        :Returns: probe | Probe
+            Combined data set.
+
+        :Algorithm:
+        
+        To interpolate a set of points to a common value, first find the
+        common *Q* value:
+        
+        .. math::
+        
+            \hat Q = \sum{Q_k} / n
+
+        Then for each dataset *k*, find the interval [i,i+1] containing the 
+        value *Q*, and use it to compute interpolated value for *R*:
+
+        .. math::
+        
+            w_k &=& (\hat Q - Q_k_i)/(Q_k_{i+1} - Q_k_i) \\
+            \hat R_k &=& w_k R_k_{i+1} + (1-w_k) R_k_{i+1} \\
+            \hat \sigma_{R_k} &=& \sqrt{ w^2_k \sigma^2_{R_k_i} + (1-w_k)^2 \sigma^2_{R_k_{i+1}} } / n
+
+        Average the resulting *R* using Gaussian error propagation:
+        
+        .. math::
+
+            \hat R &=& \sum{\hat R_k}/n \\
+            \hat \sigma_R &=& \sqrt{\sum \hat \sigma_{R_k}^2}/n
+        """
+        raise NotImplementedError
+

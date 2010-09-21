@@ -91,8 +91,7 @@ class Microslabs:
         # For now use the dumb implementation; a better implementation
         # would remember the repeats and pre-calculate the matrix product
         # for the repeating region, saving much work later.  This has
-        # to work in conjunction with interfaces and with magnetic signals
-        # which vary across the repeated layers, so perhaps it is not so useful.
+        # to work in conjunction with interfaces and with magnetic profiles.
         repeats = count-1
         end = len(self)
         length = end-start
@@ -103,7 +102,7 @@ class Microslabs:
         self._slabsQ[toidx] = numpy.tile(self._slabsQ[fromidx],[repeats,1,1])
         self._num_slabs += repeats*length
         
-        # if any magnetic sections are within the repeat, they need to be
+        # TODO: any magnetic sections within the repeat need to be
         # repeated as well
 
     def _reserve(self, nadd):
@@ -146,8 +145,9 @@ class Microslabs:
         allows more flexibility than trying to compute the effects
         of roughness on non-flat layers.
         """
-        print "Ignoring special interface on the top of the stack"
-        pass
+        raise NotImplementedError('special interfaces not yet supported')
+        # TODO: check that Nevot-Croce works between microslab sections
+        self.extend(w = 0, sigma=I, rho = self.rho[-1], irho = self.irho[-1])
 
     def _w(self):
         return self._slabs[:self._num_slabs,0]

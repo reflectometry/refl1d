@@ -15,6 +15,7 @@ See :module:`resolution` for details.
 import re
 import math
 import numpy
+from numpy import sqrt
 from .resolution import Polychromatic, binwidths
 from . import util
 
@@ -127,9 +128,36 @@ class SNSLoader:
         header,data = parse_file(filename)
         return _make_probe(geometry=self, header=header, data=data, **kw)
 
-    def simdata(self, sample, counts=None, **kw):
+    def simdata(self, sample, uncertainty=0.01, **kw):
         """
         Simulate a run with a particular sample.
+        
+        :Parameters:
+            *sample* : Stack
+                Reflectometry model
+            *T* : [float] | degrees
+                List of angles to be measured, such as [0.15,0.4,1,2].
+            *slits* : [float] or [(float,float)] | mm
+                Slit settings for each angle. Default is 0.2*T
+            *uncertainty* = 0.01 : float or [float]
+                Incident intensity is set so that the worst dF/F is better
+                than *uncertainty*, where F is the idealized Fresnel
+                reflectivity of the sample.
+            *dLoL* = 0.02: float
+                Wavelength resolution
+            *normalize* = True : boolean
+                Whether to normalize the intensities
+            *theta_offset* = 0 : float | degrees
+                Sample alignment error
+            *background* = 0 : float
+                Background counts per incident neutron (background is
+                assumed to be independent of measurement geometry).
+            *back_reflectivity* = False : boolean
+                Whether beam travels through incident medium 
+                or through substrate.
+            *back_absorption* = 1 : float
+                Absorption factor for beam traveling through substrate.
+                Only needed for back reflectivity measurements.
         """
         from reflectometry.reduction.rebin import rebin
         from .experiment import Experiment
@@ -137,25 +165,54 @@ class SNSLoader:
         T = kw.pop('T', self.T)
         slits = kw.pop('slits', self.slits)
         if slits is None: slits = [0.2*Ti for Ti in T]
-        if counts is None: counts = [(100*Ti)**4 for Ti in T]
+
+        dLoL = kw.pop('dLoL', self.dLoL)
+        normalize = kw.pop('normalize', True)
+        theta_offset = kw.pop('theta_offset', 0)
+        background = kw.pop('background', 0)
+        back_reflectivity = kw.pop('back_reflectivity', False)
+        back_absorption = kw.pop('back_absorption', 1)
 
         # Compute reflectivity with resolution and added noise
         probes = []
-        for Ti,Si,Ci in zip(T,slits,counts):
-            probe = self.simulate(T=Ti, slits=Si, **kw)
+        for Ti,Si in zip(T,slits):
+            probe = self.simulate(T=Ti, slits=Si, dLoL=dLoL)
+            probe.back_reflectivity = back_reflectivity
+            probe.theta_offset.value = theta_offset
+            probe.back_absorption.value = back_absorption
             M = Experiment(probe=probe, sample=sample)
+            # Note: probe.L is reversed because L is sorted by increasing
+            # Q in probe.
             I = rebin(binedges(self.feather[0]),self.feather[1],
-                      binedges(probe.L))
-            I /= sum(I)
+                      binedges(probe.L[::-1]))[::-1]
+            Ci = max(1./(uncertainty**2 * I * M.fresnel()))
+            Icounts = Ci*I
+
             _, Rth = M.reflectivity()
-            Rcounts = numpy.random.poisson(Rth*I*Ci)
-            Icounts = I*Ci
+            Rcounts = numpy.random.poisson(Rth*Icounts)
+            if background > 0:
+                Rcounts += numpy.random.poisson(Icounts*background, 
+                                                size=Rcounts.shape)
+            # Set intensity/background _after_ calculating the theory function
+            # since we don't want the theory function altered by them.
+            probe.background.value = background
+            # Correct for the feather.  This has to be done otherwise we
+            # won't see the correct reflectivity.  Even if corrected for
+            # the feather, though, we haven't necessarily corrected for
+            # the overall number of counts in the measurement.
             # Z = X/Y
             # var Z = (var X / X**2 + var Y / Y**2) * Z**2
             #       = (1/X + 1/Y) * (X/Y)**2
             #       = (Y + X) * X/Y**3
             R = Rcounts/Icounts
             dR = numpy.sqrt((Icounts + Rcounts)*Rcounts/Icounts**3)
+            
+            if not normalize:
+                #Ci = 1./max(R)
+                R, dR = R*Ci, dR*Ci
+                probe.background.value *= Ci
+                probe.intensity.value = Ci
+
             probe.data = R,dR
             probes.append(probe)
 
