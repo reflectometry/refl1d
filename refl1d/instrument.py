@@ -294,6 +294,7 @@ class Monochromatic:
         kw["Q"] = Q
         self._translate_Q_to_theta(kw)
         T,dT,L,dL = self.resolution(**kw)
+        del kw["T"]
         return make_probe(T=T,dT=dT,L=L,dL=dL,data=(R,dR), 
                           radiation=self.radiation, **kw)
 
