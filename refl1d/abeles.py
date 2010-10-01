@@ -7,28 +7,32 @@ O.S. Heavens, Optical Properties of Thin Solid Films
 from numpy import asarray, isscalar, empty, ones, ones_like
 from numpy import sqrt, exp, pi
 
-def refl(kz, depth, rho, irho, sigma=0):
+def refl(kz, depth, rho, irho=0, sigma=0, rho_index=None):
     """
     Reflectometry as a function of kz for a set of slabs.
     
-    kz ([n] inv angstrom)
-        Scattering vector 2*pi*sin(theta)/wavelength. This is Qz/2.
-    depth ([m] angstrom)
-        thickness of each layer.  The thickness of the incident medium
-        and substrate are ignored.
-    rho, irho ([n x m] 1e-6/Angstrom^2)
-        real and imaginary scattering length density for each layer for each kz
-        Note: absorption cross section mu = 2 irho/lambda
-    sigma ([m-1] angstrom)
-        interfacial roughness.  This is the roughness between a layer
-        and the subsequent layer.  There is no interface associated
-        with the substrate.  The sigma array should have at least m-1
-        entries, though it may have m with the last entry ignored.
+    :Parameters:
+        *kz* : float[n] | inv angstrom
+            Scattering vector 2*pi*sin(theta)/wavelength. This is Qz/2.
+        *depth* :  float[m] | angstrom
+            thickness of each layer.  The thickness of the incident medium
+            and substrate are ignored.
+        *rho*, *irho* :  float[n,k] | 1e-6/Angstrom^2
+            real and imaginary scattering length density for each layer for each kz
+            Note: absorption cross section mu = 2 irho/lambda
+        *sigma* : float[m-1] | angstrom
+            interfacial roughness.  This is the roughness between a layer
+            and the subsequent layer.  There is no interface associated
+            with the substrate.  The sigma array should have at least m-1
+            entries, though it may have m with the last entry ignored.
+        *rho_index* : int[m]
+            index into rho vector for each kz
     
     Slabs are ordered with the surface SLD at index 0 and substrate at
     index -1, or reversed if kz < 0.
     """
     if isscalar(kz): kz = asarray([kz], 'd')
+    
     m = len(depth)
 
     # Make everything into arrays
@@ -37,6 +41,14 @@ def refl(kz, depth, rho, irho, sigma=0):
     irho = irho*ones_like(rho) if isscalar(irho) else asarray(irho,'d')
     sigma = sigma*ones(m-1,'d') if isscalar(sigma) else asarray(sigma,'d')
 
+    # Repeat rho,irho columns as needed
+    if rho_index != None:
+        rho = rho[rho_index, :]
+        irho = irho[rho_index, :]
+    elif len(rho.shape) == 1:
+        rho = rho[None,:]
+        irho = irho[None,:]
+
     ## For kz < 0 we need to reverse the order of the layers
     ## Note that the interface array sigma is conceptually one
     ## shorter than rho,mu so when reversing it, start at n-1.
@@ -44,9 +56,10 @@ def refl(kz, depth, rho, irho, sigma=0):
     ## corresponding to rho,mu or of length n-1.
     idx = (kz>=0)
     r = empty(len(kz),'D')
-    r[idx] = calc(kz[idx], depth, rho, irho, sigma)
+    r[idx] = calc(abs(kz[idx]), depth, rho, irho, sigma)
     r[~idx] = calc(abs(kz[~idx]),
                    depth[::-1], rho[:,::-1], irho[:,::-1], sigma[m-2::-1])
+    r[abs(kz) < 1e-10] = -1
     return r
 
 
@@ -70,6 +83,14 @@ def calc(kz, depth, rho, irho, sigma):
         k_next = sqrt(kz_sq - 4e-6*pi*(rho[:,i+1] + 1j*irho[:,i+1]))
         F = (k - k_next) / (k + k_next)
         F *= exp(-2*k*k_next*sigma[i]**2)
+        #print "==== layer",i
+        #print "kz:", kz
+        #print "k:", k
+        #print "k_next:",k_next
+        #print "F:",F
+        #print "rho:",rho[:,i+1]
+        #print "irho:",irho[:,i+1]
+        #print "d:",depth[i],"sigma:",sigma[i]
         M11 = exp(1j*k*depth[i]) if i>0 else 1
         M22 = exp(-1j*k*depth[i]) if i>0 else 1
         M21 = F*M11

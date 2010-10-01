@@ -7,7 +7,7 @@ Probe.view = 'log' # log, linear, fresnel, or Q**4
 #import periodictable
 
 # Compute slits from dT given in the staj file
-slits = 0.02*(ncnrdata.XRay.d_s1 - ncnrdata.XRay.d_s2)
+slits = 0.03
 instrument = ncnrdata.XRay(dLoL=0.005, slits_at_Tlo=slits)
 probe = instrument.load('e1085009.log')
 probe.log10_to_linear()  # data was stored as log_10 (R) rather than R
@@ -49,11 +49,19 @@ if 1:
     sample[4].material.rho.value = 92.02
     sample[4].material.irho.value = 11.93
 
+elif 1: # grower values
+    sample[1].thickness.value = 25
+    sample[2].thickness.value = 200
+    sample[3].thickness.value = 500
+    sample[4].thickness.value = 25
+    for i,L in enumerate(sample[1:-2]):
+        L.interface.value = 20
+
 # Fit parameters
 #probe.theta_offset.dev(radians(0.01)/sqrt(12))  # accurate to 0.01 degrees
 
 store = "T1"
-if 0: # Open set
+if 1: # Open set
     for i,L in enumerate(sample[0:-1]):
         if i>0: L.thickness.range(0,1000)
         L.interface.range(0,50)
@@ -65,19 +73,17 @@ elif 0: # jiggle
         L.interface.pmp(0,10)
         L.material.rho.pmp(10)
         L.material.irho.pmp(10)
-elif 1: # grower
-    sample[1].thickness.value = 25
-    sample[2].thickness.value = 200
-    sample[3].thickness.value = 500
-    sample[4].thickness.value = 25
+elif 0: # grower
+    sample[1].thickness.range(15,35)
+    sample[2].thickness.range(150,250)
+    sample[3].thickness.range(300,700)
+    sample[4].thickness.range(15,35)
     for i,L in enumerate(sample[1:-2]):
-        L.interface.value = 20
-        L.thickness.pmp(50)
         L.interface.pmp(100)
         L.material.rho.pmp(10)
         L.material.irho.pmp(10)
     
-elif 1: # d2 X d3
+elif 0: # d2 X d3
     #sample[2].thickness.range(0,400)
     #sample[3].thickness.range(0,1000)
     sample[2].thickness.range(50,400)
@@ -102,7 +108,7 @@ problem.store = store
 # Do the fit
 if 1:
     result = preview(models=M)
-elif 0:
+elif 1:
     result = fit(models=[M], npop=10)
     result.show()
 elif 0:

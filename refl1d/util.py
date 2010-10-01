@@ -151,3 +151,25 @@ def dhsv(color, dh=0, ds=0, dv=0, da=0):
     h,s,v,a = [clip(val,0,1) for val in h+dh,s+ds,v+dv,a+da]
     r,b,g = hsv_to_rgb(h,s,v)
     return array((r,g,b,a))
+
+
+
+def profile(fn, *args, **kw):
+    """
+    Profile a function called with the given arguments.
+    
+    Note that this is different from 
+    """
+    import cProfile, pstats, os
+    global call_result
+    def call():
+        global call_result
+        call_result = fn(*args, **kw)
+    datafile = 'profile%d.out'%id(fn)
+    cProfile.runctx('call()', dict(call=call), {}, datafile)
+    stats = pstats.Stats(datafile)
+    #stats.sort_stats('time')
+    stats.sort_stats('calls')
+    stats.print_stats()
+    os.unlink(datafile)
+    return call_result

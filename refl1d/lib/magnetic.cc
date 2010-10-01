@@ -6,68 +6,13 @@
 #include <cstdlib>
 #include "reflcalc.h"
 
-#if defined(NO_APPEND_FORTRAN)
-#if defined(UPPERCASE_FORTRAN)
-#define F77_FUNC(f,F) F
-#else
-#define F77_FUNC(f,F) f
-#endif
-#else
-#if defined(UPPERCASE_FORTRAN)
-#define F77_FUNC(f,F) F##_
-#else
-#define F77_FUNC(f,F) f##_
-#endif
-#endif
-
-
-//#define Fr4xa   F77_FUNC(r4xa,R4XA)
-#define Fr4xa Cr4xa
 
 extern "C" void 
-Fr4xa(const int &n, const double d[], const double rho[], 
-      const double mu[], const double &lambda, const double P[], 
-      const std::complex<double> expth[], const double &aguide,
-      const double &q, std::complex<double> &A, std::complex<double> &B, 
-      std::complex<double> &C, std::complex<double> &D);
-
-extern "C" void 
-magnetic_amplitude(const int layers, const double d[], 
-     const double rho[], const double mu[], const double L[],
-     const double P[], const std::complex<double> expth[],
-     const double Aguide, const int points, const double Q[], 
-     std::complex<double> Ra[], std::complex<double> Rb[],
-     std::complex<double> Rc[], std::complex<double> Rd[])
-{
-  for (int i=0; i < points; i++) {
-    Fr4xa(layers,d,rho,mu,L[i],P,expth,Aguide,Q[i],Ra[i],Rb[i],Rc[i],Rd[i]);
-  }
-}
-
-extern "C" void 
-magnetic_reflectivity(const int layers, const double d[], 
-        const double rho[], const double mu[], const double L[],
-        const double P[], const std::complex<double> expth[],
-        const double Aguide, const int points, const double Q[], 
-        double Ra[], double Rb[], double Rc[], double Rd[])
-{
-  for (int i=0; i < points; i++) {
-    std::complex<double> A,B,C,D;
-    Fr4xa(layers,d,rho,mu,L[i],P,expth,Aguide,Q[i],A,B,C,D);
-    Ra[i] = real(A * conj(A));
-    Rb[i] = real(B * conj(B));
-    Rc[i] = real(C * conj(C));
-    Rd[i] = real(D * conj(D));
-  }
-}
-
-
-extern "C" void 
-Cr4xa(const int &N, const double D[], const double RHO[], 
-      const double MU[], const double &LAMBDA, const double P[], 
-      const std::complex<double> EXPTH[], const double &AGUIDE,
-      const double &Q, std::complex<double> &YA, std::complex<double> &YB, 
-      std::complex<double> &YC, std::complex<double> &YD)
+Cr4xa(const int &N, const double D[], const double SIGMA[],
+      const double RHO[], const double IRHO[],
+      const double RHOM[],  const Cplx EXPTH[],
+      const double &AGUIDE, const double &KZ,
+      Cplx &YA, Cplx &YB, Cplx &YC, Cplx &YD)
 
 {
 /*
@@ -143,8 +88,8 @@ C 2005-02-17 Paul Kienzle
 C * No need to precompute S
 C * Support for absorption in substrate
 C 2004-04-29 Paul Kienzle
-C * Handle negative Q by reversing the loop
-C * Only calculate single Q
+C * Handle negative KZ by reversing the loop
+C * Only calculate single KZ
 C 2002-01-08 Paul Kienzle
 C * Optimizations by precomputing layer parameter values
 C 2001-03-26 Kevin O`Donovan
@@ -155,32 +100,32 @@ C * Converted to subroutine from GEPORE.f
       int I,L,STEP;
         
 //    variables calculating S1, S3, COSH and SINH
-      double QSQREL, PI2oLAMBDA;
+      double KSQREL;
       double EPA, EMA, COSB, SINB, LOGH;
-      std::complex<double> S1,S3,COSHS1,COSHS3,SINHS1,SINHS3;
+      Cplx S1,S3,COSHS1,COSHS3,SINHS1,SINHS3;
 
 //    completely unrolled matrices for B=A*B update
-      std::complex<double> A11,A12,A13,A14,A21,A22,A23,A24;
-      std::complex<double> A31,A32,A33,A34,A41,A42,A43,A44;
-      std::complex<double> B11,B12,B13,B14,B21,B22,B23,B24;
-      std::complex<double> B31,B32,B33,B34,B41,B42,B43,B44;
-      std::complex<double> C1,C2,C3,C4;
+      Cplx A11,A12,A13,A14,A21,A22,A23,A24;
+      Cplx A31,A32,A33,A34,A41,A42,A43,A44;
+      Cplx B11,B12,B13,B14,B21,B22,B23,B24;
+      Cplx B31,B32,B33,B34,B41,B42,B43,B44;
+      Cplx C1,C2,C3,C4;
 
 //    variables for translating resulting B into a signal
-      std::complex<double> W11,W12,W21,W22,V11,V12,V21,V22;
-      std::complex<double> DETW;
-      std::complex<double> ZI,ZS,X,Y,SCI,SS,CC;
+      Cplx W11,W12,W21,W22,V11,V12,V21,V22;
+      Cplx DETW;
+      Cplx ZI,ZS,X,Y,SCI,SS,CC;
 
 //    constants
-      const std::complex<double> CR(1.0,0.0);
-      const std::complex<double> CI(0.0,1.0);
-      const double PI4=12.566370614359172;
+      const Cplx CR(1.0,0.0);
+      const Cplx CI(0.0,1.0);
+      const double PI4=12.566370614359172e-6;
       const double PI=3.1415926535897932284626;
-//    Check for Q near zero.  If Q < 0, reverse the indices
-      if (Q<=-1.e-10) {
+//    Check for KZ near zero.  If KZ < 0, reverse the indices
+      if (KZ<=-1.e-10) {
          L=N-1;
          STEP=-1;
-      } else if (Q>=1.e-10) {
+      } else if (KZ>=1.e-10) {
          L=0;
          STEP=1;
       } else {
@@ -225,34 +170,32 @@ C later in the calculation when we divide by DETW.
 */
 
 //     B = I
-      B11=std::complex<double>(1.0,0.0);
-      B12=std::complex<double>(0.0,0.0);
-      B13=std::complex<double>(0.0,0.0);
-      B14=std::complex<double>(0.0,0.0);
-      B21=std::complex<double>(0.0,0.0);
-      B22=std::complex<double>(1.0,0.0);
-      B23=std::complex<double>(0.0,0.0);
-      B24=std::complex<double>(0.0,0.0);
-      B31=std::complex<double>(0.0,0.0);
-      B32=std::complex<double>(0.0,0.0);
-      B33=std::complex<double>(1.0,0.0);
-      B34=std::complex<double>(0.0,0.0);
-      B41=std::complex<double>(0.0,0.0);
-      B42=std::complex<double>(0.0,0.0);
-      B43=std::complex<double>(0.0,0.0);
-      B44=std::complex<double>(1.0,0.0);
+      B11=Cplx(1.0,0.0);
+      B12=Cplx(0.0,0.0);
+      B13=Cplx(0.0,0.0);
+      B14=Cplx(0.0,0.0);
+      B21=Cplx(0.0,0.0);
+      B22=Cplx(1.0,0.0);
+      B23=Cplx(0.0,0.0);
+      B24=Cplx(0.0,0.0);
+      B31=Cplx(0.0,0.0);
+      B32=Cplx(0.0,0.0);
+      B33=Cplx(1.0,0.0);
+      B34=Cplx(0.0,0.0);
+      B41=Cplx(0.0,0.0);
+      B42=Cplx(0.0,0.0);
+      B43=Cplx(0.0,0.0);
+      B44=Cplx(1.0,0.0);
 
-//    Changing the target Q is equivalent to subtracting the fronting
-//    medium SLD.  Units are Nb so multiply by 16pi. We want sqrt(S-Q^2)/2
-//    so divide by 4.
-      QSQREL = 0.25*Q*Q + PI4*RHO[L];
-      PI2oLAMBDA = PI4/(2.*LAMBDA);
+//    Changing the target KZ is equivalent to subtracting the fronting
+//    medium SLD.
+      KSQREL = KZ*KZ + PI4*RHO[L];
 //    Process the loop once for each interior layer, either from
 //    front to back or back to front.
       for (I=1; I < N-1; I++) {
         L = L+STEP;
-        S1 = sqrt(PI4*(RHO[L]+P[L])-QSQREL - CI*PI2oLAMBDA*MU[L]);
-        S3 = sqrt(PI4*(RHO[L]-P[L])-QSQREL - CI*PI2oLAMBDA*MU[L]);
+        S1 = sqrt(PI4*(RHO[L]+RHOM[L])-KSQREL - CI*PI4*IRHO[L]);
+        S3 = sqrt(PI4*(RHO[L]-RHOM[L])-KSQREL - CI*PI4*IRHO[L]);
 
 //    Factor out H=exp(max(abs(real([S1,S3])))*D(L)) from the matrix
         if (abs(S1.real()) > abs(S3.real()))
@@ -387,8 +330,8 @@ LOGH=0;
 //    Note: this does not take into account magnetic fronting/backing
 //    media --- use gepore.f directly for a more complete solution
       L=L+STEP;
-      ZS=CI*sqrt(QSQREL-PI4*RHO[L] + CI*PI2oLAMBDA*MU[L]);
-      ZI=CI*fabs(0.5*Q);
+      ZS=CI*sqrt(KSQREL-PI4*RHO[L] + CI*PI4*IRHO[L]);
+      ZI=CI*fabs(KZ);
  
       X=-1.;
       Y=ZI*ZS;
@@ -414,4 +357,22 @@ LOGH=0;
       YD = (V12*W21-V22*W11)/DETW;
       
 }
+
+extern "C" void
+magnetic_amplitude(const int layers,
+                      const double d[], const double sigma[],
+                      const double rho[], const double irho[],
+                      const double rhoM[], const Cplx expth[],
+                      const double Aguide,
+                      const int points, const double KZ[], const int rho_index[],
+                      Cplx Ra[], Cplx Rb[], Cplx Rc[], Cplx Rd[])
+{
+  for (int i=0; i < points; i++) {
+    const int offset = layers*(rho_index != NULL?rho_index[i]:0);
+    Cr4xa(layers,d,sigma,rho+offset,irho+offset,rhoM,expth,
+          Aguide,KZ[i],Ra[i],Rb[i],Rc[i],Rd[i]);
+  }
+}
+
+
 // $Id: magnetic.cc 236 2007-05-30 17:15:57Z pkienzle $

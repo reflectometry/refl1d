@@ -13,15 +13,6 @@ PyObject* pyvector(int n, double v[])
 }
 
 static PyMethodDef methods[] = {
-	{"_fixedres",
-	 Pfixedres,
-	 METH_VARARGS,
-	 "_fixedres(L,dLoL,dT,Q,dQ): compute resolution for fixed slits at Q given L, dL/L and dT"},
-
-	{"_varyingres",
-	 Pvaryingres,
-	 METH_VARARGS,
-	 "_varyingres(L,dLoL,dToT,Q,dQ): compute resolution for varying slits at Q given L, dL/L and dT/T"},
 
 	{"_convolve",
 	 Pconvolve,
@@ -29,19 +20,14 @@ static PyMethodDef methods[] = {
 	 "_convolve(Qi,Ri,Q,dQ,R): compute convolution of width dQ[k] at points Q[k], returned in R[k]"},
 
 	{"_reflectivity_amplitude",
-	 Preflamp,
+	 Preflectivity_amplitude,
 	 METH_VARARGS, 
-	 "_reflectivity_amplitude(rho,mu,d,L,Q,R): compute reflectivity putting it into vector R of len(Q)"},
+	 "_reflectivity_amplitude(d,sigma,rho,irho,Q,rho_offset,R): compute reflectivity putting it into vector R of len(Q)"},
 
 	{"_magnetic_amplitude",
 	 Pmagnetic_amplitude,
 	 METH_VARARGS, 
-	 "_magnetic_amplitude(rho,mu,d,L,P,expth,Q,R1,R2,R3,R4): compute amplitude putting it into vector R of len(Q)"}, 
-
-	{"_reflectivity_amplitude_rough",
-	 Preflamp_rough,
-	 METH_VARARGS, 
-	 "_refl(rho,mu,d,sigma,L,Q,R): compute reflectivity with approximate roughness putting it into vector R of len(Q)"},
+	 "_magnetic_amplitude(d,sigma,rho,irho,rhoM,expth,Q,rho_offset,R1,R2,R3,R4): compute amplitude putting it into vector R of len(Q)"},
 
 	{"_erf",
 	 Perf,
@@ -67,4 +53,3 @@ extern "C" void initreflmodule(void) {
   PY_ARRAY_UNIQUE_SYMBOL = NULL;
   import_array();
 }
-

@@ -97,95 +97,50 @@ Q of a given step size in order to reach 0.001 on a gaussian of width dQ
    w = resolution_padding(dQ, step)
 */
 
+// For C++ use the standard complex double type
+// For C just use an array of doubles
+// Note: C99 could use complex double.
 #ifdef __cplusplus
-#include <complex>
-#include <cmath>
-extern "C" {
-  typedef std::complex<double> refl_complex;
+# include <complex>
+# include <cmath>
+  typedef std::complex<double> Cplx;
 #else
-#include <math.h>
-  typedef double refl_complex;
+# include <math.h>
+  typedef double Cplx;
+#endif
+
+ // Inclusion from C
+#ifdef __cplusplus
+    extern "C" {
 #endif
 
 
-void
-reflectivity(const int layers, const double d[], const double rho[],
-						 const double mu[], const double wavelength[],
-             const int points, const double Q[], double R[]);
-	
-void
-reflectivity_amplitude(const int layers, const double d[], 
-		       const double rho[], const double mu[], const double wavelength[],
-		       const int points, const double Q[], refl_complex R[]);
-
-	
-void
-reflrough(const int layers, const double d[], const double sigma[],
-	  const double rho[], const double mu[], const double wavelength[],
-	  const int points, const double Q[], double R[]);
-
-	
-void
-reflrough_amplitude(const int layers, const double d[], const double sigma[],
-		    const double rho[], const double mu[], const double wavelength[],
-		    const int points, const double Q[], refl_complex R[]);
 
 void
-magnetic_reflectivity(const int layers, const double d[], 
-		      const double rho[], const double mu[], const double wavelength[],
-		      const double P[], const refl_complex expth[],
-		      const double Aguide, const int points, const double Q[], 
-		      double Ra[], double Rb[], double Rc[], double Rd[]);
-	
-	
+reflectivity_amplitude(const int layers,
+                       const double d[], const double sigma[],
+                       const double rho[], const double irho[],
+                       const int points,
+                       const double kz[], const int rho_offset[],
+                       Cplx r[]);
+
 void
-magnetic_amplitude(const int layers, const double d[], 
-									 const double rho[], const double mu[],
-									 const double wavelength[],
-									 const double P[], const refl_complex expth[],
-									 const double Aguide, const int points, const double Q[], 
-									 refl_complex Ra[], refl_complex Rb[],
-									 refl_complex Rc[], refl_complex Rd[]
-									 );
+magnetic_amplitude(const int layers,
+                   const double d[], const double sigma[],
+                   const double rho[], const double irho[],
+                   const double rhoM[], const Cplx expth[],
+                   const double Aguide,
+                   const int points,
+                   const double kz[], const int rho_offset[],
+                   Cplx Ra[], Cplx Rb[], Cplx Rc[], Cplx Rd[]);
 
-void 
-fresnel_reflectivity(const double vrho, const double srho, 
-		     const double vmu, const double smu, 
-		     int points, const double Q[], double R[],
-		     const double lambda);
-void 
-fresnel_amplitude(const double vrho, const double srho, 
-		  const double vmu, const double smu, 
-		  int points, const double Q[], refl_complex R[],
-		  const double lambda);
-
-#define T2Q(L,T) (4.*M_PI/(L)*sin((T)*M_PI/180.))
-#define Q2T(L,Q) 180./M_PI*asin(Q*L/(4.*M_PI))
 void
 resolution(int Nin, const double Qin[], const double Rin[],
 	   int N, const double Q[], const double dQ[], double R[]);
-double 
-resolution_dT(double s1,double s2,double d);
-double 
-resolution_dToT(double s1,double s2,double d,double A3);
-  
-void
-resolution_fixed(double L, double dLoL, double dT, 
-		 int n, const double Q[], double dQ[]);
-
-void
-resolution_varying(double L, double dLoL, double dToT, 
-		   int n, const double Q[], double dQ[]);
-
-void
-resolution_dQoQ(double dQoQ, int n, const double Q[], double dQ[]);
-
-int
-resolution_padding(double dQ, double step);
 
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _REFLCALC_H */
+ #endif /* _REFLCALC_H */

@@ -21,6 +21,7 @@ import threading
 
 ## USE_SLEEP_TO_THROTTLE
 #import time
+import os
 
 #from dill import loads, dumps
 from cPickle import loads, dumps
@@ -58,17 +59,24 @@ def start_worker(server, mapid, work):
     channel.queue_declare(queue=map_queue, durable=False, 
                           exclusive=False, auto_delete=True)
 
+    #me = os.getpid()
+    #os.system("echo '%s' > /home/pkienzle/map.%d"%('starting',me))
+
     # Prefetch requires basic_ack, basic_qos and consume with ack
     def _process_work(msg):
         # Check for sentinel
-        if msg.reply_to == "": channel.basic_cancel(consumer)
+        if msg.reply_to == "": 
+            channel.basic_cancel(consumer)
         body = loads(msg.body)
         # Acknowledge delivery of message
         #print "processing...",body['index'],body['value']; sys.stdout.flush()
+        #os.system("echo 'processing %s' >> /home/pkienzle/map.%d"%(body['value'],me))
         try:
             result = work(body['value'])
-        except exc:
+        except Exception,exc:
+            #os.system("echo 'error %s' >> /home/pkienzle/map.%d"%(exc,me))
             result = None
+        #os.system("echo 'returning %s' >> /home/pkienzle/map.%d"%(result,me))
         #print "done"
         channel.basic_ack(msg.delivery_tag)
         reply = amqp.Message(dumps(dict(index=body['index'],result=result)))
@@ -171,8 +179,14 @@ class Mapper(object):
         publisher = self._send_map(items)
         recvd = set()
         while self.num_processed < self.num_items:
+            try: del self._reply
+            except: pass
             self.reply_channel.wait()
-            idx = self._reply['index']
+            try:
+                idx = self._reply['index']
+            except:
+                sys.stdout.flush()
+                raise RuntimeError("Reply not received")
             if idx in recvd: continue
             recvd.add(idx)
             result = self._reply['result']

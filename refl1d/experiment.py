@@ -7,7 +7,12 @@ import os
 import traceback
 
 import numpy
-from .abeles import refl
+try:
+    from .reflectivity import reflectivity_amplitude as reflamp
+#   raise Exception('fail')
+except:
+    print "Using pure python reflectivity calculator"
+    from .abeles import refl as reflamp
 from . import material, profile
 from .fresnel import Fresnel
 from .mystic.parameter import Parameter
@@ -148,7 +153,8 @@ class Experiment(ExperimentBase):
             #sigma = slabs.limited_sigma(limit=self.roughness_limit)
             sigma = slabs.sigma
             calc_q = self.probe.calc_Q
-            calc_r = refl(-calc_q/2, depth=w, rho=rho, irho=irho, sigma=sigma)
+            calc_r = reflamp(-calc_q/2, depth=w, rho=rho, irho=irho, 
+                             sigma=sigma)
             #print "w",w
             #print "rho",rho
             #print "irho",irho

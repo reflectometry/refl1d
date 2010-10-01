@@ -1,6 +1,6 @@
 /* This program is public domain. */
 
-#include "src/reflcalc.h"
+#include "reflcalc.h"
 #include <math.h>
 #include <stdio.h>
 #include <iostream>
@@ -46,163 +46,93 @@ PyObject* Pconvolve(PyObject *obj, PyObject *args)
 }
 
 
-PyObject* Pfixedres(PyObject*obj,PyObject*args)
-{
-  PyObject *Q_obj,*dQ_obj;
-  const double *Q;
-  double *dQ;
-  double L, dLoL, dT;
-  Py_ssize_t nQ, ndQ;
-
-  if (!PyArg_ParseTuple(args, "dddOO:fixedres", 
-			&L,&dLoL,&dT,&Q_obj,&dQ_obj)) return NULL;
-  INVECTOR(Q_obj,Q,nQ);
-  OUTVECTOR(dQ_obj,dQ,ndQ);
-  if (nQ != ndQ) {
-#ifndef BROKEN_EXCEPTIONS
-    PyErr_SetString(PyExc_ValueError, "_librefl.fixedres: Q and dQ have different lengths");
-#endif
-    return NULL;
-  }
-  resolution_fixed(L,dLoL,dT,nQ,Q,dQ);
-  return Py_BuildValue("");
-}
-
-
-PyObject* Pvaryingres(PyObject*obj,PyObject*args)
-{
-  PyObject *Q_obj,*dQ_obj;
-  const double *Q;
-  double *dQ;
-  double L, dLoL, dToT;
-  Py_ssize_t nQ, ndQ;
-
-  if (!PyArg_ParseTuple(args, "dddOO:fixedres", 
-			&L,&dLoL,&dToT,&Q_obj,&dQ_obj)) return NULL;
-  INVECTOR(Q_obj,Q,nQ);
-  OUTVECTOR(dQ_obj,dQ,ndQ);
-  if (nQ != ndQ) {
-#ifndef BROKEN_EXCEPTIONS
-    PyErr_SetString(PyExc_ValueError, "_librefl.fixedres: Q and dQ have different lengths");
-#endif
-    return NULL;
-  }
-  resolution_varying(L,dLoL,dToT,nQ,Q,dQ);
-  return Py_BuildValue("");
-}
-
-
-PyObject* Preflamp(PyObject*obj,PyObject*args)
-{
-  PyObject *Q_obj,*R_obj,*d_obj,*rho_obj,*mu_obj, *wavelength_obj;
-  const double *Q, *d, *rho, *mu, *wavelength;
-  refl_complex *R;
-  Py_ssize_t nQ, nR, nd, nrho, nmu, nwavelength;
-
-  if (!PyArg_ParseTuple(args, "OOOOOO:reflamp", 
-			&rho_obj,&mu_obj,&d_obj,&wavelength_obj,&Q_obj,&R_obj)) return NULL;
-  INVECTOR(d_obj,d,nd);
-  INVECTOR(rho_obj,rho,nrho);
-  INVECTOR(mu_obj,mu,nmu);
-  INVECTOR(Q_obj,Q,nQ);
-  INVECTOR(wavelength_obj, wavelength, nwavelength);
-  OUTVECTOR(R_obj,R,nR);
-  if (nd != nrho || nd != nmu) {
-#ifndef BROKEN_EXCEPTIONS
-    PyErr_SetString(PyExc_ValueError, "d,rho,mu have different lengths");
-#endif
-    return NULL;
-  }
-  if (nQ != nR || nwavelength != nQ) {
-#ifndef BROKEN_EXCEPTIONS
-    PyErr_SetString(PyExc_ValueError, "Q,R,wavelength have different lengths");
-#endif
-    return NULL;
-  }
-  reflectivity_amplitude(nd, d, rho, mu, wavelength, nQ, Q, R);
-  return Py_BuildValue("");
-}
-
-
 PyObject* Pmagnetic_amplitude(PyObject*obj,PyObject*args)
 {
-  PyObject *Q_obj,*wavelength_obj,*R1_obj,*R2_obj,*R3_obj,*R4_obj,*d_obj,*rho_obj,*mu_obj, *expth_obj, *P_obj;
-  const double *Q, *d, *rho, *mu, *P, *wavelength;
+  PyObject *kz_obj,*rho_index_obj,*r1_obj,*r2_obj,*r3_obj,*r4_obj,
+    *d_obj,*sigma_obj,*rho_obj,*irho_obj, *rhom_obj, *expth_obj;
+  Py_ssize_t nkz, nrho_index, nr1, nr2, nr3, nr4,
+    nd, nsigma, nrho, nirho, nrhom, nexpth;
+  const double *kz, *d, *sigma, *rho, *irho, *rhom;
+  const Cplx *expth;
+  const int *rho_index;
   double Aguide;
-  Py_ssize_t nQ, nR1, nR2, nR3, nR4, nd, nrho, nmu, nexpth, nP, nwavelength;
-  const refl_complex *expth;
-  refl_complex *R1, *R2, *R3, *R4;
+  Cplx *r1, *r2, *r3, *r4;
 
-  if (!PyArg_ParseTuple(args, "OOOOOOdOOOOO:reflectivity", 
-			                  &rho_obj, &mu_obj, &d_obj, &wavelength_obj,
-												&P_obj,&expth_obj, &Aguide,&Q_obj,
-												&R1_obj,&R2_obj,&R3_obj,&R4_obj)) 
+  if (!PyArg_ParseTuple(args, "OOOOOOdOOOOOO:magnetic_reflectivity",
+      &d_obj, &sigma_obj,
+      &rho_obj, &irho_obj, &rhom_obj,&expth_obj,
+      &Aguide,&kz_obj,&rho_index_obj,
+      &r1_obj,&r2_obj,&r3_obj,&r4_obj))
     return NULL;
   INVECTOR(d_obj,d,nd);
+  INVECTOR(sigma_obj,sigma,nsigma);
   INVECTOR(rho_obj,rho,nrho);
-  INVECTOR(mu_obj,mu,nmu);
-  INVECTOR(P_obj,P,nP);
+  INVECTOR(irho_obj,irho,nirho);
+  INVECTOR(rhom_obj,rhom,nrhom);
   INVECTOR(expth_obj,expth,nexpth);
-  INVECTOR(Q_obj,Q,nQ);
-	INVECTOR(wavelength_obj, wavelength, nwavelength);
-  OUTVECTOR(R1_obj,R1,nR1);
-  OUTVECTOR(R2_obj,R2,nR2);
-  OUTVECTOR(R3_obj,R3,nR3);
-  OUTVECTOR(R4_obj,R4,nR4);
-  if (nd != nrho || nd != nmu || nd != nP || nd != nexpth) {
+  INVECTOR(kz_obj,kz,nkz);
+  INVECTOR(rho_index_obj, rho_index, nrho_index);
+  OUTVECTOR(r1_obj,r1,nr1);
+  OUTVECTOR(r2_obj,r2,nr2);
+  OUTVECTOR(r3_obj,r3,nr3);
+  OUTVECTOR(r4_obj,r4,nr4);
+  if (nd != nrho || nd != nirho || nd != nrhom || nd != nexpth || nd != nsigma-1) {
+    //printf("%ld %ld %ld %ld %ld %ld\n",
+    //    long(nd), long(nsigma), long(nrho), long(nirho), long(nrhon), long(nexpth));
 #ifndef BROKEN_EXCEPTIONS
-    printf("%ld %ld %ld %ld %ld\n", 
-	long(nd), long(nrho), long(nmu), long(nP), long(nexpth));
-    PyErr_SetString(PyExc_ValueError, "d,rho,mu,P,expth have different lengths");
+    PyErr_SetString(PyExc_ValueError, "d,sigma,rho,irho,rhom,expth have different lengths");
 #endif
     return NULL;
   }
-  if (nQ != nR1 || nQ != nR2 || nQ != nR3 || nQ != nR4 || nwavelength != nQ) {
+  if (nkz != nr1 || nkz != nr2 || nkz != nr3 || nkz != nr4 || nkz != nrho_index) {
+    //printf("%ld %ld %ld %ld %ld %ld\n",
+    //    long(nkz), long(nr1), long(nr2), long(nr3), long(nr4), long(nrho_index));
 #ifndef BROKEN_EXCEPTIONS
-    printf("%ld %ld %ld %ld %ld\n", 
-	long(nQ), long(nR1), long(nR2), long(nR3), long(nR4));
-    PyErr_SetString(PyExc_ValueError, "Q,R,wavelength have different lengths");
+    PyErr_SetString(PyExc_ValueError, "kz,r1,r2,r3,r4,rho_index have different lengths");
 #endif
     return NULL;
   }
-  magnetic_amplitude(nd,d,rho,mu,wavelength,P,expth,Aguide,nQ,Q,R1,R2,R3,R4);
+  magnetic_amplitude(nd, d, sigma, rho, irho, rhom, expth,
+                     Aguide, nkz, kz, rho_index, r1, r2, r3, r4);
   return Py_BuildValue("");
 }
 
 
-PyObject* Preflamp_rough(PyObject*obj,PyObject*args)
+PyObject* Preflectivity_amplitude(PyObject*obj,PyObject*args)
 {
-  PyObject *Q_obj,*R_obj,*d_obj,*rho_obj,*mu_obj,*sigma_obj, *wavelength_obj;
-  const double *Q, *d, *rho, *mu, *sigma;
-  double *wavelength;
-  refl_complex *R;
-  Py_ssize_t nQ, nR, nd, nrho, nmu, nsigma, nwavelength;
+  PyObject *kz_obj,*r_obj,*d_obj,*rho_obj,*irho_obj,*sigma_obj,*rho_index_obj;
+  Py_ssize_t nkz, nr, nd, nrho, nirho, nsigma, nrho_index;
+  const double *kz, *d, *sigma, *rho, *irho;
+  const int *rho_index;
+  Cplx *r;
 
-  if (!PyArg_ParseTuple(args, "OOOOOOO:reflrough", 
-			&rho_obj,&mu_obj,&d_obj,&sigma_obj, &wavelength_obj,
-			&Q_obj,&R_obj))
-		 return NULL;
+  if (!PyArg_ParseTuple(args, "OOOOOOO:reflectivity",
+      &d_obj,&sigma_obj,&rho_obj,&irho_obj,
+      &kz_obj,&rho_index_obj, &r_obj))
+    return NULL;
   INVECTOR(sigma_obj,sigma,nsigma);
   INVECTOR(d_obj,d,nd);
   INVECTOR(rho_obj,rho,nrho);
-  INVECTOR(mu_obj,mu,nmu);
-  INVECTOR(Q_obj,Q,nQ);
-  INVECTOR(wavelength_obj, wavelength, nwavelength);
-  OUTVECTOR(R_obj,R,nR);
+  INVECTOR(irho_obj,irho,nirho);
+  INVECTOR(kz_obj,kz,nkz);
+  INVECTOR(rho_index_obj, rho_index, nrho_index);
+  OUTVECTOR(r_obj,r,nr);
   // interfaces should be one shorter than layers
-  if (nd != nrho || nd != nmu || nd != nsigma+1) {
+  if (nd != nrho || nd != nirho || nd != nsigma+1) {
 #ifndef BROKEN_EXCEPTIONS
     PyErr_SetString(PyExc_ValueError, "d,rho,mu,sigma have different lengths");
 #endif
     return NULL;
   }
-  if (nQ != nR || nwavelength != nQ) {
+  if (nkz != nr || nrho_index != nkz) {
+    printf("%ld %ld %ld\n",
+        long(nkz), long(nrho_index), long(nr));
 #ifndef BROKEN_EXCEPTIONS
-    PyErr_SetString(PyExc_ValueError, "Q,R,wavelength have different lengths");
+    PyErr_SetString(PyExc_ValueError, "kz,rho_index,r have different lengths");
 #endif
     return NULL;
   }
-  reflrough_amplitude(nd,d,sigma,rho,mu, wavelength, nQ, Q, R);
+  reflectivity_amplitude(nd, d, sigma, rho, irho, nkz, kz, rho_index, r);
   return Py_BuildValue("");
 }
 

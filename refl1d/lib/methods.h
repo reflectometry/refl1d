@@ -24,9 +24,6 @@
 PyObject* pyvector(int n, double v[]);
 
 PyObject* Perf(PyObject*obj,PyObject*args);
-PyObject* Preflamp(PyObject*obj,PyObject*args);
-PyObject* Preflamp_rough(PyObject*obj,PyObject*args);
+PyObject* Preflectivity_amplitude(PyObject*obj,PyObject*args);
 PyObject* Pmagnetic_amplitude(PyObject* obj, PyObject* args);
 PyObject* Pconvolve(PyObject*obj,PyObject*args);
-PyObject* Pfixedres(PyObject*obj,PyObject*args);
-PyObject* Pvaryingres(PyObject*obj,PyObject*args);

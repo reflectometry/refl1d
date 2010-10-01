@@ -3,7 +3,7 @@
 import os.path
 
 from numpy.distutils.misc_util import Configuration
-
+from numpy.distutils.core import setup
 
 def configuration(parent_package='',
                   top_path=None
@@ -14,10 +14,9 @@ def configuration(parent_package='',
 
     # reflectometry library sources
     srcpath = os.path.join(config.package_path, 'lib')
-    sources = [ os.path.join(srcpath,'src',pattern)
-                for pattern in ['*.c','*.cc'] ]
-    sources += [os.path.join(srcpath,'reflmodule.cc'),
-                os.path.join(srcpath,'methods.cc')]
+    sources = [os.path.join(srcpath,f) 
+               for f in ("reflmodule.cc","methods.cc","reflectivity.cc",
+                         "magnetic.cc","resolution.c")]
 
     config.add_extension('reflmodule',
                          sources=sources,

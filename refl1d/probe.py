@@ -46,7 +46,7 @@ in accordance with its statistical weight.
 import numpy
 from numpy import radians, sin, sqrt, tan, cos, pi, inf, sign, log
 from periodictable import nsf, xsf
-from .calc import convolve
+from .reflectivity import convolve
 from . import fresnel
 from material import Vacuum
 from mystic.parameter import Parameter
@@ -110,7 +110,7 @@ class Probe(object):
 
         *substrate* is the material which makes up the substrate
         *surface* is the material which makes up the surface
-        *view* is 'fresnel', 'log', 'linear' or 'Q**4'
+        *view* is 'fresnel', 'log', 'linear' or 'q4'
 
     Normally *view* is set directly in the class rather than the
     instance since it is not specific to the view.  The fresnel
@@ -338,7 +338,7 @@ class Probe(object):
         elif view == 'fresnel':
             self.plot_fresnel(theory=theory, substrate=substrate,
                               surface=surface)
-        elif view == 'Q**4':
+        elif view == 'q4':
             self.plot_Q4(theory=theory)
         elif view == 'resolution':
             self.plot_resolution()
@@ -566,7 +566,7 @@ class PolarizedNeutronProbe(object):
         elif view == 'fresnel':
             self.plot_fresnel(theory=theory, 
                               substrate=substrate, surface=surface)
-        elif view == 'Q**4':
+        elif view == 'q4':
             self.plot_Q4(theory=theory)
         elif view == 'SA':
             self.plot_SA(theory=theory)

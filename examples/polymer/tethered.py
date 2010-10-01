@@ -147,6 +147,8 @@ elif modelnum == "M0":
 elif modelnum == "M1":
     problem = FitProblem(H_model)
     problem.name = "Htoluene"
+else:
+    raise RuntimeError("model %s not defined"%modelnum)
 problem.dream_opts = dream_opts
 problem.title = title
 problem.store = store
