@@ -97,18 +97,24 @@ def random_population(problem, pop_size):
 
 
 def load_problem(args):
+    import refl1d.context
     file, options = args[0], args[1:]
     ctx = dict(__file__=file)
+    #refl1d.context.math_context(ctx)
+    #refl1d.context.refl_context(ctx)
+    #refl1d.context.fitting_context(ctx)
     argv = sys.argv
     sys.argv = [file] + options
     execfile(file, ctx) # 2.x
     #exec(compile(open(model_file).read(), model_file, 'exec'), ctx) # 3.0
     sys.argv = argv
-    if "problem" not in ctx:
-        raise ValueError(file+" does not define <problem>")
-    ctx["problem"].file = file
-    ctx["problem"].options = options
-    return ctx["problem"]
+    try:
+        problem = ctx["problem"]
+    except AttributeError:
+        raise ValueError(file+" does not define 'problem=FitProblem(models)'")
+    problem.file = file
+    problem.options = options
+    return problem
 
 def preview(model):
     model.show()
@@ -125,8 +131,6 @@ def make_store(model):
     print "#"," ".join(sys.argv)
     model.show()
 
-    
-    
 def save_best(model, best):
     try:
         model.save(model.output, best)
@@ -149,8 +153,6 @@ def run_fit(model):
     state.save(model.output)
     save_best(model, state.best()[0])
     state.show(figfile=model.output)
-
-
 
 def start_worker(model):
     #sys.stdout = open("dream-%d.log"%os.getpid(),"w")

@@ -61,7 +61,7 @@ class Layer(object): # Abstract base class
 
     # Define a little algebra for composing samples
     # Layers can be stacked, repeated, or have length/roughness set
-    def __add__(self, other):
+    def __or__(self, other):
         """Join two layers to make a stack"""
         s = Stack()
         s.add(self)
@@ -79,26 +79,16 @@ class Layer(object): # Abstract base class
         return r
     def __rmul__(self, other):
         return self.__mul__(other)
-    def __div__(self, other):
-        """Return a new layer with a different thickness"""
+    def __call__(self, thickness=None, interface=None, **kw):
         c = copy(self)
-        c.thickness = _parcopy(self.thickness, other)
+        if thickness != None: c.thickness = Par.default(thickness)
+        if interface != None: c.interface = Par.default(interface)
+        for k,v in kw.items():
+            if hasattr(c, k):
+                setattr(c, v)
+            else:
+                raise AttributeError("Layer %s has no attribute %s"%(c,k))
         return c
-    def __mod__(self, other):
-        """Return a new layer with a different roughness"""
-        c = copy(self)
-        c.interface = _parcopy(self.interface, other)
-        return c
-    def __idiv__(self, other):
-        c.thickness = _parinit(self.thickness, other)
-        return self
-    def __imod__(self, other):
-        c.interface = _parinit(self.interface, other)
-        return self
-    def __rdiv__(self, other):
-        raise NotImplementedError("Use layer/thickness, not thickness/layer")
-    def __rmod__(self, other):
-        raise NotImplementedError("Use layer%roughness, not roughness%layer")
 
 def _parinit(p, v):
     """
@@ -152,7 +142,7 @@ class Stack(Layer):
     def __len__(self):
         return len(self._layers)
     def __str__(self):
-        return " + ".join(str(L) for L in self._layers)
+        return " | ".join(str(L) for L in self._layers)
     def __repr__(self):
         return "Stack("+", ".join(repr(L) for L in self._layers)+")"
     def parameters(self):
@@ -233,18 +223,12 @@ class Stack(Layer):
         return s
     def __rmul__(self, other):
         return self.__mul__(other)
-    def __add__(self, other):
+    def __or__(self, other):
         s = Stack()
         s.add(self)
         s.add(other)
         return s
-    def __radd__(self, other):
-        s = Stack()
-        s.add(other)
-        s.add(self)
-    def __iadd__(self, other):
-        self.add(other)
-        return self
+    
     render.__doc__ = Layer.render.__doc__
 
 def _check_layer(el):
@@ -253,7 +237,7 @@ def _check_layer(el):
     elif isinstance(el, material.Scatterer):
         return Slab(el)
     else:
-        raise TypeError("Can only stack materials and layers")
+        raise TypeError("Can only stack materials and layers, not %s"%el)
 
 class Repeat(Layer):
     """
@@ -305,24 +289,15 @@ class _MaterialStacker:
     """
     # Define a little algebra for composing samples
     # Layers can be repeated, stacked, or have length/interface set
-    def __add__(self, other):
+    def __or__(self, other):
         """Place a slab of material into a layer stack"""
         s = Stack()
         s.add(self)
         s.add(other)
         return s
-    def __div__(self, other):
-        """Create a slab with the given thickness"""
-        c = Slab(material=self, thickness=other)
+    def __call__(self, thickness=0,interface=0):
+        c = Slab(material=self, thickness=thickness, interface=interface)
         return c
-    def __rdiv__(self, other):
-        raise NotImplementedError("Use layer/thickness, not thickness/layer")
-    def __mod__(self, other):
-        """Create a slab with the given roughness"""
-        c = Slab(material=self, interface=other)
-        return c
-    def __rmod__(self, other):
-        raise NotImplementedError("Use layer%roughness, not roughness%layer")
 material.Scatterer.__bases__ += (_MaterialStacker,)
 
 class Slab(Layer):
@@ -352,7 +327,7 @@ class Slab(Layer):
         slabs.extend(rho=[rho], irho=[irho], w=[w], sigma=[sigma])
     def __str__(self):
         if self.thickness.value > 0:
-            return "%s/%.3g"%(str(self.material),self.thickness.value)
+            return "%s(%.3g)"%(str(self.material),self.thickness.value)
         else:
             return str(self.material)
     def __repr__(self):

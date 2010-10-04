@@ -1,3 +1,6 @@
+from refl1d.names import *
+from copy import copy
+
 # Attached please find two data sets for a tethered  approximately 10 nm thick 
 # deuterated polystyrene chains in deuterated and hydrogenated toluene. 
 # 10 nm thickness is for dry conditions and I am assuming these chains will 
@@ -12,12 +15,6 @@
 # swollen brush chains and at the end bulk solvent. When we do these swelling 
 # measurements beam penetrate the system from the silicon side and the bottom 
 # layer is deuterated or hydrogenated toluene.
-import sys
-from periodictable import formula
-from refl1d import *
-from refl1d.fitter import MultiFitProblem, FitProblem
-from copy import copy
-Probe.view = "log"
 
 
 ## =============== Models ======================
@@ -43,19 +40,18 @@ D_initiator = SLD(name="D-initiator",rho=1.5)
 H_toluene = SLD(name="H-toluene",rho=0.94)
 H_initiator = SLD(name="H-initiator",rho=0)
 
-D_polymer_layer = PolymerBrush(polymer=D_polystyrene, solvent=D_toluene,
+D_brush = PolymerBrush(polymer=D_polystyrene, solvent=D_toluene,
                                base_vf=70, base=120, length=200, power=2,
                                sigma=10)
 
-# Stack materials into samples
-D = silicon%5 + SiOx/100%5 + D_initiator/100%20 + D_polymer_layer/1000%0 + D_toluene
-
+D = (silicon(0,5) | SiOx(100,5) | D_initiator(100,20) | D_brush(1000,0) 
+     | D_toluene)
 
 
 ### Undeuterated toluene solvent system
-H_polymer_layer = copy(D_polymer_layer)  # Share tethered polymer parameters...
-H_polymer_layer.solvent = H_toluene      # ... but use different solvent
-H = silicon + SiOx + H_initiator + H_polymer_layer + H_toluene
+H_brush = copy(D_brush)  # Share tethered polymer parameters...
+H_brush.solvent = H_toluene      # ... but use different solvent
+H = silicon | SiOx | H_initiator | H_brush | H_toluene
 for i,_ in enumerate(D):
     H[i].thickness = D[i].thickness
     H[i].interface = D[i].interface
@@ -72,12 +68,12 @@ if 0:
     D_initiator.rho.value = 1.2
     D[2].thickness.value = 0
     
-    D_polymer_layer.power.value = 1.93
-    D_polymer_layer.base.value = 64
-    D_polymer_layer.base_vf.value = 64
+    D_brush.power.value = 1.93
+    D_brush.base.value = 64
+    D_brush.base_vf.value = 64
     D_polystyrene.rho.value = 6.42
-    D_polymer_layer.length.value = 128
-    D_polymer_layer.sigma.value = 5
+    D_brush.length.value = 128
+    D_brush.sigma.value = 5
     
     H_initiator.rho.value = 0.2
 
@@ -93,11 +89,11 @@ SiOx.rho.range(2.07,4.16) # Si - SiO2
 #SiOx.rho.pmp(10) # SiOx +/- 10%
 D_toluene.rho.pmp(5)
 D_initiator.rho.range(0,1.5)
-D_polymer_layer.base_vf.range(50,80)
-D_polymer_layer.base.range(0,100)
-D_polymer_layer.length.range(0,500)
-D_polymer_layer.power.range(1.5,2.5)
-D_polymer_layer.sigma.range(0,20)
+D_brush.base_vf.range(50,80)
+D_brush.base.range(0,100)
+D_brush.length.range(0,500)
+D_brush.power.range(1.5,2.5)
+D_brush.sigma.range(0,20)
 
 ## Undeuterated system adds two extra parameters
 H_toluene.rho.pmp(5)
@@ -114,8 +110,6 @@ H_probe = instrument.load('10nht001.refl', back_reflectivity=True)
 dream_opts = dict(chains=20,draws=300000,burn=1000000)
 store = "T0" 
 if len(sys.argv) > 1: store=sys.argv[1]
-modelnum = "all"
-if len(sys.argv) > 2: modelnum=sys.argv[2]
 if store == "T1":
     dream_opts = dict(chains=20,draws=300000,burn=3000000)
     title = "decay tail"
@@ -124,11 +118,11 @@ elif store == "T2":
     title = "decay tail; loose parameters (=T2)"
     D_toluene.rho.pmp(15)
     D_initiator.rho.range(-1,3)
-    D_polymer_layer.base_vf.range(30,100)
-    D_polymer_layer.base.range(0,200)
-    D_polymer_layer.length.range(0,500)
-    D_polymer_layer.power.range(1.,4.)
-    D_polymer_layer.sigma.range(0,50)
+    D_brush.base_vf.range(30,100)
+    D_brush.base.range(0,200)
+    D_brush.length.range(0,500)
+    D_brush.power.range(1.,4.)
+    D_brush.sigma.range(0,50)
 else:
     raise RuntimeError("store %s not defined"%store)
 
@@ -138,6 +132,8 @@ H_model = Experiment(sample=H, probe=H_probe)
 models = D_model, H_model
 
 # Needed by dream fitter
+modelnum = "all"
+if len(sys.argv) > 2: modelnum=sys.argv[2]
 if modelnum == "all":
     problem = MultiFitProblem(models=models)
     problem.name = "tethered"
@@ -152,4 +148,3 @@ else:
 problem.dream_opts = dream_opts
 problem.title = title
 problem.store = store
-#Probe.view = 'log'
