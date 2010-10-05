@@ -79,15 +79,10 @@ class Layer(object): # Abstract base class
         return r
     def __rmul__(self, other):
         return self.__mul__(other)
-    def __call__(self, thickness=None, interface=None, **kw):
+    def __call__(self, thickness=None, interface=None):
         c = copy(self)
         if thickness != None: c.thickness = Par.default(thickness)
         if interface != None: c.interface = Par.default(interface)
-        for k,v in kw.items():
-            if hasattr(c, k):
-                setattr(c, v)
-            else:
-                raise AttributeError("Layer %s has no attribute %s"%(c,k))
         return c
 
 def _parinit(p, v):

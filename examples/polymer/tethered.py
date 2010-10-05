@@ -41,14 +41,13 @@ H_toluene = SLD(name="H-toluene",rho=0.94)
 H_initiator = SLD(name="H-initiator",rho=0)
 
 D_brush = PolymerBrush(polymer=D_polystyrene, solvent=D_toluene,
-                               base_vf=70, base=120, length=200, power=2,
-                               sigma=10)
+                       base_vf=70, base=120, length=200, power=2,
+                       sigma=10)
 
 D = (silicon(0,5) | SiOx(100,5) | D_initiator(100,20) | D_brush(1000,0) 
      | D_toluene)
 
-
-### Undeuterated toluene solvent system
+#### Undeuterated toluene solvent system
 H_brush = copy(D_brush)  # Share tethered polymer parameters...
 H_brush.solvent = H_toluene      # ... but use different solvent
 H = silicon | SiOx | H_initiator | H_brush | H_toluene
