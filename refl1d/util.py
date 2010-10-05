@@ -165,7 +165,7 @@ def profile(fn, *args, **kw):
     def call():
         global call_result
         call_result = fn(*args, **kw)
-    datafile = 'profile%d.out'%id(fn)
+    datafile = 'profile.out'
     cProfile.runctx('call()', dict(call=call), {}, datafile)
     stats = pstats.Stats(datafile)
     #stats.sort_stats('time')
@@ -173,3 +173,14 @@ def profile(fn, *args, **kw):
     stats.print_stats()
     os.unlink(datafile)
     return call_result
+
+
+def kbhit():
+    try: # Windows
+        import msvcrt 
+        return msvcrt.kbhit()
+    except: # Unix
+        import sys
+        import select
+        i,_,_ = select.select([sys.stdin],[],[],0.0001)
+        return sys.stdin in i

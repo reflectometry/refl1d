@@ -38,7 +38,7 @@ class ConsoleMonitor(monitor.TimedUpdate):
         except:
             raise
 
-class DEfit(FitBase):
+class DEFit(FitBase):
     def solve(self, **kw):
         from mystic.optimizer import de
         from mystic.solver import Minimizer
@@ -72,7 +72,7 @@ class AmoebaFit(FitBase):
             print "step %d of %d" % (k, n), (fx if improved else "")
         return True
 
-class SNOBfit(FitBase):
+class SnobFit(FitBase):
     def solve(self, **kw):
         from snobfit.snobfit import snobfit
         self.lasttime = time.clock() - 61
@@ -110,7 +110,7 @@ def mesh(models=[], weights=None, vars=None, n=40):
     return x,y,numpy.asarray(z) 
     
 
-def fit(models=[], weights=None, fitter=DEfit, **kw):
+def fit(models=[], weights=None, fitter=DEFit, **kw):
     """
     Perform a fit
     """

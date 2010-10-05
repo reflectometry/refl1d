@@ -68,7 +68,7 @@ from .freeform import Freeform
 from .cheby import FreeformCheby, ChebyVF
 from .interface import Erf
 from .probe import Probe, ProbeSet, NeutronProbe, XrayProbe
-from .fitter import preview, fit, DEfit, SNOBfit, mesh, FitProblem, MultiFitProblem
+from .fitter import preview, fit, DEFit, SnobFit, mesh, FitProblem, MultiFitProblem
 try:
     from .sampler import draw_samples
 except Exception, exc:

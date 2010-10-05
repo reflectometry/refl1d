@@ -7,12 +7,9 @@ import os
 import traceback
 
 import numpy
-try:
-    from .reflectivity import reflectivity_amplitude as reflamp
-#   raise Exception('fail')
-except:
-    print "Using pure python reflectivity calculator"
-    from .abeles import refl as reflamp
+from .reflectivity import reflectivity_amplitude as reflamp
+#print "Using pure python reflectivity calculator"
+#from .abeles import refl as reflamp
 from . import material, profile
 from .fresnel import Fresnel
 from .mystic.parameter import Parameter
