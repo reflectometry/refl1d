@@ -39,7 +39,7 @@ class AfterThread(threading.Thread):
         """
         Calls notify after the thread is complete.  Notify should
         take a single argument which is the result of the function.
-        
+
         Note that notify will be called from the main thread if the
         thread is already complete when thread.after(notify) is called,
         otherwise it will be called from thread.

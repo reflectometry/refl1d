@@ -19,7 +19,7 @@ def pbs(x, y, xt, flat=True, parametric=False):
     assert x[0] == 0 and x[-1] == 1
     knot = numpy.hstack((0, 0, numpy.linspace(0,1,len(y)), 1, 1))
     if flat:
-        cx = numpy.hstack((x[0],x[0],x[0],(2*x[0]+x[1])/3, 
+        cx = numpy.hstack((x[0],x[0],x[0],(2*x[0]+x[1])/3,
                            x[1:-1],
                            (2*x[-1]+x[-2])/3, x[-1]))
     else:
@@ -66,7 +66,7 @@ def bspline(y, xt, flat=True):
     if flat:
         knot = numpy.hstack((0, 0, numpy.linspace(0,1,len(y)), 1, 1))
         cy = numpy.hstack(([y[0]]*3, y, y[-1]))
-    else: 
+    else:
         raise NotImplementedError
         # The following matches first derivative but not second
         knot = numpy.hstack((0, 0, numpy.linspace(0,1,len(y)), 1, 1))
@@ -75,7 +75,7 @@ def bspline(y, xt, flat=True):
                            y[1:-1],
                            y[-1] + (y[-2]-y[-1])/3, y[-1]))
     return _bspline3(knot,cy,xt)
-    
+
 def _bspline3(knot,control,t,nderiv=0):
     knot,control,t = [numpy.asarray(v) for v in knot, control, t]
 
@@ -154,7 +154,7 @@ def demo():
     from pylab import hold, linspace, plot, show
     hold(True)
     x = linspace(0,1,7)
-    #x[1],x[-2] = x[0],x[-1] 
+    #x[1],x[-2] = x[0],x[-1]
     x[1],x[-2] = x[2],x[-3]
     x[1],x[-2] = x[2]+0.01,x[-3]-0.01
     #x[1],x[-2] = x[1]-x[1]/2,x[-1]-x[1]/2
@@ -173,7 +173,7 @@ def demo():
     plot(t,yt,'-b') # pbs
     plot(sorted(x),y,':ob')
     show()
-    
+
 if __name__ == "__main__":
     #demo()
     speed_test()

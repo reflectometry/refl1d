@@ -22,11 +22,11 @@ in accordance with its statistical weight.
 # Theta offset:
 #   Q1 = 4 pi sin(T1 + offset)/L1
 #   Q2 = 4 pi sin(T2 + offset)/L2
-#   at offset=0, 
+#   at offset=0,
 #      Q1=Q2
-#   at offset!=0, 
+#   at offset!=0,
 #      Q1' ~ Q1 + 4pi offset/L1
-#      Q2' ~ Q2 + 4pi offset/L2 
+#      Q2' ~ Q2 + 4pi offset/L2
 #      => Q1' != Q2'
 # Thick layers:
 #   Since a given Q,dQ has multiple T,dT,L,dL, oversampling is going
@@ -89,17 +89,17 @@ class Probe(object):
     in the cost function for the fit as if it were another measurement.  Note
     that the uncertainty in the peak position is not the same as the width
     of the peak.  The peak stays roughly the same as statistics are improved,
-    but the uncertainty in position and width will decrease.[#Daymond2002]   
-    There is an additional uncertainty in the angle due to motor step size, 
+    but the uncertainty in position and width will decrease.[#Daymond2002]
+    There is an additional uncertainty in the angle due to motor step size,
     easily computed from the variance in a uniform distribution.  Combined,
     the uncertainty in *theta_offset* is::
-    
+
         dT = w/sqrt(I) + d/sqrt(12)
-        
-    where *w* is the full-width of the peak in radians at half maximum, *I* 
+
+    where *w* is the full-width of the peak in radians at half maximum, *I*
     is the integrated intensity under the peak and *d* is the motor step size
     is radians.
-    
+
     *intensity* and *back_absorption* are generally not needed --- scaling
     the reflected signal by an appropriate intensity measurement will correct
     for both of these during reduction.  *background* may be needed,
@@ -134,11 +134,11 @@ class Probe(object):
         self.intensity = Parameter.default(intensity,name="intensity")
         self.background = Parameter.default(background,name="background",
                                             limits=[0,inf])
-        self.back_absorption = Parameter.default(back_absorption, 
+        self.back_absorption = Parameter.default(back_absorption,
                                                  name="back_absorption",
                                                  limits=[0,1])
         self.theta_offset = Parameter.default(theta_offset,name="theta_offset")
-        
+
         self.back_reflectivity = back_reflectivity
 
         #if L is None:
@@ -174,9 +174,9 @@ class Probe(object):
     def log10_to_linear(self):
         """
         Convert data from log to linear.
-        
-        Older reflectometry reduction code stored reflectivity in log base 10 
-        format.  Call probe.log10_to_linear() after loading this data to 
+
+        Older reflectometry reduction code stored reflectivity in log base 10
+        format.  Call probe.log10_to_linear() after loading this data to
         convert it to linear for subsequent display and fitting.
         """
         if self.Ro != None:
@@ -196,7 +196,7 @@ class Probe(object):
     def resynth_data(self):
         """
         Generate new data according to the model R ~ N(Ro,dR).
-        
+
         The resynthesis step is a precursor to refitting the data, as is
         required for certain types of monte carlo error analysis.
         """
@@ -298,7 +298,7 @@ class Probe(object):
         calc_R *= back
 
         # For back reflectivity, reverse the sign of Q after computing
-        if self.back_reflectivity: 
+        if self.back_reflectivity:
             calc_Q = -calc_Q
         if resolution:
             if calc_Q[-1] < calc_Q[0]:
@@ -456,7 +456,7 @@ def measurement_union(xs):
     for x in xs:
         if x is not None:
             TL = TL | set(zip(x.T,x.dT,x.L,x.dL))
-    T,dT,L,dL = [numpy.array(sorted(v)) 
+    T,dT,L,dL = [numpy.array(sorted(v))
                  for v in zip(*[w for w in TL])]
     Q = TL2Q(T,L)
     dQ = dTdL2dQ(T,dT,L,dL)
@@ -475,7 +475,7 @@ class PolarizedNeutronProbe(object):
     polarized = True
     def __init__(self, xs=None, Tguide=270):
         self.pp, self.pm, self.mp, self.mm = xs
-        
+
         self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
             = measurement_union(xs)
         self._set_calc(self.T, self.L)
@@ -494,7 +494,7 @@ class PolarizedNeutronProbe(object):
         intensity = Parameter.default(intensity,name="intensity")
         background = Parameter.default(background,name="background",
                                        limits=[0,inf])
-        back_absorption = Parameter.default(back_absorption, 
+        back_absorption = Parameter.default(back_absorption,
                                             name="back_absorption",
                                             limits=[0,1])
         theta_offset = Parameter.default(theta_offset,name="theta_offset")
@@ -564,7 +564,7 @@ class PolarizedNeutronProbe(object):
         elif view == 'log':
             self.plot_log(theory=theory)
         elif view == 'fresnel':
-            self.plot_fresnel(theory=theory, 
+            self.plot_fresnel(theory=theory,
                               substrate=substrate, surface=surface)
         elif view == 'q4':
             self.plot_Q4(theory=theory)
@@ -582,7 +582,7 @@ class PolarizedNeutronProbe(object):
     def plot_log(self, theory=None):
         self._xs_plot('plot_log', theory=theory)
     def plot_fresnel(self, theory=None, substrate=None, surface=None):
-        self._xs_plot('plot_fresnel', theory=theory, 
+        self._xs_plot('plot_fresnel', theory=theory,
                       substrate=substrate, surface=surface)
     def plot_Q4(self, theory=None):
         self._xs_plot('plot_Q4', theory=theory)
@@ -613,7 +613,7 @@ class PolarizedNeutronProbe(object):
             Q,pp,pm,mp,mm = theory
             theory = ((Q,pp),(Q,pm),(Q,mp),(Q,pm))
         else:
-            theory = (None,None,None,None) 
+            theory = (None,None,None,None)
         for xs,xstheory in zip((self.pp, self.pm, self.mp, self.mm),theory):
             if xs is not None:
                 fn = getattr(xs, plotter)
@@ -634,7 +634,7 @@ def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
     Uncertainty *dSA* follows from propagation of error::
 
         dSA^2 = 4(Rp^2  dRm^2  -  Rm^2 dRp^2)/(Rp + Rm)^4
-        
+
     The inputs (*Qp*, *Rp*, *dRp*) and (*Qm*, *Rm*, *dRm*) are measurements
     for the ++ and -- cross sections respectively.  If *dRp*, *dRm* are None,
     then the returned uncertainty will also be None.
@@ -727,13 +727,13 @@ class ProbeSet(Probe):
 
         New parameters are created for *intensity*, *background*,
         *theta_offset* and *back_absorption* and assigned to the all
-        segments.  These can be replaced in an individual segment if 
+        segments.  These can be replaced in an individual segment if
         that parameter is independent.
         """
         intensity = Parameter.default(intensity,name="intensity")
         background = Parameter.default(background,name="background",
                                        limits=[0,inf])
-        back_absorption = Parameter.default(back_absorption, 
+        back_absorption = Parameter.default(back_absorption,
                                             name="back_absorption",
                                             limits=[0,1])
         theta_offset = Parameter.default(theta_offset,name="theta_offset")
@@ -748,37 +748,36 @@ class ProbeSet(Probe):
 
         *Not implemented*
 
-        Points within *tol* of each other and with the same resolution 
-        are combined by interpolating them to a common Q value then averaged 
+        Points within *tol* of each other and with the same resolution
+        are combined by interpolating them to a common Q value then averaged
         using Gaussian error propagation.
-        
+
         :Returns: probe | Probe
             Combined data set.
 
         :Algorithm:
-        
+
         To interpolate a set of points to a common value, first find the
         common *Q* value:
-        
+
         .. math::
-        
+
             \hat Q = \sum{Q_k} / n
 
-        Then for each dataset *k*, find the interval [i,i+1] containing the 
+        Then for each dataset *k*, find the interval [i,i+1] containing the
         value *Q*, and use it to compute interpolated value for *R*:
 
         .. math::
-        
+
             w_k &=& (\hat Q - Q_k_i)/(Q_k_{i+1} - Q_k_i) \\
             \hat R_k &=& w_k R_k_{i+1} + (1-w_k) R_k_{i+1} \\
             \hat \sigma_{R_k} &=& \sqrt{ w^2_k \sigma^2_{R_k_i} + (1-w_k)^2 \sigma^2_{R_k_{i+1}} } / n
 
         Average the resulting *R* using Gaussian error propagation:
-        
+
         .. math::
 
             \hat R &=& \sum{\hat R_k}/n \\
             \hat \sigma_R &=& \sqrt{\sum \hat \sigma_{R_k}^2}/n
         """
         raise NotImplementedError
-

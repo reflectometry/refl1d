@@ -13,39 +13,39 @@ import numpy
 
 from park.client import JobDescription, make_kernel
 
-def mesheval(f, mesh={}, kwargs={}, returntype='d', vectorized=False, 
+def mesheval(f, mesh={}, kwargs={}, returntype='d', vectorized=False,
              preview=None, server=None):
     """
     Evaluate *f* over a mesh.
-    
+
     *f* is a service kernel or a function within a package.
 
-    *mesh* is a list [('x', [v0,v1,v2,...]), ('y', [v0,v1,v2,...]), ... ] 
-    where x,y, ... are the names of the parameters that are to be meshed and 
+    *mesh* is a list [('x', [v0,v1,v2,...]), ('y', [v0,v1,v2,...]), ... ]
+    where x,y, ... are the names of the parameters that are to be meshed and
     [v0,v1,v2, ...] are the grid points in that dimension of the mesh.
 
-    *kwargs* are the values for the non-meshed function arguments. 
+    *kwargs* are the values for the non-meshed function arguments.
 
     *returntype* is the type of the returned value.  By default it is
     assumed to be a floating point double, or 'f8'.
 
     *vectorized* is true if *f* accepts array inputs (default)
- 
+
     *preview* is a component to generate a thumbnail plot of the mesh on
     the current figure and return the HTML markup for the figure caption.
-    By default this will show a 2D image for the first two dimensions, 
+    By default this will show a 2D image for the first two dimensions,
     summed across the remaining dimensions.
 
-    The returned matrix dimensions follow the order given in *mesh*.  Only 
+    The returned matrix dimensions follow the order given in *mesh*.  Only
     the first dimension is parallelized, so you should choose the longest
-    steps as the first.  If some dimensions are slower than others (e.g., 
-    because they cache a table of precalculated values for each lambda in 
-    the case of a Poisson random number generator), they should be used 
+    steps as the first.  If some dimensions are slower than others (e.g.,
+    because they cache a table of precalculated values for each lambda in
+    the case of a Poisson random number generator), they should be used
     earlier in the list of dimensions.
 
     The return type must be a string describing the returned object. Usually
     it will be on of the simple types::
-    
+
         f4, f8, f12 (single, double, long double)
         c8, c12, c24 (complex single, double, long double)
         i1, i2, i4, i8 (byte, short, int, long)
@@ -56,24 +56,24 @@ def mesheval(f, mesh={}, kwargs={}, returntype='d', vectorized=False,
     Tuples can be returned by listing the types of the tuple separated
     by commas.  For example, to return a,b,c where a is an integer, b
     is 3x2 doubles and c is a string of length 3 you would use::
-    
+
         returntype='i4,(3,2)f8,a3'
 
     The returned tuples can be retrieved from the array.  For example,
     to retrieve the 3x2 doubles from mesh i,j use::
-    
+
         result[i,j][1]
 
     Alternatively, a particular field from the tuple can be retrieved
     as an array using index 'f#' on the result, where # is the number
     of the field.  This is equivalent to the above::
-    
+
         result['f1'][i,j]
 
     The names can be changed using result.dtype.names = [list of names].
 
     See the numpy manual for details.[1]
-    
+
     [1] http://docs.scipy.org/doc/numpy/reference/arrays.dtypes.html
     """
     service = dict(name="park.services.mesheval.mesheval_service",
@@ -98,7 +98,7 @@ def mesheval_worker(env, input):
 # No progress reporting, checkpoint/resume or thumbnail views.
 def simple_mesheval_service(env, input):
     mesh = input['mesh']
-    _,step = mesh[0] 
+    _,step = mesh[0]
     res = env.mapper(step)
     return numpy.asarray(res)
 
@@ -106,7 +106,7 @@ def monitored_mesheval_service(env, input):
     mesh,preview = input['mesh'], input['preview']
     service = MonitoredMeshevalService(mesh,preview)
     return service.run(env)
-    _,step = mesh[0] 
+    _,step = mesh[0]
     res = env.mapper(step)
     return numpy.asarray(res)
 
@@ -185,7 +185,7 @@ class MonitoredMeshEvalService:
         offset = numpy.argsort(self.start[:len(self.mesh)])
         for s,m in zip(offset,self.mesh):
             A[s::stride] = m
-        
+
         # Construct value vector for partial dimensions
         steps0 = []*shape0
         oldsteps0 = self.request.steps[0]
@@ -205,9 +205,9 @@ class MonitoredMeshEvalService:
             caption = "<p>Partial view of meshed matrix</p>"
 
         return caption
-    
+
     def progress(self):
-        return (numpy.sum([len(v) for v in self.mesh]), 
+        return (numpy.sum([len(v) for v in self.mesh]),
                 len(self.request.steps[0]), "rows")
 
     def cleanup(self):
@@ -262,7 +262,7 @@ class MeshEvalWorker(object):
         kwargs = dict(self.request.kwargs) # copy
         kwargs.update(zip(self.request.dims,mesh))
         return self.__f(**kwargs)
-    
+
     def evalpop_scalar(self, ypop):
         if self.__do_prepare:
             self.__do_prepare = False
@@ -309,7 +309,7 @@ class MeshEvalWorker(object):
 def meshgridn(*args):
     """
     Form a list of grids from a list of vectors.
-    
+
     For vectors d1, d2, ..., dn, the returned grid, Dk, will have elements
     Dk[...,i,...] equal to dk[i] where i is the kth index of Dk.
     """
@@ -320,7 +320,7 @@ def meshgridn(*args):
 def _grid(dims,k,v):
     """
     Build array Dk for index *k* from vector *v*.
-    
+
     For vectors v, the returned array, Dk, will have elements
     Dk[...,i,...] equal to v[i] where i is the kth index of Dk.
     """

@@ -60,4 +60,3 @@ assert norm(probe2.dQ-probe.dQ) < 2e-14
 assert norm(probe2.dR-probe.dR) < 2e-14
 assert norm(probe2.dL-probe.dL) < 2e-14
 assert norm(probe2.dT-probe.dT) < 2e-14
-

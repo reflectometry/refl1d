@@ -6,7 +6,7 @@ import math
 import numpy
 from numpy import arange, squeeze, reshape, linspace, meshgrid, vstack, NaN, inf
 import pylab
-from pylab import (axes, plot, MaxNLocator, setp, title, xlabel, 
+from pylab import (axes, plot, MaxNLocator, setp, title, xlabel,
                    ylabel, legend, figure, show, suptitle, savefig)
 from . import corrplot
 from .stats import credible_interval, stats
@@ -14,7 +14,7 @@ from .formatnum import format_uncertainty
 from .util import console
 
 def plot_all(state, portion=None, figfile=None):
-    
+
     figure(1); plot_vars(state, portion=portion)
     if state.title: suptitle(state.title)
     if figfile != None: savefig(figfile+"-vars")
@@ -32,7 +32,7 @@ def plot_all(state, portion=None, figfile=None):
     if figfile != None: savefig(figfile+"-corr")
 
 def plot_var(state, var=0, portion=None, selection=None, **kw):
-    points, logp = state.sample(portion=portion, vars=[var], 
+    points, logp = state.sample(portion=portion, vars=[var],
                                 selection=selection)
     _plot_var(points.flatten(), logp, label=state.labels[var], **kw)
 
@@ -61,7 +61,7 @@ def tile_axes(n, size=None):
     #
     # w,h = figwidth/nw, figheight/nh
     #
-    # To achieve the golden ratio, set w/h to phi:   
+    # To achieve the golden ratio, set w/h to phi:
     #     w/h = phi  => figwidth/figheight*nh/nw = phi
     #                => nh/nw = phi * figheight/figwidth
     # Must have enough tiles:
@@ -75,7 +75,7 @@ def tile_axes(n, size=None):
     nw = int(math.ceil(n/nh))
     return nw,nh
 
-    
+
 def _plot_var(points, logp, label="P", nbins=50, ci=0.95):
     # Sort the data
     idx = numpy.argsort(points)
@@ -89,24 +89,24 @@ def _plot_var(points, logp, label="P", nbins=50, ci=0.95):
     # as the weight
     #weights = numpy.exp(logp-maxlogp) if weighted else None
     weights = None
-    
+
     # Choose the interval for the histogram
     ONE_SIGMA = 0.15865525393145705
-    rangeci,range68 = credible_interval(x=points, weights=weights, 
+    rangeci,range68 = credible_interval(x=points, weights=weights,
                                         ci=[ci,1-2*ONE_SIGMA])
 
     # Compute stats
     median = points[int(len(points)/2)]
     mean, std = stats(x=points, weights=weights)
-    
+
     # Produce a histogram
     hist, bins = numpy.histogram(points, bins=nbins, range=rangeci,
                                  #new=True,
                                  normed=True, weights=weights)
 
     # Find the max likelihood for values in this bin
-    edge = numpy.searchsorted(points,bins) 
-    histbest = [numpy.max(logp[edge[i]:edge[i+1]]) 
+    edge = numpy.searchsorted(points,bins)
+    histbest = [numpy.max(logp[edge[i]:edge[i+1]])
                 if edge[i]<edge[i+1] else -inf
                 for i in range(nbins)]
     density = kde_1d(points)
@@ -134,7 +134,7 @@ best   = %s
     # Plot the kernel density estimate
     #x = linspace(bins[0],bins[-1],100)
     #pylab.plot(x, density(x), '-k', hold=True)
-    
+
     # Plot the marginal maximum likelihood
     centers = (bins[:-1]+bins[1:])/2
     pylab.plot(centers, histbest, '-g', hold=True)
@@ -144,13 +144,13 @@ best   = %s
     pylab.axvline(mean)
     pylab.axvline(best)
     if 0:
-        pylab.text(0.01, 0.95, statsbox, 
+        pylab.text(0.01, 0.95, statsbox,
                    backgroundcolor=(1,1,0,0.2),
                    verticalalignment='top',
                    horizontalalignment='left',
                    transform=pylab.gca().transAxes)
     else:
-        pylab.text(0.01, 0.95, label, 
+        pylab.text(0.01, 0.95, label,
                    backgroundcolor=(1,1,0,0.2),
                    verticalalignment='top',
                    horizontalalignment='left',
@@ -181,18 +181,18 @@ class kde_2d(kde.gaussian_kde):
         dxy = self.evaluate(vstack([X.flatten(),Y.flatten()]))
         return dxy.reshape(X.shape)
     __call__ = evalxy
-    
+
 def plot_corr(state, vars=(0,1), portion=None, selection=None):
     p1,p2 = vars
     labels = [state.labels[v] for v in vars]
     points, _ = state.sample(portion=portion, vars=vars, selection=selection)
-    
+
     # Form kernel density estimates of the parameters
     xmin,xmax = min(points[:,p1]),max(points[:,p1])
     density_x = kde_1d(points[:,p1])
     x = linspace(xmin, xmax, 100)
     px = density_x(x)
-    
+
     density_y = kde_1d(points[:,p2])
     ymin,ymax = min(points[:,p2]),max(points[:,p2])
     y = linspace(ymin, ymax, 100)
@@ -204,7 +204,7 @@ def plot_corr(state, vars=(0,1), portion=None, selection=None):
     #density_xy = kde_2d(points[:,vars])
     #dxy = density_xy(x,y)*points.shape[0]
     #axData.pcolorfast(x,y,dxy,cmap=cm.gist_earth_r) #@UndefinedVariable
-    
+
     axData.plot(points[:,p1], points[:,p2], 'k.', markersize=1)
     axData.set_xlabel(labels[p1])
     axData.set_ylabel(labels[p2])
@@ -240,7 +240,7 @@ def plot_R(state, portion=None):
     legend(['P%d'%i for i in range(1,R.shape[1]+1)])
     xlabel('Generation number')
     ylabel('R')
-    
+
 def plot_logp(state, portion=None):
     if portion == None:
         portion = 0.8 if state.cycle < 1 else 1

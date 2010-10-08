@@ -1,19 +1,19 @@
 from refl1d.names import *
 from copy import copy
 
-# Attached please find two data sets for a tethered  approximately 10 nm thick 
-# deuterated polystyrene chains in deuterated and hydrogenated toluene. 
-# 10 nm thickness is for dry conditions and I am assuming these chains will 
+# Attached please find two data sets for a tethered  approximately 10 nm thick
+# deuterated polystyrene chains in deuterated and hydrogenated toluene.
+# 10 nm thickness is for dry conditions and I am assuming these chains will
 # swell to 14-18 nm thickness once they are in toluene.
 #    10ndt is for deuterated toluene case
 #    10nht is for hydrogenated toluene case
-# I also have to tell you that these chains are bound to the substrate by 
-# using an initiator layer between substrate and brush chains. So in your 
-# model you should have a silicon layer, silicon oxide layer, initiator layer 
-# which is mostly hydrocarbon and scattering length density should be between 
-# 0 and 1.5 depending on how much solvent is in the layer. Then you have the 
-# swollen brush chains and at the end bulk solvent. When we do these swelling 
-# measurements beam penetrate the system from the silicon side and the bottom 
+# I also have to tell you that these chains are bound to the substrate by
+# using an initiator layer between substrate and brush chains. So in your
+# model you should have a silicon layer, silicon oxide layer, initiator layer
+# which is mostly hydrocarbon and scattering length density should be between
+# 0 and 1.5 depending on how much solvent is in the layer. Then you have the
+# swollen brush chains and at the end bulk solvent. When we do these swelling
+# measurements beam penetrate the system from the silicon side and the bottom
 # layer is deuterated or hydrogenated toluene.
 
 
@@ -44,7 +44,7 @@ D_brush = PolymerBrush(polymer=D_polystyrene, solvent=D_toluene,
                        base_vf=70, base=120, length=200, power=2,
                        sigma=10)
 
-D = (silicon(0,5) | SiOx(100,5) | D_initiator(100,20) | D_brush(1000,0) 
+D = (silicon(0,5) | SiOx(100,5) | D_initiator(100,20) | D_brush(1000,0)
      | D_toluene)
 
 #### Undeuterated toluene solvent system
@@ -62,18 +62,18 @@ if 0:
 
     D[1].interface.value = 30
     D[1].thickness.value = 33
-    
+
     D[2].interface.value = 7
     D_initiator.rho.value = 1.2
     D[2].thickness.value = 0
-    
+
     D_brush.power.value = 1.93
     D_brush.base.value = 64
     D_brush.base_vf.value = 64
     D_polystyrene.rho.value = 6.42
     D_brush.length.value = 128
     D_brush.sigma.value = 5
-    
+
     H_initiator.rho.value = 0.2
 
 
@@ -107,7 +107,7 @@ H_probe = instrument.load('10nht001.refl', back_reflectivity=True)
 
 # ================== Model variations ====================
 dream_opts = dict(chains=20,draws=300000,burn=1000000)
-store = "T0" 
+store = "T0"
 if len(sys.argv) > 1: store=sys.argv[1]
 if store == "T1":
     dream_opts = dict(chains=20,draws=300000,burn=3000000)

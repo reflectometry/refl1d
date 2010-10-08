@@ -23,12 +23,12 @@ class Scheduler(object):
             if self._active:
                 self._workers = run_work(self._active)
                 continue
-            
+
             # Wait for the next item to be placed on the queue
             self._block_queue.acquire()
             self._block_queue.wait()
             self._block_queue.release()
-        
+
     def jobs(self):
         """
         Return a list of jobs on the queue.
@@ -38,7 +38,7 @@ class Scheduler(object):
                 queue = [self._active] + self._queue
             else:
                 queue = self._queue
-            return "\n".join("%d %s"%(jobid,job['name']) 
+            return "\n".join("%d %s"%(jobid,job['name'])
                              for jobid,job in queue)
 
     # Job specific commands
@@ -62,7 +62,7 @@ class Scheduler(object):
             if self._active is not None and jobid == self._active[0]:
                 kill_work(self._workers)
             else:
-                self._queue = [item for item in self._queue 
+                self._queue = [item for item in self._queue
                                if item[0] != jobid]
 
 # An in-memory version of store --- may be a bad idea, particularly for
@@ -80,7 +80,7 @@ class Store:
     def put(self, jobid, key, value):
         self._store[jobid][key] = value
     def add(self, jobid, key, value):
-        self._store[jobid][key] += value        
+        self._store[jobid][key] += value
     def get(self, jobid, key):
         return self._store[jobid][key]
     def delete(self, jobid, key):

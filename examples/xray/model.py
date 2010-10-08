@@ -21,10 +21,10 @@ glass = SLD(name="glass", rho=15.086, irho=1.55/(2*1.54))
 
 
 sample = (glass%(17.53/2.35)
-          + seed/22.9417%(20.72/2.35) 
+          + seed/22.9417%(20.72/2.35)
           + Pt55Fe45/146.576%(20.22/2.35)
-          + Ni80Fe20/508.784%(29.93/2.35) 
-          + Pt/31.8477%(25.18/2.35) 
+          + Ni80Fe20/508.784%(29.93/2.35)
+          + Pt/31.8477%(25.18/2.35)
           + air)
 
 # Values from fit
@@ -82,7 +82,7 @@ elif 0: # grower
         L.interface.pmp(100)
         L.material.rho.pmp(10)
         L.material.irho.pmp(10)
-    
+
 elif 0: # d2 X d3
     #sample[2].thickness.range(0,400)
     #sample[3].thickness.range(0,1000)
@@ -121,11 +121,11 @@ elif 0:
     from dream.corrplot import COLORMAP
     import pylab
     from numpy import min,exp
-    x,y,image = mesh(models=M, 
+    x,y,image = mesh(models=M,
                  vars=[sample[2].thickness,sample[3].thickness],
                  n=200)
     vmax = 100*min(image)
-    image[image>vmax] = vmax 
+    image[image>vmax] = vmax
     pylab.pcolormesh(y,x,-0.5*image.T, cmap=COLORMAP)
     pylab.colorbar()
     pylab.show()
@@ -134,7 +134,7 @@ elif 0:
     output = "xray"
     sys.stdout = open(output+".out","w")
     model.show()
-   
+
     # Plot
     import pylab
     model.plot(fignum=6, figfile=output)

@@ -24,7 +24,7 @@ def save_mlayer(experiment, filename):
 def mlayer_to_model(staj):
     """
     Convert a loaded staj file to a refl1d experiment.
-    
+
     Returns a new experiment
     """
     from .experiment import Experiment
@@ -51,9 +51,9 @@ def _mlayer_to_stack(s):
         else:
             name = 'B%d'%(i-i2+1)
         slabs.append(Slab(material=SLD(rho=s.rho[i],irho=s.irho[i],name=name),
-                          thickness=s.thickness[i], 
+                          thickness=s.thickness[i],
                           interface=s.sigma_roughness[i]))
-        
+
     # Build stack
     if s.num_repeats == 0:
         stack = Stack(slabs[:i1]+slabs[i2:])
@@ -83,7 +83,7 @@ def _mlayer_to_probe(s):
     T = QL2T(Q=Q,L=s.wavelength)
     dT = sqrt( (dQ*L/(4*pi*cos(radians(T))))**2 - (tan(radians(T))*dL/L)**2 )
     dT = degrees(dT)
-    
+
     # Hack: X-ray is 1.54; anything above 2 is neutron.  Doesn't matter since
     # materials are set as SLD rather than composition.
     if s.wavelength < 2:
@@ -100,7 +100,7 @@ def _mlayer_to_probe(s):
 def model_to_mlayer(model):
     """
     Return an mlayer model based on the a slab stack
-    
+
     Raises TypeError if model cannot be stored as a staj file
     """
     #TODO: when back reflectivity is handled properly, need to support it here

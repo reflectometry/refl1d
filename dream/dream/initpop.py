@@ -10,7 +10,7 @@ Two functions are provided:
 1. lhs_init(N, bounds) returns a latin hypercube sampling, which tests every
 parameter at each of N levels.
 
-2. cov_init(N, x, cov) returns a Gaussian sample along the ellipse 
+2. cov_init(N, x, cov) returns a Gaussian sample along the ellipse
 defined by the covariance matrix, cov.  Covariance defaults to
 diag(dx) if dx is provided as a parameter, or to I if it is not.
 
@@ -30,15 +30,15 @@ def lhs_init(N, bounds):
 
     Returns an array whose columns each have *N* samples from equally spaced
     bins between *bounds*=(xmin, xmax) for the column.  DREAM bounds
-    objects, with bounds.low and bounds.high can be used as well.  
-    
+    objects, with bounds.low and bounds.high can be used as well.
+
     Note: Indefinite ranges are not supported.
     """
     try:
         xmin, xmax = bounds
     except:
         xmin, xmax = bounds.low, bounds.high
-    
+
     # Define the size of xmin
     nvar = len(xmin)
     # Initialize array ran with random numbers
@@ -59,9 +59,9 @@ def lhs_init(N, bounds):
 def cov_init(N, x, cov=None, dx=None):
     """
     Initialize *N* sets of random variables from a gaussian model.
-    
+
     The center is at *x* with an uncertainty ellipse specified by the
-    1-sigma independent uncertainty values *dx* or the full covariance 
+    1-sigma independent uncertainty values *dx* or the full covariance
     matrix uncertainty *cov*.
 
     For example, create an initial population for 20 sequences for a
@@ -70,7 +70,7 @@ def cov_init(N, x, cov=None, dx=None):
         pop = cov_init(cov=C, x=x, N=20)
     """
     #return mean + dot(RNG.randn(N,len(mean)), chol(cov))
-    if cov == None and dx == None: 
+    if cov == None and dx == None:
         cov = eye(len(x))
     elif cov == None:
         cov = diag(asarray(dx)**2)

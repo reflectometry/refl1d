@@ -92,13 +92,13 @@ def test():
                 object.__setattr__(self, a, v)
             else:
                 setattr(self._internal_class, a, v)
-        # Need to explicity forward magic names, except __init__, 
+        # Need to explicity forward magic names, except __init__,
         # __getattr__ and __setattr__.
         __call__ = lambda self, *args, **kw: self._internal_class.__call__(*args, **kw)
     # Need to explicity forward magic names
     #setattr(WrappedA,'__call__',
     #        lambda self, *args, **kw: getattr(self._A, '__call__')(*args, **kw))
- 
+
     # Check that the behaviour works as desired
     wobj = WrappedA(5)
     assert wobj.parameters() == {'b': wobj.b}
@@ -140,7 +140,7 @@ def test():
     # Besides which, parameters() is only called once per fit, so efficiency
     # isn't that important.
 
-    # Somewhat more interesting to the third party developer is to take an 
+    # Somewhat more interesting to the third party developer is to take an
     # already existing structure and wrap it for fitting.  By defining a
     # mapping between classes and fittable attributes this process can be
     # automated.  Again, walk the structure checking for classes that

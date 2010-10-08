@@ -10,15 +10,15 @@ from math import sqrt
 def exppow_pars(B):
     """
     Return w(B) and c(B) for the exponential power density::
-    
+
         p(v|S,B) = w(B)/S exp(-c(B) |v/S|^(2/(1+B)))
-    
+
     *B* in (-1,1] is a measure of kurtosis::
 
         B = 1: double exponential
         B = 0: normal
         B -> -1: uniform
-        
+
     [1] Thiemann, M., M. Trosser, H. Gupta, and S. Sorooshian (2001).
     "Bayesian recursive parameter estimation for hydrologic models",
     Water Resour. Res. 37(10) 2521-2535.

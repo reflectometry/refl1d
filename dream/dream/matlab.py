@@ -30,7 +30,7 @@ Another challenge is *ModelName*.  In matlab this is the name of the
 m-file that contains the model definition.  Following that convention,
 we will try to using "from <ModelName> import <ModelName>", and if this
 fails, assume that *ModelName* is actually the function itself.  For
-this to work you will need to translate the function in ModelName.m 
+this to work you will need to translate the function in ModelName.m
 to the equivalent function in ModelName.py.
 
 *option* is the same option number as before
@@ -47,7 +47,7 @@ you do in matlab.  For example::
     In [3]: %run example.m
 
 
-You can now use various dream visualization tools or use the matlab-like 
+You can now use various dream visualization tools or use the matlab-like
 plotting functions from pylab::
 
     In [4]: out.state.save('modeloutput')
@@ -56,8 +56,8 @@ plotting functions from pylab::
 Command line usage
 ------------------
 
-You can also run a suitable m-file example from the command line.  This will 
-place you at an ipython command line with all the variables from your 
+You can also run a suitable m-file example from the command line.  This will
+place you at an ipython command line with all the variables from your
 m-file available.  For example::
 
     python -m dream.matlab example.m
@@ -127,7 +127,7 @@ def setup(MCMCPar, ParRange, Measurement, ModelName, Extra, option):
     dreamer.bounds_style=Extra.BoundHandling
     if ModelName == 'Banshp':
         # specific properties of the banana function
-        # Extra.imat is computed from cmat  
+        # Extra.imat is computed from cmat
         # MCMCPar.n is implicit in Extra.cmat
         f = Banana(mu=Extra.mu.flatten(), bpar=Extra.bpar, cmat=Extra.cmat)
         option=4
@@ -159,7 +159,7 @@ def setup(MCMCPar, ParRange, Measurement, ModelName, Extra, option):
         thinning = 1
     dreamer.thinning = thinning
     dreamer.draws = MCMCPar.ndraw
-    
+
     # Outlier detection
     T = MCMCPar.outlierTest
     if T.endswith('_test'): T = T[:-5]
@@ -169,7 +169,7 @@ def setup(MCMCPar, ParRange, Measurement, ModelName, Extra, option):
     dreamer.DE_steps = MCMCPar.steps
     dreamer.DE_pairs = MCMCPar.DEpairs
     dreamer.DE_eps = MCMCPar.eps
-    
+
     # Initial population
     if Extra.InitPopulation == 'COV_BASED':
         pop = cov_init(N=MCMCPar.seq, x=Extra.muX.flatten(), cov=Extra.qcov)
@@ -194,7 +194,7 @@ def convert_state(state):
     """
     Convert a completed dreamer run into a form compatible with the
     matlab dream interface::
-    
+
         Sequences, Reduced_Seq, X, out, hist_logp
 
     The original state is stored in out.state
@@ -219,13 +219,13 @@ def convert_state(state):
 
     # save the dreamer state data structure  as well
     out.state = state
-    
+
     return Sequences, Sequences, X, out, hist_logp
 
 class Banana:
     """
     Banana shaped function.
-    
+
     Note that this is not one of the N dimensional Rosenbrock variants
     documented on wikipedia as it only operates "banana-like" in
     the x0-x1 plane.

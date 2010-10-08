@@ -10,10 +10,10 @@ from numpy.linalg import qr, solve, svd
 def mahalanobis(Y,X):
     """
     Returns the distances of the observations from a reference set.
-    
+
     Observations are stored in rows *Y* and the reference set in *X*.
     """
-    
+
     M = mean(X, axis=0)                 # mean
     Xc = X - mean(X, axis=0)            # center the reference
     W = dot(Xc.T, Xc)/(Xc.shape[0] - 1) # covariance of reference
@@ -36,6 +36,6 @@ def test():
     d = mahalanobis(array([[2,3,4],[2,3,4]]),
                     array([[1,0,0],[2,1,0],[1,1,0],[2,0,1]]))
     assert norm(d-[290.25,290.25]) < 1e-14
-    
+
 if __name__ == "__main__":
     test()

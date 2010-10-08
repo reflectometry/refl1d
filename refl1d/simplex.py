@@ -58,7 +58,7 @@ class Result:
         msg = "Converged" if self.status else "Aborted"
         return ("%s with %g at %s after %d calls"
                 % (msg, self.fx, self.x, self.calls))
-            
+
 
 def dont_abort(): return False
 
@@ -116,10 +116,10 @@ def simplex(f, x0=None, bounds=None, radius=0.05,
         maxiter : int=200*N
             Maximum number of iterations to perform.  Defaults
         update_handler : callable
-            Called after each iteration, as callback(k,n,xk,fxk), 
+            Called after each iteration, as callback(k,n,xk,fxk),
             where k is the current iteration, n is the maximum
-            iteration, xk is the best parameter vector and fxk is 
-            the best function value.  The update handler should 
+            iteration, xk is the best parameter vector and fxk is
+            the best function value.  The update handler should
             return True if the fit is to continue.
 
     *Notes*

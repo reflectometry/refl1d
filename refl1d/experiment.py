@@ -82,7 +82,7 @@ class ExperimentBase:
         pylab.subplot(212)
         self.plot_reflectivity()
 
-    
+
 class Experiment(ExperimentBase):
     """
     Theory calculator.  Associates sample with data, Sample plus data.
@@ -106,12 +106,12 @@ class Experiment(ExperimentBase):
     calculation of the displayed profile.  Use a value of 0 if you want no
     limits on the roughness,  but be aware that the displayed profile may
     not reflect the actual scattering densities in the material.
-    
+
     The *dz* step size sets the size of the slabs for non-uniform profiles.
-    Using the relation d = 2 pi / Q_max,  we use a default step size of d/20 
-    rounded to two digits.  The maximum step size is 5 A.  For simultaneous 
-    fitting you may want to set *dz* explicitly using 
-    :function:`experiment.nice`  to nice(pi/Q_max/10) so that all models 
+    Using the relation d = 2 pi / Q_max,  we use a default step size of d/20
+    rounded to two digits.  The maximum step size is 5 A.  For simultaneous
+    fitting you may want to set *dz* explicitly using
+    :function:`experiment.nice`  to nice(pi/Q_max/10) so that all models
     use the same profile step size, but the same step size is not required.
     """
     def __init__(self, sample=None, probe=None,
@@ -119,7 +119,7 @@ class Experiment(ExperimentBase):
         self.sample = sample
         self.probe = probe
         self.roughness_limit = roughness_limit
-        if dz is None: 
+        if dz is None:
             dz = nice((2*pi/probe.Q.max())/20)
             if dz > 5: dz = 5
         self._slabs = profile.Microslabs(len(probe), dz=dz)
@@ -150,7 +150,7 @@ class Experiment(ExperimentBase):
             #sigma = slabs.limited_sigma(limit=self.roughness_limit)
             sigma = slabs.sigma
             calc_q = self.probe.calc_Q
-            calc_r = reflamp(-calc_q/2, depth=w, rho=rho, irho=irho, 
+            calc_r = reflamp(-calc_q/2, depth=w, rho=rho, irho=irho,
                              sigma=sigma)
             #print "w",w
             #print "rho",rho
@@ -194,7 +194,7 @@ class Experiment(ExperimentBase):
             self._cache[key] = Q,R
             if numpy.isnan(R).any(): print "apply_beam causes NaN"
         return self._cache[key]
-    
+
     def fresnel(self):
         """
         Calculate the fresnel reflectivity for the model.
@@ -204,14 +204,14 @@ class Experiment(ExperimentBase):
         #sigma = slabs.limited_sigma(limit=self.roughness_limit)
         #sigma = slabs.sigma
         sigma = [0] # Don't do roughness
-        f = Fresnel(rho=rho[0,0], irho=irho[0,0], sigma=sigma[0], 
+        f = Fresnel(rho=rho[0,0], irho=irho[0,0], sigma=sigma[0],
                     Vrho=rho[0,-1], Virho=irho[0,-1])
         return f(self.probe.Q)
 
     def smooth_profile(self,dz=1):
         """
         Compute a density profile for the material.
-        
+
         If *dz* is not given, use *dz* = 1 A.
         """
         key = 'smooth_profile', dz
@@ -232,16 +232,16 @@ class Experiment(ExperimentBase):
             prof = slabs.step_profile()
             self._cache[key] = prof
         return self._cache[key]
-        
+
     def slabs(self):
         """
-        Return the slab thickness, roughness, rho, irho for the 
+        Return the slab thickness, roughness, rho, irho for the
         rendered model.
-        
+
         Note: roughness is for the top of the layer.
         """
         slabs = self._render_slabs()
-        return (slabs.w, numpy.hstack((0,slabs.sigma)), 
+        return (slabs.w, numpy.hstack((0,slabs.sigma)),
                 slabs.rho[0], slabs.irho[0])
 
     def save(self, basename):
@@ -301,7 +301,7 @@ class Experiment(ExperimentBase):
 class CompositeExperiment(ExperimentBase):
     """
     Support composite sample reflectivity measurements.
-    
+
     Sometimes the sample you are measuring is not uniform.
     For example, you may have one portion of you polymer
     brush sample where the brushes are close packed and able
@@ -310,21 +310,21 @@ class CompositeExperiment(ExperimentBase):
     models, one with brushes upright and one with brushes
     flat, and adding the reflectivity incoherently, you can
     then fit the ratio of upright to flat.
-    
+
     *samples* the layer stacks making up the models
     *ratio* a list of parameters, such as [3,1] for a 3:1 ratio
     *probe* the measurement to be fitted or simulated
-    
+
     Statistics such as the cost functions for the individual
     profiles can be accessed from the underlying experiments
     using composite.parts[i] for the various samples.
     """
-    def __init__(self, samples=None, ratio=None, 
+    def __init__(self, samples=None, ratio=None,
                  probe=None, roughness_limit=2.5):
         self.samples = samples
         self.ratio = [Parameter.default(r) for r in ratio]
         self.parts = [Experiment(s,probe) for s in samples]
-        
+
     def parameters(self):
         return dict(samples = [s.parameters() for s in self.samples],
                     ratio = self.ratio,
@@ -342,7 +342,7 @@ class CompositeExperiment(ExperimentBase):
         f = numpy.array(r.value for r in self.ratio)
         Qs,Rs = zip(*[p.reflectivity() for p in self.parts])
         Q = Qs[0]
-        R = f/numpy.sum(f,axis=0)*numpy.array(Rs)        
+        R = f/numpy.sum(f,axis=0)*numpy.array(Rs)
         return Q, R
 
 

@@ -24,12 +24,12 @@ sample = (silicon%7 + Cr/23%9 + PtFe/147%9 + NiFe/509%13 + Pt/32%11 + air)
 # Data files
 
 ninstrument = snsdata.Liquids()
-Mn = ninstrument.simulate(sample, 
+Mn = ninstrument.simulate(sample,
                           #slits=[0.02]*4,
                           #dLoL=0.02,
                           T=[0.09,0.4,1,2],
                           uncertainty = 0.1,
-                          theta_offset = 0.01, 
+                          theta_offset = 0.01,
                           #background=1e-6,
                           #normalize=False,
                           #back_reflectivity=True,

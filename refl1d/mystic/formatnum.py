@@ -5,13 +5,13 @@ Format values and uncertainties nicely for printing.
 
 :func:`format_uncertainty_pm`(v,err) produces the expanded format v +/- err.
 
-:func:`format_uncertainty_compact`(v,err) produces the compact format v(##), 
+:func:`format_uncertainty_compact`(v,err) produces the compact format v(##),
 where the number in parenthesis is the uncertainty in the last two digits of v.
 
-:func:`format_uncertainty`(v,err) uses the compact format by default, but this 
-can be changed to use the expanded +/- format by setting 
+:func:`format_uncertainty`(v,err) uses the compact format by default, but this
+can be changed to use the expanded +/- format by setting
 format_uncertainty.compact to False.
-    
+
 The formatted string uses only the number of digits warranted by
 the uncertainty in the measurement.
 
@@ -33,7 +33,7 @@ Example::
     >>> print format_uncertainty(v,dv)
     757.236 +/- 0.010
 
-UncertaintyFormatter() returns a private formatter with its own 
+UncertaintyFormatter() returns a private formatter with its own
 formatter.compact flag.
 """
 from __future__ import division
@@ -70,7 +70,7 @@ def format_uncertainty_pm(value, uncertainty):
 def format_uncertainty_compact(value, uncertainty):
     """
     Given *value* v and *uncertainty* dv, return the compact
-    representation v(##), where ## are the first two digits of 
+    representation v(##), where ## are the first two digits of
     the uncertainty.
     """
     return _format_uncertainty(value, uncertainty, compact=True)
@@ -79,8 +79,8 @@ class UncertaintyFormatter:
     """
     Value and uncertainty formatter.
 
-    The *formatter* instance will use either the expanded v +/- dv form 
-    or the compact v(##) form depending on whether *formatter.compact* is 
+    The *formatter* instance will use either the expanded v +/- dv form
+    or the compact v(##) form depending on whether *formatter.compact* is
     True or False.  The default is True.
     """
     compact = True
@@ -137,7 +137,7 @@ def _format_uncertainty(value, uncertainty, compact):
         # Extreme cases: zeros before value or after error
         # The value is ###.###(##)e#, ##.####(##)e# or #.#####(##)e#
         pass
-    
+
     # Force engineering notation, with exponent a multiple of 3
     val_place = int(math.floor(val_place/3.))*3
 
@@ -277,7 +277,7 @@ def test_compact():
     assert value_str(-numpy.inf,None) == "-inf"
     assert value_str(numpy.inf,None) == "inf"
     assert value_str(numpy.NaN,None) == "NaN"
-    
+
     # bad or missing uncertainty
     assert value_str(-1.23567,numpy.NaN) == "-1.23567"
     assert value_str(-1.23567,-numpy.inf) == "-1.23567"
@@ -408,7 +408,7 @@ def test_pm():
     assert value_str(-numpy.inf,None) == "-inf"
     assert value_str(numpy.inf,None) == "inf"
     assert value_str(numpy.NaN,None) == "NaN"
-    
+
     # bad or missing uncertainty
     assert value_str(-1.23567,numpy.NaN) == "-1.23567"
     assert value_str(-1.23567,-numpy.inf) == "-1.23567"
@@ -423,7 +423,7 @@ def test():
     test_pm()
     # Check that the default is the compact format
     assert format_uncertainty(-1.23567,0.766) == "-1.24(77)"
-    
+
     import doctest
     doctest.testmod()
 

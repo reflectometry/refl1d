@@ -6,7 +6,7 @@ The Rosenbrock banana function
 from dream import *
 from pylab import *
 
-def rosen(x):  
+def rosen(x):
     x = asarray(x)
     return -sum(100.0*(x[1:]-x[:-1]**2)**2 + (1-x[:-1])**2)
 

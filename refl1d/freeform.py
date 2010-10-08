@@ -13,16 +13,16 @@ class Freeform(Layer):
     A freeform section of the sample modeled with B-splines.
 
     sld (rho) and imaginary sld (irho) can be modeled with a separate
-    number of control points. The control points can be equally spaced 
+    number of control points. The control points can be equally spaced
     in the layers unless rhoz or irhoz are specified. If the z values
     are given, they must be in the range [0,1].  One control point is
     anchored at either end, so there are two fewer z values than controls
     if z values are given.
-    
+
     Layers have a slope of zero at the ends, so the automatically blend
     with slabs.
     """
-    def __init__(self, thickness=0, left=None, right=None, 
+    def __init__(self, thickness=0, left=None, right=None,
                  rho=[], irho=[], rhoz=[], irhoz=[], name="Freeform"):
         self.name = name
         self.left, self.right = left,right

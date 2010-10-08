@@ -54,8 +54,8 @@ class Scatterer(object):
     from the calculation of the scattering length density.  This allows
     programs to fit density and alloy composition more efficiently.
 
-    Note: the Scatterer base class is extended by 
-    :class:`model._MaterialStacker` so that materials can be implicitly 
+    Note: the Scatterer base class is extended by
+    :class:`model._MaterialStacker` so that materials can be implicitly
     converted to slabs when used in stack construction expressions.  It is
     not done directly to avoid circular dependencies between :module:`model`
     and :module:`material`.
@@ -95,16 +95,16 @@ class SLD(Scatterer):
     Use this when you don't know the composition of the sample.  The
     absorption and scattering length density are stored directly rather
     than trying to guess at the composition from details about the sample.
-    
+
     The complex scattering potential is defined by *rho* + 1j *irho*.
     Note that this differs from *rho* + 1j *mu*/(2 *lambda*) more
-    traditionally used in neutron reflectometry, and *N* *re* (*f1* + 1j *f2*) 
+    traditionally used in neutron reflectometry, and *N* *re* (*f1* + 1j *f2*)
     traditionally used in X-ray reflectometry.
-    
+
     Given that *f1* and *f2* are always wavelength dependent for X-ray
     reflectometry, it will not make much sense to uses this for wavelength
     varying X-ray measurements.  Similarly, some isotopes, particularly
-    rare earths, show wavelength dependence for neutrons, and so 
+    rare earths, show wavelength dependence for neutrons, and so
     time-of-flight measurements should not be fit with a fixed SLD scatterer.
     """
     def __init__(self, name="SLD", rho=0, irho=0):
@@ -241,7 +241,7 @@ class Compound(Scatterer):
 
     An individual component can be a chemical formula, not just an element.
     """
-    def __init__(self, parts=None, density=None, name=None, 
+    def __init__(self, parts=None, density=None, name=None,
                  use_incoherent=False):
         # Split [M1,N1,M2,N2,...] into [M1,M2,...], [N1,N2,...]
         formula = [parts[i] for i in range(0, len(parts),2)]
@@ -343,7 +343,7 @@ class Mixture(Scatterer):
     densities will be valid.  Be aware that density will need to change from
     bulk values if the formula has isotope substitutions.
 
-    The fractions F2, F3, ... are percentages in [0,100].  The implicit 
+    The fractions F2, F3, ... are percentages in [0,100].  The implicit
     fraction F1 is 100 - (F2+F3+...).   The SLD is NaN when F1 < 0.
 
     name defaults to M1.name+M2.name+...
@@ -388,7 +388,7 @@ class Mixture(Scatterer):
         # Make the fractions into fittable parameters
         fraction = [Par.default(w,limits=(0,100), name=f.name+"% "+by)
                     for w,f in zip(fraction,material[1:])]
-        
+
         self._volume = _volume
         self.material = material
         self.fraction = fraction

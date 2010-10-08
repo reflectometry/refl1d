@@ -8,7 +8,7 @@ from numpy import random as RNG
 def de_step(Nchain,pop,CR,max_pairs=2,eps=0.05,snooker_rate=0.1):
     """
     Generates offspring using METROPOLIS HASTINGS monte-carlo markov chain
-    
+
     The number of chains may be smaller than the population size if the
     population is selected from both the current generation and the
     ancestors.
@@ -32,23 +32,23 @@ def de_step(Nchain,pop,CR,max_pairs=2,eps=0.05,snooker_rate=0.1):
     for qq in range(Nchain):
 
         if alg[qq] == DE:  # Use DE with cross-over ratio
-            
+
             # Select to number of vector pair differences to use in update
             # using k ~ discrete U[1,max pairs]
             k = RNG.randint(max_pairs)+1
             # [PAK: same as k = DEversion[qq,1] in the old code]
-            
+
             # Select 2*k members at random different from the current member
             perm = draw(2*k, Npop-1)
             perm[perm>=qq] += 1
             r1,r2 = perm[:k],perm[k:2*k]
-        
+
             # Select the dims to update based on the crossover ratio, making
             # sure at least one dim is selected
             vars = where(RNG.rand(Nvar) > (1-CR[qq]))[0]
             if len(vars) == 0: vars = [RNG.randint(Nvar)]
 
-            # Weight the size of the jump inversely proportional to the 
+            # Weight the size of the jump inversely proportional to the
             # number of contributions, both from the parameters being
             # updated and from the population defining the step direction.
             gamma = 2.38/sqrt(2 * len(vars) * k)
@@ -69,7 +69,7 @@ def de_step(Nchain,pop,CR,max_pairs=2,eps=0.05,snooker_rate=0.1):
             xi = pop[qq]
             z,R1,R2 = [pop[i] for i in perm]
 
-            # Find the step direction and scale it to the length of the 
+            # Find the step direction and scale it to the length of the
             # projection of R1-R2 onto the step direction.
             step = xi - z
             scale = sum( (R1-R2)*step ) / sum( step**2 )
@@ -77,10 +77,10 @@ def de_step(Nchain,pop,CR,max_pairs=2,eps=0.05,snooker_rate=0.1):
             # Step using gamma of 2.38/sqrt(2) + U(-0.5,0.5)
             gamma = 1.2 + RNG.rand()
             delta_x[qq] = gamma * scale * step
-            
+
             # Scale Metropolis probability by (||xi* - z||/||xi - z||)^(d-1)
             step_alpha[qq] = (norm(delta_x[qq]+step)/norm(step))**((Nvar-1)/2)
-    
+
         elif alg[qq] == DIRECT:  # Use one pair and all dimensions
 
             # Note that there is no F scaling, dimension selection or noise
@@ -91,8 +91,8 @@ def de_step(Nchain,pop,CR,max_pairs=2,eps=0.05,snooker_rate=0.1):
         else:
             raise RuntimeError("Select failed...should never happen")
 
-        # If no step was specified (exceedingly unlikely!), then 
-        # select a delta at random from a gaussian approximation to the 
+        # If no step was specified (exceedingly unlikely!), then
+        # select a delta at random from a gaussian approximation to the
         # current population
         if all(delta_x[qq] == 0):
             try:
@@ -114,14 +114,14 @@ def de_step(Nchain,pop,CR,max_pairs=2,eps=0.05,snooker_rate=0.1):
 def _check():
     import numpy
     Nchain, Npop, Nvar = 4, 10, 3
-    
+
     pop = 100*numpy.arange(Npop*Nvar).reshape((Npop,Nvar))
     pop += RNG.rand(*pop.shape)*1e-6
     CR = 1./(RNG.randint(4,size=Nvar)+1)
     x_new, step_alpha, used = de_step(Nchain,pop,CR,max_pairs=2,eps=0.05)
     print """\
-The following table shows the expected portion of the dimensions that 
-are changed and the rounded value of the change for each point in the 
+The following table shows the expected portion of the dimensions that
+are changed and the rounded value of the change for each point in the
 population.
 """
     for r,i,u in zip(CR,range(8),used):

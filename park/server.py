@@ -47,7 +47,7 @@ class JobService:
 
     def stored(self, jobid):
         _validate_jobid(jobid)
-        return self._store.keys(jobid)     
+        return self._store.keys(jobid)
 
     def result(self, jobid):
         self._scheduler.deactivate(jobid)
@@ -91,7 +91,7 @@ class JobService:
         self._store.create(jobid)
         self._store.put(jobid, 'job', json.dumps(job))
         return jobid
-    
+
     def start(self, jobid):
         _validate_jobid(jobid)
         job = json.loads(self._store.get(jobid, 'job'))
@@ -100,7 +100,7 @@ class JobService:
     def submit(self, job):
         """
         Submit a job to the queue, returning the job id.
-        
+
         This is equivalent to start(prepare(job))
         """
         jobid = self.prepare(job)

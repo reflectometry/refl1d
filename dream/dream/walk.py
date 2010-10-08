@@ -16,41 +16,41 @@ def walk(n=1000, mu=0, sigma=1, alpha=0.01, s0=NaN):
     Mean reverting random walk.
 
     Returns an array of n-1 steps in the following process::
-    
+
         s[i] = s[i-1] + alpha*(mu-s[i-1]) + e[i]
-        
+
     with e ~ N(0,sigma).
-    
+
     The parameters are::
-    
+
         *n* walk length
         *s0* starting value, defaults to N(mu,sigma)
         *mu* target mean, defaults to 0
         *sigma* volatility
         *alpha* in [0,1] reversion rate
-    
+
     Use alpha=0 for a pure Gaussian random walk or alpha=1 independent
     samples about the mean.
-    
+
     If *mu* is a vector, multiple streams are run in parallel.  In this
     case *s0*, *sigma* and *alpha* can either be scalars or vectors.
-    
+
     If *mu* is an array, the target value is non-stationary, and the
     parameter *n* is ignored.
-    
+
     Note: the default starting value should be selected from a distribution
     whose width depends on alpha.  N(mu,sigma) is too narrow.  This
     effect is illustrated in :function:`demo`, where the following choices
     of sigma and alpha give approximately the same histogram::
-    
-        sigma = [0.138, 0.31, 0.45, 0.85, 1] 
+
+        sigma = [0.138, 0.31, 0.45, 0.85, 1]
         alpha = [0.01,  0.05, 0.1,  0.5,  1]
     """
     s0,mu,sigma,alpha = [asarray(v) for v in s0,mu,sigma,alpha]
     nchains = mu.shape[0] if mu.ndim > 0 else 1
 
     if mu.ndim < 2:
-        if isnan(s0): 
+        if isnan(s0):
             s0 = mu + util.RNG.randn(nchains)*sigma
         s = [s0*ones_like(mu)]
         for i in range(n-1):
@@ -69,8 +69,8 @@ def walk(n=1000, mu=0, sigma=1, alpha=0.01, s0=NaN):
 def demo():
     """
     Example showing the relationship between alpha and sigma in the random
-    walk posterior distribution.  
-    
+    walk posterior distribution.
+
     The lag 1 autocorrelation coefficient R^2 is approximately 1-alpha.
     """
     from numpy import array, mean, std, sum
@@ -81,7 +81,7 @@ def demo():
     # Generate chains
     N = 5000
     mu=[0,5,10,15,20]
-    sigma=[0.138,0.31,0.45,0.85,1] 
+    sigma=[0.138,0.31,0.45,0.85,1]
     alpha=[0.01,0.05,0.1,0.5,1]
     chains = walk(N,mu=mu,sigma=sigma,alpha=alpha)
 
@@ -89,7 +89,7 @@ def demo():
     M, S = mean(chains,axis=0), std(chains,ddof=1,axis=0)
     R2 = sum((chains[1:]-M)*(chains[:-1]-M),axis=0) / ((N-2)*S**2)
     R2[abs(R2)<0.01] = 0
-    
+
     # Plot chains
     axData = pylab.axes([0.05,0.05,0.65,0.9]) # x,y,w,h
     axData.plot(chains)

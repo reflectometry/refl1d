@@ -42,7 +42,7 @@ class Magnetic(Layer):
     Region of constant magnetism, possibly spanning multiple structural
     layers.
     """
-    def __init__(self, stack, rhoM=0, thetaM=270, 
+    def __init__(self, stack, rhoM=0, thetaM=270,
                  dead_below=0, dead_above=0):
         self.stack = stack
         self.rhoM = Parameter.default(rhoM, name=stack.name+" magnetic SLD")
@@ -107,9 +107,9 @@ class MagneticTwist(Layer):
         mark = len(slabs)
         z = slabs.thickness()
         self.stack.render(probe, slabs)
-        slabs.magnetic(start, w=[slabs.thickness() - z], 
+        slabs.magnetic(start, w=[slabs.thickness() - z],
                        rhoM=[self.rhoM.value], thetaM=[self.thetaM.value])
-        
+
     def __str__(self):
         return "magnetic("+str(self.stack)+")"
     def __repr__(self):

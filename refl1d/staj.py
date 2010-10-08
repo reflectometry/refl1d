@@ -117,10 +117,10 @@ TANH_FWHM = 0.47320111770856327 # 1/2 atanh(erf(1/sqrt(2))) / acosh(sqrt(2))
 class MlayerModel(object):
     """
     Model definition used by MLayer program.
-    
+
     Attributes
     ----------
-    
+
     Q values and reflectivity come from a data file with Q, R, dR or
     from simulation with linear spacing from Qmin to Qmax in equal steps::
 
@@ -130,7 +130,7 @@ class MlayerModel(object):
             for simulation, Q sample points
 
     Resolution is defined by wavelength and by incident angle::
-    
+
         *wavelength*, *wavelength_dispersion*, *angular_divergence*
             resolution equation uses dQ/Q = dL/L + dT/sin(T)
 
@@ -148,19 +148,19 @@ class MlayerModel(object):
     number of times, as defined by the number of repeats attribute.  The
     attributes defining the sections are::
 
-        *num_top* *num_middle* *num_bottom*  
+        *num_top* *num_middle* *num_bottom*
             section sizes
-        *num_repeats*  
+        *num_repeats*
             number of times middle section repeats
 
-    Interfaces are split into discrete steps according to a profile, 
-    either error function or hyperbolic tangent.  For sharp interfaces 
-    which do not overlap within a layer, the interface is broken into a 
-    fixed number of slabs with slabs having different widths, but equal 
-    changes in height.  For broad interfaces, the whole layer is split 
-    into the same fixed number of slabs, but with each slab having the 
+    Interfaces are split into discrete steps according to a profile,
+    either error function or hyperbolic tangent.  For sharp interfaces
+    which do not overlap within a layer, the interface is broken into a
+    fixed number of slabs with slabs having different widths, but equal
+    changes in height.  For broad interfaces, the whole layer is split
+    into the same fixed number of slabs, but with each slab having the
     same width.  The following attributes are used::
-    
+
         *roughness_steps*
             number of roughness steps (13 is coarse; 51 is fine)
         *roughness_profile*
@@ -168,17 +168,17 @@ class MlayerModel(object):
 
     Layers have thickness, interface roughness and real and imaginary
     scattering length density (SLD).  Roughness is stored in the file
-    using full width at half maximum (FWHM) for the given profile type. 
-    For convenience, roughness can also be set or queried using a 1-sigma 
-    equivalent roughness on an error function profile.  Regardless, 
-    layer parameters are represented as vectors with one entry for each 
+    using full width at half maximum (FWHM) for the given profile type.
+    For convenience, roughness can also be set or queried using a 1-sigma
+    equivalent roughness on an error function profile.  Regardless,
+    layer parameters are represented as vectors with one entry for each
     top, middle and bottom layer using the following attributes::
 
         *thickness*, *roughness* (Angstroms)
             layer thickness and FWHM roughness
         *rho*, *irho*, *incoh* (inv A**2 x 10^6)
             complex coherent rho + 1j * irho and incoherent SLD
-            
+
     Computed attributes are provided for convenience::
         *sigma_roughness* (Angstroms)
             1-sigma equivalent roughness for erf profile
@@ -189,9 +189,9 @@ class MlayerModel(object):
     with an additional column of 0 for magnetic SLD.  This conversion will
     happen automatically on read/write.  Note that there is no way to separate
     irho and incoh on read so incoh is set to 0.
-    
+
     The layers are ordered from surface to substrate.
-    
+
     Additional attributes are as follows::
 
         *fitpars*
@@ -206,46 +206,46 @@ class MlayerModel(object):
 
     Methods
     -------
-    
+
     model = MlayerModel(attribute=value, ...)
-    
+
         Construct a new MLayer model with the given attributes set.
 
     model = MlayerModel.load(filename)
-    
+
         Construct a new MLayer model from a staj file.
-    
+
     model.set(attribute=value, ...)
-    
+
         Replace a set of attribute values.
 
     model.fit_resolution(Q,dQ)
-    
+
         Choose the best resolution parameters to match the given Q,dQ
         resolution.  Returns the object so that calls can be chained.
-        
+
     model.resolution(Q)
-    
+
         Return the resolution at Q for the current resolution parameters.
-    
+
     model.split_sections()
-    
+
         Assign top, middle, bottom and repeats to distribute the layers
         across sections.  Returns the object so that calls can be chained.
 
     model.save(filename)
-    
+
         Write the model to the given named file.  Raises ValueError if
         the model is invalid.
-    
+
     Constructing new files
     ----------------------
-    
+
     Staj files can be constructed directly.  The MlayerModel constructor
     can accept all data attributes as key word arguments.  Models require
-    at least *data_file*, *wavelength*, *thickness*, *roughness* and *rho*.  
-    Resolution parameters can be set using model.fit_resolution(Q,dQ).  
-    Section sizes can be set using model.split_sections().  Everything 
+    at least *data_file*, *wavelength*, *thickness*, *roughness* and *rho*.
+    Resolution parameters can be set using model.fit_resolution(Q,dQ).
+    Section sizes can be set using model.split_sections().  Everything
     else has reasonable defaults.
     """
     data_file = ""
@@ -259,7 +259,7 @@ class MlayerModel(object):
     background = 0
     theta_offset = 0
     num_top, num_middle, num_bottom = 0, 0, 0
-    num_repeats = 1  
+    num_repeats = 1
     roughness_steps = 13
     roughness_profile = 'E'
     thickness = roughness = rho = None
@@ -291,7 +291,7 @@ class MlayerModel(object):
         fin = open(filename,'r')
         lines = fin.readlines()
         fin.close()
-        
+
         self = cls()
         self._parse(lines)
         return self
@@ -311,37 +311,37 @@ class MlayerModel(object):
         """
         Return the resolution at Q for mlayer with the current settings
         for wavelength, wavelength divergence and angular divergence.
-        
+
         Resolution is full-width at half maximum (FWHM), not 1-sigma.
         """
-        return (abs(Q) * self.wavelength_dispersion 
+        return (abs(Q) * self.wavelength_dispersion
                 + 4 * pi * self.angular_divergence) / self.wavelength
-        
+
     def fit_FWHMresolution(self, Q, dQ, weight=1):
         """
         Choose the best dL and dT to match the resolution dQ.
-        
+
         Given that mlayer uses the following resolution function::
-        
+
             staj dQ = (|Q| dL + 4 * pi * dT ) / L
-        
+
         we can use a linear system solver to find the optimal dL and dT::
 
             [ |Qi|/L, 4*pi/L ] * [dL, dT]' = dQi
-            
+
         If weights are provided (e.g., dR/R), then weight each point before
         fitting.
-        
+
         Given that the experiment is often run with fixed slits at the
         start and end, you may choose to match the resolution across the
         entire Q range, or instead restrict it to just the region where
         the slits are opening.  You will generally want to get the resolution
         correct at the critical edge since that's where it will have the
         largest effect on the fit.
-        
+
         Returns the object so that operations can be chained.
         """
-        A = numpy.array([abs(Q)/self.wavelength, 
+        A = numpy.array([abs(Q)/self.wavelength,
                          numpy.ones_like(Q)*(4*pi/self.wavelength)]).T
         s = wsolve.wsolve(A,y=dQ,dy=weight)
         self.wavelength_dispersion = s.x[0]
@@ -354,7 +354,7 @@ class MlayerModel(object):
         Split the given set of layers into sections, putting as many layers
         as possible into the middle section, then the bottom and finally
         the top.
-        
+
         Returns the object so that operations can be chained.
         """
         self.num_repeats = 1
@@ -424,10 +424,10 @@ class MlayerModel(object):
         in the details that are missing.
         """
         if ((self.irho is not None and len(self.rho) != len(self.irho))
-            or len(self.rho) != len(self.thickness) 
+            or len(self.rho) != len(self.thickness)
             or len(self.rho) != len(self.roughness)):
             raise ValueError("layer parameters have different lengths")
-        
+
         # Could check if Qmin/Qmax/num_Q matches data, but I don't think
         # it matters, so skip it
 
@@ -471,7 +471,7 @@ class MlayerModel(object):
         nums = [float(s) for s in lines[2].split()]
         self.intensity, self.background, self.Qmin, self.Qmax = nums[:4]
         self.num_Q = int(nums[4])
-        
+
         #4: profile_type ('E' for error function, 'H' for tanh)
         self.roughness_profile = lines[3].strip().upper()[:1]
         if self.roughness_profile not in ('E','H'):
@@ -490,7 +490,7 @@ class MlayerModel(object):
                   for line in lines[6:6+nL]]
         del layers[self.num_top+1]
         del layers[self.num_top+self.num_middle+1]
-        
+
         A = numpy.array(layers)
         self.rho = A[:,0] * (1e6/16/pi)
         self.irho = A[:,4] * (1e6/2/self.wavelength)
@@ -505,8 +505,8 @@ class MlayerModel(object):
 
     def _write(self, fid):
         #1: num_top num_middle num_bottom num_repeats num_fit rough_steps
-        fid.write("%d %d %d %d %d %d\n"%(self.num_top, self.num_middle, 
-                                    self.num_bottom, self.num_repeats, 
+        fid.write("%d %d %d %d %d %d\n"%(self.num_top, self.num_middle,
+                                    self.num_bottom, self.num_repeats,
                                     len(self.fitpars), self.roughness_steps))
 
         #2: wavelength  wavelength_dispersion  angular_divergence [theta_offset]
@@ -516,7 +516,7 @@ class MlayerModel(object):
         #3: intensity  background  Qmin  Qmax  num_Q
         fid.write("%g %g %g %g %d\n"%(self.intensity, self.background,
                                     self.Qmin, self.Qmax, self.num_Q))
-        
+
         #4: profile_type ('E' for error function, 'H' for tanh)
         fid.write("%s\n"%self.roughness_profile)
 
@@ -531,7 +531,7 @@ class MlayerModel(object):
         mu = self.mu*1e-6
         w,s = self.thickness, self.roughness
         def _write_layer(idx):
-            fid.write("%g %g %g %g %g\n"%(rho[idx], 0., 
+            fid.write("%g %g %g %g %g\n"%(rho[idx], 0.,
                                           w[idx], s[idx],
                                           mu[idx]))
         offset = 0
@@ -549,7 +549,7 @@ class MlayerModel(object):
         fid.write(" ".join(str(p) for p in self.fitpars)+"\n")
         #7+nL+2 to end: constraints
         fid.write(self.constraints)
-        
+
 
 
 #==============================================================================
@@ -657,10 +657,10 @@ class MlayerModel(object):
 class MlayerMagnetic(object):
     """
     Model definition used by GJ2 program.
-    
+
     Attributes
     ----------
-    
+
     Q values and reflectivity come from a data file with Q, R, dR or
     from simulation with linear spacing from Qmin to Qmax in equal steps::
 
@@ -672,7 +672,7 @@ class MlayerMagnetic(object):
             for simulation, Q sample points
 
     Resolution is defined by wavelength and by incident angle::
-    
+
         *wavelength*, *wavelength_dispersion*, *angular_divergence*
             resolution equation uses dQ/Q = dL/L + dT/sin(T)
 
@@ -684,19 +684,19 @@ class MlayerMagnetic(object):
         *guide_angle*
             angle of the guide field
 
-    Unlike pure structural models, magnetic models are in one large 
+    Unlike pure structural models, magnetic models are in one large
     section with no repeats.  The single parameter is the number of
     layers, which is implicit in the length of the layer data and
     does not need to be an explicit attribute.
 
-    Interfaces are split into discrete steps according to a profile, 
-    either error function or hyperbolic tangent.  For sharp interfaces 
-    which do not overlap within a layer, the interface is broken into a 
-    fixed number of slabs with slabs having different widths, but equal 
-    changes in height.  For broad interfaces, the whole layer is split 
-    into the same fixed number of slabs, but with each slab having the 
+    Interfaces are split into discrete steps according to a profile,
+    either error function or hyperbolic tangent.  For sharp interfaces
+    which do not overlap within a layer, the interface is broken into a
+    fixed number of slabs with slabs having different widths, but equal
+    changes in height.  For broad interfaces, the whole layer is split
+    into the same fixed number of slabs, but with each slab having the
     same width.  The following attributes are used::
-    
+
         *roughness_steps*
             number of roughness steps (13 is coarse; 51 is fine)
         *roughness_profile*
@@ -704,10 +704,10 @@ class MlayerMagnetic(object):
 
     Layers have thickness, interface roughness and real and imaginary
     scattering length density (SLD).  Roughness is stored in the file
-    using full width at half maximum (FWHM) for the given profile type. 
-    For convenience, roughness can also be set or queried using a 1-sigma 
-    equivalent roughness on an error function profile.  Regardless, 
-    layer parameters are represented as vectors with one entry for each 
+    using full width at half maximum (FWHM) for the given profile type.
+    For convenience, roughness can also be set or queried using a 1-sigma
+    equivalent roughness on an error function profile.  Regardless,
+    layer parameters are represented as vectors with one entry for each
     top, middle and bottom layer using the following attributes::
 
         *thickness*, *roughness* (Angstroms)
@@ -723,9 +723,9 @@ class MlayerMagnetic(object):
     Note that the file itself stores SLD as 16*pi*rho, irho/(2 wavelength)
     with an additional column of 0 for magnetic SLD.  This conversion will
     happen automatically on read/write.
-    
+
     The layers are ordered from surface to substrate.
-    
+
     Additional attributes are as follows::
 
         *fitpars*
@@ -740,40 +740,40 @@ class MlayerMagnetic(object):
 
     Methods
     -------
-    
+
     model = MlayerMagnetic(attribute=value, ...)
-    
+
         Construct a new MLayer model with the given attributes set.
 
     model = MlayerMagnetic.load(filename)
-    
+
         Construct a new MLayer model from a staj file.
-    
+
     model.set(attribute=value, ...)
-    
+
         Replace a set of attribute values.
 
     model.fit_resolution(Q,dQ)
-    
+
         Choose the best resolution parameters to match the given Q,dQ
         resolution.  Returns the object so that calls can be chained.
-        
+
     model.resolution(Q)
-    
+
         Return the resolution at Q for the current resolution parameters.
-    
+
     model.save(filename)
-    
+
         Write the model to the given named file.  Raises ValueError if
         the model is invalid.
-    
+
     Constructing new files
     ----------------------
-    
+
     Staj files can be constructed directly.  The MlayerModel constructor
     can accept all data attributes as key word arguments.  Models require
-    at least *data_file*, *wavelength*, *thickness*, *roughness* and *rho*.  
-    Resolution parameters can be set using model.fit_resolution(Q,dQ).  
+    at least *data_file*, *wavelength*, *thickness*, *roughness* and *rho*.
+    Resolution parameters can be set using model.fit_resolution(Q,dQ).
     Everything else has reasonable defaults.
     """
     data_file = ""
@@ -818,7 +818,7 @@ class MlayerMagnetic(object):
         fin = open(filename,'r')
         lines = fin.readlines()
         fin.close()
-        
+
         self = cls()
         try:
             self._parse(lines)
@@ -841,37 +841,37 @@ class MlayerMagnetic(object):
         """
         Return the resolution at Q for mlayer with the current settings
         for wavelength, wavelength divergence and angular divergence.
-        
+
         Resolution is full-width at half maximum (FWHM), not 1-sigma.
         """
-        return (abs(Q) * self.wavelength_dispersion 
+        return (abs(Q) * self.wavelength_dispersion
                 + 4 * pi * self.angular_divergence) / self.wavelength
-        
+
     def fit_resolution(self, Q, dQ, weight=1):
         """
         Choose the best dL and dT to match the resolution dQ.
-        
+
         Given that mlayer uses the following resolution function::
-        
+
             staj dQ = (|Q| dL + 4 * pi * dT ) / L
-        
+
         we can use a linear system solver to find the optimal dL and dT::
 
             [ |Qi|/L, 4*pi/L ] * [dL, dT]' = dQi
-            
+
         If weights are provided (e.g., dR/R), then weight each point before
         fitting.
-        
+
         Given that the experiment is often run with fixed slits at the
         start and end, you may choose to match the resolution across the
         entire Q range, or instead restrict it to just the region where
         the slits are opening.  You will generally want to get the resolution
         correct at the critical edge since that's where it will have the
         largest effect on the fit.
-        
+
         Returns the object so that operations can be chained.
         """
-        A = numpy.array([abs(Q)/self.wavelength, 
+        A = numpy.array([abs(Q)/self.wavelength,
                          numpy.ones_like(Q)*(4*pi/self.wavelength)])
         s = wsolve.wsolve(A,y=dQ,dy=weight)
         self.wavelength_dispersion = s.x[0]
@@ -929,7 +929,7 @@ class MlayerMagnetic(object):
             raise ValueError("layer parameters have different lengths")
         if any((n==0) for n in ns[:3]):
             raise ValueError("rho, thickness and roughness are required")
-        
+
         # Could check if Qmin/Qmax/num_Q matches data, but I don't think
         # it matters, so skip it
 
@@ -971,11 +971,11 @@ class MlayerMagnetic(object):
         #2: intensity  background
         nums = [float(s) for s in lines[1].split()]
         self.intensity, self.background = nums
-        
+
         #3: maxLayer  nRoughSteps  nFitParam
         nums = [int(s) for s in lines[2].split()]
         maxLayer, self.roughness_steps, _ = nums
-    
+
         #4-7: Qmin  Qmax  nQ (data points in a, b, c and d)
         # Note that we are only keeping the first one; for simulation all the
         # others should be the same, and for loading, the datafile will tell
@@ -995,7 +995,7 @@ class MlayerMagnetic(object):
         #11: output_file
         self.data_file = lines[9].strip()
         self.output_file = lines[10].strip()
-        
+
         ## Layer information follows in sets of 3 lines x (nL+1).
         #Line next (1):  rho   depth   rough  mu
         #Line next (2):  mrho  mdepth  mrough (mrho is also known as phi)
@@ -1003,7 +1003,7 @@ class MlayerMagnetic(object):
         nL = maxLayer + 1
         layers = [[float(v) for v in " ".join(lines[11+3*i:11+3*(i+1)]).split()]
                   for i in range(nL)]
-        
+
         A = numpy.array(layers)
         self.rho = A[:,0]* (1e6/16/pi)
         self.irho = A[:,3] * (1e6/2/self.wavelength)
@@ -1027,7 +1027,7 @@ class MlayerMagnetic(object):
 
         #2: intensity  background
         fid.write("%g %g\n"%(self.intensity, self.background))
-        
+
         #3: maxLayer  nRoughSteps  nFitParam
         fid.write("%d %d %d\n"%(len(self.rho)-1, self.roughness_steps,
                                 len(self.fitpars)))
@@ -1047,7 +1047,7 @@ class MlayerMagnetic(object):
         #10: data file (base name without suffix char such as test.refl)
         #11: output_file
         fid.write("%s\n%s\n"%(self.data_file, self.output_file))
-        
+
         ## Layer information follows in sets of 3 lines x (nL+1).
         #Line next (1):  rho   depth   rough  mu
         #Line next (2):  mrho  mdepth  mrough (mrho is also known as phi)

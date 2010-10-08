@@ -74,7 +74,7 @@ def countunique(A):
 def zscore(A, axis=None):
     """
     Convert an array of data to zscores.
-    
+
     Use *axis* to limit the calculation of mean and standard deviation to
     a particular axis.
     """

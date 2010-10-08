@@ -32,8 +32,8 @@ class Corr2d:
     Generate and manage 2D correlation histograms.
     """
     def __init__(self, data, labels=None, **kw):
-        if labels == None: 
-            labels = ["P"+str(i+1) for i,_ in enumerate(data)] 
+        if labels == None:
+            labels = ["P"+str(i+1) for i,_ in enumerate(data)]
         self.N = len(data)
         self.labels = labels
         self.data = data
@@ -73,7 +73,7 @@ def _hists(data, ranges=None, **kw):
         ranges = [(l,h) for l,h in zip(low,high)]
     return dict(((i,j), numpy.histogram2d(data[i], data[j],
                                     range=[ranges[i],ranges[j]], **kw))
-                for i in range(0,N) 
+                for i in range(0,N)
                 for j in range(i+1,N))
 
 def _plot(fig, hists, labels, N):
@@ -108,15 +108,15 @@ def _plot(fig, hists, labels, N):
             data = numpy.clip(data,vmin,vmax)
             a.pcolorfast(y,x,data,cmap=COLORMAP,norm=norm)
             # Show labels or hide ticks
-            if i == 0: 
+            if i == 0:
                 pylab.xlabel(labels[j])
             else:
                 pylab.setp(a.get_xticklabels(),visible=False)
-            if j == i+1: 
+            if j == i+1:
                 pylab.ylabel(labels[i])
             else:
                 pylab.setp(a.get_yticklabels(),visible=False)
-            
+
             a.zoomable=True
 
 
@@ -141,7 +141,7 @@ def zoom(event,step):
         hi = hi + (1-bal)*scale
         return (lo,hi)
 
-    
+
     if ax.zoomable is not True and 'mapper' in ax.zoomable:
         mapper = ax.zoomable['mapper']
         if event.ydata is not None:
@@ -158,4 +158,3 @@ def zoom(event,step):
         lo, hi = rescale(lo,hi,event.ydata,step)
         ax.set_ylim((lo,hi))
     ax.figure.canvas.draw_idle()
-

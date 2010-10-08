@@ -9,7 +9,7 @@ Control points are located at fixed z_k
     z_k = L * (cos( pi*(k-0.5)/N )+1)/2 for k in 1..N
 
 where L is the thickness of the layer.
-    
+
 Interpolation as an O(N log N) cost to calculation of the profile for N
 coefficients.  This is in addition to the O (N S) cost of the direct
 profile for S microslabs.
@@ -18,9 +18,9 @@ profile for S microslabs.
 """
 #TODO: clipping volume fraction to [0,1] distorts parameter space
 # Option 0: clip to [0,1]
-# - Bayesian analysis: parameter values outside the domain will be equally 
+# - Bayesian analysis: parameter values outside the domain will be equally
 #   probable out to infinity
-# - Newton methods: the fit space is flat outside the domain, which leads 
+# - Newton methods: the fit space is flat outside the domain, which leads
 #   to a degenerate hessian.
 # - Direct methods: won't fail, but will be subject to random walk
 #   performance outside the domain.
@@ -36,17 +36,17 @@ profile for S microslabs.
 #   A profile based on clipping may have lower chisq than any profile that
 #   can be described by a valid model (e.g., by having a sharper transition
 #   than would be allowed by the model), leading to a minimum outside D.
-#   Adding a penalty constant outside D would help, but there is no constant 
-#   that works everywhere.  We could use a constant greater than the worst 
+#   Adding a penalty constant outside D would help, but there is no constant
+#   that works everywhere.  We could use a constant greater than the worst
 #   chisq seen so far in D, which can guarantee an arbitrarily low P(x) and
 #   a global minimum within D, but for Newton methods, the boundary may still
 #   have spurious local minima and objective value now depends on history.
 #   Linear compression of profile to fit within the domain would avoid
 #   unreachable profile shapes (this is just a linear transform on chebyshev
-#   coefficients), and the addition of the penalty value would reduce 
-#   parameter correlations that result from having transformed parameters 
-#   resulting in identical profiles.  Returning T = ||A(x)|| from render, 
-#   with A being a transform that brings the profile within [0,1], the 
+#   coefficients), and the addition of the penalty value would reduce
+#   parameter correlations that result from having transformed parameters
+#   resulting in identical profiles.  Returning T = ||A(x)|| from render,
+#   with A being a transform that brings the profile within [0,1], the
 #   objective function can return P'(x) = P(x)/(10*(1+sum(T_i)^4) for all
 #   slabs i, or P(x) if no slabs return a penalty value.  So long as T is
 #   monotonic with increasing badness, with value of 0 within D, and so long
@@ -81,7 +81,7 @@ class FreeformCheby(Layer):
     sld (rho) and imaginary sld (irho) can be modeled with a separate
     polynomial orders.
     """
-    def __init__(self, thickness=0, rho=[], irho=[], 
+    def __init__(self, thickness=0, rho=[], irho=[],
                  name="Cheby", method="interp"):
         self.name = name
         self.method = method
@@ -103,7 +103,7 @@ class FreeformCheby(Layer):
         Pw,Pz = slabs.microslabs(thickness)
         t = Pz/thickness
         Prho = cheby_profile([p.value for p in self.rho], t, self.method)
-        Pirho = cheby_profile([p.value for p in self.irho], t, self.method)        
+        Pirho = cheby_profile([p.value for p in self.irho], t, self.method)
         slabs.extend(rho=[Prho], irho=[Pirho], w=Pw)
 
 class ChebyVF(Layer):
@@ -120,10 +120,10 @@ class ChebyVF(Layer):
             the material of interest
         *solvent* : Material
             the solvent or vacuum
-        *vf* : [float] 
+        *vf* : [float]
             the control points for volume fraction
         *method* = 'interp' : string | 'direct' or 'interp'
-            freeform profile method 
+            freeform profile method
 
     *method* is 'direct' if the *vf* values refer to chebyshev
     polynomial coefficients or 'interp' if *vf* values refer to
@@ -132,11 +132,11 @@ class ChebyVF(Layer):
         z_k = L*(cos(pi (k-0.5)/N)+1) + 1)/2  for k=1..N.
 
     The materials can either use the scattering length density directly,
-    such as PDMS = SLD(0.063, 0.00006) or they can use chemical composition 
+    such as PDMS = SLD(0.063, 0.00006) or they can use chemical composition
     and material density such as PDMS=Material("C2H6OSi",density=0.965).
 
     These parameters combine in the following profile formula::
-    
+
         sld(z) = material.sld * profile(z) + solvent.sld * (1 - profile(z))
     """
     def __init__(self, thickness=0, interface=0,
@@ -150,7 +150,7 @@ class ChebyVF(Layer):
         self.vf = [Par.default(p,name="vf[%d]"%i) for i,p in enumerate(vf)]
         self.method = method
         # Constraints:
-        #   base_vf in [0,1] 
+        #   base_vf in [0,1]
         #   base,length,sigma,thickness,interface>0
         #   base+length+3*sigma <= thickness
     def parameters(self):
@@ -167,7 +167,7 @@ class ChebyVF(Layer):
         S = Sr + 1j*Si
         try: M,S = M[0],S[0]  # Temporary hack
         except: pass
-        
+
         thickness = self.thickness.value
         Pw,Pz = slabs.microslabs(thickness)
         t = Pz/thickness
@@ -185,7 +185,7 @@ def cheby_profile(control, t, method):
     if method == 'interp':
         # DCT calculation of chebyshev coefficients
         #    c_j = 2/N sum_k=1^N f_k cos((2 pi j (k-1) / 2 N)
-        # where 
+        # where
         #    f_k = f[cos( (2 pi k - 1) / 2 N]
         w = exp((-0.5j*pi/n)*numpy.arange(n))
         y = numpy.hstack((c[0::2], c[1::2][::-1]))

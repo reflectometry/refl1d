@@ -9,23 +9,23 @@ product of gaussians.
 This example show performance of the algorithm on multimodal densities,
 with adjustable number of densities and degree of separation.
 
-The peaks are distributed about the x-y plane so that the marginal densities 
+The peaks are distributed about the x-y plane so that the marginal densities
 in x and y are spaced every 2 units using latin hypercube sampling.  For small
 peak widths, this means that the densities will not overlap, and the marginal
-maximum likelihood for a given x or y value should match the estimated density.  
+maximum likelihood for a given x or y value should match the estimated density.
 With overlap, the marginal density will over estimate the marginal maximum
 likelihood.
 
 Adjust the width of the peaks, *S*, to see the effect of relative diameter of
-the modes on sampling.  Adjust the height of the peaks, *I*, to see the 
+the modes on sampling.  Adjust the height of the peaks, *I*, to see the
 effects of the relative height of the modes.  Adjust the count *n* to see
 the effects of the number of modes.
 
-Note that dream.diffev.de_step adds jitter to the parameters at the 1e-6 level, 
+Note that dream.diffev.de_step adds jitter to the parameters at the 1e-6 level,
 so *S* < 1e-4 cannot be modeled reliably.
 
 *draws* is set to 1000 samples per mode.  *burn* is set to 100 samples per mode.
-Population size *h* is set to 20 per mode.  A good choice for number of 
+Population size *h* is set to 20 per mode.  A good choice for number of
 sequences *k* is not yet determined.
 """
 from pylab import *
@@ -51,7 +51,7 @@ model = Mixture(*args)
 
 k = 20*n
 h = int(20*n/k)
-sampler = Dream(model=model, 
+sampler = Dream(model=model,
                 population=randn(h,k,2),
                 #use_delayed_rejection=False,
                 DE_snooker_rate=0.5,

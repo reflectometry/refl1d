@@ -7,8 +7,8 @@ Reflectometry models consist of 1-D stacks of layers.  Layers are joined
 by gaussian interfaces.  The layers themselves may be uniform, or the
 scattering density may vary with depth in the layer.
 
-Note: by importing model, the definition of :class:`material.Scatterer` 
-changes so that materials can be stacked into layers using operator 
+Note: by importing model, the definition of :class:`material.Scatterer`
+changes so that materials can be stacked into layers using operator
 overloading. This will affect all instances of the Scatterer class, and
 all of its subclasses.
 """
@@ -133,7 +133,7 @@ class Stack(Layer):
         newone = Stack()
         newone.__dict__.update(self.__dict__)
         newone._layers = self._layers[:]
-        return newone        
+        return newone
     def __len__(self):
         return len(self._layers)
     def __str__(self):
@@ -159,7 +159,7 @@ class Stack(Layer):
         neutron_probe = probe.NeutronProbe(T=numpy.arange(0,5,100), L=5.)
         xray_probe = probe.XrayProbe(T=numpy.arange(0,5,100), L=1.54)
         slabs = profile.Microslabs(1, dz=dz)
-        
+
         pylab.subplot(211)
         cache = material.ProbeCache(xray_probe)
         slabs.clear()
@@ -173,7 +173,7 @@ class Stack(Layer):
         pylab.ylabel('SLD (10^6 inv A**2)')
         pylab.text(0.05,0.95,r"Cu-$K_\alpha$ X-ray", va="top",ha="left",
                    transform=pylab.gca().transAxes)
-        
+
         pylab.subplot(212)
         cache = material.ProbeCache(neutron_probe)
         slabs.clear()
@@ -188,7 +188,7 @@ class Stack(Layer):
         pylab.text(0.05,0.95,"5 A neutron", va="top",ha="left",
                    transform=pylab.gca().transAxes)
 
-        
+
     # Stacks as lists
     def __getitem__(self, idx):
         if isinstance(idx,slice):
@@ -223,7 +223,7 @@ class Stack(Layer):
         s.add(self)
         s.add(other)
         return s
-    
+
     render.__doc__ = Layer.render.__doc__
 
 def _check_layer(el):
@@ -237,8 +237,8 @@ def _check_layer(el):
 class Repeat(Layer):
     """
     Repeat a layer or stack.
-    
-    If an interface parameter is provide, the roughness between the 
+
+    If an interface parameter is provide, the roughness between the
     multilayers may be different from the roughness between the repeated
     stack and the following layer.
     """
@@ -327,4 +327,3 @@ class Slab(Layer):
             return str(self.material)
     def __repr__(self):
         return "Slab("+repr(self.material)+")"
-

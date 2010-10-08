@@ -109,7 +109,7 @@ elif 0:
 elif 0:
     # Version 5: run longer with larger population and MgO interface at 40
     #    20N for 5*2000 generations
-    # Version 6: 
+    # Version 6:
     #    let theta offset vary according to rocking curve width
     #    let substrate rho vary by 1%
     #    limit MgHxi thickness to 1200

@@ -22,10 +22,10 @@ class DreamModel(dream.MCMCModel):
         self.problem = problem
         self.bounds = zip(*[p.bounds.limits for p in problem.parameters])
         self.labels = [p.name for p in problem.parameters]
-        
+
         self.mapper = mapper if mapper else lambda p: map(self.log_density,p)
 
-        # Pull things up from 
+        # Pull things up from
         self.store = problem.store
         self.dream_opts = problem.dream_opts
         self.name = problem.name
@@ -43,17 +43,17 @@ class DreamModel(dream.MCMCModel):
         """Display the contents of the model in the current figure"""
         if x is not None: self.problem.setp(x)
         self.problem.plot(**kw)
-        
+
     def show(self, x = None):
         """Display the contents of the model in the current figure"""
         if x is not None: self.problem.setp(x)
         self.problem.show()
-        
+
     def save(self, output, x = None):
         """Display the contents of the model in the current figure"""
         if x is not None: self.problem.setp(x)
         self.problem.save(output)
-        
+
     def map(self, pop):
         return numpy.array(self.mapper(pop))
 
@@ -65,7 +65,7 @@ def draw_samples(model, **kw):
     pop_size = chains*len(model.problem.parameters)
     population = random_population(model.problem, pop_size)
     sampler = dream.Dream(model=model, population=population, **kw)
-    
+
     state = sampler.sample()
     #dream.plot_state(state)
     return state
@@ -106,14 +106,14 @@ def preview(model):
     model.show()
     model.plot()
     import pylab; pylab.show()
-    
+
 def start_fit(model, fit_options):
 
     try: os.mkdir(model.store)
     except: pass
     output = os.path.join(model.store,model.name)
     shutil.copy2(model.file, model.store)
-    
+
     # Record call and model definition
     sys.stdout = open(output+".mon","w")
     print "#"," ".join(sys.argv)
@@ -176,7 +176,7 @@ def parse_opts():
 
 def main():
     preview_only = "--preview" in sys.argv
-    if preview_only: sys.argv.remove("--preview")        
+    if preview_only: sys.argv.remove("--preview")
     fit_options, model_file, model_options = parse_opts()
     problem = load_problem(model_file, model_options)
     model = DreamModel(problem=problem)

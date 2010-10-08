@@ -48,9 +48,9 @@ class DreamProxy:
         pop_size = chains*len(self.dream_model.problem.parameters)
         population = random_population(self.dream_model.problem, pop_size)
         population = population[None,:,:]
-        sampler = dream.Dream(model=self.dream_model, population=population, 
+        sampler = dream.Dream(model=self.dream_model, population=population,
                               **dream_opts)
-        
+
         self.state = sampler.sample()
         self.state.title = self.problem.name
 
@@ -58,13 +58,13 @@ class DreamProxy:
 
     def save(self, output):
         self.state.save(output)
-    
+
     def plot(self, output):
         self.state.show(figfile=output)
 
 class FitProxy:
     def __init__(self, fitter, problem):
-        
+
         self.fitter = fitter
         self.problem = problem
         self.opts = {}
@@ -81,15 +81,15 @@ class FitProxy:
 
         self.result = Result(self.problem, x)
         return x
-        
+
     def save(self, output):
         pass
         #self.result.show()
-        
+
     def plot(self, output):
         pass
 
-    
+
 
 # ===== Model manipulation ====
 
@@ -155,7 +155,7 @@ def make_store(problem, opts):
     if opts.store != None:
         problem.store = opts.store
     problem.output = os.path.join(problem.store,problem.name)
-    
+
     # Check if already exists
     if not opts.overwrite and os.path.exists(problem.output+'.out'):
         if opts.batch:
@@ -175,7 +175,7 @@ def make_store(problem, opts):
     # Redirect sys.stdout to capture progress
     if opts.batch:
         sys.stdout = open(problem.output+".mon","w")
-    
+
     # Show command line arguments and initial model
     print "#"," ".join(sys.argv)
     problem.show()
@@ -237,7 +237,7 @@ class AMQPMapper:
         def exit_fun():
             for p in pipes: p.terminate()
         atexit.register(exit_fun)
-    
+
         return mapper
 
     @staticmethod
@@ -313,7 +313,7 @@ where options includes
 
 Options can be anywhere on the command line.
 
-The modelfile is a series of python commands which sets up the data, 
+The modelfile is a series of python commands which sets up the data,
 the models, and the fittable parameters.  The model arguments are
 available in the modelfile as sys.argv[1:].  Model arguments may not
 start with '-'.
@@ -358,7 +358,7 @@ def main():
     from refl1d import Probe
     Probe.view = opts.plot
 
-    
+
     if opts.profile:
         run_profile(problem)
     elif opts.worker:

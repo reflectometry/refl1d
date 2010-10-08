@@ -128,7 +128,7 @@ class Job(object):
     def status(self):
         """
         Query remote server for job status.  Returns one of:
-        
+
             PENDING, ACTIVE, COMPLETE, ERROR
         """
         return self.server.status(self.jobid)
@@ -147,12 +147,12 @@ class Job(object):
     def result(self):
         """
         Check if job is complete, and return the value or return None if
-        job is not yet complete.  
-        
+        job is not yet complete.
+
         Raises RuntimeError if the job terminated with an error.
-        
+
         Example:
-        
+
             while job.result is None: time.sleep(1)
             print job.result
         """
@@ -177,12 +177,12 @@ class Job(object):
     def error(self):
         """
         Return the error if one has been encounter, or return None.
-        
+
         This does not check for job completion first, and so it should
         be used after job.result or job.wait() raises an error.
-        
+
         Example:
-        
+
             try:
                 print job.wait()
             except:
@@ -233,4 +233,3 @@ class CompletedJob:
             raise RuntimeError("job raised remote error")
     def after(self, fn, pollrate=1):
         thread.start_new_thread(fn, (self, self.result))
-

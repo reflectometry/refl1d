@@ -41,10 +41,10 @@ def prepare(job):
 def commands(jobid, job):
     interp = config.interp()
     service = "%s -m park.amqp.start_service %s %s '%s'"\
-        %(interp, jobid, job['service']['name'], 
+        %(interp, jobid, job['service']['name'],
           json.dumps(job['service']['input']))
     worker = "%s -m park.amqp.start_kernel %s %s '%s'"\
-        %(interp, jobid, job['kernel']['name'], 
+        %(interp, jobid, job['kernel']['name'],
           json.dumps(job['kernel']['input']))
 
     return service, worker
@@ -54,11 +54,11 @@ _ = '''
 def makeenv(requirements):
     """
     Create an execution environment out of the required packages.
-    
+
     Environment is a dictionary of interpreter, package and requires.
-    
+
     E.g.,
-    
+
         requirements = {
           'interpreter': "python2.5",
           'repositories':

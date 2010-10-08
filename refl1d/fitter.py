@@ -107,8 +107,8 @@ def mesh(models=[], weights=None, vars=None, n=40):
         #parameter.summarize(problem.parameters)
         return problem.chisq()
     z = [[fn(xi,yi) for xi in x] for yi in y]
-    return x,y,numpy.asarray(z) 
-    
+    return x,y,numpy.asarray(z)
+
 
 def fit(models=[], weights=None, fitter=DEFit, **kw):
     """
@@ -129,7 +129,7 @@ def fit(models=[], weights=None, fitter=DEFit, **kw):
 def show_chisq(chisq, fid=None):
     """
     Show chisq statistics on a drawing from the likelihood function.
-    
+
     dof is the number of degrees of freedom, required for showing the
     normalized chisq.
     """
@@ -139,7 +139,7 @@ def show_chisq(chisq, fid=None):
 
     valstr = format_uncertainty(v, dv)
     print >>fid, "Chisq for samples: %s,  [min,max] = [%g,%g]" % (valstr,lo,hi)
-    
+
 def show_stats(pars, points, fid=None):
     """
     Print a stylized list of parameter names and values with range bars.
@@ -166,13 +166,13 @@ def show_correlations(pars, points, fid=None):
     """
     if 1: # Use correlation coefficient
         R = numpy.corrcoef(points.T)
-        corr = [(i,j,R[i,j]) 
+        corr = [(i,j,R[i,j])
                 for i in range(len(pars))
                 for j in range(i+1, len(pars))]
         # Trim those which are not significant
         corr = [(i,j,r) for i,j,r in corr if abs(r) > 0.2]
         corr = list(sorted(corr, cmp=lambda x,y: cmp(abs(y[2]),abs(x[2]))))
-  
+
     else: # Use ??
         z = util.zscore(points, axis=0)
         # Compute all cross correlations
@@ -191,7 +191,7 @@ def show_correlations(pars, points, fid=None):
             print >>fid, pars[i].name, "X", pars[j].name, ":", r
 
 
-    
+
 import pytwalk
 class TWalk:
     def __init__(self, problem):
@@ -228,7 +228,7 @@ class Result:
         """
         Refit the result multiple times with resynthesized data, building
         up an array in Result.samples which contains the best fit to the
-        resynthesized data.  *samples* is the number of samples to generate.  
+        resynthesized data.  *samples* is the number of samples to generate.
         *fitter* is the (local) optimizer to use. **kw are the parameters
         for the optimizer.
         """
@@ -463,7 +463,7 @@ class FitProblem:
     def __call__(self, pvec):
         """
         Problem cost function.
-        
+
         Returns the negative log likelihood scaled by 2/DOF so that
         the result looks like the familiar normalized chi-squared.  These
         scale factors will not affect the value of the minimum, though some

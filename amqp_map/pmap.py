@@ -15,15 +15,15 @@ def pickle_worker(server):
     map_queue = "map.pickle"
     channel.exchange_declare(exchange=exchange, type="direct",
                              durable=False, auto_delete=True)
-    channel.queue_declare(queue=map_queue, durable=False, 
+    channel.queue_declare(queue=map_queue, durable=False,
                           exclusive=False, auto_delete=True)
 
     _rpc_queue,_,_ = channel.queue_declare(queue=service,
-                                           durable=False, 
-                                           exclusive=True, 
+                                           durable=False,
+                                           exclusive=True,
                                            auto_delete=True)
     channel.queue_bind(queue=_rpc_queue,
-                       exchange="amq.direct", 
+                       exchange="amq.direct",
                        routing_key=queue)
 
 
@@ -31,22 +31,22 @@ def pickle_worker(server):
     def _fetch_function(queue, mapid):
         reply = amqp.Message(dumps(dict(mapid=mapid,
                                         sendfunction=rpc_queue)))
-        channel.basic_publish(reply, exchange=exchange, 
+        channel.basic_publish(reply, exchange=exchange,
                               routing_key=queue)
         def _receive_function(msg):
             rpc_channel.basic_cancel(tag)
             body = pickle.loads(msg.body)
             _cache[body['mapid']] = pickle.loads(body['function'])
-            
-        tag = channel.basic_consume(queue=queue, 
-                                    callback=_receive_function, 
+
+        tag = channel.basic_consume(queue=queue,
+                                    callback=_receive_function,
                                     no_ack=False)
         rpc_channel.wait() # Wait for function id
 
     def _process_work(msg):
         # Check for sentinel
         if msg.reply_to == "": channel.basic_cancel(consumer)
-        
+
         body = pickle.loads(msg.body)
         mapid = body['mapid']
         if mapid not in _cache:
@@ -57,7 +57,7 @@ def pickle_worker(server):
             return
 
         # Acknowledge delivery of message
-        #print "processing...",body['index'],body['value'] 
+        #print "processing...",body['index'],body['value']
         try:
             result = function(body['value'])
         except:
@@ -66,10 +66,10 @@ def pickle_worker(server):
         channel.basic_ack(msg.delivery_tag)
         reply = dict(index=body['index'], result=result, mapid=mapid)
         replymsg = amqp.Message(pickle.dumps(reply))
-        channel.basic_publish(replymsg, exchange=exchange, 
+        channel.basic_publish(replymsg, exchange=exchange,
                               routing_key=msg.reply_to)
     #channel.basic_qos(prefetch_size=0, prefetch_count=1, a_global=False)
-    consumer = channel.basic_consume(queue=map_queue, callback=_process_work, 
+    consumer = channel.basic_consume(queue=map_queue, callback=_process_work,
                                      no_ack=False)
     while True:
         channel.wait()
@@ -86,22 +86,22 @@ class PickleMapper(object, RPCMixin):
 
         map_channel = channel
         map_queue = "map.pickle"
-        map_channel.queue_declare(queue=map_queue, durable=False, 
+        map_channel.queue_declare(queue=map_queue, durable=False,
                                   exclusive=False, auto_delete=True)
         map_channel.queue_bind(queue=map_queue, exchange="park.map",
                                routing_key = map_queue)
-        
+
         reply_channel = server.channel()
         #reply_queue = ".".join(("reply",mapid)) # Fixed Queue name
         reply_queue = "" # Let amqp create a temporary queue for us
         reply_queue,_,_ = reply_channel.queue_declare(queue=reply_queue,
-                                                      durable=False, 
-                                                      exclusive=True, 
+                                                      durable=False,
+                                                      exclusive=True,
                                                       auto_delete=True)
         reply_channel.queue_bind(queue=reply_queue, exchange="park.map",
                                  routing_key = reply_queue)
-        reply_channel.basic_consume(queue=reply_queue, 
-                                    callback=self._process_result, 
+        reply_channel.basic_consume(queue=reply_queue,
+                                    callback=self._process_result,
                                     no_ack=True)
         self.exchange = exchange
         self.map_queue = map_queue
@@ -127,7 +127,7 @@ class PickleMapper(object, RPCMixin):
         for i,v in enumerate(items):
             self.num_queued = i
             #print "queuing %d %s"%(i,v)
-            
+
             ## USE_LOCKS_TO_THROTTLE
             if  self.num_queued - self.num_processed > config.MAX_QUEUE:
                 #print "sleeping at %d in %d out"%(i,self.num_processed)
@@ -150,7 +150,7 @@ class PickleMapper(object, RPCMixin):
 
     def _send_function(self, function_str, destination):
         msg = amqp.Message(function_str, delivery_mode=1)
-        self.map_channel.basic_publish(msg, 
+        self.map_channel.basic_publish(msg,
                                        exchange=self.exchange,
                                        routing_key=destination)
     def cancel(self):
@@ -207,7 +207,7 @@ class PickleMapper(object, RPCMixin):
                 self._throttle.acquire()
                 self._throttle.notify()
                 self._throttle.release()
-            
+
             yield idx,result
         publisher.join()
     def __call__(self, fn, items):

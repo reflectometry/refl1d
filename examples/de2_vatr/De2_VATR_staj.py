@@ -12,7 +12,7 @@ if True:
     for Lxr,Lnr in zip(Mxr.sample,Mnr.sample):
         Lxr.thickness = Lnr.thickness
         Lxr.interface = Lnr.interface
-    
+
     for Lxr,Lnr in zip(Mxr.sample,Mnr.sample):
         Lxr.material.rho.pmp(5)
         Lnr.material.rho.pmp(5)
@@ -30,7 +30,7 @@ if False:
         sld.rho.range(0,20)
     for L in layers:
         L.thickness.pmp(5)
-    
+
     # Load xray data
     instrument = ncnrdata.XRay(slits_at_Tlo=0.2)
     xray_probe = instrument.load('n5hl2_Short.refl')
@@ -56,4 +56,3 @@ else:
     result.save('De2_VATR_staj')
     result.show()
     result.show_stats()
-

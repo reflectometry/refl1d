@@ -17,12 +17,12 @@ class Fresnel:
             real and imaginary scattering length density of incident medium
         *sigma* = 0 : float | Angstrom
             interfacial roughness
-            
+
     :Returns:
         fresnel : Fresnel
             callable object for computing Fresnel reflectivity at Q
 
-    Note that we do not correct for attenuation of the beam through the 
+    Note that we do not correct for attenuation of the beam through the
     incident medium since we do not know the path length.
     """
     def __init__(self, rho=0, irho=0, sigma=0, Vrho=0, Virho=0):
@@ -62,7 +62,7 @@ class Fresnel:
 def test():
     import numpy
     import abeles
-    
+
     # Rough silicon with an anomolously large absorbtion
     rho,irho = 2.07,0.01
     Vrho,Virho = -1,0.1

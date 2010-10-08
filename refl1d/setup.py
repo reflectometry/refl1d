@@ -14,7 +14,7 @@ def configuration(parent_package='',
 
     # reflectometry library sources
     srcpath = os.path.join(config.package_path, 'lib')
-    sources = [os.path.join(srcpath,f) 
+    sources = [os.path.join(srcpath,f)
                for f in ("reflmodule.cc","methods.cc","reflectivity.cc",
                          "magnetic.cc","resolution.c")]
 

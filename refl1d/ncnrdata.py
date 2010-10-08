@@ -61,7 +61,7 @@ from probe import PolarizedNeutronProbe
 def load(filename, instrument=None, **kw):
     """
     Return a probe for NCNR data.
-    
+
     Keyword arguments are as specified in :class:`resolution.Monochromatic`.
     """
     if filename is None: return None
@@ -73,7 +73,7 @@ def load(filename, instrument=None, **kw):
     probe = resolution.probe(data=(R,dR), **header)
     probe.title = header['title'] if 'title' in header else filename
     probe.date = header['date'] if 'date' in header else "unknown"
-    probe.instrument = (header['instrument'] if 'instrument' in header 
+    probe.instrument = (header['instrument'] if 'instrument' in header
                         else instrument.instrument)
     probe.filename = filename
     return probe
@@ -81,7 +81,7 @@ def load(filename, instrument=None, **kw):
 def load_magnetic(filename, Tguide=270, shared_beam=True, **kw):
     """
     Return a probe for magnetic NCNR data.
-    
+
     *filename* (string, or 4x string)
         If it is a string, then filenameA, filenameB, filenameC, filenameD,
         are the ++, +-, -+, -- cross sections, otherwise the individual
@@ -92,9 +92,9 @@ def load_magnetic(filename, Tguide=270, shared_beam=True, **kw):
     *shared_beam* (True)
         Use false if beam parameters should be fit separately for the
         individual cross sections.
-    
+
     Other keyword arguments are for the individual cross section loaders
-    as specified in :class:`resolution.Monochromatic`.    
+    as specified in :class:`resolution.Monochromatic`.
 
     The data sets should are the base filename with an additional character
     corresponding to the spin state::
@@ -126,7 +126,7 @@ def load_magnetic(filename, Tguide=270, shared_beam=True, **kw):
 def find_xsec(filename):
     """
     Find files containing the polarization cross-sections.
-    
+
     Returns tuple with file names for ++ +- -+ -- cross sections, or
     None if the spin cross section does not exist.
     """
@@ -135,7 +135,7 @@ def find_xsec(filename):
         filename + 's'
     except:
         return filename
-        
+
     if filename[-1] in 'abcdABCD':
         filename = filename[:-1]
     def check(a):

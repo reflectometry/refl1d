@@ -4,7 +4,7 @@
 Basic reflectometry calculations.
 
 reflectivity, magnetic_reflectivity, unpolarized_magnetic:
-    Slab model reflectivity calculator with optional absorption and roughness. 
+    Slab model reflectivity calculator with optional absorption and roughness.
     The function reflectivity_amplitude returns the complex waveform.
 
     Slab model with supporting magnetic scattering.  The function
@@ -50,7 +50,7 @@ def reflectivity(*args, **kw):
             be stored in column order.
         *kz* : float[M] | angstrom**-1
             Points at which to evaluate the reflectivity
-        *rho_index* : integer[M]            
+        *rho_index* : integer[M]
             *rho* and *irho* columns to use for the various kz.
 
     :Returns:
@@ -83,11 +83,11 @@ def reflectivity_amplitude(kz=None,
         *rho*, *irho* = 0: float[N] OR float[N,K] | 10^-6 angstrom**-2
             Real and imaginary scattering length density.  Use multiple
             columns when you have kz-dependent scattering length densities,
-            and set *rho_index* to select amongst them.  Data should be 
+            and set *rho_index* to select amongst them.  Data should be
             stored in column order.
         *kz* : float[M] | angstrom**-1
             Points at which to evaluate the reflectivity
-        *rho_index* = 0 : integer[M]            
+        *rho_index* = 0 : integer[M]
             *rho* and *irho* columns to use for the various kz.
 
     :Returns:
@@ -101,7 +101,7 @@ def reflectivity_amplitude(kz=None,
         rho_index = numpy.zeros(kz.shape,'i')
     else:
         rho_index = _dense(rho_index, 'i')
-    
+
     depth = _dense(depth, 'd')
     if numpy.isscalar(sigma):
         sigma = sigma*numpy.ones(len(depth)-1, 'd')

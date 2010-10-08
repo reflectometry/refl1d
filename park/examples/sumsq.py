@@ -37,7 +37,7 @@ square = dict(name="park.examples.sumsq.square_kernel", input=None)
 
 if __name__ == "__main__":
     import park.client
-    with park.client.connect("http://sparkle.ncnr.nist.gov:8000"):        
+    with park.client.connect("http://sparkle.ncnr.nist.gov:8000"):
         job = sum(lambda x: 1, 4000)
         #job = sum(square, 5000)
         #job = sum(square, [1,2,3,4,5,6,7,8,9])

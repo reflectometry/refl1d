@@ -35,12 +35,12 @@ import time
 from .threaded import threaded, daemon
 
 def connect(url, insist=False):
-    url = URL(url, host="localhost", port=5672, 
+    url = URL(url, host="localhost", port=5672,
               user="guest", password="guest", path="/")
     host = ":".join( (url.host, str(url.port)) )
     userid,password = url.user,url.password
     virtual_host = "/" + url.path
-    server = amqp.Connection(host=host, userid=userid, password=password, 
+    server = amqp.Connection(host=host, userid=userid, password=password,
                              virtual_host=virtual_host, insist=insist)
     return server
 
@@ -56,7 +56,7 @@ def start_worker(server, mapid, work):
     map_queue = ".".join(("map",mapid))
     channel.exchange_declare(exchange=exchange, type="direct",
                              durable=False, auto_delete=True)
-    channel.queue_declare(queue=map_queue, durable=False, 
+    channel.queue_declare(queue=map_queue, durable=False,
                           exclusive=False, auto_delete=True)
 
     #me = os.getpid()
@@ -65,7 +65,7 @@ def start_worker(server, mapid, work):
     # Prefetch requires basic_ack, basic_qos and consume with ack
     def _process_work(msg):
         # Check for sentinel
-        if msg.reply_to == "": 
+        if msg.reply_to == "":
             channel.basic_cancel(consumer)
         body = loads(msg.body)
         # Acknowledge delivery of message
@@ -80,10 +80,10 @@ def start_worker(server, mapid, work):
         #print "done"
         channel.basic_ack(msg.delivery_tag)
         reply = amqp.Message(dumps(dict(index=body['index'],result=result)))
-        channel.basic_publish(reply, exchange=exchange, 
+        channel.basic_publish(reply, exchange=exchange,
                               routing_key=msg.reply_to)
     #channel.basic_qos(prefetch_size=0, prefetch_count=1, a_global=False)
-    consumer = channel.basic_consume(queue=map_queue, callback=_process_work, 
+    consumer = channel.basic_consume(queue=map_queue, callback=_process_work,
                                      no_ack=False)
     while True:
         channel.wait()
@@ -98,22 +98,22 @@ class Mapper(object):
 
         map_channel = channel
         map_queue = ".".join(("map",mapid))
-        map_channel.queue_declare(queue=map_queue, durable=False, 
+        map_channel.queue_declare(queue=map_queue, durable=False,
                                   exclusive=False, auto_delete=True)
         map_channel.queue_bind(queue=map_queue, exchange="park.map",
                                routing_key = map_queue)
-        
+
         reply_channel = server.channel()
         #reply_queue = ".".join(("reply",mapid)) # Fixed Queue name
         reply_queue = "" # Let amqp create a temporary queue for us
         reply_queue,_,_ = reply_channel.queue_declare(queue=reply_queue,
-                                                      durable=False, 
-                                                      exclusive=True, 
+                                                      durable=False,
+                                                      exclusive=True,
                                                       auto_delete=True)
         reply_channel.queue_bind(queue=reply_queue, exchange="park.map",
                                  routing_key = reply_queue)
-        reply_channel.basic_consume(queue=reply_queue, 
-                                    callback=self._process_result, 
+        reply_channel.basic_consume(queue=reply_queue,
+                                    callback=self._process_result,
                                     no_ack=True)
         self.exchange = exchange
         self.map_queue = map_queue
@@ -134,7 +134,7 @@ class Mapper(object):
         for i,v in enumerate(items):
             self.num_queued = i
             #print "queuing %d %s"%(i,v)
-            
+
             ## USE_LOCKS_TO_THROTTLE
             if  self.num_queued - self.num_processed > config.MAX_QUEUE:
                 #print "sleeping at %d in %d out"%(i,self.num_processed)
@@ -163,7 +163,7 @@ class Mapper(object):
         # Need to clear the queued items and notify async that no more results.
         # Messages in transit need to be ignored, which probably means tagging
         # each map header with a call number so that previous calls don't
-        # get confused with current calls.        
+        # get confused with current calls.
         msg = amqp.Message("", reply_to="", delivery_mode=1)
         self.map_channel.basic_publish(msg, exchange=self.exchange,
                                        routing_key=self.map_queue)
@@ -198,12 +198,11 @@ class Mapper(object):
                 # Ten at a time go through for slow processes
                 self._throttle.acquire()
                 self._throttle.notify()
-                self._throttle.release() 
-            
+                self._throttle.release()
+
             yield idx,result
         publisher.join()
     def __call__(self, items):
         result = list(self.async(items))
         result = list(sorted(result,lambda x,y: cmp(x[0],y[0])))
         return zip(*result)[1]
-

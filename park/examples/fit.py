@@ -14,7 +14,7 @@ def cost_kernel(env, input):
     return lambda p: chisq(numpy.polyval(p,x), y, dy)
 cost = dict(name="park.examples.fit.cost_kernel", input="",
             files=dict(data="mydata.txt"))
-    
+
 
 
 
@@ -38,5 +38,5 @@ def main():
         job = diffev(cost,parameters,ftol=1e-5,maxiter=100,npop=10)
     print job.wait()
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
     main()

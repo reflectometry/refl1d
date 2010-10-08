@@ -17,17 +17,17 @@ The results may be queried as follows::
     show()/save(file)/load(file)
 
 Data is stored in circular arrays, which keeps the last N generations and
-throws the rest away.  
+throws the rest away.
 
-*generation* is the total number of generations drawn by the sampler.  
+*generation* is the total number of generations drawn by the sampler.
 
-*cycle* is the number of times around the circular array.  
+*cycle* is the number of times around the circular array.
 
 *thinning* is the number of generations to user per stored sample.
 
 draws[i] is the number of draws including those required to produce the
-information in the corresponding return vector.  Note that draw numbers 
-need not be linearly spaced, since techniques like delayed rejection 
+information in the corresponding return vector.  Note that draw numbers
+need not be linearly spaced, since techniques like delayed rejection
 will result in a varying number of samples per generation.
 
 logp[i] is the set of log likelihoods, one for each member of the population.
@@ -38,16 +38,16 @@ AR[i] is the acceptance rate at generation i, showing the proportion of
 proposed points which are accepted into the population.
 
 chains[i,:,:] is the set of points in the differential evolution population
-at thinned generation i.  Ideally, the thinning rate of the MCMC process 
-is chosen so that thinned generations i and i+1 are independent samples 
+at thinned generation i.  Ideally, the thinning rate of the MCMC process
+is chosen so that thinned generations i and i+1 are independent samples
 from the posterior distribution, though there is a chance that this may
-not be the case, and indeed, some points in generation i+1 may be identical 
+not be the case, and indeed, some points in generation i+1 may be identical
 to those in generation i.  Actual generation number is i*thinning.
 
 points[i,:] is the ith point in a returned sample.  The i is just a place
 holder; there is no inherent ordering to the sample once they have been
-extracted from the chains.  Note that the sample may be from a marginal 
-distribution.  
+extracted from the chains.  Note that the sample may be from a marginal
+distribution.
 
 R[i] is the Gelman R statistic measuring convergence of the Markov chain.
 
@@ -95,14 +95,14 @@ def save_state(state, filename):
     Nthin,Npop,Nvar = point.shape
     point = dstack((logp[:,:,None], point))
     point = reshape(point, (point.shape[0]*point.shape[1],point.shape[2]))
-    
+
     draws, R_stat = state.R_stat()
     _, CR_weight = state.CR_weight()
     _, Ncr = CR_weight.shape
     stats = hstack((draws[:,None], R_stat, CR_weight))
 
     #TODO: missing _outliers from save_state
-    
+
     # Write convergence info
     file = CREATE(filename+'-chain'+EXT,'w')
     file.write('# draws acceptance_rate %d*logp\n'%Npop)
@@ -114,7 +114,7 @@ def save_state(state, filename):
     file.write('# logp point (Nthin x Npop x Nvar = [%d,%d,%d])\n'%(Nthin,Npop,Nvar))
     savetxt(file,point)
     file.close()
-    
+
     # Write stats
     file=CREATE(filename+'-stats'+EXT,'w')
     file.write('# draws %d*R-stat %d*CR_weight\n'%(Nvar,Ncr))
@@ -141,7 +141,7 @@ def loadtxt(file, report=0):
     lineno = 0
     for line in fh:
         lineno += 1
-        if report and lineno%report==0: 
+        if report and lineno%report==0:
             print "read",section
             section += 1
         IND_PAT.sub('nan', line)
@@ -163,13 +163,13 @@ def load_state(filename, skip=0):
 
     # Read point file
     file = open(filename+'-point'+EXT,'r')
-    line = file.readline()    
+    line = file.readline()
     point_dims = line[line.find('[')+1:line.find(']')]
     Nthin,Npop,Nvar = eval(point_dims)
     for _ in range(skip*Npop): file.readline()
     point = loadtxt(file,report=1000*Npop)
     file.close()
-    
+
     # Read stats file
     stats = loadtxt(filename+'-stats'+EXT)
 
@@ -178,7 +178,7 @@ def load_state(filename, skip=0):
     thinning = 1
     Nthin -= skip
     Nupdate = stats.shape[0]
-    #Ncr = stats.shape[1] - Nvar - 1    
+    #Ncr = stats.shape[1] - Nvar - 1
 
     # Create empty draw and fill it with loaded data
     state = MCMCDraw(0,0,0,0,0,0,thinning)
@@ -202,7 +202,7 @@ def load_state(filename, skip=0):
     bestidx = numpy.argmax(point[:,0])
     state._best_logp = point[bestidx,0]
     state._best_x = point[bestidx,1:]
-    
+
 
     return state
 
@@ -277,11 +277,11 @@ class MCMCDraw(object):
         self._gen_acceptance_rate[i] = 100*sum(accept)/new_draws
         self._gen_logp[i] = logp
         i = i+1
-        if i == len(self._gen_draws): 
+        if i == len(self._gen_draws):
             i = 0
             self.cycle += 1
         self._gen_index = i
-        
+
         # Keep every nth iteration
         self._thin_timer += 1
         if self._thin_timer == self.thinning or force_keep:
@@ -316,7 +316,7 @@ class MCMCDraw(object):
 
     def _replace_outlier(self, old, new):
         """
-        Called from outliers.py when a chain is replaced by the 
+        Called from outliers.py when a chain is replaced by the
         clone of another.
         """
         self._outliers.append((self._thin_index,old,new))
@@ -350,7 +350,7 @@ class MCMCDraw(object):
         # (2) because it is circular, the cursor may be in the middle
         # If the current generation isn't in the buffer (but is instead
         # stored separately as _gen_current), then the entire buffer
-        # becomes the history pool.  
+        # becomes the history pool.
         # otherwise we need to exclude the current generation from
         # the pool.  If (2) happens, we need to increment everything
         # above the cursor by the number of chains.
@@ -370,9 +370,9 @@ class MCMCDraw(object):
             pop[:Nchain] = points[cursor:cursor+Nchain]
 
         if Npop > Nchain:
-            # Find the remainder with unique ancestors.  
-            # Again, because this is a circular buffer, their may be random 
-            # numbers generated at or above the cursor.  All of these must 
+            # Find the remainder with unique ancestors.
+            # Again, because this is a circular buffer, their may be random
+            # numbers generated at or above the cursor.  All of these must
             # be shifted by Nchains to avoid the cursor.
             perm = draw(Npop-Nchain,pool_size)
             perm[perm>=cursor] += Nchain
@@ -387,12 +387,12 @@ class MCMCDraw(object):
         """
         Return the iteration number and the log likelihood for each point in
         the individual sequences in that iteration.
-        
+
         For example, to plot the convergence of each sequence::
-        
+
             draw, logp = state.logp()
             plot(draw, logp)
-        
+
         Note that draw[i] represents the total number of samples taken,
         including those for the samples in logp[i].
         """
@@ -408,12 +408,12 @@ class MCMCDraw(object):
     def acceptance_rate(self):
         """
         Return the iteration number and the acceptance rate for that iteration.
-        
+
         For example, to plot the acceptance rate over time::
-        
+
             draw, AR = state.acceptance_rate()
             plot(draw, AR)
-        
+
         """
         vectors = self._gen_draws, self._gen_acceptance_rate
         N,idx = self.generation, self._gen_index
@@ -423,26 +423,26 @@ class MCMCDraw(object):
             return [numpy.roll(v,-idx,axis=0) for v in vectors]
         else:
             return vectors
-            
+
     def chains(self, unroll=False):
         """
         Returns the observed Markov chains and the corresponding likelihoods.
-        
+
         The return value is a tuple (*draws*,*chains*,*logp*).
 
         *draws* is the number of samples taken up to and including the samples
         for the current generation.
-        
+
         *chains* is a three dimensional array of generations X chains X vars
         giving the set of points observed for each chain in every generation.
         Only the thinned samples are returned.
-        
+
         *logp* is a two dimensional array of generation X population giving
         the log likelihood of observing the set of variable values given in
         chains.
-        
-        NOTE: Unless called with mc.chains(unroll=True), the chains are 
-        returned as a circular array with the starting index somewhere in 
+
+        NOTE: Unless called with mc.chains(unroll=True), the chains are
+        returned as a circular array with the starting index somewhere in
         the middle.
         """
         vectors = self._thin_draws,self._thin_point,self._thin_logp
@@ -460,10 +460,10 @@ class MCMCDraw(object):
         Return the R-statistics convergence statistic for each variable.
 
         For example, to plot the convergence of all variables over time::
-        
+
             draw, R = state.R_stat()
             plot(draw, R)
-    
+
         See :module:`dream.gelman` and references detailed therein.
         """
         vectors = self._update_draws,self._update_R_stat
@@ -474,16 +474,16 @@ class MCMCDraw(object):
             return [numpy.roll(v,-idx,axis=0) for v in vectors]
         else:
             return vectors
-    
+
     def CR_weight(self):
         """
         Return the crossover ratio weights to be used in the next generation.
 
         For example, to see if the adaptive CR is stable use::
-        
+
             draw, weight = state.CR_weight()
             plot(draw, weight)
-    
+
         See :module:`dream.crossover` for details.
         """
         vectors = self._update_draws,self._update_CR_weight
@@ -498,22 +498,22 @@ class MCMCDraw(object):
     def outliers(self):
         """
         Return a list of outlier removal operations.
-        
+
         Each outlier operation is a tuple giving the thinned generation
         in which it occurred, the old chain id and the new chain id.
-        
-        The chains themselves have already been updated to reflect the 
+
+        The chains themselves have already been updated to reflect the
         removal.
-        
+
         Curiously, it is possible for the maximum likelihood seen so far
-        to be removed by this operation.        
+        to be removed by this operation.
         """
         return asarray(self._outliers, 'i')
 
     def best(self):
         """
         Return the best point seen and its log likelihood.
-        """        
+        """
         return self._best_x, self._best_logp
 
     def sample(self, portion=1, vars=None, selection=None):
@@ -523,18 +523,18 @@ class MCMCDraw(object):
         *portion* is the portion of each chain to use
         *vars* is a list of variables to return for each point
         *selection* sets the range for the returned marginal distribution
-        
+
         *selection* is a dictionary of {variable: (low,high)} to set the
         range on each variable.  Missing variables default to the full
         range.
-        
+
         To plot the distribution for parameter p1::
-        
+
             points, logp = state.sample()
             hist(points[:,0])
 
         To plot the interdependence of p1 and p2::
-        
+
             draw, points, logp = state.sample()
             plot(points[:,0],points[:,1],'.')
 
@@ -550,15 +550,15 @@ class MCMCDraw(object):
 
         *fn* is a function taking points p[:,k] for k in 0 ... samples and
         returning a set of derived variables pj[k] for each sample k.  The
-        variables can be returned as any kind of sequence including an 
-        array or a tuple with one entry per variable.  The caller uses 
+        variables can be returned as any kind of sequence including an
+        array or a tuple with one entry per variable.  The caller uses
         asarray to convert the returned variables into a vars X samples array.
         For convenience, a single variable can be returned by itself.
-        
+
         *labels* are the labels to use for the derived variables.
-        
+
         The following example adds the new variable x+y = P[0] + P[1]::
-        
+
             state.derive_vars(lambda p: p[0]+p[1], labels=["x+y"])
         """
         # Grab all samples as a set of points
@@ -574,7 +574,7 @@ class MCMCDraw(object):
         # Extend new variables to be the same length as the stored selection
         Nthin = self._thin_point.shape[0]
         newvars = numpy.resize(newvars, (Nthin, Npop, Nnew))
-        
+
         # Add new variables to the points
         self._thin_point = dstack( (self._thin_point, newvars) )
 
@@ -598,7 +598,7 @@ def _sample(state, portion, vars, selection):
     draw, chains, logp = state.chains()
     start = int((1-portion)*len(draw))
     chains = chains[start:]
-    logp = logp[start:]    
+    logp = logp[start:]
     Ngen,Npop,Nvar = chains.shape
     points = reshape(chains,(Ngen*Npop,Nvar))
     logp = reshape(logp,(Ngen*Npop))
@@ -620,7 +620,7 @@ def test():
     from numpy.linalg import norm
     from numpy.random import rand
     from numpy import arange
-    
+
     # Make some fake data
     Nupdate,Nstep = 3,5
     Ngen = Nupdate*Nstep
@@ -632,11 +632,11 @@ def test():
     Rin = rand(Nupdate,1)
     thinning = 2
     Nthin = int(Ngen/thinning)
-    
+
     # Put it into a state
     thinning = 2
     Nthin = int(Ngen/thinning)
-    state = MCMCDraw(Ngen=Ngen, Nthin=Nthin, Nupdate=Nupdate, 
+    state = MCMCDraw(Ngen=Ngen, Nthin=Nthin, Nupdate=Nupdate,
                      Nvar=Nvar, Npop=Npop, Ncr=Ncr, thinning=thinning)
     for i in range(Nupdate):
         state._update(R_stat=Rin[i],CR_weight=CRin[i])
@@ -672,12 +672,11 @@ def test():
     state._replace_outlier(1,2)
     outliers = state.outliers()
     draws,sample,logp = state.sample()
-    assert norm(outliers -  asarray([[state._thin_index,1,2]])) == 0    
+    assert norm(outliers -  asarray([[state._thin_index,1,2]])) == 0
     assert norm(sample[:,1,:] - xin[thinning-1::thinning,2,:]) == 0
     assert norm(sample[:,2,:] - xin[thinning-1::thinning,2,:]) == 0
     assert norm(logp[:,1] - pin[thinning-1::thinning,2]) == 0
     assert norm(logp[:,2] - pin[thinning-1::thinning,2]) == 0
-    
+
 if __name__ == "__main__":
     test()
-    

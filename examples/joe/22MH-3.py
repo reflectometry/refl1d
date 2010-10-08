@@ -53,7 +53,7 @@ PdH = Compound(('Pd',1,'H',nH), name='<Pd+kH>', use_incoherent=True)
 PdH.density = (Pd.density / Pd_stretch
                * (1 + nH * (elements.H.mass/elements.Pd.mass)))
 
-sample1 = (sapphire%0.85 + Mg_MgH2a/480%31.6 + Mg_MgH2b/790.286%0.43 
+sample1 = (sapphire%0.85 + Mg_MgH2a/480%31.6 + Mg_MgH2b/790.286%0.43
            + Pd/555.35%0.43 + air)
 sample2 = sample1[:]
 sample2[3] = PdH%0.43

@@ -81,7 +81,7 @@ def plot_log(data, theory=None):
     pylab.xlabel('Q (inv Angstroms)')
     pylab.ylabel('Reflectivity')
 
-#TODO: move stitch from an example to a test suite    
+#TODO: move stitch from an example to a test suite
 def stitch_sets(sets):
     from refl1d.stitch import stitch
     p1,p2 = zip(*sets)

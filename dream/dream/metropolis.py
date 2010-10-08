@@ -4,7 +4,7 @@ from . import util
 
 def paccept(logp_old, logp_try):
     """
-    Returns the probability of taking a metropolis step given two 
+    Returns the probability of taking a metropolis step given two
     log density values.
     """
     return minimum(exp(logp_try - logp_old), 1)
@@ -14,12 +14,12 @@ def metropolis(xtry, logp_try, xold, logp_old, step_alpha):
     Metropolis rule for acceptance or rejection
 
     Generates the next generation, *newgen* from::
-    
+
         x_new[k] = x[k]     if U > alpha
                  = x_old[k] if U <= alpha
-    
+
     where alpha is p/p_old and accept is U > alpha.
-    
+
     Returns x_new, logp_new, alpha, accept
     """
     alpha = paccept(logp_try=logp_try, logp_old=logp_old)
@@ -56,7 +56,7 @@ def metropolis_dr(xtry, logp_try, x, logp, xold, logp_old, alpha12, R):
 
     # Compute alpha32 (note we turned x and xtry around!)
     alpha32 = paccept(logp_try=logp, logp_old=logp_try)
-    
+
     # Calculate alpha for each chain
     l2 = paccept(logp_try=logp_try, logp_old=logp_old)
     iR = inv(R)

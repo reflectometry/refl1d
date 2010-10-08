@@ -10,7 +10,7 @@ class URL(object):
     Parse a universal resource locator
 
         protocol://user:password@host:port/path?p1=v1&p2=v2
-        
+
     :Parameters:
         *url*  : string
             URL to be parsed
@@ -30,7 +30,7 @@ class URL(object):
     :Raises:
         *ValueError* : Not a valid protocol
     """
-    def __init__(self, url, user='', password='', host='localhost', 
+    def __init__(self, url, user='', password='', host='localhost',
                  protocol='', path='', port=0, parameters=[]):
         errmsg = "".join( ("Invalid url <",url,">") )
 
@@ -65,7 +65,7 @@ class URL(object):
             parameters = [pair.split('=') for pair in pars.split('&')]
             if any(len(pair) > 2 for pair in parameters):
                 raise ValueError(errmsg)
-            parameters = [[urllib.unquote_plus(p) for p in pair] 
+            parameters = [[urllib.unquote_plus(p) for p in pair]
                           for pair in parameters]
         self.protocol = protocol
         self.user = user
@@ -85,7 +85,7 @@ class URL(object):
             result.extend( (self.user,'@') )
         if self.host:
             result.extend( (self.host,) )
-        if self.port: 
+        if self.port:
             result.extend( (':', str(self.port)) )
         if self.path or len(self.parameters) > 0:
             result.extend( ('/', urllib.quote_plus(self.path)) )
@@ -120,16 +120,16 @@ def test():
     h = URL('u:p@:4')
     assert h.user=='u' and h.password=='p' and h.host=='localhost' and h.port==4
     h = URL('proto://u:p@:4')
-    assert (h.protocol=='proto' and h.user=='u' and h.password=='p' 
+    assert (h.protocol=='proto' and h.user=='u' and h.password=='p'
             and h.host=='localhost' and h.port==4)
     h = URL('proto://u:p@:4/')
-    assert (h.protocol=='proto' and h.user=='u' and h.password=='p' 
+    assert (h.protocol=='proto' and h.user=='u' and h.password=='p'
             and h.host=='localhost' and h.port==4 and h.path == '')
     h = URL('proto://u:p@:4/%7econnolly')
-    assert (h.protocol=='proto' and h.user=='u' and h.password=='p' 
+    assert (h.protocol=='proto' and h.user=='u' and h.password=='p'
             and h.host=='localhost' and h.port==4 and h.path == '~connolly')
     h = URL('proto://u:p@:4/%7econnolly?this&that=other')
-    assert (h.protocol=='proto' and h.user=='u' and h.password=='p' 
+    assert (h.protocol=='proto' and h.user=='u' and h.password=='p'
             and h.host=='localhost' and h.port==4 and h.path == '~connolly')
     assert (h.parameters[0][0] == 'this'
             and h.parameters[1][0] == 'that'

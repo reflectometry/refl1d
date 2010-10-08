@@ -1,7 +1,7 @@
 """
 Chain outlier tests.
 
-Given a 
+Given a
 """
 
 from numpy import mean, std, sqrt, argsort, where, argmin, arange
@@ -20,16 +20,16 @@ def remove_outliers(state, x, logp, test='IQR', portion=0.5):
     *x*, *logp* is the current population and the corresponding log likelihoods
     *test* is the name of the test to use (one of IQR, Grubbs, Mahal or none).
     *portion* in (0,1] is the amount of the chain to use
-    
+
     Updates *state*, *x* and *logp* to reflect the changes.
-    
+
     See :module:`outliers` for details.
-    """     
+    """
     # Grab the last part of the chain histories
     _, chains = state.logp()
     chain_len, Nchains = chains.shape
     outliers = identify_outliers(test, chains[-chain_len:], x)
-    
+
     # Loop over each outlier chain, replacing each with another
     for old in outliers:
         # Draw another chain at random, with replacement
@@ -50,7 +50,7 @@ def identify_outliers(test, chains, x):
     *test* is the name of the test to use (one of IQR, Grubbs, Mahal or none).
     *chains* is a set of log likelihood values of shape (chain len, num chains)
     *x* is the current population of shape (num vars, num chains)
-    
+
     See :module:`outliers` for details.
     """
     # Determine the mean log density of the active chains
@@ -66,7 +66,7 @@ def identify_outliers(test, chains, x):
         # See whether there are any outlier chains
         outliers = where(v < Q1 - 2*IQR)[0]
 
-    elif test == 'grubbs': 
+    elif test == 'grubbs':
         # Compute zscore for chain averages
         zscore = (mean(v) - v) / std(v, ddof=1)
         # Determine t-value of one-sided interval
@@ -132,18 +132,18 @@ def test():
 
     # =====================================================================
     # Test replacement
-    
+
     # Construct a state object
     from numpy.linalg import norm
     from state import MCMCDraw
     Ngen, Npop = chains.shape
     Npop, Nvar = x.shape
-    state = MCMCDraw(Ngen=Ngen, Nthin=Ngen, Nupdate=0, 
+    state = MCMCDraw(Ngen=Ngen, Nthin=Ngen, Nupdate=0,
                      Nvar=Nvar, Npop=Npop, Ncr=0, thin_rate=0)
     # Fill it with chains
     for i in range(Ngen):
         state._generation(new_draws=Npop, x=x, logp=chains[i], accept=Npop)
-    
+
     # Make a copy of the current state so we can check it was updated
     nx, nlogp = x+0,chains[-1]+0
     # Remove outliers
@@ -154,7 +154,7 @@ def test():
     for i in range(Nbad):
         assert nlogp[outliers[i,1]] == chains[-1][outliers[i,2]]
         assert norm(nx[outliers[i,1],:] - x[outliers[i,2],:]) == 0
-    
+
 
 if __name__ == "__main__":
     test()

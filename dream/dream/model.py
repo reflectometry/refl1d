@@ -4,7 +4,7 @@ MCMC model types
 Usage
 -----
 
-First create a :module:`bounds` object.  This stores the ranges available 
+First create a :module:`bounds` object.  This stores the ranges available
 on the parameters, and controls how values outside the range are handled::
 
     M_bounds = bounds(minx, maxx, style='reflect|clip|fold|randomize|none')
@@ -14,7 +14,7 @@ For simple functions you can use one of the existing models.
 If your model *f* computes the probability density, use :class:`Density`::
 
     M = Density(f, bounds=M_bounds)
-    
+
 If your model *f* computes the log probability density, use :class:`LogDensity`::
 
     M = LogDensity(f, bounds=M_bounds)
@@ -107,7 +107,7 @@ from . import exppow
 class MCMCModel:
     """
     MCMCM model abstract base class.
-    
+
     Each model must have a negative log likelihood function which operates
     on a point x, returning the negative log likelihood, or inf if the point
     is outside the domain.
@@ -126,7 +126,7 @@ class MCMCModel:
 class Density(MCMCModel):
     """
     Construct an MCMC model from a probablility density function.
-    
+
     *f* is the density function
     """
     def __init__(self, f, bounds=None, labels=None):
@@ -137,14 +137,14 @@ class Density(MCMCModel):
 class LogDensity(MCMCModel):
     """
     Construct an MCMC model from a log probablility density function.
-    
+
     *f* is the log density function
     """
     def __init__(self, f, bounds=None, labels=None):
         self.f, self.bounds, self.labels = f, bounds, labels
     def nllf(self, x):
         return -self.f(x)
- 
+
 class Simulation(MCMCModel):
     """
     Construct an MCMC model from a simulation function.
@@ -155,10 +155,10 @@ class Simulation(MCMCModel):
     *gamma* in (-1, 1] represents kurtosis on the data measurement uncertainty.
 
     Data is assumed to come from an exponential power density::
-    
+
         p(v|S,G) = w(G)/S exp(-c(G) |v/S|^(2/(1+G)))
 
-    where S is *sigma* and G is *gamma*.  
+    where S is *sigma* and G is *gamma*.
 
     The values of *sigma* and *gamma* can be uniform or can vary with the
     individual measurement points.
@@ -206,17 +206,17 @@ class MVNormal(MCMCModel):
 class Mixture(MCMCModel):
     """
     Create a mixture model from a list of weighted density models.
-    
+
     MixtureModel( M1, w1, M2, w2, ...)
-    
-    Models M1, M2, ... are MCMC models with M.nllf(x) returning the negative 
+
+    Models M1, M2, ... are MCMC models with M.nllf(x) returning the negative
     log likelihood of x.  Weights w1, w2, ... are arbitrary scalars.
     """
     def __init__(self, *args):
 
         models = args[::2]
         weights = args[1::2]
-        if (len(args)%2 != 0 
+        if (len(args)%2 != 0
             or not all(hasattr(M,'nllf') for M in models)
             or not all(isscalar(w) for w in weights)):
             raise TypeError("Expected MixtureModel(M1,w1,M2,w2,...)")
@@ -226,4 +226,3 @@ class Mixture(MCMCModel):
     def nllf(self, x):
         p = [w*exp(-M.nllf(x)) for M,w in self.pairs]
         return -log( sum(p)/self.weight )
-

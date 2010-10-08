@@ -21,7 +21,7 @@ class Scheduler(object):
         output,_ = _slurm_exec('squeue','-o', '%i %M %j')
         #print "output",output
         return output
-    
+
     def deactivate(self, jobid):
         #TODO: remove the job from the active list
         pass
@@ -40,7 +40,7 @@ class Scheduler(object):
                      "srun -n %d -K -o kernel.out nice %s"%(num_workers,kernel)]
         create_batchfile(script,commands)
 
-        _,err = _slurm_exec('sbatch', 
+        _,err = _slurm_exec('sbatch',
                             '-n',str(num_workers), # Number of tasks
                             #'-K', # Kill if any process returns error
                             #'-o', 'job%j.out',  # output file
@@ -57,7 +57,7 @@ class Scheduler(object):
         PENDING   --  Job is waiting to be processed
         ACTIVE    --  Job is busy being processed through the queue
         COMPLETE  --  Job has completed successfully
-        ERROR     --  Job has either been canceled by the user or an 
+        ERROR     --  Job has either been canceled by the user or an
                       error has been raised
         """
 

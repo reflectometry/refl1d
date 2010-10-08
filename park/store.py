@@ -28,7 +28,7 @@ class Store:
         shutil.rmtree(path)
 
     def keys(self, jobid):
-        return [os.path.basename(p) 
+        return [os.path.basename(p)
                 for p in glob.glob(os.path.join(self._dir(jobid),'*'))]
 
     def delete(self, jobid, key):
@@ -41,7 +41,7 @@ class Store:
             value[0]+' '
         except:
             raise ValueError("value is not a string")
-        
+
         # Store the value in a file
         path = self._file(jobid, key)
         fid = open(path,'wb')
@@ -54,7 +54,7 @@ class Store:
             value[0]+' '
         except:
             raise ValueError("value is not a string")
-        
+
         # Store the value in a file
         path = self._file(jobid, key)
         fid = open(path,'ab')
@@ -73,7 +73,7 @@ class Store:
     def put_workfile(self, jobid, key, value):
         # Store the value in a file
         path = self._workfile(jobid, key)
-        if not os.path.exists(os.path.dirname(path)): 
+        if not os.path.exists(os.path.dirname(path)):
             os.mkdir(os.path.dirname(path))
         fid = open(path, 'wb')
         fid.write(value)

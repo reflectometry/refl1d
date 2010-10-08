@@ -6,7 +6,7 @@ function operates on a point x, transforming it so that all dimensions
 are within the bounds.  Options are available, including reflecting,
 wrapping, clipping or randomizing the point, or ignoring the bounds.
 
-The returned bounds object should have an apply(x) method which 
+The returned bounds object should have an apply(x) method which
 transforms the point *x*.
 """
 __all__ = ['set_bounds']
@@ -16,9 +16,9 @@ from . import util
 def make_bounds_handler(bounds, style='reflect'):
     """
     Return a bounds object which can update the bounds.
-    
+
     Bounds handling *style* name is one of::
-    
+
         reflect:   reflect off the boundary
         clip:      stop at the boundary
         fold:      wrap values to the other side of the boundary
@@ -29,14 +29,14 @@ def make_bounds_handler(bounds, style='reflect'):
     defined, and reflection is used instead.
 
     With finite intervals the the reflected or folded point may still be
-    outside the bounds (which can happen if the step size is too large), 
+    outside the bounds (which can happen if the step size is too large),
     and a random uniform value is used instead.
     """
     if bounds == None:
         return IgnoreBounds()
-    
+
     low,high = bounds
-    
+
     # Do boundary handling -- what to do when points fall outside bound
     style = style.lower()
     if style == 'reflect':
@@ -70,7 +70,7 @@ class ReflectBounds(Bounds):
     def apply(self, y):
         """
         Update x so all values lie within bounds
-        
+
         Returns x for convenience.  E.g., y = bounds.apply(x+0)
         """
         minn, maxn = self.low, self.high
@@ -78,7 +78,7 @@ class ReflectBounds(Bounds):
         # Reflect points which are out of bounds
         idx = y < minn; y[idx] = 2*minn[idx] - y[idx]
         idx = y > maxn; y[idx] = 2*maxn[idx] - y[idx]
-    
+
         # Randomize points which are still out of bounds
         idx = (y < minn) | (y > maxn)
         y[idx] = minn[idx] + util.RNG.rand(sum(idx))*(maxn[idx]-minn[idx])
@@ -94,7 +94,7 @@ class ClipBounds(Bounds):
     def apply(self, y):
         minn, maxn = self.low, self.high
         idx = y < minn; y[idx] = minn[idx]
-        idx = y > maxn; y[idx] = maxn[idx]       
+        idx = y > maxn; y[idx] = maxn[idx]
 
         return y
 
@@ -115,7 +115,7 @@ class FoldBounds(Bounds):
         # Wrap points which are out of bounds
         idx = y < minn; y[idx] = maxn[idx] - (minn[idx] - y[idx])
         idx = y > maxn; y[idx] = minn[idx] + (y[idx] - maxn[idx])
-        
+
         # Randomize points which are still out of bounds
         idx = (y < minn) | (y > maxn)
         y[idx] = minn[idx] + util.RNG.rand(sum(idx))*(maxn[idx]-minn[idx])

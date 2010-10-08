@@ -9,7 +9,7 @@ def stats(x, weights=None):
         # TODO: this is biased by selection of mean; need an unbiased formula
         var = numpy.sum((weights*(x-mean))**2)/numpy.sum(weights)
         std = numpy.sqrt(var)
-        
+
     return mean, std
 
 
@@ -17,18 +17,18 @@ def stats(x, weights=None):
 def credible_interval(x, ci=0.95, weights=None):
     """
     Find the credible interval covering the portion *ci* of the data.
-    
+
     Returns the minimum and maximum values of the interval.
-    
+
     *x* are samples from the posterior distribution.
     *weights* is a vector of weights for each x, or None for unweighted
     *ci* is the portion in (0,1], and defaults to 0.95.
-    
+
     This function is faster if the inputs are already sorted.
-    
+
     For log likelihood data, setting weights to exp(max(logp)-logp) should
     give reasonable results.
-    
+
     If *ci* is a vector, return a vector of intervals.
     """
     sorted = numpy.all(x[1:]>=x[:-1])
@@ -64,4 +64,3 @@ def _find_interval(x,ci):
         width = x[size:] - x[:-size]
         idx = numpy.argmin(width)
         return x[idx],x[idx+size]
-    

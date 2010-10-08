@@ -4,7 +4,7 @@ Exchange information.
 
 This information should be filled in when connecting to a service.
 
-Some of this should be filled from 
+Some of this should be filled from
 Note that the host used for job management and status updates is
 going to be different from that used for mapping operations within
 the job.
@@ -25,4 +25,4 @@ the job.
 CLIENT_HOST = "guest:guest@sparkle.ncnr.nist.gov:5672/"
 SERVICE_HOST = "guest:guest@sparkle.ncnr.nist.gov:5672/"
 EXCHANGE = "park"
-MAX_QUEUE = 1000 
+MAX_QUEUE = 1000

@@ -9,18 +9,18 @@ from numpy import hstack, vstack, argsort, sum, sqrt
 def stitch(probes, same_Q = 0.001, same_dQ = None):
     """
     Stitch together multiple measurements into one.
-    
+
     *probes* a list of datasets with Q,dQ,R,dR attributes
     *same_Q* minimum point separation.
     *same_dQ* minimum change in resolution that may be averaged.
 
-    Wavelength and angle are not preserved since different points with the 
-    same Q,dQ may have different wavelength/angle inputs, particularly for 
+    Wavelength and angle are not preserved since different points with the
+    same Q,dQ may have different wavelength/angle inputs, particularly for
     time of flight instruments.
-        
+
     WARNING: the returned Q values may be data dependent, with two measured
-    sets having different Q after stitching, even though the measurement 
-    conditions are identical!!  
+    sets having different Q after stitching, even though the measurement
+    conditions are identical!!
 
     Either add an intensity weight to the datasets::
 
@@ -34,7 +34,7 @@ def stitch(probes, same_Q = 0.001, same_dQ = None):
         R2 = numpy.interp(Q1,Q2,R2)
         dR2 = numpy.interp(Q1,Q2,dR2)
         Q2 = Q1
-        
+
     WARNING: the returned dQ value underestimates the true Q, depending on
     the relative weights of the averaged data points.
     """
@@ -54,7 +54,7 @@ def stitch(probes, same_Q = 0.001, same_dQ = None):
     data = data[:, idx]
     Q = data[0, :]
     dQ = data[1, :]
-    
+
     # Skip through the data looking for regions of overlap.
     keep = []
     n, last, next = len(Q), 0, 1
@@ -72,22 +72,22 @@ def stitch(probes, same_Q = 0.001, same_dQ = None):
         last = next
 
     return data[:4,keep]
-    
+
 def poisson_average(QdQRdRw):
     """
     Compute the poisson average of R/dR using a set of data points.
 
     The returned Q,dQ is the weighted average of the inputs::
-    
+
         Q = sum(Q*I)/sum(I)
         dQ = sum(dQ*I)/sum(I)
-    
+
     The returned R,dR use Poisson averaging::
 
         w = sum(y/dy^2)
         y = sum((y/dy)^2)/w
         dy = sqrt(y/w)
-    
+
     The above formula gives the expected result for combining two
     measurements, assuming there is no uncertainty in the monitor.
 

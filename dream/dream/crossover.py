@@ -1,9 +1,9 @@
 """
 Crossover ratios
 
-The crossover ratio (CR) determines what percentage of parameters in the 
-target vector are updated with difference vector selected from the 
-population.  In traditional differential evolution a CR value is chosen 
+The crossover ratio (CR) determines what percentage of parameters in the
+target vector are updated with difference vector selected from the
+population.  In traditional differential evolution a CR value is chosen
 somewhere in [0,1] at the start of the search and stays constant throughout.
 DREAM extends this by allowing multiple CRs at the same time with different
 probabilities.  Adaptive crossover adjusts the relative weights of the CRs
@@ -52,10 +52,10 @@ from . import util
 class Crossover(object):
     """
     Fixed weight crossover ratios.
-    
+
     *CR* is a scalar if there is a single crossover ratio, or a vector of
     numbers in (0,1].
-    
+
     *weight* is the relative weighting of each CR, or None for equal weights.
     """
     def __init__(self, CR, weight=None):
@@ -78,7 +78,7 @@ class Crossover(object):
 
     def update(self, N, xold, xnew, used):
         """
-        Gather adaptation data on *xold*, *xnew* for each CR that was 
+        Gather adaptation data on *xold*, *xnew* for each CR that was
         *used* in step *N*.
         """
         pass
@@ -97,7 +97,7 @@ class AdaptiveCrossover(object):
     initial weights [1/N, 1/N, ..., 1/N].
     """
     def __init__(self, N):
-        if N < 2: 
+        if N < 2:
             raise ValueError("Need more than one CR for AdaptiveCrossover")
         self.CR = (arange(N)+1)/N  # Equally spaced CRs
         self.weight = ones(N) / N  # Start with all CRs equally probable
@@ -109,7 +109,7 @@ class AdaptiveCrossover(object):
         Generate CR samples for the next Nsteps over a population of size Npop.
         """
         self._CR_samples = gen_CR(self.CR, self.weight, Nsteps, Npop)
-        
+
     def __getitem__(self, step):
         """
         Return CR samples for step N since reset.
@@ -118,7 +118,7 @@ class AdaptiveCrossover(object):
 
     def update(self, N, xold, xnew, used):
         """
-        Gather adaptation data on *xold*, *xnew* for each CR that was 
+        Gather adaptation data on *xold*, *xnew* for each CR that was
         *used* in step *N*.
         """
         # Calculate the standard deviation of each dimension of X
@@ -141,18 +141,18 @@ class AdaptiveCrossover(object):
 def gen_CR(CR, weight, Nsteps, Npop):
     """
     Generates CR samples for Nsteps generations of size Npop.
-    
+
     The frequency and value of the samples is based on the CR and weight
     """
     if len(CR) == 1:
         return CR[0] * ones( (Nsteps,Npop) )
-    
+
     # Determine how many of each CR to use based on the weights
     L = util.RNG.multinomial(Nsteps * Npop, weight)
-    
+
     # Turn this into index boundaries within a CR location vector
     L = hstack( (0, cumsum(L)) )
-    
+
     # Generate a random location vector for each CR in the sample
     r = util.RNG.permutation(Nsteps * Npop)
 
@@ -161,10 +161,10 @@ def gen_CR(CR, weight, Nsteps, Npop):
     for i,v in enumerate(CR):
         # Select a range of elements in r
         idx = r[L[i]:L[i+1]]
-        
+
         # Fill those elements with crossover ratio v
         sample[idx] = v
-        
+
     # Now reshape CR
     sample = reshape(sample, (Nsteps, Npop) )
 
@@ -174,8 +174,8 @@ def gen_CR(CR, weight, Nsteps, Npop):
 def distance_per_CR(available_CRs, distances, CRs_used):
     """
     Accumulate normalized Euclidean distance for each crossover value
-    
-    Returns the number of times each available CR was used and the total 
+
+    Returns the number of times each available CR was used and the total
     distance for that CR.
     """
     total = array([sum(distances[CRs_used==p]) for p in available_CRs])
@@ -187,4 +187,3 @@ if __name__ == "__main__":
     CR, weight = array([.25, .5, .75, .1]), array([.1, .6, .2, .1])
     print gen_CR(CR, weight, 5, 4)
     # TODO: needs actual tests
-    

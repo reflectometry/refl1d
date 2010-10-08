@@ -12,7 +12,7 @@ layer = TetheredPolymer(polymer,solvent,head,tail,power,
 of Grafted Polymer Chains", Macromolecules 24, 140-149.
 
 [2] Karima, A; Douglas, JF; Horkay, F; Fetters, LJ; Satija, SK (1996)
-"Comparative swelling of gels and polymer brush layers", 
+"Comparative swelling of gels and polymer brush layers",
 Physica B 221, 331-336 DOI: 10.1016/0921-4526(95)00946-9
 """
 from __future__ import division
@@ -41,11 +41,11 @@ class PolymerBrush(Layer):
         *sigma* brush roughness (rms)
 
     The materials can either use the scattering length density directly,
-    such as PDMS = SLD(0.063, 0.00006) or they can use chemical composition 
+    such as PDMS = SLD(0.063, 0.00006) or they can use chemical composition
     and material density such as PDMS=Material("C2H6OSi",density=0.965).
 
     These parameters combine in the following profile formula::
-    
+
         brush(z) = base_vf   for z <= base
                  = base_vf * (1 - ((z-base)/length)**2)**power
                              for base <= z <= base+length
@@ -54,7 +54,7 @@ class PolymerBrush(Layer):
         sld(z) = material.sld * profile(z) + solvent.sld * (1 - profile(z))
     """
     def __init__(self, thickness=0, interface=0,
-                 polymer=None, solvent=None, base_vf=None, 
+                 polymer=None, solvent=None, base_vf=None,
                  base=None, length=None, power=None, sigma=None):
         self.thickness = Parameter.default(thickness, name="solvent thickness")
         self.interface = Parameter.default(interface, name="solvent interface")
@@ -66,7 +66,7 @@ class PolymerBrush(Layer):
         self.solvent = solvent
         self.polymer = polymer
         # Constraints:
-        #   base_vf in [0,1] 
+        #   base_vf in [0,1]
         #   base,length,sigma,thickness,interface>0
         #   base+length+3*sigma <= thickness
     def parameters(self):
@@ -81,7 +81,7 @@ class PolymerBrush(Layer):
                     sigma = self.sigma)
     def render(self, probe, slabs):
         thickness, interface, base_vf, base, length, power, sigma \
-            = [p.value for p in self.thickness, self.interface, 
+            = [p.value for p in self.thickness, self.interface,
                self.base_vf, self.base, self.length, self.power, self.sigma]
         base_vf /= 100. # % to fraction
         Mr,Mi = self.polymer.sld(probe)
@@ -116,13 +116,13 @@ class PolymerBrush(Layer):
         if left > right: raise RuntimeError("broken profile search")
 
         if left > 0:
-            slabs.extend(rho=[Pr[0:1]], irho=[Pi[0:1]], 
+            slabs.extend(rho=[Pr[0:1]], irho=[Pi[0:1]],
                          w=[numpy.sum(Pw[:left])])
         if left < right:
-            slabs.extend(rho=[Pr[left:right]], irho=[Pi[left:right]], 
+            slabs.extend(rho=[Pr[left:right]], irho=[Pi[left:right]],
                          w=Pw[left:right])
         if right < len(P):
-            slabs.extend(rho=[Pr[-1:]], irho=[Pi[-1:]], 
+            slabs.extend(rho=[Pr[-1:]], irho=[Pi[-1:]],
                          w=[numpy.sum(Pw[:right])],
                          sigma = [interface])
 
@@ -131,7 +131,7 @@ class PolymerBrush(Layer):
 def layer_thickness(z):
     """
     Return the thickness of a layer given the microslab z points.
-    
+
     The layer is sliced into bins of equal width, with the final
     bin making up the remainder.  The z values given to the profile
     function are the centers of these bins.  Using this, we can
@@ -154,26 +154,26 @@ class VolumeProfile(Layer):
         *profile* the profile function, suitably parameterized
 
     The materials can either use the scattering length density directly,
-    such as PDMS = SLD(0.063, 0.00006) or they can use chemical composition 
+    such as PDMS = SLD(0.063, 0.00006) or they can use chemical composition
     and material density such as PDMS=Material("C2H6OSi",density=0.965).
 
     These parameters combine in the following profile formula::
-    
+
         sld = material.sld * profile + solvent.sld * (1 - profile)
 
     The profile function takes a depth z and returns a density rho.
-    
-    For volume profiles, the returned rho should be the volume fraction 
-    of the material.  For SLD profiles, rho should be complex scattering 
-    length density of the material.  
+
+    For volume profiles, the returned rho should be the volume fraction
+    of the material.  For SLD profiles, rho should be complex scattering
+    length density of the material.
 
     Fitting parameters are the available named arguments to the function.
-    The first argument must be *z*, which is the array of depths at which 
-    the profile is to be evaluated.  It is guaranteed to be increasing, with 
+    The first argument must be *z*, which is the array of depths at which
+    the profile is to be evaluated.  It is guaranteed to be increasing, with
     step size 2*z[0].
-    
+
     Initial values for the function parameters can be given using name=value.
-    These values can be scalars or fitting parameters.  The function will 
+    These values can be scalars or fitting parameters.  The function will
     be called with the current parameter values as arguments.  The layer
     thickness can be computed as :function:`thickness`(z).
     """
@@ -197,14 +197,14 @@ class VolumeProfile(Layer):
         unused = [k for k in kw.keys() if k not in vars]
         if len(unused) > 0:
             raise TypeError("Profile got unexpected keyword argument '%s'"%unused[0])
-        dups = [k for k in vars 
+        dups = [k for k in vars
                 if k in ('thickness','interface','polymer','solvent','profile')]
         if len(dups) > 0:
             raise TypeError("Profile has conflicting argument '%s'"%dups[0])
         for k in vars: kw.setdefault(k,0)
         for k,v in kw.items():
             setattr(self,k,Parameter.default(v,name=k))
-        
+
         self._parameters = vars
 
     def parameters(self):
@@ -230,7 +230,7 @@ class VolumeProfile(Layer):
         except:
             raise TypeError("profile function '%s' did not return array phi(z)"
                             %self.profile.__name__)
-            
+
         P = M*phi + S*(1-phi)
         slabs.extend(rho = [real(P)], irho = [imag(P)], w = Pw)
         slabs.interface(self.interface.value)
@@ -243,7 +243,7 @@ def smear(z, P, sigma):
     :Parameters:
         *z* | vector
             equally spaced sample times
-        *P* | vector 
+        *P* | vector
             sample values
         *sigma* | real
             root-mean-squared convolution width

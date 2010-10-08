@@ -7,7 +7,7 @@ Demonstrates bimodal sampling from a multidimensional space.
 
 Change the relative weights of the modes to see how effectively DREAM samples
 from lower probability regions.  In particular, with low *w2*, long chains
-(thinning*generations*cycles) and small population, the second mode can 
+(thinning*generations*cycles) and small population, the second mode can
 get lost.
 """
 from pylab import *

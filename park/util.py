@@ -13,4 +13,3 @@ def import_symbol(path):
     #if not hasattr(symbol, 'park_export'):
     #    raise TypeError("Symbol %s not marked @park.export"%path)
     return symbol
-

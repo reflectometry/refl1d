@@ -7,11 +7,11 @@ from dream import *
 from pylab import *
 from numpy.random import lognormal
 
-def rosen(x):  
+def rosen(x):
     x = asarray(x)
     s = sum(100.0*(x[1:]-x[:-1]**2)**2 + (1-x[:-1])**2)
     return -lognormal(s,sqrt(s)) # Poisson style: variance = # counts
-    
+
 
 n=3
 sampler = Dream(model=LogDensity(rosen),

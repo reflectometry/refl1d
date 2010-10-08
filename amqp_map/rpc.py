@@ -15,14 +15,14 @@ class RPCMixin:
     def rpc_init(self, server, service="", provides=None):
         channel = server.channel()
         queue,_,_ = channel.queue_declare(queue=service,
-                                          durable=False, 
-                                          exclusive=True, 
+                                          durable=False,
+                                          exclusive=True,
                                           auto_delete=True)
         channel.queue_bind(queue=queue,
-                           exchange="amq.direct", 
+                           exchange="amq.direct",
                            routing_key=queue)
-        channel.basic_consume(queue=queue, 
-                              callback=self._rpc_process, 
+        channel.basic_consume(queue=queue,
+                              callback=self._rpc_process,
                               no_ack=False)
         self._rpc_queue = queue
         self._rpc_channel = channel
@@ -65,7 +65,7 @@ class RPCMixin:
     # Send messages
     def _rpc_send_call(self, service, parts):
         self._rpc_id += 1
-        msg = amqp.Message(body=dumps(parts), 
+        msg = amqp.Message(body=dumps(parts),
                            reply_to=self._rpc_queue,
                            message_id = str(self._rpc_id))
         self._rpc_channel.basic_publish(msg,
@@ -73,15 +73,15 @@ class RPCMixin:
                                         routing_key=service)
     def _rpc_send_response(self, msg, result):
         #print "responding to",msg.reply_to,msg.message_id,"with",result
-        resp = amqp.Message(body=dumps(("response",result)), 
+        resp = amqp.Message(body=dumps(("response",result)),
                            message_id=msg.message_id)
-        self._rpc_channel.basic_publish(resp, 
+        self._rpc_channel.basic_publish(resp,
                                         exchange="amq.direct",
                                         routing_key=msg.reply_to)
     def _rpc_send_error(self, msg, str):
-        resp = amqp.Message(body=dumps(("error",str)), 
+        resp = amqp.Message(body=dumps(("error",str)),
                            message_id=msg.message_id)
-        self._rpc_channel.basic_publish(resp, 
+        self._rpc_channel.basic_publish(resp,
                                         exchange="amq.direct",
                                         routing_key=msg.reply_to)
 
@@ -105,7 +105,7 @@ class RPCMixin:
 
     def _rpc_recv_call(self, msg, method, args, kw):
         if not self._rpc_valid_method(method):
-            return self._rpc_send_error(msg, "Invalid method")            
+            return self._rpc_send_error(msg, "Invalid method")
         fn = getattr(self, method)
         try:
             result = fn(*args, **kw)

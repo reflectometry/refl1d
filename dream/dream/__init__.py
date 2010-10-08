@@ -3,7 +3,7 @@
 Notes on random numbers
 =======================
 
-Uses dream.util.RNG as the random number generator.  
+Uses dream.util.RNG as the random number generator.
 
 You can set the seed using::
 
@@ -16,7 +16,7 @@ the RNG on the dream class may be a better option.
 
 #from .core import dream
 from initpop import * # cov_init, lhs_init
-from model import *   # 
+from model import *   #
 from state import *   # load_state, save_state
 from views import *    # plotting routines
 from core import Dream

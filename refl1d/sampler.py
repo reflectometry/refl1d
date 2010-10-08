@@ -21,7 +21,7 @@ class Model(dream.MCMCModel):
     def nllf(self, x):
         """Negative log likelihood of seeing models given parameters *x*"""
         return self.model.nllf(x)
-    
+
     def plot(self, x):
         """Display the contents of the model in the current figure"""
         self.model.setp(x)
@@ -36,7 +36,7 @@ def draw_samples(models=None, weights=None, chains=10, **kw):
     pop_size = chains*len(problem.parameters)
     population = random_population(problem, pop_size)
     sampler = dream.Dream(model=model, population=population, **kw)
-    
+
     state = sampler.sample()
     #dream.plot_state(state)
     return state

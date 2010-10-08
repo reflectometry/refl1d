@@ -3,10 +3,10 @@
 """
 Reflectometry instrument definitions.
 
-Given Q = 4 pi sin(theta)/lambda, the instrumental resolution in Q is 
-determined by the dispersion angle theta and wavelength lambda.  For 
-monochromatic instruments, the wavelength resolution is fixed and the 
-angular resolution varies.  For polychromatic instruments, the wavelength 
+Given Q = 4 pi sin(theta)/lambda, the instrumental resolution in Q is
+determined by the dispersion angle theta and wavelength lambda.  For
+monochromatic instruments, the wavelength resolution is fixed and the
+angular resolution varies.  For polychromatic instruments, the wavelength
 resolution varies and the angular resolution is fixed.
 
 The angular resolution is determined by the geometry (slit positions and
@@ -44,7 +44,7 @@ Usage
 
 :module:`instrument` (this module) defines two instrument types:
 :class:`Monochromatic` and :class:`Polychromatic`.  These represent
-generic scanning and time of flight instruments, respectively.  
+generic scanning and time of flight instruments, respectively.
 
 To perform a simulation or load a data set, an instrument must first
 be defined.  For example:
@@ -62,13 +62,13 @@ be defined.  For example:
             Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1,
             )
 
-Fixed parameters for various instruments are defined in :module:`snsdata` 
+Fixed parameters for various instruments are defined in :module:`snsdata`
 and :module:`ncnrdata`, so the above is equivalent to:
 
     >>> from ncnrdata import ANDR
     >>> andr = ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
 
-With a particular measurement geometry defined by the instrument we can 
+With a particular measurement geometry defined by the instrument we can
 compute the expected resolution function for arbitrary angles:
 
     >>> T,dT,L,dL = andr.resolution(T=linspace(0,5,51))
@@ -93,7 +93,7 @@ effects in the resolution::
     >>> probe1 = andr.load('blg117.refl', sample_broadening=0.1)
 
 Properties of the instrument can be displayed, both for the generic
-instrument (which defines slit distances and wavelength in this case) 
+instrument (which defines slit distances and wavelength in this case)
 or for the specific measurement geometry (which adds detail about the
 slit opening as a function of angle)::
 
@@ -113,7 +113,7 @@ files can be checked in a predefined order.  If the file cannot be
 loaded, then the next loader is tried.  This should be extended with
 the concept of a magic signature such as those used by graphics and
 sound file applications: preread the first block and run it through
-the signature check before trying to load it.  For unrecognized 
+the signature check before trying to load it.  For unrecognized
 extensions, all loaders can be tried.
 
 The file loader should return an instrument instance with metadata
@@ -158,28 +158,28 @@ to slits is::
     dT_slits = degrees(0.5*(s1+s2)/(d1-d2))
 
 where s1,s2 are slit openings edge to edge and d1,d2 are the distances
-between the sample and the slits.  For tiny samples of width m, the sample 
-itself can act as a slit.  If s = sin(T)*m is smaller than s2 for some T, 
+between the sample and the slits.  For tiny samples of width m, the sample
+itself can act as a slit.  If s = sin(T)*m is smaller than s2 for some T,
 then use::
 
     dT_slits = degrees(0.5*(s1+sin(T)*m)/d1)
-    
+
 The sample broadening can be read off a rocking curve using::
 
     dT_sample = w - dT_slits
-    
+
 where w is the measured FWHM of the peak in degrees and dT_slits is the
-slit contribution to the divergence. Broadening can be negative for concave 
-samples which have a focusing effect on the beam.  This constant should 
-be added to the computed dT for all angles and slit geometries.  You will 
+slit contribution to the divergence. Broadening can be negative for concave
+samples which have a focusing effect on the beam.  This constant should
+be added to the computed dT for all angles and slit geometries.  You will
 not usually have this information on hand, but you can leave space for users
 to enter it if it is available.
 
 FWHM can be converted to 1-sigma resolution using the scale factor of
 1/sqrt(8 * log(2))
 
-For opening slits we assume dT/T is held constant, so if you know s and To 
-at the start of the opening slits region you can compute dT/To, and later 
+For opening slits we assume dT/T is held constant, so if you know s and To
+at the start of the opening slits region you can compute dT/To, and later
 scale that to your particular T::
 
     dT(Q) = dT/To * T(Q)
@@ -275,7 +275,7 @@ class Monochromatic:
         particular, slit settings *slits_at_Tlo*, *Tlo*, *Thi*,
         and *slits_below*, and *slits_above* are used to define the
         angular divergence.
-        
+
         Note that this function ignores any resolution information
         stored in the file, such as dQ, dT or dL columns, and instead
         uses the defined instrument parameters to calculate the resolution.
@@ -295,7 +295,7 @@ class Monochromatic:
         self._translate_Q_to_theta(kw)
         T,dT,L,dL = self.resolution(**kw)
         del kw["T"]
-        return make_probe(T=T,dT=dT,L=L,dL=dL,data=(R,dR), 
+        return make_probe(T=T,dT=dT,L=L,dL=dL,data=(R,dR),
                           radiation=self.radiation, **kw)
 
     def probe(self, **kw):
@@ -308,8 +308,8 @@ class Monochromatic:
             *T* : [float] | degrees
                 Angles to be measured.
 
-        Additional keyword parameters 
-                
+        Additional keyword parameters
+
         :Returns:
             *probe* : Probe
                 Measurement probe with complete resolution information.  The
@@ -337,7 +337,7 @@ class Monochromatic:
 
         Guide field angle *Tguide* can be specified, as well as keyword
         arguments for the geometry of the probe cross sections such as
-        *slits_at_Tlo*, *Tlo*, *Thi*, *slits_below*, and *slits_above* 
+        *slits_at_Tlo*, *Tlo*, *Thi*, *slits_below*, and *slits_above*
         to define the angular divergence.
         """
         from .probe import PolarizedNeutronProbe
@@ -350,7 +350,7 @@ class Monochromatic:
     def simulate(self, sample, uncertainty=0.01, **kw):
         """
         Simulate a run with a particular sample.
-        
+
         :Parameters:
             *sample* : Stack
                 Model of the sample.
@@ -366,9 +366,9 @@ class Monochromatic:
 
         The relative uncertainty is used to calculate the number of incident
         beam intensity for the measurement as follows::
-        
+
             I = (100 Q)^4 / s^2
-            
+
         """
         from .experiment import Experiment
         probe = self.probe(**kw)
@@ -377,17 +377,17 @@ class Monochromatic:
         dR = uncertainty*M.fresnel()
         R = Rth + numpy.random.randn(*Rth.shape)*dR
         probe.data = R,dR
-        
+
         return M
 
     def resolution(self, T, **kw):
         """
         Calculate resolution at each angle.
-        
+
         :Parameters:
             *T* : [float] | degrees
                 Q values for which resolution is needed
-        
+
         :Return:
             *T*,*dT* : [float] | degrees
                 Angles and angular divergence.
@@ -396,14 +396,14 @@ class Monochromatic:
         """
         L = kw.get('L',kw.get('wavelength',self.wavelength))
         dLoL = kw.get('dLoL',self.dLoL)
-        if L is None: 
+        if L is None:
             raise TypeError("Need wavelength L to compute resolution")
-        if dLoL is None: 
+        if dLoL is None:
             raise TypeError("Need wavelength dispersion dLoL to compute resolution")
-        
+
         slits = self.calc_slits(T, **kw)
         dT = self.calc_dT(T, slits, **kw)
-        
+
         return T,dT,L,dLoL*L
 
     def calc_slits(self, T, **kw):
@@ -414,11 +414,11 @@ class Monochromatic:
         otherwise use an opening range [Tlo,Thi] and the value of the
         slits at the start of the opening to define the slits.  Slits
         below Tlo and above Thi can be specified separately.
-        
+
         *Tlo*,*Thi*      angle range over which slits are opening
         *slits_at_Tlo*   openings at the start of the range, or fixed opening
         *slits_below*, *slits_above*   openings below and above the range
-        
+
         Use fixed_slits is available, otherwise use opening slits.
         """
         Tlo = kw.get('Tlo',self.Tlo)
@@ -427,7 +427,7 @@ class Monochromatic:
         slits_below = kw.get('slits_below',self.slits_below)
         slits_above = kw.get('slits_above',self.slits_above)
 
-        # Otherwise we are using opening slits            
+        # Otherwise we are using opening slits
         if Tlo is None or slits_at_Tlo is None:
             raise TypeError("Resolution calculation requires Tlo and slits_at_Tlo")
         slits = slit_widths(T=T, slits_at_Tlo=slits_at_Tlo,
@@ -439,7 +439,7 @@ class Monochromatic:
     def calc_dT(self, T, slits, **kw):
         """
         Compute the angular divergence for given slits and angles
-        
+
         :Parameters:
             *T* : [float] | degrees
                 measurement angles
@@ -464,7 +464,7 @@ class Monochromatic:
         """
         d_s1 = kw.get('d_s1',self.d_s1)
         d_s2 = kw.get('d_s2',self.d_s2)
-        if d_s1 is None or d_s2 is None: 
+        if d_s1 is None or d_s2 is None:
             raise TypeError("Need slit distances d_s1, d_s2 to compute resolution")
         sample_width = kw.get('sample_width',self.sample_width)
         sample_broadening = kw.get('sample_broadening',self.sample_broadening)
@@ -478,7 +478,7 @@ class Monochromatic:
         """
         Rewrite keyword arguments with Q values translated to theta values.
         """
-        # Grab wavelength first so we can translate Qlo/Qhi to Tlo/Thi no 
+        # Grab wavelength first so we can translate Qlo/Qhi to Tlo/Thi no
         # matter what order the keywords appear.
         wavelength = kw.get('wavelength',self.wavelength)
         if "Q" in kw:
@@ -486,7 +486,7 @@ class Monochromatic:
         if "Qlo" in kw:
             kw["Tlo"] = QL2T(kw.pop("Qlo"), wavelength)
         if "Qhi" in kw:
-            kw["Thi"] = QL2T(kw.pop("Qhi"), wavelength)            
+            kw["Thi"] = QL2T(kw.pop("Qhi"), wavelength)
         if "slits_at_Qlo" in kw:
             kw["slits_at_Tlo"] = kw.pop("slits_at_Qlo")
 
@@ -601,7 +601,7 @@ class Polychromatic:
         uncertainties, but not any data.
 
         You can override instrument parameters using key=value.
-        In particular, slit settings *slits* and *T* define 
+        In particular, slit settings *slits* and *T* define
         the angular divergence and *dLoL* defines the wavelength
         resolution.
         """
@@ -623,7 +623,7 @@ class Polychromatic:
 
         Guide field angle *Tguide* can be specified, as well as keyword
         arguments for the geometry of the probe cross sections such as
-        slit settings *slits* and *T* to define the angular divergence 
+        slit settings *slits* and *T* to define the angular divergence
         and *dLoL* to define the wavelength resolution.
         """
         from .probe import PolarizedNeutronProbe
@@ -636,7 +636,7 @@ class Polychromatic:
     def simulate(self, sample, uncertainty=0.01, **kw):
         """
         Simulate a run with a particular sample.
-        
+
         :Parameters:
             *sample* : Stack
                 Reflectometry model
@@ -658,7 +658,7 @@ class Polychromatic:
                 Background counts per incident neutron (background is
                 assumed to be independent of measurement geometry).
             *back_reflectivity* = False : boolean
-                Whether beam travels through incident medium 
+                Whether beam travels through incident medium
                 or through substrate.
             *back_absorption* = 1 : float
                 Absorption factor for beam traveling through substrate.
@@ -697,7 +697,7 @@ class Polychromatic:
             _, Rth = M.reflectivity()
             Rcounts = numpy.random.poisson(Rth*Icounts)
             if background > 0:
-                Rcounts += numpy.random.poisson(Icounts*background, 
+                Rcounts += numpy.random.poisson(Icounts*background,
                                                 size=Rcounts.shape)
             # Set intensity/background _after_ calculating the theory function
             # since we don't want the theory function altered by them.
@@ -712,7 +712,7 @@ class Polychromatic:
             #       = (Y + X) * X/Y**3
             R = Rcounts/Icounts
             dR = numpy.sqrt((Icounts + Rcounts)*Rcounts/Icounts**3)
-            
+
             if not normalize:
                 #Ci = 1./max(R)
                 R, dR = R*Ci, dR*Ci
@@ -802,7 +802,7 @@ def bins(low, high, dLoL):
     *low*,*high* are the minimum and maximum wavelength.
     *dLoL* is the desired resolution FWHM dL/L for the bins.
     """
-    
+
     step = 1 + dLoL;
     n = ceil(log(high/low)/log(step))
     edges = low*step**arange(n+1)
@@ -884,13 +884,13 @@ def divergence(T=None, slits=None, distance=None,
             w, width of the sample
         *sample_broadening* : float | degrees FWHM
             additional divergence caused by sample
-    
+
     :Returns:
         *dT*  : float OR [float] | degrees FWHM
             calculated angular divergence
 
     Algorithm:
-    
+
     Uses the following formula:
 
         p = w * sin(radians(T))
@@ -904,7 +904,7 @@ def divergence(T=None, slits=None, distance=None,
 
         sample_broadening = W - degrees( 0.5*(s1+s2) / (d1-d2))
 
-    :Note: 
+    :Note:
         default sample width is large but not infinite so that at T=0,
         sin(0)*sample_width returns 0 rather than NaN.
     """
@@ -950,7 +950,7 @@ def slit_widths(T=None,slits_at_Tlo=None,Tlo=90,Thi=90,
             values of the slits at the ends of the opening region.
         *slits_at_Tlo : float OR [float,float] | mm
             Slits at the start of the opening region.
-    
+
     :Returns:
         *s1*, *s2* : [float] | mm
             Slit widths for each theta.

@@ -20,7 +20,7 @@ def draw(k,n):
 
 def _check_uniform_draw():
     """
-    Draws from history should 
+    Draws from history should
     """
     import pylab
     k,n = 50,400
@@ -43,7 +43,7 @@ def _check_uniform_draw():
 def console():
     """
     Start the python console with the local variables available.
-    
+
     console() should be the last thing in the file, after sampling and
     showing the default plots.
     """
@@ -51,7 +51,7 @@ def console():
     import sys
 
     # Hack for eclipse console: can't actually run ipython in the eclipse
-    # console and get it to plot, so instead guess whether we are in a 
+    # console and get it to plot, so instead guess whether we are in a
     # console by checking if we are attached to a proper tty through stdin.
     # For eclipse, just show the plots.
     try:

@@ -74,7 +74,7 @@ def pm(v, *args):
         >>> print "%g - %g"%r
         0.7818 - 0.7866
 
-    If called as pm(value, +dp, -dm) or pm(value, -dm, +dp), 
+    If called as pm(value, +dp, -dm) or pm(value, -dm, +dp),
     return (~v-dm, ~v+dp).
     """
     return nice_range(pm_raw(v,*args))
@@ -91,7 +91,7 @@ def pmp(v, *args):
         >>> print "%g - %g"%r
         0.7834 - 0.785
 
-    If called as pmp(value, +pp, -pm) or pmp(value, -pm, +pp), 
+    If called as pmp(value, +pp, -pm) or pmp(value, -pm, +pp),
     return (~v-pm%v, ~v+pp%v).
     """
     return nice_range(pmp_raw(v,*args))
@@ -101,7 +101,7 @@ def pm_raw(v, *args):
     """
     Return the tuple [v-dv,v+dv].
 
-    If called as pm_raw(value, +dp, -dm) or pm_raw(value, -dm, +dp), 
+    If called as pm_raw(value, +dp, -dm) or pm_raw(value, -dm, +dp),
     return (v-dm, v+dp).
     """
     if len(args) == 1:
@@ -120,7 +120,7 @@ def pmp_raw(v, *args):
     """
     Return the tuple [v-%v,v+%v]
 
-    If called as pmp_raw(value, +pp, -pm) or pmp_raw(value, -pm, +pp), 
+    If called as pmp_raw(value, +pp, -pm) or pmp_raw(value, -pm, +pp),
     return (v-pm%v, v+pp%v).
     """
     if len(args) == 1:
@@ -282,7 +282,7 @@ class Unbounded(Bounds):
     The probability is uniformly 1/inf everywhere, which means the negative
     log likelihood of P is inf everywhere.  A value inf will interfere
     with optimization routines, and so we instead choose P == 1 everywhere.
-    
+
 
     Convert sign*m*2^e to sign*(e+1023+m), yielding a value in [-2048,2048].
     This can then be converted to a value in [0,1].
@@ -314,7 +314,7 @@ class BoundedBelow(Bounds):
     Logarithmic compression works by converting sign*m*2^e+base to
     sign*(e+1023+m), yielding a value in [0,2048]. This can then be
     converted to a value in [0,1].
-    
+
     Note that the likelihood function is problematic: the true probability
     of seeing any particular value in the range is infintesimal, and that
     is indistinguishable from values outside the range.    Instead we say
@@ -362,7 +362,7 @@ class BoundedAbove(Bounds):
     Logarithmic compression works by converting sign*m*2^e+base to
     sign*(e+1023+m), yielding a value in [0,2048].  This can then be
     converted to a value in [0,1].
-    
+
     Note that the likelihood function is problematic: the true probability
     of seeing any particular value in the range is infintesimal, and that
     is indistinguishable from values outside the range.    Instead we say

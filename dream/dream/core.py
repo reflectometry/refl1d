@@ -150,7 +150,7 @@ class Dream(object):
         """
         Pull the requisite number of samples from the distribution
         """
-        if not self._initialized: 
+        if not self._initialized:
             self._initialized = True
         try:
             run_dream(self)
@@ -175,7 +175,7 @@ def run_dream(dream):
         dream.CR = AdaptiveCrossover(3)
 
     # Step 2: Calculate posterior density associated with each value in x
-    apply_bounds = make_bounds_handler(dream.model.bounds, 
+    apply_bounds = make_bounds_handler(dream.model.bounds,
                                        style=dream.bounds_style)
 
     # Record initial state
@@ -185,8 +185,8 @@ def run_dream(dream):
         apply_bounds(x)
 # ********************** MAP *****************************
         logp = dream.model.map(x)
-        state._generation(new_draws=Nchain, x=x, 
-                          logp=logp, accept=Nchain, 
+        state._generation(new_draws=Nchain, x=x,
+                          logp=logp, accept=Nchain,
                           force_keep=True)
 
     # Skip R_stat and pCR until we have some data data to analyze
@@ -206,8 +206,8 @@ def run_dream(dream):
 
             # Generate candidates for each sequence
             xtry, step_alpha, used \
-                = de_step(Nchain, pop, dream.CR[gen], 
-                          max_pairs=dream.DE_pairs, 
+                = de_step(Nchain, pop, dream.CR[gen],
+                          max_pairs=dream.DE_pairs,
                           eps=dream.DE_eps,
                           snooker_rate=dream.DE_snooker_rate)
 
@@ -219,7 +219,7 @@ def run_dream(dream):
 
             # Apply the metropolis acceptance/rejection rule
             x,logp,alpha,accept \
-                = metropolis(xtry, logp_try, 
+                = metropolis(xtry, logp_try,
                              xold, logp_old,
                              step_alpha)
 
@@ -253,24 +253,24 @@ def run_dream(dream):
             state._generation(draws, x, logp, accept)
 # ********************** NOTIFY **************************
             #print state.generation, ":", state._best_logp
-            
+
             # Keep track of which CR ratios were successful
             dream.CR.update(gen, xold, x, used)
-            
+
         # End of differential evolution aging
         # ---------------------------------------------------------------------
 
         # Calculate Gelman and Rubin convergence diagnostic
         _, points, _ = state.chains(unroll=True)
         R_stat = gelman(points, portion=0.5)
-    
+
         if state.draws <= 0.1 * dream.draws:
             # Adapt the crossover ratio, but only during burn-in.
             dream.CR.adapt()
         #else:
         #    # See whether there are any outlier chains, and remove them to current best value of X
         #    remove_outliers(state, x, logp, test=dream.outlier_test)
-            
+
         # Save update information
         state._update(R_stat=R_stat, CR_weight=dream.CR.weight)
 
@@ -284,7 +284,7 @@ def run_dream(dream):
 
 def allocate_state(dream):
     """
-    Estimate the size of the output 
+    Estimate the size of the output
     """
     # Determine problem dimensions from the initial population
     Npop, Nchain, Nvar = dream.population.shape
@@ -292,11 +292,10 @@ def allocate_state(dream):
     thinning = dream.thinning
     Ncr = len(dream.CR.CR)
     draws = dream.draws
-    
+
     Nupdate = int(draws/(steps*Nchain)) + 1
     Ngen = Nupdate * steps
     Nthin = int(Ngen/thinning) + 1
     #print Ngen, Nthin, Nupdate, draws, steps, Npop, Nvar
 
     return MCMCDraw(Ngen, Nthin, Nupdate, Nvar, Nchain, Ncr, thinning)
-    

@@ -50,10 +50,10 @@ class Microslabs:
     def microslabs(self, thickness=0):
         """
         Return a set of microslabs for a layer of the given *thickness*.
-        
-        The step size slabs.dz was defined when the Microslabs 
+
+        The step size slabs.dz was defined when the Microslabs
         object was created.
-        
+
         This is a convenience function.  Layer definitions can choose
         their own slices so long as the step size is approximately
         slabs.dz in the varying region.
@@ -101,7 +101,7 @@ class Microslabs:
         self._slabs[toidx] = numpy.tile(self._slabs[fromidx],[repeats,1])
         self._slabsQ[toidx] = numpy.tile(self._slabsQ[fromidx],[repeats,1,1])
         self._num_slabs += repeats*length
-        
+
         # TODO: any magnetic sections within the repeat need to be
         # repeated as well
 
@@ -132,7 +132,7 @@ class Microslabs:
 
     def magnetic(self, anchor, w, rhoM=0, thetaM=0):
         self._slabsM.append(anchor,w,rhoM,thetaM)
-    
+
     def thickness(self):
         """
         Total thickness of the profile.

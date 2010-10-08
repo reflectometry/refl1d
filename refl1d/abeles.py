@@ -10,7 +10,7 @@ from numpy import sqrt, exp, pi
 def refl(kz, depth, rho, irho=0, sigma=0, rho_index=None):
     """
     Reflectometry as a function of kz for a set of slabs.
-    
+
     :Parameters:
         *kz* : float[n] | inv angstrom
             Scattering vector 2*pi*sin(theta)/wavelength. This is Qz/2.
@@ -27,12 +27,12 @@ def refl(kz, depth, rho, irho=0, sigma=0, rho_index=None):
             entries, though it may have m with the last entry ignored.
         *rho_index* : int[m]
             index into rho vector for each kz
-    
+
     Slabs are ordered with the surface SLD at index 0 and substrate at
     index -1, or reversed if kz < 0.
     """
     if isscalar(kz): kz = asarray([kz], 'd')
-    
+
     m = len(depth)
 
     # Make everything into arrays

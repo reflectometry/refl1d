@@ -99,19 +99,19 @@ def parse_file(filename):
 
     # Date-time field for the file
     header['date'] = raw_header.get('D','')
-    
+
     # Column names and units
     columnpat = re.compile(r'(?P<name>\w+)[(](?P<units>\w*)[)]')
     columns,units = zip(*columnpat.findall(raw_header.get('L','')))
     header['columns'] = columns
     header['units'] = units
-    
+
     # extra information like title, angle, etc.
     commentpat = re.compile(r'(?P<name>.*)\s*:\s*(?P<value>.*)\s*\n')
     comments = dict(commentpat.findall(raw_header.get('C','')))
     header['title'] = comments.get('Title','')
     header['description'] = comments.get('Notes','')
-    
+
     # parse values of the form "Long Name: (value, 'units')" in comments
     valuepat = re.compile(r"[(]\s*(?P<value>.*)\s*,\s*'(?P<units>.*)'\s*[)]")
     def parse_value(valstr):
@@ -171,7 +171,7 @@ def intensity_from_spline(Lrange,dLoL,feather):
     n = math.ceil(math.log(L1/L0)/math.log(1+dLoL))
     L = L0*(1+dLoL)**numpy.arange(0,n)
     return (L[:-1]+L[1:])/2, rebin(feather[0],feather[1],L)
-    
+
 
 def boltzmann_feather(L,counts=100000,range=None):
     """

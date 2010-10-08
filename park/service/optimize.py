@@ -5,7 +5,7 @@ Takes an optimizer and a kernel, and returns the minimum.  If kernel is
 fitness, then the optimizer returns the best fit.
 
 ***WARNING*** being able to import arbitrary symbols as service and kernel
-is a security risk.  Possible solutions: list valid symbols in park.config; 
+is a security risk.  Possible solutions: list valid symbols in park.config;
 mark valid symbols with @park.export; have a directory of component definition
 files; others?
 """
@@ -35,9 +35,9 @@ def fitness(f,x,y,dy=1):
                 input=dict(x=x,y=y,dy=dy,f=f))
 
 
-def diffev(f, parameters, 
+def diffev(f, parameters,
            maxiter=None, ftol=5e-3,
-           CR=0.5, F=2.0, npop=3, 
+           CR=0.5, F=2.0, npop=3,
            crossover="c_exp", mutate="best1u"):
     if maxiter is None: maxiter = len(parameters)*100
 
@@ -53,8 +53,8 @@ def diffev(f, parameters,
 def diffev_service(env,input):
     input = dict((str(k),v) for k,v in input.items()) # clean up unicode
     return _diffev(input, lambda f,v: env.mapper(v))
-    
-def _diffev(input, mapper):    
+
+def _diffev(input, mapper):
     from refl1d.mystic import stop
     from refl1d.mystic.optimizer import de
     from refl1d.mystic.solver import Minimizer
@@ -62,7 +62,7 @@ def _diffev(input, mapper):
 
     # Parameters
     parameters = input.pop('parameters')
-    
+
     # Lookup crossover function
     if 'crossover' not in input: input['crossover'] = 'c_exp'
     if input['crossover'] not in de.CROSSOVER:

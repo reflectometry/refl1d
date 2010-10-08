@@ -207,10 +207,10 @@ class Reference(Parameter):
     Create an adaptor so that a model attribute can be treated as if it
     were a parameter.  This allows only direct access, wherein the
     storage for the parameter value is provided by the underlying model.
-    
-    Indirect access, wherein the storage is provided by the parameter, cannot 
-    be supported since the parameter has no way to detect that the model 
-    is asking for the value of the attribute.  This means that model 
+
+    Indirect access, wherein the storage is provided by the parameter, cannot
+    be supported since the parameter has no way to detect that the model
+    is asking for the value of the attribute.  This means that model
     attributes cannot be assigned to parameter expressions without some
     trigger to update the values of the attributes in the model.
     """
@@ -451,7 +451,7 @@ def summarize(pars, fid=None):
 def unique(s):
     """
     Return the unique set of parameters
-    
+
     The ordering is stable.  The same parameters/dependencies will always
     return the same ordering, with the first occurrence first.
     """
@@ -467,7 +467,7 @@ def unique(s):
     for p in pars:
         if p not in result:
             result.append(p)
-    # Return the complete set of parameters    
+    # Return the complete set of parameters
     return result
 
 def fittable(s):
@@ -529,7 +529,7 @@ class VectorParameter(Parameter):
 class Alias(object):
     """
     Parameter alias.
-    
+
     Rather than modifying a model to contain a parameter slot,
     allow the parameter to exist outside the model. The resulting
     parameter will have the full parameter semantics, including
@@ -545,5 +545,3 @@ class Alias(object):
         setattr(self.obj,self.attr,self.par.value)
     def parameters(self):
         return self.p.parameters()
-
-
