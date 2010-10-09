@@ -56,11 +56,15 @@ class Model(mystic.Model):
     def __call__(self, t):
         p = [float(v) for v in self._pars]
         return dual_exponential(t,p)
+
 m = Model()
-e = Measurement(,x,y,dy)
+e = Measurement(x,y,dy)
+
 
 class Measurement(mystic.Experiment):
     def __init__(self):
+        pass
+
 
 class BevingtonDecay(AbstractModel):
 
