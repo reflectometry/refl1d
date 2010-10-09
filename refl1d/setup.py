@@ -5,10 +5,8 @@ import os.path
 from numpy.distutils.misc_util import Configuration
 from numpy.distutils.core import setup
 
-def configuration(parent_package='',
-                  top_path=None
-                  ):
-    config = Configuration('model', parent_package, top_path)
+def configuration(parent_package='', top_path=None):
+    config = Configuration('refl1d', parent_package, top_path)
 
     config.add_data_files('README.txt')
 
