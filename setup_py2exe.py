@@ -37,6 +37,12 @@ purposes, refl1d.exe can be run from the dist directory.
 import os
 import sys
 
+root = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(1, os.path.join(root, "dream"))
+print "*** Python path is:"
+for i, p in enumerate(sys.path):
+    print "%5d  %s" %(i, p)
+
 from distutils.core import setup
 
 # Augment the setup interface with the py2exe command and make sure the py2exe

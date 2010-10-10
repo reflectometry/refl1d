@@ -2,11 +2,29 @@
 
 import sys
 import os
+import wx
+import matplotlib
 
-__file__ = os.path.realpath(__file__)
-root = os.path.abspath(os.path.join(os.path.dirname(__file__),'..'))
-sys.path.extend((os.path.join(root), 
-                 os.path.join(root,"dream")))
+# Disable interactive mode so that plots are only updated on show() or draw().
+# Note: this must be done before selecting a backend or importing pylab or
+# pyplot, otherwise it will have no effect.
+matplotlib.interactive(False)
+
+# Specify the backend to use for plotting and import backend dependent classes.
+# Note: this must be done before importing pylab or pyplot to have an effect.
+matplotlib.use('WXAgg')
+
+# Unless this is a frozen image, augment sys.path.
+if not hasattr(sys, "frozen"):
+    path = os.path.realpath(__file__)
+    root = os.path.abspath(os.path.join(os.path.dirname(path), '..'))
+    sys.path.insert(1, root)
+    sys.path.insert(2, os.path.join(root, "dream"))
+    '''
+    print "*** Python path is:"
+    for i, p in enumerate(sys.path):
+        print "%5d  %s" %(i, p)
+    '''
 
 import refl1d.cli
 
