@@ -110,7 +110,7 @@ data_files += periodictable.data_files()
 
 # Specify required packages to bundle in the executable image.
 packages = ['numpy', 'scipy', 'matplotlib', 'pytz', 'pyparsing', 'wx',
-            'periodictable']
+            'periodictable', 'refl1d.names']
 
 # Specify files to include in the executable image.
 includes = []

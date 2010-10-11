@@ -1,8 +1,17 @@
 #!/usr/bin/env python
+# Authors: Paul Kienzle and James Krycka
+# This program is in the public domain
 
+# ======================== Path setup =================================
 import sys
 import os
-import wx
+if not hasattr(sys, "frozen"):
+    __file__ = os.path.realpath(__file__)
+    root = os.path.abspath(os.path.join(os.path.dirname(__file__),'..'))
+    sys.path.insert(0, root)
+    sys.path.insert(1, os.path.join(root,"dream"))
+
+# ======================== Matplotlib setup ==========================
 import matplotlib
 
 # Disable interactive mode so that plots are only updated on show() or draw().
@@ -14,18 +23,6 @@ matplotlib.interactive(False)
 # Note: this must be done before importing pylab or pyplot to have an effect.
 matplotlib.use('WXAgg')
 
-# Unless this is a frozen image, augment sys.path.
-if not hasattr(sys, "frozen"):
-    path = os.path.realpath(__file__)
-    root = os.path.abspath(os.path.join(os.path.dirname(path), '..'))
-    sys.path.insert(1, root)
-    sys.path.insert(2, os.path.join(root, "dream"))
-    '''
-    print "*** Python path is:"
-    for i, p in enumerate(sys.path):
-        print "%5d  %s" %(i, p)
-    '''
-
+# ======================== Start program ============================
 import refl1d.cli
-
 refl1d.cli.main()
