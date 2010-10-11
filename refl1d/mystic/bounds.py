@@ -56,7 +56,7 @@ __all__ = ['pm','pmp','pm_raw','pmp_raw', 'nice_range', 'init_bounds',
 
 import math
 import numpy
-from numpy import (isinf, inf, nan, e, pi, log, sqrt)
+from numpy import (isinf, inf, nan, e, pi, log, sqrt, exp)
 RNG = numpy.random
 
 try:
@@ -435,8 +435,9 @@ class Distribution(Bounds):
     In particular, it should define methods rvs, nnlf, cdf and ppf and
     attributes args and dist.name.
     """
-    N = normal_distribution(0,1)
     def __init__(self, dist):
+        if not hasattr(Distribution, "N"):
+            Distribution.N = normal_distribution(0,1)
         self.dist = dist
     def random(self, n=1):
         return self.dist.rvs(n)
