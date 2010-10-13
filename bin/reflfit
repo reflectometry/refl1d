@@ -11,6 +11,12 @@ if not hasattr(sys, "frozen"):
     sys.path.insert(0, root)
     sys.path.insert(1, os.path.join(root,"dream"))
 
+# ======================== Workaround ================================
+# The following import of wx only appears to be necessary to support building
+# a py2exe executable using Python 2.5.  It is not necessary when using py2exe
+# on 2.6, nor is it required if running reflfit from source code on 2.5 or 2.6.
+import wx
+
 # ======================== Matplotlib setup ==========================
 import matplotlib
 
