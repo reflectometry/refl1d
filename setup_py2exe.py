@@ -39,9 +39,6 @@ import sys
 
 root = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(1, os.path.join(root, "dream"))
-print "*** Python path is:"
-for i, p in enumerate(sys.path):
-    print "%5d  %s" %(i, p)
 
 from distutils.core import setup
 
@@ -58,15 +55,15 @@ import periodictable
 # Retrieve the application version string.
 from version import version
 
-# Create a manifest for use with Python 2.5 on Windows XP.  This manifest is
-# required to be included in a py2exe image (or accessible as a file in the
-# image directory) when wxPython is included so that the Windows XP theme is
-# used when rendering wx widgets.  The manifest below is adapted from the
-# Python manifest file (C:\Python25\pythonw.exe.manifest).
+# A manifest is required to be included in a py2exe image (or accessible as a
+# file in the image directory) when wxPython is included so that the Windows XP
+# theme is used when rendering wx widgets.  The manifest must be matched to the
+# version of Python that is being used.
 #
-# Note that a different manifest is required if using another version of Python.
+# Create a manifest for use with Python 2.5 on Windows XP or Vista.  It is
+# adapted from the Python manifest file (C:\Python25\pythonw.exe.manifest).
 
-manifest = """
+manifest_for_python25 = """
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
 <assemblyIdentity
@@ -90,6 +87,63 @@ manifest = """
 </dependency>
 </assembly>
 """
+
+# Create a manifest for use with Python 2.6 or 2.7 on Windows XP or Vista.
+
+manifest_for_python26 = """
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1"
+manifestVersion="1.0">
+  <assemblyIdentity
+    version="0.6.8.0"
+    processorArchitecture="x86"
+    name="MyCare Card Browser"
+    type="win32"
+  />
+  <description>MyCare Card Browser Program</description>
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
+    <security>
+      <requestedPrivileges>
+        <requestedExecutionLevel
+          level="asInvoker"
+          uiAccess="false"
+        />
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+  <dependency>
+    <dependentAssembly>
+      <assemblyIdentity
+        type="win32"
+        name="Microsoft.VC90.CRT"
+        version="9.0.21022.8"
+        processorArchitecture="x86"
+        publicKeyToken="1fc8b3b9a1e18e3b"
+      />
+    </dependentAssembly>
+  </dependency>
+  <dependency>
+    <dependentAssembly>
+      <assemblyIdentity
+        type="win32"
+        name="Microsoft.Windows.Common-Controls"
+        version="6.0.0.0"
+        processorArchitecture="x86"
+        publicKeyToken="6595b64144ccf1df"
+        language="*"
+      />
+    </dependentAssembly>
+  </dependency>
+</assembly>
+"""
+
+# Select the appropriate manifest to use.
+if sys.version_info >= (3, 0) or sys.version_info < (2, 5):
+    print "*** This script only works with Python 2.5, 2.6, or 2.7."
+    sys.exit()
+elif sys.version_info >= (2, 6):
+    manifest = manifest_for_python26
+elif sys.version_info >= (2, 5):
+    manifest = manifest_for_python25
 
 # Create a list of all files to include along side the executable being built
 # in the dist directory tree.  Each element of the data_files list is a tuple
@@ -172,15 +226,13 @@ setup(
                    'includes': includes,
                    'excludes': excludes,
                    'dll_excludes': dll_excludes,
-                   ###'compressed': 1,   # standard compression
-                   'compressed': 0,   # standard compression
+                   'compressed': 1,   # standard compression
                    'optimize': 0,     # no byte-code optimization
                    'dist_dir': "dist",# where to put py2exe results
                    'xref': False,     # display cross reference (as html doc)
-                   ###'bundle_files': 1  # bundle python25.dll in executable
-                   'bundle_files': 3  # bundle python25.dll in executable
+                   'bundle_files': 1, # bundle python25.dll in executable
                          }
               },
-      ###zipfile=None,                   # bundle files in exe, not in library.zip
+      zipfile=None,                   # bundle files in exe, not in library.zip
       data_files=data_files           # list of files to copy to dist directory
      )
