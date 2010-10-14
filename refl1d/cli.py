@@ -292,31 +292,31 @@ class FitOpts(ParseOpts):
     USAGE = """\
 Usage: reflfit [-option] modelfile [modelargs]
 
-where options includes
+where options include:
 
     -?/-h/-help
         display this help
     -preview
-        display model but do not fit
+        display model but do not perform a fitting operation
     -batch
         batch mode; don't show plots during run
     -plot=%(plotter)s
-        type of reflectivity plot to use
+        type of reflectivity plot to display
     -store=path
         output directory for plots and models
     -overwrite
         if store already exists, replace it
     -fit=%(fitter)s
-        which fitting engine to use; see manual for details
+        fitting engine to use; see manual for details
     -amqp
         run in parallel with amqp mapper
 
-Options can be anywhere on the command line.
+Options can be placed anywhere on the command line.
 
-The modelfile is a series of python commands which sets up the data,
-the models, and the fittable parameters.  The model arguments are
-available in the modelfile as sys.argv[1:].  Model arguments may not
-start with '-'.
+The modelfile is a Python script (i.e., a series of Python commands)
+which sets up the data, the models, and the fittable parameters.
+The model arguments are available in the modelfile as sys.argv[1:].
+Model arguments may not start with '-'.
 """%{'fitter':'|'.join(FITTERS),
      'plotter':'|'.join(PLOTTERS),
      }
@@ -340,6 +340,10 @@ start with '-'.
 # ==== Main ====
 
 def main():
+    if len(sys.argv) == 1:
+        sys.argv.append("-?")
+        print "\nNo modelfile parameter was specified.\n"
+
     opts = FitOpts(sys.argv)
     problem = load_problem(opts.args)
     if opts.fitter == 'dream':
