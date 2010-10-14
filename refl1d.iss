@@ -80,7 +80,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Files]
 ; This script assumes that the output from the previously run py2exe packaging process is in .\dist\...
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
-Source: "dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\*"; Excludes: "refl1d.bat"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\refl1d.bat"; DestDir: "{sys}"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"

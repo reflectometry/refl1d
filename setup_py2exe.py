@@ -158,9 +158,10 @@ data_files = matplotlib.get_py2exe_datafiles()
 data_files += periodictable.data_files()
 
 # Add resource files that need to reside in the same directory as the image.
-#data_files.append( ('.', [os.path.join('.', 'refl1d.ico')]) )
-#data_files.append( ('.', [os.path.join('.', 'LICENSE.txt')]) )
-#data_files.append( ('.', [os.path.join('.', 'README.txt')]) )
+data_files.append( ('.', [os.path.join('.', 'refl1d.ico')]) )
+data_files.append( ('.', [os.path.join('.', 'LICENSE.txt')]) )
+data_files.append( ('.', [os.path.join('.', 'README.txt')]) )
+data_files.append( ('.', [os.path.join('.', 'bin', 'refl1d.bat')]) )
 
 # Specify required packages to bundle in the executable image.
 packages = ['numpy', 'scipy', 'matplotlib', 'pytz', 'pyparsing', 'wx',

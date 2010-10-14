@@ -30,4 +30,5 @@ def configuration(parent_package='', top_path=None):
 
 if __name__ == '__main__':
     if len(sys.argv) == 1: sys.argv.append('install')
-    setup(**configuration(top_path='').todict())
+    scripts=["bin/reflfit.bat"] # put in C:/Pythonxx/Scripts
+    setup(scripts=scripts, **configuration(top_path='').todict())
