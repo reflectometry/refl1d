@@ -1,5 +1,3 @@
-import sys; sys.path.append('../..')
-
 from refl1d import *
 Probe.view = 'log' # log, linear, fresnel, or Q**4
 

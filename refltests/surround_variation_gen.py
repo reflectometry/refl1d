@@ -1,4 +1,3 @@
-import sys; sys.path.append('..')
 import numpy
 from numpy import sqrt
 from numpy.linalg import norm

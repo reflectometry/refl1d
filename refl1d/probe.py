@@ -1,10 +1,17 @@
 # This program is in the public domain
 # Tuthor: Paul Kienzle
+
 """
+.. sidebar:: On this Page
+    
+        * :class:`Base probe <refl1d.probe.Probe>`
+        * :class:`Polarized neutron probe <refl1d.probe.PolarizedNeutronProbe>`
+        * :class:`Neutron probe <refl1d.probe.NeutronProbe>`
+        * :class:`X-ray probe <refl1d.probe.XrayProbe>`
+   
 Experimental probe.
 
 The experimental probe describes the incoming beam for the experiment.
-
 Scattering properties of the sample are dependent on the type and
 energy of the radiation.
 
@@ -75,7 +82,7 @@ class Probe(object):
     points only, but for some systems, such as those with very thick layers,
     oversampling is needed to avoid aliasing effects.
 
-    Measurement properties::
+    Measurement properties:
 
         *intensity* is the beam intensity
         *background* is the background
@@ -89,12 +96,12 @@ class Probe(object):
     in the cost function for the fit as if it were another measurement.  Note
     that the uncertainty in the peak position is not the same as the width
     of the peak.  The peak stays roughly the same as statistics are improved,
-    but the uncertainty in position and width will decrease.[#Daymond2002]
+    but the uncertainty in position and width will decrease. [#Daymond2002]_
     There is an additional uncertainty in the angle due to motor step size,
     easily computed from the variance in a uniform distribution.  Combined,
     the uncertainty in *theta_offset* is::
 
-        dT = w/sqrt(I) + d/sqrt(12)
+        >>> dT = w/sqrt(I) + d/sqrt(12)
 
     where *w* is the full-width of the peak in radians at half maximum, *I*
     is the integrated intensity under the peak and *d* is the motor step size
@@ -106,7 +113,7 @@ class Probe(object):
     particularly for samples with significant hydrogen content due to its
     large isotropic incoherent scattering cross section.
 
-    View properties::
+    View properties:
 
         *substrate* is the material which makes up the substrate
         *surface* is the material which makes up the surface
@@ -117,10 +124,10 @@ class Probe(object):
     substrate and surface materials are a property of the sample,
     and should share the same material.
 
-    [#Daymond2002] M.R. Daymond, P.J. Withers and M.W. Johnson;
-    The expected uncertainty of diffraction-peak location",
-    Appl. Phys. A 74 [Suppl.], S112 - S114 (2002).
-    http://dx.doi.org/10.1007/s003390201392
+    .. [#Daymond2002] M.R. Daymond, P.J. Withers and M.W. Johnson;
+       The expected uncertainty of diffraction-peak location",
+       Appl. Phys. A 74 [Suppl.], S112 - S114 (2002).
+       http://dx.doi.org/10.1007/s003390201392
     """
     polarized = False
     view = "fresnel"
@@ -629,11 +636,11 @@ def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
 
     Spin asymmetry, *SA*, is::
 
-        SA = (Rp - Rm)/(Rp + Rm)
+        >>> SA = (Rp - Rm)/(Rp + Rm)
 
     Uncertainty *dSA* follows from propagation of error::
 
-        dSA^2 = 4(Rp^2  dRm^2  -  Rm^2 dRp^2)/(Rp + Rm)^4
+        >>> dSA^2 = 4(Rp^2  dRm^2  -  Rm^2 dRp^2)/(Rp + Rm)^4
 
     The inputs (*Qp*, *Rp*, *dRp*) and (*Qm*, *Rm*, *dRm*) are measurements
     for the ++ and -- cross sections respectively.  If *dRp*, *dRm* are None,
@@ -779,5 +786,6 @@ class ProbeSet(Probe):
 
             \hat R &=& \sum{\hat R_k}/n \\
             \hat \sigma_R &=& \sqrt{\sum \hat \sigma_{R_k}^2}/n
+
         """
         raise NotImplementedError

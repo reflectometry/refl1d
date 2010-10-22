@@ -1,4 +1,3 @@
-import sys; sys.path.append('../..')
 import time
 
 from amqp_map.core import connect

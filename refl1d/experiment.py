@@ -1,6 +1,16 @@
 # This program is in the public domain
 # Author: Paul Kienzle
 
+"""
+.. sidebar:: On this Page
+    
+        * :class:`Experiment <refl1d.experiment.Experiment>`
+        * :class:`Composite Experiment <refl1d.experiment.CompositeExperiment>`
+        * :class:`Distribution Experiment <refl1d.experiment.DistributionExperiment>`
+        * :class:`Experiment Base <refl1d.experiment.ExperimentBase>`
+        * :class:`Weights <refl1d.experiment.Weights>`
+"""
+
 from math import log, pi, log10, ceil, floor
 import shutil
 import os
@@ -91,11 +101,11 @@ class Experiment(ExperimentBase):
     The model calculator is specific to the particular measurement technique
     that was applied to the model.
 
-    Measurement properties::
+    Measurement properties:
 
         *probe* is the measuring probe
 
-    Sample properties::
+    Sample properties:
 
         *sample* is the model sample
         *roughness_limit* limits the roughness based on layer thickness
@@ -111,8 +121,9 @@ class Experiment(ExperimentBase):
     Using the relation d = 2 pi / Q_max,  we use a default step size of d/20
     rounded to two digits.  The maximum step size is 5 A.  For simultaneous
     fitting you may want to set *dz* explicitly using
-    :function:`experiment.nice`  to nice(pi/Q_max/10) so that all models
+    :func:`experiment.nice <refl1d.experiment.nice>`  to nice(pi/Q_max/10) so that all models
     use the same profile step size, but the same step size is not required.
+
     """
     def __init__(self, sample=None, probe=None,
                  roughness_limit=2.5, dz=None):
@@ -238,7 +249,8 @@ class Experiment(ExperimentBase):
         Return the slab thickness, roughness, rho, irho for the
         rendered model.
 
-        Note: roughness is for the top of the layer.
+        .. Note::
+             Roughness is for the top of the layer.
         """
         slabs = self._render_slabs()
         return (slabs.w, numpy.hstack((0,slabs.sigma)),
@@ -385,6 +397,7 @@ class Weights:
                   of parameter P.
         uniform   Flat from loc to loc+scale. Use loc=edges[0], scale=edges[-1]
                   to define P as uniform over the range.
+    
     """
     def __init__(self, edges=None, cdf=None,
                  args=None, loc=None, scale=None, truncated=True):

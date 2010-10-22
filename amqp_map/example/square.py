@@ -1,4 +1,3 @@
-import sys; sys.path.append('../..')
 import time
 import numpy
 

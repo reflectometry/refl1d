@@ -1,4 +1,3 @@
-import sys; sys.path.append('../..')
 
 from refl1d import *
 

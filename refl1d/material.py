@@ -1,6 +1,14 @@
 # This program is in the public domain
 # Author Paul Kienzle
 """
+.. sidebar:: On this Page
+    
+        * :class:`Base Material <refl1d.material.Material>`
+        * :class:`Mixture (mixed block of material) <refl1d.material.Mixture>`
+        * :class:`Scattering Length Density (SLD) <refl1d.material.SLD>`
+        * :class:`Material Probe Proxy <refl1d.material.ProbeCache>`
+        * :class:`Empty Layer (Vaccum) <refl1d.material.Vacuum>`
+
 Reflectometry materials.
 
 Materials (see :class:`Material`) have a composition and a density.
@@ -10,7 +18,7 @@ The density parameter can be fitted directly, or the bulk density can be
 used, and a stretch parameter can be fitted.
 
 Mixtures (see :class:`Mixture`) are a special kind of material which are
-composed of individual parts in proportion.  A mixture can be construct
+composed of individual parts in proportion.  A mixture can be constructed
 in a number of ways, such as by measuring proportional masses and mixing
 or measuring proportional volumes and mixing.  The parameter of interest
 may also be the relative number of atoms of one material versus another.
@@ -40,8 +48,8 @@ type and energy.  Unlike the normally tabulated scattering factors f', f''
 for X-ray, there is no need to scale by probe by electron radius.  In
 the end, sld is just the returned scattering factors times density.
 """
-__all__ = ['Material','Mixture','SLD','Vacuum']
-
+__all__ = ['Material','Mixture','SLD','Vacuum', 'Scatterer', 'ProbeCache']
+import sys; 
 import numpy
 from numpy import inf
 import periodictable
@@ -54,11 +62,12 @@ class Scatterer(object):
     from the calculation of the scattering length density.  This allows
     programs to fit density and alloy composition more efficiently.
 
-    Note: the Scatterer base class is extended by
-    :class:`model._MaterialStacker` so that materials can be implicitly
-    converted to slabs when used in stack construction expressions.  It is
-    not done directly to avoid circular dependencies between :module:`model`
-    and :module:`material`.
+    .. Note::
+       the Scatterer base class is extended by
+       :class:`_MaterialStacker <refl1d.model._MaterialStacker>` so that materials 
+       can be implicitly converted to slabs when used in stack construction 
+       expressions. It is not done directly to avoid circular dependencies 
+       between :mod:`model <refl1d.model>` and :mod:`material <refl1d.material>`.
     """
     def sld(self, sf):
         """
@@ -149,18 +158,20 @@ class Material(Scatterer):
 
     For example, to fit Pd by cell volume use::
 
-        m = Material('Pd', fitby='cell_volume')
-        m.cell_volume.range(10)
-        print "Pd density",m.density.value
+        >>> m = Material('Pd', fitby='cell_volume')
+        >>> m.cell_volume.range(10)
+        >>> print "Pd density",m.density.value
 
-    You can change density representation by calling fitby(type).  Note that
-    this will delete the underlying parameter, so be sure you specify fitby
-    type before using m.density in a parameter expression.  Alternatively,
-    you can use WrappedParameter(m,'density') in your expression so that it
-    doesn't matter if fitby is set.
+    You can change density representation by calling *fitby(type)*.  
 
-    **WARNING** as of this writing packing_factor does not seem to return
-    the correct density.
+    .. Note::
+         This will delete the underlying parameter, so be sure you specify fitby
+         type before using *m.density* in a parameter expression.  Alternatively,
+         you can use WrappedParameter(m,'density') in your expression so that it
+         doesn't matter if fitby is set.
+
+    .. Warning::
+        As of this writing packing_factor does not seem to return the correct density.
     """
     def __init__(self, formula=None, name=None, use_incoherent=False,
                  density=None, packing_factor=None, fitby='bulk_density'):
@@ -334,8 +345,8 @@ class Mixture(Scatterer):
     The components of the mixture can vary relative to each other, either
     by mass, by volume or by number::
 
-        Mixture.bymass(M1,M2,F2,M3,F3...,name='mixture name')
-        Mixture.byvolume(M1,M2,F2,M3,F3...,name='mixture name')
+        >>> Mixture.bymass(M1,M2,F2,M3,F3...,name='mixture name')
+        >>> Mixture.byvolume(M1,M2,F2,M3,F3...,name='mixture name')
 
     The materials M1, M2, M3, ... can be chemical formula strings or material
     objects.  In practice, since the chemical formula parser does not have
@@ -343,9 +354,9 @@ class Mixture(Scatterer):
     densities will be valid.  Be aware that density will need to change from
     bulk values if the formula has isotope substitutions.
 
-    The fractions F2, F3, ... are percentages in [0,100].  The implicit
-    fraction F1 is 100 - (F2+F3+...).   The SLD is NaN when F1 < 0.
-
+    The fractions F2, F3, ... are percentages in [0,100]. The implicit
+    fraction F1 is 100 - (F2+F3+...). The SLD is NaN when *F1 < 0*).
+   
     name defaults to M1.name+M2.name+...
     """
     @classmethod
@@ -469,7 +480,7 @@ class ProbeCache:
     *probe* is the probe to use when looking up the scattering length density.
 
     The scattering factors need to be retrieved each time the probe
-    or the composition changes.  This can be done either by deleting
+    or the composition changes. This can be done either by deleting
     an individual material from probe (using del probe[material]) or
     by clearing the entire cash.
     """

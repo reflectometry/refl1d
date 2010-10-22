@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import sys; sys.path.append('../..')
 import time
 
 from amqp_map.config import SERVICE_HOST

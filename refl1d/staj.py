@@ -1,11 +1,16 @@
 # This program is in the public domain
 # Author: Paul Kienzle
 """
+.. sidebar:: On this Page
+    
+        * :class:`Mlayer magnetic <refl1d.staj.MlayerMagnetic>`
+        * :class:`Mlayer model <refl1d.staj.MlayerModel>`
+ 
 This module reads and writes staj files.  These are the model files for the
 mlayer and gj2 programs, which are used as the calculation engine for the
-reflpak suite.   Mlayer supports unpolarized beam with multilayer models,
-and has files ending in .staj.  GJ2 supports polarized beam without
-multilayer models, and has files ending in .sta.
+reflpak suite. Mlayer supports unpolarized beam with multilayer models,
+and has files ending in **.staj**. GJ2 supports polarized beam without
+multilayer models, and has files ending in **.sta**.
 """
 
 from math import pi
@@ -118,24 +123,23 @@ class MlayerModel(object):
     """
     Model definition used by MLayer program.
 
-    Attributes
-    ----------
+    **Attributes:**
 
     Q values and reflectivity come from a data file with Q, R, dR or
-    from simulation with linear spacing from Qmin to Qmax in equal steps::
+    from simulation with linear spacing from Qmin to Qmax in equal steps:
 
         *data_file*
             name of the data file, or None if this is simulation only
         *Qmin*, *Qmax*, *num_Q*
             for simulation, Q sample points
 
-    Resolution is defined by wavelength and by incident angle::
+    Resolution is defined by wavelength and by incident angle:
 
         *wavelength*, *wavelength_dispersion*, *angular_divergence*
             resolution equation uses dQ/Q = dL/L + dT/sin(T)
 
     Additional beam parameters correct for intensity, background and
-    possibly sample alignment::
+    possibly sample alignment:
 
         *intensity*, *background*
             incident beam intensity and sample background
@@ -146,7 +150,7 @@ class MlayerModel(object):
     and bottom section correspond to the fixed layers at the surface and
     the substrate.  The middle section layers can be repeated an arbitrary
     number of times, as defined by the number of repeats attribute.  The
-    attributes defining the sections are::
+    attributes defining the sections are:
 
         *num_top* *num_middle* *num_bottom*
             section sizes
@@ -159,7 +163,7 @@ class MlayerModel(object):
     fixed number of slabs with slabs having different widths, but equal
     changes in height.  For broad interfaces, the whole layer is split
     into the same fixed number of slabs, but with each slab having the
-    same width.  The following attributes are used::
+    same width.  The following attributes are used:
 
         *roughness_steps*
             number of roughness steps (13 is coarse; 51 is fine)
@@ -172,27 +176,29 @@ class MlayerModel(object):
     For convenience, roughness can also be set or queried using a 1-sigma
     equivalent roughness on an error function profile.  Regardless,
     layer parameters are represented as vectors with one entry for each
-    top, middle and bottom layer using the following attributes::
+    top, middle and bottom layer using the following attributes:
 
         *thickness*, *roughness* (Angstroms)
             layer thickness and FWHM roughness
         *rho*, *irho*, *incoh* (inv A**2 x 10^6)
             complex coherent rho + 1j * irho and incoherent SLD
 
-    Computed attributes are provided for convenience::
+    Computed attributes are provided for convenience:
+
         *sigma_roughness* (Angstroms)
             1-sigma equivalent roughness for erf profile
         *mu*
             absorption cross section (2*wavelength*irho + incoh)
 
-    Note that staj files store SLD as 16*pi*rho, 2*wavelength*irho+incoh
-    with an additional column of 0 for magnetic SLD.  This conversion will
-    happen automatically on read/write.  Note that there is no way to separate
-    irho and incoh on read so incoh is set to 0.
+    .. Note::
+          The staj files store SLD as 16*pi*rho, 2*wavelength*irho+incoh
+          with an additional column of 0 for magnetic SLD. This conversion will
+          happen automatically on read/write. Note that there is no way to separate
+          irho and incoh on read so incoh is set to 0.
 
     The layers are ordered from surface to substrate.
 
-    Additional attributes are as follows::
+    Additional attributes are as follows:
 
         *fitpars*
             individual fit parameter numbers
@@ -204,8 +210,7 @@ class MlayerModel(object):
     These can be safely ignored, except perhaps if you want to try to
     compile the constraints into something that can be used by your system.
 
-    Methods
-    -------
+    **Methods:**
 
     model = MlayerModel(attribute=value, ...)
 
@@ -238,8 +243,7 @@ class MlayerModel(object):
         Write the model to the given named file.  Raises ValueError if
         the model is invalid.
 
-    Constructing new files
-    ----------------------
+    **Constructing new files:**
 
     Staj files can be constructed directly.  The MlayerModel constructor
     can accept all data attributes as key word arguments.  Models require
@@ -247,6 +251,7 @@ class MlayerModel(object):
     Resolution parameters can be set using model.fit_resolution(Q,dQ).
     Section sizes can be set using model.split_sections().  Everything
     else has reasonable defaults.
+    
     """
     data_file = ""
     Qmin = 0
@@ -323,11 +328,11 @@ class MlayerModel(object):
 
         Given that mlayer uses the following resolution function::
 
-            staj dQ = (|Q| dL + 4 * pi * dT ) / L
+            >>> staj dQ = (|Q| dL + 4 * pi * dT ) / L
 
         we can use a linear system solver to find the optimal dL and dT::
 
-            [ |Qi|/L, 4*pi/L ] * [dL, dT]' = dQi
+            >>> [ |Qi|/L, 4*pi/L ] * [dL, dT]' = dQi
 
         If weights are provided (e.g., dR/R), then weight each point before
         fitting.
@@ -658,11 +663,10 @@ class MlayerMagnetic(object):
     """
     Model definition used by GJ2 program.
 
-    Attributes
-    ----------
-
+    **Attributes:**
+    
     Q values and reflectivity come from a data file with Q, R, dR or
-    from simulation with linear spacing from Qmin to Qmax in equal steps::
+    from simulation with linear spacing from Qmin to Qmax in equal steps:
 
         *data_file*
             base name of the data file, or None if this is simulation only
@@ -671,13 +675,13 @@ class MlayerMagnetic(object):
         *Qmin*, *Qmax*, *num_Q*
             for simulation, Q sample points
 
-    Resolution is defined by wavelength and by incident angle::
+    Resolution is defined by wavelength and by incident angle:
 
         *wavelength*, *wavelength_dispersion*, *angular_divergence*
             resolution equation uses dQ/Q = dL/L + dT/sin(T)
 
     Additional beam parameters correct for intensity, background and
-    possibly guide field angle::
+    possibly guide field angle:
 
         *intensity*, *background*
             incident beam intensity and sample background
@@ -695,7 +699,7 @@ class MlayerMagnetic(object):
     fixed number of slabs with slabs having different widths, but equal
     changes in height.  For broad interfaces, the whole layer is split
     into the same fixed number of slabs, but with each slab having the
-    same width.  The following attributes are used::
+    same width. The following attributes are used:
 
         *roughness_steps*
             number of roughness steps (13 is coarse; 51 is fine)
@@ -708,7 +712,7 @@ class MlayerMagnetic(object):
     For convenience, roughness can also be set or queried using a 1-sigma
     equivalent roughness on an error function profile.  Regardless,
     layer parameters are represented as vectors with one entry for each
-    top, middle and bottom layer using the following attributes::
+    top, middle and bottom layer using the following attributes:
 
         *thickness*, *roughness* (Angstroms)
             layer thickness and FWHM roughness
@@ -720,13 +724,14 @@ class MlayerMagnetic(object):
         *sigma_roughness*, *sigma_mroughness* (Angstroms)
             computed 1-sigma equivalent roughness for erf profile
 
-    Note that the file itself stores SLD as 16*pi*rho, irho/(2 wavelength)
-    with an additional column of 0 for magnetic SLD.  This conversion will
-    happen automatically on read/write.
+    .. Note::
+        The file itself stores SLD as 16*pi*rho, irho/(2 wavelength)
+        with an additional column of 0 for magnetic SLD. This conversion will
+        happen automatically on read/write.
 
     The layers are ordered from surface to substrate.
 
-    Additional attributes are as follows::
+    Additional attributes are as follows:
 
         *fitpars*
             individual fit parameter numbers
@@ -738,8 +743,7 @@ class MlayerMagnetic(object):
     These can be safely ignored, except perhaps if you want to try to
     compile the constraints into something that can be used by your system.
 
-    Methods
-    -------
+    **Methods:**
 
     model = MlayerMagnetic(attribute=value, ...)
 
@@ -767,14 +771,14 @@ class MlayerMagnetic(object):
         Write the model to the given named file.  Raises ValueError if
         the model is invalid.
 
-    Constructing new files
-    ----------------------
-
+    **Constructing new files:**
+    
     Staj files can be constructed directly.  The MlayerModel constructor
     can accept all data attributes as key word arguments.  Models require
     at least *data_file*, *wavelength*, *thickness*, *roughness* and *rho*.
     Resolution parameters can be set using model.fit_resolution(Q,dQ).
     Everything else has reasonable defaults.
+    
     """
     data_file = ""
     active_xsec = "abcd"
@@ -853,11 +857,11 @@ class MlayerMagnetic(object):
 
         Given that mlayer uses the following resolution function::
 
-            staj dQ = (|Q| dL + 4 * pi * dT ) / L
+            >>> staj dQ = (|Q| dL + 4 * pi * dT ) / L
 
         we can use a linear system solver to find the optimal dL and dT::
 
-            [ |Qi|/L, 4*pi/L ] * [dL, dT]' = dQi
+            >>> [ |Qi|/L, 4*pi/L ] * [dL, dT]' = dQi
 
         If weights are provided (e.g., dR/R), then weight each point before
         fitting.
@@ -870,6 +874,7 @@ class MlayerMagnetic(object):
         largest effect on the fit.
 
         Returns the object so that operations can be chained.
+        
         """
         A = numpy.array([abs(Q)/self.wavelength,
                          numpy.ones_like(Q)*(4*pi/self.wavelength)])

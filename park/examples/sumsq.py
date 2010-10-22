@@ -4,7 +4,6 @@ Simple service/worker example
 Service is sum(f(v)) for kernel f(v):v**2 and input v=1 2 3 4 5 6.
 """
 from __future__ import with_statement
-import sys; sys.path.append('../..')
 from park import export
 from park.client import JobDescription
 

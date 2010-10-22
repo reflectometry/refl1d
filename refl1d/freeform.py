@@ -1,3 +1,9 @@
+"""
+.. sidebar:: On this Page
+    
+        * :class:`Free form <refl1d.freeform.Freeform>`
+"""
+
 import numpy
 from numpy import inf
 from mystic import Parameter as Par, IntegerParameter as IntPar

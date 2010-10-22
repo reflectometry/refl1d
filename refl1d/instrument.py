@@ -1,6 +1,13 @@
 # This program is in the public domain
 # Author: Paul Kienzle
 """
+.. sidebar:: On this Page
+    
+        * :class:`Monochromatic <refl1d.instrument.Monochromatic>`
+        * :class:`Polychromatic <refl1d.instrument.Polychromatic>`
+        * :func:`Divergence <refl1d.instrument.divergence>`
+        * :func:`Slit width <refl1d.instrument.slit_widths>`
+  
 Reflectometry instrument definitions.
 
 Given Q = 4 pi sin(theta)/lambda, the instrumental resolution in Q is
@@ -9,7 +16,7 @@ monochromatic instruments, the wavelength resolution is fixed and the
 angular resolution varies.  For polychromatic instruments, the wavelength
 resolution varies and the angular resolution is fixed.
 
-The angular resolution is determined by the geometry (slit positions and
+The angular resolution is determined by the geometry (slit positions, 
 openings and sample profile) with perhaps an additional contribution
 from sample warp.  For monochromatic instruments, measurements are taken
 with fixed slits at low angles until the beam falls completely onto the
@@ -42,8 +49,8 @@ channels in a way that sets a fixed relative resolution dL/L for each bin.
 Usage
 =====
 
-:module:`instrument` (this module) defines two instrument types:
-:class:`Monochromatic` and :class:`Polychromatic`.  These represent
+:mod:`refl1d.instrument` (this module) defines two instrument types:
+:class:`Monochromatic` and :class:`Polychromatic`. These represent
 generic scanning and time of flight instruments, respectively.
 
 To perform a simulation or load a data set, an instrument must first
@@ -62,8 +69,8 @@ be defined.  For example:
             Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1,
             )
 
-Fixed parameters for various instruments are defined in :module:`snsdata`
-and :module:`ncnrdata`, so the above is equivalent to:
+Fixed parameters for various instruments are defined in :mod:`snsdata`
+and :mod:`ncnrdata`, so the above is equivalent to:
 
     >>> from ncnrdata import ANDR
     >>> andr = ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
@@ -129,22 +136,22 @@ Algorithms
 Resolution in Q is computed from uncertainty in wavelength L and angle T
 using propagation of errors::
 
-    dQ**2 = (df/dL)**2 dL**2 + (df/dT)**2 dT**2
+    >>> dQ**2 = (df/dL)**2 dL**2 + (df/dT)**2 dT**2
 
 where::
 
-    f(L,T) = 4 pi sin(T)/L
-    df/dL = -4 pi sin(T)/L**2 = -Q/L
-    df/dT = 4 pi cos(T)/L = cos(T) Q/sin(T) = Q/tan(T)
+    >>> f(L,T) = 4 pi sin(T)/L
+    >>> df/dL = -4 pi sin(T)/L**2 = -Q/L
+    >>> df/dT = 4 pi cos(T)/L = cos(T) Q/sin(T) = Q/tan(T)
 
 yielding the traditional form::
 
-    (dQ/Q)**2 = (dL/L)**2 + (dT/tan(T))**2
+    >>> (dQ/Q)**2 = (dL/L)**2 + (dT/tan(T))**2
 
 Computationally, 1/tan(T) is infinity at T=0, so it is better to use the
 direct calculation::
 
-    dQ = (4 pi / L) sqrt( sin(T)**2 (dL/L)**2 + cos(T)**2 dT**2 )
+    >>> dQ = (4 pi / L) sqrt( sin(T)**2 (dL/L)**2 + cos(T)**2 dT**2 )
 
 
 Wavelength dispersion dL/L is usually constant (e.g., for AND/R it is 2%
@@ -155,18 +162,18 @@ Angular divergence dT comes primarily from the slit geometry, but can have
 broadening or focusing due to a warped sample.  The FWHM divergence due
 to slits is::
 
-    dT_slits = degrees(0.5*(s1+s2)/(d1-d2))
+    >>> dT_slits = degrees(0.5*(s1+s2)/(d1-d2))
 
 where s1,s2 are slit openings edge to edge and d1,d2 are the distances
 between the sample and the slits.  For tiny samples of width m, the sample
 itself can act as a slit.  If s = sin(T)*m is smaller than s2 for some T,
 then use::
 
-    dT_slits = degrees(0.5*(s1+sin(T)*m)/d1)
+    >>> dT_slits = degrees(0.5*(s1+sin(T)*m)/d1)
 
 The sample broadening can be read off a rocking curve using::
 
-    dT_sample = w - dT_slits
+    >>> dT_sample = w - dT_slits
 
 where w is the measured FWHM of the peak in degrees and dT_slits is the
 slit contribution to the divergence. Broadening can be negative for concave
@@ -182,10 +189,9 @@ For opening slits we assume dT/T is held constant, so if you know s and To
 at the start of the opening slits region you can compute dT/To, and later
 scale that to your particular T::
 
-    dT(Q) = dT/To * T(Q)
+    >>> dT(Q) = dT/To * T(Q)
 
 Because d is fixed, that means s1(T) = s1(To) * T/To and s2(T) = s2(To) * T/To
-
 """
 
 # TODO: the resolution calculator should not be responsible for loading
@@ -276,9 +282,11 @@ class Monochromatic:
         and *slits_below*, and *slits_above* are used to define the
         angular divergence.
 
-        Note that this function ignores any resolution information
-        stored in the file, such as dQ, dT or dL columns, and instead
-        uses the defined instrument parameters to calculate the resolution.
+        .. Note::
+             This function ignores any resolution information stored in
+             the file, such as dQ, dT or dL columns, and instead uses the 
+             defined instrument parameters to calculate the resolution.
+
         """
         # Load the data
         data = numpy.loadtxt(filename).T
@@ -367,7 +375,7 @@ class Monochromatic:
         The relative uncertainty is used to calculate the number of incident
         beam intensity for the measurement as follows::
 
-            I = (100 Q)^4 / s^2
+            >>> I = (100 Q)^4 / s^2
 
         """
         from .experiment import Experiment
@@ -384,14 +392,14 @@ class Monochromatic:
         """
         Calculate resolution at each angle.
 
-        :Parameters:
+        :Parameters:                     
             *T* : [float] | degrees
                 Q values for which resolution is needed
 
         :Return:
-            *T*,*dT* : [float] | degrees
+            *T*, *dT* : [float] | degrees
                 Angles and angular divergence.
-            *L*,*dL* : [float] | Angstroms
+            *L*, *dL* : [float] | Angstroms
                 Wavelengths and wavelength dispersion.
         """
         L = kw.get('L',kw.get('wavelength',self.wavelength))
@@ -415,7 +423,7 @@ class Monochromatic:
         slits at the start of the opening to define the slits.  Slits
         below Tlo and above Thi can be specified separately.
 
-        *Tlo*,*Thi*      angle range over which slits are opening
+        *Tlo*, *Thi*      angle range over which slits are opening
         *slits_at_Tlo*   openings at the start of the range, or fixed opening
         *slits_below*, *slits_above*   openings below and above the range
 
@@ -440,7 +448,7 @@ class Monochromatic:
         """
         Compute the angular divergence for given slits and angles
 
-        :Parameters:
+        :Parameters:               
             *T* : [float] | degrees
                 measurement angles
             *slits* : float OR (float,float) | mm
@@ -527,7 +535,7 @@ class Polychromatic:
     """
     Instrument representation for multi-wavelength reflectometers.
 
-    :Parameters:
+    :Parameters:                
         *instrument* : string
             name of the instrument
         *radiation* : string | xray, neutron
@@ -799,7 +807,7 @@ def bins(low, high, dLoL):
     """
     Return bin centers from low to high perserving a fixed resolution.
 
-    *low*,*high* are the minimum and maximum wavelength.
+    *low*, *high* are the minimum and maximum wavelength.
     *dLoL* is the desired resolution FWHM dL/L for the bins.
     """
 
@@ -889,7 +897,7 @@ def divergence(T=None, slits=None, distance=None,
         *dT*  : float OR [float] | degrees FWHM
             calculated angular divergence
 
-    Algorithm:
+    **Algorithm:**
 
     Uses the following formula:
 
@@ -900,13 +908,14 @@ def divergence(T=None, slits=None, distance=None,
 
     where p is the projection of the sample into the beam.
 
-    *sample_broadening* can be estimated from W, the FWHM of a rocking curve:
+    *sample_broadening* can be estimated from W, the FWHM of a rocking curve::
 
         sample_broadening = W - degrees( 0.5*(s1+s2) / (d1-d2))
 
-    :Note:
-        default sample width is large but not infinite so that at T=0,
+    .. Note::
+        Default sample width is large but not infinite so that at T=0,
         sin(0)*sample_width returns 0 rather than NaN.
+   
     """
     # TODO: check that the formula is correct for T=0 => dT = s1 / d1
     # TODO: add sample_offset and compute full footprint
@@ -948,7 +957,7 @@ def slit_widths(T=None,slits_at_Tlo=None,Tlo=90,Thi=90,
         *slits_below*, *slits_above* : float OR [float,float] | mm
             Slits outside opening region.  The default is to use the
             values of the slits at the ends of the opening region.
-        *slits_at_Tlo : float OR [float,float] | mm
+        *slits_at_Tlo* : float OR [float,float] | mm
             Slits at the start of the opening region.
 
     :Returns:
@@ -963,8 +972,10 @@ def slit_widths(T=None,slits_at_Tlo=None,Tlo=90,Thi=90,
     which defaults to *slits_at_Tlo*.  With no *Thi*, slits are continuously
     opening above *Tlo*.
 
-    Note that this function works equally well if angles are measured in
-    radians and/or slits are measured in inches.
+    .. Note::
+         This function works equally well if angles are measured in
+         radians and/or slits are measured in inches.
+    
     """
 
     # Slits at T<Tlo

@@ -1,6 +1,12 @@
 # This program is in the public domain
 # Author: Paul Kienzle
 """
+.. sidebar:: On this Page
+    
+        * :class:`SNS Liquids instrument <refl1d.snsdata.Liquids>`
+        * :class:`SNS Magnetic instrument <refl1d.snsdata.Magnetic>`
+        * :func:`Parse file <refl1d.snsdata.parse_file>`
+
 SNS data loaders.
 
 The following instruments are defined::
@@ -9,7 +15,7 @@ The following instruments are defined::
 
 These are :class:`resolution.Polychromatic` classes tuned with
 default instrument parameters and loaders for reduced SNS data.
-See :module:`resolution` for details.
+See :mod:`resolution` for details.
 """
 
 import re

@@ -1,4 +1,3 @@
-import sys; sys.path.append('../..')
 
 import pylab
 from mystic.parameter import Parameter as Par

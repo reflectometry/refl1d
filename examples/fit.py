@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
 import sys
-sys.path.extend(('C:/home/pkienzle/danse/refl1d',
-                 'C:/home/pkienzle/danse/refl1d/dream'))
 import os
 import shutil
 import subprocess

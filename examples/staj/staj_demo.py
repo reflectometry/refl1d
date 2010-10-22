@@ -1,4 +1,3 @@
-import sys; sys.path.append('../..')
 from refl1d import preview
 from refl1d.staj import MlayerModel
 from refl1d.stajconvert import load_mlayer

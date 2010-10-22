@@ -1,4 +1,3 @@
-import sys; sys.path.append('..')
 import os
 from refl1d import ncnrdata
 

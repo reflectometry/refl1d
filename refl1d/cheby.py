@@ -1,12 +1,19 @@
 """
+.. sidebar:: On this Page
+    
+        * :class:`Cheby volume fraction <refl1d.cheby.ChebyVF>`
+        * :class:`Free form cheby <refl1d.cheby.FreeformCheby>`
+        * :func:`Layer thickness <refl1d.polymer.layer_thickness>`
+        * :func:`Smear <refl1d.polymer.smear>`
+
 Two variants:
 
-    direct: use the chebyshev polynomial coefficients directly
-    interp: interpolate through control points to set the coefficients.
+    #. direct: use the chebyshev polynomial coefficients directly
+    #. interp: interpolate through control points to set the coefficients.
 
-Control points are located at fixed z_k
+Control points are located at fixed z_k::
 
-    z_k = L * (cos( pi*(k-0.5)/N )+1)/2 for k in 1..N
+    >>> z_k = L * (cos( pi*(k-0.5)/N )+1)/2 for k in 1..N
 
 where L is the thickness of the layer.
 
@@ -127,9 +134,9 @@ class ChebyVF(Layer):
 
     *method* is 'direct' if the *vf* values refer to chebyshev
     polynomial coefficients or 'interp' if *vf* values refer to
-    control points located at z_k
+    control points located at z_k::
 
-        z_k = L*(cos(pi (k-0.5)/N)+1) + 1)/2  for k=1..N.
+       >>> z_k = L*(cos(pi (k-0.5)/N)+1) + 1)/2  for k=1..N.
 
     The materials can either use the scattering length density directly,
     such as PDMS = SLD(0.063, 0.00006) or they can use chemical composition
@@ -137,7 +144,7 @@ class ChebyVF(Layer):
 
     These parameters combine in the following profile formula::
 
-        sld(z) = material.sld * profile(z) + solvent.sld * (1 - profile(z))
+       >>> sld(z) = material.sld * profile(z) + solvent.sld * (1 - profile(z))
     """
     def __init__(self, thickness=0, interface=0,
                  material=None, solvent=None,

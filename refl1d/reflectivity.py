@@ -1,23 +1,30 @@
 #!/usr/bin/env python
 
 """
+.. sidebar:: On this Page
+    
+        * :class:`Reflectivity <refl1d.reflectivity.reflectivity>`
+        * :class:`Reflectivity amplitude <refl1d.reflectivity.reflectivity_amplitude>`
+        * :class:`Magenetic reflectivity <refl1d.reflectivity.magnetic_reflectivity>`
+     
 Basic reflectometry calculations.
 
-reflectivity, magnetic_reflectivity, unpolarized_magnetic:
+:class:`reflectivity <refl1d.reflectivity.reflectivity>`,
+:class:`magnetic_reflectivity <refl1d.reflectivity.magnetic_reflectivity>`,
+:class:`unpolarized_magnetic <refl1d.reflectivity.unpolarized_magnetic>`:
     Slab model reflectivity calculator with optional absorption and roughness.
     The function reflectivity_amplitude returns the complex waveform.
-
     Slab model with supporting magnetic scattering.  The function
     magnetic_reflectivity returns the complex reflection for the four
     spin polarization cross sections [++, +-, -+, --].  The function
     unpolarized_magnetic returns the expected magnitude for a measurement
     of the magnetic scattering using an unpolarized beam.
 
-convolve
+:class:`convolve <refl1d.reflectivity.convolve>`
     Apply Q-dependent resolution function to the theory.
 """
 
-__doc__ = "Fundamental reflectivity calculations"
+#__doc__ = "Fundamental reflectivity calculations"
 __author__ = "Paul Kienzle"
 __all__ = [ 'reflectivity', 'reflectivity_amplitude',
             'magnetic_reflectivity', 'magnetic_amplitude',
@@ -35,7 +42,7 @@ def reflectivity(*args, **kw):
     """
     Calculate reflectivity |r(k_z)|^2 from slab model.
 
-    :Parameters:
+    :Parameters :
         *depth* : float[N] | angstrom
             Thickness of the individual layers (incident and substrate
             depths are ignored)
@@ -72,7 +79,7 @@ def reflectivity_amplitude(kz=None,
     """
     Calculate reflectivity r(k_z) from slab model.
 
-    :Parameters:
+    :Parameters :
         *depth* : float[N] | angstrom
             Thickness of the individual layers (incident and substrate
             depths are ignored)
@@ -124,7 +131,6 @@ def magnetic_reflectivity(*args,**kw):
 
     Returns the expected values for the four polarization cross
     sections (++,+-,-+,--).
-
     Return reflectivity R^2 from slab model with sharp interfaces.
     returns reflectivities.
 
@@ -161,7 +167,7 @@ def unpolarized_magnetic(*args,**kw):
     """
     Returns the average of magnetic reflectivity for all cross-sections.
 
-    See magnetic_reflectivity for details.
+    See :class:`magnetic_reflectivity <refl1d.reflectivity.magnetic_reflectivity>` for details.
     """
     return reduce(numpy.add, magnetic_reflectivity(*args,**kw))/2.
 
@@ -177,7 +183,7 @@ def magnetic_amplitude(Q,
     """
     Returns the complex magnetic reflectivity waveform.
 
-    See magnetic_reflectivity for details.
+    See :class:`magnetic_reflectivity <refl1d.reflectivity.magnetic_reflectivity>` for details.
     """
     Q = _dense(Q,'d')
     n = len(depth)

@@ -1,16 +1,24 @@
 # This program is in the public domain
 # Author: Paul Kienzle
 """
+.. sidebar:: On this Page
+    
+        * :class:`Layer of material <refl1d.model.Layer>`
+        * :class:`Layer Stack <refl1d.model.Stack>`
+        * :class:`Block of material (Slab) <refl1d.model.Slab>`
+        * :class:`Repeat a Stack or Layer <refl1d.model.Repeat>`
+
 Reflectometry models.
 
-Reflectometry models consist of 1-D stacks of layers.  Layers are joined
-by gaussian interfaces.  The layers themselves may be uniform, or the
+Reflectometry models consist of 1-D stacks of layers. Layers are joined
+by gaussian interfaces. The layers themselves may be uniform, or the
 scattering density may vary with depth in the layer.
 
-Note: by importing model, the definition of :class:`material.Scatterer`
-changes so that materials can be stacked into layers using operator
-overloading. This will affect all instances of the Scatterer class, and
-all of its subclasses.
+.. Note::
+   By importing model, the definition of :class:`material.Scatterer <refl1d.material.Scatterer>`
+   changes so that materials can be stacked into layers using operator
+   overloading. This will affect all instances of the Scatterer class, 
+   and all of its subclasses.
 """
 
 #TODO: xray has smaller beam spot
@@ -19,7 +27,7 @@ all of its subclasses.
 # Xray thickness variance = neutron roughness - xray roughness
 
 
-__all__ = ['Repeat','Slab','Stack']
+__all__ = ['Repeat','Slab','Stack','Layer', '_MaterialStacker']
 
 from copy import copy, deepcopy
 import numpy
@@ -110,9 +118,9 @@ class Stack(Layer):
     """
     Reflectometry layer stack
 
-    A reflectometry sample is defined by a stack of layers.  Each layer
+    A reflectometry sample is defined by a stack of layers. Each layer
     has an interface describing how the top of the layer interacts with
-    the bottom of the overlaying layer.  The stack may contain
+    the bottom of the overlaying layer. The stack may contain
     """
     def __init__(self, base=None):
         self.interface = None

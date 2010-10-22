@@ -1,4 +1,3 @@
-import sys; sys.path.append('../..')
 
 import numpy, pylab
 from periodictable import elements

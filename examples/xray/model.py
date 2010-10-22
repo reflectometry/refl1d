@@ -1,4 +1,3 @@
-import sys; sys.path.extend(('c:/home/pkienzle/danse/refl1d','c:/home/pkienzle/danse/refl1d/dream'))
 from math import pi
 from refl1d import *
 Probe.view = 'log' # log, linear, fresnel, or Q**4

@@ -1,6 +1,5 @@
 from __future__ import with_statement
 
-import sys; sys.path.append("../..")
 import numpy
 
 import park

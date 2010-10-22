@@ -1,4 +1,3 @@
-import sys; sys.path.append('..')
 from math import *
 import numpy
 from numpy.linalg import norm

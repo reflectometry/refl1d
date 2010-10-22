@@ -1,4 +1,3 @@
-import sys; sys.path.append('../..')
 
 from amqp_map.config import SERVICE_HOST
 from amqp_map.core import connect, start_worker

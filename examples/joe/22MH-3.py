@@ -1,5 +1,3 @@
-import sys; sys.path.append('../..')
-
 #TODO: xray has smaller beam spot
 # => smaller roughness
 # => thickness depends on where the beam spot hits the sample

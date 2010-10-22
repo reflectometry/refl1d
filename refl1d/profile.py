@@ -1,6 +1,14 @@
 # This program is public domain
 # Author: Paul Kienzle
 
+"""
+.. sidebar:: On this Page
+    
+        * :class:`Microslab representation <refl1d.profile.Microslabs>`
+        * :class:`Build profile <refl1d.profile.build_profile>`
+        * :class:`Blend function <refl1d.profile.blend>`
+"""
+
 import numpy
 from numpy import inf
 from scipy.special import erf
@@ -20,23 +28,22 @@ class Microslabs:
     The space for the slabs is saved even after reset, in preparation for a
     new set of slabs from different fitting parameters.
 
-    Example
-    =======
-
+    **Example**
+    
     The following example shows how to fill a slab model from layers and
     use it to compute reflectivity::
 
-        slabs.clear()
-        for layer in model:
-            w,sigma,rho,irho,rho_M,theta_M = layer.render()
-            slabs.extend(w=w, sigma=sigma, rho=rho, irho=irho,
-                         rho_M=rho_M, theta_M=theta_M)
-        w,sigma = slabs.w,slabs.sigma
-        rho,irho = slabs.rho,slabs.irho
-        rho_M,theta_M = slabs.rho_M,slabs.theta_M
-        R = refl(kz,w,rho=rho,irho=irho,sigma=sigma, rho_M=rho_M, theta_M=theta_M)
-        figure(2)
-        plot(kz,R,label='reflectivity')
+        >>> slabs.clear()
+        >>> for layer in model:
+        ...     w,sigma,rho,irho,rho_M,theta_M = layer.render()
+        ...     slabs.extend(w=w, sigma=sigma, rho=rho, irho=irho,
+        ...               rho_M=rho_M, theta_M=theta_M)
+        >>> w,sigma = slabs.w,slabs.sigma
+        >>> rho,irho = slabs.rho,slabs.irho
+        >>> rho_M,theta_M = slabs.rho_M,slabs.theta_M
+        >>> R = refl(kz,w,rho=rho,irho=irho,sigma=sigma, rho_M=rho_M, theta_M=theta_M)
+        >>> figure(2)
+        >>> plot(kz,R,label='reflectivity')
     """
     def __init__(self, nprobe, dz=None):
         self._num_slabs = 0

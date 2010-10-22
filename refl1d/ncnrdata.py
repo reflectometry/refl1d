@@ -1,53 +1,62 @@
 # This program is in the public domain
 # Author: Paul Kienzle
 """
+.. sidebar:: On this Page
+    
+        * :class:`NCNR AND/R diffractometer/reflectometer <refl1d.ncnrdata.ANDR>`
+        * :class:`NCNR X-ray reflectometer <refl1d.ncnrdata.XRay>`
+        * :class:`NCNR loader <refl1d.ncnrdata.NCNRLoader>`
+        * :class:`NCNR NG-1 reflectometer <refl1d.ncnrdata.NG1>`
+        * :class:`NCNR NG-7 reflectometer <refl1d.ncnrdata.NG7>`
+        * :func:`Magnetic NCNR data <refl1d.ncnrdata.load_magnetic>`
+
 NCNR data loaders.
 
 The following instruments are defined::
 
     ANDR, NG1, NG7 and Xray
 
-These are :class:`resolution.Monochromatic` classes tuned with
-default instrument parameters and loaders for reduced NCNR data.
+These are :class:`instrument.Monochromatic <refl1d.instrument.Monochromatic>` classes
+tuned with default instrument parameters and loaders for reduced NCNR data.
 
 The instruments can be used to load data or to compute resolution functions
 for the purposes.
 
 Example loading data::
 
-    from ncnrdata import ANDR
-    instrument = ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
-    probe = instrument.load('chale207.refl')
-    probe.plot(view='log')
+    >>> from ncnrdata import ANDR
+    >>> instrument = ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
+    >>> probe = instrument.load('chale207.refl')
+    >>> probe.plot(view='log')
 
 Magnetic data has multiple cross sections and often has fixed slits::
 
-    from ncnrdata import NG1
-    instrument = NG1(slits_at_Tlo=1)
-    probe = instrument.load('n101Gc1.refl')
-    probe.plot(view='SA') # Spin asymmetry view
+    >>> from ncnrdata import NG1
+    >>> instrument = NG1(slits_at_Tlo=1)
+    >>> probe = instrument.load('n101Gc1.refl')
+    >>> probe.plot(view='SA') # Spin asymmetry view
 
 For simulation, you just need a probe but not the associated data::
 
-    from ncnrdata import ANDR
-    instrument = ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
-    probe = instrument.simulate(T=linspace(0,5,51))
-    pylab.plot(probe.Q, probe.dQ)
-    pylab.ylabel('resolution (1-sigma)')
-    pylab.xlabel('Q (inv A)')
-    pylab.show()
+    >>> from ncnrdata import ANDR
+    >>> instrument = ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
+    >>> probe = instrument.simulate(T=linspace(0,5,51))
+    >>> pylab.plot(probe.Q, probe.dQ)
+    >>> pylab.ylabel('resolution (1-sigma)')
+    >>> pylab.xlabel('Q (inv A)')
+    >>> pylab.show()
 
 And for magnetic::
 
-    from ncnrdata import NG1
-    instrument = NG1(slits_at_Tlo=1)
-    probe = instrument.simulate_magnetic(T=linspace(0,5,51))
-    pylab.plot(probe.Q, probe.dQ)
-    pylab.ylabel('resolution (1-sigma)')
-    pylab.xlabel('Q (inv A)')
-    pylab.show()
+    >>> from ncnrdata import NG1
+    >>> instrument = NG1(slits_at_Tlo=1)
+    >>> probe = instrument.simulate_magnetic(T=linspace(0,5,51))
+    >>> pylab.plot(probe.Q, probe.dQ)
+    >>> pylab.ylabel('resolution (1-sigma)')
+    >>> pylab.xlabel('Q (inv A)')
+    >>> pylab.show()
 
-See :module:`resolution` for details.
+See :mod:`instrument <refl1d.instrument>` for details.
 """
 
 import os
@@ -94,7 +103,7 @@ def load_magnetic(filename, Tguide=270, shared_beam=True, **kw):
         individual cross sections.
 
     Other keyword arguments are for the individual cross section loaders
-    as specified in :class:`resolution.Monochromatic`.
+    as specified in :class:`instrument.Monochromatic <refl1d.instrument.Monochromatic>`.
 
     The data sets should are the base filename with an additional character
     corresponding to the spin state::
@@ -231,8 +240,8 @@ class XRay(Monochromatic,NCNRLoader):
     by setting the slit opening to 0 and using sample_broadening
     to define the entire divergence::
 
-        xray = ncnrdata.XRay(slits_at_To=0)
-        data = xray.load("exp123.dat", sample_broadening=1e-4)
+        >>> xray = ncnrdata.XRay(slits_at_To=0)
+        >>> data = xray.load("exp123.dat", sample_broadening=1e-4)
     """
     instrument = "X-ray"
     radiation = "xray"

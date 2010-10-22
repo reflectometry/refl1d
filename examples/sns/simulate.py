@@ -1,4 +1,3 @@
-import sys; sys.path.extend(('../..','../../dream','../../../reflectometry/build/lib.win32-2.5'))
 
 #TODO: xray has smaller beam spot
 # => smaller roughness

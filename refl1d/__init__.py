@@ -56,7 +56,7 @@ the repeats is the same as the interface between the repeats and the cap.
 The cap interface can be set explicitly.  See :class:`model.Repeat` for
 details.
 """
-
+import sys
 from periodictable import elements
 from refl1d.mystic import Parameter
 from .version import __version__

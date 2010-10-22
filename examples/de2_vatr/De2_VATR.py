@@ -1,4 +1,3 @@
-import sys; sys.path.append('../..'); sys.path.append('../../dream')
 from math import pi
 from refl1d import *
 #Probe.view = 'log' # log, linear, fresnel, or Q**4

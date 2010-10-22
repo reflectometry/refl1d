@@ -1,22 +1,29 @@
 # This program is public domain
 # Author Paul Kienzle
 """
+.. sidebar:: On this Page
+    
+        * :class:`Polymer brush <refl1d.polymer.PolymerBrush>`
+        * :class:`Volume profile <refl1d.polymer.VolumeProfile>`
+        * :func:`Layer thickness <refl1d.polymer.layer_thickness>`
+        * :func:`Smear <refl1d.polymer.smear>`
+
 Layer models for polymer systems.
 
-Analytic Self-consistent Field (SCF) profile[1,2]
+Analytic Self-consistent Field (SCF) profile [#Zhulina]_ [#Karima]_
 
 layer = TetheredPolymer(polymer,solvent,head,tail,power,
 
-[1] Zhulina, EB; Borisov, OV; Pryamitsyn, VA; Birshtein, TM (1991)
-"Coil-Globule Type Transitions in Polymers. 1. Collapse of Layers
-of Grafted Polymer Chains", Macromolecules 24, 140-149.
+.. [#Zhulina] Zhulina, EB; Borisov, OV; Pryamitsyn, VA; Birshtein, TM (1991)
+   "Coil-Globule Type Transitions in Polymers. 1. Collapse of Layers
+   of Grafted Polymer Chains", Macromolecules 24, 140-149.
 
-[2] Karima, A; Douglas, JF; Horkay, F; Fetters, LJ; Satija, SK (1996)
-"Comparative swelling of gels and polymer brush layers",
-Physica B 221, 331-336 DOI: 10.1016/0921-4526(95)00946-9
+.. [#Karima] Karima, A; Douglas, JF; Horkay, F; Fetters, LJ; Satija, SK (1996)
+   "Comparative swelling of gels and polymer brush layers",
+   Physica B 221, 331-336. `<DOI: 10.1016/0921-4526(95)00946-9>`_
 """
 from __future__ import division
-__all__ = ["TetheredPolymer","VolumeProfile","layer_thickness"]
+#__all__ = ["TetheredPolymer","VolumeProfile","layer_thickness"]
 import inspect
 import numpy
 from numpy import real, imag, exp
@@ -28,7 +35,7 @@ class PolymerBrush(Layer):
     """
     Polymer brushes in a solvent
 
-    Parameters::
+    Parameters:
 
         *thickness* the thickness of the solvent layer
         *interface* the roughness of the solvent surface
@@ -51,7 +58,7 @@ class PolymerBrush(Layer):
                              for base <= z <= base+length
                  = 0         for z >= base+length
         profile(z) = conv(brush(z), gaussian(sigma))
-        sld(z) = material.sld * profile(z) + solvent.sld * (1 - profile(z))
+        >>> sld(z) = material.sld * profile(z) + solvent.sld * (1 - profile(z))
     """
     def __init__(self, thickness=0, interface=0,
                  polymer=None, solvent=None, base_vf=None,
@@ -137,7 +144,7 @@ def layer_thickness(z):
     function are the centers of these bins.  Using this, we can
     guess that the total layer thickness will be the following::
 
-         2*z[-1]-z[-2] if len(z) > 0 else 2*z[0]
+         >>> 2*z[-1]-z[-2] if len(z) > 0 else 2*z[0]
     """
     2*z[-1]-z[-2] if len(z) > 0 else 2*z[0]
 
@@ -145,7 +152,7 @@ class VolumeProfile(Layer):
     """
     Generic volume profile function
 
-    Parameters::
+    Parameters:
 
         *thickness* the thickness of the solvent layer
         *interface* the roughness of the solvent surface
@@ -159,7 +166,7 @@ class VolumeProfile(Layer):
 
     These parameters combine in the following profile formula::
 
-        sld = material.sld * profile + solvent.sld * (1 - profile)
+        >>> sld = material.sld * profile + solvent.sld * (1 - profile)
 
     The profile function takes a depth z and returns a density rho.
 
@@ -175,7 +182,8 @@ class VolumeProfile(Layer):
     Initial values for the function parameters can be given using name=value.
     These values can be scalars or fitting parameters.  The function will
     be called with the current parameter values as arguments.  The layer
-    thickness can be computed as :function:`thickness`(z).
+    thickness can be computed as :func:`layer_thickness`(z).
+    
     """
     # TODO: test that thickness(z) matches the thickness of the layer
     def __init__(self, thickness=0, interface=0,
