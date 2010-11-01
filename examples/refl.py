@@ -1,6 +1,3 @@
-
-import pylab
-from numpy import linspace
 from refl1d import *
 
 instrument = ncnrdata.ANDR(Tlo=0.35, slits_at_Tlo=0.21)
@@ -12,14 +9,13 @@ FeV = Mixture.bymass('Fe',3,'V',2)
 Pd = Material('Pd')
 
 # Sample description
-V_FeV = V/14%3+FeV/35%5
-sample = (MgO%3 + 14*V_FeV + V/14%3 + FeV/60%5 + 85*V_FeV + V/14%2
-          + Pd/20%4 + air)
+V_FeV = V(14,3)+FeV(35,5)
+sample = (MgO(0,3) | 14*V_FeV | V(14,3) | FeV(60,5) | 85*V_FeV | V(14,2)
+          | Pd(20,4) | air)
 
-#data = instrument.load('12v2b006_nobkgr_corr.refl')
-#experiment = Experiment(data, )
+data = instrument.load('12v2b006_nobkgr_corr.refl')
+experiment = Experiment(sample=sample, probe=data)
 
-Probe.view = 'log'
 print "Sample 1:",sample
 plot_sample(sample)
 
