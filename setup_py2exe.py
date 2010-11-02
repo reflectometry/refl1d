@@ -38,7 +38,7 @@ import os
 import sys
 
 root = os.path.dirname(os.path.realpath(__file__))
-sys.path.insert(1, os.path.join(root, "dream"))
+sys.path.insert(1, os.path.join(root, 'dream'))
 
 from distutils.core import setup
 
@@ -69,10 +69,10 @@ manifest_for_python25 = """
 <assemblyIdentity
     version="0.64.1.0"
     processorArchitecture="x86"
-    name="Controls"
+    name="%(prog)s"
     type="win32"
 />
-<description>DiRefl</description>
+<description>%(prog)s</description>
 <dependency>
     <dependentAssembly>
         <assemblyIdentity
@@ -91,22 +91,22 @@ manifest_for_python25 = """
 # Create a manifest for use with Python 2.6 or 2.7 on Windows XP or Vista.
 
 manifest_for_python26 = """
-<assembly xmlns="urn:schemas-microsoft-com:asm.v1"
-manifestVersion="1.0">
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
   <assemblyIdentity
-    version="0.6.8.0"
+    version="5.0.0.0"
     processorArchitecture="x86"
-    name="MyCare Card Browser"
-    type="win32"
-  />
-  <description>MyCare Card Browser Program</description>
+    name="%(prog)s"
+    type="win32">
+  </assemblyIdentity>
+  <description>%(prog)s</description>
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
     <security>
       <requestedPrivileges>
         <requestedExecutionLevel
           level="asInvoker"
-          uiAccess="false"
-        />
+          uiAccess="false">
+        </requestedExecutionLevel>
       </requestedPrivileges>
     </security>
   </trustInfo>
@@ -117,8 +117,8 @@ manifestVersion="1.0">
         name="Microsoft.VC90.CRT"
         version="9.0.21022.8"
         processorArchitecture="x86"
-        publicKeyToken="1fc8b3b9a1e18e3b"
-      />
+        publicKeyToken="1fc8b3b9a1e18e3b">
+      </assemblyIdentity>
     </dependentAssembly>
   </dependency>
   <dependency>
@@ -129,8 +129,8 @@ manifestVersion="1.0">
         version="6.0.0.0"
         processorArchitecture="x86"
         publicKeyToken="6595b64144ccf1df"
-        language="*"
-      />
+        language="*">
+      </assemblyIdentity>
     </dependentAssembly>
   </dependency>
 </assembly>
@@ -208,7 +208,7 @@ client = Target(
     dest_base = 'refl1d',  # file name part of the exe file to create
     #icon_resources = [(1, 'refl1d.ico')],  # also need to specify in data_files
     bitmap_resources = [],
-    other_resources = [(24, 1, manifest)])
+    other_resources = [(24, 1, manifest % dict(prog='Refl1d'))])
 
 # Now do the work to create a standalone distribution using py2exe.
 # Specify either console mode or windows mode build.
