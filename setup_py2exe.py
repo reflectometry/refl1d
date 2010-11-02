@@ -163,6 +163,20 @@ data_files.append( ('.', [os.path.join('.', 'LICENSE.txt')]) )
 data_files.append( ('.', [os.path.join('.', 'README.txt')]) )
 data_files.append( ('.', [os.path.join('.', 'bin', 'refl1d.bat')]) )
 
+# Add the Microsoft Visual C++ 2008 redistributable kit if we are building with
+# Python 2.6 or 2.7.  This kit will be installed on the target system as part
+# of the installation process for the frozen image.  Note that the Python 2.5
+# interpreter requires msvcr71.dll which is included in the Python25 package,
+# however, Python 2.6 and 2.7 require the msvcr90.dll but they do not bundle it
+# with the Python26 or Python27 package.  Thus, for Python 2.6 and later, the
+# appropriate dll must be present on the target system at runtime.
+if sys.version_info >= (2, 6) and sys.version_info < (2, 7):
+    data_files.append( ('.', [os.path.join('C:', os.sep, 'Python26',
+                                           'vcredist_x86.exe')]) )
+if sys.version_info >= (2, 7) and sys.version_info < (2, 8):
+    data_files.append( ('.', [os.path.join('C:', os.sep, 'Python27',
+                                           'vcredist_x86.exe')]) )
+
 # Specify required packages to bundle in the executable image.
 packages = ['numpy', 'scipy', 'matplotlib', 'pytz', 'pyparsing', 'wx',
             'periodictable', 'refl1d.names']
@@ -191,6 +205,7 @@ dll_excludes = ['libgdk_pixbuf-2.0-0.dll',
                 'QtGui4.dll',
                 'QtCore4.dll',
                 'msvcr71.dll',
+                'msvcp90.dll',
                 'w9xpopen.exe',
                 'cygwin1.dll']
 

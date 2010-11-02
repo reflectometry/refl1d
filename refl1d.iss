@@ -97,6 +97,15 @@ Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}{#Spac
 [Run]
 Filename: "{app}\{#MyAppFileName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
 Filename: "{app}\{#MyReadmeFileName}"; Description: "Read Release Notes"; Verb: "open"; Flags: shellexec waituntilterminated skipifdoesntexist postinstall skipifsilent unchecked
+; Install the Microsoft C++ DLL redistributable package if it is provided.
+; Note this is done if the app was built using Python 2.6 or 2.7, but not for 2.5.
+; Parameter options:
+; - for silent install use "/q"
+; - for automatic install with progress bar use "/qb"
+; - for automatic install with progress bar but disallow cancellation use "/qb!"
+#ifexist "dist\vcredist_x86.exe"
+    Filename: "{app}\vcredist_x86.exe"; Parameters: "/qb!"; WorkingDir: "{app}"; StatusMsg: "Checking for and installing Microsoft Visual C++ Redistributable Package ..."; Flags: waituntilterminated
+#endif
 
 [UninstallDelete]
 ; Delete directories and files that are dynamically created by the application.
