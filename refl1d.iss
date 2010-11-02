@@ -97,3 +97,8 @@ Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}{#Spac
 [Run]
 Filename: "{app}\{#MyAppFileName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
 Filename: "{app}\{#MyReadmeFileName}"; Description: "Read Release Notes"; Verb: "open"; Flags: shellexec waituntilterminated skipifdoesntexist postinstall skipifsilent unchecked
+
+[UninstallDelete]
+; Delete directories and files that are dynamically created by the application.
+Type: filesandordirs; Name: "{app}\.matplotlib"
+

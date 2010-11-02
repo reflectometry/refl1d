@@ -1,23 +1,43 @@
 #!/usr/bin/env python
+# This program is in the public domain.
 # Authors: Paul Kienzle and James Krycka
-# This program is in the public domain
 
-# ======================== Path setup =================================
-import sys
+"""
+This script starts the command line interface of the refl1d application to
+process the command just entered.
+"""
+
 import os
-if not hasattr(sys, "frozen"):
-    __file__ = os.path.realpath(__file__)
-    root = os.path.abspath(os.path.join(os.path.dirname(__file__),'..'))
-    sys.path.insert(0, root)
-    sys.path.insert(1, os.path.join(root,"dream"))
+import sys
 
-# ======================== Workaround ================================
+# ========================== Path setup =======================================
+# The following code assumes that this script is running from a subdirectory
+# of the package.  Due to the structure of the package, sys.path needs to be
+# updated for some imports to work when running from an image built by py2exe.
+if not hasattr(sys, 'frozen'):
+    __file__ = os.path.realpath(__file__)
+    root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    sys.path.insert(0, root)
+    sys.path.insert(1, os.path.join(root, 'dream'))
+
+# ========================== wxPython Workaround ==============================
 # The following import of wx only appears to be necessary to support building
 # a py2exe executable using Python 2.5.  It is not necessary when using py2exe
 # on 2.6, nor is it required if running reflfit from source code on 2.5 or 2.6.
-import wx
+if sys.version_info < (2, 6):
+    import wx
 
-# ======================== Matplotlib setup ==========================
+# ========================== Matplotlib setup =================================
+# If we are running from an image built by py2exe, keep the frozen environment
+# self contained by having matplotlib use a private directory instead of using
+# .matplotlib under the user's home directory for storing shared data files
+# such as fontList.cache.  Note that a Windows installer/uninstaller such as
+# Inno Setup should explicitly delete this private directory on uninstall.
+if hasattr(sys, 'frozen'):
+    mplconfigdir = os.path.join(sys.prefix, '.matplotlib')
+    if not os.path.exists(mplconfigdir):
+        os.mkdir(mplconfigdir)
+    os.environ['MPLCONFIGDIR'] = mplconfigdir
 import matplotlib
 
 # Disable interactive mode so that plots are only updated on show() or draw().
@@ -29,6 +49,7 @@ matplotlib.interactive(False)
 # Note: this must be done before importing pylab or pyplot to have an effect.
 matplotlib.use('WXAgg')
 
-# ======================== Start program ============================
+# ========================== Start program ====================================
+# Process the command line that has been entered.
 import refl1d.cli
 refl1d.cli.main()
