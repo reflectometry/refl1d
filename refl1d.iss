@@ -1,5 +1,4 @@
 ; -- refl1d.iss -- an Inno Setup Script for Refl1d
-
 ; This script is used by the Inno Setup Compiler to build a Windows XP
 ; installer/uninstaller for the DANSE Reflectometry application named Refl1d.
 ; The script is written to explicitly allow multiple versions of the
@@ -66,8 +65,8 @@ LicenseFile={#MyLicenseFileName}
 SourceDir=.
 OutputDir=.
 PrivilegesRequired=none
-;InfoBeforeFile=display_before_install.txt
-;InfoAfterFile=display_after_install.txt
+;;;InfoBeforeFile=display_before_install.txt
+;;;InfoAfterFile=display_after_install.txt
 
 ; The App*URL directives are for display in the Add/Remove Programs control panel and are all optional
 AppPublisherURL={#MyAppURL}
@@ -80,32 +79,47 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Files]
 ; This script assumes that the output from the previously run py2exe packaging process is in .\dist\...
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
-Source: "dist\*"; Excludes: "refl1d.bat"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "dist\refl1d.bat"; DestDir: "{sys}"
+Source: "dist\*"; Excludes: "*.bat"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\*.bat"; DestDir: "{sys}"
+
+; The following Pascal function checks for the presence of the VC++ 2008 DLL folder on the target system
+; to determine if the VC++ 2008 Redistributable kit needs to be installed.
+[Code]
+function InstallVC90CRT(): Boolean;
+begin
+    Result := not DirExists('C:\WINDOWS\WinSxS\x86_Microsoft.VC90.CRT_1fc8b3b9a1e18e3b_9.0.21022.8_x-ww_d08d0375');
+end;
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Icons]
-Name: "{group}\Launch {#MyAppName}"; Filename: "{app}\{#MyAppFileName}"; IconFilename: "{app}\{#MyIconFileName}"
+; This section does not have a flag for keeping the command window open on exit when running a program.
+; To accomplish this, a batch file is run that creates the command window that provides the user with
+; a command prompt.  This provides the same environment as starting a command window using the run dialog box
+; from the Windows start menu and entering a command such as "cmd" or "cmd /k <file-to-execute>".
+;;;Name: "{group}\Launch {#MyAppName}"; Filename: "{app}\{#MyAppFileName}"; IconFilename: "{app}\{#MyIconFileName}"; WorkingDir: "{app}"; Flags: runmaximized
+Name: "{group}\Launch {#MyAppName}"; Filename: "{sys}\refllaunch.bat"; IconFilename: "{app}\{#MyIconFileName}"; WorkingDir: "{app}"; Flags: runmaximized
 Name: "{group}\{cm:ProgramOnTheWeb,{#MyAppName}}"; Filename: "{#MyAppURL}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{commondesktop}\{#MyAppName}{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppFileName}"; Tasks: desktopicon; WorkingDir: "{app}"; IconFilename: "{app}\{#MyIconFileName}"
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppFileName}"; Tasks: quicklaunchicon; WorkingDir: "{app}"; IconFilename: "{app}\{#MyIconFileName}"
+;;;Name: "{commondesktop}\{#MyAppName}{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppFileName}"; Tasks: desktopicon; WorkingDir: "{app}"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
+Name: "{commondesktop}\{#MyAppName}{#Space}{#MyAppVersion}"; Filename: "{sys}\refllaunch.bat"; Tasks: desktopicon; WorkingDir: "{app}"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
+;;;Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppFileName}"; Tasks: quicklaunchicon; WorkingDir: "{app}"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
+Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}{#Space}{#MyAppVersion}"; Filename: "{sys}\refllaunch.bat"; Tasks: quicklaunchicon; WorkingDir: "{app}"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
 
 [Run]
-Filename: "{app}\{#MyAppFileName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
-Filename: "{app}\{#MyReadmeFileName}"; Description: "Read Release Notes"; Verb: "open"; Flags: shellexec waituntilterminated skipifdoesntexist postinstall skipifsilent unchecked
-; Install the Microsoft C++ DLL redistributable package if it is provided.
-; Note this is done if the app was built using Python 2.6 or 2.7, but not for 2.5.
+; Filename: "{app}\{#MyAppFileName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
+Filename: "{sys}\refllaunch.bat"; Description: "{cm:LaunchProgram,{#MyAppName}}"; WorkingDir: "{app}"; Flags: nowait postinstall skipifsilent runmaximized
+Filename: "{app}\{#MyReadmeFileName}"; Description: "Read Release Notes"; Verb: "open"; Flags: shellexec skipifdoesntexist waituntilterminated postinstall skipifsilent unchecked
+; Install the Microsoft C++ DLL redistributable package if it is provided and the DLLs are not present on the target system.
+; Note that the redistributable package is included if the app was built using Python 2.6 or 2.7, but not with 2.5.
 ; Parameter options:
-; - for silent install use "/q"
-; - for automatic install with progress bar use "/qb"
-; - for automatic install with progress bar but disallow cancellation use "/qb!"
-#ifexist "dist\vcredist_x86.exe"
-    Filename: "{app}\vcredist_x86.exe"; Parameters: "/qb!"; WorkingDir: "{app}"; StatusMsg: "Checking for and installing Microsoft Visual C++ Redistributable Package ..."; Flags: waituntilterminated
-#endif
+; - for silent install use: "/q"
+; - for silent install with progress bar use: "/qb"
+; - for silent install with progress bar but disallow cancellation of operation use: "/qb!"
+; Note that we do not use the postinstall flag as this would display a checkbox and thus require the user to decide what to do.
+Filename: "{app}\vcredist_x86.exe"; Parameters: "/qb!"; WorkingDir: "{tmp}"; StatusMsg: "Installing Microsoft Visual C++ 2008 Redistributable Package ..."; Check: InstallVC90CRT(); Flags: skipifdoesntexist waituntilterminated
 
 [UninstallDelete]
 ; Delete directories and files that are dynamically created by the application.

@@ -24,6 +24,10 @@ def configuration(parent_package='', top_path=None):
     config.add_data_dir('refltests')
     config.add_data_dir('tests')
 
+    config.add_data_files('refl1d.ico')
+    config.add_data_files('refl1d.iss')
+    config.add_data_files('*.txt')
+
     config.get_version(os.path.join('version.py'))  # sets config.version
 
     return config
@@ -31,5 +35,4 @@ def configuration(parent_package='', top_path=None):
 
 if __name__ == '__main__':
     if len(sys.argv) == 1: sys.argv.append('install')
-    scripts=["bin/reflfit.bat"] # put in C:/Pythonxx/Scripts
-    setup(scripts=scripts, **configuration(top_path='').todict())
+    setup(**configuration(top_path='').todict())

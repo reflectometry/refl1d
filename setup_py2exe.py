@@ -94,7 +94,7 @@ manifest_for_python26 = """
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
   <assemblyIdentity
-    version="5.0.0.0"
+    version="0.5.0.0"
     processorArchitecture="x86"
     name="%(prog)s"
     type="win32">
@@ -161,7 +161,8 @@ data_files += periodictable.data_files()
 data_files.append( ('.', [os.path.join('.', 'refl1d.ico')]) )
 data_files.append( ('.', [os.path.join('.', 'LICENSE.txt')]) )
 data_files.append( ('.', [os.path.join('.', 'README.txt')]) )
-data_files.append( ('.', [os.path.join('.', 'bin', 'refl1d.bat')]) )
+data_files.append( ('.', [os.path.join('.', 'bin', 'reflfit.bat')]) )
+data_files.append( ('.', [os.path.join('.', 'bin', 'refllaunch.bat')]) )
 
 # Add the Microsoft Visual C++ 2008 redistributable kit if we are building with
 # Python 2.6 or 2.7.  This kit will be installed on the target system as part
