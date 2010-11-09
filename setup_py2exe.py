@@ -36,6 +36,7 @@ purposes, refl1d.exe can be run from the dist directory.
 
 import os
 import sys
+import glob
 
 root = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(1, os.path.join(root, 'dream'))
@@ -161,8 +162,24 @@ data_files += periodictable.data_files()
 data_files.append( ('.', [os.path.join('.', 'refl1d.ico')]) )
 data_files.append( ('.', [os.path.join('.', 'LICENSE.txt')]) )
 data_files.append( ('.', [os.path.join('.', 'README.txt')]) )
+
+# Add batch files to implement commands useful for launching the program.
+# Note that Inno Setup will determine where these files will be placed.  The
+# intent is to put them in a system directory on the Path environment variable.
 data_files.append( ('.', [os.path.join('.', 'bin', 'reflfit.bat')]) )
 data_files.append( ('.', [os.path.join('.', 'bin', 'refllaunch.bat')]) )
+
+# Add example directories and their files.  An empty directory is ignored.
+# Note that Inno Setup will determine where these files will be placed such as
+# C:\My Documents\... instead of the installation directory.
+for path in glob.glob(os.path.join('examples', '*')):
+    if os.path.isdir(path):
+        for file in glob.glob(os.path.join(path, '*.*')):
+            print "*******1", path, file
+            data_files.append( (path, [file]) )
+    else:
+        print "*******2", "examples", path
+        data_files.append( ('examples', [path]) )
 
 # Add the Microsoft Visual C++ 2008 redistributable kit if we are building with
 # Python 2.6 or 2.7.  This kit will be installed on the target system as part
