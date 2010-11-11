@@ -131,98 +131,120 @@ class Material(Scatterer):
     """
     Description of a solid block of material.
 
-    *formula* (chemical formula)
+    :Parameters:
+        *formula* : Formula
 
-        Composition can be initialized from either a string or a chemical
-        formula.  Valid values are defined in periodictable.formula.
+            Composition can be initialized from either a string or a chemical
+            formula.  Valid values are defined in periodictable.formula.
 
-    *density* (None g/cm**3)
+        *density* : float | |g/cm^3|
 
-        If specified, set the bulk density for the material
+            If specified, set the bulk density for the material.
 
-    *packing_factor* (None)
+        *natural_density* : float | |g/cm^3|
 
-        If specified, set the bulk density for the material from the
-        packing factor or from the named lattice type (bcc, fcc, hcp,
-        cubic, or diamond).
+            If specified, set the natural bulk density for the material.
 
-    *use_incoherent* (True)
+        *use_incoherent* = False : boolean
 
-        True if incoherent scattering should be interpreted as absorption.
+            True if incoherent scattering should be interpreted as absorption.
 
-    *fitby* (bulk_density)
+        *fitby* = 'bulk_density' : string
 
-        Indicate how density should be represented in the fit.  This should
-        be one of bulk_density (g/cm**3), relative_density (unitless),
-        cell_volume (A**3) or packing_factor (unitless).
+            See :meth:`fitby` for details
+            
+        *value* : Parameter or float | units depends on fitby type
+        
+            Initial value for the fitted density parameter.  If None, the
+            value will be initialized from the material density.
 
     For example, to fit Pd by cell volume use::
 
         >>> m = Material('Pd', fitby='cell_volume')
         >>> m.cell_volume.range(10)
-        >>> print "Pd density",m.density.value
+        >>> print "Pd density=%.3g volume=%.3g"%(m.density.value,m.cell_volume.value)
 
-    You can change density representation by calling *fitby(type)*.  
+    You can change density representation by calling *material.fitby(type)*.  
 
-    .. Note::
-         This will delete the underlying parameter, so be sure you specify fitby
-         type before using *m.density* in a parameter expression.  Alternatively,
-         you can use WrappedParameter(m,'density') in your expression so that it
-         doesn't matter if fitby is set.
-
-    .. Warning::
-        As of this writing packing_factor does not seem to return the correct density.
     """
     def __init__(self, formula=None, name=None, use_incoherent=False,
-                 density=None, packing_factor=None, fitby='bulk_density'):
-        self.formula = periodictable.formula(formula, density=density)
+                 density=None, natural_density=None,
+                 fitby='bulk_density', value=None):
+        self.formula = periodictable.formula(formula, density=density,
+                                             natural_density=natural_density)
         self.name = name if name is not None else str(self.formula)
         self.use_incoherent = use_incoherent
-        self.fitby(fitby)
+        self.fitby(type=fitby, value=value)
 
-    def fitby(self, type):
+    def fitby(self, type='bulk_density', value=None):
         """
         Specify the fitting parameter to use for material density.
 
-        Only one of the following density parameters can be fit:
+        :Parameters:
+            *type* : string
+                Density representation
+            *value* : Parameter
+                Initial value, or associated parameter.
+                
+        Density type can be one of the following:
+        
+            *bulk_density* : |g/cm^3| or kg/L
+                Density is *bulk_density*
+            *natural_density* : |g/cm^3| or kg/L
+                Density is *natural_density* / (natural mass/isotope mass)
+            *relative_density* : unitless
+                Density is *relative_density* * formula density
+            *cell_volume* : |A^3|
+                Density is mass / *cell_volume*
 
-            bulk_density (g/cm**3 or equivalently, kg/L)
-            cell_volume (A**3)
-            packing_factor (unitless)
-            relative_density (unitless: density relative to bulk density)
+        The resulting material will have a *density* attribute with the
+        computed material density and the appropriately named attribute.
 
-        The default is to fit the bulk density directly.
-
+        .. Note::
+        
+            This will delete the underlying parameter, so be sure you specify 
+            fitby type before using *m.density* in a parameter expression.  
+            Alternatively, you can use WrappedParameter(m,'density') in your 
+            expression so that it doesn't matter if fitby is set.
         """
-        #TODO: test cell_volume and packing_factor
 
         # Clean out old parameter
-        for attr in ('bulk_density','cell_volume',
-                     'relative_density','packing_factor'):
+        for attr in ('bulk_density','natural_density','cell_volume',
+                     'relative_density'):
             try: delattr(self, attr)
             except: pass
 
         # Put in new parameters
         if type is 'bulk_density':
-            self.bulk_density = Par.default(self.formula.density,
-                                            name=self.name+" density")
+            if value is None:
+                value = self.formula.density
+            self.bulk_density = Par.default(value, name=self.name+" density")
             self.density = self.bulk_density
+        elif type is 'natural_density':
+            if value is None:
+                value = self.formula.natural_density
+            self.natural_density = Par.default(value, name=self.name+" nat. density")
+            self.density = self.natural_density / self.formula.natural_mass_ratio()
         elif type is 'relative_density':
-            self.relative_density = Par.default(1, name=self.name+" stretch")
+            if value is None:
+                value = 1
+            self.relative_density = Par.default(value, name=self.name+" rel. density")
             self.density = self.formula.density*self.relative_density
-        elif type is 'packing_factor':
-            max_density = self.formula.mass/self.formula.volume(packing_factor=1)
-            pf = self.formula.density/max_density
-            self.packing_factor = Par.default(pf, name=self.name+" packing factor")
-            self.density = self.packing_factor * max_density
+        ## packing factor code should be correct, but radii are unreliable
+        #elif type is 'packing_factor':
+        #    max_density = self.formula.mass/self.formula.volume(packing_factor=1)
+        #    if value is None: 
+        #        value = self.formula.density/max_density
+        #    self.packing_factor = Par.default(value, name=self.name+" packing factor")
+        #    self.density = self.packing_factor * max_density
         elif type is 'cell_volume':
-            # Density is in grams/cm**3.
+            # Density is in grams/cm^3.
             # Mass is in grams/mole.  N_A is 6.02e23 atoms/mole.
-            # Volume is in A**3.  1 A is 1e-8 cm.
-            units = 1e24/avogadro_number
-            vol = (self.formula.mass*units)/self.formula.density
-            self.cell_volume = Par.default(vol, name=self.name+" cell volume")
-            self.density = (self.formula.mass*units)/self.cell_volume
+            # Volume is in A^3.  1 A is 1e-8 cm.
+            if value is None: 
+                value = self.formula.molecular_mass/self.formula.density
+            self.cell_volume = Par.default(value, name=self.name+" cell volume")
+            self.density = self.formula.molecular_mass/self.cell_volume
         else:
             raise ValueError("Unknown density calculation type '%s'"%type)
 
@@ -232,6 +254,7 @@ class Material(Scatterer):
         rho, irho, incoh = probe.scattering_factors(self.formula)
         if self.use_incoherent:
             raise NotImplementedError("incoherent scattering not supported")
+            irho += incoh
         scale = self.density.value
         #print "Material sld ",self.name,scale*coh,scale*absorp
         return (scale*rho,scale*irho)
@@ -245,10 +268,13 @@ class Compound(Scatterer):
     """
     Chemical formula with variable composition.
 
+    :Parameters:
+    
+        *parts* : [M1, F1, M2, F2, ...]
+
     Unlike a simple material which has a chemical formula and a density,
-    the formula itself can be varied in a compound.  In particular, the
-    absolute number of atoms of each component in the unit cell can be a
-    fitted parameter, in addition to the overall density.
+    the formula itself can be varied by fitting the number of atoms of 
+    each component in the unit cell in addition to the overall density.
 
     An individual component can be a chemical formula, not just an element.
     """
@@ -319,9 +345,9 @@ class Compound(Scatterer):
 class _VolumeFraction:
     """
     Returns the relative volume for each component in the system given
-    the relative volumes.  Clearly, this is just the identity function.
+    the volume percentages.
     """
-    def __init__(self, material):
+    def __init__(self, base, material):
         pass
     def __call__(self, fraction):
         return 0.01*numpy.asarray(fraction)
@@ -331,10 +357,10 @@ class _MassFraction:
     Returns the relative volume for each component in the system given
     the relative masses.
     """
-    def __init__(self, material):
-        self.material = material
+    def __init__(self, base, material):
+        self._material = [base] + material
     def __call__(self, fraction):
-        density = numpy.array([m.density.value for m in self.material])
+        density = numpy.array([m.density.value for m in self._material])
         volume = fraction/density
         return volume/sum(volume)
 
@@ -345,14 +371,14 @@ class Mixture(Scatterer):
     The components of the mixture can vary relative to each other, either
     by mass, by volume or by number::
 
-        >>> Mixture.bymass(M1,M2,F2,M3,F3...,name='mixture name')
-        >>> Mixture.byvolume(M1,M2,F2,M3,F3...,name='mixture name')
+        >>> Mixture.bymass(base,M1,F1,M2,F2...,name='mixture name')
+        >>> Mixture.byvolume(base,M1,F1,M2,F2...,name='mixture name')
 
-    The materials M1, M2, M3, ... can be chemical formula strings or material
-    objects.  In practice, since the chemical formula parser does not have
-    a density database, only elemental materials can be specified by
-    densities will be valid.  Be aware that density will need to change from
-    bulk values if the formula has isotope substitutions.
+    The materials *base*, *M1*, *M2*, *M3*, ... can be chemical formula 
+    strings  or material objects.  In practice, since the chemical 
+    formula parser does not have a density database, only elemental 
+    materials can be specified by string. Use natural_density will need 
+    to change from bulk values if the formula has isotope substitutions.
 
     The fractions F2, F3, ... are percentages in [0,100]. The implicit
     fraction F1 is 100 - (F2+F3+...). The SLD is NaN when *F1 < 0*).
@@ -360,36 +386,37 @@ class Mixture(Scatterer):
     name defaults to M1.name+M2.name+...
     """
     @classmethod
-    def bymass(cls, *parts, **kw):
+    def bymass(cls, base, *parts, **kw):
         """
         Returns an alloy defined by relative mass of the constituents.
 
-        Mixture.bymass(M1,M2,F2,...,name='mixture name')
+        Mixture.bymass(base,M1,F2,...,name='mixture name')
         """
-        return cls(parts, by='mass', **kw)
+        return cls(base, parts, by='mass', **kw)
 
     @classmethod
-    def byvolume(cls, *parts, **kw):
+    def byvolume(cls, base, *parts, **kw):
         """
         Returns an alloy defined by relative volume of the constituents.
 
         Mixture.byvolume(M1,M2,F2,...,name='mixture name')
         """
-        return cls(parts, by='volume', **kw)
+        return cls(base, parts, by='volume', **kw)
 
-    def __init__(self, parts, by='volume', name=None, use_incoherent=False):
+    def __init__(self, base, parts, by='volume', name=None, use_incoherent=False):
         # Split [M1,M2,F2,...] into [M1,M2,...], [F2,...]
-        material = [parts[0]] + [parts[i] for i in range(1, len(parts),2)]
-        fraction = [parts[i] for i in range(2, len(parts), 2)]
+        material = [parts[i] for i in range(0, len(parts), 2)]
+        fraction = [parts[i] for i in range(1, len(parts), 2)]
         # Convert M1,M2, ... to materials if necessary
+        if not isinstance(base,Material): base = Material(base)
         material = [p if isinstance(p,Material) else Material(p)
-                     for p in material]
+                    for p in material]
 
         # Specify the volume calculator based on the type of fraction
         if by == 'volume':
-            _volume = _VolumeFraction(material)
+            _volume = _VolumeFraction(base, material)
         elif by == 'mass':
-            _volume = _MassFraction(material)
+            _volume = _MassFraction(base, material)
         else:
             raise ValueError('fraction must be one of volume, mass or number')
 
@@ -412,8 +439,10 @@ class Mixture(Scatterer):
         constituent and the relative scale fraction used to tweak
         the overall density.
         """
-        return dict(fraction=self.fraction,
-                    material=[m.parameters() for m in self.material])
+        return dict(base=self.base.parameters(),
+                    material=[m.parameters() for m in self.material],
+                    fraction=self.fraction,
+                    )
 
     def _density(self):
         """
@@ -430,7 +459,7 @@ class Mixture(Scatterer):
         if (fraction<0).any():
             return NaN
         volume = self._volume(fraction)
-        density = numpy.array([m.density() for m in self.material])
+        density = numpy.array([m.density() for m in [self.base]+self.material])
         return numpy.sum(volume*density)
     density = property(_density,doc=_density.__doc__)
 
@@ -439,8 +468,7 @@ class Mixture(Scatterer):
         Return the scattering length density and absorption of the mixture.
         """
         # Convert fractions into an array, with the final fraction
-        fraction = numpy.hstack((0, [m.value for m in self.fraction]))
-        fraction[0] = 100 - sum(fraction)
+        fraction = numpy.array([f.value for f in self.fraction])
         # TODO: handle invalid fractions using penalty functions
         # S = sum(fraction)
         # scale = S/100 if S > 100 else 1
@@ -450,7 +478,7 @@ class Mixture(Scatterer):
             return NaN, NaN
 
         # Lookup SLD
-        slds = [c.sld(probe) for c in self.material]
+        slds = [c.sld(probe) for c in [base] + self.material]
         rho,irho = [numpy.asarray(v) for v in zip(*slds)]
 
         # Use calculator to convert individual SLDs to overall SLD

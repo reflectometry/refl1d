@@ -16,8 +16,8 @@ The following instruments are defined::
 
     ANDR, NG1, NG7 and Xray
 
-These are :class:`instrument.Monochromatic <refl1d.instrument.Monochromatic>` classes
-tuned with default instrument parameters and loaders for reduced NCNR data.
+These are :class:`refl1d.instrument.Monochromatic` classes tuned with default 
+instrument parameters and loaders for reduced NCNR data.
 
 The instruments can be used to load data or to compute resolution functions
 for the purposes.
