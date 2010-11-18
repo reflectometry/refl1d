@@ -51,7 +51,7 @@ the end, sld is just the returned scattering factors times density.
 __all__ = ['Material','Mixture','SLD','Vacuum', 'Scatterer', 'ProbeCache']
 import sys; 
 import numpy
-from numpy import inf
+from numpy import inf, sqrt, pi
 import periodictable
 from periodictable.constants import avogadro_number
 from mystic import Parameter as Par
@@ -262,7 +262,6 @@ class Material(Scatterer):
         return self.name
     def __repr__(self):
         return "Material(%s)"%self.name
-
 
 class Compound(Scatterer):
     """
@@ -478,7 +477,7 @@ class Mixture(Scatterer):
             return NaN, NaN
 
         # Lookup SLD
-        slds = [c.sld(probe) for c in [base] + self.material]
+        slds = [c.sld(probe) for c in [self.base] + self.material]
         rho,irho = [numpy.asarray(v) for v in zip(*slds)]
 
         # Use calculator to convert individual SLDs to overall SLD

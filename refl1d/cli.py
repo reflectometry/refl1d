@@ -286,7 +286,8 @@ class ParseOpts:
 
 class FitOpts(ParseOpts):
     MINARGS = 1
-    FLAGS = set(("preview","profile","worker","batch","overwrite","amqp"))
+    FLAGS = set(("preview","check","profile",
+                 "worker","batch","overwrite","amqp"))
     VALUES = set(("plot","store"))
     FITTERS= "de","dream","snobfit","amoeba"
     PLOTTERS="log","linear","fresnel","q4"
@@ -297,6 +298,8 @@ where options include:
 
     -?/-h/-help
         display this help
+    -check
+        print the model description and chisq value and exit
     -preview
         display model but do not perform a fitting operation
     -batch
@@ -368,6 +371,8 @@ def main():
         run_profile(problem)
     elif opts.worker:
         mapper.start_worker(problem)
+    elif opts.check:
+        problem.show()
     elif opts.preview:
         preview(problem)
     else:

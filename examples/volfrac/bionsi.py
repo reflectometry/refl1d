@@ -1,3 +1,4 @@
+from refl1d import *
 
 # Create materials
 Si = Material('Si')
