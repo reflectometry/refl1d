@@ -2,7 +2,7 @@
 # Author: Paul Kienzle
 """
 .. sidebar:: On this Page
-    
+
         * :class:`SNS Liquids instrument <refl1d.snsdata.Liquids>`
         * :class:`SNS Magnetic instrument <refl1d.snsdata.Magnetic>`
         * :func:`Parse file <refl1d.snsdata.parse_file>`

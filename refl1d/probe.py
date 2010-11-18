@@ -3,12 +3,12 @@
 
 """
 .. sidebar:: On this Page
-    
+
         * :class:`Base probe <refl1d.probe.Probe>`
         * :class:`Polarized neutron probe <refl1d.probe.PolarizedNeutronProbe>`
         * :class:`Neutron probe <refl1d.probe.NeutronProbe>`
         * :class:`X-ray probe <refl1d.probe.XrayProbe>`
-   
+
 Experimental probe.
 
 The experimental probe describes the incoming beam for the experiment.

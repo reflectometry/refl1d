@@ -2,7 +2,7 @@
 # Author: Paul Kienzle
 """
 .. sidebar:: On this Page
-    
+
         * :class:`Base interface <refl1d.interface.Interface>`
         * :class:`Sharp interface <refl1d.interface.Sharp>`
         * :class:`Error function profile <refl1d.interface.Erf>`
@@ -177,7 +177,7 @@ class Erf(Interface):
     .. Note::
         This interface can be computed analytically. When computing
         the slab product of the reflectivity, scale the Fresnel coefficient
-    
+
     F = (k-k_next)/(k+k_next) by::
 
         >>> S = exp(-2*k*k_next*sigma[i]**2)
@@ -273,9 +273,9 @@ class Tanh(Interface):
        This profile was derived from the free energy of a nonuniform system:
 
         * J.W. Cahn and J. E. Hilliard, J. Chem. Phys. 28, 258 (1958)
-        
+
     .. seealso::
-       This profile has an analytic solution. E.S. Wu, and W. W. Webb, 
+       This profile has an analytic solution. E.S. Wu, and W. W. Webb,
        Phys Rev A 8(4) 2065-2076 (1973)
     """
 

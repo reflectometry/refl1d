@@ -1,6 +1,6 @@
 """
 .. sidebar:: On this Page
-    
+
         * :class:`Cheby volume fraction <refl1d.cheby.ChebyVF>`
         * :class:`Free form cheby <refl1d.cheby.FreeformCheby>`
         * :func:`Layer thickness <refl1d.polymer.layer_thickness>`

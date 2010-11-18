@@ -2,7 +2,7 @@
 # Author Paul Kienzle
 """
 .. sidebar:: On this Page
-    
+
         * :class:`Base Material <refl1d.material.Material>`
         * :class:`Mixture (mixed block of material) <refl1d.material.Mixture>`
         * :class:`Scattering Length Density (SLD) <refl1d.material.SLD>`
@@ -49,7 +49,7 @@ for X-ray, there is no need to scale by probe by electron radius.  In
 the end, sld is just the returned scattering factors times density.
 """
 __all__ = ['Material','Mixture','SLD','Vacuum', 'Scatterer', 'ProbeCache']
-import sys; 
+import sys;
 import numpy
 from numpy import inf, sqrt, pi
 import periodictable
@@ -64,9 +64,9 @@ class Scatterer(object):
 
     .. Note::
        the Scatterer base class is extended by
-       :class:`_MaterialStacker <refl1d.model._MaterialStacker>` so that materials 
-       can be implicitly converted to slabs when used in stack construction 
-       expressions. It is not done directly to avoid circular dependencies 
+       :class:`_MaterialStacker <refl1d.model._MaterialStacker>` so that materials
+       can be implicitly converted to slabs when used in stack construction
+       expressions. It is not done directly to avoid circular dependencies
        between :mod:`model <refl1d.model>` and :mod:`material <refl1d.material>`.
     """
     def sld(self, sf):
@@ -152,9 +152,9 @@ class Material(Scatterer):
         *fitby* = 'bulk_density' : string
 
             See :meth:`fitby` for details
-            
+
         *value* : Parameter or float | units depends on fitby type
-        
+
             Initial value for the fitted density parameter.  If None, the
             value will be initialized from the material density.
 
@@ -164,7 +164,7 @@ class Material(Scatterer):
         >>> m.cell_volume.range(10)
         >>> print "Pd density=%.3g volume=%.3g"%(m.density.value,m.cell_volume.value)
 
-    You can change density representation by calling *material.fitby(type)*.  
+    You can change density representation by calling *material.fitby(type)*.
 
     """
     def __init__(self, formula=None, name=None, use_incoherent=False,
@@ -185,9 +185,9 @@ class Material(Scatterer):
                 Density representation
             *value* : Parameter
                 Initial value, or associated parameter.
-                
+
         Density type can be one of the following:
-        
+
             *bulk_density* : |g/cm^3| or kg/L
                 Density is *bulk_density*
             *natural_density* : |g/cm^3| or kg/L
@@ -201,10 +201,10 @@ class Material(Scatterer):
         computed material density and the appropriately named attribute.
 
         .. Note::
-        
-            This will delete the underlying parameter, so be sure you specify 
-            fitby type before using *m.density* in a parameter expression.  
-            Alternatively, you can use WrappedParameter(m,'density') in your 
+
+            This will delete the underlying parameter, so be sure you specify
+            fitby type before using *m.density* in a parameter expression.
+            Alternatively, you can use WrappedParameter(m,'density') in your
             expression so that it doesn't matter if fitby is set.
         """
 
@@ -233,7 +233,7 @@ class Material(Scatterer):
         ## packing factor code should be correct, but radii are unreliable
         #elif type is 'packing_factor':
         #    max_density = self.formula.mass/self.formula.volume(packing_factor=1)
-        #    if value is None: 
+        #    if value is None:
         #        value = self.formula.density/max_density
         #    self.packing_factor = Par.default(value, name=self.name+" packing factor")
         #    self.density = self.packing_factor * max_density
@@ -241,7 +241,7 @@ class Material(Scatterer):
             # Density is in grams/cm^3.
             # Mass is in grams/mole.  N_A is 6.02e23 atoms/mole.
             # Volume is in A^3.  1 A is 1e-8 cm.
-            if value is None: 
+            if value is None:
                 value = self.formula.molecular_mass/self.formula.density
             self.cell_volume = Par.default(value, name=self.name+" cell volume")
             self.density = self.formula.molecular_mass/self.cell_volume
@@ -268,11 +268,11 @@ class Compound(Scatterer):
     Chemical formula with variable composition.
 
     :Parameters:
-    
+
         *parts* : [M1, F1, M2, F2, ...]
 
     Unlike a simple material which has a chemical formula and a density,
-    the formula itself can be varied by fitting the number of atoms of 
+    the formula itself can be varied by fitting the number of atoms of
     each component in the unit cell in addition to the overall density.
 
     An individual component can be a chemical formula, not just an element.
@@ -373,15 +373,15 @@ class Mixture(Scatterer):
         >>> Mixture.bymass(base,M1,F1,M2,F2...,name='mixture name')
         >>> Mixture.byvolume(base,M1,F1,M2,F2...,name='mixture name')
 
-    The materials *base*, *M1*, *M2*, *M3*, ... can be chemical formula 
-    strings  or material objects.  In practice, since the chemical 
-    formula parser does not have a density database, only elemental 
-    materials can be specified by string. Use natural_density will need 
+    The materials *base*, *M1*, *M2*, *M3*, ... can be chemical formula
+    strings  or material objects.  In practice, since the chemical
+    formula parser does not have a density database, only elemental
+    materials can be specified by string. Use natural_density will need
     to change from bulk values if the formula has isotope substitutions.
 
     The fractions F2, F3, ... are percentages in [0,100]. The implicit
     fraction F1 is 100 - (F2+F3+...). The SLD is NaN when *F1 < 0*).
-   
+
     name defaults to M1.name+M2.name+...
     """
     @classmethod

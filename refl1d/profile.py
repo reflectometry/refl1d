@@ -3,7 +3,7 @@
 
 """
 .. sidebar:: On this Page
-    
+
         * :class:`Microslab representation <refl1d.profile.Microslabs>`
         * :class:`Build profile <refl1d.profile.build_profile>`
         * :class:`Blend function <refl1d.profile.blend>`
@@ -29,7 +29,7 @@ class Microslabs:
     new set of slabs from different fitting parameters.
 
     **Example**
-    
+
     The following example shows how to fill a slab model from layers and
     use it to compute reflectivity::
 

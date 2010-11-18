@@ -2,7 +2,7 @@
 # Author: Paul Kienzle
 """
 .. sidebar:: On this Page
-    
+
         * :class:`Layer of material <refl1d.model.Layer>`
         * :class:`Layer Stack <refl1d.model.Stack>`
         * :class:`Block of material (Slab) <refl1d.model.Slab>`
@@ -17,7 +17,7 @@ scattering density may vary with depth in the layer.
 .. Note::
    By importing model, the definition of :class:`material.Scatterer <refl1d.material.Scatterer>`
    changes so that materials can be stacked into layers using operator
-   overloading. This will affect all instances of the Scatterer class, 
+   overloading. This will affect all instances of the Scatterer class,
    and all of its subclasses.
 """
 

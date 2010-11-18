@@ -2,12 +2,12 @@
 # Author: Paul Kienzle
 """
 .. sidebar:: On this Page
-    
+
         * :class:`Monochromatic <refl1d.instrument.Monochromatic>`
         * :class:`Polychromatic <refl1d.instrument.Polychromatic>`
         * :func:`Divergence <refl1d.instrument.divergence>`
         * :func:`Slit width <refl1d.instrument.slit_widths>`
-  
+
 Reflectometry instrument definitions.
 
 Given Q = 4 pi sin(theta)/lambda, the instrumental resolution in Q is
@@ -16,7 +16,7 @@ monochromatic instruments, the wavelength resolution is fixed and the
 angular resolution varies.  For polychromatic instruments, the wavelength
 resolution varies and the angular resolution is fixed.
 
-The angular resolution is determined by the geometry (slit positions, 
+The angular resolution is determined by the geometry (slit positions,
 openings and sample profile) with perhaps an additional contribution
 from sample warp.  For monochromatic instruments, measurements are taken
 with fixed slits at low angles until the beam falls completely onto the
@@ -284,7 +284,7 @@ class Monochromatic:
 
         .. Note::
              This function ignores any resolution information stored in
-             the file, such as dQ, dT or dL columns, and instead uses the 
+             the file, such as dQ, dT or dL columns, and instead uses the
              defined instrument parameters to calculate the resolution.
 
         """
@@ -392,7 +392,7 @@ class Monochromatic:
         """
         Calculate resolution at each angle.
 
-        :Parameters:                     
+        :Parameters:
             *T* : [float] | degrees
                 Q values for which resolution is needed
 
@@ -448,7 +448,7 @@ class Monochromatic:
         """
         Compute the angular divergence for given slits and angles
 
-        :Parameters:               
+        :Parameters:
             *T* : [float] | degrees
                 measurement angles
             *slits* : float OR (float,float) | mm
@@ -535,7 +535,7 @@ class Polychromatic:
     """
     Instrument representation for multi-wavelength reflectometers.
 
-    :Parameters:                
+    :Parameters:
         *instrument* : string
             name of the instrument
         *radiation* : string | xray, neutron
@@ -915,7 +915,7 @@ def divergence(T=None, slits=None, distance=None,
     .. Note::
         Default sample width is large but not infinite so that at T=0,
         sin(0)*sample_width returns 0 rather than NaN.
-   
+
     """
     # TODO: check that the formula is correct for T=0 => dT = s1 / d1
     # TODO: add sample_offset and compute full footprint
@@ -975,7 +975,7 @@ def slit_widths(T=None,slits_at_Tlo=None,Tlo=90,Thi=90,
     .. Note::
          This function works equally well if angles are measured in
          radians and/or slits are measured in inches.
-    
+
     """
 
     # Slits at T<Tlo

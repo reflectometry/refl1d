@@ -2,10 +2,10 @@
 # Author: Paul Kienzle
 """
 .. sidebar:: On this Page
-    
+
         * :class:`Mlayer magnetic <refl1d.staj.MlayerMagnetic>`
         * :class:`Mlayer model <refl1d.staj.MlayerModel>`
- 
+
 This module reads and writes staj files.  These are the model files for the
 mlayer and gj2 programs, which are used as the calculation engine for the
 reflpak suite. Mlayer supports unpolarized beam with multilayer models,
@@ -251,7 +251,7 @@ class MlayerModel(object):
     Resolution parameters can be set using model.fit_resolution(Q,dQ).
     Section sizes can be set using model.split_sections().  Everything
     else has reasonable defaults.
-    
+
     """
     data_file = ""
     Qmin = 0
@@ -664,7 +664,7 @@ class MlayerMagnetic(object):
     Model definition used by GJ2 program.
 
     **Attributes:**
-    
+
     Q values and reflectivity come from a data file with Q, R, dR or
     from simulation with linear spacing from Qmin to Qmax in equal steps:
 
@@ -772,13 +772,13 @@ class MlayerMagnetic(object):
         the model is invalid.
 
     **Constructing new files:**
-    
+
     Staj files can be constructed directly.  The MlayerModel constructor
     can accept all data attributes as key word arguments.  Models require
     at least *data_file*, *wavelength*, *thickness*, *roughness* and *rho*.
     Resolution parameters can be set using model.fit_resolution(Q,dQ).
     Everything else has reasonable defaults.
-    
+
     """
     data_file = ""
     active_xsec = "abcd"
@@ -874,7 +874,7 @@ class MlayerMagnetic(object):
         largest effect on the fit.
 
         Returns the object so that operations can be chained.
-        
+
         """
         A = numpy.array([abs(Q)/self.wavelength,
                          numpy.ones_like(Q)*(4*pi/self.wavelength)])

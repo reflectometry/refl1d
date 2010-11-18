@@ -2,7 +2,7 @@
 # Author: Paul Kienzle
 """
 .. sidebar:: On this Page
-    
+
         * :class:`NCNR AND/R diffractometer/reflectometer <refl1d.ncnrdata.ANDR>`
         * :class:`NCNR X-ray reflectometer <refl1d.ncnrdata.XRay>`
         * :class:`NCNR loader <refl1d.ncnrdata.NCNRLoader>`
@@ -16,7 +16,7 @@ The following instruments are defined::
 
     ANDR, NG1, NG7 and Xray
 
-These are :class:`refl1d.instrument.Monochromatic` classes tuned with default 
+These are :class:`refl1d.instrument.Monochromatic` classes tuned with default
 instrument parameters and loaders for reduced NCNR data.
 
 The instruments can be used to load data or to compute resolution functions

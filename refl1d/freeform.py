@@ -1,6 +1,6 @@
 """
 .. sidebar:: On this Page
-    
+
         * :class:`Free form <refl1d.freeform.Freeform>`
 """
 

@@ -3,7 +3,7 @@
 
 """
 .. sidebar:: On this Page
-    
+
         * :class:`Experiment <refl1d.experiment.Experiment>`
         * :class:`Composite Experiment <refl1d.experiment.CompositeExperiment>`
         * :class:`Distribution Experiment <refl1d.experiment.DistributionExperiment>`
@@ -397,7 +397,7 @@ class Weights:
                   of parameter P.
         uniform   Flat from loc to loc+scale. Use loc=edges[0], scale=edges[-1]
                   to define P as uniform over the range.
-    
+
     """
     def __init__(self, edges=None, cdf=None,
                  args=None, loc=None, scale=None, truncated=True):

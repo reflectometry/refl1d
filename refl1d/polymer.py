@@ -2,7 +2,7 @@
 # Author Paul Kienzle
 """
 .. sidebar:: On this Page
-    
+
         * :class:`Polymer brush <refl1d.polymer.PolymerBrush>`
         * :class:`Volume profile <refl1d.polymer.VolumeProfile>`
         * :func:`Layer thickness <refl1d.polymer.layer_thickness>`
@@ -183,7 +183,7 @@ class VolumeProfile(Layer):
     These values can be scalars or fitting parameters.  The function will
     be called with the current parameter values as arguments.  The layer
     thickness can be computed as :func:`layer_thickness`(z).
-    
+
     """
     # TODO: test that thickness(z) matches the thickness of the layer
     def __init__(self, thickness=0, interface=0,

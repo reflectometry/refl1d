@@ -2,11 +2,11 @@
 
 """
 .. sidebar:: On this Page
-    
+
         * :class:`Reflectivity <refl1d.reflectivity.reflectivity>`
         * :class:`Reflectivity amplitude <refl1d.reflectivity.reflectivity_amplitude>`
         * :class:`Magenetic reflectivity <refl1d.reflectivity.magnetic_reflectivity>`
-     
+
 Basic reflectometry calculations.
 
 :class:`reflectivity <refl1d.reflectivity.reflectivity>`,
