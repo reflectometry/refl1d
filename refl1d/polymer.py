@@ -198,10 +198,10 @@ class VolumeProfile(Layer):
 
         # Query profile function for the list of arguments
         vars = inspect.getargspec(profile)[0]
-        print "vars",vars
+        #print "vars",vars
         if inspect.ismethod(profile): vars = vars[1:]  # Chop self
         vars = vars[1:]  # Chop z
-        print vars
+        #print vars
         unused = [k for k in kw.keys() if k not in vars]
         if len(unused) > 0:
             raise TypeError("Profile got unexpected keyword argument '%s'"%unused[0])
@@ -222,16 +222,17 @@ class VolumeProfile(Layer):
                  interface=self.interface)
         for k in self._parameters:
             P[k] = getattr(self,k)
+        return P
 
     def render(self, probe, slabs):
-        Mr,Mi,Minc = self.material.sld(probe)
-        Sr,Si,Sinc = self.solvent.sld(probe)
-        M = Mr + 1j*(Mi+Minc)
-        S = Sr + 1j*(Si+Sinc)
-        M,S = M[0],S[0]  # Temporary hack
+        Mr,Mi = self.material.sld(probe)
+        Sr,Si = self.solvent.sld(probe)
+        M = Mr + 1j*Mi
+        S = Sr + 1j*Si
+        #M,S = M[0],S[0]  # Temporary hack
         Pw,Pz = slabs.microslabs(self.thickness.value)
         kw = dict((k,getattr(self,k).value) for k in self._parameters)
-        print kw
+        #print kw
         phi = self.profile(Pz,**kw)
         try:
             if phi.shape != Pz.shape: raise Exception
@@ -241,7 +242,7 @@ class VolumeProfile(Layer):
 
         P = M*phi + S*(1-phi)
         slabs.extend(rho = [real(P)], irho = [imag(P)], w = Pw)
-        slabs.interface(self.interface.value)
+        #slabs.interface(self.interface.value)
 
 
 def smear(z, P, sigma):

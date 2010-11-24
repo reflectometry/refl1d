@@ -8,7 +8,7 @@ import subprocess
 
 import numpy
 import dream
-from refl1d.fitter import DEFit, AmoebaFit, SnobFit
+from refl1d.fitter import DEFit, AmoebaFit, SnobFit, BFGSFit
 
 # ==== Fitters ====
 
@@ -25,7 +25,7 @@ class DreamModel(dream.MCMCModel):
         self.bounds = zip(*[p.bounds.limits for p in problem.parameters])
         self.labels = [p.name for p in problem.parameters]
 
-        self.mapper = mapper if mapper else lambda p: map(self.log_density,p)
+        self.mapper = mapper if mapper else lambda p: map(self.nllf,p)
 
     def nllf(self, x):
         """Negative log likelihood of seeing models given parameters *x*"""
@@ -33,27 +33,32 @@ class DreamModel(dream.MCMCModel):
         return self.problem.nllf(x)
 
     def map(self, pop):
-        return numpy.array(self.mapper(pop))
+        #print "calling mapper",self.mapper
+        return -numpy.array(self.mapper(pop))
 
 
-class DreamProxy:
-    def __init__(self, problem):
+class DreamProxy(object):
+    def __init__(self, problem, pop=10, iters=1000, burn=0):
         self.dream_model = DreamModel(problem)
+        self.pop = pop
+        self.iters = iters
+        self.burn = burn
+    def _get_mapper(self):
+        return self.dream_model.mapper
     def _set_mapper(self, mapper):
         self.dream_model.mapper = mapper
-    mapper = property(fset=_set_mapper)
+    mapper = property(fget=_get_mapper, fset=_set_mapper)
 
     def fit(self):
-        dream_opts = getattr(self.problem,'dream_opts',{})
-        chains = dream_opts.pop('chains',10)
-        pop_size = chains*len(self.dream_model.problem.parameters)
+        pop_size = self.pop*len(self.dream_model.problem.parameters)
         population = random_population(self.dream_model.problem, pop_size)
         population = population[None,:,:]
         sampler = dream.Dream(model=self.dream_model, population=population,
-                              **dream_opts)
+                              draws = pop_size*(self.iters+self.burn),
+                              burn = pop_size*self.burn)
 
         self.state = sampler.sample()
-        self.state.title = self.problem.name
+        self.state.title = self.dream_model.problem.name
 
         return self.state.best()[0]
 
@@ -63,7 +68,7 @@ class DreamProxy:
     def plot(self, output):
         self.state.show(figfile=output)
 
-class FitProxy:
+class FitProxy(object):
     def __init__(self, fitter, problem):
 
         self.fitter = fitter
@@ -160,10 +165,10 @@ def make_store(problem, opts):
     # Check if already exists
     if not opts.overwrite and os.path.exists(problem.output+'.out'):
         if opts.batch:
-            print >>sys.stderr, problem.output+" already exists.  Use -overwrite to replace."
+            print >>sys.stderr, problem.output+" already exists.  Use --overwrite to replace."
             sys.exit(1)
         print problem.output,"already exists."
-        print "Press 'y' to overwrite, or 'n' to abort and restart with -store=newpath"
+        print "Press 'y' to overwrite, or 'n' to abort and restart with --store=newpath"
         ans = raw_input("Overwrite [y/n]? ")
         if ans not in ("y","Y","yes"):
             sys.exit(1)
@@ -195,8 +200,8 @@ class SerialMapper:
     def start_worker(model):
         pass
     @staticmethod
-    def start_mapper(model):
-        return lambda p: map(model.log_density, p)
+    def start_mapper(problem, modelargs):
+        return lambda points: map(problem.nllf, points)
     @staticmethod
     def stop_mapper(mapper):
         pass
@@ -204,27 +209,29 @@ class SerialMapper:
 class AMQPMapper:
 
     @staticmethod
-    def start_worker(model):
-        #sys.stdout = open("dream-%d.log"%os.getpid(),"w")
-        #print "worker is starting"; sys.stdout.flush()
+    def start_worker(problem):
+        #sys.stderr = open("dream-%d.log"%os.getpid(),"w")
+        #print >>sys.stderr,"worker is starting"; sys.stdout.flush()
         from amqp_map.config import SERVICE_HOST
         from amqp_map.core import connect, start_worker as serve
         server = connect(SERVICE_HOST)
-        os.system("echo 'serving' > /home/pkienzle/map.%d"%(os.getpid()))
+        #os.system("echo 'serving' > /tmp/map.%d"%(os.getpid()))
         #print "worker is serving"; sys.stdout.flush()
-        serve(server, "dream", model.log_density)
-        #print "worker ended"; sys.stdout.flush()
+        serve(server, "dream", problem.nllf)
+        #print >>sys.stderr,"worker ended"; sys.stdout.flush()
 
     @staticmethod
-    def start_mapper(modelargs):
+    def start_mapper(problem, modelargs):
+        import multiprocessing
         from amqp_map.config import SERVICE_HOST
         from amqp_map.core import connect, Mapper
 
         server = connect(SERVICE_HOST)
         mapper = Mapper(server, "dream")
+        cpus = multiprocessing.cpu_count()
         pipes = []
-        for _ in range(8):
-            cmd = [sys.argv[0], "-worker"] + modelargs
+        for _ in range(cpus):
+            cmd = [sys.argv[0], "--worker"] + modelargs
             #print "starting",sys.argv[0],"in",os.getcwd(),"with",cmd
             pipe = subprocess.Popen(cmd, universal_newlines=True,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -239,6 +246,7 @@ class AMQPMapper:
             for p in pipes: p.terminate()
         atexit.register(exit_fun)
 
+        #print "returning mapper",mapper
         return mapper
 
     @staticmethod
@@ -258,37 +266,45 @@ class ParseOpts:
         self._parse(args)
 
     def _parse(self, args):
-        flagargs = [v for v in sys.argv[1:] if v.startswith('-') and not '=' in v]
-        flags = set(v[1:] for v in flagargs)
+        flagargs = [v for v in sys.argv[1:] if v.startswith('--') and not '=' in v]
+        flags = set(v[2:] for v in flagargs)
         if '?' in flags or 'h' in flags or 'help' in flags:
             print self.USAGE
             sys.exit()
         unknown = flags - self.FLAGS
         if any(unknown):
-            raise ValueError("Unknown options -%s.  Use -? for help."%", -".join(unknown))
+            raise ValueError("Unknown options --%s.  Use -? for help."%", --".join(unknown))
         for f in self.FLAGS:
             setattr(self, f, (f in flags))
 
-        valueargs = [v for v in sys.argv[1:] if v.startswith('-') and '=' in v]
+        valueargs = [v for v in sys.argv[1:] if v.startswith('--') and '=' in v]
         for f in valueargs:
             idx = f.find('=')
-            name = f[1:idx]
+            name = f[2:idx]
             value = f[idx+1:]
             if name not in self.VALUES:
-                raise ValueError("Unknown option -%s. Use -? for help."%name)
+                raise ValueError("Unknown option --%s. Use -? for help."%name)
             setattr(self, name, value)
 
         positionargs = [v for v in sys.argv[1:] if not v.startswith('-')]
         if len(positionargs) < self.MINARGS:
             raise ValueError("Not enough arguments. Use -? for help.")
         self.args = positionargs
+        
+        #print "flags",flags
+        #print "vals",valueargs
+        #print "args",positionargs
 
 
 class FitOpts(ParseOpts):
     MINARGS = 1
     FLAGS = set(("preview","check","profile",
-                 "worker","batch","overwrite","amqp"))
-    VALUES = set(("plot","store"))
+                 "worker","batch","overwrite","parallel"))
+    VALUES = set(("plot","store","fit",
+                  "pop","iters","burn"))
+    pop="10"
+    iters="1000"
+    burn="0"
     FITTERS= "de","dream","snobfit","amoeba"
     PLOTTERS="log","linear","fresnel","q4"
     USAGE = """\
@@ -296,24 +312,30 @@ Usage: reflfit [-option] modelfile [modelargs]
 
 where options include:
 
-    -?/-h/-help
+    -?/-h/--help
         display this help
-    -check
+    --check
         print the model description and chisq value and exit
-    -preview
+    --preview
         display model but do not perform a fitting operation
-    -batch
+    --batch
         batch mode; don't show plots during run
-    -plot=%(plotter)s
+    --plot=%(plotter)s
         type of reflectivity plot to display
-    -store=path
+    --store=path
         output directory for plots and models
-    -overwrite
+    --overwrite
         if store already exists, replace it
-    -fit=%(fitter)s
+    --fit=%(fitter)s (default de)
         fitting engine to use; see manual for details
-    -amqp
-        run in parallel with amqp mapper
+    --pop=n (default 10)
+        population size per parameter (used for dream and DE)
+    --iters=n (default 1000)
+        number of fit iterations
+    --burn=n (default 0)
+        number of iterations before accumulating stats (dream)
+    --parallel
+        run fit using all processors
 
 Options can be placed anywhere on the command line.
 
@@ -337,7 +359,7 @@ Model arguments may not start with '-'.
         if value not in set(self.FITTERS):
             raise ValueError("unknown fitter %s; use %s"%(value,"|".join(self.FITTERS)))
         self._fitter = value
-    fitter = property(fget=lambda self: self._fitter, fset=_set_fitter)
+    fit = property(fget=lambda self: self._fitter, fset=_set_fitter)
 
 
 
@@ -349,15 +371,21 @@ def main():
         print "\nNo modelfile parameter was specified.\n"
 
     opts = FitOpts(sys.argv)
+    opts.iters = int(opts.iters)
+    opts.pop = int(opts.pop)
+    opts.burn = int(opts.burn)
+    
     problem = load_problem(opts.args)
-    if opts.fitter == 'dream':
-        fitter = DreamProxy(problem=problem)
-    elif opts.fitter == 'de':
+    if opts.fit == 'dream':
+        fitter = DreamProxy(problem=problem,
+                            pop=opts.pop,
+                            iters=opts.iters,
+                            burn=opts.burn)
+    elif opts.fit == 'de':
         fitter = FitProxy(fitter=DEFit, problem=problem)
-    elif opts.fitter == 'bfgs':
-        raise NotImplementedError
+    elif opts.fit == 'bfgs':
         fitter = FitProxy(fitter=BFGSFit, problem=problem)
-    if opts.amqp:
+    if opts.parallel or opts.worker:
         mapper = AMQPMapper
     else:
         mapper = SerialMapper
@@ -377,7 +405,7 @@ def main():
         preview(problem)
     else:
         make_store(problem,opts)
-        fitter.mapper = mapper.start_mapper(opts.args)
+        fitter.mapper = mapper.start_mapper(problem, opts.args)
         best = fitter.fit()
         remember_best(fitter, problem, best)
         if not opts.batch:

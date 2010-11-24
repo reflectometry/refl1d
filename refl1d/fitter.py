@@ -51,6 +51,14 @@ class DEFit(FitBase):
         x = minimize()
         return x
 
+class BFGSFit(FitBase):
+    def solve(self, **kw):
+        from quasinewton import quasinewton
+        result = quasinewton(self.problem,
+                             x0=self.problem.guess(),
+                             )
+        return result['x']
+
 class AmoebaFit(FitBase):
     def solve(self, **kw):
         from simplex import simplex
