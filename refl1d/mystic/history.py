@@ -75,7 +75,7 @@ For example:
 # 2. Do we want to support a skip option on traces, so that only every nth
 #    item is preserved?  This is probably too hard.
 
-class History:
+class History(object):
     """
     Collection of traces.
 
@@ -158,7 +158,7 @@ class History:
         return "\n".join(str(l) for l in traces)
 
 
-class Trace:
+class Trace(object):
     """
     Value trace.
 

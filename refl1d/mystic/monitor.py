@@ -7,7 +7,7 @@ perform some sort of work on it.
 """
 from numpy import inf
 
-class Monitor:
+class Monitor(object):
     """
     Generic monitor.
     """

@@ -221,7 +221,7 @@ class _Bar(Condition):
     externally.
     """
     def __init__(self, condition):
-        self.condition = condtion
+        self.condition = condition
     def __call__(self, *args, **kw):
         return not self.condition(*args, **kw)
     def _negate(self):
