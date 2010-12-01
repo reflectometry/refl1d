@@ -63,6 +63,18 @@ PROBE_KW = ('T', 'dT', 'L', 'dL', 'data',
             'intensity', 'background', 'back_absorption',
             'theta_offset', 'back_reflectivity', 'data')
 
+def make_probe(**kw):
+    """
+    Return a reflectometry measurement object of the given resolution.
+    """
+    radiation = kw.pop('radiation')
+    kw = dict((k,v) for k,v in kw.items() if k in PROBE_KW)
+    if radiation == 'neutron':
+        return NeutronProbe(**kw)
+    else:
+        return XrayProbe(**kw)
+
+
 class Probe(object):
     """
     Defines the incident beam used to study the material.

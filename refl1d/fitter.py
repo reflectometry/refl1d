@@ -10,20 +10,15 @@ from numpy import inf, nan, isnan
 import numpy
 from mystic import parameter, bounds as mbounds, monitor
 from mystic.formatnum import format_uncertainty
+from mystic.history import History
 import time
-
-class FitBase:
-    def __init__(self, problem):
-        """Fit the models and show the results"""
-        self.problem = problem
-    def solve(self, **kw):
-        raise NotImplementedError
 
 class ConsoleMonitor(monitor.TimedUpdate):
     def __init__(self, problem, progress=1, improvement=30):
         monitor.TimedUpdate.__init__(self, progress=progress,
                                      improvement=improvement)
         self.problem = problem
+    # TimedUpdate profiles 
     def show_progress(self, history):
         print "step", history.step[0], "chisq", history.value[0]
     def show_improvement(self, history):
@@ -38,6 +33,29 @@ class ConsoleMonitor(monitor.TimedUpdate):
         except:
             raise
 
+class RunMonitors(object):
+    def __init__(self, monitors, problem):
+        if monitors == None:
+            monitors = [ConsoleMonitor(problem)]
+        self.monitors = monitors
+        self.history = History(time=1,step=1,point=1,value=1)
+        for M in self.monitors:
+            M.config_history(self.history)
+    def start(self):
+        self._start = time.time()
+    def __call__(self, step, point, value):
+        self.history.update(time=time.time()-self._start,
+                            step=step, point=point, value=value)
+        for M in self.monitors:
+            M(self.history)
+
+class FitBase(object):
+    def __init__(self, problem):
+        """Fit the models and show the results"""
+        self.problem = problem
+    def solve(self, **kw):
+        raise NotImplementedError
+
 class DEFit(FitBase):
     def solve(self, **kw):
         from mystic.optimizer import de
@@ -51,50 +69,47 @@ class DEFit(FitBase):
         x = minimize()
         return x
 
+        
+
 class BFGSFit(FitBase):
     def solve(self, **kw):
         from quasinewton import quasinewton
+        self._update = RunMonitors(problem=self.problem,
+                                   monitors=kw.pop('monitors', None))
         result = quasinewton(self.problem,
                              x0=self.problem.guess(),
+                             monitor = self._monitor,
                              )
         return result['x']
+    def _monitor(self, step, x, fx):
+        self._update(step=step, point=x, value=fx)
+        return True
 
 class AmoebaFit(FitBase):
     def solve(self, **kw):
         from simplex import simplex
-        self.best = numpy.inf
-        self.lasttime = time.clock()
-        self.lastfx = self.best
+        self._update = RunMonitors(problem=self.problem,
+                                   monitors=kw.pop('monitors', None))
         bounds = numpy.array([p.bounds.limits
                               for p in self.problem.parameters]).T
         result = simplex(f=self.problem, x0=self.problem.guess(), bounds=bounds,
                          update_handler=self._monitor, **kw)
         return result.x
     def _monitor(self, k, n, x, fx):
-        t = time.clock()
-        improved = self.best > fx
-        if fx < self.lastfx and self.lasttime < t - 60:
-            self.lasttime = t
-            self.lastfx = fx
-            parameter.summarize(self.problem.parameters)
-            print "step %d of %d" % (k, n), (fx if improved else "")
-        return True
+        self._update(step=k, point=x, value=fx)
 
 class SnobFit(FitBase):
     def solve(self, **kw):
         from snobfit.snobfit import snobfit
-        self.lasttime = time.clock() - 61
+        self._update = RunMonitors(problem=self.problem,
+                                   monitors=kw.pop('monitors', None))
         bounds = numpy.array([p.bounds.limits
                               for p in self.problem.parameters]).T
         x, _, _ = snobfit(self.problem, self.problem.guess(), bounds,
                           fglob=0, callback=self._monitor)
         return x
     def _monitor(self, k, x, fx, improved):
-        t = time.clock()
-        if improved and self.lasttime < t - 60:
-            self.lasttime = t
-            parameter.summarize(self.problem.parameters)
-        print k, (fx if improved else "")
+        self._update(step=k, point=x, value=fx)
 
 def preview(models=[], weights=None):
     """Preview the models in preparation for fitting"""

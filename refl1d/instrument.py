@@ -204,7 +204,7 @@ from numpy import ones_like, arange, isscalar, asarray
 from util import TL2Q, QL2T, dTdL2dQ, dQdT2dLoL, FWHM2sigma, sigma2FWHM
 
 
-class Monochromatic:
+class Monochromatic(object):
     """
     Instrument representation for scanning reflectometers.
 
@@ -270,41 +270,6 @@ class Monochromatic:
                 setattr(self, k, v)
             else:
                 raise TypeError("unexpected keyword argument '%s'"%k)
-
-    def load(self, filename, **kw):
-        """
-        Load the data, returning the associated probe.  This probe will
-        contain Q, angle, wavelength, measured reflectivity and the
-        associated uncertainties.
-
-        You can override instrument parameters using key=value.  In
-        particular, slit settings *slits_at_Tlo*, *Tlo*, *Thi*,
-        and *slits_below*, and *slits_above* are used to define the
-        angular divergence.
-
-        .. Note::
-             This function ignores any resolution information stored in
-             the file, such as dQ, dT or dL columns, and instead uses the
-             defined instrument parameters to calculate the resolution.
-
-        """
-        # Load the data
-        data = numpy.loadtxt(filename).T
-        if data.shape[0] == 2:
-            Q,R = data
-            dR = None
-        elif data.shape[0] == 3:
-            Q,R,dR = data
-        elif data.shape[0] == 4:
-            Q,dQ,R,dR = data
-        elif data.shape[0] == 5:
-            Q,dQ,R,dR,L = data
-        kw["Q"] = Q
-        self._translate_Q_to_theta(kw)
-        T,dT,L,dL = self.resolution(**kw)
-        del kw["T"]
-        return make_probe(T=T,dT=dT,L=L,dL=dL,data=(R,dR),
-                          radiation=self.radiation, **kw)
 
     def probe(self, **kw):
         """
@@ -531,7 +496,44 @@ slit distances = %(d_s1)g mm and %(d_s2)g mm
            )
         return msg
 
-class Polychromatic:
+class GenericMonochromatic(Monochromatic):
+    def load(self, filename, **kw):
+        """
+        Load the data, returning the associated probe.  This probe will
+        contain Q, angle, wavelength, measured reflectivity and the
+        associated uncertainties.
+
+        You can override instrument parameters using key=value.  In
+        particular, slit settings *slits_at_Tlo*, *Tlo*, *Thi*,
+        and *slits_below*, and *slits_above* are used to define the
+        angular divergence.
+
+        .. Note::
+             This function ignores any resolution information stored in
+             the file, such as dQ, dT or dL columns, and instead uses the
+             defined instrument parameters to calculate the resolution.
+
+        """
+        # Load the data
+        data = numpy.loadtxt(filename).T
+        if data.shape[0] == 2:
+            Q,R = data
+            dR = None
+        elif data.shape[0] == 3:
+            Q,R,dR = data
+        elif data.shape[0] == 4:
+            Q,dQ,R,dR = data
+        elif data.shape[0] == 5:
+            Q,dQ,R,dR,L = data
+        kw["Q"] = Q
+        self._translate_Q_to_theta(kw)
+        T,dT,L,dL = self.resolution(**kw)
+        del kw["T"]
+        return make_probe(T=T,dT=dT,L=L,dL=dL,data=(R,dR),
+                          radiation=self.radiation, **kw)
+
+
+class Polychromatic(object):
     """
     Instrument representation for multi-wavelength reflectometers.
 
@@ -581,25 +583,6 @@ class Polychromatic:
             if not hasattr(self, k):
                 raise TypeError("unexpected keyword argument '%s'"%k)
             setattr(self, k, v)
-
-    def load(self, filename, **kw):
-        """
-        Load the data, returning the associated probe.  This probe will
-        contain Q, angle, wavelength, measured reflectivity and the
-        associated uncertainties.
-
-        You can override instrument parameters using key=value.
-        In particular, slit settings *slits* and *T* define the
-        angular divergence.
-        """
-        # Load the data
-        data = numpy.loadtxt(filename).T
-        Q,dQ,R,dR,L = data
-        dL = binwidths(L)
-        T = kw.pop('T',QL2T(Q,L))
-        T,dT,L,dL = self.resolution(L=L, dL=dL, T=T, **kw)
-        return make_probe(T=T,dT=dT,L=L,dL=dL,data=(R,dR),
-                          radiation=self.radiation, **kw)
 
     def probe(self, **kw):
         """
@@ -791,17 +774,27 @@ slit distances = %(d_s1)g mm and %(d_s2)g mm
            )
         return msg
 
-def make_probe(**kw):
-    """
-    Return a reflectometry measurement object of the given resolution.
-    """
-    from .probe import NeutronProbe, XrayProbe, PROBE_KW
-    radiation = kw.pop('radiation')
-    kw = dict((k,v) for k,v in kw.items() if k in PROBE_KW)
-    if radiation == 'neutron':
-        return NeutronProbe(**kw)
-    else:
-        return XrayProbe(**kw)
+class GenericTOF(Polychromatic):
+    def load(self, filename, **kw):
+        """
+        Load the data, returning the associated probe.  This probe will
+        contain Q, angle, wavelength, measured reflectivity and the
+        associated uncertainties.
+
+        You can override instrument parameters using key=value.
+        In particular, slit settings *slits* and *T* define the
+        angular divergence.
+        """
+        # Load the data
+        data = numpy.loadtxt(filename).T
+        Q,dQ,R,dR,L = data
+        dL = binwidths(L)
+        T = kw.pop('T',QL2T(Q,L))
+        T,dT,L,dL = self.resolution(L=L, dL=dL, T=T, **kw)
+        return make_probe(T=T,dT=dT,L=L,dL=dL,data=(R,dR),
+                          radiation=self.radiation, **kw)
+
+
 
 def bins(low, high, dLoL):
     """

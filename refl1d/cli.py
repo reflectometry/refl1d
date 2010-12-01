@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import with_statement
 
 import sys
 import os
@@ -7,6 +8,7 @@ import shutil
 import subprocess
 
 import numpy
+import pylab
 import dream
 from refl1d.fitter import DEFit, AmoebaFit, SnobFit, BFGSFit
 
@@ -62,12 +64,16 @@ class DreamProxy(object):
 
         return self.state.best()[0]
 
-    def save(self, output):
-        self.state.save(output)
+    def save(self, output_path):
+        self.state.save(output_path)
 
-    def plot(self, output):
-        self.state.show(figfile=output)
-
+    def plot(self, output_path):
+        self.state.show(figfile=output_path)
+        P = self.dream_model.problem
+        pylab.figure(6)
+        pylab.suptitle(":".join((P.store,P.title)))
+        P.plot(figfile=output_path)
+        
 class FitProxy(object):
     def __init__(self, fitter, problem):
 
@@ -88,12 +94,14 @@ class FitProxy(object):
         self.result = Result(self.problem, x)
         return x
 
-    def save(self, output):
-        pass
-        #self.result.show()
+    def show(self):
+        self.result.show()
+
+    def save(self, output_path):
+        self.result.save(output_path)
 
     def plot(self, output):
-        pass
+        self.result.plot(output_path)
 
 
 
@@ -140,34 +148,52 @@ def preview(model):
     model.plot()
     import pylab; pylab.show()
 
+class redirect_console(object):
+    def __init__(self, fid):
+        # Try opening a file
+        if not hasattr(fid, 'write'):
+            self.open_file = open(fid, 'w')
+            fid = self.open_file
+        else:
+            self.open_file = None
+        self.redirect = fid
+    def __enter__(self):
+        self.stdout = sys.stdout
+        self.stderr = sys.stderr
+        sys.stdout = self.redirect
+        sys.stderr = self.redirect
+    def __exit__(self, *args):
+        if self.open_file: self.open_file.close()
+        sys.stdout = self.stdout
+        sys.stderr = self.stderr
+        return False
+
 def remember_best(fitter, problem, best):
-    fitter.save(problem.output)
+    fitter.save(problem.output_path)
 
-    try:
-        problem.save(problem.output, best)
-    except:
-        pass
-    sys.stdout = open(problem.output+".out","w")
-
-    fitter.plot(problem.output)
-    problem.show()
+    #try:
+    #    problem.save(problem.output_path, best)
+    #except:
+    #    pass
+    with redirect_console(problem.output_path+".out"):
+        fitter.show()
+    fitter.show()
+    fitter.plot(problem.output_path)
 
     # Plot
-    problem.plot(fignum=6, figfile=problem.output)
-    import pylab; pylab.suptitle(":".join((problem.store,problem.title)))
 
 def make_store(problem, opts):
     # Determine if command line override
     if opts.store != None:
         problem.store = opts.store
-    problem.output = os.path.join(problem.store,problem.name)
+    problem.output_path = os.path.join(problem.store,problem.name)
 
     # Check if already exists
-    if not opts.overwrite and os.path.exists(problem.output+'.out'):
+    if not opts.overwrite and os.path.exists(problem.output_path+'.out'):
         if opts.batch:
-            print >>sys.stderr, problem.output+" already exists.  Use --overwrite to replace."
+            print >>sys.stderr, problem.output_path+" already exists.  Use --overwrite to replace."
             sys.exit(1)
-        print problem.output,"already exists."
+        print problem.output_path,"already exists."
         print "Press 'y' to overwrite, or 'n' to abort and restart with --store=newpath"
         ans = raw_input("Overwrite [y/n]? ")
         if ans not in ("y","Y","yes"):
@@ -180,7 +206,7 @@ def make_store(problem, opts):
 
     # Redirect sys.stdout to capture progress
     if opts.batch:
-        sys.stdout = open(problem.output+".mon","w")
+        sys.stdout = open(problem.output_path+".mon","w")
 
     # Show command line arguments and initial model
     print "#"," ".join(sys.argv)
@@ -305,7 +331,7 @@ class FitOpts(ParseOpts):
     pop="10"
     iters="1000"
     burn="0"
-    FITTERS= "de","dream","snobfit","amoeba"
+    FITTERS= "de","dream","snobfit","amoeba","newton"
     PLOTTERS="log","linear","fresnel","q4"
     USAGE = """\
 Usage: reflfit [-option] modelfile [modelargs]
@@ -383,8 +409,14 @@ def main():
                             burn=opts.burn)
     elif opts.fit == 'de':
         fitter = FitProxy(fitter=DEFit, problem=problem)
-    elif opts.fit == 'bfgs':
+    elif opts.fit == 'newton':
         fitter = FitProxy(fitter=BFGSFit, problem=problem)
+    elif opts.fit == 'amoeba':
+        fitter = FitProxy(fitter=AmoebaFit, problem=problem)
+    elif opts.fit == 'snobfit':
+        fitter = FitProxy(fitter=SnobFit, problem=problem)
+    else:
+        raise RuntimeError("Unknown fitter "%fitter)
     if opts.parallel or opts.worker:
         mapper = AMQPMapper
     else:
