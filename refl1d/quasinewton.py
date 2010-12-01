@@ -49,11 +49,13 @@ from numpy import inf, sqrt, isnan
 from numpy import diag, zeros, ones, array, linalg, inner, outer, dot, amax, maximum
 
 def quasinewton(fn, x0 = [], grad = [], Sx = [], typf = 1, macheps = [], eta = [],
-              maxstep = 100, gradtol = 1e-6, steptol = 1e-12, itnlimit = 2000) :
+              maxstep = 100, gradtol = 1e-6, steptol = 1e-12, itnlimit = 2000,
+              monitor = lambda **kw: True) :
     """
     Run a quasinewton optimization on the problem.
     """
 
+    #print "starting QN"
     # If some input parameters are not specified, define default values for them
     # here. First and second parameters fn and x0 must be defined, others may be
     # passed.  If you want to set a value to a parameter, say to typf, make sure all
@@ -124,7 +126,8 @@ def quasinewton(fn, x0 = [], grad = [], Sx = [], typf = 1, macheps = [], eta = [
 
         # Perform line search (Alg.6.3.1). todo. put param order as in the book
         #print "calling linesearch",xc,fc,gc,sN,Sx,H,L,middle_step_v
-        retcode, xp, fp, maxtaken, fcnt = linesearch(fn, n, xc, fc, gc, sN, Sx, maxstep, steptol)
+        retcode, xp, fp, maxtaken, fcnt \
+            = linesearch(fn, n, xc, fc, gc, sN, Sx, maxstep, steptol)
         fcount = fcount + fcnt
         fcount_ls = fcount_ls + fcnt
         #plot(xp(1), xp(2), 'g.')
@@ -136,10 +139,11 @@ def quasinewton(fn, x0 = [], grad = [], Sx = [], typf = 1, macheps = [], eta = [
             gp = fdgrad(n, xp, fp, fn, Sx, eta)
             fcount = fcount + n
 
-
         # Check stopping criteria (alg.7.2.1)
-        termcode = umstop(n, xc, xp, fp, gp, Sx, typf, retcode, gradtol, steptol,\
-                          itncount, itnlimit, maxtaken, consecmax)
+        termcode = umstop(n, xc, xp, fp, gp, Sx, typf, retcode, gradtol, 
+                          steptol, itncount, itnlimit, maxtaken, consecmax)
+
+        print "termcode=",termcode
 
         # STEP 10.6
         # If termcode is larger than zero, we found a point satisfying one of the
@@ -148,6 +152,10 @@ def quasinewton(fn, x0 = [], grad = [], Sx = [], typf = 1, macheps = [], eta = [
         if termcode > 0 :
             xf = xp                                        # x final
             ff = fp                                        # f final
+
+        elif not monitor(x=xp,fx=fp,step=itncount):
+            termcode = 6
+        
         else :
             H = bfgsunfac(n, xc, xp, gc, gp, macheps, eta, analgrad, H)
             xc = xp
@@ -597,6 +605,8 @@ def modelhess(n, Sx, macheps, H):
 
 
 #------------------------------------------------------------------------------
+def umstop(n, xc, xp, f, g, Sx, typf, retcode, gradtol, steptol, itncount, itnlimit, maxtaken, consecmax):
+    """
 #@author: Ismet Sahin
 
 # ALGORITHM 7.2.1
@@ -622,8 +632,7 @@ def modelhess(n, Sx, macheps, H):
 #        iterations.  This may happen if the funtion is not bounded from below, or
 #        the function has a finite asympotote in some direction, or maxstep is too
 #        small.
-
-def umstop(n, xc, xp, f, g, Sx, typf, retcode, gradtol, steptol, itncount, itnlimit, maxtaken, consecmax):
+    """
 
     termcode = 0
     if retcode == 1:
