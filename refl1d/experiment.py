@@ -24,7 +24,7 @@ from . import material, profile
 from .fresnel import Fresnel
 from .mystic.parameter import Parameter
 
-class ExperimentBase:
+class ExperimentBase(object):
     def format_parameters(self):
         import mystic.parameter
         p = self.parameters()

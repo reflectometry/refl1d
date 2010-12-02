@@ -121,6 +121,7 @@ def reflectivity_amplitude(kz=None,
         irho = _dense(irho, 'd')
 
     r = numpy.empty(kz.shape,'D')
+    #print "amplitude",depth,rho,kz,rho_index
     reflmodule._reflectivity_amplitude(depth, sigma, rho, irho, kz, rho_index, r)
     return r
 
@@ -218,6 +219,9 @@ def convolve(Qi,Ri,Q,dQ):
     return R
 
 def erf(x):
+    """
+    Error function calculator.
+    """
     input = _dense(x,'d')
     output = numpy.empty_like(input)
     reflmodule._erf(input,output)

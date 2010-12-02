@@ -63,7 +63,7 @@ import os
 import numpy
 from numpy import inf, pi
 
-from .instrument import Monochromatic
+from .instrument import Monochromatic, GenericMonochromatic
 from . import util
 from probe import PolarizedNeutronProbe, make_probe
 
@@ -78,7 +78,7 @@ def load(filename, instrument=None, **kw):
     header,data = parse_file(filename)
     header.update(**kw)
     Q,R,dR = data
-    T,dT,L,dL = instrument.resolution(Q, **header)
+    T,dT,L,dL = instrument.resolution(Q=Q, **header)
     kw.update(dict(T=T,dT=dT,L=L,dL=dL,data=(R,dR), 
                    radiation=instrument.radiation))
     probe = make_probe(**kw)
@@ -186,7 +186,7 @@ def parse_file(filename):
 
     return header, data
 
-class NCNRLoader:
+class NCNRLoader(object):
     def load(self, filename, **kw):
         return load(filename, instrument=self, **kw)
     def load_magnetic(self, filename, **kw):
@@ -216,7 +216,7 @@ class NG1(Monochromatic,NCNRLoader):
     d_s3 = 9*25.4
     d_s4 = 42*25.4
 
-class NG7(NCNRLoader, Monochromatic):
+class NG7(Monochromatic, NCNRLoader):
     """
     Instrument definition for NCNR NG-7 reflectometer.
     """

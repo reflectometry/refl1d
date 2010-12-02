@@ -10,7 +10,8 @@ import subprocess
 import numpy
 import pylab
 import dream
-from refl1d.fitter import DEFit, AmoebaFit, SnobFit, BFGSFit
+from .fitter import DEFit, AmoebaFit, SnobFit, BFGSFit
+from . import util
 
 # ==== Fitters ====
 
@@ -85,23 +86,28 @@ class FitProxy(object):
         from refl1d.fitter import Result
         if self.fitter is not None:
             t0 = time.clock()
+            print "initial",self.problem.getp()
             opt = self.fitter(self.problem)
             x = opt.solve(**self.opts)
+            print "result",x
             print "time", time.clock() - t0
         else:
             x = self.problem.guess()
 
-        self.result = Result(self.problem, x)
+        self.result = x
+        self.problem.setp(x)
         return x
 
     def show(self):
-        self.result.show()
+        self.problem.show()
 
     def save(self, output_path):
-        self.result.save(output_path)
+        pass
 
-    def plot(self, output):
-        self.result.plot(output_path)
+    def plot(self, output_path):
+        P = self.problem
+        pylab.suptitle(":".join((P.store,P.title)))
+        P.plot(figfile=output_path)
 
 
 
@@ -146,27 +152,7 @@ def load_problem(args):
 def preview(model):
     model.show()
     model.plot()
-    import pylab; pylab.show()
-
-class redirect_console(object):
-    def __init__(self, fid):
-        # Try opening a file
-        if not hasattr(fid, 'write'):
-            self.open_file = open(fid, 'w')
-            fid = self.open_file
-        else:
-            self.open_file = None
-        self.redirect = fid
-    def __enter__(self):
-        self.stdout = sys.stdout
-        self.stderr = sys.stderr
-        sys.stdout = self.redirect
-        sys.stderr = self.redirect
-    def __exit__(self, *args):
-        if self.open_file: self.open_file.close()
-        sys.stdout = self.stdout
-        sys.stderr = self.stderr
-        return False
+    pylab.show()
 
 def remember_best(fitter, problem, best):
     fitter.save(problem.output_path)
@@ -175,7 +161,7 @@ def remember_best(fitter, problem, best):
     #    problem.save(problem.output_path, best)
     #except:
     #    pass
-    with redirect_console(problem.output_path+".out"):
+    with util.redirect_console(problem.output_path+".out"):
         fitter.show()
     fitter.show()
     fitter.plot(problem.output_path)
@@ -441,4 +427,4 @@ def main():
         best = fitter.fit()
         remember_best(fitter, problem, best)
         if not opts.batch:
-            import pylab; pylab.show()
+            pylab.show()

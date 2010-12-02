@@ -202,7 +202,7 @@ from numpy import pi, inf, sqrt, log, degrees, radians, cos, sin, tan
 from numpy import arcsin as asin, ceil
 from numpy import ones_like, arange, isscalar, asarray
 from util import TL2Q, QL2T, dTdL2dQ, dQdT2dLoL, FWHM2sigma, sigma2FWHM
-
+from probe import make_probe
 
 class Monochromatic(object):
     """
@@ -353,13 +353,9 @@ class Monochromatic(object):
 
         return M
 
-    def resolution(self, T, **kw):
+    def resolution(self, **kw):
         """
         Calculate resolution at each angle.
-
-        :Parameters:
-            *T* : [float] | degrees
-                Q values for which resolution is needed
 
         :Return:
             *T*, *dT* : [float] | degrees
@@ -367,6 +363,10 @@ class Monochromatic(object):
             *L*, *dL* : [float] | Angstroms
                 Wavelengths and wavelength dispersion.
         """
+        self._translate_Q_to_theta(kw)
+        if 'T' not in kw:
+            raise TypeError("resolution requires slits and either T or Q")
+
         L = kw.get('L',kw.get('wavelength',self.wavelength))
         dLoL = kw.get('dLoL',self.dLoL)
         if L is None:
@@ -374,12 +374,14 @@ class Monochromatic(object):
         if dLoL is None:
             raise TypeError("Need wavelength dispersion dLoL to compute resolution")
 
-        slits = self.calc_slits(T, **kw)
-        dT = self.calc_dT(T, slits, **kw)
+        T = kw['T']
+        if 'slits' not in kw:
+            kw['slits'] = self.calc_slits(**kw)
+        dT = self.calc_dT(**kw)
 
         return T,dT,L,dLoL*L
 
-    def calc_slits(self, T, **kw):
+    def calc_slits(self, **kw):
         """
         Determines slit openings from measurement pattern.
 
@@ -388,12 +390,17 @@ class Monochromatic(object):
         slits at the start of the opening to define the slits.  Slits
         below Tlo and above Thi can be specified separately.
 
-        *Tlo*, *Thi*      angle range over which slits are opening
+        *T* OR *Q*       incident angle or Q
+        *Tlo*, *Thi*     angle range over which slits are opening
         *slits_at_Tlo*   openings at the start of the range, or fixed opening
         *slits_below*, *slits_above*   openings below and above the range
 
         Use fixed_slits is available, otherwise use opening slits.
         """
+        self._translate_Q_to_theta(kw)
+        if 'T' not in kw:
+            raise TypeError("calc_slits requires angle T=... or Q=...")
+        T = kw['T']
         Tlo = kw.get('Tlo',self.Tlo)
         Thi = kw.get('Thi',self.Thi)
         slits_at_Tlo = kw.get('slits_at_Tlo',self.slits_at_Tlo)
@@ -409,12 +416,12 @@ class Monochromatic(object):
                             slits_above=slits_above)
         return slits
 
-    def calc_dT(self, T, slits, **kw):
+    def calc_dT(self, **kw):
         """
         Compute the angular divergence for given slits and angles
 
         :Parameters:
-            *T* : [float] | degrees
+            *T* OR *Q* : [float] | degrees OR |1/A|
                 measurement angles
             *slits* : float OR (float,float) | mm
                 total slit opening from edge to edge, not beam center to edge
@@ -427,7 +434,7 @@ class Monochromatic(object):
 
         :Returns:
             *dT* : [float] | degrees FWHM
-                angluar divergence
+                angular divergence
 
         *sample_broadening* can be estimated from W, the full width at half
         maximum of a rocking curve measured in degrees:
@@ -435,6 +442,11 @@ class Monochromatic(object):
             sample_broadening = W - degrees( 0.5*(s1+s2) / (d1-d2))
 
         """
+        self._translate_Q_to_theta(kw)
+        if 'T' not in kw or 'slits' not in kw:
+            raise TypeError("calc_dT requires slits and either T or Q")
+        slits = kw['slits']
+        T = kw['T']
         d_s1 = kw.get('d_s1',self.d_s1)
         d_s2 = kw.get('d_s2',self.d_s2)
         if d_s1 is None or d_s2 is None:
@@ -525,12 +537,13 @@ class GenericMonochromatic(Monochromatic):
             Q,dQ,R,dR = data
         elif data.shape[0] == 5:
             Q,dQ,R,dR,L = data
-        kw["Q"] = Q
-        self._translate_Q_to_theta(kw)
+        if "Q" not in kw: kw["Q"] = Q
         T,dT,L,dL = self.resolution(**kw)
-        del kw["T"]
-        return make_probe(T=T,dT=dT,L=L,dL=dL,data=(R,dR),
-                          radiation=self.radiation, **kw)
+        print Q,R,dR
+        print T,dT,L,dL
+        kw.update(dict(T=T,dT=dT,L=L,dL=dL,data=(R,dR), 
+                       radiation=self.radiation))
+        return make_probe(**kw)
 
 
 class Polychromatic(object):

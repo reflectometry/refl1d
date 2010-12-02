@@ -125,6 +125,20 @@ def _parse_line(line):
     return [],key,value
 
 def indfloat(s):
+    """
+    Convert string to float, with support for inf and nan.
+    
+    Example
+    -------
+    
+        >>> import numpy
+        >>> print numpy.isinf(indfloat('inf'))
+        True
+        >>> print numpy.isinf(indfloat('-inf'))
+        True
+        >>> print numpy.isnan(indfloat('nan')
+        True
+    """
     try:
         return float(s)
     except:
@@ -141,7 +155,17 @@ def dhsv(color, dh=0, ds=0, dv=0, da=0):
     Modify color on hsv scale.
 
     *dv* change intensity, e.g., +0.1 to brighten, -0.1 to darken.
-    *dh* change hue, e.g.,
+    *dh* change hue
+    *ds* change saturation
+    *da* change transparency
+    
+    Example
+    -------
+    
+        >>> seagreen = [v/255. for v in (51, 136, 85, 255)]
+        >>> darker = dhsv(seagreen, dv=-0.1)
+        >>> print [int(v*255) for v in darker]
+        [41, 110, 67, 255]
     """
     from matplotlib.colors import colorConverter
     from colorsys import rgb_to_hsv, hsv_to_rgb
@@ -176,6 +200,9 @@ def profile(fn, *args, **kw):
 
 
 def kbhit():
+    """
+    Check whether a key has been pressed on the console.
+    """
     try: # Windows
         import msvcrt
         return msvcrt.kbhit()
@@ -184,3 +211,61 @@ def kbhit():
         import select
         i,_,_ = select.select([sys.stdin],[],[],0.0001)
         return sys.stdin in i
+
+import sys
+class redirect_console(object):
+    """
+    Console output redirection context
+    
+    Redirect the console output to a path or file object.
+    
+    Example
+    -------
+
+        >>> print "hello"
+        hello
+        >>> with redirect_console("redirect_out.log"):
+        ...     print "hello"
+        >>> print "hello"
+        hello
+        >>> print open("redirect_out.log").read()[:-1]
+        hello
+        >>> import os; os.unlink("redirect_out.log")
+    """
+    def __init__(self, stdout=None, stderr=None):
+        if stdout is None:
+            raise TypeError("stdout must be a path or file object")
+        self.open_files = []
+        self.sys_stdout = []
+        self.sys_stderr = []
+        
+        if hasattr(stdout, 'write'):
+            self.stdout = stdout
+        else:
+            self.open_files.append(open(stdout, 'w'))
+            self.stdout = self.open_files[-1]
+        
+        if stderr is None:
+            self.stderr = self.stdout
+        elif hasattr(stderr, 'write'):
+            self.stderr = stderr
+        else:
+            self.open_files.append(open(stderr,'w'))
+            self.stderr = self.open_files[-1]
+
+    def __del__(self):
+        for f in self.open_files:
+            f.close()        
+            
+    def __enter__(self):
+        self.sys_stdout.append(sys.stdout)
+        self.sys_stderr.append(sys.stderr)
+        sys.stdout = self.stdout
+        sys.stderr = self.stderr
+
+    def __exit__(self, *args):
+        sys.stdout = self.sys_stdout[-1]
+        sys.stderr = self.sys_stderr[-1]
+        del self.sys_stdout[-1]
+        del self.sys_stderr[-1]
+        return False

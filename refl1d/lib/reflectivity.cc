@@ -101,7 +101,7 @@ reflectivity_amplitude(const int    layers,
   for (int i=0; i < points; i++) {
     const int offset = layers*(rho_index!=NULL ? rho_index[i] : 0);
     refl(layers, kz[i], depth, sigma, rho+offset, irho+offset, r[i]);
-   }
+  }
 }
 
 

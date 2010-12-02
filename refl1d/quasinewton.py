@@ -126,6 +126,7 @@ def quasinewton(fn, x0 = [], grad = [], Sx = [], typf = 1, macheps = [], eta = [
 
         # Perform line search (Alg.6.3.1). todo. put param order as in the book
         #print "calling linesearch",xc,fc,gc,sN,Sx,H,L,middle_step_v
+        print "linesearch",xc,fc
         retcode, xp, fp, maxtaken, fcnt \
             = linesearch(fn, n, xc, fc, gc, sN, Sx, maxstep, steptol)
         fcount = fcount + fcnt
@@ -142,8 +143,6 @@ def quasinewton(fn, x0 = [], grad = [], Sx = [], typf = 1, macheps = [], eta = [
         # Check stopping criteria (alg.7.2.1)
         termcode = umstop(n, xc, xp, fp, gp, Sx, typf, retcode, gradtol, 
                           steptol, itncount, itnlimit, maxtaken, consecmax)
-
-        print "termcode=",termcode
 
         # STEP 10.6
         # If termcode is larger than zero, we found a point satisfying one of the

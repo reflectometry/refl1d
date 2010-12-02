@@ -33,7 +33,10 @@ class ConsoleMonitor(monitor.TimedUpdate):
         except:
             raise
 
-class RunMonitors(object):
+class MonitorRunner(object):
+    """
+    Adaptor which allows non-mystic solvers to accept progress monitors.
+    """
     def __init__(self, monitors, problem):
         if monitors == None:
             monitors = [ConsoleMonitor(problem)]
@@ -41,7 +44,6 @@ class RunMonitors(object):
         self.history = History(time=1,step=1,point=1,value=1)
         for M in self.monitors:
             M.config_history(self.history)
-    def start(self):
         self._start = time.time()
     def __call__(self, step, point, value):
         self.history.update(time=time.time()-self._start,
@@ -68,16 +70,16 @@ class DEFit(FitBase):
                              monitors=monitors)
         x = minimize()
         return x
-
         
 
 class BFGSFit(FitBase):
     def solve(self, **kw):
         from quasinewton import quasinewton
-        self._update = RunMonitors(problem=self.problem,
-                                   monitors=kw.pop('monitors', None))
+        self._update = MonitorRunner(problem=self.problem,
+                                     monitors=kw.pop('monitors', None))
+        
         result = quasinewton(self.problem,
-                             x0=self.problem.guess(),
+                             x0=self.problem.getp(),
                              monitor = self._monitor,
                              )
         return result['x']
@@ -88,11 +90,11 @@ class BFGSFit(FitBase):
 class AmoebaFit(FitBase):
     def solve(self, **kw):
         from simplex import simplex
-        self._update = RunMonitors(problem=self.problem,
-                                   monitors=kw.pop('monitors', None))
+        self._update = MonitorRunner(problem=self.problem,
+                                     monitors=kw.pop('monitors', None))
         bounds = numpy.array([p.bounds.limits
                               for p in self.problem.parameters]).T
-        result = simplex(f=self.problem, x0=self.problem.guess(), bounds=bounds,
+        result = simplex(f=self.problem, x0=self.problem.getp(), bounds=bounds,
                          update_handler=self._monitor, **kw)
         return result.x
     def _monitor(self, k, n, x, fx):
@@ -101,11 +103,11 @@ class AmoebaFit(FitBase):
 class SnobFit(FitBase):
     def solve(self, **kw):
         from snobfit.snobfit import snobfit
-        self._update = RunMonitors(problem=self.problem,
-                                   monitors=kw.pop('monitors', None))
+        self._update = MonitorRunner(problem=self.problem,
+                                     monitors=kw.pop('monitors', None))
         bounds = numpy.array([p.bounds.limits
                               for p in self.problem.parameters]).T
-        x, _, _ = snobfit(self.problem, self.problem.guess(), bounds,
+        x, _, _ = snobfit(self.problem, self.problem.getp(), bounds,
                           fglob=0, callback=self._monitor)
         return x
     def _monitor(self, k, x, fx, improved):
@@ -114,7 +116,7 @@ class SnobFit(FitBase):
 def preview(models=[], weights=None):
     """Preview the models in preparation for fitting"""
     problem = _make_problem(models=models, weights=weights)
-    result = Result(problem, problem.guess())
+    result = Result(problem, problem.getp())
     result.show()
     return result
 
@@ -144,7 +146,7 @@ def fit(models=[], weights=None, fitter=DEFit, **kw):
         x = opt.solve(**kw)
         print "time", time.clock() - t0
     else:
-        x = problem.guess()
+        x = problem.getp()
     result = Result(problem, x)
     result.show()
     return result
@@ -242,7 +244,7 @@ class Result:
         opt = walker(self.problem)
         x0 = numpy.array(self.solution)
         parameter.randomize(self.problem.parameters)
-        x1 = self.problem.guess()
+        x1 = self.problem.getp()
         points = opt.run(N=samples, x0=x0, x1=x1)
         self.points = numpy.vstack((self.points, points[burnin:]))
         self.problem.setp(self.solution)
@@ -311,15 +313,10 @@ class Result:
         """
         self.showmodel()
         self.showpars()
-        # Show the graph if pylab is available
-        try:
-            import pylab
-            import atexit
-        except:
-            pass
-        else:
-            self.problem.plot()
-            atexit.register(pylab.show)
+        return self
+        
+    def plot(self):
+        self.problem.plot()
         return self
 
     def showmodel(self):
@@ -374,11 +371,6 @@ class FitProblem:
     def restore_data(self):
         """Restore original data after resynthesis."""
         self.fitness.probe.restore_data()
-    def guess(self):
-        """
-        Return the user values as the guess for the initial model.
-        """
-        return numpy.array([p.value for p in self.parameters],'d')
     def _prepare(self):
         """
         Prepare for the fit.
@@ -419,6 +411,12 @@ class FitProblem:
             p.value = v
         #self.constraints()
         self.model_update()
+    def getp(self):
+        """
+        Returns the current value of the parameter vector.
+        """
+        return numpy.array([p.value for p in self.parameters], 'd')
+
     def parameter_nllf(self):
         """
         Returns negative log likelihood of seeing parameters p.
