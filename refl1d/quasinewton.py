@@ -126,7 +126,7 @@ def quasinewton(fn, x0 = [], grad = [], Sx = [], typf = 1, macheps = [], eta = [
 
         # Perform line search (Alg.6.3.1). todo. put param order as in the book
         #print "calling linesearch",xc,fc,gc,sN,Sx,H,L,middle_step_v
-        print "linesearch",xc,fc
+        #print "linesearch",xc,fc
         retcode, xp, fp, maxtaken, fcnt \
             = linesearch(fn, n, xc, fc, gc, sN, Sx, maxstep, steptol)
         fcount = fcount + fcnt

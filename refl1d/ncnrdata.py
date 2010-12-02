@@ -63,7 +63,7 @@ import os
 import numpy
 from numpy import inf, pi
 
-from .instrument import Monochromatic, GenericMonochromatic
+from .instrument import Monochromatic
 from . import util
 from probe import PolarizedNeutronProbe, make_probe
 

@@ -86,10 +86,8 @@ class FitProxy(object):
         from refl1d.fitter import Result
         if self.fitter is not None:
             t0 = time.clock()
-            print "initial",self.problem.getp()
             opt = self.fitter(self.problem)
             x = opt.solve(**self.opts)
-            print "result",x
             print "time", time.clock() - t0
         else:
             x = self.problem.guess()
