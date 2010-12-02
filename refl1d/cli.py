@@ -90,7 +90,7 @@ class FitProxy(object):
             x = opt.solve(**self.opts)
             print "time", time.clock() - t0
         else:
-            x = self.problem.guess()
+            x = self.problem.getp()
 
         self.result = x
         self.problem.setp(x)
@@ -120,7 +120,7 @@ def random_population(problem, pop_size):
     population = numpy.array(population).T
 
     # Plug in the initial guess
-    guess = problem.guess()
+    guess = problem.getp()
     if guess != None:
         population[0] = numpy.asarray(guess)
 
