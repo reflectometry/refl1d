@@ -3,7 +3,7 @@ from numpy import tan, cos, sqrt, radians, degrees, pi
 from .staj import MlayerModel
 from .model import Slab, Stack, Repeat
 from .material import SLD
-from .util import QL2T,sigma2FWHM
+from .resolution import QL2T,sigma2FWHM
 from .probe import NeutronProbe, XrayProbe
 
 def load_mlayer(filename):

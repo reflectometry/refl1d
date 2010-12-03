@@ -5,14 +5,12 @@
 
         * :class:`NCNR AND/R diffractometer/reflectometer <refl1d.ncnrdata.ANDR>`
         * :class:`NCNR X-ray reflectometer <refl1d.ncnrdata.XRay>`
-        * :class:`NCNR loader <refl1d.ncnrdata.NCNRLoader>`
         * :class:`NCNR NG-1 reflectometer <refl1d.ncnrdata.NG1>`
         * :class:`NCNR NG-7 reflectometer <refl1d.ncnrdata.NG7>`
-        * :func:`Magnetic NCNR data <refl1d.ncnrdata.load_magnetic>`
 
 NCNR data loaders.
 
-The following instruments are defined::
+The following instruments are defined:
 
     ANDR, NG1, NG7 and Xray
 
@@ -22,21 +20,21 @@ instrument parameters and loaders for reduced NCNR data.
 The instruments can be used to load data or to compute resolution functions
 for the purposes.
 
-Example loading data::
+Example loading data:
 
     >>> from ncnrdata import ANDR
     >>> instrument = ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
     >>> probe = instrument.load('chale207.refl')
     >>> probe.plot(view='log')
 
-Magnetic data has multiple cross sections and often has fixed slits::
+Magnetic data has multiple cross sections and often has fixed slits:
 
     >>> from ncnrdata import NG1
     >>> instrument = NG1(slits_at_Tlo=1)
     >>> probe = instrument.load('n101Gc1.refl')
     >>> probe.plot(view='SA') # Spin asymmetry view
 
-For simulation, you just need a probe but not the associated data::
+For simulation, you just need a probe but not the associated data:
 
     >>> from ncnrdata import ANDR
     >>> instrument = ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
@@ -46,7 +44,7 @@ For simulation, you just need a probe but not the associated data::
     >>> pylab.xlabel('Q (inv A)')
     >>> pylab.show()
 
-And for magnetic::
+And for magnetic:
 
     >>> from ncnrdata import NG1
     >>> instrument = NG1(slits_at_Tlo=1)
@@ -71,15 +69,16 @@ def load(filename, instrument=None, **kw):
     """
     Return a probe for NCNR data.
 
-    Keyword arguments are as specified in :class:`resolution.Monochromatic`.
+    Keyword arguments are as specified Monochromatic instruments.
     """
     if filename is None: return None
     if instrument is None: instrument=Monochromatic()
     header,data = parse_file(filename)
+    header.update(instrument.__dict__)
     header.update(**kw)
     Q,R,dR = data
     T,dT,L,dL = instrument.resolution(Q=Q, **header)
-    kw.update(dict(T=T,dT=dT,L=L,dL=dL,data=(R,dR), 
+    kw.update(dict(T=T,dT=dT,L=L,dL=dL,data=(R,dR),
                    radiation=instrument.radiation))
     probe = make_probe(**kw)
     probe.title = header['title'] if 'title' in header else filename
@@ -186,13 +185,15 @@ def parse_file(filename):
 
     return header, data
 
-class NCNRLoader(object):
+class NCNRData(object):
+    def readfile(self, filename):
+        return parse_file(filename)
     def load(self, filename, **kw):
         return load(filename, instrument=self, **kw)
     def load_magnetic(self, filename, **kw):
         return load_magnetic(filename, instrument=self, **kw)
 
-class ANDR(Monochromatic,NCNRLoader):
+class ANDR(NCNRData, Monochromatic):
     """
     Instrument definition for NCNR AND/R diffractometer/reflectometer.
     """
@@ -203,7 +204,7 @@ class ANDR(Monochromatic,NCNRLoader):
     d_s1 = 230.0 + 1856.0
     d_s2 = 230.0
 
-class NG1(Monochromatic,NCNRLoader):
+class NG1(NCNRData, Monochromatic):
     """
     Instrument definition for NCNR NG-1 reflectometer.
     """
@@ -216,19 +217,19 @@ class NG1(Monochromatic,NCNRLoader):
     d_s3 = 9*25.4
     d_s4 = 42*25.4
 
-class NG7(Monochromatic, NCNRLoader):
+class NG7(NCNRData, Monochromatic):
     """
     Instrument definition for NCNR NG-7 reflectometer.
     """
     instrument = "NG-7"
     radiation = "neutron"
     wavelength = 4.768
-    dLoL = 0.040
+    dLoL = 0.025  # 4% FWHM wavelength spread
     d_s2 = 275.   # TODO: check this number
     d_s1 = d_s2 + 1350.
     d_detector = 2000.
 
-class XRay(NCNRLoader, Monochromatic):
+class XRay(NCNRData, Monochromatic):
     """
     Instrument definition for NCNR X-ray reflectometer.
 

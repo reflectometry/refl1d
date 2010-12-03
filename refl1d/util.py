@@ -1,62 +1,3 @@
-from numpy import pi, inf, nan, sqrt, log, degrees, radians, cos, sin, tan
-from numpy import arcsin as asin, ceil, clip
-
-_FWHM_scale = sqrt(log(256))
-def FWHM2sigma(s):
-    return s/_FWHM_scale
-def sigma2FWHM(s):
-    return s*_FWHM_scale
-
-def QL2T(Q=None,L=None):
-    """
-    Compute angle from Q and wavelength.
-
-    T = asin( |Q| L / 4 pi )
-
-    Returns T in degrees.
-    """
-    return degrees(asin(abs(Q) * L / (4*pi)))
-
-def TL2Q(T=None,L=None):
-    """
-    Compute Q from angle and wavelength.
-
-    Q = 4 pi sin(T) / L
-
-    Returns Q in inverse Angstroms.
-    """
-    return 4 * pi * sin(radians(T)) / L
-
-def dTdL2dQ(T=None, dT=None, L=None, dL=None):
-    """
-    Convert wavelength dispersion and angular divergence to Q resolution.
-
-    *T*,*dT*  (degrees) angle and FWHM angular divergence
-    *L*,*dL*  (Angstroms) wavelength and FWHM wavelength dispersion
-
-    Returns 1-sigma dQ
-    """
-
-    # Compute dQ from wavelength dispersion (dL) and angular divergence (dT)
-    T,dT = radians(T), radians(dT)
-    #print T, dT, L, dL
-    dQ = (4*pi/L) * sqrt( (sin(T)*dL/L)**2 + (cos(T)*dT)**2 )
-
-    #sqrt((dL/L)**2+(radians(dT)/tan(radians(T)))**2)*probe.Q
-    return FWHM2sigma(dQ)
-
-def dQdT2dLoL(Q, dQ, T, dT):
-    """
-    Convert a calculated Q resolution and wavelength divergence to a
-    wavelength dispersion.
-
-    *Q*, *dQ* (inv Angstroms)  Q and 1-sigma Q resolution
-    *T*, *dT* (degrees) angle and FWHM angular divergence
-
-    Returns FWHM dL/L
-    """
-    return sqrt( (sigma2FWHM(dQ)/Q)**2 - (radians(dT)/tan(radians(T)))**2 )
-
 def parse_file(file):
     """
     Parse a file into a header and data.
@@ -127,10 +68,10 @@ def _parse_line(line):
 def indfloat(s):
     """
     Convert string to float, with support for inf and nan.
-    
+
     Example
     -------
-    
+
         >>> import numpy
         >>> print numpy.isinf(indfloat('inf'))
         True
@@ -158,10 +99,10 @@ def dhsv(color, dh=0, ds=0, dv=0, da=0):
     *dh* change hue
     *ds* change saturation
     *da* change transparency
-    
+
     Example
     -------
-    
+
         >>> seagreen = [v/255. for v in (51, 136, 85, 255)]
         >>> darker = dhsv(seagreen, dv=-0.1)
         >>> print [int(v*255) for v in darker]
@@ -216,9 +157,9 @@ import sys
 class redirect_console(object):
     """
     Console output redirection context
-    
+
     Redirect the console output to a path or file object.
-    
+
     Example
     -------
 
@@ -238,13 +179,13 @@ class redirect_console(object):
         self.open_files = []
         self.sys_stdout = []
         self.sys_stderr = []
-        
+
         if hasattr(stdout, 'write'):
             self.stdout = stdout
         else:
             self.open_files.append(open(stdout, 'w'))
             self.stdout = self.open_files[-1]
-        
+
         if stderr is None:
             self.stderr = self.stdout
         elif hasattr(stderr, 'write'):
@@ -255,8 +196,8 @@ class redirect_console(object):
 
     def __del__(self):
         for f in self.open_files:
-            f.close()        
-            
+            f.close()
+
     def __enter__(self):
         self.sys_stdout.append(sys.stdout)
         self.sys_stderr.append(sys.stderr)

@@ -141,7 +141,7 @@ def quasinewton(fn, x0 = [], grad = [], Sx = [], typf = 1, macheps = [], eta = [
             fcount = fcount + n
 
         # Check stopping criteria (alg.7.2.1)
-        termcode = umstop(n, xc, xp, fp, gp, Sx, typf, retcode, gradtol, 
+        termcode = umstop(n, xc, xp, fp, gp, Sx, typf, retcode, gradtol,
                           steptol, itncount, itnlimit, maxtaken, consecmax)
 
         # STEP 10.6
@@ -154,7 +154,7 @@ def quasinewton(fn, x0 = [], grad = [], Sx = [], typf = 1, macheps = [], eta = [
 
         elif not monitor(x=xp,fx=fp,step=itncount):
             termcode = 6
-        
+
         else :
             H = bfgsunfac(n, xc, xp, gc, gp, macheps, eta, analgrad, H)
             xc = xp

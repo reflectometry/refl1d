@@ -213,9 +213,9 @@ class DifferentialEvolution(solver.Strategy):
         population = numpy.array(population).T
 
         # Plug in the initial guess
-        guess = problem.guess()
-        if guess != None:
-            population[0] = numpy.asarray(guess)
+        for i,p in enumerate(problem.parameters):
+            if p.value in p.bounds:
+                population[0,i] = p.value
 
         # Return the population
         return population

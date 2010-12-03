@@ -68,13 +68,16 @@ class DreamProxy(object):
     def save(self, output_path):
         self.state.save(output_path)
 
+    def show(self):
+        self.dream_model.problem.show()
+
     def plot(self, output_path):
         self.state.show(figfile=output_path)
         P = self.dream_model.problem
         pylab.figure(6)
         pylab.suptitle(":".join((P.store,P.title)))
         P.plot(figfile=output_path)
-        
+
 class FitProxy(object):
     def __init__(self, fitter, problem):
 
@@ -300,7 +303,7 @@ class ParseOpts:
         if len(positionargs) < self.MINARGS:
             raise ValueError("Not enough arguments. Use -? for help.")
         self.args = positionargs
-        
+
         #print "flags",flags
         #print "vals",valueargs
         #print "args",positionargs
@@ -384,7 +387,7 @@ def main():
     opts.iters = int(opts.iters)
     opts.pop = int(opts.pop)
     opts.burn = int(opts.burn)
-    
+
     problem = load_problem(opts.args)
     if opts.fit == 'dream':
         fitter = DreamProxy(problem=problem,

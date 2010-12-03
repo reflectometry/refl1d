@@ -22,7 +22,8 @@ import re
 import math
 import numpy
 from numpy import sqrt
-from .instrument import Polychromatic, binwidths
+from .instrument import Pulsed
+from . import resolution
 from . import util
 
 ## Estimated intensity vs. wavelength for liquids reflectometer
@@ -61,13 +62,13 @@ def load(filename, instrument=None, **kw):
     Return a probe for NCNR data.
     """
     header, data = parse_file(filename)
-    return _make_probe(geometry=Polychromatic(), header=header, data=data, **kw)
+    return _make_probe(geometry=Pulsed(), header=header, data=data, **kw)
 
 def _make_probe(geometry, header, data, **kw):
     header.update(**kw)
     Q,dQ,R,dR,L = data
-    dL = binwidths(L)
-    T = kw.pop('angle',util.QL2T(Q[0],L[0]))
+    dL = resolution.binwidths(L)
+    T = kw.pop('angle',resolution.QL2T(Q[0],L[0]))
     resolution = geometry.resolution(L=L, dL=dL, T=T, **header)
     probe = resolution.probe(data=(R,dR), **header)
     probe.title = header['title']
@@ -129,13 +130,13 @@ def parse_file(filename):
     return header, data
 
 
-class SNSLoader:
+class SNSData(object):
     def load(self, filename, **kw):
         header,data = parse_file(filename)
         return _make_probe(geometry=self, header=header, data=data, **kw)
 
 # TODO: print "Insert correct slit distances for Liquids and Magnetic"
-class Liquids(Polychromatic, SNSLoader):
+class Liquids(SNSData, Pulsed):
     """
     Loader for reduced data from the SNS Liquids instrument.
     """
@@ -150,7 +151,7 @@ class Liquids(Polychromatic, SNSLoader):
     d_s1 = 230.0 + 1856.0
     d_s2 = 230.0
 
-class Magnetic(Polychromatic, SNSLoader):
+class Magnetic(SNSData, Pulsed):
     """
     Loader for reduced data from the SNS Magnetic instrument.
     """

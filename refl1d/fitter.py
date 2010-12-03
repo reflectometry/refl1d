@@ -18,7 +18,7 @@ class ConsoleMonitor(monitor.TimedUpdate):
         monitor.TimedUpdate.__init__(self, progress=progress,
                                      improvement=improvement)
         self.problem = problem
-    # TimedUpdate profiles 
+    # TimedUpdate profiles
     def show_progress(self, history):
         print "step", history.step[0], "chisq", history.value[0]
     def show_improvement(self, history):
@@ -70,14 +70,14 @@ class DEFit(FitBase):
                              monitors=monitors)
         x = minimize()
         return x
-        
+
 
 class BFGSFit(FitBase):
     def solve(self, **kw):
         from quasinewton import quasinewton
         self._update = MonitorRunner(problem=self.problem,
                                      monitors=kw.pop('monitors', None))
-        
+
         result = quasinewton(self.problem,
                              x0=self.problem.getp(),
                              monitor = self._monitor,
@@ -314,7 +314,7 @@ class Result:
         self.showmodel()
         self.showpars()
         return self
-        
+
     def plot(self):
         self.problem.plot()
         return self
