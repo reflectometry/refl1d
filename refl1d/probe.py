@@ -256,7 +256,7 @@ class Probe(object):
     def parameters(self):
         return dict(intensity=self.intensity,
                     background=self.background,
-                    backabsorption=self.back_absorption,
+                    back_absorption=self.back_absorption,
                     theta_offset=self.theta_offset)
     def scattering_factors(self, material):
         """

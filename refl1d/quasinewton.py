@@ -54,7 +54,6 @@ def quasinewton(fn, x0 = [], grad = [], Sx = [], typf = 1, macheps = [], eta = [
     """
     Run a quasinewton optimization on the problem.
     """
-
     #print "starting QN"
     # If some input parameters are not specified, define default values for them
     # here. First and second parameters fn and x0 must be defined, others may be

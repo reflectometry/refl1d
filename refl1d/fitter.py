@@ -59,28 +59,30 @@ class FitBase(object):
         raise NotImplementedError
 
 class DEFit(FitBase):
-    def solve(self, **kw):
+    def solve(self, pop=10, steps=2000, **kw):
         from mystic.optimizer import de
         from mystic.solver import Minimizer
+        from mystic.stop import Steps
         monitors = kw.pop('monitors', None)
         if monitors == None:
             monitors = [ConsoleMonitor(self.problem)]
-        strategy = de.DifferentialEvolution(**kw)
+        strategy = de.DifferentialEvolution(npop=pop)
         minimize = Minimizer(strategy=strategy, problem=self.problem,
-                             monitors=monitors)
+                             monitors=monitors,
+                             failure=Steps(steps))
         x = minimize()
         return x
 
 
 class BFGSFit(FitBase):
-    def solve(self, **kw):
+    def solve(self, steps=2000, **kw):
         from quasinewton import quasinewton
         self._update = MonitorRunner(problem=self.problem,
                                      monitors=kw.pop('monitors', None))
-
         result = quasinewton(self.problem,
                              x0=self.problem.getp(),
                              monitor = self._monitor,
+                             itnlimit = steps,
                              )
         return result['x']
     def _monitor(self, step, x, fx):
@@ -88,14 +90,14 @@ class BFGSFit(FitBase):
         return True
 
 class AmoebaFit(FitBase):
-    def solve(self, **kw):
+    def solve(self, steps=2000, **kw):
         from simplex import simplex
         self._update = MonitorRunner(problem=self.problem,
                                      monitors=kw.pop('monitors', None))
         bounds = numpy.array([p.bounds.limits
                               for p in self.problem.parameters]).T
         result = simplex(f=self.problem, x0=self.problem.getp(), bounds=bounds,
-                         update_handler=self._monitor, **kw)
+                         update_handler=self._monitor, maxiter=steps)
         return result.x
     def _monitor(self, k, n, x, fx):
         self._update(step=k, point=x, value=fx)
@@ -506,7 +508,8 @@ class FitProblem:
         self.fitness.plot()
         pylab.text(0, 0, 'chisq=%g' % self.chisq(),
                    transform=pylab.gca().transAxes)
-        if figfile != None: pylab.savefig(figfile+"-model")
+        if figfile != None: 
+            pylab.savefig(figfile+"-model", format='png')
 
 class MultiFitProblem(FitProblem):
     """

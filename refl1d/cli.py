@@ -10,8 +10,10 @@ import subprocess
 import numpy
 import pylab
 import dream
-from .fitter import DEFit, AmoebaFit, SnobFit, BFGSFit
+from refl1d.stajconvert import load_mlayer
+from .fitter import DEFit, AmoebaFit, SnobFit, BFGSFit, FitProblem
 from . import util
+from .mystic import parameter
 
 # ==== Fitters ====
 
@@ -41,11 +43,11 @@ class DreamModel(dream.MCMCModel):
 
 
 class DreamProxy(object):
-    def __init__(self, problem, pop=10, iters=1000, burn=0):
+    def __init__(self, problem, opts):
         self.dream_model = DreamModel(problem)
-        self.pop = pop
-        self.iters = iters
-        self.burn = burn
+        self.pop = opts.pop
+        self.steps = opts.steps
+        self.burn = opts.burn
     def _get_mapper(self):
         return self.dream_model.mapper
     def _set_mapper(self, mapper):
@@ -57,7 +59,7 @@ class DreamProxy(object):
         population = random_population(self.dream_model.problem, pop_size)
         population = population[None,:,:]
         sampler = dream.Dream(model=self.dream_model, population=population,
-                              draws = pop_size*(self.iters+self.burn),
+                              draws = pop_size*(self.steps+self.burn),
                               burn = pop_size*self.burn)
 
         self.state = sampler.sample()
@@ -79,18 +81,20 @@ class DreamProxy(object):
         P.plot(figfile=output_path)
 
 class FitProxy(object):
-    def __init__(self, fitter, problem):
+    def __init__(self, fitter, problem, opts):
 
         self.fitter = fitter
         self.problem = problem
-        self.opts = {}
+        self.opts = opts
     def fit(self):
         import time
         from refl1d.fitter import Result
         if self.fitter is not None:
             t0 = time.clock()
-            opt = self.fitter(self.problem)
-            x = opt.solve(**self.opts)
+            optimizer = self.fitter(self.problem)
+            x = optimizer.solve(steps=self.opts.steps,
+                                burn=self.opts.burn,
+                                pop=self.opts.pop)
             print "time", time.clock() - t0
         else:
             x = self.problem.getp()
@@ -130,9 +134,46 @@ def random_population(problem, pop_size):
     return population
 
 
+def load_staj(file):
+    M = load_mlayer(file)
+    
+    # Exclude unlikely fitting parameters
+    exclude = set((M.sample[0].thickness,
+               M.sample[-1].thickness,
+               M.sample[-1].interface,
+               M.probe.back_absorption,
+               ))
+    if M.probe.intensity.value == 1:
+        exclude.add(M.probe.intensity)
+    if M.probe.background.value < 2e-10:
+        exclude.add(M.probe.background.value)
+    ## Zero values are excluded below
+    #if M.probe.theta_offset.value == 0:
+    #    exclude.add(M.probe.theta_offset)
+    #for L in M.sample:
+    #    if L.rho.value == 0: exclude.add(L.rho)
+    #    if L.irho.value == 0: exclude.add(L.irho)
+    
+    # Fit everything else using a range of +/- 20 %
+    for p in parameter.unique(M.parameters()):
+        if p in exclude: continue
+        if p.value != 0: p.pmp(20)
+        #p.fixed = False
+
+    problem = FitProblem(M)
+    problem.file = file
+    problem.title = file
+    problem.name = file
+    problem.options = []
+    return problem
+
 def load_problem(args):
     #import refl1d.context
     file, options = args[0], args[1:]
+    
+    if file.endswith('.staj'):
+        return load_staj(file)
+    
     ctx = dict(__file__=file)
     #refl1d.context.math_context(ctx)
     #refl1d.context.refl_context(ctx)
@@ -309,16 +350,17 @@ class ParseOpts:
         #print "args",positionargs
 
 
+FITTERS = dict(dream=None,
+               de=DEFit, newton=BFGSFit, amoeba=AmoebaFit, snobfit=SnobFit)
 class FitOpts(ParseOpts):
     MINARGS = 1
     FLAGS = set(("preview","check","profile",
                  "worker","batch","overwrite","parallel"))
     VALUES = set(("plot","store","fit",
-                  "pop","iters","burn"))
+                  "pop","steps","burn"))
     pop="10"
-    iters="1000"
+    steps="1000"
     burn="0"
-    FITTERS= "de","dream","snobfit","amoeba","newton"
     PLOTTERS="log","linear","fresnel","q4"
     USAGE = """\
 Usage: reflfit [-option] modelfile [modelargs]
@@ -343,7 +385,7 @@ where options include:
         fitting engine to use; see manual for details
     --pop=n (default 10)
         population size per parameter (used for dream and DE)
-    --iters=n (default 1000)
+    --steps=n (default 1000)
         number of fit iterations
     --burn=n (default 0)
         number of iterations before accumulating stats (dream)
@@ -356,7 +398,7 @@ The modelfile is a Python script (i.e., a series of Python commands)
 which sets up the data, the models, and the fittable parameters.
 The model arguments are available in the modelfile as sys.argv[1:].
 Model arguments may not start with '-'.
-"""%{'fitter':'|'.join(FITTERS),
+"""%{'fitter':'|'.join(sorted(FITTERS.keys())),
      'plotter':'|'.join(PLOTTERS),
      }
 
@@ -384,26 +426,16 @@ def main():
         print "\nNo modelfile parameter was specified.\n"
 
     opts = FitOpts(sys.argv)
-    opts.iters = int(opts.iters)
+    opts.steps = int(opts.steps)
     opts.pop = int(opts.pop)
     opts.burn = int(opts.burn)
 
     problem = load_problem(opts.args)
     if opts.fit == 'dream':
-        fitter = DreamProxy(problem=problem,
-                            pop=opts.pop,
-                            iters=opts.iters,
-                            burn=opts.burn)
-    elif opts.fit == 'de':
-        fitter = FitProxy(fitter=DEFit, problem=problem)
-    elif opts.fit == 'newton':
-        fitter = FitProxy(fitter=BFGSFit, problem=problem)
-    elif opts.fit == 'amoeba':
-        fitter = FitProxy(fitter=AmoebaFit, problem=problem)
-    elif opts.fit == 'snobfit':
-        fitter = FitProxy(fitter=SnobFit, problem=problem)
+        fitter = DreamProxy(problem=problem, opts=opts)
     else:
-        raise RuntimeError("Unknown fitter "%fitter)
+        fitter = FitProxy(FITTERS[opts.fit],
+                          problem=problem, opts=opts)
     if opts.parallel or opts.worker:
         mapper = AMQPMapper
     else:
