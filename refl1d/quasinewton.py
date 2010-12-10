@@ -45,8 +45,20 @@ EXAMPLE CALL::
           result['iterations'],result['evals'],result['linesearch_evals']
 """
 
-from numpy import inf, sqrt, isnan
+from numpy import inf, sqrt, isnan, isinf
 from numpy import diag, zeros, ones, array, linalg, inner, outer, dot, amax, maximum
+
+STATUS = { 
+    1: "Gradient < tolerance",
+    2: "Step size < tolerance",
+    3: "Invalid point in line search",
+    4: "Iterations exceeded",
+    5: "Max step taken --- function unbounded?",
+    6: "User abort",
+    7: "Iterations exceeded in line search",
+    8: "Line search step size is too small",
+    9: "Singular Hessian",
+    }
 
 def quasinewton(fn, x0 = [], grad = [], Sx = [], typf = 1, macheps = [], eta = [],
               maxstep = 100, gradtol = 1e-6, steptol = 1e-12, itnlimit = 2000,
@@ -99,7 +111,8 @@ def quasinewton(fn, x0 = [], grad = [], Sx = [], typf = 1, macheps = [], eta = [
 
 
     # Check if the initial guess is a local minimizer
-    [termcode, consecmax] = umstop0(n, x0, fc, gc, Sx, typf, gradtol)
+    termcode = umstop0(n, x0, fc, gc, Sx, typf, gradtol)
+    consecmax = 0
     if termcode > 0 :
         # Approximately x0 is a critical point
         xf = x0
@@ -122,6 +135,14 @@ def quasinewton(fn, x0 = [], grad = [], Sx = [], typf = 1, macheps = [], eta = [
         H, L = modelhess(n, Sx, macheps, H)
         middle_step_v = linalg.solve(L, -gc)              # the vector obtained in the middle
         sN = linalg.solve(L.transpose(), middle_step_v)   # the last step
+        if isnan(sN).any():
+            #print "H",H
+            #print "L",L
+            #print "v",middle_step_v
+            #print "Sx",Sx
+            #print "gc",gc
+            termcode = 9
+            break
 
         # Perform line search (Alg.6.3.1). todo. put param order as in the book
         #print "calling linesearch",xc,fc,gc,sN,Sx,H,L,middle_step_v
@@ -140,8 +161,9 @@ def quasinewton(fn, x0 = [], grad = [], Sx = [], typf = 1, macheps = [], eta = [
             fcount = fcount + n
 
         # Check stopping criteria (alg.7.2.1)
+        consecmax = consecmax+1 if maxtaken else 0
         termcode = umstop(n, xc, xp, fp, gp, Sx, typf, retcode, gradtol,
-                          steptol, itncount, itnlimit, maxtaken, consecmax)
+                          steptol, itncount, itnlimit, consecmax)
 
         # STEP 10.6
         # If termcode is larger than zero, we found a point satisfying one of the
@@ -309,7 +331,11 @@ def fdgrad(n, xc, fc, fn, Sx, eta) :
 
         #--- EVALUATE APPR. GRADIENT
         fj = fn(xc)
+        # PAK: hack for infeasible region: point the other way
+        if isinf(fj): fj = fc+hj 
         g[j-1] = (fj - fc)/hj
+        #if isinf(g[j-1]):
+        #    print "fc,fj,hj,Sx,xc",fc,fj,hj,Sx[j-1],xc[j-1]
 
         # now reset the current
         xc[j-1] = tempj
@@ -330,7 +356,8 @@ def inithessunfac(n, f, typf, Sx):
 
 #------------------------------------------------------------------------------
 
-'''
+def linesearch(cost_func, n, xc, fc, g, p, Sx, maxstep, steptol):
+    '''
 % ALGORITHM 6.3.1
 %
 % Ismet Sahin
@@ -372,9 +399,8 @@ def inithessunfac(n, f, typf, Sx):
 %    alfa : is used to prevent function value reductions which are too small.
 %       Here we'll use a very small number in order to accept very small
 %       reductions but not too small.
-'''
+    '''
 
-def linesearch(cost_func, n, xc, fc, g, p, Sx, maxstep, steptol):
     maxtaken = 0
 
     # alfa specifies how much function value reduction is allowable.  The smaller
@@ -403,21 +429,21 @@ def linesearch(cost_func, n, xc, fc, g, p, Sx, maxstep, steptol):
     # In this loop, we try to find an acceptable next point xp = xc + lambda * p by
     # finding an optimal lambda based on one dimensional quadratic and cubic models
     fcount = 0
-    retcode = 2
-    while retcode >= 2:                # 10 starts.
+    while True:                # 10 starts.
         xp = xc + lambdaM * p                                    # next point candidate
         #print "linesearch",fcount,xp,xc,lambdaM,p
         if isnan(xp).any():
-            #print "invalid point in linesearch",xp
+            #print "linesearch",fcount,xp,xc,lambdaM,p
             retcode = 1
             xp,fp = xc,fc
             break
         if fcount > 20:
             #print "too many cycles in linesearch",xp
-            retcode = 1
+            retcode = 2
             xp,fp = xc,fc
             break
         fp = cost_func(xp)                                        # function value at xp
+        if isinf(fp): fp = 2*fc # PAK: infeasible region hack
         fcount = fcount + 1
         if fp <= fc + alfa * lambdaM * initslope:
             # satisfactory xp is found
@@ -427,7 +453,7 @@ def linesearch(cost_func, n, xc, fc, g, p, Sx, maxstep, steptol):
             break                                                    # return from here
         elif lambdaM < minlambda:
             # step length is too small, therefore a satisfactory xp cannot be found
-            retcode = 1
+            retcode = 3
             xp,fp = xc,fc
             break
         else:                            # 10.3c starts
@@ -435,22 +461,27 @@ def linesearch(cost_func, n, xc, fc, g, p, Sx, maxstep, steptol):
             if lambdaM == 1.0:
                 # first backtrack with one dimensional quadratic fit
                 lambda_temp = -initslope / (2.0*(fp-fc-initslope))
+                #print "L1",lambda_temp
             else:
                 # perform second and following backtracks with cubic fit
                 Mt = array([[1.0/(lambdaM**2), -1.0/(lambda_prev**2)], [-lambda_prev/(lambdaM**2), lambdaM/(lambda_prev**2)]])
                 vt = array([[fp - fc - lambdaM * initslope], [fp_prev - fc - lambda_prev * initslope]])
                 ab = (1.0/(lambdaM-lambda_prev)) * dot(Mt,vt)
                 disc = ab[1,0]**2 - 3.0 * ab[0,0] * initslope        # a = ab(1) and b = ab(2)
+                #print "Mt,vt,ab,disc",Mt,vt,ab,disc
                 if ab[0,0] == 0.0:
                     # cubic model turn out to be a quadratic
                     lambda_temp = -initslope / (2.0*ab[1,0])
+                    #print "L2",lambda_temp
                 else:
                     # the model is a legitimate cubic
                     lambda_temp = (-ab[1,0] + sqrt(disc)) / (3.0 * ab[0,0])
+                    #print "L3",lambda_temp
 
                 if lambda_temp > 0.5 * lambdaM:
                     # larger than half of previous lambda is not allowed.
                     lambda_temp = 0.5 * lambdaM
+                    #print "L4",lambda_temp
 
             lambda_prev = lambdaM
             fp_prev = fp
@@ -468,9 +499,7 @@ def linesearch(cost_func, n, xc, fc, g, p, Sx, maxstep, steptol):
 
 #------------------------------------------------------------------------------
 
-'''
-@author: Ismet Sahin
-'''
+# @author: Ismet Sahin
 # ALGORITHM 1.3.1
 def machineeps() :
     macheps = 1.0
@@ -483,7 +512,8 @@ def machineeps() :
 
 #------------------------------------------------------------------------------
 
-'''
+def modelhess(n, Sx, macheps, H):
+    '''
 @author: Ismet Sahin.
 Thanks to Christopher Meeting for his help in converting this module from
 Matlab to Python
@@ -514,9 +544,8 @@ Matlab to Python
 %         A3 =[2     0    10
 %               0     2     0
 %              10     0     3]
-'''
+    '''
 
-def modelhess(n, Sx, macheps, H):
     # SCALING
     scale_needed = 0                        # ISMET uses this parameter
     if sum(Sx - ones(n)) != 0 :
@@ -603,38 +632,45 @@ def modelhess(n, Sx, macheps, H):
 
 
 #------------------------------------------------------------------------------
-def umstop(n, xc, xp, f, g, Sx, typf, retcode, gradtol, steptol, itncount, itnlimit, maxtaken, consecmax):
+def umstop(n, xc, xp, f, g, Sx, typf, retcode, gradtol, steptol, 
+           itncount, itnlimit, consecmax):
     """
 #@author: Ismet Sahin
 
-# ALGORITHM 7.2.1
+ALGORITHM 7.2.1
 
-# Return codes:
-# Note that return codes are nonnegative integers. When it is not zero, there is
-# a termination condition which is satisfied.
-#    0 : None of the termination conditions is satisfied
-#    1 : Magnitute of scaled grad is less than gradtol; this is the primary
-#        condition. The new point xp is most likely a local minimizer.  If gradtol
-#        is too large, then this condition can be satisfied easier and therefore
-#        xp may not be a local minimizer
-#    2 : Scaled distance between last two points is less than steptol; xp might be
-#        a local minimizer.  This condition may also be satisfied if step is
-#        chosen too large or the algorithm is far from the minimizer and making
-#        small progress
-#    3 : The algorithm cannot find a new point giving smaller function value than
-#        the current point.  The current may be a local minimizer, or analytic
-#        gradient implementation has some mistakes, or finite difference gradient
-#        estimation is not accurate, or steptol is too large.
-#    4 : Maximum number of iterations are completed
-#    5 : The maximum step length maxstep is taken for last ten consecutive
-#        iterations.  This may happen if the funtion is not bounded from below, or
-#        the function has a finite asympotote in some direction, or maxstep is too
-#        small.
+Return codes:
+Note that return codes are nonnegative integers. When it is not zero, there is
+a termination condition which is satisfied.
+   0 : None of the termination conditions is satisfied
+   1 : Magnitute of scaled grad is less than gradtol; this is the primary
+       condition. The new point xp is most likely a local minimizer.  If gradtol
+       is too large, then this condition can be satisfied easier and therefore
+       xp may not be a local minimizer
+   2 : Scaled distance between last two points is less than steptol; xp might be
+       a local minimizer.  This condition may also be satisfied if step is
+       chosen too large or the algorithm is far from the minimizer and making
+       small progress
+   3 : The algorithm cannot find a new point giving smaller function value than
+       the current point.  The current may be a local minimizer, or analytic
+       gradient implementation has some mistakes, or finite difference gradient
+       estimation is not accurate, or steptol is too large.
+   4 : Maximum number of iterations are completed
+   5 : The maximum step length maxstep is taken for last ten consecutive
+       iterations.  This may happen if the funtion is not bounded from below, or
+       the function has a finite asympotote in some direction, or maxstep is too
+       small.
     """
 
     termcode = 0
     if retcode == 1:
         termcode = 3
+    elif retcode == 2:
+        termcode = 7
+    elif retcode == 3:
+        termcode = 8
+    elif retcode > 0:
+        raise ValueError("Unknown linesearch return code")
     elif max(abs(g) * maximum(abs(xp), 1/Sx) / max(abs(f), typf)) <= gradtol:
         # maximum component of scaled gradient is smaller than gradtol.  todo. make
         # sure not to use a too large typf value which leads to the satisfaction of
@@ -646,13 +682,9 @@ def umstop(n, xc, xp, f, g, Sx, typf, retcode, gradtol, steptol, itncount, itnli
     elif itncount >= itnlimit:
         # maximum number of iterations are performed
         termcode = 4
-    elif maxtaken == 1:
-        consecmax = consecmax + 1
-        if consecmax == 10:
-            # not more than 10 steps will be taken consecutively.
-            termcode = 5
-    else:
-        consecmax = 0                # todo.  this may never be used. delete it later.
+    elif consecmax == 10:
+        # not more than 10 steps will be taken consecutively.
+        termcode = 5
 
     return termcode
 
@@ -683,7 +715,7 @@ def umstop0(n, x0, f, g, Sx, typf, gradtol):
         termcode = 1
     else :
         termcode = 0
-    return termcode, consecmax
+    return termcode
 
 
 #------------------------------------------------------------------------------

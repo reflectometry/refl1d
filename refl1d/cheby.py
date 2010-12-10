@@ -72,7 +72,7 @@ profile for S microslabs.
 # - Direct methods: random walk should be biased toward the domain
 # - moderately complicated
 import numpy
-from numpy import inf, real, imag, exp, pi
+from numpy import inf, real, imag, exp, pi, cos, hstack, arange, asarray
 from numpy.fft import fft
 from mystic import Parameter as Par, IntegerParameter as IntPar
 from .model import Layer
@@ -88,8 +88,9 @@ class FreeformCheby(Layer):
     sld (rho) and imaginary sld (irho) can be modeled with a separate
     polynomial orders.
     """
-    def __init__(self, thickness=0, rho=[], irho=[],
+    def __init__(self, thickness=0, interface=0, rho=[], irho=[],
                  name="Cheby", method="interp"):
+        if interface != 0: raise NotImplementedError("interface not yet supported")
         self.name = name
         self.method = method
         self.thickness = Par.default(thickness, limits=(0,inf),
@@ -109,8 +110,8 @@ class FreeformCheby(Layer):
         thickness = self.thickness.value
         Pw,Pz = slabs.microslabs(thickness)
         t = Pz/thickness
-        Prho = cheby_profile([p.value for p in self.rho], t, self.method)
-        Pirho = cheby_profile([p.value for p in self.irho], t, self.method)
+        Prho = _profile([p.value for p in self.rho], t, self.method)
+        Pirho = _profile([p.value for p in self.irho], t, self.method)
         slabs.extend(rho=[Prho], irho=[Pirho], w=Pw)
 
 class ChebyVF(Layer):
@@ -147,11 +148,12 @@ class ChebyVF(Layer):
        >>> sld(z) = material.sld * profile(z) + solvent.sld * (1 - profile(z))
     """
     def __init__(self, thickness=0, interface=0,
-                 material=None, solvent=None,
-                 length=None, vf=None, method="interp"):
+                 material=None, solvent=None, vf=None, 
+                 name="ChebyVF", method="interp"):
+        if interface != 0: raise NotImplementedError("interface not yet supported")
+        self.name = name
         self.thickness = Par.default(thickness, name="solvent thickness")
         self.interface = Par.default(interface, name="solvent interface")
-        self.length = Par.default(length, name="length")
         self.solvent = solvent
         self.material = material
         self.vf = [Par.default(p,name="vf[%d]"%i) for i,p in enumerate(vf)]
@@ -165,7 +167,6 @@ class ChebyVF(Layer):
                     material=self.material.parameters(),
                     thickness=self.thickness,
                     interface=self.interface,
-                    length=self.length,
                     vf=self.vf)
     def render(self, probe, slabs):
         Mr,Mi = self.material.sld(probe)
@@ -178,29 +179,74 @@ class ChebyVF(Layer):
         thickness = self.thickness.value
         Pw,Pz = slabs.microslabs(thickness)
         t = Pz/thickness
-        vf = cheby_profile([p.value for p in self.vf], t, self.method)
+        vf = _profile([p.value for p in self.vf], t, self.method)
         vf = numpy.clip(vf,0,1)
         P = M*vf + S*(1-vf)
         Pr, Pi = real(P), imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
 
-def cheby_profile(control, t, method):
-    n = len(control)
-    if n == 0:
-        return 0*t
-    c = numpy.array(control)
+def _profile(c, t, method):
+    """
+    Evaluate the chebyshev approximation c at points x.
+
+    If method is 'direct' then $c_i$ are the coefficients for the chebyshev
+    polynomials $T_i$ yielding $P = \sum_i{c_i T_i(x)}$.
+
+    If method is 'interp' then $c_i$ are the values of the interpolated
+    function $f$ evaluated at the chebyshev points 
+    $p_i = \cos(i (\pi + \frac{1}{2})/n)$.
+    """
     if method == 'interp':
-        # DCT calculation of chebyshev coefficients
-        #    c_j = 2/N sum_k=1^N f_k cos((2 pi j (k-1) / 2 N)
-        # where
-        #    f_k = f[cos( (2 pi k - 1) / 2 N]
-        w = exp((-0.5j*pi/n)*numpy.arange(n))
-        y = numpy.hstack((c[0::2], c[1::2][::-1]))
-        c = (2./n) * real(fft(y)*w)
+        c = cheby_coeff(c)
+    return cheby_val(c, t)
+
+def cheby_approx(n, f, range=[0,1]):
+    """
+    Return the coefficients for the order n chebyshev approximation to 
+    function f evaluated over the range [low,high].
+    """
+    fx = f(cheby_points(n, range=range))
+    return cheby_coeff(fx)
+
+def cheby_val(c, x, method='direct'):
+    """
+    Evaluate the chebyshev approximation c at points x.
+
+    The values $c_i$ are the coefficients for the chebyshev
+    polynomials $T_i$ yielding $p(x) = \sum_i{c_i T_i(x)}$.
+    """
+    c = numpy.asarray(c)
+    if len(c) == 0: return 0*x
 
     # Crenshaw recursion from numerical recipes sec. 5.8
-    y = 4*t - 2
+    y = 4*x - 2
     d = dd = 0
     for c_j in c[:0:-1]:
         d, dd = y*d + (c_j - dd), d
     return y*(0.5*d) + (0.5*c[0] - dd)
+
+def cheby_points(n, range=[0,1]):
+    """
+    Return the points in at which a function must be evaluated to 
+    generate the order $n$ Chebyshev approximation function.
+
+    Over the range [-1,1], the points are $p_k = \cos(\pi/2 (2 k + 1)/n)$.
+    Adjusting the range to $[x_L,x_R]$, the points become 
+    $x_k = 1/2 (p_k - x_L + 1)/(x_R-x_L)$.
+    """
+    return 0.5*(cos(pi*(arange(n)+0.5)/n)-range[0]+1)/(range[1]-range[0])
+
+def cheby_coeff(fx):
+    """
+    Compute chebyshev coefficients for a polynomial of order n given
+    the function evaluated at the chebyshev points for order n.
+    
+    This can be used as the basis of a direct interpolation method where
+    the n control points are positioned at cheby_points(n).
+    """
+    fx = asarray(fx)
+    n = len(fx)
+    w = exp((-0.5j*pi/n)*arange(n))
+    y = numpy.hstack((fx[0::2], fx[1::2][::-1]))
+    c = (2./n) * real(fft(y)*w)
+    return c

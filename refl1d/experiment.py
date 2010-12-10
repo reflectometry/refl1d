@@ -24,6 +24,22 @@ from . import material, profile
 from .fresnel import Fresnel
 from .mystic.parameter import Parameter
 
+
+def plot_sample(sample, instrument=None, roughness_limit=0):
+    """
+    Quick plot of a reflectivity sample and the corresponding reflectivity.
+
+    Use a data probe if the data is available.
+    """
+    if instrument == None:
+        from .probe import NeutronProbe
+        probe = NeutronProbe(T=numpy.arange(0,5,0.05), L=4.75)
+    else:
+        probe = instrument.simulate()
+    experiment = Experiment(sample=sample, probe=probe,
+                            roughness_limit=roughness_limit)
+    experiment.plot()
+
 class ExperimentBase(object):
     def format_parameters(self):
         import mystic.parameter

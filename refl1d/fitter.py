@@ -76,7 +76,7 @@ class DEFit(FitBase):
 
 class BFGSFit(FitBase):
     def solve(self, steps=2000, **kw):
-        from quasinewton import quasinewton
+        from quasinewton import quasinewton, STATUS
         self._update = MonitorRunner(problem=self.problem,
                                      monitors=kw.pop('monitors', None))
         result = quasinewton(self.problem,
@@ -84,6 +84,8 @@ class BFGSFit(FitBase):
                              monitor = self._monitor,
                              itnlimit = steps,
                              )
+        code = result['status']
+        print "%d: %s" % (code, STATUS[code])
         return result['x']
     def _monitor(self, step, x, fx):
         self._update(step=step, point=x, value=fx)

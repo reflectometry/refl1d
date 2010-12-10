@@ -5,12 +5,12 @@ from numpy import *
 from periodictable import elements, formula
 from refl1d.mystic import Parameter
 from .version import __version__
-from .experiment import Experiment
+from .experiment import Experiment, plot_sample
 from .material import SLD, Material, Compound, Mixture
 from .model import Slab, Stack
 from .polymer import PolymerBrush, VolumeProfile, layer_thickness
 from .freeform import Freeform
-from .cheby import FreeformCheby, ChebyVF
+from .cheby import FreeformCheby, ChebyVF, cheby_approx, cheby_points
 from .interface import Erf
 from .probe import Probe, ProbeSet, NeutronProbe, XrayProbe
 from .fitter import preview, fit, DEFit, SnobFit, mesh, FitProblem, MultiFitProblem

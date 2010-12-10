@@ -186,10 +186,12 @@ class VolumeProfile(Layer):
 
     """
     # TODO: test that thickness(z) matches the thickness of the layer
-    def __init__(self, thickness=0, interface=0,
+    def __init__(self, thickness=0, interface=0, name="VolumeProfile",
                  material=None, solvent=None, profile=None, **kw):
+        if interface != 0: raise NotImplementedError("interface not yet supported")
         if profile is None or material is None or solvent is None:
             raise TypeError("Need polymer, solvent and profile")
+        self.name = name
         self.thickness = Parameter.default(thickness, name="solvent thickness")
         self.interface = Parameter.default(interface, name="solvent interface")
         self.profile = profile

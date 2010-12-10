@@ -14,6 +14,7 @@ from refl1d.stajconvert import load_mlayer
 from .fitter import DEFit, AmoebaFit, SnobFit, BFGSFit, FitProblem
 from . import util
 from .mystic import parameter
+from .probe import Probe
 
 # ==== Fitters ====
 
@@ -442,7 +443,6 @@ def main():
         mapper = SerialMapper
 
     # Which format to view the plots
-    from refl1d import Probe
     Probe.view = opts.plot
 
 

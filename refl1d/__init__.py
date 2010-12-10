@@ -56,6 +56,7 @@ the repeats is the same as the interface between the repeats and the cap.
 The cap interface can be set explicitly.  See :class:`model.Repeat` for
 details.
 """
+_ = """
 import sys
 from periodictable import elements
 from refl1d.mystic import Parameter
@@ -65,7 +66,7 @@ from .material import SLD, Material, Compound, Mixture
 from .model import Slab, Stack
 from .polymer import PolymerBrush, VolumeProfile, layer_thickness
 from .freeform import Freeform
-from .cheby import FreeformCheby, ChebyVF
+from .cheby import FreeformCheby, ChebyVF, cheby_approx
 from .interface import Erf
 from .probe import Probe, ProbeSet, NeutronProbe, XrayProbe
 from .fitter import preview, fit, DEFit, SnobFit, mesh, FitProblem, MultiFitProblem
@@ -84,18 +85,5 @@ from . import ncnrdata, snsdata
 # both of them create elements.
 # Python doesn't allow "from .module import *"
 from refl1d.materialdb import *
+"""
 
-
-def plot_sample(sample, instrument=None, roughness_limit=0):
-    """
-    Quick plot of a reflectivity sample and the corresponding reflectivity.
-
-    Use a data probe if the data is available.
-    """
-    if instrument == None:
-        import numpy
-        T = numpy.arange(0, 5, 0.05)
-        probe = NeutronProbe(T=T, L=4.75)
-    experiment = Experiment(sample=sample, probe=probe,
-                            roughness_limit=roughness_limit)
-    experiment.plot()
