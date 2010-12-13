@@ -89,8 +89,12 @@ class Layer(object): # Abstract base class
         return self.__mul__(other)
     def __call__(self, thickness=None, interface=None):
         c = copy(self)
-        if thickness != None: c.thickness = Par.default(thickness)
-        if interface != None: c.interface = Par.default(interface)
+        if thickness != None: 
+            c.thickness = Par.default(thickness, limits=(0,inf),
+                                      name=self.name+" thickness")
+        if interface != None: 
+            c.interface = Par.default(interface, limits=(0,inf),
+                                      name=self.name+" interface")
         return c
 
 def _parinit(p, v):

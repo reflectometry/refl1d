@@ -9,7 +9,7 @@ from .experiment import Experiment, plot_sample
 from .material import SLD, Material, Compound, Mixture
 from .model import Slab, Stack
 from .polymer import PolymerBrush, VolumeProfile, layer_thickness
-from .freeform import Freeform
+from .mono import FreeLayer, FreeInterface
 from .cheby import FreeformCheby, ChebyVF, cheby_approx, cheby_points
 from .interface import Erf
 from .probe import Probe, ProbeSet, NeutronProbe, XrayProbe

@@ -66,7 +66,9 @@ class DreamProxy(object):
         self.state = sampler.sample()
         self.state.title = self.dream_model.problem.name
 
-        return self.state.best()[0]
+        best = self.state.best()[0]
+        self.dream_model.problem.setp(best)
+        return best
 
     def save(self, output_path):
         self.state.save(output_path)

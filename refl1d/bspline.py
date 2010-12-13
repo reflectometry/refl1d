@@ -172,6 +172,7 @@ def pbs_control(x, y, clamp=True):
     return _find_control(x, clamp=clamp), _find_control(y, clamp=clamp)
 
 def _find_control(v, clamp=True):
+    raise NotImplementedError("B-spline interpolation doesn't work yet")
     from scipy.linalg import solve_banded
     N = len(v)
     udiag = numpy.hstack([0, 0, 0, [1/6]*(N-3), 0.25, 0.3])
@@ -330,18 +331,19 @@ def test():
 def demo():
     from pylab import hold, linspace, plot, show
     hold(True)
-    x = linspace(0,1,7)
+    #y = [9,6,1,3,8,4,2]
+    #y = [9,11,13,3,-2,0,2]
+    y = [9,11,2,3,8,0,2]
+    #y = [9,9,1,3,8,2,2]
+    xeq = linspace(0,1,len(y))
+    x = xeq+0
     #x[1],x[-2] = x[0],x[-1]
     #x[1],x[-2] = x[2],x[-3]
     #x[1],x[2] = x[2],x[1]
     #x[1],x[-2] = x[2]-0.001,x[-2]+0.001
     #x[1],x[-2] = x[1]-x[1]/2,x[-1]-x[1]/2
-    #y = [9,6,1,3,8,4,2]
-    #y = [9,11,13,3,-2,0,2]
-    y = [9,11,2,3,8,0,2]
-    #y = [9,9,1,3,8,2,2]
-    t = linspace(0,1,400)
-    plot(linspace(x[0],x[-1],len(x)),y,':oy')
+    t = linspace(x[0],x[-1],400)
+    plot(xeq,y,':oy')
     plot(t,bspline(y,t,clamp=False),'-.y') # bspline
     plot(t,bspline(y,t,clamp=True),'-y') # bspline
 
@@ -358,10 +360,11 @@ def demo_interp():
     from pylab import hold, linspace, plot, show
     hold(True)
     xeq = linspace(0,1,7)
+    x = xeq+0
     y = [9,11,2,3,8,0,2]
     t = linspace(0,1,400)
     yc = bspline_control(y,clamp=True)
-    xc = linspace(0,1,9)
+    xc = linspace(x[0],x[-1],9)
     plot(xc,yc,':oy',xeq,y,'xg')
     knot = numpy.hstack((0, numpy.linspace(0,1,len(y)), 1))
     # fy = _bspline3(knot,yc,t)
@@ -371,5 +374,6 @@ def demo_interp():
 
 if __name__ == "__main__":
     #test()
-    demo_interp()
+    demo()
+    #demo_interp()
     #speed_check()
