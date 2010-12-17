@@ -37,16 +37,20 @@ Magnetism support is split into two parts: describing the layers
 and anchoring them to the structure.
 """
 
+from .model import Layer
+from .mystic.parameter import Parameter
+
 class Magnetic(Layer):
     """
     Region of constant magnetism, possibly spanning multiple structural
     layers.
     """
+    magnetic = True
     def __init__(self, stack, rhoM=0, thetaM=270,
                  dead_below=0, dead_above=0):
         self.stack = stack
         self.rhoM = Parameter.default(rhoM, name=stack.name+" magnetic SLD")
-        self.thetaM = Parameter.default(interface, limits=(0,360),
+        self.thetaM = Parameter.default(thetaM, limits=(0,360),
                                         name=stack.name+" magnetic angle")
         self.dead_below = Parameter.default(dead_below,
                                             name=stack.name+" nonmagnetic below")
@@ -94,6 +98,7 @@ class MagneticTwist(Layer):
     Region of constant magnetism, possibly spanning multiple structural
     layers.
     """
+    magnetic = True
     def __init__(self, stack, rhoM=0):
         self.stack = stack
         self.rhoM = Parameter.default(rhoM, name=stack.name+" rhoM")
@@ -107,7 +112,7 @@ class MagneticTwist(Layer):
         mark = len(slabs)
         z = slabs.thickness()
         self.stack.render(probe, slabs)
-        slabs.magnetic(start, w=[slabs.thickness() - z],
+        slabs.magnetic(mark, w=[slabs.thickness() - z],
                        rhoM=[self.rhoM.value], thetaM=[self.thetaM.value])
 
     def __str__(self):

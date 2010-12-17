@@ -357,7 +357,7 @@ FITTERS = dict(dream=None,
                de=DEFit, newton=BFGSFit, amoeba=AmoebaFit, snobfit=SnobFit)
 class FitOpts(ParseOpts):
     MINARGS = 1
-    FLAGS = set(("preview","check","profile",
+    FLAGS = set(("preview","check","profile","edit",
                  "worker","batch","overwrite","parallel"))
     VALUES = set(("plot","store","fit",
                   "pop","steps","burn"))
@@ -448,7 +448,10 @@ def main():
     Probe.view = opts.plot
 
 
-    if opts.profile:
+    if opts.edit:
+        from .profileview.demo import demo
+        demo(problem)
+    elif opts.profile:
         run_profile(problem)
     elif opts.worker:
         mapper.start_worker(problem)

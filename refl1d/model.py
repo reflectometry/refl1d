@@ -53,11 +53,19 @@ class Layer(object): # Abstract base class
     """
     thickness = None
     interface = None
+    magnetic = False
     def constraints(self):
         """
         Constraints
         """
-        return self.thickness >= 0, self.roughness >= 0
+        return self.thickness >= 0, self.interface >= 0
+    def find(self, z):
+        """
+        Find the layer at depth z.
+        
+        Returns layer, start, end
+        """
+        return self, 0, self.thickness.value
     def parameters(self):
         """
         Returns a list of parameters used in the layer.
@@ -66,6 +74,13 @@ class Layer(object): # Abstract base class
         """
         Use the probe to render the layer into a microslab representation.
         """
+
+    def __str__(self):
+        """
+        Print shows the layer name
+        """
+        return getattr(self,'name',repr(self))
+
 
     # Define a little algebra for composing samples
     # Layers can be stacked, repeated, or have length/roughness set
@@ -133,6 +148,28 @@ class Stack(Layer):
             self.add(base)
         self._thickness = Function(self._calc_thickness,name="sample thickness")
 
+    @property
+    def magnetic(self):
+        return any(p.magnetic for p in self._layers)
+    def find(self, z):
+        """
+        Find the layer at depth z.
+        
+        Returns layer, start, end
+        """
+        offset = 0
+        for L in self._layers:
+            dz = L.thickness.value
+            if z < offset + dz:
+                break
+            offset += dz
+        else:
+            L = self._layers[-1]
+            offset -= dz
+
+        L, start, end = L.find(z-offset)
+        return L, start+offset, end+offset
+
     def add(self, other):
         if isinstance(other,Stack):
             self._layers.extend(other._layers)
@@ -150,7 +187,8 @@ class Stack(Layer):
     def __len__(self):
         return len(self._layers)
     def __str__(self):
-        return " | ".join(str(L) for L in self._layers)
+        return " | ".join("%s(%.3g)"%(L,L.thickness.value) 
+                          for L in self._layers)
     def __repr__(self):
         return "Stack("+", ".join(repr(L) for L in self._layers)+")"
     def parameters(self):
@@ -265,6 +303,25 @@ class Repeat(Layer):
         self.stack = stack
         self.interface = interface
         self._thickness = Function(self._calc_thickness,name="sample thickness")
+    @property
+    def magnetic(self):
+        return self.stack.magnetic
+    def find(self, z):
+        """
+        Find the layer at depth z.
+        
+        Returns layer, start, end
+        """
+        n = self.repeat.value
+        unit = self.thickness.value
+        if z < n*unit:
+            offset = int(z/unit)*unit
+            L,start,end = self.stack.find(z-offset)
+            return L,start+offset,end+offset
+        else:
+            offset = n*unit
+            L,start,end = self.stack.find(unit)
+            return L,start+offset,end+offset
     def parameters(self):
         if self.interface is not None:
             return dict(stack=self.stack.parameters,
@@ -344,7 +401,7 @@ class Slab(Layer):
         slabs.extend(rho=[rho], irho=[irho], w=[w], sigma=[sigma])
     def __str__(self):
         if self.thickness.value > 0:
-            return "%s(%.3g)"%(str(self.material),self.thickness.value)
+            return str(self.material)
         else:
             return str(self.material)
     def __repr__(self):
