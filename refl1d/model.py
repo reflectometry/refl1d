@@ -37,7 +37,7 @@ import periodictable
 import periodictable.xsf as xsf
 import periodictable.nsf as nsf
 
-from mystic import Parameter as Par, IntegerParameter as IntPar
+from mystic.parameter import Parameter as Par, IntegerParameter as IntPar, Function
 
 from .interface import Erf
 from . import material
@@ -131,6 +131,7 @@ class Stack(Layer):
         self._layers = []
         if base is not None:
             self.add(base)
+        self._thickness = Function(self._calc_thickness,name="sample thickness")
 
     def add(self, other):
         if isinstance(other,Stack):
@@ -153,14 +154,18 @@ class Stack(Layer):
     def __repr__(self):
         return "Stack("+", ".join(repr(L) for L in self._layers)+")"
     def parameters(self):
-        return [L.parameters() for L in self._layers]
-    def _thickness(self):
+        layers = [L.parameters() for L in self._layers]
+        attrs = dict(thickness=self.thickness)
+        return (attrs,layers)
+        #return [L.parameters() for L in self._layers]
+    def _calc_thickness(self):
         """returns the total thickness of the stack"""
         t = 0
         for L in self._layers:
-            t += L.thickness
-        return t*self.repeat
-    thickness = property(_thickness)
+            t += L.thickness.value
+        return t
+    @property
+    def thickness(self): return self._thickness
     def render(self, probe, slabs):
         for layer in self._layers:
             layer.render(probe, slabs)
@@ -259,6 +264,7 @@ class Repeat(Layer):
                              name="repeats")
         self.stack = stack
         self.interface = interface
+        self._thickness = Function(self._calc_thickness,name="sample thickness")
     def parameters(self):
         if self.interface is not None:
             return dict(stack=self.stack.parameters,
@@ -267,6 +273,10 @@ class Repeat(Layer):
         else:
             return dict(stack=self.stack.parameters,
                         repeat=self.repeat)
+    def _calc_thickness(self):
+        return self.stack.thickness.value*self.repeat.value
+    @property # Read only thickness parameter
+    def thickness(self): return self._thickness
     def render(self, probe, slabs):
         nr = self.repeat.value
         if nr <= 0: return

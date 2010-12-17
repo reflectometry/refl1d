@@ -7,8 +7,8 @@
 
 from __future__ import division, with_statement
 from numpy import (diff, hstack, sqrt, searchsorted, asarray, cumsum,
-                   inf)
-from mystic import Parameter as Par
+                   inf, nonzero, linspace)
+from mystic.parameter import Parameter as Par, Function as ParFunction
 from . import numpyerrors
 from .model import Layer
 
@@ -138,6 +138,11 @@ class FreeInterfaceW(Layer):
                      sigma=[interface],
                      w=[thickness-Pz[ridx]])
 
+def inflections(dx,dy):
+    x = hstack( (0, cumsum(dx)) )
+    y = hstack( (0, cumsum(dy)) )
+    return count_inflections(x,y)
+
 
 class FreeInterface(Layer):
     """
@@ -156,6 +161,7 @@ class FreeInterface(Layer):
         self.interface = Par.default(interface, limits=(0,inf),
                                      name=name+" interface")
         
+        
         # Choose reasonable defaults if not given
         if dp is None and dz is None:
             dp = [1]*5
@@ -171,14 +177,18 @@ class FreeInterface(Layer):
         self.dz = [Par.default(p,name=name+" dz[%d]"%i,limits=(0,inf))
                   for i,p in enumerate(dz)]
         self.dp = [Par.default(p,name=name+" dp[%d]"%i,limits=(0,inf))
-                   for i,p in enumerate(dp)]        
+                   for i,p in enumerate(dp)]
+        self.inflections = ParFunction(inflections, dx=self.dz, dy=self.dp,
+                                       name=name+" inflections")
+
     def parameters(self):
         return dict(dz=self.dz,
                     dp=self.dp,
                     below=self.below.parameters(),
                     above=self.above.parameters(),
                     thickness=self.thickness,
-                    interface=self.interface)
+                    interface=self.interface,
+                    inflections=self.inflections)
     def render(self, probe, slabs):
         thickness = self.thickness.value
         interface = self.interface.value
@@ -203,6 +213,32 @@ class FreeInterface(Layer):
                      sigma=[interface],
                      w=[thickness-Pz[ridx]])
 
+@numpyerrors.ignored
+def count_inflections(x,y):
+    """
+    Count the number of inflection points in the spline curve
+    """
+    m = (y[2:]-y[:-2])/(x[2:]-x[:-2])
+    b = y[2:] - m*x[2:]
+    delta = y[1:-1] - (m*x[1:-1] + b)
+    delta = delta[nonzero(delta)] # ignore points on the line
+    sign_change = (delta[1:]*delta[:-1]) < 0
+    return sum(sign_change)
+
+def plot_inflection(x,y):
+    m = (y[2:]-y[:-2])/(x[2:]-x[:-2])
+    b = y[2:] - m*x[2:]
+    delta = y[1:-1] - (m*x[1:-1] + b)
+    t = linspace(x[0],x[-1],400)
+    import pylab
+    ax1=pylab.subplot(211)
+    pylab.plot(t,monospline(x,y,t),'-b',x,y,'ob')
+    pylab.subplot(212, sharex=ax1)
+    delta_x = x[1:-1]
+    pylab.stem(delta_x,delta)
+    pylab.plot(delta_x[delta<0],delta[delta<0],'og')
+    pylab.axis([x[0],x[-1],min(min(delta),0),max(max(delta),0)])
+    
 
 @numpyerrors.ignored
 def monospline(x, y, xt):

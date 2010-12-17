@@ -157,6 +157,9 @@ class Experiment(ExperimentBase):
         return dict(sample=self.sample.parameters(),
                     probe=self.probe.parameters())
 
+    def numpoints(self):
+        return len(self.probe.R)
+
     def _render_slabs(self):
         """
         Build a slab description of the model from the individual layers.
@@ -325,6 +328,14 @@ class Experiment(ExperimentBase):
         pylab.legend(['rho','irho'])
         pylab.xlabel('depth (A)')
         pylab.ylabel('SLD (10^6 inv A**2)')
+
+    def resynth_data(self):
+        """Resynthesize data with noise from the uncertainty estimates."""
+        self.probe.resynth_data()
+    def restore_data(self):
+        """Restore original data after resynthesis."""
+        self.probe.restore_data()
+
 
 class CompositeExperiment(ExperimentBase):
     """

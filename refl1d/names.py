@@ -3,7 +3,7 @@ import sys
 from numpy import *
 
 from periodictable import elements, formula
-from refl1d.mystic import Parameter
+from .mystic.parameter import Parameter
 from .version import __version__
 from .experiment import Experiment, plot_sample
 from .material import SLD, Material, Compound, Mixture

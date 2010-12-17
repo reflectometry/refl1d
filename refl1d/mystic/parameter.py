@@ -59,15 +59,18 @@ class BaseParameter(object):
         if self.fittable: self.fixed = False
         self.bounds = mbounds.Bounded(*mbounds.pm(self.value, *args))
         return self
-    def dev(self, std=1):
+    def dev(self, sigma=1, mu=None):
         """
         Allow the parameter to vary according to a normal distribution, with
-        deviations added to the overall cost function.
+        deviations added to the overall cost function:
 
-        dev(sigma) -> Normal(mean=value,std=sigma)
+            dev(sigma, mu) -> Normal(mean=mu,std=sigma)
+
+        If mu is None, then it defaults to the current parameter value.
         """
         if self.fittable: self.fixed = False
-        self.bounds = mbounds.Normal(self.value,std)
+        if mu is None: mu = self.value
+        self.bounds = mbounds.Normal(mu,sigma)
         return self
     def range(self, low, high):
         """
@@ -85,9 +88,9 @@ class BaseParameter(object):
     def __ge__(self, other): return ConstraintGE(self, other)
     def __le__(self, other): return ConstraintLE(self, other)
     def __lt__(self, other): return ConstraintLT(self, other)
-    ## Don't deal with equality constraints yet
     #def __eq__(self, other): return ConstraintEQ(self, other)
     #def __ne__(self, other): return ConstraintNE(self, other)
+
     def __add__(self, other): return OperatorAdd(self,other)
     def __sub__(self, other): return OperatorSub(self,other)
     def __mul__(self, other): return OperatorMul(self,other)
@@ -102,6 +105,33 @@ class BaseParameter(object):
     def __neg__(self): return _mul(self,-1)
     def __pos__(self): return self
     def __float__(self): return float(self.value)
+
+
+    def nllf(self):
+        """
+        Return the negative log likelihood of seeing the current parameter value.
+        """
+        return self.bounds.nllf(self.value)
+
+    def residual(self):
+        """
+        Return the negative log likelihood of seeing the current parameter value.
+        """
+        return self.bounds.residual(self.value)
+
+    def valid(self):
+        return not numpy.isinf(self.nllf())
+
+    def format(self):
+        return "%s=%g in %s"%(self,self.value,self.bounds)
+
+    def __str__(self):
+        name = self.name if self.name != None else '?'
+        return name
+
+    def __repr__(self):
+        return "Parameter(%s)"%self
+
 
 class Parameter(BaseParameter):
     """
@@ -165,42 +195,17 @@ class Parameter(BaseParameter):
         self.fixed = fixed
         self.name = name
 
-    def feasible(self):
-        """
-        Value is within the limits defined by the model
-        """
-        self.limits[0] <= self.value <= self.limits[1]
-
     def rand(self, rng=mbounds.RNG):
         """
         Set a random value for the parameter.
         """
         self.value = self.bounds.rand(rng)
 
-    def nllf(self):
+    def feasible(self):
         """
-        Return the negative log likelihood of seeing the current parameter value.
+        Value is within the limits defined by the model
         """
-        return self.bounds.nllf(self.value)
-
-    def residual(self):
-        """
-        Return the negative log likelihood of seeing the current parameter value.
-        """
-        return self.bounds.residual(self.value)
-
-    def valid(self):
-        return not numpy.isinf(self.nllf())
-
-    def format(self):
-        return "%s=%g in %s"%(self,self.value,self.bounds)
-
-    def __str__(self):
-        name = self.name if self.name != None else '?'
-        return name
-
-    def __repr__(self):
-        return "Parameter(%s)"%self
+        return self.limits[0] <= self.value <= self.limits[1]
 
 class Reference(Parameter):
     """
@@ -341,6 +346,7 @@ class Function(BaseParameter):
     """
     __slots__ = ['op','args','kw']
     def __init__(self, op, *args, **kw):
+        self.name = kw.pop('name',None)
         self.op,self.args,self.kw = op,args,kw
     def parameters(self):
         # Figure out which arguments to the function are parameters
@@ -357,9 +363,13 @@ class Function(BaseParameter):
         return self.op(*substitute(self.args), **substitute(self.kw))
     value = property(_value)
     def __str__(self):
-        args = [str(v) for v in self.args]
-        kw = [str(k)+"="+str(v) for k,v in self.kw.items()]
-        return self.op.__name__ + "(" + ", ".join(args+kw) + ")"
+        if self.name is not None:
+            name = self.name
+        else:
+            args = [str(v) for v in self.args]
+            kw = [str(k)+"="+str(v) for k,v in self.kw.items()]
+            name = self.op.__name__ + "(" + ", ".join(args+kw) + ")"
+        return "%s:%g"%(name,self.value)
 from functools import wraps
 def function(op):
     """
@@ -421,6 +431,9 @@ def format(p, indent=0):
             else:
                 res.append(label+' = '+s+'\n')
         return "".join(res)
+    elif isinstance(p, tuple) and p != ():
+        return "".join(format(v, indent) for v in p)
+        
     elif isinstance(p, Parameter):
         if p.fixed:
             bounds = ""
@@ -457,16 +470,22 @@ def unique(s):
     """
     # Walk structures such as dicts and lists
     pars = flatten(s)
+    #print "====== flattened"
+    #print "\n".join("%s:%s"%(id(p),p) for p in pars)
     # Also walk parameter expressions
     pars = pars + flatten([p.parameters() for p in pars])
+    #print "====== extended"
+    #print "\n".join("%s:%s"%(id(p),p) for p in pars)
 
     # TODO: implement n log n rather than n^2 uniqueness algorithm
-    # Should be able to do it with a stable sort of ids, and keeping
-    # the first id of each run.
+    # problem is that the sorting has to be unique across a pickle.
     result = []
     for p in pars:
-        if p not in result:
+        if not any(p is q for q in result):
             result.append(p)
+            
+    #print "====== unique"
+    #print "\n".join("%s:%s"%(id(p),p) for p in result)
     # Return the complete set of parameters
     return result
 

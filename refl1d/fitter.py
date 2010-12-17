@@ -4,6 +4,7 @@ Adaptors for fitting.
 parameters associated with the model.  Within fit problems, self.parameters
 is a list of fitted parameters only.
 """
+from __future__ import division
 import sys
 from copy import deepcopy
 from numpy import inf, nan, isnan
@@ -20,7 +21,7 @@ class ConsoleMonitor(monitor.TimedUpdate):
         self.problem = problem
     # TimedUpdate profiles
     def show_progress(self, history):
-        print "step", history.step[0], "chisq", history.value[0]
+        print "step", history.step[0], "nllf", history.value[0]
     def show_improvement(self, history):
         #print "step",history.step[0],"chisq",history.value[0]
         self.problem.setp(history.point[0])
@@ -345,7 +346,56 @@ def _make_problem(models=[], weights=None):
     return problem
 
 
-class FitProblem:
+# Abstract base class
+class Fitness(object):
+    def parameters(self):
+        """
+        Return the set of parameters in the model.
+        """
+        raise NotImplementedError
+    def update(self):
+        """
+        Parameters have been updated; model needs to be re-evaluated.
+        """
+        raise NotImplementedError
+    def numpoints(self):
+        """
+        Return the number of data points.
+        """
+        raise NotImplementedError
+    def nllf(self):
+        """
+        Return the negative log likelihood value of the current parameter set.
+        """
+        raise NotImplementedError
+    def resynth_data(self):
+        """
+        Generate fake data based on uncertainties in the real data.
+        """
+        raise NotImplementedError
+    def restore_data(self):
+        """
+        Restore the original data in the model.
+        """
+        raise NotImplementedError
+    def residiuals(self):
+        """
+        Return residuals for current theory minus data.
+        """
+        raise NotImplementedError
+    def save(self, basename):
+        """
+        Save the model to a file based on basename+extension
+        """
+        pass
+
+    def plot(self):
+        """
+        Plot the model to the current figure.
+        """
+        pass
+
+class FitProblem(object):
     def __init__(self, fitness):
         self.fitness = fitness
         self._prepare()
@@ -358,7 +408,7 @@ class FitProblem:
         """
         Number of data points associated with the model.
         """
-        return len(self.fitness.probe.Q)
+        return self.fitness.numpoints()
     def model_update(self):
         """
         Update the model according to the changed parameters.
@@ -371,10 +421,10 @@ class FitProblem:
         return self.fitness.nllf()
     def resynth_data(self):
         """Resynthesize data with noise from the uncertainty estimates."""
-        self.fitness.probe.resynth_data()
+        self.fitness.resynth_data()
     def restore_data(self):
         """Restore original data after resynthesis."""
-        self.fitness.probe.restore_data()
+        self.fitness.restore_data()
     def _prepare(self):
         """
         Prepare for the fit.
@@ -425,7 +475,10 @@ class FitProblem:
         """
         Returns negative log likelihood of seeing parameters p.
         """
-        return numpy.sum(p.nllf() for p in self.bounded)
+        s = numpy.sum(p.nllf() for p in self.bounded)
+        #print "\n".join("%s %g"%(p,p.nllf()) for p in self.bounded)
+        return s
+
     def parameter_residuals(self):
         """
         Returns negative log likelihood of seeing parameters p.
@@ -449,7 +502,7 @@ class FitProblem:
         """
         #model_dof = self.model_points() - len(self.parameters)
         return numpy.sum(self.residuals()**2) / self.dof
-    def nllf(self, pvec):
+    def nllf(self, pvec=None):
         """
         Compute the cost function for a new parameter set p.
 
@@ -459,31 +512,32 @@ class FitProblem:
         likelihoods are scaled by 1/max(P) so that normalization constants
         can be ignored.
         """
-        if self.valid(pvec):
-            self.setp(pvec)
-            try:
-                if isnan(self.parameter_nllf()):
-                    print "Parameter nllf is wrong"
-                    for p in self.bounded:
-                        print p, p.nllf()
-                cost = self.model_nllf() + self.parameter_nllf()
-            except KeyboardInterrupt:
-                raise
-            except:
-                #TODO: make sure errors get back to the user
-                import traceback
-                traceback.print_exc()
-                parameter.summarize(self.parameters)
+        if pvec is not None:
+            if self.valid(pvec):
+                self.setp(pvec)
+            else:
                 return inf
-            if isnan(cost):
-                #TODO: make sure errors get back to the user
-                print "point evaluates to NaN"
-                parameter.summarize(self.parameters)
-                return inf
-            # Make cost look like
-            return cost
-        else:
+            
+        try:
+            if isnan(self.parameter_nllf()):
+                print "Parameter nllf is wrong"
+                for p in self.bounded:
+                    print p, p.nllf()
+            cost = self.model_nllf() + self.parameter_nllf()
+        except KeyboardInterrupt:
+            raise
+        except:
+            #TODO: make sure errors get back to the user
+            import traceback
+            traceback.print_exc()
+            parameter.summarize(self.parameters)
             return inf
+        if isnan(cost):
+            #TODO: make sure errors get back to the user
+            print "point evaluates to NaN"
+            parameter.summarize(self.parameters)
+            return inf
+        return cost
 
     def __call__(self, pvec):
         """
@@ -494,11 +548,12 @@ class FitProblem:
         scale factors will not affect the value of the minimum, though some
         care will be required when interpreting the uncertainty.
         """
-        return 2*self.nllf(pvec)/self.dof
+        return 0.5*self.nllf(pvec)/self.dof
 
     def show(self):
         print parameter.format(self.model_parameters())
-        print "[chisq=%g]" % self.chisq()
+        print "[chisq=%g, nllf=%g]" % (self.chisq(), self.nllf()/self.dof)
+        parameter.summarize(self.parameters)
 
     def save(self, basename):
         self.fitness.save(basename)
@@ -561,7 +616,7 @@ class MultiFitProblem(FitProblem):
         for i, f in enumerate(self.fits):
             print "-- Model %d" % i
             f.show()
-        print "[overall chisq=%g]" % self.chisq()
+        print "[overall chisq=%g, nllf=%g]" % (self.chisq(), self.nllf()/self.dof)
 
     def plot(self,fignum=1,figfile=None):
         import pylab

@@ -178,7 +178,7 @@ def init_bounds(v):
     else:
         return Bounded(lo,hi)
 
-class Bounds:
+class Bounds(object):
     """
     Bounds abstract base class.
 
@@ -258,10 +258,10 @@ class Bounds:
     def __contains__(self, v):
         return self.limits[0] <= v <= self.limits[1]
     def __str__(self):
-        limits=[num_format(v) for v in self.limits]
-        return "(%s,%s)"%self.limits
+        limits=tuple(num_format(v) for v in self.limits)
+        return "(%s,%s)"%limits
 
-#CRUFT: python 2.6 formats indefinite numbers properly on windows?
+#CRUFT: python 2.5 doesn't format indefinite numbers properly on windows
 def num_format(v):
     """
     Number formating which supports inf/nan on windows.
@@ -406,6 +406,11 @@ class Bounded(Bounds):
 
     [lo,hi] <-> [0,1] scale is simple linear
     [lo,hi] <-> (-inf,inf) scale uses exponential expansion
+    
+    While technically the probability of seeing any value within the
+    range is 1/range, for consistency with the semi-infinite ranges
+    and for a more natural mapping between nllf and chisq, we instead
+    set the probability to 0.  This choice will not affect the fits.
     """
     def __init__(self, lo, hi):
         self.limits = (lo,hi)
@@ -415,7 +420,11 @@ class Bounded(Bounds):
         return RNG.uniform(lo, hi, size=n)
     def nllf(self, value):
         lo,hi = self.limits
-        return self._nllf_scale if lo<=value<=hi else inf
+        return 0 if lo<=value<=hi else inf
+        #return self._nllf_scale if lo<=value<=hi else inf
+    def residual(self, value):
+        lo,hi = self.limits
+        return -4 if lo>value else (4 if hi<value else 0)
     def get01(self, x):
         lo,hi = self.limits
         return float(x-lo)/(hi-lo) if hi-lo>0 else 0
@@ -507,8 +516,7 @@ class SoftBounded(Bounds):
 
     Note that for bounds constrained optimizers which force the value
     into the range [0,1] for each parameter we don't need to use soft
-    constraints, and this acts just like the rectangular distribution,
-    but with clipping.
+    constraints, and this acts just like the rectangular distribution.
     """
     def __init__(self, lo, hi, std=1):
         self._lo,self._hi,self._std=lo,hi,std
@@ -521,7 +529,7 @@ class SoftBounded(Bounds):
         # which is just hi-lo + sqrt(2*pi*std**2).
         if value < self._lo:
             z = self._lo-value
-        elif value > self.hi:
+        elif value > self._hi:
             z = value-self._hi
         else:
             z = 0
@@ -529,7 +537,7 @@ class SoftBounded(Bounds):
     def residual(self, value):
         if value < self._lo:
             z = self._lo-value
-        elif value > self.hi:
+        elif value > self._hi:
             z = value-self._hi
         else:
             z = 0
