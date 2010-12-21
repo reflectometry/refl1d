@@ -206,7 +206,6 @@ class ProfileInteractor(object):
         # May need to walk sample to find the position of the markers
         # when setting the limits.  Alternatively, we could just ask
         # where the markers are.
-
         z = self.hrho.get_xdata()
         rho = self.hrho.get_ydata()
         rhoI = self.hrhoI.get_ydata()

@@ -190,6 +190,7 @@ class FreeInterface(Layer):
                     interface=self.interface,
                     inflections=self.inflections)
     def profile(self, Pz):
+        thickness = self.thickness.value
         z = hstack( (0, cumsum([v.value for v in self.dz])) )
         p = hstack( (0, cumsum([v.value for v in self.dp])) )
         if p[-1] == 0: p[-1] = 1
@@ -204,7 +205,7 @@ class FreeInterface(Layer):
         right_rho,right_irho = self.above.sld(probe)
         Pw,Pz = slabs.microslabs(thickness)
         profile = self.profile(Pz)
-        lidx,ridx = searchsorted(profile,[0.01,0.99])
+        lidx,ridx = searchsorted(profile,[0.001,0.999])
         ridx = min( (ridx, len(profile)-1) )
         Prho  = (1-profile)*left_rho  + profile*right_rho
         Pirho = (1-profile)*left_irho + profile*right_irho

@@ -233,10 +233,10 @@ class FreeInterfaceInteractor(BaseInteractor):
     """
     def __init__(self, profile, layer):
         super(FreeInterfaceInteractor,self).__init__(profile)
-        self.polymer = MaterialInteractor(profile,layer.below,
-                                          range=(0,.3))
-        self.solvent = MaterialInteractor(profile, layer.above,
-                                          range=(0.7,1))
+        self.below = MaterialInteractor(profile,layer.below,
+                                        range=(0,.3))
+        self.above = MaterialInteractor(profile, layer.above,
+                                        range=(0.7,1))
         self.layer = layer
         ax = profile.axes
 
@@ -250,23 +250,22 @@ class FreeInterfaceInteractor(BaseInteractor):
 
         style = dict(marker='o',
                      transform=profile.xcoords,
-                     zorder=5,
+                     zorder=7,
                      pickradius = pick_radius,
                      color = profile_color,
                      alpha = 0.5,
                      markersize = 5,
                      visible=True,
                      )
-        self.markers = [ax.plot([],[], **style)[0]
-                        for _ in layer.dp]
+        self.markers = [ax.plot([],[], **style)[0] for _ in layer.dp[:-1]]
         self.connect_markers(self.markers)
 
     def update_markers(self):
         """
         Draw the widgets in their new positions.
         """
-        self.polymer.update_markers()
-        self.solvent.update_markers()
+        self.below.update_markers()
+        self.above.update_markers()
 
         n = self.profile.layer_num
         left,right = self.profile.boundary[n:n+2]
@@ -277,32 +276,55 @@ class FreeInterfaceInteractor(BaseInteractor):
         self.hprofile.set_xdata(z+left)
         self.hprofile.set_ydata(vf*vf_scale)
 
-        z = cumsum([v.value for v in layer.dz])
-        p = cumsum([v.value for v in layer.dp])
+        z = numpy.cumsum([v.value for v in layer.dz])
+        p = numpy.cumsum([v.value for v in layer.dp])
+        self._zscale = layer.thickness.value/z[-1]
         if p[-1] == 0: p[-1] = 1
-        p *= 1/p[-1]
-        z *= thickness/z[-1]
-        for h,zi,pi in zip(markers,z,p):
-            h.set_data( (zi,), (pi,) )            
-        
-        profile = monospline(z, p, Pz)
-        return profile
+        p *= vf_scale/p[-1]
+        z *= self._zscale
+        z += left
+        for h,zi,pi in zip(self.markers,z[:-1],p[:-1]):
+            h.set_data( (zi,), (pi,) )
+        #self.markers[0].set_data(z,p)
+    
 
+    def clear_markers(self):
+        self.below.clear_markers()
+        self.above.clear_markers()
+        super(FreeInterfaceInteractor,self).clear_markers()
+        self.hprofile.remove()
 
     def drag(self, evt):
         """
         Update the model with the new widget position.
         """
+        n = self.profile.layer_num
+        left,right = self.profile.boundary[n:n+2]
+        dz = self.layer.dz
+    
+        idx = self.markers.index(evt.artist)
+        a = self.markers[idx-1].get_xdata()[0] if idx>0 else left
+        c = self.markers[idx+1].get_xdata()[0] if idx<len(self.markers)-1 else right
+        b = clip(evt.xdata, a+1e-3, c-1e-3)
+        setpar(dz[idx], (b-a)/self._zscale)
+        setpar(dz[idx+1], (c-b)/self._zscale)
+            
 
     def save(self, evt):
         """
         Save the current state of the model represented by the widget.
         """
+        self._save_dz = [p.value for p in self.layer.dz]
+        self._save_dp = [p.value for p in self.layer.dp]
 
-    def restore(self):
+    def restore(self, evt):
         """
         Restore the widget and model to the saved state.
         """
+        for p,v in zip(self.layer.dz, self._save_dz):
+            p.value = v
+        for p,v in zip(self.layer.dp, self._save_dp):
+            p.value = v
 
 # -------------------------------------------------------------------
 class NoInteractor(BaseInteractor):
