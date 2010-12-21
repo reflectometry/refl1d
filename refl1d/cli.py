@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from __future__ import with_statement
 
 import sys
@@ -163,14 +162,14 @@ def load_staj(file):
         if p.value != 0: p.pmp(20)
         #p.fixed = False
 
-    problem = FitProblem(M)
-    problem.file = file
-    problem.title = file
-    problem.name = file
-    problem.options = []
-    return problem
+    job = FitProblem(M)
+    job.file = file
+    job.title = file
+    job.name = file
+    job.options = []
+    return job
 
-def load_problem(args):
+def load_job(args):
     #import refl1d.context
     file, options = args[0], args[1:]
     
@@ -187,61 +186,61 @@ def load_problem(args):
     #exec(compile(open(model_file).read(), model_file, 'exec'), ctx) # 3.0
     sys.argv = argv
     try:
-        problem = ctx["problem"]
+        job = ctx["problem"]
     except AttributeError:
         raise ValueError(file+" does not define 'problem=FitProblem(models)'")
-    problem.file = file
-    problem.options = options
-    return problem
+    job.file = file
+    job.options = options
+    return job
 
 def preview(model):
     model.show()
     model.plot()
     pylab.show()
 
-def remember_best(fitter, problem, best):
-    fitter.save(problem.output_path)
+def remember_best(fitter, job, best):
+    fitter.save(job.output_path)
 
     #try:
-    #    problem.save(problem.output_path, best)
+    #    job.save(job.output_path, best)
     #except:
     #    pass
-    with util.redirect_console(problem.output_path+".out"):
+    with util.redirect_console(job.output_path+".out"):
         fitter.show()
     fitter.show()
-    fitter.plot(problem.output_path)
+    fitter.plot(job.output_path)
 
     # Plot
 
-def make_store(problem, opts):
+def make_store(job, opts):
     # Determine if command line override
     if opts.store != None:
-        problem.store = opts.store
-    problem.output_path = os.path.join(problem.store,problem.name)
+        job.store = opts.store
+    job.output_path = os.path.join(job.store,job.name)
 
     # Check if already exists
-    if not opts.overwrite and os.path.exists(problem.output_path+'.out'):
+    if not opts.overwrite and os.path.exists(job.output_path+'.out'):
         if opts.batch:
-            print >>sys.stderr, problem.output_path+" already exists.  Use --overwrite to replace."
+            print >>sys.stderr, job.output_path+" already exists.  Use --overwrite to replace."
             sys.exit(1)
-        print problem.output_path,"already exists."
+        print job.output_path,"already exists."
         print "Press 'y' to overwrite, or 'n' to abort and restart with --store=newpath"
         ans = raw_input("Overwrite [y/n]? ")
         if ans not in ("y","Y","yes"):
             sys.exit(1)
 
     # Create it and copy model
-    try: os.mkdir(problem.store)
+    try: os.mkdir(job.store)
     except: pass
-    shutil.copy2(problem.file, problem.store)
+    shutil.copy2(job.file, job.store)
 
     # Redirect sys.stdout to capture progress
     if opts.batch:
-        sys.stdout = open(problem.output_path+".mon","w")
+        sys.stdout = open(job.output_path+".mon","w")
 
     # Show command line arguments and initial model
     print "#"," ".join(sys.argv)
-    problem.show()
+    job.show()
 
 
 def run_profile(model):
@@ -257,8 +256,8 @@ class SerialMapper:
     def start_worker(model):
         pass
     @staticmethod
-    def start_mapper(problem, modelargs):
-        return lambda points: map(problem.nllf, points)
+    def start_mapper(job, modelargs):
+        return lambda points: map(job.nllf, points)
     @staticmethod
     def stop_mapper(mapper):
         pass
@@ -266,7 +265,7 @@ class SerialMapper:
 class AMQPMapper:
 
     @staticmethod
-    def start_worker(problem):
+    def start_worker(job):
         #sys.stderr = open("dream-%d.log"%os.getpid(),"w")
         #print >>sys.stderr,"worker is starting"; sys.stdout.flush()
         from amqp_map.config import SERVICE_HOST
@@ -274,11 +273,11 @@ class AMQPMapper:
         server = connect(SERVICE_HOST)
         #os.system("echo 'serving' > /tmp/map.%d"%(os.getpid()))
         #print "worker is serving"; sys.stdout.flush()
-        serve(server, "dream", problem.nllf)
+        serve(server, "dream", job.nllf)
         #print >>sys.stderr,"worker ended"; sys.stdout.flush()
 
     @staticmethod
-    def start_mapper(problem, modelargs):
+    def start_mapper(job, modelargs):
         import multiprocessing
         from amqp_map.config import SERVICE_HOST
         from amqp_map.core import connect, Mapper
@@ -433,12 +432,12 @@ def main():
     opts.pop = int(opts.pop)
     opts.burn = int(opts.burn)
 
-    problem = load_problem(opts.args)
+    job = load_job(opts.args)
     if opts.fit == 'dream':
-        fitter = DreamProxy(problem=problem, opts=opts)
+        fitter = DreamProxy(problem=job, opts=opts)
     else:
         fitter = FitProxy(FITTERS[opts.fit],
-                          problem=problem, opts=opts)
+                          problem=job, opts=opts)
     if opts.parallel or opts.worker:
         mapper = AMQPMapper
     else:
@@ -450,19 +449,19 @@ def main():
 
     if opts.edit:
         from .profileview.demo import demo
-        demo(problem)
+        demo(job)
     elif opts.profile:
-        run_profile(problem)
+        run_profile(job)
     elif opts.worker:
-        mapper.start_worker(problem)
+        mapper.start_worker(job)
     elif opts.check:
-        problem.show()
+        job.show()
     elif opts.preview:
-        preview(problem)
+        preview(job)
     else:
-        make_store(problem,opts)
-        fitter.mapper = mapper.start_mapper(problem, opts.args)
+        make_store(job,opts)
+        fitter.mapper = mapper.start_mapper(job, opts.args)
         best = fitter.fit()
-        remember_best(fitter, problem, best)
+        remember_best(fitter, job, best)
         if not opts.batch:
             pylab.show()
