@@ -7,8 +7,7 @@ from numpy import inf
 
 from .binder import BindArtist, pixel_to_data
 from .util import twinx
-from .config import interface_color, disable_color, active_color, title_color, \
-                 rho_color, rhoI_color, rhoM_color, thetaM_color
+from .config import rho_color, rhoI_color, rhoM_color, thetaM_color
 from .config import layer_hysteresis
 
 from . import registry

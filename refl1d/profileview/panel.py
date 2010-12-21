@@ -42,6 +42,7 @@ class ProfileView(AuiPanel):
 
         # Axes
         self.axes = self.fig.get_axes()[0]
+        self.axes.set_autoscale_on(False)
 
 
         # Show toolbar or not?
@@ -56,11 +57,6 @@ class ProfileView(AuiPanel):
         self.sizer.Add(self.toolbar)
         self.SetSizer( self.sizer)
         self.Fit()
-
-        # Binds some events; be sure not to conflict with canvas markers
-        #self.canvas.Bind( wx.EVT_LEFT_DCLICK, self.OnLeftDClick     )
-        #self.canvas.Bind( wx.EVT_RIGHT_DOWN,  self.OnPanelRightDown )
-        #self.canvas.Bind( wx.EVT_KEY_DOWN,    self.onKeyEvent)
         self.listener = Listener()
 
     def SetProfile(self, experiment):
@@ -106,51 +102,11 @@ class ProfileView(AuiPanel):
         self.fig.savefig( outfile )
 
 
-    def onKeyEvent(self, evt=None):
-        """
-        Capture, act upon keystroke events
-        """
-        print "panel keyboard event"
-        if evt == None:
-            return False
-
-        key = evt.KeyCode
-        if (key < wx.WXK_SPACE or key > 255):
-            return False
-
-        if (evt.ControlDown() and chr(key)=='B'): # Ctrl-B
-            self.OnCopyFigureMenu(evt)
-            return True
-
-
-    def update(self, n):
-        """
-        Update current layer number
-        """
-        self.current_layer = n
-
-
     def GetToolBar(self):
         """
         backend_wx call this function. KEEP it
         """
         return None
-
-
-    def OnLeftDClick(self, evt):
-        """
-        FIXME, Do some meaningful things here.
-        print 'Left double click from canvas
-        """
-        pass
-
-
-    def OnPanelRightDown(self, evt ):
-        """
-        On touch the right mouse
-        """
-        pass
-
 
     def OnPanelFrameClose(self, evt):
         """

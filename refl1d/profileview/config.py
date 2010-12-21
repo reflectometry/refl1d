@@ -5,7 +5,7 @@ layer_hysteresis = 4
 
 thickness_color = 'black'
 interface_color = 'black'
-disable_color   = 'gray'
+disabled_color  = 'gray'
 active_color    = 'red'
 rho_color       = 'black'
 rhoI_color      = 'green'

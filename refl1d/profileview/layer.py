@@ -8,7 +8,7 @@ from ..mystic.parameter import Parameter
 from ..material import SLD, Vacuum, Material, Mixture, Compound
 from .interactor import BaseInteractor
 from .config import pick_radius
-from .config import rho_color, rhoI_color, disable_color, profile_color
+from .config import rho_color, rhoI_color, disabled_color, profile_color
 from .config import vf_scale
 from .util import clip, setpar
 

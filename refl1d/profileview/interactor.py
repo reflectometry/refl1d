@@ -60,6 +60,7 @@ class BaseInteractor(object):
         color    - color of the interactor in non-active state
         markers  - list of handles for the interactor
     """
+    _debug = False
     def __init__(self, profile):
         self.profile = profile
         self.markers = []
@@ -214,7 +215,7 @@ class BaseInteractor(object):
 
         self.drag_start(event)
         self._dragging = True
-
+        
         return True
 
     @safecall
@@ -257,7 +258,7 @@ class BaseInteractor(object):
 
         # update model
         self.profile.update()
-
+        
         return True
 
     @safecall
