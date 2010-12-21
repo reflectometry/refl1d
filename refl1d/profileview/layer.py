@@ -5,12 +5,11 @@ from __future__ import division
 from math import log
 import numpy
 from ..mystic.parameter import Parameter
-from ..model import Slab
-from ..polymer import PolymerBrush
 from ..material import SLD, Vacuum, Material, Mixture, Compound
 from .interactor import BaseInteractor
 from .config import pick_radius
 from .config import rho_color, rhoI_color, disable_color, profile_color
+from .config import vf_scale
 from .util import clip, setpar
 
 
@@ -66,10 +65,8 @@ class MaterialInteractor(BaseInteractor):
             left,right = self.range[0]*delta+z[n-1], self.range[1]*delta+z[n-1]
 
         rho,rhoI = self.material.sld(self.profile.experiment.probe)
-        self.markers[0].set_xdata([left,right])
-        self.markers[0].set_ydata([rho,rho])
-        self.markers[1].set_xdata([left,right])
-        self.markers[1].set_ydata([rhoI,rhoI])
+        self.markers[0].set_data( (left,right), (rho,rho) )
+        self.markers[1].set_data( (left,right), (rhoI,rhoI) )
 
     def save(self, ev):
         if self._rho is not None: self._rho_save = self._rho.value
@@ -101,7 +98,6 @@ class PolymerBrushInteractor(BaseInteractor):
     """
     Interactor for tethered polymer model.
     """
-    phi_scale = 0.4
     def __init__(self, profile, layer):
         super(PolymerBrushInteractor,self).__init__(profile)
         self.polymer = MaterialInteractor(profile,layer.polymer,
@@ -169,12 +165,11 @@ class PolymerBrushInteractor(BaseInteractor):
 
         z = numpy.linspace(0,layer.thickness.value,200)
         vf = layer.profile(z)
-        self.hprofile.set_xdata(z+left)
-        self.hprofile.set_ydata(vf*self.phi_scale)
+        self.hprofile.set_data(z+left, vf*vf_scale)
 
         # at z midway between l1 and l2
         #     y = phi * 0.75**p
-        phi = layer.base_vf.value*self.phi_scale/100
+        phi = layer.base_vf.value*vf_scale/100
         phi_power = phi*0.75**layer.power.value
         L0 = left + layer.base.value
         L1 = L0 + layer.length.value
@@ -182,16 +177,11 @@ class PolymerBrushInteractor(BaseInteractor):
         Lsigma = L1 + layer.sigma.value
         
         #print "L0,L1,Lpower,Lsigma",L0,L1,Lpower,Lsigma,phi,phi_power
-        self.hphi.set_xdata([left, L0])
-        self.hphi.set_ydata([phi, phi])
-        self.hbase.set_xdata([L0, L0])
-        self.hbase.set_ydata([0, phi])
-        self.hlength.set_xdata([L1, L1])
-        self.hlength.set_ydata([0, phi])
-        self.hpower.set_xdata([Lpower])
-        self.hpower.set_ydata([phi_power])
-        self.hsigma.set_xdata([Lsigma])
-        self.hsigma.set_ydata([0])
+        self.hphi.set_data( (left,L0), (phi,phi) )
+        self.hbase.set_data( (L0,L0),  (0,phi) )
+        self.hlength.set_data( (L1,L1), (0, phi) )
+        self.hpower.set_data( (Lpower,), (phi_power,) )
+        self.hsigma.set_data( (Lsigma,), (0,) )
 
     def drag(self, ev):
         """
@@ -203,8 +193,8 @@ class PolymerBrushInteractor(BaseInteractor):
         left,right = self.profile.boundary[n:n+2]
         if ev.artist == self.hphi:
             #print ev.ydata, self.profile.xcoords.inverted().transform([(ev.x,ev.y)])[0][1]
-            setpar(par, ev.ydata*100/self.phi_scale)
-            #print "phi",par.value,ev.ydata*100/self.phi_scale
+            setpar(par, ev.ydata*100/vf_scale)
+            #print "phi",par.value,ev.ydata*100/vf_scale
         elif ev.artist == self.hbase:
             offset = left
             setpar(par, ev.xdata-offset)
@@ -215,7 +205,7 @@ class PolymerBrushInteractor(BaseInteractor):
             offset = left + self.layer.base.value + self.layer.length.value
             setpar(par, ev.xdata-offset)
         elif ev.artist == self.hpower:
-            phi = self.layer.base_vf.value/100*self.phi_scale
+            phi = self.layer.base_vf.value/100*vf_scale
             pow = log(ev.ydata/phi)/log(0.75) if ev.ydata > 0 else 100  
             setpar(par, pow)
 
@@ -237,112 +227,82 @@ class PolymerBrushInteractor(BaseInteractor):
 
 
 #-----------------------------------------------------------------------
-class SplineLayerInteractor(BaseInteractor):
+class FreeInterfaceInteractor(BaseInteractor):
     """
-    Interactor for SplineLayer to handle bspline control points.
-
-    For spline layer, we use "circle" marker
+    Interactor for freeform interfaces using monotonic splines.
     """
-    def getMarkerSize(self):
-        return len(self.layerMarker)
+    def __init__(self, profile, layer):
+        super(FreeInterfaceInteractor,self).__init__(profile)
+        self.polymer = MaterialInteractor(profile,layer.below,
+                                          range=(0,.3))
+        self.solvent = MaterialInteractor(profile, layer.above,
+                                          range=(0.7,1))
+        self.layer = layer
+        ax = profile.axes
 
+        style = dict(linestyle = ':',
+                     transform=profile.xcoords,
+                     zorder=0,
+                     color=profile_color,
+                     visible=True,
+                     )
+        self.hprofile = ax.plot([],[], **style)[0]
 
-    def set_layer(self, n):
-        """
-        Setup the widgets required to edit layer n.
-        """
-        self.layernum = n
-
-        ax = self.axes
-
-        splineLines = [ ax.plot( [], [],
-                               '--',
-                               label      = 'slope::line::'+self.par,
-                               linewidth  = 2,
-                               color      = self.color,
-                               pickradius = 0,
-                               zorder     = 5,
-                               visible = False
-                               )[0]  
-                        for i in xrange(len(self.layer._val)-1) ]
-
-        self.layerMarker = [ax.plot( [], [],
-                                 linestyle='',
-                                 markersize = 10,
-                                 label      = "%s[%d]"%(self.par,i),
-                                 linewidth  = 2,
-                                 color      = self.color,
-                                 pickradius = pick_radius,
-                                 zorder     = 3,
-                                 alpha   = 0.6,
-                                 marker  = 'o',
-                                 visible = False
-                                 )[0]  
-                            for i in xrange( len(self.layer._val) ) ]
-
-
-        # FIXME: use fast way to combine two lists into a single list
-        self.markers = []
-        for i in xrange( len(self.layerMarker) ):
-            self.markers.append(self.layerMarker[i])
-
+        style = dict(marker='o',
+                     transform=profile.xcoords,
+                     zorder=5,
+                     pickradius = pick_radius,
+                     color = profile_color,
+                     alpha = 0.5,
+                     markersize = 5,
+                     visible=True,
+                     )
+        self.markers = [ax.plot([],[], **style)[0]
+                        for _ in layer.dp]
         self.connect_markers(self.markers)
 
-        for i in xrange( len(splineLines) ):
-            self.markers.append( splineLines[i] )
-
-        self.update()
-
-
-    def update(self):
+    def update_markers(self):
         """
         Draw the widgets in their new positions.
         """
-        model = self.base.model
-        n = self.layernum
+        self.polymer.update_markers()
+        self.solvent.update_markers()
 
-        left_x  = model.offset[n]
-        right_x = model.offset[n+self.layer.span]
-        span    = right_x - left_x
+        n = self.profile.layer_num
+        left,right = self.profile.boundary[n:n+2]
+        layer = self.layer
 
-        nv = len( self.layer._val )
-        control_z = numpy.arange(0.0, nv)/(nv-1.0)*span + left_x
+        z = numpy.linspace(0,layer.thickness.value,200)
+        vf = layer.profile(z)
+        self.hprofile.set_xdata(z+left)
+        self.hprofile.set_ydata(vf*vf_scale)
 
-        for i in xrange(nv*2-1):
-            self.markers[i].set(visible=(n>0))
-
-        # spline Markers
-        for i in xrange(nv):
-            self.markers[i].set_data(control_z[i], self.layer._val[i])
-
-        # spline line
-        for i in xrange(nv-1):
-            m_x = [ control_z[i],        control_z[i+1]       ]
-            m_y = [ self.layer._val[i],  self.layer._val[i+1] ]
-            self.markers[i+nv].set_data(m_x, m_y)
+        z = cumsum([v.value for v in layer.dz])
+        p = cumsum([v.value for v in layer.dp])
+        if p[-1] == 0: p[-1] = 1
+        p *= 1/p[-1]
+        z *= thickness/z[-1]
+        for h,zi,pi in zip(markers,z,p):
+            h.set_data( (zi,), (pi,) )            
+        
+        profile = monospline(z, p, Pz)
+        return profile
 
 
-    def move(self, x, y, evt):
+    def drag(self, evt):
         """
         Update the model with the new widget position.
         """
-        idx = self._lookupIndex( evt )
-        if  idx != None :
-            self.layer._val[idx] = y
-
 
     def save(self, evt):
         """
         Save the current state of the model represented by the widget.
         """
-        self._saved_v = self.layer._val
-
 
     def restore(self):
         """
         Restore the widget and model to the saved state.
         """
-        self.layer._val = self._saved_v
 
 # -------------------------------------------------------------------
 class NoInteractor(BaseInteractor):
@@ -350,25 +310,3 @@ class NoInteractor(BaseInteractor):
     Null Interactor for undefined layers.
     """
     # TODO: turn layer.parameters() into sliders
-
-# ======================== LayerInteractor factory ====================
-# Associate layers with layer interactors through function
-#     interactor(profile,layer)
-# New layer interactors can be registered with
-#     make_interactor[layer_class] = interactor_class
-# =====================================================================
-class _LayerInteractorFactory:
-    """
-    Given a layer, find the associated interactor.
-    """
-    def __init__(self):
-        self._registry = {}
-    def __setitem__(self, layer_class, interactor_class):
-        self._registry[layer_class] = interactor_class
-    def __call__(self, profile, layer):
-        constructor = self._registry.get(layer.__class__, NoInteractor)
-        return constructor(profile, layer)
-
-make_interactor = _LayerInteractorFactory()
-make_interactor[Slab] = SlabInteractor
-make_interactor[PolymerBrush] = PolymerBrushInteractor

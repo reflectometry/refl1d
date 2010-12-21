@@ -73,14 +73,14 @@ class InterfaceInteractor(BaseInteractor):
         self.markers[0].set(visible=show_left)
         self.lines[0].set(visible=show_left)
         if show_left:
-            self.markers[0].set(xdata=[z[n-1]+self._left.value])
-            self.lines[0].set(xdata=[z[n-1], z[n-1]+self._left.value])
+            self.markers[0].set_xdata([z[n-1]+self._left.value])
+            self.lines[0].set_xdata([z[n-1], z[n-1]+self._left.value])
 
         self.markers[1].set(visible=show_right)
         self.lines[1].set(visible=show_right)
         if show_right:
-            self.markers[1].set(xdata=[z[n]-self._right.value])
-            self.lines[1].set(xdata=[z[n],z[n]-self._right.value])
+            self.markers[1].set_xdata([z[n]-self._right.value])
+            self.lines[1].set_xdata([z[n],z[n]-self._right.value])
 
     def clear_markers(self):
         """

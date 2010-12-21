@@ -14,3 +14,4 @@ thetaM_color    = 'orange'
 profile_color   = 'cyan'
 title_color     = 'red'
 
+vf_scale = 0.4

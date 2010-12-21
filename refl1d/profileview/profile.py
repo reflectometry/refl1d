@@ -11,7 +11,7 @@ from .config import interface_color, disable_color, active_color, title_color, \
                  rho_color, rhoI_color, rhoM_color, thetaM_color
 from .config import layer_hysteresis
 
-from .layer import make_interactor
+from . import registry
 from .interactor import BaseInteractor, safecall
 from .thickness import ThicknessInteractor
 from .interface import InterfaceInteractor
@@ -102,23 +102,26 @@ class ProfileInteractor(object):
 
     def onMotion(self, event):
         """Respond to motion events by changing the active layer."""
-        # Find the layer containing the mouse
+        # Force data coordinates for the mouse position
+        transform = self.axes.transData
+        x,_ = pixel_to_data(transform, event.x, event.y)
+
+        # Check if mouse is still in the same layer
         if self.layer_num is not None:
             left,right = self.boundary[self.layer_num:self.layer_num+2]
             # Quick rejection if it is in the layer
-            if left < event.xdata < right:
+            if left < x < right:
                 #print "quick reject", event.xdata, self.layer_start, self.layer_end
                 return False
             # If it is within 5 pixels of the layer, keep to the same layer
-            transform = self.axes.transData
             xlo,_ = pixel_to_data(transform, event.x+layer_hysteresis, event.y)
             xhi,_ = pixel_to_data(transform, event.x-layer_hysteresis, event.y)
             if left < xlo and xhi < right:
                 #print "hysteresis", event.x, xlo, xhi, self.layer_start, self.layer_end
                 return False
         
-        # Layer changed
-        self.set_layer(event.xdata)
+        # If layer changed, then replace the markers
+        self.set_layer(x)
         return False
 
 
@@ -157,7 +160,7 @@ class ProfileInteractor(object):
     
         # Reset the layer markers
         self.layer_interactor.clear_markers()
-        self.layer_interactor = make_interactor(self, layer)
+        self.layer_interactor = registry.interactor(self, layer)
 
         # Update the marker positions
         self.update_markers()

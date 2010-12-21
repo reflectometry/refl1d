@@ -189,18 +189,21 @@ class FreeInterface(Layer):
                     thickness=self.thickness,
                     interface=self.interface,
                     inflections=self.inflections)
-    def render(self, probe, slabs):
-        thickness = self.thickness.value
-        interface = self.interface.value
-        left_rho,left_irho = self.below.sld(probe)
-        right_rho,right_irho = self.above.sld(probe)
+    def profile(self, Pz):
         z = hstack( (0, cumsum([v.value for v in self.dz])) )
         p = hstack( (0, cumsum([v.value for v in self.dp])) )
         if p[-1] == 0: p[-1] = 1
         p *= 1/p[-1]
         z *= thickness/z[-1]
-        Pw,Pz = slabs.microslabs(thickness)
         profile = monospline(z, p, Pz)
+        return profile
+    def render(self, probe, slabs):
+        thickness = self.thickness.value
+        interface = self.interface.value
+        left_rho,left_irho = self.below.sld(probe)
+        right_rho,right_irho = self.above.sld(probe)
+        Pw,Pz = slabs.microslabs(thickness)
+        profile = self.profile(Pz)
         lidx,ridx = searchsorted(profile,[0.01,0.99])
         ridx = min( (ridx, len(profile)-1) )
         Prho  = (1-profile)*left_rho  + profile*right_rho
