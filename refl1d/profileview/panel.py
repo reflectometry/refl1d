@@ -3,8 +3,8 @@ A base panel to draw the profile
 """
 
 import os
-
 import wx
+import numpy
 from matplotlib.figure import Figure
 from matplotlib.axes   import Subplot
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
@@ -14,6 +14,7 @@ from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 from .auipanel import AuiPanel
 from .util import CopyImage
 from .profile import ProfileInteractor
+from .interactor import BaseInteractor
 from .listener import Listener
 
 # ------------------------------------------------------------------------
@@ -56,10 +57,10 @@ class ProfileView(AuiPanel):
         self.SetSizer( self.sizer)
         self.Fit()
 
-        # Binds some events
-        self.canvas.Bind( wx.EVT_LEFT_DCLICK, self.OnLeftDClick     )
-        self.canvas.Bind( wx.EVT_RIGHT_DOWN,  self.OnPanelRightDown )
-        self.canvas.Bind( wx.EVT_KEY_DOWN,    self.onKeyEvent)
+        # Binds some events; be sure not to conflict with canvas markers
+        #self.canvas.Bind( wx.EVT_LEFT_DCLICK, self.OnLeftDClick     )
+        #self.canvas.Bind( wx.EVT_RIGHT_DOWN,  self.OnPanelRightDown )
+        #self.canvas.Bind( wx.EVT_KEY_DOWN,    self.onKeyEvent)
         self.listener = Listener()
 
     def SetProfile(self, experiment):
@@ -70,6 +71,7 @@ class ProfileView(AuiPanel):
                                          experiment,
                                          self.listener)
         self.profile.update()
+        self.profile.reset_limits()
 
     def onPrinterSetup(self,event=None):
         self.canvas.Printer_Setup(event=event)
@@ -108,15 +110,17 @@ class ProfileView(AuiPanel):
         """
         Capture, act upon keystroke events
         """
+        print "panel keyboard event"
         if evt == None:
-            return
+            return False
 
         key = evt.KeyCode
         if (key < wx.WXK_SPACE or key > 255):
-            return
+            return False
 
         if (evt.ControlDown() and chr(key)=='B'): # Ctrl-B
             self.OnCopyFigureMenu(evt)
+            return True
 
 
     def update(self, n):
@@ -164,3 +168,8 @@ class ProfileView(AuiPanel):
 
     def CanShowContextMenu(self):
         return True
+        
+    def quit_on_error(self):
+        numpy.seterr(all='raise')
+        ProfileInteractor._debug = True
+        BaseInteractor._debug = True

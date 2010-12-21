@@ -218,17 +218,22 @@ class Material(Scatterer):
         if type is 'bulk_density':
             if value is None:
                 value = self.formula.density
-            self.bulk_density = Par.default(value, name=self.name+" density")
+            self.bulk_density = Par.default(value, name=self.name+" density",
+                                            bounds=(0,inf))
             self.density = self.bulk_density
         elif type is 'natural_density':
             if value is None:
                 value = self.formula.natural_density
-            self.natural_density = Par.default(value, name=self.name+" nat. density")
+            self.natural_density = Par.default(value, 
+                                               name=self.name+" nat. density",
+                                               bounds=(0,inf))
             self.density = self.natural_density / self.formula.natural_mass_ratio()
         elif type is 'relative_density':
             if value is None:
                 value = 1
-            self.relative_density = Par.default(value, name=self.name+" rel. density")
+            self.relative_density = Par.default(value, 
+                                                name=self.name+" rel. density",
+                                                bounds=(0,inf))
             self.density = self.formula.density*self.relative_density
         ## packing factor code should be correct, but radii are unreliable
         #elif type is 'packing_factor':
@@ -243,7 +248,9 @@ class Material(Scatterer):
             # Volume is in A^3.  1 A is 1e-8 cm.
             if value is None:
                 value = self.formula.molecular_mass/self.formula.density
-            self.cell_volume = Par.default(value, name=self.name+" cell volume")
+            self.cell_volume = Par.default(value, 
+                                           name=self.name+" cell volume",
+                                           bounds=(0,inf))
             self.density = self.formula.molecular_mass/self.cell_volume
         else:
             raise ValueError("Unknown density calculation type '%s'"%type)

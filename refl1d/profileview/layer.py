@@ -1,558 +1,243 @@
 """
 Layer interactor.
 """
-
+from __future__ import division
+from math import log
 import numpy
+from ..mystic.parameter import Parameter
 from ..model import Slab
+from ..polymer import PolymerBrush
+from ..material import SLD, Vacuum, Material, Mixture, Compound
 from .interactor import BaseInteractor
 from .config import pick_radius
+from .config import rho_color, rhoI_color, disable_color, profile_color
+from .util import clip, setpar
 
 
-# ===================== Layer interactors ========================
-# GUI starts here
-# ================================================================
-class LayerInteractor(BaseInteractor):
-    """
-    Flat layer interactor.
-    """
-    def __init__(self,
-                 profile,
-                 axes,
-                 layer,
-                 color='black'
-                 ):
-        super(LayerInteractor,self).__init__(profile, axes, color=color)
-        self.layer   = layer
-        self.markers = []
-
-    def _lookupIndex( self, event ):
-
-        try:    idx = self.layerMarker.index(event.artist)
-        except: idx = None
-        return idx
-
-
-    def  updateRhoValue(self, name, event):
-        """ Update the rho layer """
-        n = self._curr_n
-        self.infopanel.updateNLayer( n )
-
-        idx = self._lookupIndex( event )
-        self.infopanel.updateRhoValue(  event.ydata, idx=idx )
-
-
-    def  updateMuValue(self, name, event):
-        """ Update the mu layer """
-        n = self._curr_n
-        self.infopanel.updateNLayer( n )
-
-        idx = self._lookupIndex( event )
-        self.infopanel.updateMuValue(  event.ydata, idx=idx )
-
-
-    def  updatePhiValue(self, name, event):
-        """ Update the phi layer """
-        n = self._curr_n
-        self.infopanel.updateNLayer( n )
-
-        idx = self._lookupIndex( event )
-        self.infopanel.updatePhiValue(  event.ydata, idx=idx )
-
-
-    def updateThetaValue( self, name, event):
-
-        """ Update the theta layer """
-        n = self._curr_n
-        self.infopanel.updateNLayer( n )
-
-        idx = self._lookupIndex( event )
-        self.infopanel.updateThetaValue(  event.ydata, idx=idx )
-
-
-    def IsFlatLayer( self, label):
-        # Obtain Artist name
-        name = label.split("[")
-
-        if len(name) <= 1:
-            return  True
+class MaterialInteractor(BaseInteractor):
+    def __init__(self, profile, material, range=(0,1)):
+        super(MaterialInteractor,self).__init__(profile)
+        self.material = material
+        self.range = range
+        
+        if isinstance(material,SLD):
+            enabled = True
+            self._rho = material.rho
+            self._rhoI = material.irho
+            self._rho_scale = 1
+            self._rhoI_scale = 1
+        elif (hasattr(material,'density') 
+              and isinstance(material.density,Parameter)):
+            enabled = True
+            rho,rhoI = material.sld(profile.experiment.probe)
+            self._rho = material.density
+            self._rhoI = material.density
+            self._rho_scale = 1/ (rho / material.density.value)
+            self._rhoI_scale = 1/ (rhoI / material.density.value)
         else:
-            return  False
+            self._rho = self._rhoI = None
+            enabled = False
 
-
-    def _GetBestCurrLayerNum(self, event):
-        idx = self._lookupIndex( event )
-        if   idx==0:                         return self._save_depth_n +1
-        elif idx == self.getMarkerSize()-1:  return self._save_depth_n
-        else:                                return self._save_n
-
-
-    def getBestCurrLayerNum(self, event):
-        if  self.IsFlatLayer(  event.artist.get_label() ):
-            return self._save_n
+        style = dict(linestyle='--',
+                     linewidth  = 2,
+                     pickradius = pick_radius,
+                     zorder = 5,
+                     )
+        colors = rho_color,rhoI_color
+        labels = "rho","rhoI"
+        ax = profile.axes
+        self.markers = [ax.plot([], [], 
+                                label=material.name+" "+label, 
+                                color=color if enabled else disabled_color,
+                                **style)[0]
+                        for color,label in zip(colors,labels)]
+        if enabled:
+            self.connect_markers(self.markers)
+    
+    def update_markers(self):
+        z = self.profile.boundary[1:-1]
+        n = self.profile.layer_num
+        if n == 0:
+            left,right = -20,0
+        elif n >= len(z):
+            left,right = z[-1],z[-1]+20
         else:
-            return self._GetBestCurrLayerNum(event)
-
-
-    def setValue(self, event):
-        """ Update the layer value """
-        _pn = self.Artist2Name( event.artist.get_label() )
-
-        self._curr_n = self.getBestCurrLayerNum(event)
-
-        if len(_pn) > 0:
-
-            if    _pn[:3] == "rho":   self.updateRhoValue(   _pn, event)
-            elif  _pn[:2] == "mu":    self.updateMuValue(    _pn, event)
-            elif  _pn[:3] == "phi":   self.updatePhiValue(   _pn, event)
-            elif  _pn[:5] == "theta": self.updateThetaValue( _pn, event)
-            else:
-                raise ValueError("Invalid parmeter")
-
-
-    def  showRhoValue(self, event):
-        """ Show the rho layer """
-        n = self._curr_n
-        self.infopanel.updateNLayer( n )
-
-        idx = self._lookupIndex( event )
-        self.infopanel.showRhoValue( idx=idx )
-
-
-    def  showMuValue(self, event):
-        """ show the mu layer """
-        n = self._curr_n
-        self.infopanel.updateNLayer( n )
-
-        idx = self._lookupIndex( event )
-        self.infopanel.showMuValue( idx=idx )
-
-
-    def  showPhiValue(self, event):
-        """ show the phi layer """
-        n = self._curr_n
-        self.infopanel.updateNLayer( n )
-
-        idx = self._lookupIndex( event )
-        self.infopanel.showPhiValue( idx=idx )
-
-
-    def  showThetaValue( self, event):
-        """ show the theta layer """
-        n = self._curr_n
-        self.infopanel.updateNLayer( n )
-
-        idx = self._lookupIndex( event )
-        self.infopanel.showThetaValue( idx=idx )
-
-
-    def showValue(self, event):
-        """ Update the layer value """
-        _pn = self.Artist2Name( event.artist.get_label() )
-
-        self._curr_n = self.getBestCurrLayerNum(event)
-
-        if len(_pn) > 0:
-
-            if    _pn[:3] == "rho":   self.showRhoValue(  event)
-            elif  _pn[:2] == "mu":    self.showMuValue(   event)
-            elif  _pn[:3] == "phi":   self.showPhiValue(  event)
-            elif  _pn[:5] == "theta": self.showThetaValue(event)
-            else:
-                raise ValueError("Invalid parmeter name")
-
-
-    # ----------------------------------------------------------
-    def get_Marker(self, i ):
-        filled_markers =[ 'o', # '_draw_circle',
-                          's', # '_draw_square',
-                          'p', # '_draw_pentagon',
-                          'd', # '_draw_thin_diamond',
-                          'h', # '_draw_hexagon1',
-                          '+', # '_draw_plus',
-                          'x', # '_draw_x',
-                          'D', # '_draw_diamond',
-                          'H', # '_draw_hexagon2',
-                          'v', #'_draw_triangle_down',
-                          '^', # '_draw_triangle_up',
-                          '<', # '_draw_triangle_left',
-                          '>', # '_draw_triangle_right',
-                          '1', # '_draw_tri_down',
-                          '2', # '_draw_tri_up',
-                          '3', # '_draw_tri_left',
-                          '4', # '_draw_tri_right',
-                        ]
-        return filled_markers[ i%len(filled_markers) ]
-
-
-
-
-# ---------------------------------------------------------------------
-class FlatLayerInteractor(LayerInteractor):
-    """
-    Interactor for FlatLayer to handle flat slabs.
-    """
-    def set_layer(self, n, show=True):
-        """
-        Setup the widgets required to edit layer n.
-        """
-        self.layernum = n
-        v  = self.layer._val
-        ax = self.axes
-
-        self.layerMarker = ax.plot( [], [],
-                                    '--',
-                                    label      = self.par,
-                                    linewidth  = 2,
-                                    color      = self.color,
-                                    pickradius = pick_radius,
-                                    zorder     = 5
-                                    )[0]
-        self.markers = [ self.layerMarker ]
-
-        self.connect_markers(self.markers)
-
-        self.update(show)
-
-
-    def update(self, show=True):
-        """
-        Draw the widgets in their new positions.
-        """
-        model = self.base.model
-        n = self.layernum
-        x = [ model.offset[n], model.offset[n+self.layer.span] ]
-        y = [self.layer._val]*2
-
-        h = self.markers[0]
-        h.set_data(x,y)
-        h.set_visible(show)
-
-
-    def move(self, x, y, evt):
-        """
-        Update the model with the new widget position.
-        """
-        self.layer._val = y
-
-
-    def save(self, evt):
-        """
-        Save the current state of the model represented by the widget.
-        """
-        self._saved_v = self.layer._val
-
-
-    def restore(self):
-        """
-        Restore the widget and model to the saved state.
-        """
-        self.layer._val = self._saved_v
-
-
-
-
-# ------------------------------------------------------------------
-class SlopeLayerInteractor(LayerInteractor):
-    """
-    Interactor for SlopeLayer to handle the line control points.
-
-    For slope layer, we use 'p' marker
-    """
-    def getMarkerSize(self):
-        return len(self.layerMarker)
-
-
-    def set_layer(self, n):
-        """
-        Setup the widgets required to edit layer n.
-        """
-        self.layernum = n
-
-        left, right = self.layer._val
-        ax = self.axes
-
-        self.layerMarker = [ ax.plot( [], [],
-                       linestyle  = '',
-                       markersize = 10,
-                       label      = "%s[%d]"%(self.par,i),
-                       linewidth  = 2,
-                       color      = self.color,
-                       pickradius = pick_radius,
-                       zorder     = 3,
-                       alpha      = 0.6,
-                       marker     = 'p',
-                       visible    = False
-                       )[0]  for i in xrange( 2 ) ]
-
-        slopeLine = ax.plot( [], [],
-                       '--',
-                       label      = 'slope::line::'+self.par,
-                       linewidth  = 2,
-                       color      = self.color,
-                       pickradius = 0,
-                       zorder     = 5,
-                       visible = False
-                       )[0]
-
-
-        self.markers = [self.layerMarker[0], self.layerMarker[1]]
-
-        self.connect_markers(self.markers)
-        self.markers.append( slopeLine )
-
-        self.update()
-
-
-
-    def update(self):
-        """
-        Draw the widgets in their new positions.
-        """
-        model = self.base.model
-        n = self.layernum
-
-        # We shift 5 point to avoid overlapping with depth marker
-        left_x  = [ model.offset[n]]
-        right_x = [ model.offset[n+self.layer.span] ]
-
-        left_y  = [self.layer._val[0] ]
-        right_y = [self.layer._val[1] ]
-
-        leftMarker  = self.markers[0]
-        rightMarker = self.markers[1]
-        lineMarker  = self.markers[2]
-
-        leftMarker.set( visible=(n>0))
-        lineMarker.set( visible=(n>0))
-        rightMarker.set(visible=(n>0))
-
-        m_x =  [ model.offset[n], model.offset[n+self.layer.span] ]
-        m_y =  [self.layer._val[0],  self.layer._val[1] ]
-
-        leftMarker.set_data( left_x,  left_y )
-        rightMarker.set_data(right_x, right_y)
-        lineMarker.set_data( m_x,     m_y    )
-
-
-
-    def move(self, x, y, evt):
-        """
-        Update the model with the new widget position.
-        """
-        idx = self._lookupIndex( evt )
-
-        if  idx != None :
-            self.layer._val[ idx ] = y
-
-        # Otherwise: Do Nothing.
-
-
-
-    def save(self, evt):
-        """
-        Save the current state of the model represented by the widget.
-        """
-        self._saved_v = self.layer._val
-
-
-
-    def restore(self):
-        """
-        Restore the widget and model to the saved state.
-        """
-        self.layer._val = self._saved_v
-
+            delta = z[n] - z[n-1]
+            left,right = self.range[0]*delta+z[n-1], self.range[1]*delta+z[n-1]
+
+        rho,rhoI = self.material.sld(self.profile.experiment.probe)
+        self.markers[0].set_xdata([left,right])
+        self.markers[0].set_ydata([rho,rho])
+        self.markers[1].set_xdata([left,right])
+        self.markers[1].set_ydata([rhoI,rhoI])
+
+    def save(self, ev):
+        if self._rho is not None: self._rho_save = self._rho.value
+        if self._rhoI is not None: self._rhoI_save = self._rhoI.value
+
+    def restore(self, ev):
+        if self._rho is not None: self._rho.value = self._rho_save
+        if self._rhoI is not None: self._rhoI.value = self._rhoI_save
+
+    def drag(self, ev):
+        if ev.artist == self.markers[0]:
+            setpar(self._rho, ev.ydata * self._rho_scale)
+        else:
+            setpar(self._rhoI, ev.ydata * self._rhoI_scale)
+
+class SlabInteractor(BaseInteractor):
+    def __init__(self, profile, layer):
+        super(SlabInteractor,self).__init__(profile)
+        self.material = MaterialInteractor(profile,layer.material)
+    def update_markers(self):
+        self.material.update_markers()
+    def clear_markers(self):
+        self.material.clear_markers()
 
 
 
 #-----------------------------------------------------------------------
-class TetheredPolymerInteractor(LayerInteractor):
+class PolymerBrushInteractor(BaseInteractor):
     """
-    Interactor for TetheredPolymer to handle bspline control points.
-
-    For TetheredPolymer layer, we use "circle" marker
+    Interactor for tethered polymer model.
     """
-    def Artist2Name( self, label):
-        # Obtain Artist name
-        ValidParNames = ["mu", "rho", "theta", "phi"]
-        name = label.split("_")[0].strip()
+    phi_scale = 0.4
+    def __init__(self, profile, layer):
+        super(PolymerBrushInteractor,self).__init__(profile)
+        self.polymer = MaterialInteractor(profile,layer.polymer,
+                                          range=(0,.3))
+        self.solvent = MaterialInteractor(profile, layer.solvent,
+                                          range=(0.7,1))
+        self.layer = layer
+        ax = profile.axes
 
-        if name in ValidParNames:
-            return  label
-        else:
-            return  ""
+        style = dict(linestyle = ':',
+                     transform=profile.xcoords,
+                     zorder=0,
+                     color=profile_color,
+                     visible=True,
+                     )
+        self.hprofile = ax.plot([],[], **style)[0]
 
+        style = dict(linestyle='-',
+                     transform=profile.xcoords,
+                     zorder=4,
+                     pickradius = pick_radius,
+                     color = profile_color,
+                     linewidth = 1,
+                     visible=True,
+                     )
+        self.hphi = ax.plot( [], [], **style)[0]
+        self.hbase = ax.plot([],[], **style)[0]
+        self.hlength = ax.plot([],[], **style)[0]
+        
+        style = dict(marker='s',
+                     transform=profile.xcoords,
+                     zorder=5,
+                     pickradius = pick_radius,
+                     color = profile_color,
+                     alpha = 0.5,
+                     markersize = 5,
+                     visible=True,
+                     )
+        self.hpower = ax.plot([],[], **style)[0]
+        self.hsigma = ax.plot([],[], **style)[0]
+        #print "xcoords",id(profile.xcoords),"trans",id(self.hbase.get_transform())
 
-    def setValue(self, event):
-        """ Update the layer value """
-        _pn = self.Artist2Name( event.artist.get_label() )
-
-        self._curr_n = self.getBestCurrLayerNum(event)
-
-        if len(_pn) > 0:
-
-            if    _pn[:3] == "rho":   self.updateRhoValue(   _pn, event)
-            elif  _pn[:2] == "mu":    self.updateMuValue(    _pn, event)
-            elif  _pn[:3] == "phi":   self.updatePhiValue(   _pn, event)
-            elif  _pn[:5] == "theta": self.updateThetaValue( _pn, event)
-            else:
-                raise ValueError("Invalid parmeter")
-
-
-    def  updateRhoValue(self, name, event):
-        """ Update the rho layer """
-        n = self._curr_n
-        self.infopanel.updateNLayer( n )
-
-        idx = self._lookupIndex( event )
-        #print idx, name
-        if idx == 2:
-            self.infopanel.updateRhoValue(  event.xdata,
-                                            idx=idx,
-                                            name=name )
-            return
-        self.infopanel.updateRhoValue(  event.ydata, idx=idx, name=name )
-
-
-    def  updateMuValue(self, name, event):
-        """ Update the mu layer """
-        n = self._curr_n
-        self.infopanel.updateNLayer( n )
-
-        idx = self._lookupIndex( event )
-        self.infopanel.updateMuValue(  event.ydata, idx=idx, name=name )
-
-
-    def  updatePhiValue(self, name, event):
-        """ Update the phi layer """
-        n = self._curr_n
-        self.infopanel.updateNLayer( n )
-
-        idx = self._lookupIndex( event )
-        self.infopanel.updatePhiValue(  event.ydata, idx=idx, name=name )
-
-
-    def updateThetaValue( self, name, event):
-
-        """ Update the theta layer """
-        n = self._curr_n
-        self.infopanel.updateNLayer( n )
-
-        idx = self._lookupIndex( event )
-        self.infopanel.updateThetaValue(  event.ydata, idx=idx, name=name )
-
-
-    def getMarkerSize(self):
-        return len(self.layerMarker)
-
-
-    def set_layer(self, n):
-        """
-        Setup the widgets required to edit layer n.
-        """
-        self.layernum = n
-
-        ax = self.axes
-
-        polymerLine = ax.plot( [], [],
-                               '--',
-                               label      = "%s_polymerSLD"%self.par,
-                               linewidth  = 2,
-                               color      = self.color,
-                               pickradius = pick_radius,
-                               zorder     = 5,
-                               visible = False
-                               )[0]
-
-        solventLine = ax.plot( [], [],
-                               '--',
-                               label      = "%s_solventSLD"%self.par,
-                               linewidth  = 2,
-                               color      = self.color,
-                               pickradius = pick_radius,
-                               zorder     = 5,
-                               visible = False
-                               )[0]
-
-        L0Line = ax.axvline(x=0,
-                            linewidth=2,
-                            linestyle='--',
-                            label="%s_L0"%self.par,
-                            color=self.color,
-                            alpha=0.5,
-                            pickradius=pick_radius
-                            )
-
-        self.layerMarker = [ polymerLine, solventLine,  L0Line]
-
-        self.markers = []
-        for i in xrange( self.getMarkerSize() ):
-            self.markers.append(self.layerMarker[i])
-
+        self.markers = [self.hphi,self.hbase,self.hlength,
+                        self.hpower,self.hsigma]
+        self.parameters = [layer.base_vf,layer.base,layer.length,
+                           layer.power,layer.sigma]
         self.connect_markers(self.markers)
-        self.update()
 
+    def clear_markers(self):
+        super(PolymerBrushInteractor,self).clear_markers()
+        self.polymer.clear_markers()
+        self.solvent.clear_markers()
+        self.hprofile.remove()
 
-    def update(self):
+    def update_markers(self):
         """
         Draw the widgets in their new positions.
         """
-        model = self.base.model
-        n     = self.layernum
+        self.polymer.update_markers()
+        self.solvent.update_markers()
 
-        left_x  = model.offset[n]
-        right_x = model.offset[n+self.layer.span]
-        span    = right_x - left_x
+        n = self.profile.layer_num
+        left,right = self.profile.boundary[n:n+2]
+        layer = self.layer
 
-        L0 = self.layer._val[2]
-        nv = 2
+        z = numpy.linspace(0,layer.thickness.value,200)
+        vf = layer.profile(z)
+        self.hprofile.set_xdata(z+left)
+        self.hprofile.set_ydata(vf*self.phi_scale)
 
-        if span*0.1 > L0:  Lshift = L0
-        else:              Lshift = span*0.1
+        # at z midway between l1 and l2
+        #     y = phi * 0.75**p
+        phi = layer.base_vf.value*self.phi_scale/100
+        phi_power = phi*0.75**layer.power.value
+        L0 = left + layer.base.value
+        L1 = L0 + layer.length.value
+        Lpower = (L0+L1)/2
+        Lsigma = L1 + layer.sigma.value
+        
+        #print "L0,L1,Lpower,Lsigma",L0,L1,Lpower,Lsigma,phi,phi_power
+        self.hphi.set_xdata([left, L0])
+        self.hphi.set_ydata([phi, phi])
+        self.hbase.set_xdata([L0, L0])
+        self.hbase.set_ydata([0, phi])
+        self.hlength.set_xdata([L1, L1])
+        self.hlength.set_ydata([0, phi])
+        self.hpower.set_xdata([Lpower])
+        self.hpower.set_ydata([phi_power])
+        self.hsigma.set_xdata([Lsigma])
+        self.hsigma.set_ydata([0])
 
-        control = [
-                    [left_x, left_x+Lshift],
-                    [right_x-span*0.1, right_x]
-                  ]
-        for i in xrange(nv):
-            self.markers[i].set(visible=(n>0))
-
-        # Spline line
-        for i in xrange(nv):
-            m_x = [ control[i][0],       control[i][1]      ]
-            m_y = [ self.layer._val[i],  self.layer._val[i] ]
-            self.markers[i].set_data(m_x, m_y)
-
-        self.markers[2].set_xdata( [L0, L0])
-
-
-    def move(self, x, y, evt):
+    def drag(self, ev):
         """
         Update the model with the new widget position.
         """
-        idx = self._lookupIndex( evt )
+        map = dict(zip(self.markers,self.parameters))
+        par = map[ev.artist]
+        n = self.profile.layer_num
+        left,right = self.profile.boundary[n:n+2]
+        if ev.artist == self.hphi:
+            #print ev.ydata, self.profile.xcoords.inverted().transform([(ev.x,ev.y)])[0][1]
+            setpar(par, ev.ydata*100/self.phi_scale)
+            #print "phi",par.value,ev.ydata*100/self.phi_scale
+        elif ev.artist == self.hbase:
+            offset = left
+            setpar(par, ev.xdata-offset)
+        elif ev.artist == self.hlength:
+            offset = left + self.layer.base.value
+            setpar(par, ev.xdata-offset)
+        elif ev.artist == self.hsigma:
+            offset = left + self.layer.base.value + self.layer.length.value
+            setpar(par, ev.xdata-offset)
+        elif ev.artist == self.hpower:
+            phi = self.layer.base_vf.value/100*self.phi_scale
+            pow = log(ev.ydata/phi)/log(0.75) if ev.ydata > 0 else 100  
+            setpar(par, pow)
 
-        if idx != None :
-            self.layer._val[idx] = y
 
-
-    def save(self, evt):
+    def save(self, ev):
         """
         Save the current state of the model represented by the widget.
         """
-        self._saved_v = self.layer._val
+        map = dict(zip(self.markers,self.parameters))
+        par = map[ev.artist]
+        self._save_par = par
+        self._save_val = par.value
 
-
-    def restore(self):
+    def restore(self, ev):
         """
         Restore the widget and model to the saved state.
         """
-        self.layer._val = self._saved_v
-
+        self._save_par.value = self._save_val
 
 
 #-----------------------------------------------------------------------
-class SplineLayerInteractor(LayerInteractor):
+class SplineLayerInteractor(BaseInteractor):
     """
     Interactor for SplineLayer to handle bspline control points.
 
@@ -659,58 +344,31 @@ class SplineLayerInteractor(LayerInteractor):
         """
         self.layer._val = self._saved_v
 
-
-
-
 # -------------------------------------------------------------------
-class NoLayerInteractor(LayerInteractor):
+class NoInteractor(BaseInteractor):
     """
     Null Interactor for undefined layers.
     """
-    def set_layer(self, n):
-        pass
-
-    def update(self):
-        pass
-
-    def move(self, x, y):
-        pass
-
-    def save(self):
-        pass
-
-    def restore(self):
-        pass
-
-
+    # TODO: turn layer.parameters() into sliders
 
 # ======================== LayerInteractor factory ====================
 # Associate layers with layer interactors through function
-#     interactor(layer)
+#     interactor(profile,layer)
+# New layer interactors can be registered with
+#     make_interactor[layer_class] = interactor_class
 # =====================================================================
 class _LayerInteractorFactory:
     """
     Given a layer, find the associated interactor.
     """
     def __init__(self):
-        self.template = {Slab: FlatLayerInteractor
-                         },
-#                         SlopeLayer: SlopeLayerInteractor,
-#                         SplineLayer: SplineLayerInteractor,
-#                         TetheredPolymerLayer: TetheredPolymerInteractor,
-#                         JoinLayer: NoLayerInteractor,
-#                         NoLayer: NoLayerInteractor
-#                         }
-    def register(self, layer_class, interactor_class):
-        self.template[layer_class] = interactor_class
-    def __call__(self,
-                 profile,
-                 layer,
-                 **kw
-                 ):
-        if layer.__class__ in self.template:
-            return self.template[layer.__class__](profile, layer, **kw)
-        else:
-            return NoLayerInteractor(profile, layer, **kw)
+        self._registry = {}
+    def __setitem__(self, layer_class, interactor_class):
+        self._registry[layer_class] = interactor_class
+    def __call__(self, profile, layer):
+        constructor = self._registry.get(layer.__class__, NoInteractor)
+        return constructor(profile, layer)
 
 make_interactor = _LayerInteractorFactory()
+make_interactor[Slab] = SlabInteractor
+make_interactor[PolymerBrush] = PolymerBrushInteractor

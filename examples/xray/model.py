@@ -46,6 +46,7 @@ References
     "Pinpointing Chiral Structures with Front-Back Polarized Neutron 
     Reflectometry".  Physical Review Letters 88(6) 067201(4)
     http://dx.doi.org/10.1103/PhysRevLett.88.067201
+
 """
 from periodictable import formula, xray_sld, Cu, Ni, Fe, Pt
 from refl1d import *

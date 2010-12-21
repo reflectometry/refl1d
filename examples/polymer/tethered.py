@@ -46,10 +46,10 @@ H_toluene = SLD(name="H-toluene",rho=0.94)
 H_initiator = SLD(name="H-initiator",rho=0)
 
 D_brush = PolymerBrush(polymer=D_polystyrene, solvent=D_toluene,
-                       base_vf=70, base=120, length=200, power=2,
+                       base_vf=70, base=120, length=80, power=2,
                        sigma=10)
 
-D = (silicon(0,5) | SiOx(100,5) | D_initiator(100,20) | D_brush(1000,0)
+D = (silicon(0,5) | SiOx(100,5) | D_initiator(100,20) | D_brush(400,0)
      | D_toluene)
 
 #### Undeuterated toluene solvent system
@@ -94,9 +94,9 @@ SiOx.rho.range(2.07,4.16) # Si - SiO2
 D_toluene.rho.pmp(5)
 D_initiator.rho.range(0,1.5)
 D_brush.base_vf.range(50,80)
-D_brush.base.range(0,100)
+D_brush.base.range(0,200)
 D_brush.length.range(0,500)
-D_brush.power.range(1.5,2.5)
+D_brush.power.range(0,5)
 D_brush.sigma.range(0,20)
 
 ## Undeuterated system adds two extra parameters

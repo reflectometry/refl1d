@@ -60,11 +60,11 @@ class PolymerBrush(Layer):
         profile(z) = conv(brush(z), gaussian(sigma))
         >>> sld(z) = material.sld * profile(z) + solvent.sld * (1 - profile(z))
     """
-    def __init__(self, thickness=0, interface=0,
+    def __init__(self, thickness=0, interface=0, name="brush",
                  polymer=None, solvent=None, base_vf=None,
                  base=None, length=None, power=None, sigma=None):
-        self.thickness = Parameter.default(thickness, name="solvent thickness")
-        self.interface = Parameter.default(interface, name="solvent interface")
+        self.thickness = Parameter.default(thickness, name="brush thickness")
+        self.interface = Parameter.default(interface, name="brush interface")
         self.base_vf = Parameter.default(base_vf, name="base_vf")
         self.base = Parameter.default(base, name="base")
         self.length = Parameter.default(length, name="length")
@@ -72,6 +72,7 @@ class PolymerBrush(Layer):
         self.sigma = Parameter.default(sigma, name="sigma")
         self.solvent = solvent
         self.polymer = polymer
+        self.name = name
         # Constraints:
         #   base_vf in [0,1]
         #   base,length,sigma,thickness,interface>0
@@ -86,26 +87,37 @@ class PolymerBrush(Layer):
                     length=self.length,
                     power = self.power,
                     sigma = self.sigma)
-    def render(self, probe, slabs):
-        thickness, interface, base_vf, base, length, power, sigma \
-            = [p.value for p in self.thickness, self.interface,
-               self.base_vf, self.base, self.length, self.power, self.sigma]
+    
+    def profile(self, z):
+        thickness, base_vf, base, length, power, sigma \
+            = [p.value for p in self.thickness, self.base_vf, self.base,
+               self.length, self.power, self.sigma]
         base_vf /= 100. # % to fraction
+        L0 = base  # if base < thickness else thickness
+        L1 = base+length # if base+length < thickness else thickness-L0
+        if length == 0:
+            v = numpy.ones_like(z)
+        else:
+            v = (1 - ((z-L0)/(L1-L0))**2)
+        v[z<L0] = 1
+        v[z>L1] = 0
+        brush_profile = base_vf * v**power
+        # TODO: we could use Nevot-Croce rather than smearing the profile
+        vf = smear(z, brush_profile, sigma)
+        return vf
+        
+    def render(self, probe, slabs):
+        thickness,interface = self.thickness.value,self.interface.value
+        Pw,Pz = slabs.microslabs(thickness)
+        vf = self.profile(Pz)
+        
         Mr,Mi = self.polymer.sld(probe)
         Sr,Si = self.solvent.sld(probe)
         M = Mr + 1j*Mi
         S = Sr + 1j*Si
         try: M,S = M[0],S[0]  # Temporary hack
         except: pass
-        L0 = base if base < thickness else thickness
-        L1 = length if base+length < thickness else thickness-L0
 
-        Pw,Pz = slabs.microslabs(thickness)
-        brush_profile = base_vf * (1 - ((Pz-L0)/(L1-L0))**2)**power
-        brush_profile[Pz<L0] = base_vf
-        brush_profile[Pz>L1] = 0
-        # TODO: we could use Nevot-Croce rather than smearing the profile
-        vf = smear(Pz, brush_profile, sigma)
         P = M*vf + S*(1-vf)
         Pr, Pi = real(P), imag(P)
 

@@ -1,88 +1,59 @@
 """
 Reflectometry thickness interactor.
 """
+from numpy import inf
 
-from .config import interface_color, pick_radius
+from .config import thickness_color, pick_radius
 from .interactor import BaseInteractor
-
-def sample_boundaries(experiment):
-    boundaries = [0]
-    offset = 0
-    for L in experiment.sample[1:-1]:
-        dx = L.thickness.value
-        offset += dx
-        boundaries.append(offset)
-    return boundaries
-
-def sample_labels(experiment):
-    return [str(L) for L in experiment.sample]
-    
+from .util import clip
 
 class ThicknessInteractor(BaseInteractor):
     """
     Control the size of the layers.
     """
-    def __init__(self,
-                 profile,
-                 axes,
-                 color=interface_color
-                 ):
-        BaseInteractor.__init__(self, profile, axes, color=color)
+    def __init__(self, profile):
+        BaseInteractor.__init__(self, profile)
         self.markers  = []
         self.textmark = []
         self._show_labels = True
         self._show_boundaries = True
-        self.reset_layers()        
 
-    def _offsets(self):
-        boundaries = sample_boundaries(self.profile.experiment)
+    def label_offsets(self):
+        z = self.profile.boundary[1:-1]
         left = -20
-        middle = [(a+b)/2. for a,b in zip(boundaries[:-1],boundaries[1:])]
-        right = boundaries[-1] + 20
-        labels = [left]+middle+[right]
-        return boundaries, labels
+        middle = [(a+b)/2. for a,b in zip(z[:-1],z[1:])]
+        right = z[-1] + 20
+        return [left]+middle+[right]
         
-    def reset_layers(self):
+    def reset_markers(self):
         """
         Reset all markers.
         """
         self.clear_markers()
-        ax = self.profile.ax
-
-        boundaries, label_offsets = self._offsets()
-        labels = sample_labels(self.profile.experiment)
+        ax = self.profile.axes
                 
         # Add bars
         style = dict(linewidth=1, linestyle='-',
-                     color=interface_color, alpha=0.5,
+                     color=thickness_color, alpha=0.5,
                      pickradius=pick_radius,
                      visible=self._show_boundaries,
                      ) 
-        self.markers = [ax.axvline(x=z, **style) for z in boundaries]
+        self.markers = [ax.axvline(x=z, **style) 
+                        for z in self.profile.boundary[1:-1]]
 
         self.markers[0].set(linestyle=':')
         self.connect_markers(self.markers[1:])
 
         # Add labels
-        style = dict(transform=self.xcoords,
+        offsets = self.label_offsets()
+        labels = self.profile.sample_labels()
+        style = dict(transform=self.profile.xcoords,
                      ha='left', va='bottom',
                      rotation=30, fontsize='small',
                      visible=self._show_labels,
                      )
-                     
         self.textmark = [ax.text(z,1,s,**style)
-                         for z,s in zip(label_offsets,labels)]
-
-    def refresh(self):
-        """
-        Refreah all markers.
-
-        Also we clear up all the connects with the markers
-        """
-        if  self.markers:
-            self.base.connect.clear(*self.markers)
-
-        self.reset_layers()
+                         for z,s in zip(offsets,labels)]
 
     def clear_markers(self):
         """
@@ -93,94 +64,69 @@ class ThicknessInteractor(BaseInteractor):
             h.remove()
         self.textmark = []
 
-
-    def update(self):
+    def update_markers(self):
         """
         Update the marker positions
         """
-        boundaries, label_offsets = self._offsets()
+        label_offsets = self.label_offsets()
 
-        for z,h in zip(boundaries, self.markers):
+        for z,h in zip(self.profile.boundary[1:-1], self.markers):
             h.set_xdata([z,z])
         for z,h in zip(label_offsets, self.textmark):
             h.set_x(z)
 
     def save(self, ev):
+        idx = self.markers.index(ev.artist)
+        self._curr = self.profile.sample_layer(idx).thickness
+        self._curr_saved = self._curr.value
+        self._prev_offset = self.profile.boundary[idx]
+        self._next_offset = self.profile.boundary[idx+2]
+        if idx<len(self.markers)-1: # last
+            self._next = self.profile.sample_layer(idx+1).thickness
+            self._next_saved = self._next.value
+        else:
+            self._next = None
+    
+    def restore(self, ev):
+        self._curr.value = self._curr_saved
+        if self._next is not None:
+            self._next.value = self._next_saved
+
+    def drag(self, event):
+        """
+        Process move to a new position, making sure that the move is allowed.
+        """
+        if event.shift:
+            # move boundary between layers
+            lo_curr,hi_curr = self._curr.bounds.limits
+            lo_next,hi_next = self._next.bounds.limits
+            lo = min(lo_curr+self._prev_offset,
+                     self._next_offset-hi_next)
+            hi = max(hi_curr+self._prev_offset,
+                     self._next_offset-lo_next)
+        else:
+            lo_curr,hi_curr = self._curr.bounds.limits
+            lo = lo_curr+self._prev_offset
+            hi = hi_curr+self._prev_offset
+
+        x = clip(event.xdata, lo, hi)
+        self._curr.value = x - self._prev_offset
+        if self._next is not None:
+            self._next.value = (self._next_offset-x if event.shift 
+                                else self._next_saved)
+
+    def drag_start(self, ev):
         """
         Remember the depths for this layer and the next so that we
         can drag the boundary and restore it on Esc.
         """
         self.profile.freeze_axes()
-
-
-    def restore(self):
+        
+    def drag_cancel(self, event):
         """
         Restore the depths for this layer and the next.
         """
-        try:
-            model = self.base.model
-            model.depth[self._save_n] = self._save_d
-            if self._save_n < model.numlayers:
-                model.depth[self._save_n+1] = self._save_dnext
-        except:
-            pass
+        self.profile.thaw_axes()
 
-
-    def move(self, x, y, event):
-        """
-        Process move to a new position, making sure that the move is allowed.
-        """
-        layer_n = self._lookupLayerNumber(event)
-        if layer_n == None:
-            return
-
-        model   = self.base.model
-        lo = model.offset[layer_n]
-
-        # Drag layer Depth
-        min_depth = 1
-        max_depth = 10000
-        d = abs(x-lo)
-        if  d <  min_depth:  # Too samll
-            model.depth[ layer_n ] = min_depth
-            return True
-
-        if  d >= max_depth:  # Too Big
-            model.depth[ layer_n ] = max_depth
-            return True
-
-        # update the depth in mode
-        model.depth[ layer_n ] = d
-
-
-    def moveend(self, event):
-        self.base.thaw_axes()
-
-
-    def showValue(self, event):
-        """
-        Show the depth Value
-        """
-        n = self._lookupLayerNumber(event)
-        if n == None:
-            return
-
-        # Do we need save it?
-        self._save_depth_n = n
-
-        self.infopanel.updateNLayer( n )
-        self.infopanel.showDepthValue(  )
-
-
-    def setValue(self, event):
-        """
-        Set the depth Value
-
-        First call move(), so we can directly use the updated data(depth).
-        """
-        n = self._lookupLayerNumber(event)
-        if  n == None:
-            return
-
-        self.infopanel.updateNLayer( n )
-        self.infopanel.updateDepthValue( self.base.model.depth[n] )
+    def drag_done(self, event):
+        self.profile.thaw_axes()

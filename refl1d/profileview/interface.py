@@ -2,220 +2,131 @@
 interface  interactor.
 """
 
-from .config import roughness_color, pick_radius
+from .config import interface_color, pick_radius
 from .interactor import BaseInteractor
+from .util import clip, setpar
+
+MAX_ROUGH=3
 
 class InterfaceInteractor(BaseInteractor):
     """
     Control the roughness of the layers.
     """
-    def __init__(self,
-                 base,
-                 axes,
-                 color=roughness_color
-                 ):
-        BaseInteractor.__init__(self, base, axes, color=color)
-
-        self.layernum = 0
-        self.axes     = axes
+    def __init__(self, profile):
+        BaseInteractor.__init__(self, profile)
+        ax = profile.axes
 
         # markers for roughness
-        self.mrough=[self.axes.plot([0],[0.05],
-                                    linestyle  = '',
-                                    transform  = self.xcoords,
-                                    marker     = 's', #square
-                                    markersize = 7,
-                                    color      = self.color,
-                                    alpha      = 0.6,
-                                    pickradius = pick_radius,
-                                    label      = label,
-                                    zorder     = 8, #Prefer this to other lines
-                                    visible    = False)[0]
-                           for label in ('left rough','right rough')
-                     ]
+        style = dict(linestyle  = '',
+                     transform  = profile.xcoords,
+                     marker     = 's', #square
+                     markersize = 7,
+                     color      = interface_color,
+                     alpha      = 0.6,
+                     pickradius = pick_radius,
+                     zorder     = 8, #Prefer this to other lines
+                     visible    = False,
+                     )
+        self.markers=[ax.plot([0],[0.05], label=label, **style)[0]
+                      for label in 'interface marker L','interface marker R']
 
         # lines for roughness
-        self.lrough=[self.axes.plot([0,0],[0.05,0.05],
-                                    transform = self.xcoords,
-                                    linestyle = '-',
-                                    marker    = '',
-                                    color     = self.color,
-                                    visible   = False)[0]
-                           for label in ('left lrough','right lrough')
-                     ]
+        style = dict(linestyle = '-',
+                     transform = profile.xcoords,
+                     marker    = '',
+                     color     = interface_color,
+                     visible   = False)
+        self.lines=[ax.plot([0,0],[0.05,0.05], label=label, **style)[0]
+                    for label in 'interface line L','interface line R']
 
-        self.markers = self.mrough
         self.connect_markers(self.markers)
 
 
-    def set_layer(self, n):
+    def set_layer(self):
         """
-        Set the layer number
+        Move markers to the new layer
         """
-        self.layernum = n
-        self.update()
+        n = self.profile.layer_num
+        z = self.profile.boundary[1:-1]
+        show_left = n is not None and n>0
+        show_right = n is not None and n < len(z)
+        if show_left:
+            self._left = self.profile.sample_layer(n-1).interface
+        else:
+            self._left = None
+        if show_right:
+            self._right = self.profile.sample_layer(n).interface
+        else:
+            self._right = None
+        #self.update_markers()
 
 
-    def update(self):
+    def update_markers(self):
         """
         Draw the new roughness on the graph.
         """
-        return
-        model = self.base.model
-        n     = self.layernum
+        n = self.profile.layer_num
+        z = self.profile.boundary[1:-1]
+        show_left = self._left is not None
+        show_right = self._right is not None
 
-        showLeft = (n>0 and n<=model.numlayers+1)
-        self.mrough[0].set( visible = showLeft )
-        self.lrough[0].set( visible = showLeft )
-        if n > 0:
-            self.mrough[0].set(xdata=[model.offset[n]+model.rough[n-1]])
-            self.lrough[0].set(xdata=[model.offset[n],
-                                      model.offset[n]+model.rough[n-1]])
+        self.markers[0].set(visible=show_left)
+        self.lines[0].set(visible=show_left)
+        if show_left:
+            self.markers[0].set(xdata=[z[n-1]+self._left.value])
+            self.lines[0].set(xdata=[z[n-1], z[n-1]+self._left.value])
 
-        showRight = (n<=model.numlayers and n>=0)
-        self.mrough[1].set( visible = showRight )
-        self.lrough[1].set( visible = showRight )
-        if n <= model.numlayers:
-            self.mrough[1].set(xdata=[model.offset[n+1]-model.rough[n]])
-            self.lrough[1].set(xdata=[model.offset[n+1],
-                                      model.offset[n+1]-model.rough[n]])
+        self.markers[1].set(visible=show_right)
+        self.lines[1].set(visible=show_right)
+        if show_right:
+            self.markers[1].set(xdata=[z[n]-self._right.value])
+            self.lines[1].set(xdata=[z[n],z[n]-self._right.value])
 
-
-    def clear(self):
+    def clear_markers(self):
         """
-        clear roughness( line and marker) on the graph.
+        Remove interface markers from the graph.
         """
-        for line in self.lrough:
-            line.remove()
-        self.clear_markers()
+        BaseInteractor.clear_markers(self)
+        for h in self.lines:
+            h.remove()
+        self.lines = []
 
 
     def save(self, event):
         """
-        Remember the roughness for this layer and the next so that we
+        Remember the interface for this layer and the next so that we
         can restore on Esc.
         """
-        model = self.base.model
-        self._save_n = self.mrough.index(event.artist)
+        
+        if self._left is not None: 
+            self._left_value = self._left.value
+        if self._right is not None:
+            self._right_value = self._right.value
 
-        self._save_v = model.rough[self.layernum + self._save_n-1]
-
-        # Freeze the x axes
-        self.base.freeze_axes()
-
-
-    def moveend(self, event):
-        self.base.thaw_axes()
-
-
-    def restore(self):
+    def restore(self, event):
         """
         Restore the roughness for this layer.
         """
-        try:
-            model = self.base.model
-            model.rough[self.layernum + self._save_n] = self._save_v
-        except:
-            pass
+        if self._left is not None:
+            self._left.value = self._left_value
+        if self._right is not None:
+            self._right.value = self._right_value
 
-
-    def GetMaxRough(self, n):
-        """
-        Get the max rough for layer n
-        """
-        model = self.base.model
-        if n == 0 :
-            # You can change this number to show the depth in incident layer
-            # is infinite
-            return 1000.0
-        else:
-            return model.depth[n]/model.max_rough
-
-
-    def move(self, x, y, event):
+    def drag(self, event):
         """
         Process move to a new position, making sure that the move is allowed.
         """
-        model = self.base.model
-        n     = self.layernum
-
-        self._save_n = self.mrough.index(event.artist)
-
-
-        if self._save_n == 0:  # Left
-
-            v = x - model.offset[n]
-            if  v < 0:
-                v = 0
-
-            if  n >= 1 and  v > self.GetMaxRough(n-1):
-                v = self.GetMaxRough(n-1)
-
-            if  n <= model.numlayers and v > self.GetMaxRough(n):
-                v = self.GetMaxRough(n)
-
-            model.rough[n-1] = v
+        z = self.profile.boundary
+        n = self.profile.layer_num
+        side = self.markers.index(event.artist)
+        if side == 0:  # Left
+            limit = min(z[n]-z[n-1], z[n+1]-z[n])
+            v = clip(event.xdata-z[n], 0, limit/MAX_ROUGH)
+            setpar(self._left, v)
 
         else:  # Right
+            limit = min(z[n+1]-z[n], z[n+2]-z[n+1])
+            v = clip(z[n+1] - event.xdata, 0, limit/MAX_ROUGH)
+            setpar(self._right, v)
 
-            v = model.offset[n+1] - x
-            if  v < 0:
-                v = 0
-
-            if  n > 0 and v > self.GetMaxRough(n):
-                v = self.GetMaxRough(n)
-
-            if  n < model.numlayers and v > self.GetMaxRough(n+1):
-                v = self.GetMaxRough(n+1)
-
-            model.rough[n] = v
-
-
-    def getRough(self, n):
-        """
-        Get the rough for layer n
-        """
-        try:
-            val = self.base.model.rough[n]
-        except:
-            val = None
-        return val
-
-
-    def setValue(self, event):
-        """
-        Set the rough
-
-        First call move(), so we can directly use the updated data(rough).
-        """
-        n     = self.layernum
-        idx   = self.mrough.index(event.artist)
-
-        if idx==1:
-            val = self.getRough(n)
-        else:
-            val = self.getRough(n-1)
-
-        if  val == None:
-            return
-
-        self.infopanel.updateNLayer( n )
-
-        if  idx==1:  self.infopanel.updateRRoughValue( val )
-        else:        self.infopanel.updateLRoughValue( val )
-
-
-    def showValue(self, event):
-        """
-        Show the rough
-        """
-        n   = self.model.find( event.xdata )
-        idx = self.mrough.index(event.artist)
-
-        if idx ==1:  self._save_rough_n = n
-        else:        self._save_rough_n = n-1
-
-        self.infopanel.updateNLayer(  n )
-
-        if  idx == 1:  self.infopanel.showRRoughValue( )
-        else:          self.infopanel.showLRoughValue( )
+        #self.update_markers()

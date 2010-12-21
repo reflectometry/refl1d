@@ -3,18 +3,33 @@ Extension to MPL to support the binding of artists to key/mouse events.
 """
 from matplotlib      import transforms
 
+# CRUFT: matplotlib doesn't yet support canvas.draw_now()
+from matplotlib.backends.backend_wx import FigureCanvasWx
+def wxdrawnow(self):
+    #print "draw if needed"
+    if not self._isDrawn: 
+        self.draw()
+FigureCanvasWx.draw_now = wxdrawnow
+
 if hasattr(transforms,'Transform'):
     # 0.98 transforms
     def pixel_to_data(transform, x, y):
-        # TODO: suspicious code -- why not use the blended transform?
-        if isinstance(transform, transforms.BlendedGenericTransform):
-            transform = transform._x
-        return transform.inverted().transform( (x,y) )
+        return transform.inverted().transform_point( (x,y) )
 else:
     # CRUFT 0.91 support
     def pixel_to_data(transform, x, y):
         return transform.inverse_xy_tup((x,y))
 
+def draw_if_needed(canvas):
+    """
+    Force canvas to be drawn if there are drawing commands outstanding.
+    
+    This is needed if the application has emitted a draw_idle() that hasn't
+    had time to process prior to the mouse event detection running.
+    """
+    # Only implemented for wx so far
+    if not canvas._isDrawn:
+        canvas.draw()
 
 class Selection:
     """
@@ -46,6 +61,7 @@ class BindArtist:
     # TODO: properly support it from outside the windowing system since there
     # TODO: is no way to recognized whether shift is held down when the mouse
     # TODO: first clicks on the the application window.
+    _debug  = False
     control = False
     shift   = False
     alt     = False
@@ -225,6 +241,10 @@ class BindArtist:
         artist = actor.artist
         prop   = actor.prop
         if artist in self._actions[action]:
+            # Make sure the x,y data use the coordinate system of the
+            # artist rather than the default axes coordinates.
+            xy = pixel_to_data(artist.get_transform(), ev.x, ev.y)
+            ev.xdata, ev.ydata  = xy
             ev.artist = artist
             ev.prop   = prop
             processed = self._actions[action][artist](ev)
@@ -252,6 +272,9 @@ class BindArtist:
         Find the artist who will receive the event.  Only search
         registered artists.  All others are invisible to the mouse.
         """
+        self.canvas.draw_now()
+        #self.canvas.draw()
+        #draw_now(self.canvas)
         # TODO: sort by zorder of axes then by zorder within axes
         self._artists.sort(cmp=lambda x,y: cmp(y.zorder,x.zorder))
         # print "search"," ".join([str(h) for h in self._artists])
@@ -265,6 +288,7 @@ class BindArtist:
                 continue
 
             # TODO: optimization - exclude artists not inaxes
+            # Note: errors tend to show up on move
             inside,prop = artist.contains(event)
             if inside:
                 found.artist = artist
@@ -293,11 +317,6 @@ class BindArtist:
 
         # Dibs on the motion event for the clicked artist
         if self._hasclick:
-            # Make sure the x,y data use the coordinate system of the
-            # artist rather than the default axes coordinates.
-            transform = self._hasclick.artist.get_transform()
-            xy = pixel_to_data(transform, event.x, event.y)
-            event.xdata, event.ydata  = xy
             self.trigger(self._hasclick, 'drag', event)
         else:
             found = self._find_current(event)

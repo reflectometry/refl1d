@@ -1,4 +1,9 @@
 
+def clip(a,lo,hi):
+    return max(lo,min(a,hi))
+
+def setpar(p, v):
+    p.value = clip(v,*p.bounds.limits)
 
 def CopyImage(canvas):
     """
