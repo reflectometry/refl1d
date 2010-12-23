@@ -5,6 +5,7 @@ __all__ = [ 'Parameter', 'ParameterSet']
 import sys
 import numpy
 
+from numpy import inf
 from . import bounds as mbounds
 from .formatnum import format_uncertainty
 
@@ -186,11 +187,15 @@ class Parameter(BaseParameter):
         # Store whatever values the user needs to associate with the parameter
         # Models should set units and tool tips so the user interface has
         # something to work with.
+        limits = kw.pop('limits',(-inf,inf))
         for k,v in kw.items():
             setattr(self,k,v)
 
         # The real initialization
+        def clip(x,a,b): return min(max(x,a),b)
         self.bounds = bounds
+        self.bounds.limits = (clip(self.bounds.limits[0],*limits),
+                              clip(self.bounds.limits[1],*limits))
         self.value = value
         self.fixed = fixed
         self.name = name

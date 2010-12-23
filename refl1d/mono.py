@@ -7,7 +7,7 @@
 
 from __future__ import division, with_statement
 from numpy import (diff, hstack, sqrt, searchsorted, asarray, cumsum,
-                   inf, nonzero, linspace)
+                   inf, nonzero, linspace, sort)
 from mystic.parameter import Parameter as Par, Function as ParFunction
 from . import numpyerrors
 from .model import Layer
@@ -30,113 +30,50 @@ class FreeLayer(Layer):
     Layers have a slope of zero at the ends, so the automatically blend
     with slabs.
     """
-    def __init__(self, thickness=0, left=None, right=None,
-                 rho=[], irho=[], rhoz=[], irhoz=[], name="Freeform"):
+    def __init__(self, left=None, right=None, thickness=0,
+                 z=[], rho=[], irho=[], name="Freeform"):
         self.name = name
         self.left, self.right = left,right
-        self.thickness = Par.default(thickness, limits=(0,inf),
-                                   name=name+" thickness")
-        self.rho,self.irho,self.rhoz,self.irhoz \
-            = [[Par.default(p,name=name+" [%d] %s"%(i,part),limits=limits)
-                for i,p in enumerate(v)]
-               for v,part,limits in zip((rho, irho, rhoz, irhoz),
-                                        ('rho', 'irho', 'rhoz', 'irhoz'),
-                                        ((-inf,inf),(-inf,inf),(0,1),(0,1))
+        self.thickness = Par.default(thickness,name=name+" thickness",
+                                     limits=(0,inf))
+        def parvec(vector,name,limits):
+            return [Par.default(p,name=name+"[%d]"%i,limits=limits)
+                    for i,p in enumerate(vector)]
+        self.rho, self.irho, self.z \
+            = [parvec(v,name+" "+part,limits)
+               for v,part,limits in zip((rho, irho, z),
+                                        ('rho', 'irho', 'z'),
+                                        ((-inf,inf),(0,inf),(0,1))
                                         )]
-        if len(self.rhoz) > 0 and len(self.rhoz) != len(self.rho):
-            raise ValueError("must have one z value for each rho")
-        if len(self.irhoz) > 0 and len(self.irhoz) != len(self.irho):
-            raise ValueError("must have one z value for each irho")
+        if len(self.z) != len(self.rho):
+            raise ValueError("must have one z for each rho value")
+        if len(self.irho) > 0 and len(self.z) != len(self.irho):
+            raise ValueError("must have one z for each irho value")
     def parameters(self):
         return dict(rho=self.rho,
-                    rhoz=self.rhoz,
                     irho=self.irho,
-                    irhoz=self.irhoz,
+                    z=self.z,
                     left=self.left.parameters(),
                     right=self.right.parameters(),
-                    thickness=self.thickness)
+                    )
     def render(self, probe, slabs):
         thickness = self.thickness.value
-        left_rho,left_irho = self.left.sld(probe)
-        right_rho,right_irho = self.right.sld(probe)
-        Pw,Pz = slabs.microslabs(thickness)
+        left,ileft = self.left.sld(probe)
+        right,iright = self.right.sld(probe)
         
-        rho = hstack((left_rho, [p.value for p in self.rho], right_rho))
-        rhoz = hstack((0, [p.value for p in self.rhoz], 1))
-        Prho = monospline(rho, rhoz, Pz)
+        z = sort([0]+[p.value for p in self.z]+[1])*thickness
+        Pw,Pz = slabs.microslabs(z[-1])
+
+        rho = hstack((left, [p.value for p in self.rho], right))
+        Prho = monospline(z, rho, Pz)
         
-        irho = hstack((left_irho, [p.value for p in self.irho], right_irho))
-        irhoz = hstack((0, [p.value for p in self.irhoz], 1))
-        Pirho = monospline(irho, irhoz, Pz)
+        if len(self.irho)>0:
+            irho = hstack((ileft, [p.value for p in self.irho], iright))
+            Pirho = monospline(z, irho, Pz)
+        else:
+            Pirho = 0*Prho
 
         slabs.extend(rho=[Prho], irho=[Pirho], w=Pw)
-
-class FreeInterfaceW(Layer):
-    """
-    A freeform section of the sample modeled with monotonic splines.
-
-    Layers have a slope of zero at the ends, so the automatically blend
-    with slabs.
-    """
-    def __init__(self, interface=0,
-                 below=None, above=None,
-                 dz=None, dp=None, name="Interface"):
-        self.name = name
-        self.below, self.above = below,above
-        self.interface = Par.default(interface, limits=(0,inf),
-                                     name=name+" interface")
-        
-        # Choose reasonable defaults if not given
-        if dp is None and dz is None:
-            dp = [1]*5
-        if dp is None:
-            dp = [1]*len(dz)
-        if dz is None:
-            dz = [10./len(dp)]*len(dp)
-        if len(dz) != len(dp):
-            raise ValueError("Need one dz for every dp")
-        #if len(z) != len(vf)+2:
-        #    raise ValueError("Only need vf for interior z, so len(z)=len(vf)+2")
-        self.dz = [Par.default(p,name=name+" dz[%d]"%i,limits=(0,inf))
-                  for i,p in enumerate(dz)]
-        self.dp = [Par.default(p,name=name+" dp[%d]"%i,limits=(0,inf))
-                   for i,p in enumerate(dp)]
-    def _get_thickness(self):
-        w = sum(v.value for v in self.dz)
-        return Par(w,name=self.name+" thickness")
-    def _set_thickness(self, v):
-        if v != 0: 
-            raise ValueError("thickness cannot be set for FreeformInterface")
-    thickness = property(_get_thickness, _set_thickness)
-        
-    def parameters(self):
-        return dict(dz=self.dz,
-                    dp=self.dp,
-                    below=self.below.parameters(),
-                    above=self.above.parameters(),
-                    interface=self.interface)
-    def render(self, probe, slabs):
-        interface = self.interface.value
-        left_rho,left_irho = self.below.sld(probe)
-        right_rho,right_irho = self.above.sld(probe)
-        z = hstack( (0, cumsum([v.value for v in self.dz])) )
-        p = hstack( (0, cumsum([v.value for v in self.dp])) )
-        thickness = z[-1]
-        if p[-1] == 0: p[-1] = 1
-        p /= p[-1]
-        Pw,Pz = slabs.microslabs(z[-1])
-        profile = monospline(z, p, Pz)
-        lidx,ridx = searchsorted(profile,[0.01,0.99])
-        ridx = min( (ridx, len(profile)-1) )
-        Prho  = (1-profile)*left_rho  + profile*right_rho
-        Pirho = (1-profile)*left_irho + profile*right_irho
-        slabs.extend(rho=[left_rho], irho=[left_irho], w=[Pz[lidx]])
-        slabs.extend(rho=[Prho[lidx:ridx]], 
-                     irho=[Pirho[lidx:ridx]], 
-                     w=Pw[lidx:ridx])
-        slabs.extend(rho=[right_rho],irho=[right_irho],
-                     sigma=[interface],
-                     w=[thickness-Pz[ridx]])
 
 def inflections(dx,dy):
     x = hstack( (0, cumsum(dx)) )
@@ -299,3 +236,73 @@ def hermite(x,y,m,xt):
                    m[idx],
                    y[idx])
     return ((c3*v + c2)*v + c1)*v + c0
+
+
+
+# CRUFT: still working on best rep'n for control point locations
+class _FreeInterfaceW(Layer):
+    """
+    A freeform section of the sample modeled with monotonic splines.
+
+    Layers have a slope of zero at the ends, so the automatically blend
+    with slabs.
+    """
+    def __init__(self, interface=0,
+                 below=None, above=None,
+                 dz=None, dp=None, name="Interface"):
+        self.name = name
+        self.below, self.above = below,above
+        self.interface = Par.default(interface, limits=(0,inf),
+                                     name=name+" interface")
+        
+        # Choose reasonable defaults if not given
+        if dp is None and dz is None:
+            dp = [1]*5
+        if dp is None:
+            dp = [1]*len(dz)
+        if dz is None:
+            dz = [10./len(dp)]*len(dp)
+        if len(dz) != len(dp):
+            raise ValueError("Need one dz for every dp")
+        #if len(z) != len(vf)+2:
+        #    raise ValueError("Only need vf for interior z, so len(z)=len(vf)+2")
+        self.dz = [Par.default(p,name=name+" dz[%d]"%i,limits=(0,inf))
+                  for i,p in enumerate(dz)]
+        self.dp = [Par.default(p,name=name+" dp[%d]"%i,limits=(0,inf))
+                   for i,p in enumerate(dp)]
+    def _get_thickness(self):
+        w = sum(v.value for v in self.dz)
+        return Par(w,name=self.name+" thickness")
+    def _set_thickness(self, v):
+        if v != 0: 
+            raise ValueError("thickness cannot be set for FreeformInterface")
+    thickness = property(_get_thickness, _set_thickness)
+        
+    def parameters(self):
+        return dict(dz=self.dz,
+                    dp=self.dp,
+                    below=self.below.parameters(),
+                    above=self.above.parameters(),
+                    interface=self.interface)
+    def render(self, probe, slabs):
+        interface = self.interface.value
+        left_rho,left_irho = self.below.sld(probe)
+        right_rho,right_irho = self.above.sld(probe)
+        z = hstack( (0, cumsum([v.value for v in self.dz])) )
+        p = hstack( (0, cumsum([v.value for v in self.dp])) )
+        thickness = z[-1]
+        if p[-1] == 0: p[-1] = 1
+        p /= p[-1]
+        Pw,Pz = slabs.microslabs(z[-1])
+        profile = monospline(z, p, Pz)
+        lidx,ridx = searchsorted(profile,[0.01,0.99])
+        ridx = min( (ridx, len(profile)-1) )
+        Prho  = (1-profile)*left_rho  + profile*right_rho
+        Pirho = (1-profile)*left_irho + profile*right_irho
+        slabs.extend(rho=[left_rho], irho=[left_irho], w=[Pz[lidx]])
+        slabs.extend(rho=[Prho[lidx:ridx]], 
+                     irho=[Pirho[lidx:ridx]], 
+                     w=Pw[lidx:ridx])
+        slabs.extend(rho=[right_rho],irho=[right_irho],
+                     sigma=[interface],
+                     w=[thickness-Pz[ridx]])

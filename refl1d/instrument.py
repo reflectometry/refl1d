@@ -137,6 +137,8 @@ class Monochromatic(object):
         *dLoL* : float
             constant relative wavelength dispersion; wavelength range and
             dispersion together determine the bins
+        *slits* : float OR (float,float) | mm
+            fixed slits
         *slits_at_Tlo* : float OR (float,float) | mm
             slit 1 and slit 2 openings at Tlo; this can be a scalar if both
             slits are open by the same amount, otherwise it is a pair (s1,s2).
@@ -173,6 +175,7 @@ class Monochromatic(object):
     # Optional attributes
     Tlo= 90  # Use 90 for fixed slits; this is effectively inf
     Thi= 90
+    fixed_slits = None
     slits_at_Tlo = None    # Slit openings at Tlo, and default for slits_below
     slits_below = None     # Slit openings below Tlo, or fixed slits if Tlo=90
     slits_above = None
@@ -318,9 +321,14 @@ class Monochromatic(object):
         T = kw['T']
         Tlo = kw.get('Tlo',self.Tlo)
         Thi = kw.get('Thi',self.Thi)
-        slits_at_Tlo = kw.get('slits_at_Tlo',self.slits_at_Tlo)
-        slits_below = kw.get('slits_below',self.slits_below)
-        slits_above = kw.get('slits_above',self.slits_above)
+        fixed_slits = kw.get('fixed_slits',self.fixed_slits)
+        if fixed_slits is not None:
+            slits_at_Tlo = slits_below = slits_above = fixed_slits
+            Tlo = 90
+        else:
+            slits_at_Tlo = kw.get('slits_at_Tlo',self.slits_at_Tlo)
+            slits_below = kw.get('slits_below',self.slits_below)
+            slits_above = kw.get('slits_above',self.slits_above)
 
         # Otherwise we are using opening slits
         if Tlo is None or slits_at_Tlo is None:

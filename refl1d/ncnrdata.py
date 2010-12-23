@@ -12,7 +12,7 @@ NCNR data loaders.
 
 The following instruments are defined:
 
-    ANDR, NG1, NG7 and Xray
+    ANDR, NG1, NG7 and XRay
 
 These are :class:`refl1d.instrument.Monochromatic` classes tuned with default
 instrument parameters and loaders for reduced NCNR data.
