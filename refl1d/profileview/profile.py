@@ -2,6 +2,7 @@
 Reflectometry profile interactor.
 """
 
+import wx
 import numpy
 from numpy import inf
 
@@ -168,24 +169,12 @@ class ProfileInteractor(object):
         self.draw_idle()
 
     def update_markers(self):
+        self.boundary = self._layer_boundaries()
         self.thickness_interactor.update_markers()
         self.interface_interactor.update_markers()
         self.layer_interactor.update_markers()
         
-    def update(self):
-        """
-        Respond to changes in the model by recalculating the profiles and
-        resetting the widgets.
-        """
-        # We are done the manipulation; let the model send its update signal
-        # to whomever is listening.
-        self.listener.signal('update',self)
-
-        # Update locations
-        self.boundary = self._layer_boundaries()
-        self.update_markers()
-
-        # Update profile
+    def update_profile(self):
         self.experiment.update()
         if self.magnetic:
             z,rho,rhoI,rhoM,thetaM = self.experiment.smooth_profile()
@@ -195,7 +184,6 @@ class ProfileInteractor(object):
             z,rho,rhoI = self.experiment.smooth_profile()
         self.hrho.set_data(z,rho)
         self.hrhoI.set_data(z,rhoI)
-        self.draw_idle()
 
     def reset_limits(self):
 
@@ -229,7 +217,23 @@ class ProfileInteractor(object):
             fluff = 0.05*(hi-lo)
             self.axes.set_ylim(lo-fluff, hi+fluff)
 
-        self.draw_idle()
+    def update(self):
+        """
+        Respond to changes in the model by recalculating the profiles and
+        resetting the widgets.
+        """
+        # We are done the manipulation; let the model send its update signal
+        # to whomever is listening.
+        self.listener.signal('update',self)
+
+        self.update_markers()
+        self.update_profile()
+        self.draw_now()
+        #self.delayed_profile()
+
+    def delayed_profile(self):
+        try: self._delayed.Restart(50)
+        except: self._delayed = wx.FutureCall(50, lambda:(self.update_profile(),self.draw_now()))
 
     def freeze_axes(self):
         self.axes_frozen = True
@@ -237,6 +241,8 @@ class ProfileInteractor(object):
     def thaw_axes(self):
         self.axes_frozen = False
 
+    def draw_now(self):
+        self.axes.figure.canvas.draw()
     def draw_idle(self):
         """Set the limits and tell the canvas to render itself."""
         #print "draw when idle"

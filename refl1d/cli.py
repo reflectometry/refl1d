@@ -117,6 +117,16 @@ class FitProxy(object):
         P.plot(figfile=output_path)
 
 
+def mesh(problem, vars=None, n=40):
+    x,y = [numpy.linspace(p.bounds.limits[0],p.bounds.limits[1],n) for p in vars]
+    p1, p2 = vars
+    def fn(xi,yi):
+        p1.value, p2.value = xi,yi
+        problem.model_update()
+        #parameter.summarize(problem.parameters)
+        return problem.chisq()
+    z = [[fn(xi,yi) for xi in x] for yi in y]
+    return x,y,numpy.asarray(z)
 
 # ===== Model manipulation ====
 
@@ -358,8 +368,9 @@ class FitOpts(ParseOpts):
     MINARGS = 1
     FLAGS = set(("preview","check","profile","edit",
                  "worker","batch","overwrite","parallel"))
-    VALUES = set(("plot","store","fit",
-                  "pop","steps","burn"))
+    VALUES = set(("plot","store","mesh","meshsteps",
+                  "fit","pop","steps","burn",
+                 ))
     pop="10"
     steps="1000"
     burn="0"
@@ -393,6 +404,19 @@ where options include:
         number of iterations before accumulating stats (dream)
     --parallel
         run fit using all processors
+    --mesh=var OR var+var
+        plot chisq line or plane
+    --meshsteps=n
+        number of steps in the mesh
+
+For mesh plots, var can be a fitting parameter with optional
+range specifier, such as:
+
+   P[0].range(3,6)
+
+or the complete path to a model parameter:
+
+   M[0].sample[1].material.rho.pm(1)
 
 Options can be placed anywhere on the command line.
 
@@ -417,6 +441,7 @@ Model arguments may not start with '-'.
             raise ValueError("unknown fitter %s; use %s"%(value,"|".join(self.FITTERS)))
         self._fitter = value
     fit = property(fget=lambda self: self._fitter, fset=_set_fitter)
+    meshsteps = 40
 
 
 
@@ -465,3 +490,4 @@ def main():
         remember_best(fitter, job, best)
         if not opts.batch:
             pylab.show()
+

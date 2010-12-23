@@ -66,8 +66,10 @@ class ProfileView(AuiPanel):
         self.profile = ProfileInteractor(self.axes,
                                          experiment,
                                          self.listener)
-        self.profile.update()
+        self.profile.update_markers()
+        self.profile.update_profile()
         self.profile.reset_limits()
+        self.profile.draw_idle()
 
     def onPrinterSetup(self,event=None):
         self.canvas.Printer_Setup(event=event)

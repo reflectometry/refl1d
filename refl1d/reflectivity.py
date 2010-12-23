@@ -120,9 +120,12 @@ def reflectivity_amplitude(kz=None,
     else:
         irho = _dense(irho, 'd')
 
+    #print depth.shape,rho.shape,irho.shape,sigma.shape
+    #print depth.dtype,rho.dtype,irho.dtype,sigma.dtype
     r = numpy.empty(kz.shape,'D')
     #print "amplitude",depth,rho,kz,rho_index
-    reflmodule._reflectivity_amplitude(depth, sigma, rho, irho, kz, rho_index, r)
+    reflmodule._reflectivity_amplitude(depth, sigma, rho, irho, kz, 
+                                       rho_index, r)
     return r
 
 
