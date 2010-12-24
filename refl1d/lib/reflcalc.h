@@ -138,6 +138,13 @@ void
 resolution(int Nin, const double Qin[], const double Rin[],
 	   int N, const double Q[], const double dQ[], double R[]);
 
+int
+contract_by_step(int n, double d[], double sigma[],
+                 double rho[], double irho[], double dh);
+
+int
+contract_by_area(int n, double d[], double sigma[],
+                 double rho[], double irho[], double dA);
 
 #ifdef __cplusplus
 }

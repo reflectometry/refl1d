@@ -29,6 +29,16 @@ static PyMethodDef methods[] = {
 	 METH_VARARGS, 
 	 "_magnetic_amplitude(d,sigma,rho,irho,rhoM,expth,Q,rho_offset,R1,R2,R3,R4): compute amplitude putting it into vector R of len(Q)"},
 
+         {"_contract_by_area",
+          Pcontract_by_area,
+          METH_VARARGS,
+          "_contract_by_area(d,sigma,rho,irho,dA): join layers in microstep profile, keeping error under control"},
+
+          {"_contract_by_step",
+           Pcontract_by_step,
+           METH_VARARGS,
+           "_contract_by_step(d,sigma,rho,irho,dv): join layers in microstep profile, keeping error under control"},
+
 	{"_erf",
 	 Perf,
 	 METH_VARARGS,

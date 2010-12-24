@@ -125,7 +125,8 @@ class Experiment(ExperimentBase):
 
         *sample* is the model sample
         *roughness_limit* limits the roughness based on layer thickness
-        *dz* step size for profile steps in Angstroms.
+        *dz* minimum step size for computed profile steps in Angstroms.
+        *dA* discretization condition for computed profiles.
 
     The *roughness_limit* value should be reasonably large (e.g., 2.5 or above)
     to make sure that the Nevot-Croce reflectivity calculation matches the
@@ -135,20 +136,26 @@ class Experiment(ExperimentBase):
 
     The *dz* step size sets the size of the slabs for non-uniform profiles.
     Using the relation d = 2 pi / Q_max,  we use a default step size of d/20
-    rounded to two digits.  The maximum step size is 5 A.  For simultaneous
-    fitting you may want to set *dz* explicitly using
-    :func:`experiment.nice <refl1d.experiment.nice>`  to nice(pi/Q_max/10) so that all models
-    use the same profile step size, but the same step size is not required.
+    rounded to two digits, with 5 |Ang| as the maximum default.  For 
+    simultaneous fitting you may want to set *dz* explicitly using to 
+    round(pi/Q_max/10,1) so that all models use the same step size.
 
+    The *dA* condition measures the uncertainty in scattering materials 
+    allowed when combining the steps of a non-uniform profile into slabs.
+    Specifically, the area of the box containing the minimum and the
+    maximum of the non-uniform profile within the slab will be smaller
+    than *dA*.  A *dA* of 10 gives coarse slabs.  If *dA* is not provided
+    then each profile step forms its own slab.
     """
     def __init__(self, sample=None, probe=None,
-                 roughness_limit=2.5, dz=None):
+                 roughness_limit=2.5, dz=None, dA=None):
         self.sample = sample
         self.probe = probe
         self.roughness_limit = roughness_limit
         if dz is None:
             dz = nice((2*pi/probe.Q.max())/20)
             if dz > 5: dz = 5
+        self.dA = dA
         self._slabs = profile.Microslabs(len(probe), dz=dz)
         self._probe_cache = material.ProbeCache(probe)
         self._cache = {}  # Cache calculated profiles/reflectivities
@@ -168,6 +175,9 @@ class Experiment(ExperimentBase):
         if key not in self._cache:
             self._slabs.clear()
             self.sample.render(self._probe_cache, self._slabs)
+            if self.dA is not None:
+                self._slabs.contract_profile(self.dA)
+                self._slabs.smooth_interfaces(self.dA)
             self._cache[key] = True
         return self._slabs
 
@@ -219,7 +229,13 @@ class Experiment(ExperimentBase):
         if key not in self._cache:
             calc_q, calc_r = self._reflamp()
             calc_R = abs(calc_r)**2
-            if numpy.isnan(calc_R).any(): print "calc_r contains NaN"
+            if numpy.isnan(calc_R).any():
+                print "calc_r contains NaN"
+                slabs = self._slabs
+                #print "w",slabs.w
+                #print "rho",slabs.rho
+                #print "irho",slabs.irho
+                #print "sigma",slabs.sigma
             Q,R = self.probe.apply_beam(calc_q, calc_R, resolution=resolution)
             self._cache[key] = Q,R
             if numpy.isnan(R).any(): print "apply_beam causes NaN"
@@ -238,7 +254,7 @@ class Experiment(ExperimentBase):
                     Vrho=rho[0,-1], Virho=irho[0,-1])
         return f(self.probe.Q)
 
-    def smooth_profile(self,dz=1):
+    def smooth_profile(self,dz=0.1):
         """
         Compute a density profile for the material.
 

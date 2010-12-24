@@ -12,7 +12,7 @@ def configuration(parent_package='', top_path=None):
     srcpath = os.path.join(config.package_path, 'lib')
     sources = [os.path.join(srcpath,f)
                for f in ("reflmodule.cc","methods.cc","reflectivity.cc",
-                         "magnetic.cc","resolution.c")]
+                         "magnetic.cc","resolution.c","contract_profile.cc")]
 
     config.add_extension('reflmodule',
                          sources=sources,

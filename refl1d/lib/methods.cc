@@ -138,6 +138,58 @@ PyObject* Preflectivity_amplitude(PyObject*obj,PyObject*args)
 
 
 
+PyObject* Pcontract_by_area(PyObject*obj,PyObject*args)
+{
+  PyObject *d_obj,*rho_obj,*irho_obj,*sigma_obj;
+  Py_ssize_t nd, nrho, nirho, nsigma;
+  double *d, *sigma, *rho, *irho;
+  double dA;
+
+  if (!PyArg_ParseTuple(args, "OOOOd:reflectivity",
+      &d_obj,&sigma_obj,&rho_obj,&irho_obj,&dA))
+    return NULL;
+  INVECTOR(d_obj,d,nd);
+  INVECTOR(sigma_obj,sigma,nsigma);
+  INVECTOR(rho_obj,rho,nrho);
+  INVECTOR(irho_obj,irho,nirho);
+  // interfaces should be one shorter than layers
+  if (nd != nrho || nd != nirho || nd != nsigma+1) {
+#ifndef BROKEN_EXCEPTIONS
+    PyErr_SetString(PyExc_ValueError, "d,rho,mu,sigma have different lengths");
+#endif
+    return NULL;
+  }
+  int newlen = contract_by_area(nd, d, sigma, rho, irho, dA);
+  return Py_BuildValue("i",newlen);
+}
+
+
+PyObject* Pcontract_by_step(PyObject*obj,PyObject*args)
+{
+  PyObject *d_obj,*rho_obj,*irho_obj,*sigma_obj;
+  Py_ssize_t nd, nrho, nirho, nsigma;
+  double *d, *sigma, *rho, *irho;
+  double dv;
+
+  if (!PyArg_ParseTuple(args, "OOOOOd:reflectivity",
+      &d_obj,&sigma_obj,&rho_obj,&irho_obj,&dv))
+    return NULL;
+  INVECTOR(d_obj,d,nd);
+  INVECTOR(sigma_obj,sigma,nsigma);
+  INVECTOR(rho_obj,rho,nrho);
+  INVECTOR(irho_obj,irho,nirho);
+  // interfaces should be one shorter than layers
+  if (nd != nrho || nd != nirho || nd != nsigma+1) {
+#ifndef BROKEN_EXCEPTIONS
+    PyErr_SetString(PyExc_ValueError, "d,rho,mu,sigma have different lengths");
+#endif
+    return NULL;
+  }
+  int newlen = contract_by_step(nd, d, sigma, rho, irho, dv);
+  return Py_BuildValue("i",newlen);
+}
+
+
 PyObject* Perf(PyObject*obj,PyObject*args)
 {
   PyObject *data_obj, *result_obj;

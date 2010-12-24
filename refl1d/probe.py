@@ -159,7 +159,14 @@ class Probe(object):
         self.theta_offset = Parameter.default(theta_offset,name="theta_offset")
 
         self.back_reflectivity = back_reflectivity
+        if data is not None:
+            R,dR = data
+        else:
+            R,dR = None,None
 
+        self._set_TLR(T,dT,L,dL,R,dR)
+        
+    def _set_TLR(self, T,dT,L,dL,R,dR):
         #if L is None:
         #    L = xsf.xray_wavelength(E)
         #    dL = L * dE/E
@@ -178,17 +185,14 @@ class Probe(object):
         self.T, self.dT = T[idx],dT[idx]
         self.L, self.dL = L[idx],dL[idx]
         self.Qo, self.dQ = Q[idx],dQ[idx]
-        if data is not None:
-            R,dR = data
-            if R is not None: R = R[idx]
-            if dR is not None: dR = dR[idx]
-            self.Ro = self.R = R
-            self.dR = dR
+        if R is not None: R = R[idx]
+        if dR is not None: dR = dR[idx]
+        self.Ro = self.R = R
+        self.dR = dR
 
         # By default the calculated points are the measured points.  Use
         # oversample() for a more accurate resolution calculations.
         self._set_calc(self.T,self.L)
-        self.data = data
 
     def log10_to_linear(self):
         """
@@ -205,12 +209,28 @@ class Probe(object):
             self.R = self.Ro
 
     def _get_data(self):
-        return self.R0,self.dR
+        return self.Ro,self.dR
     def _set_data(self, data):
-        if data != None:
+        # Setting data is dangerous since the Q points may have been
+        # reordered to keep them sorted.  The external user may be
+        # expecting to reset them from the original data file, which
+        # would fail, or from a simulation based on Q, which would
+        # succeed.  Storing the reordering vector wouldn't help since
+        # it would just reverse the problem and still lead to confusion.
+        # Returning self.Q in the original order would allow both cases
+        # to work, but it makes simulation more complicated because the
+        # resolution calculation wants sorted inputs.  We could just
+        # make the resolution calculation sort its inputs, but that
+        # increases the cost of computing the reflectivity curve (though
+        # that cost may small compared to the cost of sorting an almost
+        # sorted list).
+        raise NotImplementedError
+        if data is not None:
             self.R,self.dR = data
-            # Remember the original so we can resynthesize as needed
-            self.Ro = self.R
+        else:
+            self.R = self.dR = None
+        # Remember the original so we can resynthesize as needed
+        self.Ro = self.R
     data = property(_get_data, _set_data)
     def resynth_data(self):
         """
@@ -242,6 +262,7 @@ class Probe(object):
     def _Q(self):
         if self.theta_offset.value != 0:
             Q = TL2Q(T=self.T+self.theta_offset.value, L=self.L)
+            #TODO: this may break the Q order on measurements with varying L
         else:
             Q = self.Qo
         return Q
@@ -249,6 +270,7 @@ class Probe(object):
     def _calc_Q(self):
         if self.theta_offset.value != 0:
             Q = TL2Q(T=self.calc_T+self.theta_offset.value, L=self.calc_L)
+            #TODO: this may break the Q order on measurements with varying L
         else:
             Q = self.calc_Qo
         return Q if not self.back_reflectivity else -Q
@@ -270,6 +292,44 @@ class Probe(object):
         the probe.
         """
         return len(self._sf_L)
+
+    def subsample(self, dQ):
+        """
+        Select points at most every dQ.
+        
+        Use this to speed up computation early in the fitting process.
+        
+        This changes the data object, and is not reversible.
+        
+        The current algorithm is not picking the "best" Q value, just the
+        nearest, so if you have nearby Q points with different quality
+        statistics (as happens in overlapped regions from spallation
+        source measurements at different angles), then it may choose
+        badly.  Simple solutions based on the smallest relative error dR/R 
+        will be biased toward peaks, and smallest absolute error dR will
+        be biased toward valleys.
+        """
+        # Assumes self contains sorted Qo and associated T,L
+        # Note: calc_Qo is already sorted
+        Q = numpy.arange(self.Qo[0],self.Qo[-1],dQ)
+        idx = numpy.unique(numpy.searchsorted(self.Qo,Q))
+        #print len(idx),len(self.Qo)
+        
+        self.T, self.dT = self.T[idx],self.dT[idx]
+        self.L, self.dL = self.L[idx],self.dL[idx]
+        self.Qo, self.dQ = self.Qo[idx],self.dQ[idx]
+        if self.R is not None: self.Ro = self.R = self.R[idx]
+        if self.dR is not None: self.dR = self.dR[idx]
+        self._set_calc(self.T,self.L)
+
+    def resolution_guard(self):
+        """
+        Make sure each measured $Q$ point has at least 5 calculated $Q$
+        points contributing to it in the range $[-3\Delta Q,3\Delta Q]$.
+        """
+        raise NotImplementedError
+        # TODO: implement resolution guard.        
+
     def oversample(self, n=6, seed=1):
         """
         Generate an over-sampling of Q to avoid aliasing effects.

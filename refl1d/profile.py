@@ -11,7 +11,9 @@
 
 import numpy
 from numpy import inf
-from scipy.special import erf
+from .reflmodule import _contract_by_area, _contract_by_step
+from .reflectivity import erf
+#from scipy.special import erf
 
 class Microslabs:
     """
@@ -132,8 +134,6 @@ class Microslabs:
         self._num_slabs += nadd
         self._slabs[idx,0] = w
         self._slabs[idx,1] = sigma
-        #self._slabs[idx,2] = rhoM
-        #self._slabs[idx,3] = thetaM
         self._slabsQ[idx,:,0] = numpy.asarray(rho).T
         self._slabsQ[idx,:,1] = numpy.asarray(irho).T
 
@@ -177,6 +177,26 @@ class Microslabs:
     rhoM = property(_rhoM, doc="Magnetic scattering")
     thetaM = property(_thetaM, doc="Magnetic scattering angle")
 
+    def contract_profile(self, dA):
+        # TODO: do we want to use common boundaries for all lambda?
+        w,sigma,rho,irho=[numpy.ascontiguousarray(v,'d')
+                          for v in self.w,self.sigma,self.rho[0],self.irho[0]]
+        n = _contract_by_area(w,sigma,rho,irho,dA)
+        self._num_slabs = n
+        self.rho[0][:] = rho[:n]
+        self.irho[0][:] = irho[:n]
+        self.sigma[:] = sigma[:n-1]
+        self.w[:] = w[:n]
+
+    def smooth_interfaces(self, dA):
+        #TODO: refine this so that it can look back as well as forward
+        #TODO: also need to avoid changing explicit sigma=0...
+        w,sigma,rho,irho = self.w,self.sigma,self.rho[0],self.irho[0]
+        step = w[:-1] * (abs(numpy.diff(rho)) + abs(numpy.diff(irho)))
+        idx = numpy.nonzero(sigma[1:]==0)[0]+1
+        fix = step[idx] < 3*dA
+        sigma[idx[fix]] = w[idx[fix]]/4
+        
     def freeze(self, step=False):
         """
         Generate a consistent set of slabs, expanding interfaces where
@@ -256,7 +276,7 @@ class Microslabs:
         roughness = self.limited_sigma(limit=roughness_limit)
         rho = build_profile(z, self.w, roughness, self.rho[0])
         irho = build_profile(z, self.w, roughness, self.irho[0])
-        return z,rho,irho
+        return z,rho,irho    
 
 
 def build_profile(z, thickness, roughness, value):
@@ -282,21 +302,23 @@ def build_profile(z, thickness, roughness, value):
 
     # compute the results
     result = numpy.empty_like(z)
-    for i,v in enumerate(value):
+    for i,mvalue in enumerate(value):
         zo = z[idx[i]:idx[i+1]]
         if i==0:
-            lvalue = 0
-            lblend = 0
+            lsigma = lvalue = lblend = 0
         else:
+            lsigma = roughness[i-1]
             lvalue = value[i-1]
-            lblend = blend(zo-offset[i],roughness[i-1])
+            lblend = blend(zo-offset[i],lsigma)
         if i >= len(value)-1:
-            rvalue = 0
-            rblend = 0
+            rsigma = rvalue = rblend = 0
         else:
+            rsigma = roughness[i]
             rvalue = value[i+1]
-            rblend = blend(offset[i+1]-zo,roughness[i])
-        mvalue = value[i]
+            rblend = blend(offset[i+1]-zo,rsigma)
+        #print "zo",i,zo
+        #print "lblend",lsigma,lblend
+        #print "rblend",rsigma,rblend
         mblend = 1 - (lblend+rblend)
         result[idx[i]:idx[i+1]] = mvalue*mblend + lvalue*lblend + rvalue*rblend
         #result[idx[i]:idx[i+1]] = rvalue*rblend
