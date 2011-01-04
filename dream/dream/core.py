@@ -192,6 +192,7 @@ def run_dream(dream):
     # Skip R_stat and pCR until we have some data data to analyze
     state._update(R_stat=-2, CR_weight=dream.CR.weight)
     last_time = time.time()
+    print "#gen", "R", "logp(x)", " ".join("<%s>"%par for par in state.labels)
 
     # Now start drawing samples
     while state.draws < dream.draws + dream.burn:
@@ -278,7 +279,8 @@ def run_dream(dream):
         current_time = time.time()
         if current_time >= last_time + 10:
             last_time = current_time
-            print state.generation, ":", state._best_logp, R_stat
+            print state.generation, max(R_stat), state._best_logp, \
+                " ".join("%.15g"%v for v in state._best_x)
             sys.stdout.flush()
 
 

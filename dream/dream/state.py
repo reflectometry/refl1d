@@ -333,7 +333,6 @@ class MCMCDraw(object):
         else:
             return self._labels
     def _set_labels(self, v):
-        print "setting labels to",v
         self._labels = v
     labels = property(fget=_get_labels,fset=_set_labels)
 
