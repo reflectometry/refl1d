@@ -92,6 +92,28 @@ class BFGSFit(FitBase):
         self._update(step=step, point=x, value=fx)
         return True
 
+class RLFit(FitBase):
+    def solve(self, pop=1, steps=2000, **kw):
+        from random_lines import random_lines
+        self._update = MonitorRunner(problem=self.problem,
+                                     monitors=kw.pop('monitors', None))
+        bounds = numpy.array([p.bounds.limits
+                              for p in self.problem.parameters]).T
+        cfo = dict(cost=self.problem,
+                   n = len(bounds[0]),
+                   x1 = bounds[0],
+                   x2 = bounds[1],
+                   monitor = self._monitor)
+        NP = cfo['n']*pop
+        result = random_lines(cfo, NP, maxiter=steps)
+        satisfied_sc, n_feval, i_best, f_best, x_best = result
+        # Note: success if satisfied_sc is 4, failure otherwise.
+        return x_best
+    def _monitor(self, step, x, fx):
+        self._update(step=step, point=x, value=fx)
+        return True
+
+
 class AmoebaFit(FitBase):
     def solve(self, steps=2000, **kw):
         from simplex import simplex

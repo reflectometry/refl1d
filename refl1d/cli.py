@@ -10,7 +10,7 @@ import numpy
 import pylab
 import dream
 from refl1d.stajconvert import load_mlayer
-from .fitter import DEFit, AmoebaFit, SnobFit, BFGSFit, FitProblem
+from .fitter import DEFit, AmoebaFit, SnobFit, BFGSFit, RLFit, FitProblem
 from . import util
 from .mystic import parameter
 from .probe import Probe
@@ -115,7 +115,6 @@ class FitProxy(object):
         P = self.problem
         pylab.suptitle(":".join((P.store,P.title)))
         P.plot(figfile=output_path)
-
 
 def mesh(problem, vars=None, n=40):
     x,y = [numpy.linspace(p.bounds.limits[0],p.bounds.limits[1],n) for p in vars]
@@ -362,7 +361,7 @@ class ParseOpts:
         #print "args",positionargs
 
 
-FITTERS = dict(dream=None,
+FITTERS = dict(dream=None, rl=RLFit,
                de=DEFit, newton=BFGSFit, amoeba=AmoebaFit, snobfit=SnobFit)
 class FitOpts(ParseOpts):
     MINARGS = 1

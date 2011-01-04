@@ -192,12 +192,18 @@ class Experiment(ExperimentBase):
             calc_q = self.probe.calc_Q
             calc_r = reflamp(-calc_q/2, depth=w, rho=rho, irho=irho,
                              sigma=sigma)
-            #print "w",w
-            #print "rho",rho
-            #print "irho",irho
-            #print "sigma",sigma
-            #print "kz",self.probe.calc_Q/2
-            #print "R",abs(calc_r**2)
+            if numpy.isnan(calc_r).any():
+                print "w",w
+                print "rho",rho
+                print "irho",irho
+                print "sigma",sigma
+                print "kz",self.probe.calc_Q/2
+                print "R",abs(calc_r**2)
+                from .mystic import parameter
+                pars = parameter.unique(self.parameters())
+                fitted = parameter.varying(pars)
+                parameter.summarize(fitted)
+                print "==="
             self._cache[key] = calc_q,calc_r
             if numpy.isnan(calc_q).any(): print "calc_Q contains NaN"
             if numpy.isnan(calc_r).any(): print "calc_r contains NaN"

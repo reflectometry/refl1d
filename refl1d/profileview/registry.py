@@ -1,8 +1,9 @@
 from ..model import Slab
 from ..polymer import PolymerBrush
-from ..mono import FreeInterface
-from .layer import (NoInteractor, SlabInteractor, PolymerBrushInteractor, 
-                    FreeInterfaceInteractor)
+from .polymeri import PolymerBrushInteractor
+from ..mono import FreeInterface, FreeLayer
+from .monoi import FreeInterfaceInteractor, FreeLayerInteractor
+from .layer import NoInteractor, SlabInteractor
 
 # ======================== LayerInteractor factory ====================
 # Associate layers with layer interactors through function
@@ -26,3 +27,4 @@ interactor = InteractorFactory()
 interactor[Slab] = SlabInteractor
 interactor[PolymerBrush] = PolymerBrushInteractor
 interactor[FreeInterface] = FreeInterfaceInteractor
+interactor[FreeLayer] = FreeLayerInteractor

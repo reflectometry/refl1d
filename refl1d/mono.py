@@ -7,7 +7,7 @@
 
 from __future__ import division, with_statement
 from numpy import (diff, hstack, sqrt, searchsorted, asarray, cumsum,
-                   inf, nonzero, linspace, sort)
+                   inf, nonzero, linspace, sort, isnan)
 from mystic.parameter import Parameter as Par, Function as ParFunction
 from . import numpyerrors
 from .model import Layer
@@ -30,10 +30,10 @@ class FreeLayer(Layer):
     Layers have a slope of zero at the ends, so the automatically blend
     with slabs.
     """
-    def __init__(self, left=None, right=None, thickness=0,
+    def __init__(self, below=None, above=None, thickness=0,
                  z=[], rho=[], irho=[], name="Freeform"):
         self.name = name
-        self.left, self.right = left,right
+        self.below, self.above = below,above
         self.thickness = Par.default(thickness,name=name+" thickness",
                                      limits=(0,inf))
         def parvec(vector,name,limits):
@@ -53,26 +53,37 @@ class FreeLayer(Layer):
         return dict(rho=self.rho,
                     irho=self.irho,
                     z=self.z,
-                    left=self.left.parameters(),
-                    right=self.right.parameters(),
+                    below=self.below.parameters(),
+                    above=self.above.parameters(),
                     )
-    def render(self, probe, slabs):
+    def profile(self, Pz, below, above):
         thickness = self.thickness.value
-        left,ileft = self.left.sld(probe)
-        right,iright = self.right.sld(probe)
-        
+        rbelow,ibelow = below
+        rabove,iabove = above
         z = sort([0]+[p.value for p in self.z]+[1])*thickness
-        Pw,Pz = slabs.microslabs(z[-1])
 
-        rho = hstack((left, [p.value for p in self.rho], right))
+        rho = hstack((rbelow, [p.value for p in self.rho], rabove))
         Prho = monospline(z, rho, Pz)
+
+        import numpy
+        if numpy.any(numpy.isnan(Prho)):
+            print "in mono"
+            print "z",z
+            print "p",[p.value for p in self.z]
+
         
         if len(self.irho)>0:
-            irho = hstack((ileft, [p.value for p in self.irho], iright))
+            irho = hstack((ibelow, [p.value for p in self.irho], iabove))
             Pirho = monospline(z, irho, Pz)
         else:
             Pirho = 0*Prho
+        return Prho,Pirho
 
+    def render(self, probe, slabs):
+        below = self.below.sld(probe)
+        above = self.above.sld(probe)
+        Pw,Pz = slabs.microslabs(self.thickness.value)
+        Prho,Pirho = self.profile(Pz, below, above)
         slabs.extend(rho=[Prho], irho=[Pirho], w=Pw)
 
 def inflections(dx,dy):
@@ -138,19 +149,19 @@ class FreeInterface(Layer):
     def render(self, probe, slabs):
         thickness = self.thickness.value
         interface = self.interface.value
-        left_rho,left_irho = self.below.sld(probe)
-        right_rho,right_irho = self.above.sld(probe)
+        below_rho,below_irho = self.below.sld(probe)
+        above_rho,above_irho = self.above.sld(probe)
         Pw,Pz = slabs.microslabs(thickness)
         profile = self.profile(Pz)
         lidx,ridx = searchsorted(profile,[0.001,0.999])
         ridx = min( (ridx, len(profile)-1) )
-        Prho  = (1-profile)*left_rho  + profile*right_rho
-        Pirho = (1-profile)*left_irho + profile*right_irho
-        slabs.extend(rho=[left_rho], irho=[left_irho], w=[Pz[lidx]])
+        Prho  = (1-profile)*below_rho  + profile*above_rho
+        Pirho = (1-profile)*below_irho + profile*above_irho
+        slabs.extend(rho=[below_rho], irho=[below_irho], w=[Pz[lidx]])
         slabs.extend(rho=[Prho[lidx:ridx]], 
                      irho=[Pirho[lidx:ridx]], 
                      w=Pw[lidx:ridx])
-        slabs.extend(rho=[right_rho],irho=[right_irho],
+        slabs.extend(rho=[above_rho],irho=[above_irho],
                      sigma=[interface],
                      w=[thickness-Pz[ridx]])
 
@@ -209,10 +220,15 @@ def monospline(x, y, xt):
         if dy[i] == 0 or alpha[i] == 0 or beta[i] == 0:
             m[i] = m[i+1] = 0
         elif d[i] > 9:
-            tau = 3/sqrt(d[i])
+            tau = 3./sqrt(d[i])
             m[i] = tau*alpha[i]*delta[i]
             m[i+1] = tau*beta[i]*delta[i]
+            #if numpy.isnan(m[i]) or numpy.isnan(m[i+1]):
+            #    print i,"isnan",tau,d[i], alpha[i],beta[i],delta[i]
+        #elif numpy.isnan(m[i]):
+        #    print i,"isnan",delta[i],dy[i]
     #m[ dy[1:]*dy[:-1]<0 ] = 0
+    m[isnan(m)] = 0
 
     return hermite(x,y,m,xt)
 
@@ -286,8 +302,8 @@ class _FreeInterfaceW(Layer):
                     interface=self.interface)
     def render(self, probe, slabs):
         interface = self.interface.value
-        left_rho,left_irho = self.below.sld(probe)
-        right_rho,right_irho = self.above.sld(probe)
+        below_rho,below_irho = self.below.sld(probe)
+        above_rho,above_irho = self.above.sld(probe)
         z = hstack( (0, cumsum([v.value for v in self.dz])) )
         p = hstack( (0, cumsum([v.value for v in self.dp])) )
         thickness = z[-1]
@@ -297,12 +313,12 @@ class _FreeInterfaceW(Layer):
         profile = monospline(z, p, Pz)
         lidx,ridx = searchsorted(profile,[0.01,0.99])
         ridx = min( (ridx, len(profile)-1) )
-        Prho  = (1-profile)*left_rho  + profile*right_rho
-        Pirho = (1-profile)*left_irho + profile*right_irho
-        slabs.extend(rho=[left_rho], irho=[left_irho], w=[Pz[lidx]])
+        Prho  = (1-profile)*below_rho  + profile*above_rho
+        Pirho = (1-profile)*below_irho + profile*above_irho
+        slabs.extend(rho=[below_rho], irho=[below_irho], w=[Pz[lidx]])
         slabs.extend(rho=[Prho[lidx:ridx]], 
                      irho=[Pirho[lidx:ridx]], 
                      w=Pw[lidx:ridx])
-        slabs.extend(rho=[right_rho],irho=[right_irho],
+        slabs.extend(rho=[above_rho],irho=[above_irho],
                      sigma=[interface],
                      w=[thickness-Pz[ridx]])
