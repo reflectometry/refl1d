@@ -209,6 +209,7 @@ class Probe(object):
             self.R = self.Ro
 
     def _get_data(self):
+        raise NotImplementedError
         return self.Ro,self.dR
     def _set_data(self, data):
         # Setting data is dangerous since the Q points may have been
@@ -241,11 +242,27 @@ class Probe(object):
         """
         self.R = self.Ro + numpy.random.randn(*self.Ro.shape)*self.dR
 
+    def simulate_data(self, R, dR):
+        """
+        Set the data for the probe to R, adding random noise dR.
+        """
+        self.Ro, self.dR = R, dR
+        self.resynth_data()
+        self.Ro = self.R        
+
     def restore_data(self):
         """
         Restore the original data.
         """
         self.R = self.Ro
+
+    def write_data(self, filename, header="# title: simulated data\n"):
+        """Save the data to a file"""
+        with open(filename,'w') as fid:
+            fid.write(header)
+            fid.write('# Q R dR\n')
+            data = numpy.vstack([self.Q, self.R, self.dR])
+            numpy.savetxt(fid,data.T)
 
     def _set_calc(self, T, L):
         Q = TL2Q(T=T, L=L)

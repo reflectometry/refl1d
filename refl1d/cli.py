@@ -365,11 +365,13 @@ FITTERS = dict(dream=None, rl=RLFit,
                de=DEFit, newton=BFGSFit, amoeba=AmoebaFit, snobfit=SnobFit)
 class FitOpts(ParseOpts):
     MINARGS = 1
-    FLAGS = set(("preview","check","profile","edit",
-                 "worker","batch","overwrite","parallel"))
-    VALUES = set(("plot","store","mesh","meshsteps",
-                  "fit","pop","steps","burn",
+    FLAGS = set(("preview","check","profile","edit","random","simulate",
+                 "worker","batch","overwrite","parallel",
                  ))
+    VALUES = set(("plot","store","mesh","meshsteps",
+                  "fit","pop","steps","burn","noise",
+                 ))
+    noise="5"
     pop="10"
     steps="1000"
     burn="0"
@@ -407,6 +409,12 @@ where options include:
         plot chisq line or plane
     --meshsteps=n
         number of steps in the mesh
+    --random
+        start from a random initial configuration
+    --simulate
+        simulate the data to fit
+    --noise=5%%
+        percent noise to add to the simulated data
 
 For mesh plots, var can be a fitting parameter with optional
 range specifier, such as:
@@ -453,10 +461,18 @@ def main():
 
     opts = FitOpts(sys.argv)
     opts.steps = int(opts.steps)
-    opts.pop = int(opts.pop)
+    opts.pop = float(opts.pop)
     opts.burn = int(opts.burn)
 
     job = load_job(opts.args)
+    if opts.random:
+        job.randomize()
+    if opts.simulate:
+        job.simulate_data(noise=float(opts.noise))
+        # If fitting, then generate a random starting point
+        if not (opts.edit or opts.check or opts.preview):
+            job.randomize()
+        
     if opts.fit == 'dream':
         fitter = DreamProxy(problem=job, opts=opts)
     else:

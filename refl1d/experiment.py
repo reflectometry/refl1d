@@ -357,6 +357,21 @@ class Experiment(ExperimentBase):
     def restore_data(self):
         """Restore original data after resynthesis."""
         self.probe.restore_data()
+    def write_data(self, filename, **kw):
+        """Save simulated data to a file"""
+        self.probe.write_data(filename, **kw)
+    def simulate_data(self, noise=2):
+        """
+        Simulate a random data set for the model
+        
+        Parameters
+        ----------
+        *noise* = 2 : float | %
+            Percentage noise to add to the data.
+        """
+        _,R = self.reflectivity(resolution=True)
+        dR = 0.01*noise*R
+        self.probe.simulate_data(R,dR)
 
 
 class CompositeExperiment(ExperimentBase):
