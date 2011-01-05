@@ -164,9 +164,7 @@ data_files.append( ('.', [os.path.join('.', 'LICENSE.txt')]) )
 data_files.append( ('.', [os.path.join('.', 'README.txt')]) )
 
 # Add batch files to implement commands useful for launching the program.
-# Note that Inno Setup will determine where these files will be placed.  The
-# intent is to put them in a system directory on the Path environment variable.
-data_files.append( ('.', [os.path.join('.', 'bin', 'reflfit.bat')]) )
+# Note that Inno Setup will determine where these files will be placed.
 data_files.append( ('.', [os.path.join('.', 'bin', 'refllaunch.bat')]) )
 
 # Add example directories and their files.  An empty directory is ignored.

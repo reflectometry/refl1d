@@ -79,8 +79,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Files]
 ; This script assumes that the output from the previously run py2exe packaging process is in .\dist\...
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
-Source: "dist\*"; Excludes: "*.bat, examples"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "dist\*.bat"; DestDir: "{sys}"
+Source: "dist\*"; Excludes: "examples"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "dist\examples\*"; DestDir: "{userdocs}\{#MyAppName}\examples"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; The following Pascal function checks for the presence of the VC++ 2008 DLL folder on the target system
@@ -97,21 +96,21 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 
 [Icons]
 ; This section does not have a flag for keeping the command window open on exit when running a program.
-; To accomplish this, a batch file is run that creates the command window that provides the user with
-; a command prompt.  This provides the same environment as starting a command window using the run dialog box
+; To accomplish this, a batch file is run that creates the command window and starts the Windows command
+; interpreter.  This provides the same environment as starting a command window using the run dialog box
 ; from the Windows start menu and entering a command such as "cmd" or "cmd /k <file-to-execute>".
 ;;;Name: "{group}\Launch {#MyAppName}"; Filename: "{app}\{#MyAppFileName}"; IconFilename: "{app}\{#MyIconFileName}"; WorkingDir: "{app}"; Flags: runmaximized
-Name: "{group}\Launch {#MyAppName}"; Filename: "{sys}\refllaunch.bat"; IconFilename: "{app}\{#MyIconFileName}"; WorkingDir: "{userdocs}\{#MyAppName}\examples"; Flags: runmaximized
+Name: "{group}\Launch {#MyAppName}"; Filename: "{app}\refllaunch.bat"; IconFilename: "{app}\{#MyIconFileName}"; WorkingDir: "{userdocs}\{#MyAppName}\examples"; Flags: runmaximized
 Name: "{group}\{cm:ProgramOnTheWeb,{#MyAppName}}"; Filename: "{#MyAppURL}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 ;;;Name: "{commondesktop}\{#MyAppName}{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppFileName}"; Tasks: desktopicon; WorkingDir: "{app}"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
-Name: "{commondesktop}\{#MyAppName}{#Space}{#MyAppVersion}"; Filename: "{sys}\refllaunch.bat"; Tasks: desktopicon; WorkingDir: "{userdocs}\{#MyAppName}\examples"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
+Name: "{commondesktop}\{#MyAppName}{#Space}{#MyAppVersion}"; Filename: "{app}\refllaunch.bat"; Tasks: desktopicon; WorkingDir: "{userdocs}\{#MyAppName}\examples"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
 ;;;Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppFileName}"; Tasks: quicklaunchicon; WorkingDir: "{app}"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}{#Space}{#MyAppVersion}"; Filename: "{sys}\refllaunch.bat"; Tasks: quicklaunchicon; WorkingDir: "{userdocs}\{#MyAppName}\examples"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
+Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}{#Space}{#MyAppVersion}"; Filename: "{app}\refllaunch.bat"; Tasks: quicklaunchicon; WorkingDir: "{userdocs}\{#MyAppName}\examples"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
 
 [Run]
 ; Filename: "{app}\{#MyAppFileName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
-Filename: "{sys}\refllaunch.bat"; Description: "{cm:LaunchProgram,{#MyAppName}}"; WorkingDir: "{userdocs}\{#MyAppName}\examples"; Flags: nowait postinstall skipifsilent runmaximized
+Filename: "{app}\refllaunch.bat"; Description: "{cm:LaunchProgram,{#MyAppName}}"; WorkingDir: "{userdocs}\{#MyAppName}\examples"; Flags: nowait postinstall skipifsilent runmaximized
 Filename: "{app}\{#MyReadmeFileName}"; Description: "Read Release Notes"; Verb: "open"; Flags: shellexec skipifdoesntexist waituntilterminated postinstall skipifsilent unchecked
 ; Install the Microsoft C++ DLL redistributable package if it is provided and the DLLs are not present on the target system.
 ; Note that the redistributable package is included if the app was built using Python 2.6 or 2.7, but not with 2.5.

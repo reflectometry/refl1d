@@ -1,6 +1,5 @@
 @echo off
-
-rem On Windows XP, refllaunch.bat should be installed in a directory on the
-rem Path environment variable such as C:\WINDOWS\system32.
-
-cmd /k reflfit --help
+rem Add location of executing batch file to path for duration of command window.
+SET BATLOC=%~dp0
+PATH %BATLOC%;%PATH%
+cmd /k refl1d --help

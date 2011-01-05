@@ -147,7 +147,7 @@ def random_population(problem, pop_size):
 
 def load_staj(file):
     M = load_mlayer(file)
-    
+
     # Exclude unlikely fitting parameters
     exclude = set((M.sample[0].thickness,
                M.sample[-1].thickness,
@@ -164,7 +164,7 @@ def load_staj(file):
     #for L in M.sample:
     #    if L.rho.value == 0: exclude.add(L.rho)
     #    if L.irho.value == 0: exclude.add(L.irho)
-    
+
     # Fit everything else using a range of +/- 20 %
     for p in parameter.unique(M.parameters()):
         if p in exclude: continue
@@ -181,10 +181,10 @@ def load_staj(file):
 def load_job(args):
     #import refl1d.context
     file, options = args[0], args[1:]
-    
+
     if file.endswith('.staj'):
         return load_staj(file)
-    
+
     ctx = dict(__file__=file)
     #refl1d.context.math_context(ctx)
     #refl1d.context.refl_context(ctx)
@@ -333,7 +333,8 @@ class ParseOpts:
     def _parse(self, args):
         flagargs = [v for v in sys.argv[1:] if v.startswith('--') and not '=' in v]
         flags = set(v[2:] for v in flagargs)
-        if '?' in flags or 'h' in flags or 'help' in flags:
+        #if '?' in flags or 'h' in flags or 'help' in flags:
+        if 'help' in flags or '-h' in sys.argv[1:] or '-?' in sys.argv[1:]:
             print self.USAGE
             sys.exit()
         unknown = flags - self.FLAGS
@@ -377,7 +378,7 @@ class FitOpts(ParseOpts):
     burn="0"
     PLOTTERS="log","linear","fresnel","q4"
     USAGE = """\
-Usage: reflfit [-option] modelfile [modelargs]
+Usage: refl1d [-option] modelfile [modelargs]
 
 where options include:
 
@@ -472,7 +473,7 @@ def main():
         # If fitting, then generate a random starting point
         if not (opts.edit or opts.check or opts.preview):
             job.randomize()
-        
+
     if opts.fit == 'dream':
         fitter = DreamProxy(problem=job, opts=opts)
     else:
