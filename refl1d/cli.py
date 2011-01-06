@@ -10,7 +10,7 @@ import numpy
 import pylab
 import dream
 from refl1d.stajconvert import load_mlayer
-from .fitter import DEFit, AmoebaFit, SnobFit, BFGSFit, RLFit, FitProblem
+from .fitter import DEFit, AmoebaFit, SnobFit, BFGSFit, RLFit, PTFit, FitProblem
 from . import util
 from .mystic import parameter
 from .probe import Probe
@@ -96,7 +96,8 @@ class FitProxy(object):
             optimizer = self.fitter(self.problem)
             x = optimizer.solve(steps=self.opts.steps,
                                 burn=self.opts.burn,
-                                pop=self.opts.pop)
+                                pop=self.opts.pop,
+                                CR=self.opts.CR)
             print "time", time.clock() - t0
         else:
             x = self.problem.getp()
@@ -362,17 +363,18 @@ class ParseOpts:
         #print "args",positionargs
 
 
-FITTERS = dict(dream=None, rl=RLFit,
+FITTERS = dict(dream=None, rl=RLFit, pt=PTFit,
                de=DEFit, newton=BFGSFit, amoeba=AmoebaFit, snobfit=SnobFit)
 class FitOpts(ParseOpts):
     MINARGS = 1
     FLAGS = set(("preview","check","profile","edit","random","simulate",
                  "worker","batch","overwrite","parallel",
                  ))
-    VALUES = set(("plot","store","mesh","meshsteps",
+    VALUES = set(("plot","store","mesh","meshsteps","CR",
                   "fit","pop","steps","burn","noise",
                  ))
     noise="5"
+    CR="0.9"
     pop="10"
     steps="1000"
     burn="0"
@@ -404,6 +406,8 @@ where options include:
         number of fit iterations
     --burn=n (default 0)
         number of iterations before accumulating stats (dream)
+    --CR=p (default 0.9)
+        crossover ratio for evolutionary algorithms (rl, de)
     --parallel
         run fit using all processors
     --mesh=var OR var+var
@@ -464,6 +468,7 @@ def main():
     opts.steps = int(opts.steps)
     opts.pop = float(opts.pop)
     opts.burn = int(opts.burn)
+    opts.CR = float(opts.CR)
 
     job = load_job(opts.args)
     if opts.random:

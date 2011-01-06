@@ -93,7 +93,7 @@ class BFGSFit(FitBase):
         return True
 
 class RLFit(FitBase):
-    def solve(self, pop=1, steps=2000, burn=10, **kw):
+    def solve(self, pop=1, steps=2000, burn=10, CR=0.9, **kw):
         from random_lines import random_lines
         self._update = MonitorRunner(problem=self.problem,
                                      monitors=kw.pop('monitors', None))
@@ -109,7 +109,7 @@ class RLFit(FitBase):
         if burn < 1: burn = 1
         assert burn<100
         for _ in range(burn):
-            result = random_lines(cfo, NP, maxiter=steps)
+            result = random_lines(cfo, NP, maxiter=steps, CR=CR)
             satisfied_sc, n_feval, i_best, f_best, x_best = result
             if f_best < f_best_overall:
                 f_best_overall = f_best
@@ -119,6 +119,27 @@ class RLFit(FitBase):
     def _monitor(self, step, x, fx):
         self._update(step=step, point=x, value=fx)
         return True
+
+
+class PTFit(FitBase):
+    def solve(self, pop=10, steps=2000, burn=10, **kw):
+        from partemp import parallel_tempering
+        self._update = MonitorRunner(problem=self.problem,
+                                     monitors=kw.pop('monitors', None))
+        bounds = numpy.array([p.bounds.limits
+                              for p in self.problem.parameters]).T
+        T = numpy.logspace(-1,numpy.log10(burn),pop)
+        result = parallel_tempering(nllf=self.problem,
+                                    p=self.problem.getp(),
+                                    bounds=bounds,
+                                    T=T,
+                                    steps=steps,
+                                    monitor=self._monitor)
+        return result[1]
+    def _monitor(self, step, x, fx):
+        self._update(step=step, point=x, value=fx)
+        return True
+
 
 
 class AmoebaFit(FitBase):
@@ -448,7 +469,7 @@ class FitProblem(object):
         Negative log likelihood of seeing data given model.
         """
         return self.fitness.nllf()
-    
+
     def simulate_data(self, noise=None):
         """Simulate data with added noise"""
         self.fitness.simulate_data(noise=noise)
@@ -557,7 +578,7 @@ class FitProblem(object):
                 self.setp(pvec)
             else:
                 return inf
-            
+
         try:
             if isnan(self.parameter_nllf()):
                 print "Parameter nllf is wrong"
@@ -605,7 +626,7 @@ class FitProblem(object):
         self.fitness.plot()
         pylab.text(0, 0, 'chisq=%g' % self.chisq(),
                    transform=pylab.gca().transAxes)
-        if figfile != None: 
+        if figfile != None:
             pylab.savefig(figfile+"-model", format='png')
 
 class MultiFitProblem(FitProblem):

@@ -48,11 +48,12 @@ References
     http://dx.doi.org/10.1103/PhysRevLett.88.067201
 
 """
+import sys
 from periodictable import formula, xray_sld, Cu, Ni, Fe, Pt
-from refl1d import *
+from refl1d.names import *
 
 # Determine what search we are going to perform
-search = "open"
+search = "rltest"
 if len(sys.argv) > 1:
     search = sys.argv[1]
 
@@ -134,8 +135,17 @@ elif search == "grower": # grower
     Lcap.thickness.range(10,50)
     for i,L in enumerate(sample[:-2]):
         L.interface.range(0,20)
-        L.material.rho.pmp(10)
-        L.material.irho.pmp(10)
+        L.material.rho.pmp(20)
+        L.material.irho.pmp(20)
+elif search == "rltest": # grower
+    Lseed.thickness.pmp(100)
+    LFePt.thickness.pmp(100)
+    LNiFe.thickness.pmp(100)
+    Lcap.thickness.pmp(100)
+    for i,L in enumerate(sample[:-2]):
+        L.interface.pmp(30)
+        L.material.rho.pmp(20)
+        L.material.irho.pmp(20)
 
 elif search == "d2Xd3": # d2 X d3
     #sample[2].thickness.range(0,400)
