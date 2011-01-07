@@ -133,6 +133,7 @@ class PTFit(FitBase):
         history = parallel_tempering(nllf=self.problem,
                                     p=self.problem.getp(),
                                     bounds=bounds,
+                                    #logfile="partemp.dat",
                                     T=T,
                                     CR=CR,
                                     steps=steps,

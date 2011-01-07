@@ -1,3 +1,13 @@
+# This program is public domain
+# Author: Paul Kienzle
+"""
+Parallel tempering for continuous function optimization and uncertainty analysis
+
+The program performs Markov chain Monte Carlo exploration of a probability
+density function using a combination of random and differential evolution
+updates.
+"""
+
 from __future__ import division
 import numpy
 from numpy import asarray, zeros, ones, exp, diff, std, inf, \
@@ -10,9 +20,61 @@ def every_ten(step,x,fx):
 
 def parallel_tempering(nllf, p, bounds, T=None, steps=1000,
                        CR=0.9, burn=1000,
-                       monitor=every_ten):
-    logfile="partemp.dat"
-    #logfile=None
+                       monitor=every_ten,
+                       logfile=None):
+    r"""
+    Parameters
+    ----------
+    
+    *nllf* : function(vector) -> float
+        Negative log likelihood function to be minimized.  $\chi^2/2$ is a
+        good choice for curve fitting with no prior restraints on the possible
+        input parameters.
+    *p* : vector
+        Initial value
+    *bounds* : vector, vector
+        Box constraints on the parameter values.  No support for indefinite
+        or semi-definite programming at present
+    *T* : vector | 0 < T[0] < T[1] < ...
+        Temperature vector.  Something like logspace(-1,1,10) will give
+        you 10 logarithmically spaced temperatures between 0.1 and 10.  The
+        maximum temperature T[-1] determines the size of the barriers that
+        can be easily jumped.  Note that the number of temperature values
+        limits the amount of parallelism available in the algorithm, so it
+        may gather statistics more quickly, though it will not necessarily
+        converge any faster.
+    *steps* = 1000 : int
+        Length of the accumulation vector.  The returned history will store 
+        this many values for each temperature.  These values can be used in
+        a weighted histogram to determine parameter uncertainty.
+    *burn* = 1000 : int | [0,inf)
+        Number of iterations to perform in addition to steps.  Only the
+        last *steps* points will be preserved for each temperature.  Since
+        the 
+        value should be in the same order as *steps* to be sure that the
+        full history is acquired.
+    *CR* = 0.9 : float | [0,1]
+        Cross-over ratio.  This is the differential evolution crossover
+        ratio to use when computing step size and direction.  Use a small
+        value to step through the dimensions one at a time, or a large value
+        to step through all at once.
+    *monitor* = every_ten : function(int step, vector x, float fx) -> None
+        Function to called at every iteration with the step number the
+        best point and the best value.
+    *logfile* = None : string
+        Name of the file which will log the history of every accepted step.
+        Note that this includes all of the burn steps, so it can get very
+        large.
+        
+    Returns
+    -------
+    
+    *history* : History
+        Structure containing *best*, *best_point* and *buffer*.  *best* is
+        the best nllf value seen and *best_point* is the parameter vector
+        which yielded *best*.  The list *buffer* contains lists of tuples 
+        (step, temperature, nllf, x) for each temperature.
+    """
     N = len(T)
     history = History(logfile=logfile, streams=N, size=steps)
     bounder = ReflectBounds(*bounds)
@@ -28,13 +90,13 @@ def parallel_tempering(nllf, p, bounds, T=None, steps=1000,
         # Take a step
         R = rand()
         if step < 20 or R < 0.2:
-            action = 'jiggle'
+            #action = 'jiggle'
             Pnext = [stepper.jiggle(p,0.01*t/T[-1]) for p,t in zip(P,T)]
         elif R < 0.4:
-            action = 'direct'
+            #action = 'direct'
             Pnext = [stepper.direct(p, i) for i,p in enumerate(P)]
         else:
-            action = 'diffev'
+            #action = 'diffev'
             Pnext = [stepper.diffev(p, i, CR=CR) for i,p in enumerate(P)]
 
         # Test constraints
