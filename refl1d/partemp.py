@@ -1,70 +1,78 @@
 from __future__ import division
 import numpy
-from numpy import asarray, zeros, ones, exp, diff, argmin, std
-from numpy.random import rand,randn
+from numpy import asarray, zeros, ones, exp, diff, std, inf, \
+    array, nonzero, sqrt, zeros_like
+from numpy.linalg import norm
+from numpy.random import rand,randn, randint, permutation
 
 def every_ten(step,x,fx):
     if step%10: print step, fx, x
 
-class History(object):
-    def __init__(self, filename):
-        self.file= open(filename,'w')
-        print >>self.file, "# Step Temp Energy Point"
-    def __call__(self, step, P, E, T, A):
-        for p,e,t,a in zip(P,E,T,A):
-            if a: 
-                pt = " ".join("%.6g"%v for v in p)
-                print >>self.file,step,t,e,pt
-        self.file.flush()
-
 def parallel_tempering(nllf, p, bounds, T=None, steps=1000,
+                       CR=0.9, burn=1000,
                        monitor=every_ten):
-    log = lambda *args: 0
-    #log = History("partemp.log")
-    dT = diff(1./asarray(T))
+    logfile="partemp.dat"
+    #logfile=None
     N = len(T)
-    P = [p]*N
+    history = History(logfile=logfile, streams=N, size=steps)
     bounder = ReflectBounds(*bounds)
-    stepper = Stepper(bounds, tol=0.2/T[-1])
+    #stepper = RandStepper(bounds, tol=0.2/T[-1])
+    stepper = Stepper(bounds, history)
+    dT = diff(1./asarray(T))
+    P = asarray([p]*N)
     E = ones(N)*nllf(p)
+    history.save(step=0, temperature=T, energy=E, point=P)
     total_accept = zeros(N)
     total_swap = zeros(N-1)
-    Pbest = p
-    Ebest = E[0]
-    for step in range(steps):
-        # Metropolis at each temperature
-        Pnext = [stepper(p,t) for p,t in zip(P,T)]
-        Pnext = [bounder.apply(p) for p in Pnext]
-        Enext = asarray([nllf(p) for p in Pnext])
-        #print step,"T",T
-        #print step,"E",E
-        #print step,"En",Enext
-        #print "p",exp(-(Enext-E)/T)
-        accept = exp(-(Enext-E)/T) > rand(N)
-        E[accept] = Enext[accept]
-        P = [(pn if a else p) for p,pn,a in zip(P,Pnext,accept)]
-        total_accept += accept
-        log(step, P,E,T,accept)
+    for step in range(1,steps+burn):
+        # Take a step
+        R = rand()
+        if step < 20 or R < 0.2:
+            action = 'jiggle'
+            Pnext = [stepper.jiggle(p,0.01*t/T[-1]) for p,t in zip(P,T)]
+        elif R < 0.4:
+            action = 'direct'
+            Pnext = [stepper.direct(p, i) for i,p in enumerate(P)]
+        else:
+            action = 'diffev'
+            Pnext = [stepper.diffev(p, i, CR=CR) for i,p in enumerate(P)]
 
-        idx = argmin(E)
-        if E[idx] < Ebest:
-            #print "update"
-            Ebest = E[idx]
-            Pbest = P[idx]
+        # Test constraints
+        Pnext = asarray([bounder.apply(p) for p in Pnext])
+
+        # Temperature dependent Metropolis update
+        Enext = asarray([nllf(p) for p in Pnext])
+        accept = exp(-(Enext-E)/T) > rand(N)
+        #print step,action
+        #print "dP"," ".join("%.6f"%norm((pn-p)/stepper.step) for pn,p in zip(P,Pnext))
+        #print "dE"," ".join("%.1f"%(en-e) for en,e in zip(E,Enext))
+        #print "En"," ".join("%.1f"%e for e in Enext)
+        #print "accept",accept
+        E[accept] = Enext[accept]
+        P[accept] = Pnext[accept]
+        total_accept += accept
+        
+        # Accumulate history for population based methods
+        history.save(step, temperature=T, energy=E, point=P, changed=accept)
+        #print "best",history.best
 
         # Swap chains across temperatures
+        # Note that we are are shuffling from high to low so that if a good
+        # point is found at a high temperature which push it immediately as
+        # low as we can go rather than risk losing it at the next high temp
+        # step.
         swap = zeros(N-1)
-        for i in range(N-1):
+        for i in range(N-2,-1,-1):
             #print "swap",E[i+1]-E[i],dT[i],exp((E[i+1]-E[i])*dT[i])
-            if exp((E[i+1]-E[i])*dT[i]) > rand(1)[0]:
+            if exp((E[i+1]-E[i])*dT[i]) > rand():
                 swap[i] = 1
-                E[i],E[i+1] = E[i+1],E[i]
-                P[i],P[i+1] = P[i+1],P[i]
+                E[i+1],E[i] = E[i],E[i+1]
+                P[i+1],P[i] = P[i]+0,P[i+1]+0
         total_swap += swap
-
+        #assert nllf(P[0]) == E[0]
 
         # Monitoring
-        monitor(step,Pbest,Ebest)
+        monitor(step, history.best_point, history.best)
         interval = 100
         if 0 and step%interval == 0:
             print "max r",max(["%.1f"%numpy.linalg.norm(p-P[0]) for p in  P[1:]])
@@ -76,31 +84,125 @@ def parallel_tempering(nllf, p, bounds, T=None, steps=1000,
             total_accept *= 0
             total_swap *= 0
 
-    return Ebest, Pbest
+    return history
+
+class History(object):
+    def __init__(self, streams=None, size=1000, logfile=None):
+        # Allocate buffers
+        self.size = size
+        self.buffer = [[] for _ in range(streams)]
+        # Prepare log file
+        if logfile != None:
+            self.log = open(logfile,'w')
+            print >>self.log, "# Step Temperature Energy Point"
+        else:
+            self.log = None
+        # Track the optimum
+        self.best = inf
+    def save(self, step, temperature, energy, point, changed=None):
+        if changed is None: changed = ones(len(temperature),'b')
+        for i,a in enumerate(changed):
+            if a:
+                self._save_point(step,i,temperature[i],energy[i],point[i]+0)
+    def _save_point(self, step, i, T, E, P):
+        # Save in buffer
+        S = self.buffer[i]
+        if len(S) >= self.size: S.pop(0)
+        if len(S) > 0: 
+            #print "P",P
+            #print "S",S[-1][3]
+            assert norm(P-S[-1][3]) != 0
+        S.append( (step,T,E,P) )
+        #print "stream",i,"now len",len(S)
+        # Track of the optimum
+        if E < self.best:
+            self.best = E
+            self.best_point = P
+        # Log to file
+        if self.log:
+            point_str = " ".join("%.6g"%v for v in P)
+            print >>self.log,step,T,E,point_str
+            self.log.flush()
+
+    def draw(self, stream, k):
+        """
+        Return a list of k items drawn from the given stream.
+        
+        If the stream is too short, fewer than n items may be returned.
+        """
+        S = self.buffer[stream]
+        n = len(S)
+        return [S[i] for i in choose(n,k)] if n > k else S[:]
+
+
 
 class Stepper(object):
-    def __init__(self, bounds, tol):
+    def __init__(self, bounds, history):
         low, high = bounds
-        self.step = (high-low)*tol
-    def __call__(self, p, t):
-        return self.subspace(p,t,3)
-    def subspace(self, p, t, ndim):
+        self.step = (high-low)
+        self.history = history
+        
+    def diffev(self, p, stream, CR=0.8, noise=0.05):
+        if len(self.history.buffer[stream]) < 20:
+            #print "jiggling",stream,stream,len(self.history.buffer[stream])
+            return self.jiggle(p,1e-6)
+        # Ideas incorporated from DREAM by Vrugt
+        N = len(p)
+        # Select to number of vector pair differences to use in update
+        # using k ~ discrete U[1,max pairs]
+        k = randint(4)+1
+
+        # Select 2*k members at random
+        parents = [v[3] for v in self.history.draw(stream, 2*k)]
+        k = len(parents)//2  # May not have enough parents
+        pop = array(parents)
+        #print "k",k
+        #print "parents",parents
+        #print "pop",pop
+
+        # Select the dims to update based on the crossover ratio, making
+        # sure at least one dim is selected
+        vars = nonzero(rand(N) < CR)
+        if len(vars) == 0: vars = [randint(N)]
+
+        # Weight the size of the jump inversely proportional to the
+        # number of contributions, both from the parameters being
+        # updated and from the population defining the step direction.
+        gamma = 2.38/sqrt(2 * len(vars) * k)
+
+        # Find and average step from the selected pairs
+        step = numpy.sum(pop[:k]-pop[k:], axis=0)
+
+        # Apply that step with F scaling and noise
+        eps = 1 + noise * (2 * rand(N) - 1)
+        #print "j",j
+        #print "gamma",gamma
+        #print "step",step.shape
+        #print "vars",vars.shape
+        delta = zeros_like(p)
+        delta[vars] = gamma*(eps*step)[vars]
+        return p + delta
+
+    def direct(self, p, stream):
+        if len(self.history.buffer[stream]) < 20:
+            #print "jiggling",stream,len(self.history.buffer[stream])
+            return self.jiggle(p,1e-6)
+        pair = self.history.draw(stream, 2)
+        return p + pair[0][3] - pair[1][3]
+    def jiggle(self, p, noise):
+        delta = randn(len(p))*self.step*noise
+        assert norm(delta) != 0
+        return p + delta
+    def subspace_jiggle(self, p, noise, k):
         n = len(self.step)
-        if n < ndim:
+        if n < k:
             idx = slice(None)
-            ndim = n
+            k = n
         else:
-            idx = numpy.random.permutation(n)[:ndim]
-        p = p+0
-        p[idx] += randn(ndim)*self.step[idx]*t
-        return p
-    def full(self, p, t):
-        return p + randn(len(p))*self.step*t
-    def part(self, p, t, cr):
-        while True:
-            idx = rand(len(p))>cr
-            if sum(idx)>0: break
-        return p + idx*randn(len(p))*self.step*t
+            idx = choose(n,k)
+        delta = zeros_like(p)
+        delta[idx] = randn(k)*self.step[idx]*noise
+        return p + delta
 
 class ReflectBounds(object):
     """
@@ -124,3 +226,17 @@ class ReflectBounds(object):
         idx = (y < minn) | (y > maxn)
         y[idx] = minn[idx] + rand(sum(idx))*(maxn[idx]-minn[idx])
         return y
+
+def choose(n, k):
+    """
+    Return an array of k things selected from a pool of n without replacement.
+    """
+    # At k == n/4, need to draw an extra 15% to get k unique draws
+    if k > n/4 or n<100:
+        idx = permutation(n)[:k]
+    else:
+        s = set(randint(n,size=k))
+        while len(s) < k:
+            s.add(randint(n))
+        idx = array([si for si in s])
+    return idx

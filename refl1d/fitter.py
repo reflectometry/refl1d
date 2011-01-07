@@ -122,20 +122,23 @@ class RLFit(FitBase):
 
 
 class PTFit(FitBase):
-    def solve(self, pop=10, steps=2000, burn=10, **kw):
+    def solve(self, pop=10, steps=2000, burn=1000, 
+              Tmin=0.1, Tmax=10, CR=0.9, **kw):
         from partemp import parallel_tempering
         self._update = MonitorRunner(problem=self.problem,
                                      monitors=kw.pop('monitors', None))
         bounds = numpy.array([p.bounds.limits
                               for p in self.problem.parameters]).T
-        T = numpy.logspace(-1,numpy.log10(burn),pop)
-        result = parallel_tempering(nllf=self.problem,
+        T = numpy.logspace(numpy.log10(Tmin),numpy.log10(Tmax),pop)
+        history = parallel_tempering(nllf=self.problem,
                                     p=self.problem.getp(),
                                     bounds=bounds,
                                     T=T,
+                                    CR=CR,
                                     steps=steps,
+                                    burn=burn,
                                     monitor=self._monitor)
-        return result[1]
+        return history.best_point
     def _monitor(self, step, x, fx):
         self._update(step=step, point=x, value=fx)
         return True

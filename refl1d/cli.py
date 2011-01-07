@@ -97,7 +97,10 @@ class FitProxy(object):
             x = optimizer.solve(steps=self.opts.steps,
                                 burn=self.opts.burn,
                                 pop=self.opts.pop,
-                                CR=self.opts.CR)
+                                CR=self.opts.CR,
+                                Tmin=self.opts.Tmin,
+                                Tmax=self.opts.Tmax,
+                                )
             print "time", time.clock() - t0
         else:
             x = self.problem.getp()
@@ -369,11 +372,15 @@ class FitOpts(ParseOpts):
     FLAGS = set(("preview","check","profile","edit","random","simulate",
                  "worker","batch","overwrite","parallel",
                  ))
-    VALUES = set(("plot","store","mesh","meshsteps","CR",
-                  "fit","pop","steps","burn","noise",
+    VALUES = set(("plot","store","fit",
+                  "noise",
+                  "CR","Tmin","Tmax","burn","steps","pop",
+                  #"mesh","meshsteps",
                  ))
     noise="5"
     CR="0.9"
+    Tmin="0.1"
+    Tmax="10"
     pop="10"
     steps="1000"
     burn="0"
@@ -381,7 +388,14 @@ class FitOpts(ParseOpts):
     USAGE = """\
 Usage: refl1d [-option] modelfile [modelargs]
 
-where options include:
+Options can be placed anywhere on the command line.
+
+The modelfile is a Python script (i.e., a series of Python commands)
+which sets up the data, the models, and the fittable parameters.
+The model arguments are available in the modelfile as sys.argv[1:].
+Model arguments may not start with '-'.
+
+Options include:
 
     -?/-h/--help
         display this help
@@ -391,53 +405,54 @@ where options include:
         display model but do not perform a fitting operation
     --batch
         batch mode; don't show plots during run
-    --plot=%(plotter)s
+    --plot=log [%(plotter)s]
         type of reflectivity plot to display
     --store=path
         output directory for plots and models
     --overwrite
         if store already exists, replace it
-    --fit=%(fitter)s (default de)
+    --fit=de  [%(fitter)s]
         fitting engine to use; see manual for details
-    --pop=n (default 10)
-        population size per parameter (used for dream and DE)
-    --steps=n (default 1000)
-        number of fit iterations
-    --burn=n (default 0)
-        number of iterations before accumulating stats (dream)
-    --CR=p (default 0.9)
-        crossover ratio for evolutionary algorithms (rl, de)
     --parallel
         run fit using all processors
-    --mesh=var OR var+var
-        plot chisq line or plane
-    --meshsteps=n
-        number of steps in the mesh
     --random
-        start from a random initial configuration
+        use a random initial configuration
     --simulate
         simulate the data to fit
     --noise=5%%
         percent noise to add to the simulated data
 
-For mesh plots, var can be a fitting parameter with optional
-range specifier, such as:
+Fitters options:
 
-   P[0].range(3,6)
+    --steps=1000   [all optimizers]
+        number of fit iterations after any burn-in time
+    --pop=10       [dream, de, rl, pt]
+        population size
+    --burn=1000    [dream, pt]
+        number of burn-in iterations before accumulating stats
+    --Tmin=0.1
+    --Tmax==10     [pt]
+        temperature range; use a higher maximum temperature and a larger
+        population if your fit is getting stuck in local minima.
+    --CR=0.9       [de, rl, pt]
+        crossover ratio for population mixing
 
-or the complete path to a model parameter:
-
-   M[0].sample[1].material.rho.pm(1)
-
-Options can be placed anywhere on the command line.
-
-The modelfile is a Python script (i.e., a series of Python commands)
-which sets up the data, the models, and the fittable parameters.
-The model arguments are available in the modelfile as sys.argv[1:].
-Model arguments may not start with '-'.
 """%{'fitter':'|'.join(sorted(FITTERS.keys())),
      'plotter':'|'.join(PLOTTERS),
      }
+
+#    --mesh=var OR var+var
+#        plot chisq line or plane
+#    --meshsteps=n
+#        number of steps in the mesh
+#For mesh plots, var can be a fitting parameter with optional
+#range specifier, such as:
+#
+#   P[0].range(3,6)
+#
+#or the complete path to a model parameter:
+#
+#   M[0].sample[1].material.rho.pm(1)
 
     _plot = 'log'
     def _set_plot(self, value):
@@ -467,6 +482,8 @@ def main():
     opts.pop = float(opts.pop)
     opts.burn = int(opts.burn)
     opts.CR = float(opts.CR)
+    opts.Tmin = float(opts.Tmin)
+    opts.Tmax = float(opts.Tmax)
 
     job = load_job(opts.args)
     if opts.random:
