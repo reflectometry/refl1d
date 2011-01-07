@@ -99,18 +99,18 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 ; To accomplish this, a batch file is run that creates the command window and starts the Windows command
 ; interpreter.  This provides the same environment as starting a command window using the run dialog box
 ; from the Windows start menu and entering a command such as "cmd" or "cmd /k <file-to-execute>".
-;;;Name: "{group}\Launch {#MyAppName}"; Filename: "{app}\{#MyAppFileName}"; IconFilename: "{app}\{#MyIconFileName}"; WorkingDir: "{app}"; Flags: runmaximized
-Name: "{group}\Launch {#MyAppName}"; Filename: "{app}\refllaunch.bat"; IconFilename: "{app}\{#MyIconFileName}"; WorkingDir: "{userdocs}\{#MyAppName}\examples"; Flags: runmaximized
+;;;Name: "{group}\Launch {#MyAppName}"; Filename: "{app}\{#MyAppFileName}"; IconFilename: "{app}\{#MyIconFileName}"; WorkingDir: "{userdocs}\{#MyAppName}"; Flags: runmaximized
+Name: "{group}\Launch {#MyAppName}"; Filename: "{app}\refllaunch.bat"; IconFilename: "{app}\{#MyIconFileName}"; WorkingDir: "{userdocs}\{#MyAppName}"; Flags: runmaximized
 Name: "{group}\{cm:ProgramOnTheWeb,{#MyAppName}}"; Filename: "{#MyAppURL}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-;;;Name: "{commondesktop}\{#MyAppName}{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppFileName}"; Tasks: desktopicon; WorkingDir: "{app}"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
-Name: "{commondesktop}\{#MyAppName}{#Space}{#MyAppVersion}"; Filename: "{app}\refllaunch.bat"; Tasks: desktopicon; WorkingDir: "{userdocs}\{#MyAppName}\examples"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
-;;;Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppFileName}"; Tasks: quicklaunchicon; WorkingDir: "{app}"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}{#Space}{#MyAppVersion}"; Filename: "{app}\refllaunch.bat"; Tasks: quicklaunchicon; WorkingDir: "{userdocs}\{#MyAppName}\examples"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
+;;;Name: "{commondesktop}\{#MyAppName}{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppFileName}"; Tasks: desktopicon; WorkingDir: "{userdocs}\{#MyAppName}"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
+Name: "{commondesktop}\{#MyAppName}{#Space}{#MyAppVersion}"; Filename: "{app}\refllaunch.bat"; Tasks: desktopicon; WorkingDir: "{userdocs}\{#MyAppName}"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
+;;;Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppFileName}"; Tasks: quicklaunchicon; WorkingDir: "{userdocs}\{#MyAppName}"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
+Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}{#Space}{#MyAppVersion}"; Filename: "{app}\refllaunch.bat"; Tasks: quicklaunchicon; WorkingDir: "{userdocs}\{#MyAppName}"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
 
 [Run]
-; Filename: "{app}\{#MyAppFileName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
-Filename: "{app}\refllaunch.bat"; Description: "{cm:LaunchProgram,{#MyAppName}}"; WorkingDir: "{userdocs}\{#MyAppName}\examples"; Flags: nowait postinstall skipifsilent runmaximized
+;;;Filename: "{app}\{#MyAppFileName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; WorkingDir: "{userdocs}\{#MyAppName}"; Flags: nowait postinstall skipifsilent runmaximized
+Filename: "{app}\refllaunch.bat"; Description: "{cm:LaunchProgram,{#MyAppName}}"; WorkingDir: "{userdocs}\{#MyAppName}"; Flags: nowait postinstall skipifsilent runmaximized
 Filename: "{app}\{#MyReadmeFileName}"; Description: "Read Release Notes"; Verb: "open"; Flags: shellexec skipifdoesntexist waituntilterminated postinstall skipifsilent unchecked
 ; Install the Microsoft C++ DLL redistributable package if it is provided and the DLLs are not present on the target system.
 ; Note that the redistributable package is included if the app was built using Python 2.6 or 2.7, but not with 2.5.

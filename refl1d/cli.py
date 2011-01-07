@@ -334,7 +334,6 @@ class ParseOpts:
     def _parse(self, args):
         flagargs = [v for v in sys.argv[1:] if v.startswith('--') and not '=' in v]
         flags = set(v[2:] for v in flagargs)
-        #if '?' in flags or 'h' in flags or 'help' in flags:
         if 'help' in flags or '-h' in sys.argv[1:] or '-?' in sys.argv[1:]:
             print self.USAGE
             sys.exit()
@@ -454,7 +453,6 @@ Model arguments may not start with '-'.
         self._fitter = value
     fit = property(fget=lambda self: self._fitter, fset=_set_fitter)
     meshsteps = 40
-
 
 
 # ==== Main ====
