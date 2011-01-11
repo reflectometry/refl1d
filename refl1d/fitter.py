@@ -21,7 +21,7 @@ class ConsoleMonitor(monitor.TimedUpdate):
         self.problem = problem
     # TimedUpdate profiles
     def show_progress(self, history):
-        print "step", history.step[0], "nllf", history.value[0]
+        print "step", history.step[0], "cost", history.value[0]
     def show_improvement(self, history):
         #print "step",history.step[0],"chisq",history.value[0]
         self.problem.setp(history.point[0])
@@ -130,7 +130,7 @@ class PTFit(FitBase):
         bounds = numpy.array([p.bounds.limits
                               for p in self.problem.parameters]).T
         T = numpy.logspace(numpy.log10(Tmin),numpy.log10(Tmax),pop)
-        history = parallel_tempering(nllf=self.problem,
+        history = parallel_tempering(nllf=self.problem.nllf,
                                     p=self.problem.getp(),
                                     bounds=bounds,
                                     #logfile="partemp.dat",
@@ -141,7 +141,7 @@ class PTFit(FitBase):
                                     monitor=self._monitor)
         return history.best_point
     def _monitor(self, step, x, fx):
-        self._update(step=step, point=x, value=fx)
+        self._update(step=step, point=x, value=2*fx/self.problem.dof)
         return True
 
 
@@ -608,12 +608,12 @@ class FitProblem(object):
         """
         Problem cost function.
 
-        Returns the negative log likelihood scaled by 2/DOF so that
+        Returns the negative log likelihood scaled by DOF so that
         the result looks like the familiar normalized chi-squared.  These
         scale factors will not affect the value of the minimum, though some
         care will be required when interpreting the uncertainty.
         """
-        return 0.5*self.nllf(pvec)/self.dof
+        return 2*self.nllf(pvec)/self.dof
 
     def show(self):
         print parameter.format(self.model_parameters())

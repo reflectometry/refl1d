@@ -89,7 +89,7 @@ class ExperimentBase(object):
                 raise ValueError("No data from which to calculate nllf")
             self._cache['nllf_scale'] = numpy.sum(numpy.log(2*pi*self.probe.dR**2))
         # TODO: add sigma^2 effects back into nllf
-        return numpy.sum(self.residuals()**2) # + self._cache['nllf_scale']
+        return 0.5*numpy.sum(self.residuals()**2) # + self._cache['nllf_scale']
 
     def plot_reflectivity(self, show_resolution=False):
         Q,R = self.reflectivity()
