@@ -86,4 +86,3 @@ from . import ncnrdata, snsdata
 # Python doesn't allow "from .module import *"
 from refl1d.materialdb import *
 """
-

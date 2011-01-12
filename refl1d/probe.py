@@ -165,7 +165,7 @@ class Probe(object):
             R,dR = None,None
 
         self._set_TLR(T,dT,L,dL,R,dR)
-        
+
     def _set_TLR(self, T,dT,L,dL,R,dR):
         #if L is None:
         #    L = xsf.xray_wavelength(E)
@@ -248,7 +248,7 @@ class Probe(object):
         """
         self.Ro, self.dR = R, dR
         self.resynth_data()
-        self.Ro = self.R        
+        self.Ro = self.R
 
     def restore_data(self):
         """
@@ -313,16 +313,16 @@ class Probe(object):
     def subsample(self, dQ):
         """
         Select points at most every dQ.
-        
+
         Use this to speed up computation early in the fitting process.
-        
+
         This changes the data object, and is not reversible.
-        
+
         The current algorithm is not picking the "best" Q value, just the
         nearest, so if you have nearby Q points with different quality
         statistics (as happens in overlapped regions from spallation
         source measurements at different angles), then it may choose
-        badly.  Simple solutions based on the smallest relative error dR/R 
+        badly.  Simple solutions based on the smallest relative error dR/R
         will be biased toward peaks, and smallest absolute error dR will
         be biased toward valleys.
         """
@@ -331,7 +331,7 @@ class Probe(object):
         Q = numpy.arange(self.Qo[0],self.Qo[-1],dQ)
         idx = numpy.unique(numpy.searchsorted(self.Qo,Q))
         #print len(idx),len(self.Qo)
-        
+
         self.T, self.dT = self.T[idx],self.dT[idx]
         self.L, self.dL = self.L[idx],self.dL[idx]
         self.Qo, self.dQ = self.Qo[idx],self.dQ[idx]
@@ -345,7 +345,7 @@ class Probe(object):
         points contributing to it in the range $[-3\Delta Q,3\Delta Q]$.
         """
         raise NotImplementedError
-        # TODO: implement resolution guard.        
+        # TODO: implement resolution guard.
 
     def oversample(self, n=6, seed=1):
         """

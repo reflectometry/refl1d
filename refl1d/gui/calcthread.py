@@ -13,7 +13,7 @@ if sys.platform.count("darwin")>0:
     def clock():
         return time.time()
     def sleep(t):
-        return time.sleep(t)    
+        return time.sleep(t)
 else:
     from time import clock
     from time import sleep
@@ -26,7 +26,7 @@ class CalcThread:
     If you specialize the __init__ method be sure to call
     CalcThread.__init__, passing it the keyword arguments for
     yieldtime, worktime, update and complete.
-    
+
     When defining the compute() method you need to include code which
     allows the GUI to run.  They are as follows:
         self.isquit()          call frequently to check for interrupts
@@ -58,7 +58,7 @@ class CalcThread:
     before the new event (e.g., in response to a mouse release event).  Use
     stop() to halt the current and pending computations (e.g., in response to
     a stop button).
-    
+
     The methods queue(), requeue() and reset() are proxies for the compute()
     method in the subclass.  Look there for a description of the arguments.
     The compute() method can be called directly to run the computation in
@@ -193,14 +193,14 @@ class CalcThread:
         if self._interrupting: raise KeyboardInterrupt
 
     def update(self,**kwargs):
-       
+
         """Update GUI with the lastest results from the current work unit."""
         if self.updatefn != None and clock() > self._time_for_update:
             self._lock.acquire()
             self._time_for_update = clock() + self._delay
             self._lock.release()
             self._time_for_update += 1e6  # No more updates
-            
+
             self.updatefn(**kwargs)
             sleep(self.yieldtime)
             if self._interrupting: raise KeyboardInterrupt

@@ -406,7 +406,7 @@ class Bounded(Bounds):
 
     [lo,hi] <-> [0,1] scale is simple linear
     [lo,hi] <-> (-inf,inf) scale uses exponential expansion
-    
+
     While technically the probability of seeing any value within the
     range is 1/range, for consistency with the semi-infinite ranges
     and for a more natural mapping between nllf and chisq, we instead

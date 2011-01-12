@@ -114,8 +114,8 @@ class FreeformInterface01(Layer):
         Prho  = (1-profile)*left_rho  + profile*right_rho
         Pirho = (1-profile)*left_irho + profile*right_irho
         slabs.extend(rho=[left_rho], irho=[left_irho], w=[Pz[lidx]])
-        slabs.extend(rho=[Prho[lidx:ridx]], 
-                     irho=[Pirho[lidx:ridx]], 
+        slabs.extend(rho=[Prho[lidx:ridx]],
+                     irho=[Pirho[lidx:ridx]],
                      w=Pw[lidx:ridx])
         slabs.extend(rho=[right_rho],irho=[right_irho],
                      sigma=[interface],
@@ -135,7 +135,7 @@ class FreeInterface(Layer):
         self.below, self.above = below,above
         self.interface = Par.default(interface, limits=(0,inf),
                                      name=name+" interface")
-        
+
         # Choose reasonable defaults if not given
         if dp is None and dz is None:
             dp = [1]*5
@@ -155,10 +155,10 @@ class FreeInterface(Layer):
         w = sum(v.value for v in self.dz)
         return Par(w,name=self.name+" thickness")
     def _set_thickness(self, v):
-        if v != 0: 
+        if v != 0:
             raise ValueError("thickness cannot be set for FreeformInterface")
     thickness = property(_get_thickness, _set_thickness)
-        
+
     def parameters(self):
         return dict(dz=self.dz,
                     dp=self.dp,
@@ -181,8 +181,8 @@ class FreeInterface(Layer):
         Prho  = (1-profile)*left_rho  + profile*right_rho
         Pirho = (1-profile)*left_irho + profile*right_irho
         slabs.extend(rho=[left_rho], irho=[left_irho], w=[Pz[lidx]])
-        slabs.extend(rho=[Prho[lidx:ridx]], 
-                     irho=[Pirho[lidx:ridx]], 
+        slabs.extend(rho=[Prho[lidx:ridx]],
+                     irho=[Pirho[lidx:ridx]],
                      w=Pw[lidx:ridx])
         slabs.extend(rho=[right_rho],irho=[right_irho],
                      sigma=[interface],

@@ -70,7 +70,7 @@ modules=[
     ('snsdata', 'SNS Data'),
     ('staj', 'Staj File'),
     ('stajconvert', 'Staj File Converter'),
-    
+
 ]
 package='refl1d'
 package_name='Reference'

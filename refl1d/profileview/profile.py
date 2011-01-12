@@ -17,10 +17,10 @@ from .thickness import ThicknessInteractor
 from .interface import InterfaceInteractor
 
 from matplotlib import transforms
-try:    
+try:
     # matplotlib 0.98
     blend_xy = transforms.blended_transform_factory
-except: 
+except:
     # CRUFT: matplotlib 0.91
     blend_xy = transforms.blend_xy_sep_transform
 
@@ -119,7 +119,7 @@ class ProfileInteractor(object):
             if left < xlo and xhi < right:
                 #print "hysteresis", event.x, xlo, xhi, self.layer_start, self.layer_end
                 return False
-        
+
         # If layer changed, then replace the markers
         self.set_layer(x)
         return False
@@ -154,17 +154,17 @@ class ProfileInteractor(object):
         """Make layer containing z the active layer."""
         self.layer_num = numpy.searchsorted(self.boundary, z)-1
         layer = self.sample_layer(self.layer_num)
-        
+
         # Reset the interface markers
         self.interface_interactor.set_layer()
-    
+
         # Reset the layer markers
         self.layer_interactor.clear_markers()
         self.layer_interactor = registry.interactor(self, layer)
 
         # Update the marker positions
         self.update_markers()
-        
+
         # Trigger redraw
         self.draw_idle()
 
@@ -173,7 +173,7 @@ class ProfileInteractor(object):
         self.thickness_interactor.update_markers()
         self.interface_interactor.update_markers()
         self.layer_interactor.update_markers()
-        
+
     def update_profile(self):
         self.experiment.update()
         if self.magnetic:
@@ -198,7 +198,7 @@ class ProfileInteractor(object):
         rho = self.hrho.get_ydata()
         rhoI = self.hrhoI.get_ydata()
         self.axes.set_xlim(z[0],z[-1])
-        
+
         if self.magnetic:
             rhoM = self.hrhoM.get_ydata()
             thetaM = self.hthetaM.get_ydata()
@@ -206,7 +206,7 @@ class ProfileInteractor(object):
             hi = max( rho.max(), rhoI.max(), rhoM.max() )
             fluff = 0.05*(hi-lo)
             self.axes.set_ylim(lo-fluff, hi+fluff)
-            
+
             lo, hi = thetaM.min(), thetaM.max()
             fluff = 0.05*(hi-lo)
             self.axes2.set_ylim(lo-fluff, hi+fluff)
@@ -255,8 +255,8 @@ class ProfileInteractor(object):
         self.axes_frozen = False
 
     def draw_now(self):
-	#try: del self._delayed
-	#except: pass
+        #try: del self._delayed
+        #except: pass
         self.axes.figure.canvas.draw()
     def draw_idle(self):
         """Set the limits and tell the canvas to render itself."""

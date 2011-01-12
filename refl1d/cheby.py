@@ -153,7 +153,7 @@ class ChebyVF(Layer):
            sld(z) = material.sld * profile(z) + solvent.sld * (1 - profile(z))
     """
     def __init__(self, thickness=0, interface=0,
-                 material=None, solvent=None, vf=None, 
+                 material=None, solvent=None, vf=None,
                  name="ChebyVF", method="interp"):
         if interface != 0: raise NotImplementedError("interface not yet supported")
         self.name = name
@@ -198,7 +198,7 @@ def _profile(c, t, method):
     polynomials $T_i$ yielding $P = \sum_i{c_i T_i(x)}$.
 
     If method is 'interp' then $c_i$ are the values of the interpolated
-    function $f$ evaluated at the chebyshev points returned by 
+    function $f$ evaluated at the chebyshev points returned by
     :function:`cheby_points`.
     """
     if method == 'interp':
@@ -207,7 +207,7 @@ def _profile(c, t, method):
 
 def cheby_approx(n, f, range=[0,1]):
     """
-    Return the coefficients for the order n chebyshev approximation to 
+    Return the coefficients for the order n chebyshev approximation to
     function f evaluated over the range [low,high].
     """
     fx = f(cheby_points(n, range=range))
@@ -232,11 +232,11 @@ def cheby_val(c, x, method='direct'):
 
 def cheby_points(n, range=[0,1]):
     """
-    Return the points in at which a function must be evaluated to 
+    Return the points in at which a function must be evaluated to
     generate the order $n$ Chebyshev approximation function.
 
     Over the range [-1,1], the points are $p_k = \cos(\pi/2 (2 k + 1)/n)$.
-    Adjusting the range to $[x_L,x_R]$, the points become 
+    Adjusting the range to $[x_L,x_R]$, the points become
     $x_k = 1/2 (p_k - x_L + 1)/(x_R-x_L)$.
     """
     return 0.5*(cos(pi*(arange(n)+0.5)/n)-range[0]+1)/(range[1]-range[0])
@@ -245,7 +245,7 @@ def cheby_coeff(fx):
     """
     Compute chebyshev coefficients for a polynomial of order n given
     the function evaluated at the chebyshev points for order n.
-    
+
     This can be used as the basis of a direct interpolation method where
     the n control points are positioned at cheby_points(n).
     """

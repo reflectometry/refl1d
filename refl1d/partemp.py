@@ -25,7 +25,7 @@ def parallel_tempering(nllf, p, bounds, T=None, steps=1000,
     r"""
     Parameters
     ----------
-    
+
     *nllf* : function(vector) -> float
         Negative log likelihood function to be minimized.  $\chi^2/2$ is a
         good choice for curve fitting with no prior restraints on the possible
@@ -44,13 +44,13 @@ def parallel_tempering(nllf, p, bounds, T=None, steps=1000,
         may gather statistics more quickly, though it will not necessarily
         converge any faster.
     *steps* = 1000 : int
-        Length of the accumulation vector.  The returned history will store 
+        Length of the accumulation vector.  The returned history will store
         this many values for each temperature.  These values can be used in
         a weighted histogram to determine parameter uncertainty.
     *burn* = 1000 : int | [0,inf)
         Number of iterations to perform in addition to steps.  Only the
         last *steps* points will be preserved for each temperature.  Since
-        the 
+        the
         value should be in the same order as *steps* to be sure that the
         full history is acquired.
     *CR* = 0.9 : float | [0,1]
@@ -65,14 +65,14 @@ def parallel_tempering(nllf, p, bounds, T=None, steps=1000,
         Name of the file which will log the history of every accepted step.
         Note that this includes all of the burn steps, so it can get very
         large.
-        
+
     Returns
     -------
-    
+
     *history* : History
         Structure containing *best*, *best_point* and *buffer*.  *best* is
         the best nllf value seen and *best_point* is the parameter vector
-        which yielded *best*.  The list *buffer* contains lists of tuples 
+        which yielded *best*.  The list *buffer* contains lists of tuples
         (step, temperature, nllf, x) for each temperature.
     """
     N = len(T)
@@ -113,7 +113,7 @@ def parallel_tempering(nllf, p, bounds, T=None, steps=1000,
         E[accept] = Enext[accept]
         P[accept] = Pnext[accept]
         total_accept += accept
-        
+
         # Accumulate history for population based methods
         history.save(step, temperature=T, energy=E, point=P, changed=accept)
         #print "best",history.best
@@ -170,7 +170,7 @@ class History(object):
         # Save in buffer
         S = self.buffer[i]
         if len(S) >= self.size: S.pop(0)
-        if len(S) > 0: 
+        if len(S) > 0:
             #print "P",P
             #print "S",S[-1][3]
             assert norm(P-S[-1][3]) != 0
@@ -189,7 +189,7 @@ class History(object):
     def draw(self, stream, k):
         """
         Return a list of k items drawn from the given stream.
-        
+
         If the stream is too short, fewer than n items may be returned.
         """
         S = self.buffer[stream]
@@ -203,7 +203,7 @@ class Stepper(object):
         low, high = bounds
         self.step = (high-low)
         self.history = history
-        
+
     def diffev(self, p, stream, CR=0.8, noise=0.05):
         if len(self.history.buffer[stream]) < 20:
             #print "jiggling",stream,stream,len(self.history.buffer[stream])

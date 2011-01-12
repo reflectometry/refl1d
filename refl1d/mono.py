@@ -71,7 +71,7 @@ class FreeLayer(Layer):
             print "z",z
             print "p",[p.value for p in self.z]
 
-        
+
         if len(self.irho)>0:
             irho = hstack((ibelow, [p.value for p in self.irho], iabove))
             Pirho = monospline(z, irho, Pz)
@@ -108,8 +108,8 @@ class FreeInterface(Layer):
                                      name=name+" thickness")
         self.interface = Par.default(interface, limits=(0,inf),
                                      name=name+" interface")
-        
-        
+
+
         # Choose reasonable defaults if not given
         if dp is None and dz is None:
             dp = [1]*5
@@ -158,8 +158,8 @@ class FreeInterface(Layer):
         Prho  = (1-profile)*below_rho  + profile*above_rho
         Pirho = (1-profile)*below_irho + profile*above_irho
         slabs.extend(rho=[below_rho], irho=[below_irho], w=[Pz[lidx]])
-        slabs.extend(rho=[Prho[lidx:ridx]], 
-                     irho=[Pirho[lidx:ridx]], 
+        slabs.extend(rho=[Prho[lidx:ridx]],
+                     irho=[Pirho[lidx:ridx]],
                      w=Pw[lidx:ridx])
         slabs.extend(rho=[above_rho],irho=[above_irho],
                      sigma=[interface],
@@ -190,20 +190,20 @@ def plot_inflection(x,y):
     pylab.stem(delta_x,delta)
     pylab.plot(delta_x[delta<0],delta[delta<0],'og')
     pylab.axis([x[0],x[-1],min(min(delta),0),max(max(delta),0)])
-    
+
 
 @numpyerrors.ignored
 def monospline(x, y, xt):
     r"""
     Monotonic cubic hermite interpolation.
-    
-    Returns $p(x_t)$ where $p(x_i)= y_i$ and $p(x) \leq p(xi)$ 
+
+    Returns $p(x_t)$ where $p(x_i)= y_i$ and $p(x) \leq p(xi)$
     if $y_i \leq y_{i+1}$ for all $y_i$.  Also works for decreasing
     values $y$, resulting in decreasing $p(x)$.  If $y$ is not monotonic,
     then $p(x)$ may peak higher than any $y$, so this function is not
     suitable for a strict constraint on the interpolated function when
     $y$ values are unconstrained.
-    
+
     http://en.wikipedia.org/wiki/Monotone_cubic_interpolation
     """
     x = hstack((x[0]-1,x,x[-1]+1))
@@ -237,7 +237,7 @@ def monospline(x, y, xt):
 def hermite(x,y,m,xt):
     """
     Computes the cubic hermite polynomial p(xt).
-    
+
     The polynomial goes through all points (x_i,y_i) with slope
     m_i at the point.
     """
@@ -270,7 +270,7 @@ class _FreeInterfaceW(Layer):
         self.below, self.above = below,above
         self.interface = Par.default(interface, limits=(0,inf),
                                      name=name+" interface")
-        
+
         # Choose reasonable defaults if not given
         if dp is None and dz is None:
             dp = [1]*5
@@ -290,10 +290,10 @@ class _FreeInterfaceW(Layer):
         w = sum(v.value for v in self.dz)
         return Par(w,name=self.name+" thickness")
     def _set_thickness(self, v):
-        if v != 0: 
+        if v != 0:
             raise ValueError("thickness cannot be set for FreeformInterface")
     thickness = property(_get_thickness, _set_thickness)
-        
+
     def parameters(self):
         return dict(dz=self.dz,
                     dp=self.dp,
@@ -316,8 +316,8 @@ class _FreeInterfaceW(Layer):
         Prho  = (1-profile)*below_rho  + profile*above_rho
         Pirho = (1-profile)*below_irho + profile*above_irho
         slabs.extend(rho=[below_rho], irho=[below_irho], w=[Pz[lidx]])
-        slabs.extend(rho=[Prho[lidx:ridx]], 
-                     irho=[Pirho[lidx:ridx]], 
+        slabs.extend(rho=[Prho[lidx:ridx]],
+                     irho=[Pirho[lidx:ridx]],
                      w=Pw[lidx:ridx])
         slabs.extend(rho=[above_rho],irho=[above_irho],
                      sigma=[interface],

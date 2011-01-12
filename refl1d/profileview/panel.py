@@ -126,7 +126,7 @@ class ProfileView(AuiPanel):
 
     def CanShowContextMenu(self):
         return True
-        
+
     def quit_on_error(self):
         numpy.seterr(all='raise')
         ProfileInteractor._debug = True

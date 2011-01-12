@@ -124,7 +124,7 @@ class RLFit(FitBase):
 
 
 class PTFit(FitBase):
-    def solve(self, pop=10, steps=2000, burn=1000, 
+    def solve(self, pop=10, steps=2000, burn=1000,
               Tmin=0.1, Tmax=10, CR=0.9, **kw):
         from partemp import parallel_tempering
         self._update = MonitorRunner(problem=self.problem,

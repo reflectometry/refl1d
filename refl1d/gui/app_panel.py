@@ -22,7 +22,7 @@
 
 """
 This module implements the AppPanel class which creates the main panel on top
-of the frame of the GUI for the Refl1D application. 
+of the frame of the GUI for the Refl1D application.
 """
 
 #==============================================================================
@@ -37,7 +37,7 @@ from wx.lib.pubsub import Publisher as pub
 from wx.lib.pubsub import Publisher
 import wx.lib.newevent
 
-############### matplotlib imports #####################     
+############### matplotlib imports #####################
 import matplotlib
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wxagg import NavigationToolbar2Wx as Toolbar
@@ -59,7 +59,7 @@ import pylab
 #from pylab import *
 
 from refl1d.mystic import monitor, parameter
-from .gui_logic import Fit_Tab, Log_tab, load_problem   
+from .gui_logic import Fit_Tab, Log_tab, load_problem
 from .work_thread import Worker
 
 from .utilities import (get_appdir, log_time,
@@ -108,7 +108,7 @@ class GUIMonitor(monitor.TimedUpdate):
                                      improvement=improvement)
         #self.problem = deepcopy(problem)
         self.problem = problem
-        
+
     def show_progress(self, history):
         temp = "  "
         wx.CallAfter(Publisher().sendMessage, "update", "step  " + str(history.step[0])+temp + "chisq  " + str(history.value[0]))
@@ -117,7 +117,7 @@ class GUIMonitor(monitor.TimedUpdate):
         self.problem.setp(history.point[0])
         out = parameter.summarize(self.problem.parameters)
         wx.CallAfter(Publisher().sendMessage, "update_plot", out)
-        
+
 
 class AppPanel(wx.Panel):
     """
@@ -135,33 +135,33 @@ class AppPanel(wx.Panel):
 
         self.SetBackgroundColour("WHITE")
         self.frame = frame
-       
+
         # Modify the tool bar.
         self.modify_toolbar()
-       
+
         # Reconfigure the status bar.
         self.modify_statusbar([-34, -50, -16])
 
         # Split the panel into left and right halves.
         self.split_panel()
-              
+
         # Modify the menu bar.
-        self.modify_menubar()   
-       
+        self.modify_menubar()
+
         # create a pubsub receiver
         Publisher().subscribe(self.updateDisplay, "update")
         Publisher().subscribe(self.update_plot, "update_plot")
         EVT_RESULT(self,self.OnFitResult)
-        
+
         self.worker = None   #worker for fitting job
-  
+
     def modify_menubar(self):
         """Adds items to the menu bar, menus, and menu options."""
         frame = self.frame
         mb = frame.GetMenuBar()
         file_menu = mb.GetMenu(0)
         file_menu.PrependSeparator()
-        
+
         _item = file_menu.Prepend(wx.ID_ANY, "&Import",
                                              "Import a script file")
         frame.Bind(wx.EVT_MENU, self.OnLoadScript, _item)
@@ -173,7 +173,7 @@ class AppPanel(wx.Panel):
                                              "Open a script file")
         _item = file_menu.Prepend(wx.ID_ANY, "&New",
                                              "Create a new script file")
-        
+
         ############View menu#########################
         view_menu = wx.Menu()
         _item = view_menu.Append(wx.ID_ANY, "&Theory",
@@ -182,7 +182,7 @@ class AppPanel(wx.Panel):
                                             "view panel")
         mb.Insert(1, view_menu, "&View")
 
-        
+
     def modify_toolbar(self):
         """Populates the tool bar."""
         tb = self.frame.GetToolBar()
@@ -196,27 +196,27 @@ class AppPanel(wx.Panel):
         self.sb = self.frame.GetStatusBar()
         self.sb.SetFieldsCount(len(subbars))
         self.sb.SetStatusWidths(subbars)
-        
+
     def split_panel(self):
         """Creates separate left and right panels."""
 
         # Split the panel into two pieces.
         sp = wx.SplitterWindow(self, style=wx.SP_3D|wx.SP_LIVE_UPDATE)
         sp.SetMinimumPaneSize(600)
-                       
+
         self.pan1 = wx.Panel(sp, wx.ID_ANY, style=wx.SUNKEN_BORDER)
         self.pan1.SetBackgroundColour("WHITE")
-        
+
         self.pan2 = wx.Panel(sp, wx.ID_ANY, style=wx.SUNKEN_BORDER)
         self.pan2.SetBackgroundColour("WHITE")
 
-       
+
         sp.SplitHorizontally(self.pan1,self.pan2)
-       
+
         # Initialize the left and right panels.
         self.init_top_panel()
         self.init_bottom_panel()
-        
+
         # Put the splitter in a sizer attached to the main panel of the page.
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(sp, 1, wx.EXPAND)
@@ -225,7 +225,7 @@ class AppPanel(wx.Panel):
 
 
     def init_top_panel(self):
-        
+
         INTRO_TEXT = "Refl1D Plot:"
 
         # Instantiate a figure object that will contain our plots.
@@ -242,10 +242,10 @@ class AppPanel(wx.Panel):
         # This technique allows this application to execute code that uses
         # pylab stataments to generate plots and embed these plots in our
         # application window(s).
-       
+
         self.fignum = 0
         self.fm = FigureManagerBase(canvas, self.fignum)
-        
+
         # Instantiate the matplotlib navigation toolbar and explicitly show it.
         mpl_toolbar = Toolbar(canvas)
         mpl_toolbar.Realize()
@@ -280,12 +280,12 @@ class AppPanel(wx.Panel):
 
     def _activate_figure(self):
         _pylab_helpers.Gcf.set_active(self.fm)
-   
+
     def init_bottom_panel(self):
         nb = self.notebook = wx.Notebook(self.pan2, wx.ID_ANY,
                              style=wx.NB_TOP|wx.NB_FIXEDWIDTH|wx.NB_NOPAGETHEME)
         nb.SetTabSize((100,20))  # works on Windows but not on Linux
-        
+
         # Create page windows as children of the notebook.
         from refl1d.profileview.panel import ProfileView
         self.page0 = ProfileView(nb)
@@ -298,7 +298,7 @@ class AppPanel(wx.Panel):
         self.page7 = Fit_Tab(nb)
         self.page8 = Fit_Tab(nb)
         self.page9 = Fit_Tab(nb)
-        
+
         # Add the pages to the notebook with a label to show on the tab.
         nb.AddPage(self.page0, "Profile")
         nb.AddPage(self.page1, "Residual")
@@ -310,7 +310,7 @@ class AppPanel(wx.Panel):
         nb.AddPage(self.page7, "Data")
         nb.AddPage(self.page8, "Console")
         nb.AddPage(self.page9, "Fit")
-        
+
         self.pan2.sizer = wx.BoxSizer(wx.VERTICAL)
         self.pan2.sizer.Add(nb, 1, wx.EXPAND)
         self.pan2.SetSizer(self.pan2.sizer)
@@ -340,7 +340,7 @@ class AppPanel(wx.Panel):
         new = event.GetSelection()
         sel = self.notebook.GetSelection()
         event.Skip()
-    
+
     def OnLoadScript(self, event):
         # The user can select both file1 and file2 from the file dialog box
         # by using the shift or control key to pick two files.  The order in
@@ -366,7 +366,7 @@ class AppPanel(wx.Panel):
         self.view(self.problem)
 
         ######## notebook tab 1 (profile view) ##############
-        try: 
+        try:
             experiment = self.problem.fits[0].fitness
         except:
             experiment = self.problem.fitness
@@ -375,11 +375,11 @@ class AppPanel(wx.Panel):
         self.page0.SetProfile(experiment)
         pub.subscribe(self.OnInteractor, "inter_update") # recieving interactor update message from profile interactor
         pub.subscribe(self.OnFit, "fit") # recieving fit message from fit tab
-              
-            
+
+
     def view(self, model):
         pylab.clf() #### clear the canvas
-	self._activate_figure()
+        self._activate_figure()
         model.show()
         model.fitness.plot_reflectivity()
         pylab.draw()
@@ -388,22 +388,22 @@ class AppPanel(wx.Panel):
         """
         On recieving fit message this event is triggered to fit the data and model
         """
-	# TODO: need to put options on fit panel
-	from .main import FitOpts, FitProxy, SerialMapper
+        # TODO: need to put options on fit panel
+        from .main import FitOpts, FitProxy, SerialMapper
         from refl1d.fitter import RLFit, DEFit, BFGSFit, AmoebaFit, SnobFit
         from refl1d.probe import Probe
 
         self.sb.SetStatusText('Fit status: Running', 2)
         moniter = GUIMonitor(self.problem)
         opts = FitOpts(self.args)
-        
+
         FITTERS = dict(dream=None, rl=RLFit,
-                        de=DEFit, newton=BFGSFit, amoeba=AmoebaFit, snobfit=SnobFit) 
-      
+                        de=DEFit, newton=BFGSFit, amoeba=AmoebaFit, snobfit=SnobFit)
+
         self.fitter = FitProxy(FITTERS[opts.fit],
                                problem=self.problem, moniter=moniter,opts=opts,)
         mapper = SerialMapper
-        
+
         Probe.view = opts.plot
 
         self.make_store(self.problem,opts)
@@ -413,18 +413,18 @@ class AppPanel(wx.Panel):
         self.worker = Worker(self, self.problem, fn = self.fitter,
                                        pars = opts.args,
                                        mapper = mapper)
-        
+
     def OnFitResult(self, event):
         self.sb.SetStatusText('Fit status: Complete', 2)
         if event.data is None:
             # Thread aborted (using our convention of None return)
             print 'Computation failed/aborted'
         else:
-            self.remember_best(self.fitter, self.problem, event.data)   
-    
-   	    
+            self.remember_best(self.fitter, self.problem, event.data)
+
+
     def remember_best(self,fitter, problem, best):
-        
+
         fitter.save(problem.output)
 
         try:
@@ -432,12 +432,12 @@ class AppPanel(wx.Panel):
         except:
             pass
         sys.stdout = open(problem.output+".out","w")
-        
+
         self.progress_gauge.Stop()
         self.progress_gauge.Show(False)
         self.pan1.Layout()
 
-	self.view(problem)
+        self.view(problem)
 
     def updateDisplay(self, msg):
         """
@@ -445,20 +445,20 @@ class AppPanel(wx.Panel):
         and redirects the update messages to log tab for dispaly
         """
         pub.sendMessage("log", msg.data)
-        
+
     def update_plot(self, d):
         """
         Receives data from thread and update the plot
         """
-	self.view(self.problem)
+        self.view(self.problem)
 
     def OnInteractor(self, event):
         """
         Receives interactor updates from interactor profile tab
         and redraws the top panel canvas with updated data.
         """
-	self.view(self.problem)
-        
+        self.view(self.problem)
+
     def make_store(self, problem, opts):
         # Determine if command line override
         if opts.store != None:
@@ -475,11 +475,8 @@ class AppPanel(wx.Panel):
             if (retCode != wx.ID_YES):
                 sys.exit(1)
             msg_dlg.Destroy()
-            
+
         # Create it and copy model
         try: os.mkdir(problem.store)
         except: pass
         shutil.copy2(problem.file, problem.store)
-         
-       
-         

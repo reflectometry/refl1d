@@ -7,7 +7,7 @@ from matplotlib      import transforms
 from matplotlib.backends.backend_wx import FigureCanvasWx
 def wxdrawnow(self):
     #print "draw if needed"
-    if not self._isDrawn: 
+    if not self._isDrawn:
         self.draw()
 FigureCanvasWx.draw_now = wxdrawnow
 
@@ -23,7 +23,7 @@ else:
 def draw_if_needed(canvas):
     """
     Force canvas to be drawn if there are drawing commands outstanding.
-    
+
     This is needed if the application has emitted a draw_idle() that hasn't
     had time to process prior to the mouse event detection running.
     """

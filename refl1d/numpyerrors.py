@@ -53,9 +53,9 @@ def errors(**kw):
     context = Errors(**kw)
     def decorator(f):
         @functools.wraps(f)
-        def decorated(*args, **kw):            
-            with context: 
-                return f(*args, **kw)        
+        def decorated(*args, **kw):
+            with context:
+                return f(*args, **kw)
         return decorated
     return decorator
 ignored = errors(all='ignore')

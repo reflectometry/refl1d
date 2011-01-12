@@ -62,7 +62,7 @@ class Layer(object): # Abstract base class
     def find(self, z):
         """
         Find the layer at depth z.
-        
+
         Returns layer, start, end
         """
         return self, 0, self.thickness.value
@@ -104,10 +104,10 @@ class Layer(object): # Abstract base class
         return self.__mul__(other)
     def __call__(self, thickness=None, interface=None):
         c = copy(self)
-        if thickness != None: 
+        if thickness != None:
             c.thickness = Par.default(thickness, limits=(0,inf),
                                       name=self.name+" thickness")
-        if interface != None: 
+        if interface != None:
             c.interface = Par.default(interface, limits=(0,inf),
                                       name=self.name+" interface")
         return c
@@ -155,7 +155,7 @@ class Stack(Layer):
     def find(self, z):
         """
         Find the layer at depth z.
-        
+
         Returns layer, start, end
         """
         offset = 0
@@ -194,7 +194,7 @@ class Stack(Layer):
     def __len__(self):
         return len(self._layers)
     def __str__(self):
-        return " | ".join("%s(%.3g)"%(L,L.thickness.value) 
+        return " | ".join("%s(%.3g)"%(L,L.thickness.value)
                           for L in self._layers)
     def __repr__(self):
         return "Stack("+", ".join(repr(L) for L in self._layers)+")"
@@ -316,7 +316,7 @@ class Repeat(Layer):
     def find(self, z):
         """
         Find the layer at depth z.
-        
+
         Returns layer, start, end
         """
         n = self.repeat.value

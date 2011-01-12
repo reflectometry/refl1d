@@ -6,9 +6,9 @@ from threading import *
 EVT_RESULT_ID = 1
 
 class ResultEvent(wx.PyEvent):
-    
+
     def __init__(self, data):
-        
+
         wx.PyEvent.__init__(self)
         self.SetEventType(EVT_RESULT_ID)
         self.data = data
@@ -40,7 +40,3 @@ class Worker(Thread):
         self.fitter.mapper = self.mapper.start_mapper(self.problem, self.pars)
         best = self.fitter.fit()
         wx.PostEvent(self.panel, ResultEvent(best))
-        
-        
-        
-    

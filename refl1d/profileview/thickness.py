@@ -24,21 +24,21 @@ class ThicknessInteractor(BaseInteractor):
         middle = [(a+b)/2. for a,b in zip(z[:-1],z[1:])]
         right = z[-1] + 20
         return [left]+middle+[right]
-        
+
     def reset_markers(self):
         """
         Reset all markers.
         """
         self.clear_markers()
         ax = self.profile.axes
-                
+
         # Add bars
         style = dict(linewidth=1, linestyle='-',
                      color=thickness_color, alpha=0.5,
                      pickradius=pick_radius,
                      visible=self._show_boundaries,
-                     ) 
-        self.markers = [ax.axvline(x=z, **style) 
+                     )
+        self.markers = [ax.axvline(x=z, **style)
                         for z in self.profile.boundary[1:-1]]
 
         self.markers[0].set(linestyle=':')
@@ -86,7 +86,7 @@ class ThicknessInteractor(BaseInteractor):
             self._next_saved = self._next.value
         else:
             self._next = None
-    
+
     def restore(self, ev):
         self._curr.value = self._curr_saved
         if self._next is not None:
@@ -112,7 +112,7 @@ class ThicknessInteractor(BaseInteractor):
         x = clip(event.xdata, lo, hi)
         self._curr.value = x - self._prev_offset
         if self._next is not None:
-            self._next.value = (self._next_offset-x if event.shift 
+            self._next.value = (self._next_offset-x if event.shift
                                 else self._next_saved)
 
     def drag_start(self, ev):
@@ -121,7 +121,7 @@ class ThicknessInteractor(BaseInteractor):
         can drag the boundary and restore it on Esc.
         """
         self.profile.freeze_axes()
-        
+
     def drag_cancel(self, event):
         """
         Restore the depths for this layer and the next.

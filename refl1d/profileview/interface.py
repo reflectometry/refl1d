@@ -97,8 +97,8 @@ class InterfaceInteractor(BaseInteractor):
         Remember the interface for this layer and the next so that we
         can restore on Esc.
         """
-        
-        if self._left is not None: 
+
+        if self._left is not None:
             self._left_value = self._left.value
         if self._right is not None:
             self._right_value = self._right.value

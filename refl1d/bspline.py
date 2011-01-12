@@ -21,7 +21,7 @@ def pbs(x, y, t, clamp=True, parametric=False):
 
     The knots are assumed to be equally spaced within 0,1.  x values are
     sorted.
-    
+
     The spline goes through the control points at the ends.  If clamp is True,
     the derivative of the spline at both ends is zero.  If clamp is False,
     the derivative at the ends is equal to the slope connecting the final
@@ -82,7 +82,7 @@ def bspline(y, xt, clamp=True):
     Evaluate the B-spline at positions xt in [0,1].
 
     The knots are assumed to be equally spaced within 0,1.
-    
+
     The spline goes through the control points at the ends.  If clamp is True,
     the derivative of the spline at both ends is zero.  If clamp is False,
     the derivative at the ends is equal to the slope connecting the final
@@ -186,7 +186,7 @@ def _find_control(v, clamp=True):
         # First derivative at ends follows line between final control points
         bl, br = (v[1]-v[0])*N, (v[-1]-v[-2])*N
     b = numpy.hstack([v[0], bl, v[1:N-1], br, v[-1]])
-    x = solve_banded((1,1), A, b)    
+    x = solve_banded((1,1), A, b)
     return x #x[1:-1]
 
 def speed_check():
@@ -245,7 +245,7 @@ def test():
     xtp,ytp = pbs(xeq,y,t,clamp=True, parametric=True)
     _check(t,xtp,1e-8)
     _check(yt,ytp,1e-8)
-    
+
     yt = bspline(y,t,clamp=False)
     xtp,ytp = pbs(xeq,y,t,clamp=False, parametric=False)
     _check(t,xtp,1e-8)
@@ -257,7 +257,7 @@ def test():
 
 
     # ==== Check bspline f at end points
-    
+
     yt = bspline(y,t,clamp=True)
     _check(y[0],yt[0],1e-12)
     _check(y[-1],yt[-1],1e-12)
@@ -277,7 +277,7 @@ def test():
     _check(x[-1],xt[-1],1e-8)
     _check(y[0],yt[0],1e-8)
     _check(y[-1],yt[-1],1e-8)
-    
+
     xt,yt = pbs(x, y, t, clamp=False, parametric=False)
     _check(x[0],xt[0],1e-8)
     _check(x[-1],xt[-1],1e-8)
@@ -289,9 +289,9 @@ def test():
     _check(x[-1],xt[-1],1e-8)
     _check(y[0],yt[0],1e-8)
     _check(y[-1],yt[-1],1e-8)
-    
+
     # ==== Check f' at end points
-    
+
     yt = bspline(y,dt,clamp=True)
     left,right = _derivs(dt,yt)
     _check(0, left, 1e-8)
@@ -306,12 +306,12 @@ def test():
     left,right = _derivs(xt,yt)
     _check(0, left, 1e-8)
     _check(0, right, 1e-8)
-    
+
     yt = bspline(y,dt,clamp=False)
     left,right = _derivs(dt,yt)
     _check((y[1]-y[0])*(n-1), left, 5e-4)
     _check((y[-1]-y[-2])*(n-1), right, 5e-4)
-    
+
     xt,yt = pbs(x, y, dx, clamp=False, parametric=False)
     left,right = _derivs(xt,yt)
     _check((y[1]-y[0])/(x[1]-x[0]), left, 5e-4)
@@ -327,7 +327,7 @@ def test():
     yc = bspline_control(y)
     print "y",y
     print "p(yc)",bspline(yc,xeq)
-    
+
 def demo():
     from pylab import hold, linspace, plot, show
     hold(True)

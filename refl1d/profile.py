@@ -196,7 +196,7 @@ class Microslabs:
         idx = numpy.nonzero(sigma[1:]==0)[0]+1
         fix = step[idx] < 3*dA
         sigma[idx[fix]] = w[idx[fix]]/4
-        
+
     def freeze(self, step=False):
         """
         Generate a consistent set of slabs, expanding interfaces where
@@ -276,7 +276,7 @@ class Microslabs:
         roughness = self.limited_sigma(limit=roughness_limit)
         rho = build_profile(z, self.w, roughness, self.rho[0])
         irho = build_profile(z, self.w, roughness, self.irho[0])
-        return z,rho,irho    
+        return z,rho,irho
 
 
 def build_profile(z, thickness, roughness, value):

@@ -67,7 +67,7 @@ class FreeInterfaceInteractor(BaseInteractor):
         for h,zi,pi in zip(self.markers,z[:-1],p[:-1]):
             h.set_data( (zi,), (pi,) )
         #self.markers[0].set_data(z,p)
-    
+
 
     def clear_markers(self):
         self.below.clear_markers()
@@ -82,14 +82,14 @@ class FreeInterfaceInteractor(BaseInteractor):
         n = self.profile.layer_num
         left,right = self.profile.boundary[n:n+2]
         dz = self.layer.dz
-    
+
         idx = self.markers.index(evt.artist)
         a = self.markers[idx-1].get_xdata()[0] if idx>0 else left
         c = self.markers[idx+1].get_xdata()[0] if idx<len(self.markers)-1 else right
         b = clip(evt.xdata, a+1e-3, c-1e-3)
         setpar(dz[idx], (b-a)/self._zscale)
         setpar(dz[idx+1], (c-b)/self._zscale)
-            
+
 
     def save(self, evt):
         """
@@ -129,7 +129,7 @@ class FreeLayerInteractor(BaseInteractor):
                      markersize = 5,
                      visible=True,
                      )
-        self.markers = [ax.plot([],[], **style)[0] 
+        self.markers = [ax.plot([],[], **style)[0]
                         for _ in layer.rho+layer.irho]
         self.connect_markers(self.markers)
 
@@ -178,7 +178,7 @@ class FreeLayerInteractor(BaseInteractor):
         else:
             setpar(z[idx], zval)
             setpar(rho[idx], evt.ydata)
-            
+
 
     def save(self, evt):
         """

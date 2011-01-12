@@ -526,4 +526,3 @@ def main():
         remember_best(fitter, job, best)
         if not opts.batch:
             pylab.show()
-

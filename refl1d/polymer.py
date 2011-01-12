@@ -87,7 +87,7 @@ class PolymerBrush(Layer):
                     length=self.length,
                     power = self.power,
                     sigma = self.sigma)
-    
+
     def profile(self, z):
         thickness, base_vf, base, length, power, sigma \
             = [p.value for p in self.thickness, self.base_vf, self.base,
@@ -105,12 +105,12 @@ class PolymerBrush(Layer):
         # TODO: we could use Nevot-Croce rather than smearing the profile
         vf = smear(z, brush_profile, sigma)
         return vf
-        
+
     def render(self, probe, slabs):
         thickness,interface = self.thickness.value,self.interface.value
         Pw,Pz = slabs.microslabs(thickness)
         vf = self.profile(Pz)
-        
+
         Mr,Mi = self.polymer.sld(probe)
         Sr,Si = self.solvent.sld(probe)
         M = Mr + 1j*Mi

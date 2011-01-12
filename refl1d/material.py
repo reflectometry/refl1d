@@ -224,14 +224,14 @@ class Material(Scatterer):
         elif type is 'natural_density':
             if value is None:
                 value = self.formula.natural_density
-            self.natural_density = Par.default(value, 
+            self.natural_density = Par.default(value,
                                                name=self.name+" nat. density",
                                                limits=(0,inf))
             self.density = self.natural_density / self.formula.natural_mass_ratio()
         elif type is 'relative_density':
             if value is None:
                 value = 1
-            self.relative_density = Par.default(value, 
+            self.relative_density = Par.default(value,
                                                 name=self.name+" rel. density",
                                                 limits=(0,inf))
             self.density = self.formula.density*self.relative_density
@@ -248,7 +248,7 @@ class Material(Scatterer):
             # Volume is in A^3.  1 A is 1e-8 cm.
             if value is None:
                 value = self.formula.molecular_mass/self.formula.density
-            self.cell_volume = Par.default(value, 
+            self.cell_volume = Par.default(value,
                                            name=self.name+" cell volume",
                                            limits=(0,inf))
             self.density = self.formula.molecular_mass/self.cell_volume

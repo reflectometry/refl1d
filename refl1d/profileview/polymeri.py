@@ -42,7 +42,7 @@ class PolymerBrushInteractor(BaseInteractor):
         self.hphi = ax.plot( [], [], **style)[0]
         self.hbase = ax.plot([],[], **style)[0]
         self.hlength = ax.plot([],[], **style)[0]
-        
+
         style = dict(marker='s',
                      transform=profile.xcoords,
                      zorder=5,
@@ -91,7 +91,7 @@ class PolymerBrushInteractor(BaseInteractor):
         L1 = L0 + layer.length.value
         Lpower = (L0+L1)/2
         Lsigma = L1 + layer.sigma.value
-        
+
         #print "L0,L1,Lpower,Lsigma",L0,L1,Lpower,Lsigma,phi,phi_power
         self.hphi.set_data( (left,L0), (phi,phi) )
         self.hbase.set_data( (L0,L0),  (0,phi) )
@@ -122,7 +122,7 @@ class PolymerBrushInteractor(BaseInteractor):
             setpar(par, ev.xdata-offset)
         elif ev.artist == self.hpower:
             phi = self.layer.base_vf.value*vf_scale/100
-            phi_power = log(ev.ydata/phi)/log(0.75) if ev.ydata > 0 else 100  
+            phi_power = log(ev.ydata/phi)/log(0.75) if ev.ydata > 0 else 100
             setpar(par, phi_power)
 
 
@@ -140,6 +140,3 @@ class PolymerBrushInteractor(BaseInteractor):
         Restore the widget and model to the saved state.
         """
         self._save_par.value = self._save_val
-
-
-

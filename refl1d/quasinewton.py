@@ -48,7 +48,7 @@ EXAMPLE CALL::
 from numpy import inf, sqrt, isnan, isinf
 from numpy import diag, zeros, ones, array, linalg, inner, outer, dot, amax, maximum
 
-STATUS = { 
+STATUS = {
     1: "Gradient < tolerance",
     2: "Step size < tolerance",
     3: "Invalid point in line search",
@@ -332,7 +332,7 @@ def fdgrad(n, xc, fc, fn, Sx, eta) :
         #--- EVALUATE APPR. GRADIENT
         fj = fn(xc)
         # PAK: hack for infeasible region: point the other way
-        if isinf(fj): fj = fc+hj 
+        if isinf(fj): fj = fc+hj
         g[j-1] = (fj - fc)/hj
         #if isinf(g[j-1]):
         #    print "fc,fj,hj,Sx,xc",fc,fj,hj,Sx[j-1],xc[j-1]
@@ -632,7 +632,7 @@ Matlab to Python
 
 
 #------------------------------------------------------------------------------
-def umstop(n, xc, xp, f, g, Sx, typf, retcode, gradtol, steptol, 
+def umstop(n, xc, xp, f, g, Sx, typf, retcode, gradtol, steptol,
            itncount, itnlimit, consecmax):
     """
 #@author: Ismet Sahin

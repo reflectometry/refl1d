@@ -8,7 +8,7 @@ from .config import active_color
 
 def safecall(fn):
     def wrapped(self, *args, **kw):
-        try: 
+        try:
             fn(self, *args, **kw)
         except:
             if self._debug:
@@ -34,10 +34,10 @@ class BaseInteractor(object):
         restore(ev) - restore the old state
         drag(ev)    - move the interactor to position ev.xdata,ev.ydata
         update_markers() - redraw the interactors
-        
+
     If something special is required while dragging:
 
-        drag_start(ev)  - drag started 
+        drag_start(ev)  - drag started
         drag_cancel(ev) - drag cancelled with escape key
         drag_done(ev)   - drag completed
 
@@ -45,7 +45,7 @@ class BaseInteractor(object):
 
         connect_markers(markers) - register callbacks for all markers
         clear_markers() - remove all items in self.markers
-    
+
     The actions associated with the interactor are:
         _onHilite(ev) - enter/leave event processing
         _onLeave(ev) - enter/leave event processing
@@ -64,7 +64,7 @@ class BaseInteractor(object):
     def __init__(self, profile):
         self.profile = profile
         self.markers = []
-        
+
         # Remember if we are dragging during motion
         self._dragging = False
 
@@ -102,7 +102,7 @@ class BaseInteractor(object):
     def save(self, ev):
         """
         Save the current state.
-        
+
         Save is triggered by both a mouse click and a mouse release.
         """
     def restore(self, ev):
@@ -112,10 +112,10 @@ class BaseInteractor(object):
     def drag(self, ev):
         """
         Move the interactor relative to the current state.
-        
+
         Drag operations are usually triggered by the mouse, using the following
         call pattern::
-        
+
             save()
             drag_start()
             drag()
@@ -123,13 +123,13 @@ class BaseInteractor(object):
             ...
             drag_done()
             save()
-            
+
         The final save allows keyboard actions to happen on the current
         interactor after the mouse manipulation has stopped.  Note that
         the drag actions are happening outside the drag_start/drag_done.
         Note also that the event itself will be marked as a keyboard
         event.
-        
+
             save()
             drag_start() # mouse click
             drag_done()  # mouse release
@@ -141,26 +141,26 @@ class BaseInteractor(object):
 
         When the escape key is pressed during drag, or the mouse leaves the
         screen, the drag may be cancelled::
-        
+
             save()
             drag_start()
             drag()
             drag()
             ...
             drag_cancel()
-            restore()        
+            restore()
         """
     def drag_start(self, ev):
         """
         Start drag.
-        
+
         Normally don't need to do anything here since save is triggered
         automatically.
         """
     def drag_cancel(self, ev):
         """
         Cancel drag.
-        
+
         Normally don't need to do anything since restore is triggered
         automatically.
         """
@@ -168,7 +168,7 @@ class BaseInteractor(object):
     def drag_done(self, ev):
         """
         End drag.
-        
+
         Normally don't need to do anything since the value was updated
         by drag.
         """
@@ -215,7 +215,7 @@ class BaseInteractor(object):
 
         self.drag_start(event)
         self._dragging = True
-        
+
         return True
 
     @safecall
@@ -232,7 +232,7 @@ class BaseInteractor(object):
         self._arrow_trans = event.artist.get_transform()
         self._arrow_x = event.xdata
         self._arrow_y = event.ydata
-        
+
         return True
 
 
@@ -258,7 +258,7 @@ class BaseInteractor(object):
 
         # update model
         self.profile.update()
-        
+
         return True
 
     @safecall
@@ -279,7 +279,7 @@ class BaseInteractor(object):
             return True
 
         elif event.key in ['up', 'down', 'right', 'left']:
-            
+
             if self._dragging:
                 return True
 
@@ -310,4 +310,3 @@ class BaseInteractor(object):
             return False
 
         raise RuntimeError("Unreachable code")
-

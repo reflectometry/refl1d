@@ -136,11 +136,11 @@ class Experiment(ExperimentBase):
 
     The *dz* step size sets the size of the slabs for non-uniform profiles.
     Using the relation d = 2 pi / Q_max,  we use a default step size of d/20
-    rounded to two digits, with 5 |Ang| as the maximum default.  For 
-    simultaneous fitting you may want to set *dz* explicitly using to 
+    rounded to two digits, with 5 |Ang| as the maximum default.  For
+    simultaneous fitting you may want to set *dz* explicitly using to
     round(pi/Q_max/10,1) so that all models use the same step size.
 
-    The *dA* condition measures the uncertainty in scattering materials 
+    The *dA* condition measures the uncertainty in scattering materials
     allowed when combining the steps of a non-uniform profile into slabs.
     Specifically, the area of the box containing the minimum and the
     maximum of the non-uniform profile within the slab will be smaller
@@ -363,7 +363,7 @@ class Experiment(ExperimentBase):
     def simulate_data(self, noise=2):
         """
         Simulate a random data set for the model
-        
+
         Parameters
         ----------
         *noise* = 2 : float | %

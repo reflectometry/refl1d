@@ -442,7 +442,7 @@ def format(p, indent=0):
         return "".join(res)
     elif isinstance(p, tuple) and p != ():
         return "".join(format(v, indent) for v in p)
-        
+
     elif isinstance(p, Parameter):
         if p.fixed:
             bounds = ""
@@ -494,7 +494,7 @@ def unique(s):
     for p in pars:
         if not any(p is q for q in result):
             result.append(p)
-            
+
     #print "====== unique"
     #print "\n".join("%s:%s"%(id(p),p) for p in result)
     # Return the complete set of parameters

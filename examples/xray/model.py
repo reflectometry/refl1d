@@ -1,7 +1,7 @@
 """
 Single wavelength X-ray measurement.
 
-The sample used in this data set is a magnetic thin film on glass, 
+The sample used in this data set is a magnetic thin film on glass,
 measured with Cu K-alpha X-rays to obtain the structural parameters.
 
 -----
@@ -43,7 +43,7 @@ References
 
 .. [#ODonovan02]_:
     KV O'Donovan, JA Borchers, CF Majkrzak, O Hellwig and EE Fullerton (2002).
-    "Pinpointing Chiral Structures with Front-Back Polarized Neutron 
+    "Pinpointing Chiral Structures with Front-Back Polarized Neutron
     Reflectometry".  Physical Review Letters 88(6) 067201(4)
     http://dx.doi.org/10.1103/PhysRevLett.88.067201
 
@@ -93,7 +93,7 @@ if search == "grower":
     # unless density is lowered to about 1.85.  Since most glass has
     # a density in [2.2, 2.5], none of these formulas can be used, and we
     # will restrict ourselves to an approximate SLD provided by the grower.
-    #fglass = formula("SiO2",density=2.2) 
+    #fglass = formula("SiO2",density=2.2)
     #fglass = mix_by_weight('SiO2',75,'Na2O',15,'CaO',10,density=2.52)
     #fglass = mix_by_weight('SiO2',73,'B2O3',10,'Na2O',8,'K2O',8,'CaO',1,density=2.2)
     glass_sld = 15,0.5
@@ -104,7 +104,7 @@ if search == "grower":
     FePt.rho.value, FePt.irho.value = xray_sld(fFePt, wavelength=Cu.Kalpha)
     seed.rho.value, seed.irho.value = xray_sld(fFePt, wavelength=Cu.Kalpha)
     glass.rho.value,glass.irho_value = glass_sld
-    
+
     # Expected thickness/interface
     Lseed.thickness.value =  15
     LFePt.thickness.value = 200

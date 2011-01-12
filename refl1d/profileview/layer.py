@@ -18,14 +18,14 @@ class MaterialInteractor(BaseInteractor):
         super(MaterialInteractor,self).__init__(profile)
         self.material = material
         self.range = range
-        
+
         if isinstance(material,SLD):
             enabled = True
             self._rho = material.rho
             self._rhoI = material.irho
             self._rho_scale = 1
             self._rhoI_scale = 1
-        elif (hasattr(material,'density') 
+        elif (hasattr(material,'density')
               and isinstance(material.density,Parameter)):
             enabled = True
             rho,rhoI = material.sld(profile.experiment.probe)
@@ -45,14 +45,14 @@ class MaterialInteractor(BaseInteractor):
         colors = rho_color,rhoI_color
         labels = "rho","rhoI"
         ax = profile.axes
-        self.markers = [ax.plot([], [], 
-                                label=material.name+" "+label, 
+        self.markers = [ax.plot([], [],
+                                label=material.name+" "+label,
                                 color=color if enabled else disabled_color,
                                 **style)[0]
                         for color,label in zip(colors,labels)]
         if enabled:
             self.connect_markers(self.markers)
-    
+
     def update_markers(self):
         z = self.profile.boundary[1:-1]
         n = self.profile.layer_num

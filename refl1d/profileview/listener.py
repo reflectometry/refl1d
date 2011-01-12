@@ -23,5 +23,5 @@ class Listener(object):
 
     def signal(self,trigger,value,**kw):
         key = (trigger,value)
-        for callback in self.connection.get(key,[]): 
+        for callback in self.connection.get(key,[]):
             callback(trigger,value,**kw)

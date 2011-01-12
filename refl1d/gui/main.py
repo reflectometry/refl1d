@@ -22,7 +22,7 @@ class FitProxy(object):
         self.problem = problem
         self.moniter = moniter
         self.opts = opts
-       
+
     def fit(self):
         import time
         from refl1d.fitter import Result
@@ -83,7 +83,7 @@ def random_population(problem, pop_size):
 
 def load_staj(file):
     M = load_mlayer(file)
-    
+
     # Exclude unlikely fitting parameters
     exclude = set((M.sample[0].thickness,
                M.sample[-1].thickness,
@@ -100,7 +100,7 @@ def load_staj(file):
     #for L in M.sample:
     #    if L.rho.value == 0: exclude.add(L.rho)
     #    if L.irho.value == 0: exclude.add(L.irho)
-    
+
     # Fit everything else using a range of +/- 20 %
     for p in parameter.unique(M.parameters()):
         if p in exclude: continue
@@ -117,10 +117,10 @@ def load_staj(file):
 def load_job(args):
     #import refl1d.context
     file, options = args[0], args[1:]
-    
+
     if file.endswith('.staj'):
         return load_staj(file)
-    
+
     ctx = dict(__file__=file)
     #refl1d.context.math_context(ctx)
     #refl1d.context.refl_context(ctx)
@@ -163,7 +163,7 @@ class ParseOpts:
         self._parse(args)
 
     def _parse(self, args):
-        
+
         flagargs = [v for v in sys.argv[0:] if v.startswith('-') and not '=' in v]
         flags = set(v[0:] for v in flagargs)
         if '?' in flags or 'h' in flags or 'help' in flags:
@@ -186,7 +186,7 @@ class ParseOpts:
 
         positionargs = [v for v in sys.argv[0:] if not v.startswith('-')]
         self.args = positionargs
-        
+
 
 
 FITTERS = dict(dream=None, rl=RLFit,
@@ -269,4 +269,3 @@ Model arguments may not start with '-'.
         self._fitter = value
     fit = property(fget=lambda self: self._fitter, fset=_set_fitter)
     meshsteps = 40
-
