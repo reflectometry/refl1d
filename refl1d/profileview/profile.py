@@ -5,7 +5,7 @@ Reflectometry profile interactor.
 import wx
 import numpy
 from numpy import inf
-
+from wx.lib.pubsub import Publisher as pub
 from .binder import BindArtist, pixel_to_data
 from .util import twinx
 from .config import rho_color, rhoI_color, rhoM_color, thetaM_color
@@ -224,16 +224,29 @@ class ProfileInteractor(object):
         """
         # We are done the manipulation; let the model send its update signal
         # to whomever is listening.
-        self.listener.signal('update',self)
+        #self.listener.signal('update',self)
 
         self.update_markers()
         self.update_profile()
         self.draw_now()
+        self.delayed_signal()
         #self.delayed_profile()
 
     def delayed_profile(self):
         try: self._delayed.Restart(50)
         except: self._delayed = wx.FutureCall(50, lambda:(self.update_profile(),self.draw_now()))
+
+    def _signal(self):
+        print "sending update signal"
+        self.p  = '1' # dummy variable for abiding message passing syntax
+        try:
+            pub.sendMessage("inter_update", self.p)
+        except:
+            print 'error in message sending'
+        self.listener.signal('update',self)
+    def delayed_signal(self):
+        try: self._delayed_signal.Restart(50)
+        except: self._delayed_signal = wx.FutureCall(50, self._signal)
 
     def freeze_axes(self):
         self.axes_frozen = True
@@ -242,6 +255,8 @@ class ProfileInteractor(object):
         self.axes_frozen = False
 
     def draw_now(self):
+	#try: del self._delayed
+	#except: pass
         self.axes.figure.canvas.draw()
     def draw_idle(self):
         """Set the limits and tell the canvas to render itself."""

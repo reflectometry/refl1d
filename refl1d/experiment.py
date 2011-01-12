@@ -202,7 +202,7 @@ class Experiment(ExperimentBase):
                 from .mystic import parameter
                 pars = parameter.unique(self.parameters())
                 fitted = parameter.varying(pars)
-                parameter.summarize(fitted)
+                print parameter.summarize(fitted)
                 print "==="
             self._cache[key] = calc_q,calc_r
             if numpy.isnan(calc_q).any(): print "calc_Q contains NaN"

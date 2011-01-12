@@ -25,7 +25,7 @@ class ConsoleMonitor(monitor.TimedUpdate):
     def show_improvement(self, history):
         #print "step",history.step[0],"chisq",history.value[0]
         self.problem.setp(history.point[0])
-        parameter.summarize(self.problem.parameters)
+        print parameter.summarize(self.problem.parameters)
         try:
             import pylab
             pylab.hold(False)
@@ -60,13 +60,15 @@ class FitBase(object):
         raise NotImplementedError
 
 class DEFit(FitBase):
-    def solve(self, pop=10, steps=2000, **kw):
+    def solve(self, pop=10, steps=100, **kw):
         from mystic.optimizer import de
         from mystic.solver import Minimizer
         from mystic.stop import Steps
         monitors = kw.pop('monitors', None)
         if monitors == None:
             monitors = [ConsoleMonitor(self.problem)]
+        else:
+            monitors = [monitors]
         strategy = de.DifferentialEvolution(npop=pop)
         minimize = Minimizer(strategy=strategy, problem=self.problem,
                              monitors=monitors,
@@ -188,7 +190,7 @@ def mesh(models=[], weights=None, vars=None, n=40):
     def fn(xi,yi):
         p1.value, p2.value = xi,yi
         problem.model_update()
-        #parameter.summarize(problem.parameters)
+        #print parameter.summarize(problem.parameters)
         return problem.chisq()
     z = [[fn(xi,yi) for xi in x] for yi in y]
     return x,y,numpy.asarray(z)
@@ -207,7 +209,9 @@ def fit(models=[], weights=None, fitter=DEFit, **kw):
     else:
         x = problem.getp()
     result = Result(problem, x)
+    print 'result', result
     result.show()
+
     return result
 
 def show_chisq(chisq, fid=None):
@@ -329,7 +333,7 @@ class Result:
                 x = opt.solve(**kw)
                 nllf = self.problem.nllf(x) # TODO: don't recalculate!
                 points.append(numpy.hstack((nllf,x)))
-                parameter.summarize(self.problem.parameters)
+                print parameter.summarize(self.problem.parameters)
                 print "[chisq=%g]" % (nllf*2/self.problem.dof)
         except KeyboardInterrupt:
             pass
@@ -355,7 +359,7 @@ class Result:
         # fits). Same in showmodel()
         self.problem.setp(self.solution)
         fid = open(basename + ".par", "w")
-        parameter.summarize(self.problem.parameters, fid=fid)
+        print >>fid, parameter.summarize(self.problem.parameters)
         fid.close()
         self.problem.save(basename)
         if self.points.shape[0] > 1:
@@ -386,7 +390,7 @@ class Result:
     def showpars(self):
         print "== Fitted parameters =="
         self.problem.setp(self.solution)
-        parameter.summarize(self.problem.parameters)
+        print parameter.summarize(self.problem.parameters)
 
 
 def _make_problem(models=[], weights=None):
@@ -595,12 +599,12 @@ class FitProblem(object):
             #TODO: make sure errors get back to the user
             import traceback
             traceback.print_exc()
-            parameter.summarize(self.parameters)
+            print parameter.summarize(self.parameters)
             return inf
         if isnan(cost):
             #TODO: make sure errors get back to the user
             print "point evaluates to NaN"
-            parameter.summarize(self.parameters)
+            print parameter.summarize(self.parameters)
             return inf
         return cost
 
@@ -616,9 +620,9 @@ class FitProblem(object):
         return 2*self.nllf(pvec)/self.dof
 
     def show(self):
-        print parameter.format(self.model_parameters())
-        print "[chisq=%g, nllf=%g]" % (self.chisq(), self.nllf()/self.dof)
-        parameter.summarize(self.parameters)
+        #print parameter.format(self.model_parameters())
+        #print "[chisq=%g, nllf=%g]" % (self.chisq(), self.nllf()/self.dof)
+        print parameter.summarize(self.parameters)
 
     def save(self, basename):
         self.fitness.save(basename)

@@ -112,6 +112,7 @@ H_probe = instrument.load('10nht001.refl', back_reflectivity=True)
 
 # ================== Model variations ====================
 dream_opts = dict(chains=20,draws=300000,burn=1000000)
+"""'
 store = "T0"
 if len(sys.argv) > 1: store=sys.argv[1]
 if store == "T1":
@@ -129,7 +130,7 @@ elif store == "T2":
     D_brush.sigma.range(0,50)
 else:
     raise RuntimeError("store %s not defined"%store)
-
+"""
 # Join models and data
 D_model = Experiment(sample=D, probe=D_probe)
 H_model = Experiment(sample=H, probe=H_probe)
@@ -139,7 +140,8 @@ models = D_model, H_model
 modelnum = "all"
 if len(sys.argv) > 2: modelnum=sys.argv[2]
 if modelnum == "all":
-    problem = MultiFitProblem(models=models)
+    #problem = MultiFitProblem(models=models)
+    problem = FitProblem(D_model)
     problem.name = "tethered"
 elif modelnum == "M0":
     problem = FitProblem(D_model)
@@ -150,5 +152,5 @@ elif modelnum == "M1":
 else:
     raise RuntimeError("model %s not defined"%modelnum)
 problem.dream_opts = dream_opts
-problem.title = title
-problem.store = store
+#problem.title = title
+#problem.store = store

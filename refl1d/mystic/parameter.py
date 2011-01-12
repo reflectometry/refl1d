@@ -454,11 +454,12 @@ def format(p, indent=0):
     else:
         return "None"
 
-def summarize(pars, fid=None):
+def summarize(pars):
     """
-    Print a stylized list of parameter names and values with range bars.
+    Return a stylized list of parameter names and values with range bars
+    suitable for printing.
     """
-    if fid is None: fid = sys.stdout
+    output = []
     for p in sorted(pars, cmp=lambda x,y: cmp(x.name,y.name)):
         if not numpy.isfinite(p.value):
             bar = "*invalid* "
@@ -468,7 +469,8 @@ def summarize(pars, fid=None):
             if position < 0: bar[0] = '<'
             elif position > 9: bar[9] = '>'
             else: bar[position] = '|'
-        print >>fid, "%40s %s %10g in %s"%(p.name,"".join(bar),p.value,p.bounds)
+        output.append("%40s %s %10g in %s"%(p.name,"".join(bar),p.value,p.bounds))
+    return "\n".join(output)
 
 def unique(s):
     """
