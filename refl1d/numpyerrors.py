@@ -16,25 +16,27 @@ types of error handling controls, but in a with context or as a decorator::
         statements
 
     @errors(...)
-    def f(...):
+    def f():
         statements
 
-A number of decorators are predefined: ignored, raised, printed, warned.
+The arguments to Errors and errors are identical to numpy.seterr.
+
+Some convenience decorators are predefined: ignored, raised, printed, warned.
 
 Example
 -------
 
     >>> import numpy
-    >>> with Errors(all='ignore'): 1/numpy.zeros(3)
-    >>> with Errors(all='print'): 1/numpy.zeros(3)
+    >>> with Errors(all='ignore'): x = 1/numpy.zeros(3)
+    >>> with Errors(all='print'): x = 1/numpy.zeros(3)  # doctest:+SKIP
     Warning: divide by zero encountered in divide
     >>> @ignored
-    ... def f(): 1/numpy.zeros(3)
+    ... def f(): x = 1/numpy.zeros(3)
     >>> f()
     >>> @printed
-    ... def g(): 1/numpy.zeros(3)
-    >>> g()
-    Warning: divide by zero encounterd in divide
+    ... def g(): x = 1/numpy.zeros(3)
+    >>> g() # doctest:+SKIP
+    Warning: divide by zero encountered in divide
 """
 from __future__ import with_statement
 import functools

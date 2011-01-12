@@ -146,6 +146,7 @@ class Stack(Layer):
         self._layers = []
         if base is not None:
             self.add(base)
+        # TODO: can we make this a class variable?
         self._thickness = Function(self._calc_thickness,name="sample thickness")
 
     @property
@@ -179,9 +180,15 @@ class Stack(Layer):
             except:
                 L = [other]
             self._layers.extend(_check_layer(el) for el in L)
+
+    def __getstate__(self):
+        return self.interface, self._layers
+    def __setstate__(self, state):
+        self.interface, self._layers = state
+        self._thickness = Function(self._calc_thickness,name="sample thickness")
     def __copy__(self):
         newone = Stack()
-        newone.__dict__.update(self.__dict__)
+        newone.interface = self.interface
         newone._layers = self._layers[:]
         return newone
     def __len__(self):

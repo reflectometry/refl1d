@@ -1,3 +1,4 @@
+# DEAD CODE
 class Vector:
     """
     Labelled set of numbers, possibly with uncertainty.
@@ -95,7 +96,7 @@ class Page:
 
         Returns a handle.
         """
-    def labels(self, x=x, y=y, text=text, **kw):
+    def labels(self, x, y, text, **kw):
         """
         Add labels to the axes.
         """

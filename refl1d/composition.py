@@ -4,7 +4,11 @@
 Composition space modeling
 """
 
-from mystic.parameter import Parameter as Par
+import numpy
+from numpy import inf
+from .mystic.parameter import Parameter as Par
+from .model import Layer
+from .materialdb import air
 
 class CompositionSpace(Layer):
     """
@@ -40,7 +44,7 @@ class CompositionSpace(Layer):
         volume profile.
         """
         # Uniform stepping
-        z = arange(slabs.dz/2, self.thickness.value, slabs.dz)
+        z = numpy.arange(slabs.dz/2, self.thickness.value, slabs.dz)
 
         # Storage for the sub-totals
         volume_total = numpy.zeros_like(z)
@@ -52,7 +56,7 @@ class CompositionSpace(Layer):
             volume_total += f
 
         # Remainder is solvent
-        ax.plot(z,1-volume_total,label=solvent.name)
+        ax.plot(z,1-volume_total,label=self.solvent.name)
 
     # Render a profile
     def render(self, probe, slabs):
@@ -78,10 +82,10 @@ class CompositionSpace(Layer):
         mu_total += mu*(1-volume_total)
 
         # Add to model
-        w = slabs.dz * numpy.ones(size(z))
+        w = slabs.dz * numpy.ones(z.shape)
         slabs.extend(w=w,rho=rho_total,mu=mu_total)
 
-class Part:
+class Part(object):
     def __init__(self, material, profile, fraction=1):
         self.material = material
         self.profile = profile
@@ -99,48 +103,8 @@ class Part:
         f = fraction.value*self.profile(z)
         return f, rho*f, mu*f
 
-class TetheredPolymer(Profile):
-    """
-    Tethered polymer profile::
 
-        1                         if z in (-inf, h)
-        (1 - ((z-h)/Lo)**2)**y    if z in (h, h+Lo)
-        0                         if z in (h+Lo, inf)
-
-    where h is the length of the head group and Lo is the length of the
-    tail group.
-
-    Parameters::
-
-        *head* is h in [0,inf)
-        *tail* is Lo in [0,inf)
-        *power* is y in [0,inf)
-
-    This profile will be used to construct a volume fraction component
-    which a scaling fraction phi and a material describing the scattering
-    properties of the profile.
-
-    Kent, et al. (1999) Tethered chains in poor solvent conditions: An
-    experimental study involving Langmuir diblock copolymer monolayers
-    J Chem Phys 110(7) 3553-3565.
-    """
-    def __init__(self, head=0, tail=0, power=0.5, name="brush"):
-        self.head = Par.default(head, limits=(0,inf),
-                              name=name+" head")
-        self.tail = Par.default(tail, limits=(0,inf),
-                              name=name+" tail")
-        self.power = Par.default(power, limits=(0,inf),
-                               name=name+" power")
-    def parameters(self):
-        return dict(head=self.head, tail=self.tail, power=self.power)
-    def __call__(self, z):
-        head,tail,power = self.head.value, self.tail.value, self.power.value
-        if power <= 0:
-            return 1. * (z < head+tail)
-        else:
-            return (1 - clip((z-head)/tail,0,1)**2)**power
-
-class Gaussian(Profile):
+class Gaussian(object):
     """
     Stretched gaussian profile::
 

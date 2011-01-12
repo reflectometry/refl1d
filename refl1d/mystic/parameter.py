@@ -367,6 +367,10 @@ class Function(BaseParameter):
         #return self.op(*[float(v) for v in self.args], **self.kw)
         return self.op(*substitute(self.args), **substitute(self.kw))
     value = property(_value)
+    def __getstate__(self):
+        return self.name, self.op, self.args, self.kw
+    def __setstate__(self, state):
+        self.name, self.op, self.args, self.kw = state
     def __str__(self):
         if self.name is not None:
             name = self.name

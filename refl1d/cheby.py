@@ -11,16 +11,19 @@ Two variants:
     #. direct: use the chebyshev polynomial coefficients directly
     #. interp: interpolate through control points to set the coefficients.
 
-Control points are located at fixed z_k::
+Control points are located at fixed z_k:
 
-    >>> z_k = L * (cos( pi*(k-0.5)/N )+1)/2 for k in 1..N
+.. math::
 
-where L is the thickness of the layer.
+    z_k = L (\cos( \pi(k-1/2)/N )+1)/2 \text{for $k$ in $1 \ldots N$}
 
-Interpolation as an O(N log N) cost to calculation of the profile for N
-coefficients.  This is in addition to the O (N S) cost of the direct
-profile for S microslabs.
+where $L$ is the thickness of the layer.
 
+Interpolation as an O(N log N) cost to calculation of the profile for $N$
+coefficients.  This is in addition to the $O(N S)$ cost of the direct
+profile for $S$ microslabs.  For a given experiment you can adjust the
+profile resolution using *Experiment(probe=probe, sample=sample, dA=dA)*
+where *dA* is the maximum slab density variation allowed.
 
 """
 #TODO: clipping volume fraction to [0,1] distorts parameter space
@@ -135,9 +138,11 @@ class ChebyVF(Layer):
 
     *method* is 'direct' if the *vf* values refer to chebyshev
     polynomial coefficients or 'interp' if *vf* values refer to
-    control points located at z_k::
+    control points located at $z_k$.
 
-       >>> z_k = L*(cos(pi (k-0.5)/N)+1) + 1)/2  for k=1..N.
+    The control points $z_k$ are located at $L z(n)$, with $L$ the layer
+    thickness, $n$ the number of control points and $z(n)$ the locations
+    returned by :function:cheby_points.
 
     The materials can either use the scattering length density directly,
     such as PDMS = SLD(0.063, 0.00006) or they can use chemical composition
@@ -145,7 +150,7 @@ class ChebyVF(Layer):
 
     These parameters combine in the following profile formula::
 
-       >>> sld(z) = material.sld * profile(z) + solvent.sld * (1 - profile(z))
+           sld(z) = material.sld * profile(z) + solvent.sld * (1 - profile(z))
     """
     def __init__(self, thickness=0, interface=0,
                  material=None, solvent=None, vf=None, 
@@ -193,8 +198,8 @@ def _profile(c, t, method):
     polynomials $T_i$ yielding $P = \sum_i{c_i T_i(x)}$.
 
     If method is 'interp' then $c_i$ are the values of the interpolated
-    function $f$ evaluated at the chebyshev points 
-    $p_i = \cos(i (\pi + \frac{1}{2})/n)$.
+    function $f$ evaluated at the chebyshev points returned by 
+    :function:`cheby_points`.
     """
     if method == 'interp':
         c = cheby_coeff(c)

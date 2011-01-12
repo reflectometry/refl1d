@@ -18,7 +18,7 @@ class ConsoleMonitor(monitor.TimedUpdate):
     def __init__(self, problem, progress=1, improvement=30):
         monitor.TimedUpdate.__init__(self, progress=progress,
                                      improvement=improvement)
-        self.problem = problem
+        self.problem = deepcopy(problem)
     # TimedUpdate profiles
     def show_progress(self, history):
         print "step", history.step[0], "cost", history.value[0]

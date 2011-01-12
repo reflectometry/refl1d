@@ -38,7 +38,7 @@ def gendensity(coeffs,density=0.1):
     npts = int(0.2*pi*R**2)
     return genpoints(coeffs,npts)
 
-from .model import Model
+from .model import Fitness
 class MinimumCircle(Fitness):
     def __init__(self, data=None, limits=None, start=None):
         self.x,self.y = data
