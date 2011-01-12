@@ -58,10 +58,13 @@ Options for controlling the development and testing environment:
 import os
 import sys
 import time
+# TODO: fix path properly
+sys.path.insert(0,os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+#print "\n".join(sys.path)
 
 import wx
 
-from common.utilities import get_appdir, log_time
+from refl1d.gui.common import get_appdir, log_time
 
 # Normally the reflmod package will be installed, but if it is not installed,
 # augment sys.path to include the parent directory of the package.  This allows

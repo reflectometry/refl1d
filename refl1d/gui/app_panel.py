@@ -35,13 +35,7 @@ import wx
 import logging
 from wx.lib.pubsub import Publisher as pub
 from wx.lib.pubsub import Publisher
-
-from refl1d.guip import *
-from refl1d.fitter import DEFit
-from refl1d.mystic import monitor, parameter
 import wx.lib.newevent
-from gui_logic import Fit_Tab, Log_tab, load_problem   
-from work_thread import Worker
 
 ############### matplotlib imports #####################     
 import matplotlib
@@ -61,8 +55,14 @@ from matplotlib.widgets import Slider, Button, RadioButtons
 from matplotlib import _pylab_helpers
 from matplotlib.backend_bases import FigureManagerBase
 
-from pylab import *
-from utilities import (get_appdir, log_time,
+import pylab
+#from pylab import *
+
+from refl1d.mystic import monitor, parameter
+from .gui_logic import Fit_Tab, Log_tab, load_problem   
+from .work_thread import Worker
+
+from .utilities import (get_appdir, log_time,
                         popup_error_message, popup_warning_message,
                         StatusBarInfo, ExecuteInThread, WorkInProgress)
 
@@ -378,16 +378,20 @@ class AppPanel(wx.Panel):
               
             
     def view(self, model):
-        clf() #### clear the canvas
+        pylab.clf() #### clear the canvas
 	self._activate_figure()
         model.show()
         model.fitness.plot_reflectivity()
-        draw()
+        pylab.draw()
 
     def OnFit(self, event):
         """
         On recieving fit message this event is triggered to fit the data and model
         """
+	# TODO: need to put options on fit panel
+	from .main import FitOpts, FitProxy, SerialMapper
+        from refl1d.fitter import RLFit, DEFit, BFGSFit, AmoebaFit, SnobFit
+        from refl1d.probe import Probe
 
         self.sb.SetStatusText('Fit status: Running', 2)
         moniter = GUIMonitor(self.problem)
@@ -396,17 +400,10 @@ class AppPanel(wx.Panel):
         FITTERS = dict(dream=None, rl=RLFit,
                         de=DEFit, newton=BFGSFit, amoeba=AmoebaFit, snobfit=SnobFit) 
       
-        if opts.fit == 'dream':
-            self.fitter = DreamProxy(problem=self.problem, moniter=moniter)
-        else:
-            self.fitter = FitProxy(FITTERS[opts.fit],
-                          problem=self.problem, moniter=moniter,opts=opts,)
-        if opts.parallel or opts.worker:
-            mapper = AMQPMapper
-        else:
-            mapper = SerialMapper
+        self.fitter = FitProxy(FITTERS[opts.fit],
+                               problem=self.problem, moniter=moniter,opts=opts,)
+        mapper = SerialMapper
         
-        from refl1d.probe import Probe
         Probe.view = opts.plot
 
         self.make_store(self.problem,opts)

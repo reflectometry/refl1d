@@ -53,7 +53,7 @@ import pylab
 
 import numpy
 
-from common.utilities import get_appdir, log_time
+from .common import get_appdir, log_time
 
 from .wx_utils import StatusBarInfo
 
