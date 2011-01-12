@@ -360,8 +360,9 @@ class AppPanel(wx.Panel):
         if sts == wx.ID_CANCEL:
             return  # Do nothing
 
-        self.model_script = os.path.split(file_path)[1]
-        self.args = [str(self.model_script), 'T1']
+        dir,file = os.path.split(file_path)
+        os.chdir(dir)
+        self.args = [file, 'T1']
         self.problem = load_problem(self.args)
         self.view(self.problem)
 

@@ -50,6 +50,7 @@ in accordance with its statistical weight.
 #
 # Unstitched seems like the better bet.
 
+from __future__ import with_statement
 import numpy
 from numpy import radians, sin, sqrt, tan, cos, pi, inf, sign, log
 from periodictable import nsf, xsf
