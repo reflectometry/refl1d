@@ -6,25 +6,35 @@ r"""
         * :func:`Layer thickness <refl1d.polymer.layer_thickness>`
         * :func:`Smear <refl1d.polymer.smear>`
 
-Two variants:
+Freeform modeling with Chebyshev polynomials.
 
-    #. direct: use the chebyshev polynomial coefficients directly
-    #. interp: interpolate through control points to set the coefficients.
+`Chebyshev polynomials <http://en.wikipedia.org/wiki/Chebyshev_polynomials>`_ 
+$T_k$ form a basis set for functions over $[-1,1]$.  The truncated
+interpolating polynomial $P_n$ is a weighted sum of Chebyshev polynomials
+up to degree $n$:
 
-Control points are located at fixed z_k:
+.. math:
 
-.. math::
+    f(x) \approx P_n(x) = \sum_{k=0}^n c_i T_k(x)
 
-    z_k = L (\cos( \pi(k-1/2)/N )+1)/2 \text{for $k$ in $1 \ldots N$}
+The interpolating polynomial exactly matches $f(x)$ at the chebyshev
+nodes $z_k$ and is near the optimal polynomial approximation to $f$
+of degree $n$ under the maximum norm.  For well behaved functions,
+the coefficients $c_k$ decrease rapidly, and furthermore are independent
+of the degree $n$ of the polynomial.
 
-where $L$ is the thickness of the layer.
+:class:`FreeformCheby` models the scattering length density profile 
+of the material within a layer, and :class:`ChebyVF` models the volume
+fraction profile of two materials mixed in the layer.
 
-Interpolation as an O(N log N) cost to calculation of the profile for $N$
-coefficients.  This is in addition to the $O(N S)$ cost of the direct
-profile for $S$ microslabs.  For a given experiment you can adjust the
-profile resolution using *Experiment(probe=probe, sample=sample, dA=dA)*
-where *dA* is the maximum slab density variation allowed.
-
+The models can either be defined directly in terms of the Chebyshev
+coefficients $c_k$ (*method* = 'direct'), or can instead be 
+defined in terms of control points $(z_k, f(z_k))$ at the Chebyshev 
+nodes :func:`cheby_points` (*method* = 'interp').  Bounds on the
+parameters are easier to control using 'interp', but the function
+may oscillate wildly outside the bounds.  Bounds on the oscillation
+are easier to control using 'direct', but the shape of the profile
+is difficult to control.
 """
 #TODO: clipping volume fraction to [0,1] distorts parameter space
 # Option 0: clip to [0,1]
@@ -140,9 +150,8 @@ class ChebyVF(Layer):
     polynomial coefficients or 'interp' if *vf* values refer to
     control points located at $z_k$.
 
-    The control points $z_k$ are located at $L z(n)$, with $L$ the layer
-    thickness, $n$ the number of control points and $z(n)$ the locations
-    returned by :func:cheby_points.
+    The control point $k$ is located at $z_k L$, with layer thickness $L$
+    and $z_k \in [0,1]$ returned by :func:`cheby_points`.
 
     The materials can either use the scattering length density directly,
     such as PDMS = SLD(0.063, 0.00006) or they can use chemical composition
@@ -235,9 +244,9 @@ def cheby_points(n, range=[0,1]):
     Return the points in at which a function must be evaluated to
     generate the order $n$ Chebyshev approximation function.
 
-    Over the range [-1,1], the points are $p_k = \cos(\pi/2 (2 k + 1)/n)$.
+    Over the range [-1,1], the points are $p_k = \cos(\pi(2 k + 1)/(2n))$.
     Adjusting the range to $[x_L,x_R]$, the points become
-    $x_k = 1/2 (p_k - x_L + 1)/(x_R-x_L)$.
+    $x_k = \frac{1}{2} (p_k - x_L + 1)/(x_R-x_L)$.
     """
     return 0.5*(cos(pi*(arange(n)+0.5)/n)-range[0]+1)/(range[1]-range[0])
 
