@@ -1,3 +1,3 @@
 """Version information for Refl1d."""
 
-version = "0.5.2"
+version = "0.5.3"

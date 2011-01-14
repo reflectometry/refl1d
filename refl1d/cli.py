@@ -117,7 +117,7 @@ class FitProxy(object):
 
     def plot(self, output_path):
         P = self.problem
-        pylab.suptitle(":".join((P.store,P.title)))
+        pylab.suptitle(": ".join((P.store,P.title)))
         P.plot(figfile=output_path)
 
 def mesh(problem, vars=None, n=40):
@@ -182,13 +182,7 @@ def load_staj(file):
     job.options = []
     return job
 
-def load_job(args):
-    #import refl1d.context
-    file, options = args[0], args[1:]
-
-    if file.endswith('.staj'):
-        return load_staj(file)
-
+def load_script(file, options):
     ctx = dict(__file__=file)
     #refl1d.context.math_context(ctx)
     #refl1d.context.refl_context(ctx)
@@ -203,8 +197,19 @@ def load_job(args):
     except AttributeError:
         raise ValueError(file+" does not define 'problem=FitProblem(models)'")
     job.file = file
+    job.title = file
+    job.name = file
     job.options = options
     return job
+
+def load_job(args):
+    #import refl1d.context
+    file, options = args[0], args[1:]
+
+    if file.endswith('.staj'):
+        return load_staj(file)
+    else:
+        return load_script(file, options)
 
 def preview(model):
     model.show()
