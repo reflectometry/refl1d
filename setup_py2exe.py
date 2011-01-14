@@ -186,12 +186,9 @@ for path in glob.glob(os.path.join('examples', '*')):
 # however, Python 2.6 and 2.7 require the msvcr90.dll but they do not bundle it
 # with the Python26 or Python27 package.  Thus, for Python 2.6 and later, the
 # appropriate dll must be present on the target system at runtime.
-if sys.version_info >= (2, 6) and sys.version_info < (2, 7):
-    data_files.append( ('.', [os.path.join('C:', os.sep, 'Python26',
-                                           'vcredist_x86.exe')]) )
-if sys.version_info >= (2, 7) and sys.version_info < (2, 8):
-    data_files.append( ('.', [os.path.join('C:', os.sep, 'Python27',
-                                           'vcredist_x86.exe')]) )
+if sys.version_info >= (2, 6):
+    pypath = os.path.dirname(sys.executable)
+    data_files.append( ('.', [os.path.join(pypath, 'vcredist_x86.exe')]) )
 
 # Specify required packages to bundle in the executable image.
 packages = ['numpy', 'scipy', 'matplotlib', 'pytz', 'pyparsing', 'wx',

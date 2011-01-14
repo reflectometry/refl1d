@@ -72,6 +72,7 @@ MIN_MATPLOTLIB = "0.99.0"
 MIN_NUMPY = "1.2.1"
 MIN_SCIPY = "0.7.0"
 MIN_WXPYTHON = "2.8.10.0"
+MIN_PERIODICTABLE = "1.3"
 MIN_SETUPTOOLS = "0.6c9"
 MIN_SPHINX = "1.0"
 MIN_DOCUTILS = "0.5"
@@ -327,6 +328,13 @@ def check_dependencies():
         wx_ver = "0"
     finally:
         req_pkg["wxpython"] = (wx_ver, MIN_WXPYTHON)
+
+    try:
+        from periodictable import __version__ as pt_ver
+    except:
+        pt_ver = "0"
+    finally:
+        req_pkg["periodictable"] = (pt_ver, MIN_PERIODICTABLE)
 
     try:
         from setuptools import __version__ as setup_ver
