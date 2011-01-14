@@ -15,26 +15,22 @@ Interfacial roughness is defined by a probability distribution P and the
 step function H, with the convolution (P*H)(z) defining the probability
 of finding a part of layer B in A.
 
-Example::
+Example
+-------
 
-    >>> from mystic.param import Parameter
-    >>> from refl1d import Sample, Slab, Material, Erf
+Define a silicon wafer with tanh roughness between 0 and 5:
 
-    # define a silicon wafer with 1-sigma roughness between 0 and 5
-    >>> model = Sample()
-    >>> model.add(Slab(Material('Si'), interface=Erf(Parameter(0,5,"Si:Air"))
+    >>> from refl1d.names import *
+    >>> sample = silicon(interface=Tanh(5,"Si:Air")) | air
 
-The above example uses an error function interface.  Other interface include::
+The above example uses a function interface.  Other interface include:
 
     Sharp()             Dirac delta interface (cumulative density ~ sign(z))
     Erf(width=sigma)    Gaussian interface (cumulative density ~ erf(z))
     Tanh(width=sigma)   sech**2 interface (cumulative density ~ tanh(z))
     Linear(width=w)     boxcar interface (cumulative density ~ linear(z))
 
-You can plot the available interfaces as follows::
-
-    >>> from refl1d import interface
-    >>> interface.demo()
+You can plot the available interfaces using :function:`demo`.
 
 As you can see from the above plot, the hyperbolic tangent profile will be
 indistinguishable from the error function profile in all practical
@@ -42,15 +38,12 @@ circumstances.  Given the computational advantage of the error function
 profile, there will be little reason to choose anything else.
 
 Some interfaces can be defined using full width at half maximum (FWHM)
-rather than 1-sigma::
+rather than $1-\sigma$::
 
     Erf.as_fwhm(width=fwhm)  Gaussian interface using FWHM
     Tanh.as_fwhm(width=fwhm) sech**2 interface using FWHM
 
-To see what the effect of choosing FWHM, use::
-
-    >>> from refl1d import interface
-    >>> interface.demo_fwhm()
+To see what the effect of choosing width FWHM, use :function:`demo_fwhm`
 
 Defined using FWHM, tanh and erf profiles are significantly different
 for the same value of width.  From the 1-sigma plots above, though, we
@@ -164,23 +157,23 @@ class Erf(Interface):
 
     *name* (string: "erf")
 
-    The erf profile has the form::
+    The erf profile has the form:
 
-        >>> CDF(z) = (1 - erf(z/(sqrt(2)*sigma)))
-        >>> PDF(z) = 1/sqrt(2 pi sigma**2) exp( (z/sigma)**2/2 )
-        >>> PPF(z) = sigma*sqrt(2)*erfinv(2*z-1)
+        CDF(z) = (1 - erf(z/(sqrt(2)*sigma)))
+        PDF(z) = 1/sqrt(2 pi sigma**2) exp( (z/sigma)**2/2 )
+        PPF(z) = sigma*sqrt(2)*erfinv(2*z-1)
 
-    To convert from a 1-sigma error function to the equivalent FWHM,
-    you need to scale the error function roughness by sqrt(8*log(2))
+    To convert from a $1-\sigma$ error function to the equivalent FWHM,
+    you need to scale the error function roughness by $\sqrt(8 \log 2)$
     which is about 2.35.
 
-    .. Note::
-        This interface can be computed analytically. When computing
-        the slab product of the reflectivity, scale the Fresnel coefficient
+    This interface can be computed analytically. When computing
+    the slab product of the reflectivity, scale the Fresnel coefficient 
+    $F$ by the interface function yielding:
+    
+    .. math:
 
-    F = (k-k_next)/(k+k_next) by::
-
-        >>> S = exp(-2*k*k_next*sigma[i]**2)
+        F = (k_i-k_{i+1})/(k_i+k_{i+1}) \exp(-2 k_i k_{i+1} \sigma_i^2)
     """
     @classmethod
     def as_fwhm(cls, *args, **kw):
@@ -221,9 +214,9 @@ class Linear(Interface):
 
     The linear profile has the form::
 
-        >>> CDF(z) = 2/w*z if |z|<w/2, 0 if z<-w/2, 1 otherwise
-        >>> PDF(z) = 1/w if |z|<w/2, otherwise 0
-        >>> PPF(z) = w/2*z if |z|<w/2, -w/2 if z<-w/2, w/2 otherwise
+        CDF(z) = 2/w*z if |z|<w/2, 0 if z<-w/2, 1 otherwise
+        PDF(z) = 1/w if |z|<w/2, otherwise 0
+        PPF(z) = w/2*z if |z|<w/2, -w/2 if z<-w/2, w/2 otherwise
     """
     def __init__(self, width=0, name="linear"):
         self.width = Parameter.default(width, limits=(0,inf), name=name)
@@ -259,15 +252,17 @@ class Tanh(Interface):
 
     *name* (string: "tanh")
 
-    The tanh profile has the form::
+    The tanh profile has the form:
 
-        >>> CDF(z) = (1 + tanh(C/w*z))/2
-        >>> PDF(z) = C/(2*w) * sech((C/w)*z)**2
-        >>> PPF(z) = (w/C) * atanh(2*z-1)
+    .. math:
+    
+        \textoperator{CDF}(z) = (1 + \tanh(C/wz))/2
+        \textoperator{PDF}(z) = C/(2w) \sech((C/w)z)^2
+        \textoperator{PPF}(z) = (w/C) \tanh^{-1}(2z-1)
 
-    where w is the interface roughness and C is a scaling constant.
-    C is atanh(erf(1/sqrt(2))) for width w defined by 1-sigma, or
-    C is 2*acosh(sqrt(2)) for width 2 defined by FWHM.
+    where $w$ is the interface roughness and $C$ is a scaling constant.
+    $C$ is $\atanh(\erf(1/\sqrt(2)))$ for width defined by $1-\sigma$, 
+    or $C$ is $2\cosh^{-1}(\sqrt(2))$ for width defined by FWHM.
 
     .. Note::
        This profile was derived from the free energy of a nonuniform system:
@@ -375,7 +370,6 @@ def demo_fwhm():
                    arrowprops=arrowprops,bbox=bbox)
 
     pylab.grid(True)
-    pylab.show()
 
 
 def demo_tanh_to_erf():
@@ -415,7 +409,6 @@ scale by atanh(erf(1/sqrt(2))) / (2 acosh(sqrt(2)))""")
                    arrowprops=arrowprops,bbox=bbox)
 
     pylab.grid(True)
-    pylab.show()
 
 def demo():
     """
@@ -450,7 +443,6 @@ def demo():
     pylab.annotate('1-sigma',xy=(w*1.1,0.2))
     pylab.legend(['erf','tanh','linear'])
     pylab.grid(True)
-    pylab.show()
 
 def _test_one(p,w):
     import scipy.integrate as sum
@@ -478,5 +470,5 @@ def test():
 if __name__ == "__main__":
     #demo()
     #demo_fwhm()
-    demo_tanh_to_erf()
-    #test()
+    #demo_tanh_to_erf()
+    test()

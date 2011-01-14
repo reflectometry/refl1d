@@ -1,5 +1,10 @@
+# Dead code
+print "mystic.meshgrid is untested"
+
+#from park Request, Service
+class Service: pass
+class Request: pass
 import numpy
-import pylab
 
 class MeshgridService(Service):
     def prepare(self, problem, dims, steps):

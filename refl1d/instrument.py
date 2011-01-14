@@ -6,83 +6,96 @@ Reflectometry instrument definitions.
 An instrument definition contains all the information necessary to compute
 the resolution for a measurement.  See :mod:`resolution` for details.
 
-Usage
-=====
+This module is intended to help define new instrument loaders
+
+Scanning Reflectometers
+=======================
 
 :mod:`refl1d.instrument` (this module) defines two instrument types:
 :class:`Monochromatic` and :class:`Pulsed`. These represent
 generic scanning and time of flight instruments, respectively.
 
 To perform a simulation or load a data set, a measurement geometry must
-be defined.  In the following example, we set up the geometry for the
-AND/R instrument, with the wavelength and wavelength dispersion
-predetermined by the choice of monochromator settings, and with the
-angular divergence defined for the particular measurement using slits
-of 0.1 mm below 0.5\ |degrees| and opening slits above 0.5\ |degrees|
-starting at 0.2 mm and maintaining a fixed $\Delta \theta / \theta$.  We
-use this geometry to compute the measurement resolution $Q, \Delta Q$.
+be defined.  In the following example, we set up the geometry for a
+pretend instrument SP:2. The complete geometry needs to include information
+to calculate wavelength resolution (wavelength and wavelength dispersion) 
+as well as angular resolution (slit distances and openings, and perhaps
+sample size and sample warp).  In this case, we are using a scanning
+monochromatic instrument with slits of 0.1 mm below 0.5\ |degrees| and 
+opening slits  above 0.5\ |degrees| starting at 0.2 mm.  The monochromatic
+instrument assumes a fixed $\Delta \theta / \theta$ while opening.
 
-    >>> from numpy import linspace
-    >>> from refl1d.instrument import Monochromatic
-    >>> from refl1d.resolution import dTdL2dQ
-    >>> geometry = Monochromatic(
-    ...    instrument="AND/R", radiation="neutron",
+    >>> from refl1d.names import *
+    >>> geometry = Monochromatic(instrument="SP:2", radiation="neutron",
     ...    wavelength=5.0042, dLoL=0.009, d_s1=230+1856, d_s2=230,
     ...    Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
-    >>> T,dT,L,dL = geometry.resolution(T=linspace(0,5,51))
-    >>> Q,dQ = dTdL2dQ(T=T,dT=dT,L=L,dL=dL)
 
-More commonly, though, the instrument would be used to generate a
+This instrument can be used to  a data file, or generate a 
 measurement probe for use in modeling or to read in a previously
-measured data set:
+measured data set or generate a probe for simulation:
 
-    >>> simulation_probe = geometry.probe(T=linspace(0,5,51))
-    >>> measured_probe = geometry.load('blg117.refl')
+    >>> from numpy import linspace, loadtxt
+    >>> datafile = sample_data('10ndt001.refl')
+    >>> Q,R,dR = loadtxt(datafile).T
+    >>> probe = geometry.probe(Q=Q, data=(R,dR))
+    >>> simulation = geometry.probe(T=linspace(0,5,51))
+
+All instrument parameters can be specified when constructing the probe,
+replacing the defaults that are associated with the instrument.  For 
+example, to include sample broadening effects in the resolution:
+
+    >>> probe2 = geometry.probe(Q=Q, data=(R,dR), sample_broadening=0.1)
 
 For magnetic systems a polarized beam probe is needed::
 
-    >>> probe = geometry.magnetic_probe(T=numpy.arange(0,5,100))
+    >>> magnetic_probe = geometry.magnetic_probe(T=numpy.linspace(0,5,100))
 
-When loading or simulating a data set, any of the instrument parameters
-and measurement geometry information can be specified, replacing the
-defaults within the instrument.  For example, to include sample broadening
-effects in the resolution::
+The string representation of the geometry prints a multi-line
+description of the default instrument configuration:
 
-    >>> probe1 = geometry.load('blg117.refl', sample_broadening=0.1)
+    >>> print geometry
+    == Instrument SP:2 ==
+    radiation = neutron at 5.0042 Angstrom with 0.9% resolution
+    slit distances = 2086 mm and 230 mm
+    fixed region below 0.5 and above 90 degrees
+    slit openings at Tlo are 0.2 mm
+    sample width = 1e+10 mm
+    sample broadening = 0 degrees
 
-Properties of the instrument can be displayed, both for the generic
-instrument (which defines slit distances and wavelength in this case)
-or for the specific measurement (which adds detail about the slit
-opening as a function of angle)::
+Predefined Instruments
+======================
 
-    >>> from refl1d.ncnrdata import ANDR
-    >>> print ANDR.defaults()
-    >>>
-    >>> print geometry.defaults()
-
-Defining Instruments
-====================
-
-Standard instruments can be defined for each facility.  This saves the users
+Specific instruments can be defined for each facility.  This saves the users
 having to remember details of the instrument geometry.
 
-For example, the above one-off example could be formalized using::
+For example, the above SP:2 instrument could be defined as follows:
 
-    from refl1d.instrument import Monochromatic
-    class ANDR(Monochromatic):
-        instrument = "AND/R"
-        radiation = "neutron"
-        wavelength = 5.0042   # Angstroms
-        dLoL = 0.009          # FWHM
-        d_s1 = 230.0 + 1856.0 # mm
-        d_s2 = 230.0          # mm
+    >>> class SP2(Monochromatic):
+    ...    instrument = "SP:2"
+    ...    radiation = "neutron"
+    ...    wavelength = 5.0042   # Angstroms
+    ...    dLoL = 0.009          # FWHM
+    ...    d_s1 = 230.0 + 1856.0 # mm
+    ...    d_s2 = 230.0          # mm
+    ...    def load(self, filename, **kw):
+    ...        Q,R,dR = loadtxt(datafile).T
+    ...        probe = self.probe(Q=Q, data=(R,dR), **kw)
+    ...        return probe
 
-This instrument definition can then be used to define the measurement
-geometry:
+This definition can then be used to define the measurement geometry.  We
+have added a load method which knows about the facility file format (in
+this case, three column ASCII data Q, R, dR) so that we can load a datafile
+in a couple of lines of code:
 
-    >>> geometry = ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
-    >>> T,dT,L,dL = geometry.resolution(T=linspace(0,5,51))
-    >>> Q,dQ = dTdL2dQ(T=T,dT=dT,L=L,dL=dL)
+    >>> geometry = SP2(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
+    >>> probe3 = geometry.load(datafile)
+
+The defaults() method prints the static components of the geometry:
+
+    >>> print SP2.defaults()
+    == Instrument class SP:2 ==
+    radiation = neutron at 5.0042 Angstrom with 0.9% resolution
+    slit distances = 2086 mm and 230 mm
 
 GUI Usage
 =========
@@ -216,9 +229,9 @@ class Monochromatic(object):
         """
         self._translate_Q_to_theta(kw)
         T,dT,L,dL = self.resolution(**kw)
-        T = kw.pop('T')
-        return make_probe(T=T,dT=dT,L=L,dL=dL,
-                          radiation=self.radiation, **kw)
+        kw.update(T=T,dT=dT,L=L,dL=dL)
+        kw.setdefault('radiation',self.radiation)
+        return make_probe(**kw)
 
     def magnetic_probe(self, Tguide=270, shared_beam=True, **kw):
         """
@@ -237,39 +250,6 @@ class Monochromatic(object):
         if shared_beam:
             probe.shared_beam()  # Share the beam parameters by default
         return probe
-
-    def simulate(self, sample, uncertainty=0.01, **kw):
-        """
-        Simulate a run with a particular sample.
-
-        :Parameters:
-            *sample* : Stack
-                Model of the sample.
-            *uncertainty* = 0.01 : float
-                Relative uncertainty in the measurement.
-
-        Additional :meth:`probe` keyword parameters are required to define
-        the set of angles to be measured
-
-        :Returns:
-            *experiment* : Experiment
-                Sample + probe with simulated data.
-
-        The relative uncertainty is used to calculate the number of incident
-        beam intensity for the measurement as follows::
-
-            >>> I = (100 Q)^4 / s^2
-
-        """
-        from .experiment import Experiment
-        probe = self.probe(**kw)
-        M = Experiment(probe=probe, sample=sample)
-        _, Rth = M.reflectivity()
-        dR = uncertainty*M.fresnel()
-        R = Rth + numpy.random.randn(*Rth.shape)*dR
-        probe.data = R,dR
-
-        return M
 
     def resolution(self, **kw):
         """
@@ -406,7 +386,7 @@ slit distances = %(d_s1)g mm and %(d_s2)g mm
 fixed region below %(Tlo)g and above %(Thi)g degrees
 slit openings at Tlo are %(slits_at_Tlo)s mm
 sample width = %(sample_width)g mm
-sample broadening = %(sample_broadening)g degrees
+sample broadening = %(sample_broadening)g degrees\
 """ % dict(name=self.instrument, L=self.wavelength, dLpercent=self.dLoL*100,
            d_s1=self.d_s1, d_s2=self.d_s2,
            sample_width=self.sample_width,
@@ -423,13 +403,13 @@ sample broadening = %(sample_broadening)g degrees
         """
         msg = """\
 == Instrument class %(name)s ==
-radiation = %(radiation)s at %(L)g Angstrom with %(dLpercent)g%% resolution
-slit distances = %(d_s1)g mm and %(d_s2)g mm
-""" % dict(name=cls.instrument, L=cls.wavelength, dLpercent=cls.dLoL*100,
-           d_s1=cls.d_s1, d_s2=cls.d_s2,
-           radiation=cls.radiation,
-           )
-        return msg
+radiation = %(radiation)s at %(L)s Angstrom with %(dL)s resolution
+slit distances = %(d_s1)s mm and %(d_s2)s mm"""
+        L,d_s1,d_s2 = ["%g"%v if v is not None else 'unknown'
+                       for v in cls.wavelength, cls.d_s1, cls.d_s2]
+        dL = "%g%%"%(cls.dLoL*100) if cls.dLoL else 'unknown'
+        return msg % dict(name=cls.instrument, radiation=cls.radiation,
+                          L=L, dL=dL, d_s1=d_s1, d_s2=d_s2)
 
 class Pulsed(object):
     """
@@ -554,7 +534,6 @@ class Pulsed(object):
         """
         from reflectometry.reduction.rebin import rebin
         from .experiment import Experiment
-        from .resolution import binedges
         from .probe import ProbeSet
         T = kw.pop('T', self.T)
         slits = kw.pop('slits', self.slits)

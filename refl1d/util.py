@@ -1,3 +1,7 @@
+from __future__ import division
+import numpy
+from numpy import inf, nan
+
 def parse_file(file):
     """
     Parse a file into a header and data.
@@ -8,7 +12,6 @@ def parse_file(file):
     Comment lines look like # float float float
     Data may contain inf or nan values.
     """
-    import numpy
     if hasattr(file, 'readline'):
         fh = file
     elif not string_like(file):
@@ -77,7 +80,7 @@ def indfloat(s):
         True
         >>> print numpy.isinf(indfloat('-inf'))
         True
-        >>> print numpy.isnan(indfloat('nan')
+        >>> print numpy.isnan(indfloat('nan'))
         True
     """
     try:
@@ -100,21 +103,27 @@ def dhsv(color, dh=0, ds=0, dv=0, da=0):
     *ds* change saturation
     *da* change transparency
 
+    Color can be any valid matplotlib color.  The hsv scale is [0,1] in
+    each dimension.  Saturation, value and alpha scales are clipped to [0,1]
+    after changing.  The hue scale wraps between red to violet.
+
     Example
     -------
 
-        >>> seagreen = [v/255. for v in (51, 136, 85, 255)]
-        >>> darker = dhsv(seagreen, dv=-0.1)
+    Make sea green 10% darker:
+    
+        >>> darker = dhsv('seagreen', dv=-0.1)
         >>> print [int(v*255) for v in darker]
-        [41, 110, 67, 255]
+        [37, 113, 71, 255]
     """
     from matplotlib.colors import colorConverter
     from colorsys import rgb_to_hsv, hsv_to_rgb
-    from numpy import clip, array
+    from numpy import clip, array, fmod
     r,g,b,a = colorConverter.to_rgba(color)
     h,s,v = rgb_to_hsv(r,g,b)
-    h,s,v,a = [clip(val,0,1) for val in h+dh,s+ds,v+dv,a+da]
-    r,b,g = hsv_to_rgb(h,s,v)
+    s,v,a = [clip(val,0.,1.) for val in s+ds,v+dv,a+da]
+    h = fmod(h+dh,1.)
+    r,g,b = hsv_to_rgb(h,s,v)
     return array((r,g,b,a))
 
 

@@ -161,8 +161,10 @@ class Material(Scatterer):
     For example, to fit Pd by cell volume use::
 
         >>> m = Material('Pd', fitby='cell_volume')
-        >>> m.cell_volume.range(10)
-        >>> print "Pd density=%.3g volume=%.3g"%(m.density.value,m.cell_volume.value)
+        >>> m.cell_volume.range(1,10)
+        Parameter(Pd cell volume)
+        >>> print m.density.value, m.cell_volume.value
+        12.02 14.7017085944
 
     You can change density representation by calling *material.fitby(type)*.
 
@@ -244,14 +246,14 @@ class Material(Scatterer):
         #    self.density = self.packing_factor * max_density
         elif type is 'cell_volume':
             # Density is in grams/cm^3.
-            # Mass is in grams/mole.  N_A is 6.02e23 atoms/mole.
-            # Volume is in A^3.  1 A is 1e-8 cm.
+            # Mass is in grams.
+            # Volume is in A^3 = 1e24*cm^3.
             if value is None:
-                value = self.formula.molecular_mass/self.formula.density
+                value = (1e24*self.formula.molecular_mass)/self.formula.density
             self.cell_volume = Par.default(value,
                                            name=self.name+" cell volume",
                                            limits=(0,inf))
-            self.density = self.formula.molecular_mass/self.cell_volume
+            self.density = (1e24*self.formula.molecular_mass)/self.cell_volume
         else:
             raise ValueError("Unknown density calculation type '%s'"%type)
 
@@ -377,8 +379,8 @@ class Mixture(Scatterer):
     The components of the mixture can vary relative to each other, either
     by mass, by volume or by number::
 
-        >>> Mixture.bymass(base,M1,F1,M2,F2...,name='mixture name')
-        >>> Mixture.byvolume(base,M1,F1,M2,F2...,name='mixture name')
+        Mixture.bymass(base,M1,F1,M2,F2...,name='mixture name')
+        Mixture.byvolume(base,M1,F1,M2,F2...,name='mixture name')
 
     The materials *base*, *M1*, *M2*, *M3*, ... can be chemical formula
     strings  or material objects.  In practice, since the chemical

@@ -25,16 +25,15 @@ New traces are provided using :meth:`History.provides`.  For example,
 the following adds traces for 'value' and 'point' to the history, and
 requires the best value on the two previous cycles in order to do its work:
 
-    >>> import mystic.history
-    >>> h = mystic.history.History()
+    >>> h = History()
     >>> h.provides(value=2, point=0)
 
-Initially the history is empty::
+Initially the history is empty:
 
     >>> print len(h.value)
     0
 
-After three updates we see that only two values are kept::
+After three updates we see that only two values are kept:
 
     >>> h.update(value=2,point=[1,1,1])
     >>> h.update(value=1,point=[1,0.5,1])
@@ -44,30 +43,23 @@ After three updates we see that only two values are kept::
     >>> print len(h.value)
     2
 
-Note that point is not monitored since it is not required::
+Note that point is not monitored since it is not required:
 
     >>> print h.point[0]
     Traceback (most recent call last):
         ...
     IndexError: point has not accumulated enough history
 
-For debugging purposes, the entire history can be printed:
-
-    >>> print h
-    Trace point:
-    Trace value: 0.5, 1
-
 Traces may be used as accumulators.  In that case, the next
 value is added to the tail value before appending to the trace.
 For example:
 
-    >>> h = mystic.history.History()
+    >>> h = History()
     >>> h.provides(step=1)
     >>> h.accumulate(step=1)
     >>> h.accumulate(step=1)
     >>> print h.step[0]
     2
-
 """
 
 # Design questions:

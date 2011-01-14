@@ -13,8 +13,9 @@ By formula::
 If you want to adjust the density you will need to make your own copy of
 these materials.  For example, for permalloy::
 
-    >>> my_permalloy=Material(permalloy.formula,density=permalloy.bulk_density)
-    >>> my_permalloy.density.pmp(10)  # Let density vary by 10% from bulk value
+    >>> NiFe=Material(permalloy.formula,density=permalloy.bulk_density)
+    >>> NiFe.density.pmp(10)  # Let density vary by 10% from bulk value
+    Parameter(permalloy density)
 """
 import periodictable
 from .material import Vacuum, Mixture, Material

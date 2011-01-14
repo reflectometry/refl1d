@@ -317,7 +317,7 @@ class MlayerModel(object):
         Return the resolution at Q for mlayer with the current settings
         for wavelength, wavelength divergence and angular divergence.
 
-        Resolution is full-width at half maximum (FWHM), not 1-sigma.
+        Resolution is full-width at half maximum (FWHM), not $1-\sigma$.
         """
         return (abs(Q) * self.wavelength_dispersion
                 + 4 * pi * self.angular_divergence) / self.wavelength
@@ -326,16 +326,21 @@ class MlayerModel(object):
         """
         Choose the best dL and dT to match the resolution dQ.
 
-        Given that mlayer uses the following resolution function::
+        Given that mlayer uses the following resolution function:
+        
+        ..math::
 
-            >>> staj dQ = (|Q| dL + 4 * pi * dT ) / L
+            \Delta Q = (|Q| \Delta\lambda + 4 \pi \Delta\theta)/\lambda
 
-        we can use a linear system solver to find the optimal dL and dT::
+        we can use a linear system solver to find the optimal 
+        $\Delta \lambda$ and $\Delta \theta$:
+        
+        ..math::
 
-            >>> [ |Qi|/L, 4*pi/L ] * [dL, dT]' = dQi
+          [|Q|/\lambda 4\pi/\lambda][\Delta\lambda \Delta\theta]^T = \Delta Q
 
-        If weights are provided (e.g., dR/R), then weight each point before
-        fitting.
+        If weights are provided (e.g., $\Delta R/R$), then weight each point 
+        before fitting.
 
         Given that the experiment is often run with fixed slits at the
         start and end, you may choose to match the resolution across the
@@ -841,41 +846,12 @@ class MlayerMagnetic(object):
         finally:
             fid.close()
 
-    def resolution(self, Q):
-        """
-        Return the resolution at Q for mlayer with the current settings
-        for wavelength, wavelength divergence and angular divergence.
-
-        Resolution is full-width at half maximum (FWHM), not 1-sigma.
-        """
+    def FWHMresolution(self, Q):
         return (abs(Q) * self.wavelength_dispersion
                 + 4 * pi * self.angular_divergence) / self.wavelength
+    FWHMresolution.__doc__ = MlayerModel.FWHMresolution.__doc__
 
-    def fit_resolution(self, Q, dQ, weight=1):
-        """
-        Choose the best dL and dT to match the resolution dQ.
-
-        Given that mlayer uses the following resolution function::
-
-            >>> staj dQ = (|Q| dL + 4 * pi * dT ) / L
-
-        we can use a linear system solver to find the optimal dL and dT::
-
-            >>> [ |Qi|/L, 4*pi/L ] * [dL, dT]' = dQi
-
-        If weights are provided (e.g., dR/R), then weight each point before
-        fitting.
-
-        Given that the experiment is often run with fixed slits at the
-        start and end, you may choose to match the resolution across the
-        entire Q range, or instead restrict it to just the region where
-        the slits are opening.  You will generally want to get the resolution
-        correct at the critical edge since that's where it will have the
-        largest effect on the fit.
-
-        Returns the object so that operations can be chained.
-
-        """
+    def fit_FWHMresolution(self, Q, dQ, weight=1):
         A = numpy.array([abs(Q)/self.wavelength,
                          numpy.ones_like(Q)*(4*pi/self.wavelength)])
         s = wsolve.wsolve(A,y=dQ,dy=weight)
@@ -883,6 +859,7 @@ class MlayerMagnetic(object):
         self.angular_divergence = s.x[1]
 
         return self
+    fit_FWHMresolution.__doc__ = MlayerModel.fit_FWHMresolution.__doc__
 
     def __str__(self):
         line = []

@@ -57,13 +57,15 @@ class MyPanel(wx.Panel):
             # 0.015 second intervals
             time.sleep(0.015)
 
-
-app = wx.PySimpleApp()
-# create a window/frame, no parent, -1 is default ID, title, size
-frame = wx.Frame(None, -1, "wxGauge Test1", size = (420, 310))
-# call the derived class, -1 is default ID
-MyPanel(frame,-1)
-# show the frame
-frame.Show(True)
-# start the event loop
-app.MainLoop()
+def demo():
+    app = wx.PySimpleApp()
+    # create a window/frame, no parent, -1 is default ID, title, size
+    frame = wx.Frame(None, -1, "wxGauge Test1", size = (420, 310))
+    # call the derived class, -1 is default ID
+    MyPanel(frame,-1)
+    # show the frame
+    frame.Show(True)
+    # start the event loop
+    app.MainLoop()
+    
+if __name__ == "__main__": demo()

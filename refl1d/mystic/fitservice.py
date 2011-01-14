@@ -1,10 +1,18 @@
+# Dead code
+print "mystic.fitservice is untested"
+
+_ = '''
 from numpy import inf
-import park
+
+#from park Request, Service
+class Service: pass
+class Request: pass
+
 from .solver import Minimizer
 from .optimizer.de import DifferentialEvolution
 from .problem import Function
 
-class FitService(park.Service):
+class FitService(Service):
     def prepare(self, request):
         self._build_solver(request)
         self.population = self.solver.start()
@@ -48,7 +56,7 @@ class FitService(park.Service):
         self.request = state['request']
         self.population = state['population']
         self.best = state['best']
-        self._build_solver(request)
+        self._build_solver(self.request)
         self.solver.history = state['history']
         return
 
@@ -79,7 +87,7 @@ class FitService(park.Service):
                                 )
         self.solver.history.requires(value=1, point=1)
 
-class FitRequest(park.Request):
+class FitRequest(Request):
     version = '0.9'
     service = "mystic.FitService"
     requires = [('mystic',1.2)]
@@ -100,3 +108,4 @@ class FitRequest(park.Request):
 @park.service_wrapper
 def fit(*args, **kw):
     return FitRequest(*args, **kw)
+'''

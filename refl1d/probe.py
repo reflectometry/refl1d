@@ -50,7 +50,7 @@ in accordance with its statistical weight.
 #
 # Unstitched seems like the better bet.
 
-from __future__ import with_statement
+from __future__ import with_statement, division
 import numpy
 from numpy import radians, sin, sqrt, tan, cos, pi, inf, sign, log
 from periodictable import nsf, xsf
@@ -106,20 +106,10 @@ class Probe(object):
     particular should be set using probe.theta_offset.dev(dT), with dT
     equal to the uncertainty in the peak position for the rocking curve,
     as measured in radians.  Changes to *theta_offset* will then be penalized
-    in the cost function for the fit as if it were another measurement.  Note
-    that the uncertainty in the peak position is not the same as the width
-    of the peak.  The peak stays roughly the same as statistics are improved,
-    but the uncertainty in position and width will decrease. [#Daymond2002]_
-    There is an additional uncertainty in the angle due to motor step size,
-    easily computed from the variance in a uniform distribution.  Combined,
-    the uncertainty in *theta_offset* is::
-
-        >>> dT = w/sqrt(I) + d/sqrt(12)
-
-    where *w* is the full-width of the peak in radians at half maximum, *I*
-    is the integrated intensity under the peak and *d* is the motor step size
-    is radians.
-
+    in the cost function for the fit as if it were another measurement.  Use
+    :meth:`alignment_uncertainty` to compute dT from the shape of the
+    rocking curve.
+    
     *intensity* and *back_absorption* are generally not needed --- scaling
     the reflected signal by an appropriate intensity measurement will correct
     for both of these during reduction.  *background* may be needed,
@@ -136,11 +126,6 @@ class Probe(object):
     instance since it is not specific to the view.  The fresnel
     substrate and surface materials are a property of the sample,
     and should share the same material.
-
-    .. [#Daymond2002] M.R. Daymond, P.J. Withers and M.W. Johnson;
-       The expected uncertainty of diffraction-peak location",
-       Appl. Phys. A 74 [Suppl.], S112 - S114 (2002).
-       http://dx.doi.org/10.1007/s003390201392
     """
     polarized = False
     view = "fresnel"
@@ -194,6 +179,55 @@ class Probe(object):
         # By default the calculated points are the measured points.  Use
         # oversample() for a more accurate resolution calculations.
         self._set_calc(self.T,self.L)
+
+    @staticmethod
+    def alignment_uncertainty(w,I,d=0):
+        """
+        Compute alignment uncertainty.
+
+        Parameters
+        ----------
+
+        *w* : float | degrees
+            Rocking curve full width at half max.
+        *I* : float | counts
+            Rocking curve integrated intensity.
+        *d* = 0: float | degrees
+            Motor step size
+
+        Returns
+        -------
+
+        *dtheta* : float | degrees
+        
+            uncertainty in alignment angle
+        
+        Algorithm
+        ---------
+        The uncertainty in the peak position is not the same as the width 
+        of the peak.  The peak stays roughly the same as statistics are 
+        improved, but the uncertainty in position and width will 
+        decrease.\ [#Daymond2002]_ There is an additional uncertainty in 
+        the angle due to motor step size, easily computed from the 
+        variance in a uniform distribution.  Combined, the uncertainty 
+        in *theta_offset* is:
+
+        .. math:
+    
+            \Delta\theta \approx \sqrt{w^2/I + d^2/12}
+
+        where $w$ is the full-width of the peak in radians at half maximum, 
+        $I$ is the integrated intensity under the peak and $d$ is the motor 
+        step size is radians.
+
+        .. [#Daymond2002] M.R. Daymond, P.J. Withers and M.W. Johnson;
+           The expected uncertainty of diffraction-peak location",
+           Appl. Phys. A 74 [Suppl.], S112 - S114 (2002).
+           http://dx.doi.org/10.1007/s003390201392
+        """
+
+        return sqrt(w**2/I + d**2/12.)
+
 
     def log10_to_linear(self):
         """
@@ -440,13 +474,13 @@ class Probe(object):
         elif view == 'resolution':
             self.plot_resolution()
         else:
-            raise TypeError("incorrect reflectivity view '%s'"%self.view)
+            raise TypeError("incorrect reflectivity view '%s'"%view)
 
     def plot_resolution(self, theory=None):
         import pylab
         pylab.plot(self.Q, self.dQ)
-        pylab.xlabel('Q (inv Angstroms)')
-        pylab.ylabel('Q resolution (1-sigma inv Angstroms)')
+        pylab.xlabel('Q ($\AA^{-1}$)')
+        pylab.ylabel('Q resolution ($1-\sigma \AA^{-1}$)')
         pylab.title('Measurement resolution')
 
 
@@ -720,27 +754,47 @@ class PolarizedNeutronProbe(object):
 
 def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
     """
-    Compute spin asymmetry for R+,R-.
+    Compute spin asymmetry for R++, R--.
 
-    Returns *Q*, *SA*, *dSA*.
+    Parameters
+    ----------
+    
+    *Qp*, *Rp*, *dRp* : vector
+        Measured ++ cross section and uncertainty.
+    *Qm*, *Rm*, *dRm* : vector
+        Measured -- cross section and uncertainty.
+    
+    If *dRp*, *dRm* are None then the returned uncertainty will also be None.
 
-    Spin asymmetry, *SA*, is::
+    Returns
+    -------
+    
+    *Q*, *SA*, *dSA* : vector
+        Computed spin asymmetry and uncertainty.
 
-        >>> SA = (Rp - Rm)/(Rp + Rm)
+    Algorithm
+    ---------
+    
+    Spin asymmetry, $S_A$, is:
+    
+    .. math:
 
-    Uncertainty *dSA* follows from propagation of error::
+        S_A = (R_{++} - R_{--})/(R_{++} + R_{--})
 
-        >>> dSA^2 = 4(Rp^2  dRm^2  -  Rm^2 dRp^2)/(Rp + Rm)^4
+    Uncertainty $\Delta S_A$ follows from propagation of error:
+    
+    .. math:
 
-    The inputs (*Qp*, *Rp*, *dRp*) and (*Qm*, *Rm*, *dRm*) are measurements
-    for the ++ and -- cross sections respectively.  If *dRp*, *dRm* are None,
-    then the returned uncertainty will also be None.
+        \Delta S_A^2 = \frac{4(R_{++}^2\Delta R_{--}^2-R_{--}^2\Delta R_{++})}
+                            {(R_{++} + R_{--})^4}
+
     """
     Rm = numpy.interp(Qp,Qm,Rm)
     v = (Rp-Rm)/(Rp+Rm)
     if dRp is not None:
         dRm = numpy.interp(Qp,Qm,dRm)
         dvsq = 4 * ((Rp*dRm)**2 - (Rm*dRp)**2) / (Rp+Rm)**4
+        dvsq[dvsq<0] = 0
         return Qp, v, sqrt(dvsq)
     else:
         return Qp, v, None

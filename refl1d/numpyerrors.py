@@ -59,6 +59,6 @@ def errors(**kw):
         return decorated
     return decorator
 ignored = errors(all='ignore')
-raised = errors(all='error')
+raised = errors(all='raise')
 printed = errors(all='print')
 warned = errors(all='warn')

@@ -22,37 +22,41 @@ for the purposes.
 
 Example loading data:
 
-    >>> from ncnrdata import ANDR
-    >>> instrument = ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
-    >>> probe = instrument.load('chale207.refl')
+    >>> import pylab
+    >>> from refl1d.names import *
+    >>> datafile = sample_data('chale207.refl')
+    >>> instrument = NCNR.ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
+    >>> probe = instrument.load(datafile)
     >>> probe.plot(view='log')
 
 Magnetic data has multiple cross sections and often has fixed slits:
 
-    >>> from ncnrdata import NG1
-    >>> instrument = NG1(slits_at_Tlo=1)
-    >>> probe = instrument.load('n101Gc1.refl')
+    >>> datafile = sample_data('lha03_255G.refl')
+    >>> instrument = NCNR.NG1(slits_at_Tlo=1)
+    >>> probe = instrument.load_magnetic(datafile)
     >>> probe.plot(view='SA') # Spin asymmetry view
 
-For simulation, you just need a probe but not the associated data:
+For simulation, you need a probe and a sample:
 
-    >>> from ncnrdata import ANDR
-    >>> instrument = ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
-    >>> probe = instrument.simulate(T=linspace(0,5,51))
-    >>> pylab.plot(probe.Q, probe.dQ)
-    >>> pylab.ylabel('resolution (1-sigma)')
-    >>> pylab.xlabel('Q (inv A)')
-    >>> pylab.show()
+    >>> instrument = NCNR.ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
+    >>> probe = instrument.probe(T=linspace(0,5,51))
+    >>> probe.plot_resolution()
+    >>> sample = silicon(0,10) | gold(100,10) | air
+    >>> M = Experiment(probe=probe, sample=sample)
+    >>> M.simulate_data() # Optional
+    >>> M.plot()
 
 And for magnetic:
 
-    >>> from ncnrdata import NG1
-    >>> instrument = NG1(slits_at_Tlo=1)
-    >>> probe = instrument.simulate_magnetic(T=linspace(0,5,51))
-    >>> pylab.plot(probe.Q, probe.dQ)
-    >>> pylab.ylabel('resolution (1-sigma)')
-    >>> pylab.xlabel('Q (inv A)')
-    >>> pylab.show()
+    >>> instrument = NCNR.NG1(slits_at_Tlo=1)
+    >>> #sample = silicon(0,10) | Magnetic(permalloy(100,10),rho_M=3) | air
+    >>> #M = Experiment(probe=probe, sample=sample)
+    >>> #M.simulate_data()
+    >>> #M.plot()
+    >>> #probe = instrument.simulate_magnetic(sample, T=linspace(0,5,51))
+    >>> #h = pylab.plot(probe.Q, probe.dQ)
+    >>> #h = pylab.ylabel('resolution (1-sigma)')
+    >>> #h = pylab.xlabel('Q (inv A)')
 
 See :mod:`instrument <refl1d.instrument>` for details.
 """
@@ -74,13 +78,9 @@ def load(filename, instrument=None, **kw):
     if filename is None: return None
     if instrument is None: instrument=Monochromatic()
     header,data = parse_file(filename)
-    header.update(instrument.__dict__)
-    header.update(**kw)
+    header.update(**kw) # calling parameters override what's in the file.
     Q,R,dR = data
-    T,dT,L,dL = instrument.resolution(Q=Q, **header)
-    kw.update(dict(T=T,dT=dT,L=L,dL=dL,data=(R,dR),
-                   radiation=instrument.radiation))
-    probe = make_probe(**kw)
+    probe = instrument.probe(Q=Q, data=(R,dR), **header)
     probe.title = header['title'] if 'title' in header else filename
     probe.date = header['date'] if 'date' in header else "unknown"
     probe.instrument = (header['instrument'] if 'instrument' in header
@@ -241,10 +241,14 @@ class XRay(NCNRData, Monochromatic):
 
     You can choose to ignore the geometric calculation entirely
     by setting the slit opening to 0 and using sample_broadening
-    to define the entire divergence::
+    to define the entire divergence:
 
-        >>> xray = ncnrdata.XRay(slits_at_To=0)
-        >>> data = xray.load("exp123.dat", sample_broadening=1e-4)
+        >>> from refl1d.names import *
+        >>> file = sample_data("exp123.dat")
+        >>> xray = NCNR.XRay(slits_at_Tlo=0)
+        >>> data = xray.load(file, sample_broadening=1e-4)
+        >>> print data.dT[5]
+        0.0001
     """
     instrument = "X-ray"
     radiation = "xray"
@@ -262,3 +266,60 @@ INSTRUMENTS = {
     'NG-7': NG7,
     'Xray': XRay,
     }
+
+_ = '''
+def _counting_time(instrument, sample, uncertainty, 
+    Qrange, Qstep, beam_rate, num_parts):
+    r"""
+    Simulate counting time for a particular sample.
+
+    :Parameters:
+        *sample* : Stack
+            Model of the sample.
+        *uncertainty* = 0.01 : float
+            Relative uncertainty in the measurement.
+
+    Additional :meth:`probe` keyword parameters are required to define
+    the set of angles to be measured
+
+    Returns
+    -------
+    
+    *experiment* : Experiment
+        Sample + probe with simulated data.
+
+    Algorithm
+    ---------
+    
+    Assuming our counts follow approximately the Fresnel reflectivity
+    of the sample, $F$, and we are targeting an fractional uncertainty
+    $\Delta R/R = \sigma$, we can calculate the desired incident beam 
+    $I = 1/(F\sigma^2)$ that will yield this uncertainty.  With $I$, 
+    we can compute the  expected number of counts on the detector due 
+    to reflection off the sample (this is just $R_{\rm th} I$) and use 
+    that to simulate detector counts $D$ by drawing from a Poisson 
+    distribution $D ~ P(R_{\rm th} I)$.  Given $D$ and $I$ we can use
+    the normal reflectometry reduction process to get $(R,\Delta R)$
+    as:
+    
+    .. math:
+    
+        I &=& 1/(F \sigma^2) //
+        D &~& P(R_{\rm th} I) //
+        R &=& D/I //
+        \Delta R &=& \sqrt(D)/I
+    """
+
+    from .experiment import Experiment
+    probe = self.probe(**kw)
+    M = Experiment(probe=probe, sample=sample)
+    if 1: # Fresnel counting
+        I = 1/(M.fresnel()* uncertainty**2)
+    else: # Q^4 counting
+        I = 1/(100*probe.Q**4 * uncertainty**2)
+    D = numpy.random.poisson( Rth * I )
+    R,dR = D/I, numpy.sqrt(D)/I
+    probe.data = R,dR
+
+    return M
+'''

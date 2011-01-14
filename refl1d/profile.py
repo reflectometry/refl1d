@@ -2,11 +2,61 @@
 # Author: Paul Kienzle
 
 """
-.. sidebar:: On this Page
+Scattering length density profile.
 
-        * :class:`Microslab representation <refl1d.profile.Microslabs>`
-        * :class:`Build profile <refl1d.profile.build_profile>`
-        * :class:`Blend function <refl1d.profile.blend>`
+In order to render a reflectometry model, the theory function calculator
+renders each layer in the model for each energy in the probe.  For slab
+layers this is easy: just accumulate the slabs, with the $1-sigma$ Gaussian
+interface width between the slabs.  For freeform or functional layers,
+this is more complicated.  The rendering needs to chop each layer into
+microslabs and evaluate the profile at each of these slabs.  
+
+Example
+-------
+
+This example sets up a model which uses tanh to transition from 
+silicon to gold in 20 |Ang| with 2 |Ang| steps.
+
+First define the profile, and put in the substrate:
+
+    >>> S = Microslabs(nprobe=1,dz=2)
+    >>> S.clear()
+    >>> S.extend(w=[0],rho=[2.07])
+    
+Next add the interface.  This uses :meth:`microslabs` to select 
+the points at which the interface is evaluated, much like you
+would do when defining your own special layer type.  Note that the
+points Pz are in the center of the micro slabs.  The width of the
+final slab may be different.  You do not need to use fixed width
+microslabs if you can more efficiently represent the profile with
+a smaller number of variable width slabs, but :meth:`contract_profile`
+serves the same purpose with less work on your part.
+
+    >>> from numpy import tanh
+    >>> Pw,Pz = S.microslabs(20)
+    >>> print "widths = %s ..."%(" ".join("%g"%v for v in Pw[:5]))
+    widths = 2 2 2 2 2 ...
+    >>> print "centers = %s ..."%(" ".join("%g"%v for v in Pz[:5]))
+    centers = 1 3 5 7 9 ...
+    >>> rho = (1-tanh((Pz-10)/5))/2*(2.07-4.5)+4.5
+    >>> S.extend(w=Pw, rho=[rho])
+    
+Finally, add the incident medium and see the results.  Note that *rho*
+is a matrix, with one column for each incident energy.  We are only
+using one energy so we only show the first column.
+
+    >>> S.extend(w=[0],rho=[4.5])
+    >>> print "width = %s ..."%(" ".join("%g"%v for v in S.w[:5]))
+    width = 0 2 2 2 2 ...
+    >>> print "rho = %s ..."%(" ".join("%.2f"%v for v in S.rho[0,:5]))
+    rho = 2.07 2.13 2.21 2.36 2.63 ...
+
+ Since *irho* and *sigma* were not specified, they will be zero.
+ 
+    >>> print "sigma = %s ..."%(" ".join("%g"%v for v in S.sigma[:5]))
+    sigma = 0 0 0 0 0 ...
+    >>> print "irho = %s ..."%(" ".join("%g"%v for v in S.irho[0,:5]))
+    irho = 0 0 0 0 0 ...
 """
 
 import numpy
@@ -15,7 +65,7 @@ from .reflmodule import _contract_by_area, _contract_by_step
 from .reflectivity import erf
 #from scipy.special import erf
 
-class Microslabs:
+class Microslabs(object):
     """
     Manage the micro slab representation of a model.
 
@@ -30,22 +80,6 @@ class Microslabs:
     The space for the slabs is saved even after reset, in preparation for a
     new set of slabs from different fitting parameters.
 
-    **Example**
-
-    The following example shows how to fill a slab model from layers and
-    use it to compute reflectivity::
-
-        >>> slabs.clear()
-        >>> for layer in model:
-        ...     w,sigma,rho,irho,rho_M,theta_M = layer.render()
-        ...     slabs.extend(w=w, sigma=sigma, rho=rho, irho=irho,
-        ...               rho_M=rho_M, theta_M=theta_M)
-        >>> w,sigma = slabs.w,slabs.sigma
-        >>> rho,irho = slabs.rho,slabs.irho
-        >>> rho_M,theta_M = slabs.rho_M,slabs.theta_M
-        >>> R = refl(kz,w,rho=rho,irho=irho,sigma=sigma, rho_M=rho_M, theta_M=theta_M)
-        >>> figure(2)
-        >>> plot(kz,R,label='reflectivity')
     """
     def __init__(self, nprobe, dz=None):
         self._num_slabs = 0
@@ -138,6 +172,9 @@ class Microslabs:
         self._slabsQ[idx,:,1] = numpy.asarray(irho).T
 
     def magnetic(self, anchor, w, rhoM=0, thetaM=0):
+        """
+        Add magnetic layers.
+        """
         self._slabsM.append(anchor,w,rhoM,thetaM)
 
     def thickness(self):

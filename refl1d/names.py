@@ -21,7 +21,8 @@ except Exception, exc:
     print traceback.print_exc()
     print "==== exception ignored"
 from .stajconvert import load_mlayer, save_mlayer
-from . import ncnrdata, snsdata
+from . import ncnrdata as NCNR, snsdata as SNS
+from .instrument import Monochromatic, Pulsed
 
 # Pull in common materials for reflectometry experiments.
 # This could lead to a lot of namespace pollution, and particularly to
@@ -29,3 +30,4 @@ from . import ncnrdata, snsdata
 # both of them create elements.
 # Python doesn't allow "from .module import *"
 from refl1d.materialdb import *
+from .support import sample_data

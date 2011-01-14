@@ -58,7 +58,7 @@ class PolymerBrush(Layer):
                              for base <= z <= base+length
                  = 0         for z >= base+length
         profile(z) = conv(brush(z), gaussian(sigma))
-        >>> sld(z) = material.sld * profile(z) + solvent.sld * (1 - profile(z))
+        sld(z) = material.sld * profile(z) + solvent.sld * (1 - profile(z))
     """
     def __init__(self, thickness=0, interface=0, name="brush",
                  polymer=None, solvent=None, base_vf=None,
@@ -156,7 +156,7 @@ def layer_thickness(z):
     function are the centers of these bins.  Using this, we can
     guess that the total layer thickness will be the following::
 
-         >>> 2*z[-1]-z[-2] if len(z) > 0 else 2*z[0]
+         2*z[-1]-z[-2] if len(z) > 0 else 2*z[0]
     """
     2*z[-1]-z[-2] if len(z) > 0 else 2*z[0]
 
@@ -178,7 +178,7 @@ class VolumeProfile(Layer):
 
     These parameters combine in the following profile formula::
 
-        >>> sld = material.sld * profile + solvent.sld * (1 - profile)
+        sld = material.sld * profile + solvent.sld * (1 - profile)
 
     The profile function takes a depth z and returns a density rho.
 

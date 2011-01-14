@@ -1,3 +1,8 @@
+print "mystic.pseudopark is untested"
+_ = '''
+import pickle
+class Problem: pass
+
 class MapWorker:
     def config(self, request):
         """
@@ -125,3 +130,4 @@ class Handler:
         queue = self._waiting[tag]
         queue.put(result)
         del self._waiting[tag]
+'''

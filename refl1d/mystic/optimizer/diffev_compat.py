@@ -1,6 +1,6 @@
 from ..solver import Minimizer
 from ..problem import Function
-from .. import termination as stop
+from .. import stop
 
 from .de import DifferentialEvolution, best1
 
