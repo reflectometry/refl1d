@@ -177,7 +177,7 @@ def load_staj(file):
 
     job = FitProblem(M)
     job.file = file
-    job.title = file
+    job.title = os.path.basename(file)
     job.name = file
     job.options = []
     return job
@@ -197,7 +197,7 @@ def load_script(file, options):
     except AttributeError:
         raise ValueError(file+" does not define 'problem=FitProblem(models)'")
     job.file = file
-    job.title = file
+    job.title = os.path.basename(file)
     job.name = file
     job.options = options
     return job
@@ -377,8 +377,7 @@ class FitOpts(ParseOpts):
     FLAGS = set(("preview","check","profile","edit","random","simulate",
                  "worker","batch","overwrite","parallel",
                  ))
-    VALUES = set(("plot","store","fit",
-                  "noise",
+    VALUES = set(("plot","store","fit","noise",
                   "CR","Tmin","Tmax","burn","steps","pop",
                   #"mesh","meshsteps",
                  ))
@@ -391,35 +390,19 @@ class FitOpts(ParseOpts):
     burn="0"
     PLOTTERS="log","linear","fresnel","q4"
     USAGE = """\
-Usage: refl1d [-option] modelfile [modelargs]
-
-Options can be placed anywhere on the command line.
+Usage: refl1d modelfile [modelargs] [options]
 
 The modelfile is a Python script (i.e., a series of Python commands)
 which sets up the data, the models, and the fittable parameters.
 The model arguments are available in the modelfile as sys.argv[1:].
 Model arguments may not start with '-'.
 
-Options include:
+Options:
 
-    -?/-h/--help
-        display this help
-    --check
-        print the model description and chisq value and exit
     --preview
         display model but do not perform a fitting operation
-    --batch
-        batch mode; don't show plots during run
-    --plot=log [%(plotter)s]
+    --plot=log      [%(plotter)s]
         type of reflectivity plot to display
-    --store=path
-        output directory for plots and models
-    --overwrite
-        if store already exists, replace it
-    --fit=de  [%(fitter)s]
-        fitting engine to use; see manual for details
-    --parallel
-        run fit using all processors
     --random
         use a random initial configuration
     --simulate
@@ -427,21 +410,34 @@ Options include:
     --noise=5%%
         percent noise to add to the simulated data
 
-Fitters options:
+    --store=path
+        output directory for plots and models
+    --overwrite
+        if store already exists, replace it
+    --parallel
+        run fit using all processors
+    --batch
+        batch mode; don't show plots after fit
 
-    --steps=1000   [all optimizers]
+    --fit=de        [%(fitter)s]
+        fitting engine to use; see manual for details
+    --steps=1000    [all optimizers]
         number of fit iterations after any burn-in time
-    --pop=10       [dream, de, rl, pt]
+    --pop=10        [dream, de, rl, pt]
         population size
-    --burn=1000    [dream, pt]
+    --burn=0        [dream, pt]
         number of burn-in iterations before accumulating stats
     --Tmin=0.1
-    --Tmax==10     [pt]
+    --Tmax=10       [pt]
         temperature range; use a higher maximum temperature and a larger
         population if your fit is getting stuck in local minima.
-    --CR=0.9       [de, rl, pt]
+    --CR=0.9        [de, rl, pt]
         crossover ratio for population mixing
 
+    --check
+        print the model description and chisq value and exit
+    -?/-h/--help
+        display this help
 """%{'fitter':'|'.join(sorted(FITTERS.keys())),
      'plotter':'|'.join(PLOTTERS),
      }
