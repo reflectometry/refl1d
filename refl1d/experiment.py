@@ -364,8 +364,8 @@ class Experiment(ExperimentBase):
         """
         Simulate a random data set for the model
 
-        Parameters
-        ----------
+        **Parameters:**
+        
         *noise* = 2 : float | %
             Percentage noise to add to the data.
         """
@@ -447,7 +447,7 @@ class Weights:
     function signature f(x,a1,a2,...,loc=0,scale=1).  The list *args*
     defines the arguments a1, a2, etc.  The underlying parameters are
     available as args[i].  Similarly, *loc* and *scale* define the
-    distribution center and width.  Use *truncated*=False if you want
+    distribution center and width.  Use *truncated=False* if you want
     the distribution tails to be included in the weights.
 
     SciPy distribution D is used by specifying cdf=scipy.stats.D.cdf.

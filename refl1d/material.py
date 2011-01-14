@@ -7,7 +7,7 @@
         * :class:`Mixture (mixed block of material) <refl1d.material.Mixture>`
         * :class:`Scattering Length Density (SLD) <refl1d.material.SLD>`
         * :class:`Material Probe Proxy <refl1d.material.ProbeCache>`
-        * :class:`Empty Layer (Vaccum) <refl1d.material.Vacuum>`
+        * :class:`Empty Layer (Vacuum) <refl1d.material.Vacuum>`
 
 Reflectometry materials.
 
@@ -98,19 +98,19 @@ class Vacuum(Scatterer):
 # ============================ Unknown scatterer ========================
 
 class SLD(Scatterer):
-    """
+    r"""
     Unknown composition.
 
     Use this when you don't know the composition of the sample.  The
     absorption and scattering length density are stored directly rather
     than trying to guess at the composition from details about the sample.
 
-    The complex scattering potential is defined by *rho* + 1j *irho*.
-    Note that this differs from *rho* + 1j *mu*/(2 *lambda*) more
-    traditionally used in neutron reflectometry, and *N* *re* (*f1* + 1j *f2*)
+    The complex scattering potential is defined by $\rho + j \rho_i$.
+    Note that this differs from $\rho + j \mu/(2 \lambda)$ more
+    traditionally used in neutron reflectometry, and $N r_e (f_1 + j f_2)$
     traditionally used in X-ray reflectometry.
 
-    Given that *f1* and *f2* are always wavelength dependent for X-ray
+    Given that $f_1$ and $f_2$ are always wavelength dependent for X-ray
     reflectometry, it will not make much sense to uses this for wavelength
     varying X-ray measurements.  Similarly, some isotopes, particularly
     rare earths, show wavelength dependence for neutrons, and so
@@ -196,7 +196,7 @@ class Material(Scatterer):
                 Density is *natural_density* / (natural mass/isotope mass)
             *relative_density* : unitless
                 Density is *relative_density* * formula density
-            *cell_volume* : |A^3|
+            *cell_volume* : |Ang^3|
                 Density is mass / *cell_volume*
 
         The resulting material will have a *density* attribute with the

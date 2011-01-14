@@ -29,7 +29,7 @@ Predefined bounds are::
     Normal
         range (-inf, inf) with gaussian probability
 
-Using :function:`int_bounds` you can create the appropriate bounded
+Using :func:`int_bounds` you can create the appropriate bounded
 or unbounded object for the kind of input.
 
 New bounds can be defined following the abstract base class

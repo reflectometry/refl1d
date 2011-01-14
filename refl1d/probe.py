@@ -1,7 +1,6 @@
 # This program is in the public domain
-# Tuthor: Paul Kienzle
-
-"""
+# Author: Paul Kienzle
+r"""
 .. sidebar:: On this Page
 
         * :class:`Base probe <refl1d.probe.Probe>`
@@ -17,12 +16,20 @@ energy of the radiation.
 
 For time-of-flight measurements, each angle should be represented as
 a different probe.  This eliminates the 'stitching' problem, where
-Q = 4 pi sin(T1)/L1 = 4 pi sin(T2)/L2 for some (T1,L1) and (T2,L2).
+$Q = 4 \pi \sin(\theta_1)/\lambda_1 = 4 \pi \sin(\theta_2)/\lambda_2$ 
+for some $(\theta_1,\lambda_1)$ and $(\theta_2,\lambda_2)$.
 With stitching, it is impossible to account for effects such as
 alignment offset since two nominally identical Q values will in
 fact be different.  No information is lost treating the two data sets
 separately --- each points will contribute to the overall cost function
 in accordance with its statistical weight.
+
+
+.. [#Daymond2002] M.R. Daymond, P.J. Withers and M.W. Johnson;
+   The expected uncertainty of diffraction-peak location",
+   Appl. Phys. A 74 [Suppl.], S112 - S114 (2002).
+   http://dx.doi.org/10.1007/s003390201392
+
 """
 
 # TOF stitching introduces a lot of complexity.
@@ -77,12 +84,12 @@ def make_probe(**kw):
 
 
 class Probe(object):
-    """
+    r"""
     Defines the incident beam used to study the material.
 
     The probe is used to compute the scattering potential for the individual
     materials that the beam will bass through.  This potential is normalized
-    to density=1 g/cm**3.  To use these values in the calculation of
+    to density=1 |g/cm^3|.  To use these values in the calculation of
     reflectivity, they need to be scaled by density and volume fraction.
 
     The choice of normalized density is dictated by the cost of lookups
@@ -90,8 +97,8 @@ class Probe(object):
     is necessary during the fit, rather than one for each choice of density
     even when density is not the fitting parameter.
 
-    For calculation purposes, probe needs to return the values, Q_calc, at
-    which the model is evaluated.  This is normally going to be the measured
+    For calculation purposes, probe needs to return the values $Q_\text{calc}$
+    at which the model is evaluated.  This is normally going to be the measured
     points only, but for some systems, such as those with very thick layers,
     oversampling is needed to avoid aliasing effects.
 
@@ -182,11 +189,10 @@ class Probe(object):
 
     @staticmethod
     def alignment_uncertainty(w,I,d=0):
-        """
+        r"""
         Compute alignment uncertainty.
 
-        Parameters
-        ----------
+        **Parameters:**
 
         *w* : float | degrees
             Rocking curve full width at half max.
@@ -195,19 +201,18 @@ class Probe(object):
         *d* = 0: float | degrees
             Motor step size
 
-        Returns
-        -------
+        **Returns:**
 
         *dtheta* : float | degrees
         
             uncertainty in alignment angle
         
-        Algorithm
-        ---------
+        **Algorithm:**
+        
         The uncertainty in the peak position is not the same as the width 
         of the peak.  The peak stays roughly the same as statistics are 
         improved, but the uncertainty in position and width will 
-        decrease.\ [#Daymond2002]_ There is an additional uncertainty in 
+        decrease. [#Daymond2002]_ There is an additional uncertainty in 
         the angle due to motor step size, easily computed from the 
         variance in a uniform distribution.  Combined, the uncertainty 
         in *theta_offset* is:
@@ -219,11 +224,6 @@ class Probe(object):
         where $w$ is the full-width of the peak in radians at half maximum, 
         $I$ is the integrated intensity under the peak and $d$ is the motor 
         step size is radians.
-
-        .. [#Daymond2002] M.R. Daymond, P.J. Withers and M.W. Johnson;
-           The expected uncertainty of diffraction-peak location",
-           Appl. Phys. A 74 [Suppl.], S112 - S114 (2002).
-           http://dx.doi.org/10.1007/s003390201392
         """
 
         return sqrt(w**2/I + d**2/12.)
@@ -375,7 +375,7 @@ class Probe(object):
         self._set_calc(self.T,self.L)
 
     def resolution_guard(self):
-        """
+        r"""
         Make sure each measured $Q$ point has at least 5 calculated $Q$
         points contributing to it in the range $[-3\Delta Q,3\Delta Q]$.
         """
@@ -479,8 +479,8 @@ class Probe(object):
     def plot_resolution(self, theory=None):
         import pylab
         pylab.plot(self.Q, self.dQ)
-        pylab.xlabel('Q ($\AA^{-1}$)')
-        pylab.ylabel('Q resolution ($1-\sigma \AA^{-1}$)')
+        pylab.xlabel(r'Q ($\AA^{-1}$)')
+        pylab.ylabel(r'Q resolution ($1-\sigma \AA^{-1}$)')
         pylab.title('Measurement resolution')
 
 
@@ -733,7 +733,7 @@ class PolarizedNeutronProbe(object):
             Q,pp,pm,mp,mm = theory
             Q,SA,_ = spin_asymmetry(Q,pp,None,Q,mm,None)
             pylab.plot(Q, SA, hold=True)
-        pylab.xlabel('Q (inv Angstroms)')
+        pylab.xlabel(r'Q (\AA^{-1})')
         pylab.ylabel(r'spin asymmetry $(R^+ -\, R^-) / (R^+ +\, R^-)$')
 
     def _xs_plot(self, plotter, theory=None, **kw):
@@ -753,11 +753,10 @@ class PolarizedNeutronProbe(object):
         if not isheld: pylab.hold(False)
 
 def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
-    """
+    r"""
     Compute spin asymmetry for R++, R--.
 
-    Parameters
-    ----------
+    **Parameters:**
     
     *Qp*, *Rp*, *dRp* : vector
         Measured ++ cross section and uncertainty.
@@ -766,14 +765,12 @@ def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
     
     If *dRp*, *dRm* are None then the returned uncertainty will also be None.
 
-    Returns
-    -------
+    **Returns:**
     
     *Q*, *SA*, *dSA* : vector
         Computed spin asymmetry and uncertainty.
 
-    Algorithm
-    ---------
+    **Algorithm:**
     
     Spin asymmetry, $S_A$, is:
     
@@ -900,7 +897,7 @@ class ProbeSet(Probe):
         *Not implemented*
 
         Points within *tol* of each other and with the same resolution
-        are combined by interpolating them to a common Q value then averaged
+        are combined by interpolating them to a common $Q$ value then averaged
         using Gaussian error propagation.
 
         :Returns: probe | Probe
@@ -909,27 +906,28 @@ class ProbeSet(Probe):
         :Algorithm:
 
         To interpolate a set of points to a common value, first find the
-        common *Q* value:
+        common $Q$ value:
 
         .. math::
 
             \hat Q = \sum{Q_k} / n
 
-        Then for each dataset *k*, find the interval [i,i+1] containing the
-        value *Q*, and use it to compute interpolated value for *R*:
+        Then for each dataset $k$, find the interval $[i,i+1]$ containing the
+        value $Q$, and use it to compute interpolated value for $R$:
 
         .. math::
 
-            w_k &=& (\hat Q - Q_k_i)/(Q_k_{i+1} - Q_k_i) \\
-            \hat R_k &=& w_k R_k_{i+1} + (1-w_k) R_k_{i+1} \\
-            \hat \sigma_{R_k} &=& \sqrt{ w^2_k \sigma^2_{R_k_i} + (1-w_k)^2 \sigma^2_{R_k_{i+1}} } / n
+            w &= (\hat Q - Q_i)/(Q_{i+1} - Q_i) \\
+            \hat R &= w R_{i+1} + (1-w) R_{i+1} \\
+            \hat \sigma_{R} &=
+                \sqrt{ w^2 \sigma^2_{R_i} + (1-w)^2 \sigma^2_{R_{i+1}} } / n
 
-        Average the resulting *R* using Gaussian error propagation:
+        Average the resulting $R$ using Gaussian error propagation:
 
         .. math::
 
-            \hat R &=& \sum{\hat R_k}/n \\
-            \hat \sigma_R &=& \sqrt{\sum \hat \sigma_{R_k}^2}/n
+            \hat R &= \sum{\hat R_k}/n \\
+            \hat \sigma_R &= \sqrt{\sum \hat \sigma_{R_k}^2}/n
 
         """
         raise NotImplementedError

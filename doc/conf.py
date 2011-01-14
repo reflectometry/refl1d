@@ -26,7 +26,7 @@ import sys, os
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 
-sys.path.append(os.path.abspath(os.path.dirname('../../refl1d')))
+sys.path.append(os.path.abspath('..'))
 sys.path.append(os.path.abspath('_extensions'))
 
 """
@@ -35,7 +35,6 @@ import glob
 buildpath = glob.glob('../../build/lib*')[0]
 sys.path.insert(0, os.path.abspath(buildpath))
 #sys.path.insert(0, os.path.abspath('../..'))
-sys.path.insert(0, os.path.abspath('_extensions'))
 """
 
 # -- General configuration -----------------------------------------------------
@@ -43,13 +42,17 @@ sys.path.insert(0, os.path.abspath('_extensions'))
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest',
-              'sphinx.ext.coverage', 'sphinx.ext.pngmath',
+              'sphinx.ext.coverage', 
+              #'sphinx.ext.pngmath',
+              'sphinx.ext.jsmath',
               #'only_directives',
               #'matplotlib.sphinxext.mathmpl',
               'matplotlib.sphinxext.only_directives',
               'matplotlib.sphinxext.plot_directive',
               #'inheritance_diagram',
+              'dollarmath',
              ]
+jsmath_path = 'MathJax/MathJax.js'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -64,8 +67,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Refl1D documentation'
-copyright = u'2010, Nikunj Patel'
+project = u'Refl1D'
+copyright = u'2010, Paul Kienzle, Nikunj Patel, James Krycka'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -88,7 +91,7 @@ release = '0.1'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build']
+exclude_trees = ['_*','build','MathJax','plots']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
@@ -223,6 +226,14 @@ latex_documents = [
 
 # Additional stuff for the LaTeX preamble.
 #latex_preamble = ''
+LATEX_PREAMBLE=r"""
+\renewcommand{\AA}{\text{\r{A}}} % Allow \AA in math mode
+\usepackage[utf8]{inputenc}      % Allow unicode symbols in text
+\DeclareUnicodeCharacter {00B7} {\ensuremath{\cdot}}   % cdot
+\DeclareUnicodeCharacter {00B0} {\ensuremath{^\circ}}  % degrees
+\DeclareUnicodeCharacter {212B} {\AA}                  % Angstrom
+"""
+latex_elements = {'preamble' : LATEX_PREAMBLE}
 
 # Documents to append as an appendix to all manuals.
 #latex_appendices = []
@@ -230,6 +241,10 @@ latex_documents = [
 # If false, no module index is generated.
 #latex_domain_indices = True
 
+
+if os.path.exists('rst_prolog'):
+    with open('rst_prolog') as fid:
+        rst_prolog = fid.read()
 
 # -- Options for manual page output --------------------------------------------
 

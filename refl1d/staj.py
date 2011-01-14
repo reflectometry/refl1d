@@ -178,14 +178,14 @@ class MlayerModel(object):
     layer parameters are represented as vectors with one entry for each
     top, middle and bottom layer using the following attributes:
 
-        *thickness*, *roughness* (Angstroms)
+        *thickness*, *roughness* : float | |Ang|
             layer thickness and FWHM roughness
-        *rho*, *irho*, *incoh* (inv A**2 x 10^6)
+        *rho*, *irho*, *incoh* : float | |1e-6/Ang^2|
             complex coherent rho + 1j * irho and incoherent SLD
 
     Computed attributes are provided for convenience:
 
-        *sigma_roughness* (Angstroms)
+        *sigma_roughness* : float | |Ang|
             1-sigma equivalent roughness for erf profile
         *mu*
             absorption cross section (2*wavelength*irho + incoh)
@@ -665,7 +665,7 @@ class MlayerModel(object):
 #for a non-magnetic (6 values) or a magnetic (4 values) Staj file.
 #
 class MlayerMagnetic(object):
-    """
+    r"""
     Model definition used by GJ2 program.
 
     **Attributes:**
@@ -683,7 +683,8 @@ class MlayerMagnetic(object):
     Resolution is defined by wavelength and by incident angle:
 
         *wavelength*, *wavelength_dispersion*, *angular_divergence*
-            resolution equation uses dQ/Q = dL/L + dT/sin(T)
+            resolution is calculated as 
+            $\Delta Q/Q = \Delta\lambda/\lambda + \Delta\theta/\sin\theta$
 
     Additional beam parameters correct for intensity, background and
     possibly guide field angle:
@@ -707,7 +708,7 @@ class MlayerMagnetic(object):
     same width. The following attributes are used:
 
         *roughness_steps*
-            number of roughness steps (13 is coarse; 51 is fine)
+            number of roughness steps (13 is coarse; 51 is fine)            
         *roughness_profile*
             roughness profile is either 'E' for error function or 'H' for tanh
 
@@ -719,20 +720,22 @@ class MlayerMagnetic(object):
     layer parameters are represented as vectors with one entry for each
     top, middle and bottom layer using the following attributes:
 
-        *thickness*, *roughness* (Angstroms)
+        *thickness*, *roughness* : float | |Ang|
             layer thickness and FWHM roughness
-        *rho*, *irho*
-            complex SLD rho + 1j * irho (x 10^6)
-        *mthickness*, *mroughness* (Angstroms)
-        *mrho*, *mtheta*
-            magnetic SLD (x 10^6) and angle (degrees)
-        *sigma_roughness*, *sigma_mroughness* (Angstroms)
+        *rho*, *irho* : float, float | $16 \pi \rho$, $irho/(2\lambda)$
+            complex scattering length density
+        *mthickness*, *mroughness* : float | |Ang|
+            magnetic thickness and roughness
+        *mrho* : float | $16 \pi \rho_M$
+            magnetic scattering length density
+        *mtheta* : float | |deg|
+            magnetic angle
+        *sigma_roughness*, *sigma_mroughness* : float | |Ang|
             computed 1-sigma equivalent roughness for erf profile
 
-    .. Note::
-        The file itself stores SLD as 16*pi*rho, irho/(2 wavelength)
-        with an additional column of 0 for magnetic SLD. This conversion will
-        happen automatically on read/write.
+    The conversion from stored $16 \pi \rho$, $\rho_i/(2\lambda)$ to
+    in memory $10^6 \rho$,$10^6 \rho_i$  happens automatically on
+    read/write.
 
     The layers are ordered from surface to substrate.
 
@@ -740,8 +743,10 @@ class MlayerMagnetic(object):
 
         *fitpars*
             individual fit parameter numbers
+
         *constraints*
             constraints between layers
+
         *output_file*
             name of the output file
 

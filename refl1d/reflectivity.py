@@ -3,15 +3,16 @@
 """
 .. sidebar:: On this Page
 
-        * :class:`Reflectivity <refl1d.reflectivity.reflectivity>`
-        * :class:`Reflectivity amplitude <refl1d.reflectivity.reflectivity_amplitude>`
-        * :class:`Magenetic reflectivity <refl1d.reflectivity.magnetic_reflectivity>`
+   * :class:`Reflectivity <refl1d.reflectivity.reflectivity>`
+   * :class:`Reflectivity amplitude <refl1d.reflectivity.reflectivity_amplitude>`
+   * :class:`Magnetic reflectivity <refl1d.reflectivity.magnetic_reflectivity>`
 
 Basic reflectometry calculations.
 
 :class:`reflectivity <refl1d.reflectivity.reflectivity>`,
 :class:`magnetic_reflectivity <refl1d.reflectivity.magnetic_reflectivity>`,
 :class:`unpolarized_magnetic <refl1d.reflectivity.unpolarized_magnetic>`:
+
     Slab model reflectivity calculator with optional absorption and roughness.
     The function reflectivity_amplitude returns the complex waveform.
     Slab model with supporting magnetic scattering.  The function
@@ -21,6 +22,7 @@ Basic reflectometry calculations.
     of the magnetic scattering using an unpolarized beam.
 
 :class:`convolve <refl1d.reflectivity.convolve>`
+
     Apply Q-dependent resolution function to the theory.
 """
 
@@ -40,22 +42,22 @@ from . import reflmodule
 
 def reflectivity(*args, **kw):
     """
-    Calculate reflectivity |r(k_z)|^2 from slab model.
+    Calculate reflectivity $|r(k_z)|^2$ from slab model.
 
     :Parameters :
-        *depth* : float[N] | angstrom
+        *depth* : float[N] | |Ang|
             Thickness of the individual layers (incident and substrate
             depths are ignored)
-        *sigma* : float OR float[N-1] | angstrom
+        *sigma* : float OR float[N-1] | |Ang|
             Interface roughness between the current layer and the next.
             The final layer is ignored.  This may be a scalar for fixed
             roughness on every layer, or None if there is no roughness.
-        *rho*, *irho* : float[N] OR float[N,K] | 10^-6 angstrom**-2
+        *rho*, *irho* : float[N] OR float[N,K] | |1e-6/Ang^2|
             Real and imaginary scattering length density.  Use multiple
             columns when you have kz-dependent scattering length densities,
             and set rho_offset to select the appropriate one.  Data should
             be stored in column order.
-        *kz* : float[M] | angstrom**-1
+        *kz* : float[M] | |1/Ang|
             Points at which to evaluate the reflectivity
         *rho_index* : integer[M]
             *rho* and *irho* columns to use for the various kz.
@@ -80,19 +82,19 @@ def reflectivity_amplitude(kz=None,
     Calculate reflectivity r(k_z) from slab model.
 
     :Parameters :
-        *depth* : float[N] | angstrom
+        *depth* : float[N] | |Ang|
             Thickness of the individual layers (incident and substrate
             depths are ignored)
-        *sigma* = 0 : float OR float[N-1] | angstrom
+        *sigma* = 0 : float OR float[N-1] | |Ang|
             Interface roughness between the current layer and the next.
             The final layer is ignored.  This may be a scalar for fixed
             roughness on every layer, or None if there is no roughness.
-        *rho*, *irho* = 0: float[N] OR float[N,K] | 10^-6 angstrom**-2
+        *rho*, *irho* = 0: float[N] OR float[N,K] | |1e-6/Ang^2|
             Real and imaginary scattering length density.  Use multiple
             columns when you have kz-dependent scattering length densities,
             and set *rho_index* to select amongst them.  Data should be
             stored in column order.
-        *kz* : float[M] | angstrom**-1
+        *kz* : float[M] | |1/Ang|
             Points at which to evaluate the reflectivity
         *rho_index* = 0 : integer[M]
             *rho* and *irho* columns to use for the various kz.
@@ -140,16 +142,16 @@ def magnetic_reflectivity(*args,**kw):
 
     The parameters are as follows:
 
-    Q (angstrom**-1)
+    Q (|1/Ang|)
         points at which to evaluate the reflectivity
-    depth (angstrom)
+    depth (|Ang|)
         thickness of the individual layers (incident and substrate
         depths are ignored)
     rho (microNb)
         Scattering length density.
     mu (microNb)
         absorption. Defaults to 0.
-    wavelength (angstrom)
+    wavelength (|Ang|)
         Incident wavelength (only affects absorption).  May be a vector.
         Defaults to 1.
     rho_m (microNb)

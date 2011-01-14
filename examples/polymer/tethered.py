@@ -105,7 +105,7 @@ H_initiator.rho.range(-0.5,0.5)
 
 
 # ================= Data files ===========================
-instrument = ncnrdata.NG7(Qlo=0.005, slits_at_Qlo=0.075)
+instrument = NCNR.NG7(Qlo=0.005, slits_at_Qlo=0.075)
 D_probe = instrument.load('10ndt001.refl', back_reflectivity=True)
 H_probe = instrument.load('10nht001.refl', back_reflectivity=True)
 

@@ -36,7 +36,11 @@ help:
 clean:
 	-rm -rf $(BUILDDIR)/*
 
-html:
+_build/html:
+	mkdir -p _build/html/_static
+	-cp -r MathJax _build/html/_static/MathJax
+
+html: _build/html
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
@@ -102,6 +106,8 @@ latexpdf:
 	@echo "Running LaTeX files through pdflatex..."
 	make -C $(BUILDDIR)/latex all-pdf
 	@echo "pdflatex finished; the PDF files are in $(BUILDDIR)/latex."
+
+
 
 text:
 	$(SPHINXBUILD) -b text $(ALLSPHINXOPTS) $(BUILDDIR)/text

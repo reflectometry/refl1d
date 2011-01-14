@@ -30,7 +30,7 @@ The above example uses a function interface.  Other interface include:
     Tanh(width=sigma)   sech**2 interface (cumulative density ~ tanh(z))
     Linear(width=w)     boxcar interface (cumulative density ~ linear(z))
 
-You can plot the available interfaces using :function:`demo`.
+You can plot the available interfaces using :func:`demo`.
 
 As you can see from the above plot, the hyperbolic tangent profile will be
 indistinguishable from the error function profile in all practical
@@ -43,7 +43,7 @@ rather than $1-\sigma$::
     Erf.as_fwhm(width=fwhm)  Gaussian interface using FWHM
     Tanh.as_fwhm(width=fwhm) sech**2 interface using FWHM
 
-To see what the effect of choosing width FWHM, use :function:`demo_fwhm`
+To see what the effect of choosing width FWHM, use :func:`demo_fwhm`
 
 Defined using FWHM, tanh and erf profiles are significantly different
 for the same value of width.  From the 1-sigma plots above, though, we
@@ -242,12 +242,12 @@ class Linear(Interface):
             return numpy.clip(2*z/w,-w/2,w/2)
 
 class Tanh(Interface):
-    """
+    r"""
     Hyperbolic tangent profile
 
     *width* (Parameter: 0 Angstroms)
 
-        1-sigma equivalent roughness.  For roughness w measured by the
+        $1-\sigma$ equivalent roughness.  For roughness $w$ measured by the
         full width at half maximum (FWHM), use Tanh.as_fwhm(w).
 
     *name* (string: "tanh")
@@ -256,13 +256,13 @@ class Tanh(Interface):
 
     .. math:
     
-        \textoperator{CDF}(z) = (1 + \tanh(C/wz))/2
-        \textoperator{PDF}(z) = C/(2w) \sech((C/w)z)^2
-        \textoperator{PPF}(z) = (w/C) \tanh^{-1}(2z-1)
+        \text{CDF}(z) = (1 + \tanh(C/wz))/2
+        \text{PDF}(z) = C/(2w) \sech((C/w)z)^2
+        \text{PPF}(z) = (w/C) \tanh^{-1}(2z-1)
 
     where $w$ is the interface roughness and $C$ is a scaling constant.
-    $C$ is $\atanh(\erf(1/\sqrt(2)))$ for width defined by $1-\sigma$, 
-    or $C$ is $2\cosh^{-1}(\sqrt(2))$ for width defined by FWHM.
+    $C$ is $\tanh^{-1}(\text{erf}(1/\sqrt(2)))$ for width defined 
+    by $1-\sigma$, or $C$ is $2\cosh^{-1}(\sqrt(2))$ for width defined by FWHM.
 
     .. Note::
        This profile was derived from the free energy of a nonuniform system:

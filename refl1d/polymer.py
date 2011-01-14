@@ -194,7 +194,7 @@ class VolumeProfile(Layer):
     Initial values for the function parameters can be given using name=value.
     These values can be scalars or fitting parameters.  The function will
     be called with the current parameter values as arguments.  The layer
-    thickness can be computed as :func:`layer_thickness`(z).
+    thickness can be computed as :func:`layer_thickness`.
 
     """
     # TODO: test that thickness(z) matches the thickness of the layer

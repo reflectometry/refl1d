@@ -1,4 +1,4 @@
-"""
+r"""
 .. sidebar:: On this Page
 
         * :class:`Cheby volume fraction <refl1d.cheby.ChebyVF>`
@@ -142,7 +142,7 @@ class ChebyVF(Layer):
 
     The control points $z_k$ are located at $L z(n)$, with $L$ the layer
     thickness, $n$ the number of control points and $z(n)$ the locations
-    returned by :function:cheby_points.
+    returned by :func:cheby_points.
 
     The materials can either use the scattering length density directly,
     such as PDMS = SLD(0.063, 0.00006) or they can use chemical composition
@@ -191,7 +191,7 @@ class ChebyVF(Layer):
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
 
 def _profile(c, t, method):
-    """
+    r"""
     Evaluate the chebyshev approximation c at points x.
 
     If method is 'direct' then $c_i$ are the coefficients for the chebyshev
@@ -199,7 +199,7 @@ def _profile(c, t, method):
 
     If method is 'interp' then $c_i$ are the values of the interpolated
     function $f$ evaluated at the chebyshev points returned by
-    :function:`cheby_points`.
+    :func:`cheby_points`.
     """
     if method == 'interp':
         c = cheby_coeff(c)
@@ -214,7 +214,7 @@ def cheby_approx(n, f, range=[0,1]):
     return cheby_coeff(fx)
 
 def cheby_val(c, x, method='direct'):
-    """
+    r"""
     Evaluate the chebyshev approximation c at points x.
 
     The values $c_i$ are the coefficients for the chebyshev
@@ -231,7 +231,7 @@ def cheby_val(c, x, method='direct'):
     return y*(0.5*d) + (0.5*c[0] - dd)
 
 def cheby_points(n, range=[0,1]):
-    """
+    r"""
     Return the points in at which a function must be evaluated to
     generate the order $n$ Chebyshev approximation function.
 

@@ -21,8 +21,8 @@ pretend instrument SP:2. The complete geometry needs to include information
 to calculate wavelength resolution (wavelength and wavelength dispersion) 
 as well as angular resolution (slit distances and openings, and perhaps
 sample size and sample warp).  In this case, we are using a scanning
-monochromatic instrument with slits of 0.1 mm below 0.5\ |degrees| and 
-opening slits  above 0.5\ |degrees| starting at 0.2 mm.  The monochromatic
+monochromatic instrument with slits of 0.1 mm below 0.5\ |deg| and 
+opening slits  above 0.5\ |deg| starting at 0.2 mm.  The monochromatic
 instrument assumes a fixed $\Delta \theta / \theta$ while opening.
 
     >>> from refl1d.names import *
@@ -145,7 +145,7 @@ class Monochromatic(object):
         *d_s1*, *d_s2* : float | mm
             distance from sample to pre-sample slits 1 and 2; post-sample
             slits are ignored
-        *wavelength* : float | Angstrom
+        *wavelength* : float | |Ang|
             wavelength of the instrument
         *dLoL* : float
             constant relative wavelength dispersion; wavelength range and
@@ -158,9 +158,9 @@ class Monochromatic(object):
         *slits_at_Qlo* : float OR (float,float) | mm
             equivalent to slits_at_Tlo, for instruments that are controlled by
             Q rather than theta
-        *Tlo*, *Thi* : float | degrees
+        *Tlo*, *Thi* : float | |deg|
             range of opening slits, or inf if slits are fixed.
-        *Qlo*, *Qhi* : float | inv Angstroms
+        *Qlo*, *Qhi* : float | |1/Ang|
             range of opening slits when instrument is controlled by Q.
         *slits_below*, *slits_above* : float OR (float,float) | mm
             slit 1 and slit 2 openings below Tlo and above Thi; again, these
@@ -172,7 +172,7 @@ class Monochromatic(object):
             miss the sample and are not reflected onto the detector, so the
             sample itself acts as a slit, therefore the width of the sample
             may be needed to compute the resolution correctly
-        *sample_broadening* : float | degrees FWHM
+        *sample_broadening* : float | |deg| FWHM
             amount of angular divergence (+) or focusing (-) introduced by
             the sample; this is caused by sample warp, and may be read off
             of the rocking curve by subtracting (s1+s2)/2/(d_s1-d_s2) from
@@ -208,9 +208,9 @@ class Monochromatic(object):
         Return a probe for use in simulation.
 
         :Parameters:
-            *Q* : [float] | Angstroms
+            *Q* : [float] | |Ang|
                 Q values to be measured.
-            *T* : [float] | degrees
+            *T* : [float] | |deg|
                 Angles to be measured.
 
         Additional keyword parameters
@@ -256,9 +256,9 @@ class Monochromatic(object):
         Calculate resolution at each angle.
 
         :Return:
-            *T*, *dT* : [float] | degrees
+            *T*, *dT* : [float] | |deg|
                 Angles and angular divergence.
-            *L*, *dL* : [float] | Angstroms
+            *L*, *dL* : [float] | |Ang|
                 Wavelengths and wavelength dispersion.
         """
         self._translate_Q_to_theta(kw)
@@ -324,7 +324,7 @@ class Monochromatic(object):
         Compute the angular divergence for given slits and angles
 
         :Parameters:
-            *T* OR *Q* : [float] | degrees OR |1/A|
+            *T* OR *Q* : [float] | |deg| OR |1/Ang|
                 measurement angles
             *slits* : float OR (float,float) | mm
                 total slit opening from edge to edge, not beam center to edge
@@ -332,11 +332,11 @@ class Monochromatic(object):
                 distance from sample to slit 1 and slit 2
             *sample_width* : float | mm
                 size of sample
-            *sample_broadening* : float | degrees FWHM
+            *sample_broadening* : float | |deg| FWHM
                 resolution changes from sample warp
 
         :Returns:
-            *dT* : [float] | degrees FWHM
+            *dT* : [float] | |deg| FWHM
                 angular divergence
 
         *sample_broadening* can be estimated from W, the full width at half
@@ -420,14 +420,14 @@ class Pulsed(object):
             name of the instrument
         *radiation* : string | xray, neutron
             source radiation type
-        *T* : float | degrees
+        *T* : float | |deg|
             sample angle
         *slits* : float OR (float,float) | mm
             slit 1 and slit 2 openings
         *d_s1*, *d_s2* : float | mm
             distance from sample to pre-sample slits 1 and 2; post-sample
             slits are ignored
-        *wavelength* : (float,float) | Angstrom
+        *wavelength* : (float,float) | |Ang|
             wavelength range for the measurement
         *dLoL* : float
             constant relative wavelength dispersion; wavelength range and
@@ -437,7 +437,7 @@ class Pulsed(object):
             miss the sample and are not reflected onto the detector, so the
             sample itself acts as a slit, therefore the width of the sample
             may be needed to compute the resolution correctly
-        *sample_broadening* : float | degrees FWHM
+        *sample_broadening* : float | |deg| FWHM
             amount of angular divergence (+) or focusing (-) introduced by
             the sample; this is caused by sample warp, and may be read off
             of the rocking curve by subtracting 0.5*(s1+s2)/(d_s1-d_s2) from
@@ -508,7 +508,7 @@ class Pulsed(object):
         :Parameters:
             *sample* : Stack
                 Reflectometry model
-            *T* : [float] | degrees
+            *T* : [float] | |deg|
                 List of angles to be measured, such as [0.15,0.4,1,2].
             *slits* : [float] or [(float,float)] | mm
                 Slit settings for each angle. Default is 0.2*T
@@ -520,7 +520,7 @@ class Pulsed(object):
                 Wavelength resolution
             *normalize* = True : boolean
                 Whether to normalize the intensities
-            *theta_offset* = 0 : float | degrees
+            *theta_offset* = 0 : float | |deg|
                 Sample alignment error
             *background* = 0 : float
                 Background counts per incident neutron (background is
