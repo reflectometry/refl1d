@@ -7,7 +7,7 @@ from numpy.distutils.core import setup
 from numpy.distutils.misc_util import Configuration
 
 def configuration(parent_package='', top_path=None):
-    config = Configuration('pak2010', parent_package, top_path)
+    config = Configuration('refl1d', parent_package, top_path)
 
     # Add subpackages (top level name spaces) and data directories.
     # Note that subpackages may have their own setup.py to drill down further.

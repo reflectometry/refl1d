@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2006-2010, University of Maryland
+# Copyright (C) 2006-2011, University of Maryland
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -56,9 +56,9 @@ PYTHON = "python"
 INNO   = r"C:\Program Files\Inno Setup 5\ISCC.exe"  # command line operation
 
 # URL of the Subversion repository where the source code lives
-SVN_REPO_URL = "svn://svn@danse.us/reflectometry/branches/pak2010"
+SVN_REPO_URL = "svn://svn@danse.us/reflectometry/trunk/refl1d"
 # Name of the package
-PKG_NAME = "pak2010" # temporary name
+PKG_NAME = "refl1d" # temporary name
 # Name of the application we're building
 APP_NAME = "refl1d" # temporary name
 # Relative path for local install (by default the installation path on Windows
@@ -110,7 +110,7 @@ def build_it():
     # Get the version string for the application to use later.
     # This has to be done after we have checked out the repository.
     if RUN_DIR == TOP_DIR:
-        from pak2010.version import version
+        from refl1d.version import version
     else:
         from version import version
 
