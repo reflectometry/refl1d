@@ -9,7 +9,7 @@ import subprocess
 import numpy
 import pylab
 import dream
-from refl1d.stajconvert import load_mlayer
+from .stajconvert import load_mlayer
 from .fitter import DEFit, AmoebaFit, SnobFit, BFGSFit, RLFit, PTFit, FitProblem
 from . import util
 from .mystic import parameter
@@ -90,7 +90,7 @@ class FitProxy(object):
         self.opts = opts
     def fit(self):
         import time
-        from refl1d.fitter import Result
+        from .fitter import Result
         if self.fitter is not None:
             t0 = time.clock()
             optimizer = self.fitter(self.problem)
@@ -184,9 +184,6 @@ def load_staj(file):
 
 def load_script(file, options):
     ctx = dict(__file__=file)
-    #refl1d.context.math_context(ctx)
-    #refl1d.context.refl_context(ctx)
-    #refl1d.context.fitting_context(ctx)
     argv = sys.argv
     sys.argv = [file] + options
     execfile(file, ctx) # 2.x
@@ -203,7 +200,6 @@ def load_script(file, options):
     return job
 
 def load_job(args):
-    #import refl1d.context
     file, options = args[0], args[1:]
 
     if file.endswith('.staj'):
@@ -262,7 +258,7 @@ def make_store(job, opts):
 
 
 def run_profile(model):
-    from refl1d.util import profile
+    from .util import profile
     p = random_population(model,1000)
     print p.shape
     profile(map,model.nllf,p)

@@ -1,10 +1,19 @@
+"""
+Exported names
+
+In model definition scripts, rather than importing symbols one by one, you 
+can simply perform:
+
+    from numpy import *
+    from refl1d.names import *
+
+This is bad style for library and applications but convenient for 
+small scripts.
+"""
 import sys
-
-from numpy import *
-
+import numpy
 from periodictable import elements, formula
 from .mystic.parameter import Parameter
-from .version import __version__
 from .experiment import Experiment, plot_sample
 from .material import SLD, Material, Compound, Mixture
 from .model import Slab, Stack

@@ -1,88 +1,19 @@
 # This program is in the public domain
 # Author: Paul Kienzle
 """
-1-D Reflectometry Models
+1-D Reflectometry Modeller
 
-First define materials that you are going to use.
+This package provides tools for modeling a variety of systems from
+simple slabs to complex systems with a mixture models involving 
+smoothly varying layers.
 
-Common materials defined in :module:`materialdb`::
+X-ray and neutron and polarized neutron data can be loaded and the model 
+parameters adjusted to achieve the best fit.
 
-    *air*, *water*, *silicon*, *sapphire*, ...
+A graphical interface allows direct manipulation of the model profiles.
 
-Specific elements, molecules or mixtures can be added using the
-classes in :module:`material`::
-
-    *SLD*       unknown material with fittable SLD
-    *Material*  known chemical formula and fittable density
-    *Mixture*   known alloy or mixture with fittable fractions
-
-Materials can be stacked as slabs, with a thickness for each layer and
-roughness at the top of each layer.  Because this is such a common
-operation, there is special syntax to do it, using '/' to specify
-thickness and '%' to specify roughness.  For example, the following
-is a 30 A gold layer on top of silicon, with a silicon:gold interface
-of 5 A and a gold:air interface of 2 A::
-
-    >> from refl1d import *
-    >> sample = silicon%5 + gold/30%2 + air
-    >> print sample
-    Si + Au/30 + air
-
-Individual layers and stacks can be used in multiple models, with all
-parameters shared except those that are explicitly made separate.  The
-syntax for doing so is similar to that for lists.  For example, the
-following defines two samples, one with Si+Au/30+air and the other with
-Si+Au/30+alkanethiol/10+air, with the silicon/gold layers shared::
-
-
-    >> alkane_thiol = Material('C2H4OHS',bulk_density=0.8,name='thiol')
-    >> sample1 = silicon%5 + gold/30%2 + air
-    >> sample2 = sample1[:-1] + alkane_thiol/10%3 + air
-    >> print sample2
-    Si + Au/30 + thiol/10 + air
-
-Stacks can be repeated using a simple multiply operation.  For example,
-the following gives a cobalt/copper multilayer on silicon::
-
-    >> Cu = Material('Cu')
-    >> Co = Material('Co')
-    >> sample = Si + (Co/30 + Cu/10)*20 + Co/30 + air
-    >> print sample
-    Si + (Co/30 + Cu/10)x20 + Co/30 + air
-
-Multiple repeat sections can be included, and repeats can contain repeats.
-Even freeform layers can be repeated.  By default the interface between
-the repeats is the same as the interface between the repeats and the cap.
-The cap interface can be set explicitly.  See :class:`model.Repeat` for
-details.
+See http://www.reflectometry.org/danse/reflectometry for online
+manuals.
 """
-_ = """
-import sys
-from periodictable import elements
-from refl1d.mystic import Parameter
-from .version import __version__
-from .experiment import Experiment
-from .material import SLD, Material, Compound, Mixture
-from .model import Slab, Stack
-from .polymer import PolymerBrush, VolumeProfile, layer_thickness
-from .freeform import Freeform
-from .cheby import FreeformCheby, ChebyVF, cheby_approx
-from .interface import Erf
-from .probe import Probe, ProbeSet, NeutronProbe, XrayProbe
-from .fitter import preview, fit, DEFit, SnobFit, mesh, FitProblem, MultiFitProblem
-try:
-    from .sampler import draw_samples
-except Exception, exc:
-    import traceback
-    print traceback.print_exc()
-    print "==== exception ignored"
-from .stajconvert import load_mlayer, save_mlayer
-from . import ncnrdata, snsdata
 
-# Pull in common materials for reflectometry experiments.
-# This could lead to a lot of namespace pollution, and particularly to
-# confusion if the user also does "from periodictable import *" since
-# both of them create elements.
-# Python doesn't allow "from .module import *"
-from refl1d.materialdb import *
-"""
+__version__ = "0.5.4"

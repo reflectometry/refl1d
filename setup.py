@@ -28,7 +28,12 @@ def configuration(parent_package='', top_path=None):
     config.add_data_files('refl1d.iss')
     config.add_data_files('*.txt')
 
-    config.get_version(os.path.join('version.py'))  # sets config.version
+
+    for line in open('refl1d/__init__.py').readlines():
+        if (line.startswith('__version__')):
+            exec(line.strip())
+            config.version = __version__
+            break
 
     return config
 

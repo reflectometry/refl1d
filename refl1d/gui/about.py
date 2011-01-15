@@ -36,7 +36,7 @@ except ImportError: # if it's not there, try the older location.
 
 from wx.lib.wordwrap import wordwrap
 
-from version import version as APP_VERSION
+from .. import __version__ as APP_VERSION
 from .common import get_appdir
 
 # Resource files.

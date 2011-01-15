@@ -110,14 +110,11 @@ def build_it():
 
     # Get the version string for the application to use later.
     # This has to be done after we have checked out the repository.
-    if RUN_DIR == TOP_DIR:
-        from refl1d.version import version
-    else:
-        from version import version
+    import refl1d
 
     # Create an archive of the source code.
     if not (len(sys.argv) > 1 and '-a' in sys.argv[1:]):
-        create_archive(version)
+        create_archive(refl1d.__version__)
 
     # Install the application in a local directory tree.
     install_package()
@@ -130,7 +127,7 @@ def build_it():
     # Create a Windows installer/uninstaller exe using the Inno Setup Compiler.
     if not (len(sys.argv) > 1 and '-w' in sys.argv[1:]):
         if os.name == 'nt':
-            create_windows_installer(version)
+            create_windows_installer(refl1d.__version__)
 
     '''
     # Build HTML and PDF documentaton using sphinx.

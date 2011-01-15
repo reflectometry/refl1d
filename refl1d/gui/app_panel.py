@@ -202,7 +202,7 @@ class AppPanel(wx.Panel):
 
         # Split the panel into two pieces.
         sp = wx.SplitterWindow(self, style=wx.SP_3D|wx.SP_LIVE_UPDATE)
-        sp.SetMinimumPaneSize(600)
+        sp.SetMinimumPaneSize(300)
 
         self.pan1 = wx.Panel(sp, wx.ID_ANY, style=wx.SUNKEN_BORDER)
         self.pan1.SetBackgroundColour("WHITE")
@@ -226,8 +226,6 @@ class AppPanel(wx.Panel):
 
     def init_top_panel(self):
 
-        INTRO_TEXT = "Refl1D Plot:"
-
         # Instantiate a figure object that will contain our plots.
         figure = Figure()
 
@@ -250,21 +248,12 @@ class AppPanel(wx.Panel):
         mpl_toolbar = Toolbar(canvas)
         mpl_toolbar.Realize()
 
-        # Display a title above the plots.
-        self.pan1_intro_text = INTRO_TEXT
-        self.pan1_intro = wx.StaticText(self.pan1, wx.ID_ANY, label=INTRO_TEXT)
-        font = self.pan1_intro.GetFont()
-        font.SetPointSize(font.GetPointSize() + 1)
-        font.SetWeight(wx.BOLD)
-        self.pan1_intro.SetFont(font)
-
         # Create a progress bar to be displayed during a lengthy computation.
         self.progress_gauge = WorkInProgress(self.pan1)
         self.progress_gauge.Show(False)
 
         # Create a horizontal box sizer to hold the title and progress bar.
         hbox1_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        hbox1_sizer.Add(self.pan1_intro, 0, wx.ALIGN_CENTER_VERTICAL)
         hbox1_sizer.Add((10,25), 1)  # stretchable whitespace
         hbox1_sizer.Add(self.progress_gauge, 0)
 

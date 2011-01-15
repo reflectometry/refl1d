@@ -1,4 +1,59 @@
+First define materials that you are going to use.
+
+Common materials defined in :module:`materialdb`::
+
+    *air*, *water*, *silicon*, *sapphire*, ...
+
+Specific elements, molecules or mixtures can be added using the
+classes in :module:`material`::
+
+    *SLD*       unknown material with fittable SLD
+    *Material*  known chemical formula and fittable density
+    *Mixture*   known alloy or mixture with fittable fractions
+
+Materials can be stacked as slabs, with a thickness for each layer and
+roughness at the top of each layer.  Because this is such a common
+operation, there is special syntax to do it, using '/' to specify
+thickness and '%' to specify roughness.  For example, the following
+is a 30 A gold layer on top of silicon, with a silicon:gold interface
+of 5 A and a gold:air interface of 2 A:
+
+    >> from refl1d import *
+    >> sample = silicon(0,5) | gold(30,2) | air
+    >> print sample
+    Si | Au(30) | air
+
+Individual layers and stacks can be used in multiple models, with all
+parameters shared except those that are explicitly made separate.  The
+syntax for doing so is similar to that for lists.  For example, the
+following defines two samples, one with Si+Au/30+air and the other with
+Si+Au/30+alkanethiol/10+air, with the silicon/gold layers shared::
+
+
+    >> alkane_thiol = Material('C2H4OHS',bulk_density=0.8,name='thiol')
+    >> sample1 = silicon(0,5) | gold(30,2) | air
+    >> sample2 = sample1[:-1] | alkane_thiol(10,3) | air
+    >> print sample2
+    Si | Au(30) | thiol(10) | air
+
+Stacks can be repeated using a simple multiply operation.  For example,
+the following gives a cobalt/copper multilayer on silicon::
+
+    >> Cu = Material('Cu')
+    >> Co = Material('Co')
+    >> sample = Si | [Co(30) | Cu(10)]*20 | Co(30) | air
+    >> print sample
+    Si | [Co(30) | Cu(10)]*20 | Co(30) | air
+
+Multiple repeat sections can be included, and repeats can contain repeats.
+Even freeform layers can be repeated.  By default the interface between
+the repeats is the same as the interface between the repeats and the cap.
+The cap interface can be set explicitly.  See :class:`model.Repeat` for
+details.
+
+
 .. _single-model:
+
 
 ############################
 Single Model and Single Data
