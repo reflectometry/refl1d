@@ -126,6 +126,7 @@ def reflectivity_amplitude(kz=None,
     #print depth.dtype,rho.dtype,irho.dtype,sigma.dtype
     r = numpy.empty(kz.shape,'D')
     #print "amplitude",depth,rho,kz,rho_index
+    #print depth.shape, sigma.shape, rho.shape, irho.shape, kz.shape
     reflmodule._reflectivity_amplitude(depth, sigma, rho, irho, kz,
                                        rho_index, r)
     return r

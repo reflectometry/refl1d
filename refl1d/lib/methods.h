@@ -21,7 +21,7 @@
     } while (0)
 #define SCALAR(obj) PyFloat_AsDouble(obj)
 
-PyObject* pyvector(int n, double v[]);
+//PyObject* pyvector(int n, double v[]);
 
 PyObject* Perf(PyObject*obj,PyObject*args);
 PyObject* Preflectivity_amplitude(PyObject*obj,PyObject*args);

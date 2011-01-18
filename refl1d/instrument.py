@@ -532,7 +532,7 @@ class Pulsed(object):
                 Absorption factor for beam traveling through substrate.
                 Only needed for back reflectivity measurements.
         """
-        from reflectometry.reduction.rebin import rebin
+        from .rebin import rebin
         from .experiment import Experiment
         from .probe import ProbeSet
         T = kw.pop('T', self.T)
@@ -586,7 +586,8 @@ class Pulsed(object):
                 probe.background.value *= Ci
                 probe.intensity.value = Ci
 
-            probe.data = R,dR
+            probe.Ro = probe.R = R
+            probe.dR = dR
             probes.append(probe)
 
         return Experiment(sample=sample, probe=ProbeSet(probes))

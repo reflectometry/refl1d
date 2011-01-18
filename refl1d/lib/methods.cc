@@ -104,6 +104,7 @@ PyObject* Preflectivity_amplitude(PyObject*obj,PyObject*args)
   Py_ssize_t nkz, nr, nd, nrho, nirho, nsigma, nrho_index;
   const double *kz, *d, *sigma, *rho, *irho;
   const int *rho_index;
+  int nprofiles;
   Cplx *r;
 
   if (!PyArg_ParseTuple(args, "OOOOOOO:reflectivity",
@@ -117,16 +118,28 @@ PyObject* Preflectivity_amplitude(PyObject*obj,PyObject*args)
   INVECTOR(kz_obj,kz,nkz);
   INVECTOR(rho_index_obj, rho_index, nrho_index);
   OUTVECTOR(r_obj,r,nr);
+
+  // Determine how many profiles we have
+  nprofiles = 1;
+  for (int i=0; i < nrho_index; i++)
+    if (rho_index[i] > nprofiles-1) nprofiles = rho_index[i]+1;
+
   // interfaces should be one shorter than layers
-  if (nd != nrho || nd != nirho || nd != nsigma+1) {
+  if (nrho%nd != 0 || nirho%nd != 0 || nd != nsigma+1) {
 #ifndef BROKEN_EXCEPTIONS
     PyErr_SetString(PyExc_ValueError, "d,rho,mu,sigma have different lengths");
 #endif
     return NULL;
   }
+  if (nrho < nd*nprofiles || nirho < nd*nprofiles) {
+#ifndef BROKEN_EXCEPTIONS
+    PyErr_SetString(PyExc_ValueError, "rho_index too high");
+#endif
+    return NULL;
+  }
   if (nkz != nr || nrho_index != nkz) {
-    printf("%ld %ld %ld\n",
-        long(nkz), long(nrho_index), long(nr));
+    //printf("%ld %ld %ld\n",
+    //    long(nkz), long(nrho_index), long(nr));
 #ifndef BROKEN_EXCEPTIONS
     PyErr_SetString(PyExc_ValueError, "kz,rho_index,r have different lengths");
 #endif

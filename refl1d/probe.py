@@ -807,7 +807,7 @@ class ProbeSet(Probe):
         self._len = sum([len(p) for p in self.probes])
 
     def parameters(self):
-        return [p.paramters() for p in self.probes]
+        return [p.parameters() for p in self.probes]
     parameters.__doc__ = Probe.parameters.__doc__
 
     def resynth_data(self):

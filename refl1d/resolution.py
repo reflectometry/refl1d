@@ -130,7 +130,7 @@ $s_2(\theta) = s_2(\theta_o) \cdot \theta/\theta_o$.
 
 from numpy import pi, inf, nan, sqrt, log, degrees, radians, cos, sin, tan
 from numpy import arcsin as asin, ceil, clip
-from numpy import ones_like, arange, isscalar, asarray
+from numpy import ones_like, arange, isscalar, asarray, hstack
 
 def QL2T(Q=None,L=None):
     """
@@ -267,7 +267,7 @@ def binedges(L):
         dLoL = L[0]/L[1] - 1
         last = 1./(1+dLoL)
     E = L*2/(2+dLoL)
-    return numpy.hstack((E,E[-1]*last))
+    return hstack((E,E[-1]*last))
 
 def divergence(T=None, slits=None, distance=None,
                sample_width=1e10, sample_broadening=0):
