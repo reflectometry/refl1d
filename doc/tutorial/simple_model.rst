@@ -8,12 +8,13 @@ tutorials that exist on line.
 
 We start with a basic example, a nickel film on silicon:
 
-.. literalinclude:: /examples/1-nifilm.py
+.. literalinclude:: /examples/ex1/nifilm.py
 
 We can save this to NiFilm1.py and preview the reflectivity with refl1d 
 on the command line::
 
-	$ refl1d 1-nifilm.py --preview
+	$ cd examples/ex1
+	$ refl1d nifilm.py --preview
 
 Lets break the code down on a line by line basis to understand what is
 going on.
