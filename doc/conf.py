@@ -28,6 +28,7 @@ import sys, os
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 
 sys.path.append(os.path.abspath('..'))
+sys.path.append(os.path.abspath('../dream'))
 sys.path.append(os.path.abspath('_extensions'))
 
 """
@@ -54,6 +55,7 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest',
               'dollarmath',
               'slink',
              ]
+#plot_formats = [('png', 120), ('pdf', 50)] # Only make 80 dpi plots
 jsmath_path = 'MathJax/MathJax.js'
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

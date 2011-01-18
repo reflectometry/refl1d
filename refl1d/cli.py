@@ -84,7 +84,6 @@ class DreamProxy(object):
 
 class FitProxy(object):
     def __init__(self, fitter, problem, opts):
-
         self.fitter = fitter
         self.problem = problem
         self.opts = opts
@@ -207,9 +206,9 @@ def load_job(args):
     else:
         return load_script(file, options)
 
-def preview(model):
-    model.show()
-    model.plot()
+def preview(job):
+    job.show()
+    job.plot()
     pylab.show()
 
 def remember_best(fitter, job, best):
@@ -257,17 +256,16 @@ def make_store(job, opts):
     job.show()
 
 
-def run_profile(model):
+def run_profile(job):
     from .util import profile
-    p = random_population(model,1000)
-    print p.shape
-    profile(map,model.nllf,p)
+    p = random_population(job,1000)
+    profile(map,job.nllf,p)
 
 # ==== Mappers ====
 
 class SerialMapper:
     @staticmethod
-    def start_worker(model):
+    def start_worker(job):
         pass
     @staticmethod
     def start_mapper(job, modelargs):
@@ -487,7 +485,8 @@ def main():
         job.randomize()
     if opts.simulate:
         job.simulate_data(noise=float(opts.noise))
-        # If fitting, then generate a random starting point
+        # If fitting, then generate a random starting point different
+        # from the simulation
         if not (opts.edit or opts.check or opts.preview):
             job.randomize()
 
@@ -513,7 +512,7 @@ def main():
     elif opts.worker:
         mapper.start_worker(job)
     elif opts.check:
-        job.show()
+        print "chisq",job()
     elif opts.preview:
         preview(job)
     else:

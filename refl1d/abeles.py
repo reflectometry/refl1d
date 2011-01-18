@@ -13,14 +13,14 @@ def refl(kz, depth, rho, irho=0, sigma=0, rho_index=None):
 
     :Parameters:
         *kz* : float[n] | inv angstrom
-            Scattering vector 2*pi*sin(theta)/wavelength. This is Qz/2.
-        *depth* :  float[m] | angstrom
+            Scattering vector $2*\pi*\sin(\theta)/\lambda$. This is $Q_z/2$.
+        *depth* :  float[m] | |Ang|
             thickness of each layer.  The thickness of the incident medium
             and substrate are ignored.
-        *rho*, *irho* :  float[n,k] | 1e-6/Angstrom^2
+        *rho*, *irho* :  float[n,k] | |1e-6/Ang|
             real and imaginary scattering length density for each layer for each kz
             Note: absorption cross section mu = 2 irho/lambda
-        *sigma* : float[m-1] | angstrom
+        *sigma* : float[m-1] | |Ang|
             interfacial roughness.  This is the roughness between a layer
             and the subsequent layer.  There is no interface associated
             with the substrate.  The sigma array should have at least m-1

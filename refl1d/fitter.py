@@ -608,7 +608,7 @@ class FitProblem(object):
             return inf
         return cost
 
-    def __call__(self, pvec):
+    def __call__(self, pvec=None):
         """
         Problem cost function.
 

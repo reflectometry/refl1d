@@ -4,71 +4,86 @@ Simple Models
 Model scripts are defined using `Python <http://www.python.org>`_.  A
 complete introduction to programming and Python is beyond the
 scope of this document, and the reader is referred to the many fine
-tutorials that exist on line.
+tutorials that exist on the web.
 
 We start with a basic example, a nickel film on silicon:
 
+.. plot::
+
+    import pylab
+    from refl1d.cli import load_job
+    load_job(['examples/ex1/nifilm.py']).plot()
+    pylab.show()
+
+This model is defined by :download:`nifilm.py </examples/ex1/nifilm.py>`:
+
 .. literalinclude:: /examples/ex1/nifilm.py
 
-We can save this to NiFilm1.py and preview the reflectivity with refl1d 
-on the command line::
+You can preview the model on the command line::
 
-	$ cd examples/ex1
-	$ refl1d nifilm.py --preview
+    $ refl1d nifilm.py --preview
 
 Lets break the code down on a line by line basis to understand what is
 going on.
 
-	``from refl1d.names import *``
+.. literalinclude:: /examples/ex1/nifilm.py
+    :lines: 1
 
-		Bring in all of the functions from refl1d.names so that we can
-		use them in the remainder of the script.
+Bring in all of the functions from refl1d.names so that we can
+use them in the remainder of the script.
 
-	``nickel = Material('Ni')``
+.. literalinclude:: /examples/ex1/nifilm.py
+    :lines: 3
 	
-		Define a new material composed of pure nickel.  The more traditional
-		``nickel = SLD(rho=9.4)`` could be used instead.
+Define a new material composed of pure nickel.  The more 
+traditional ``nickel = SLD(rho=9.4)`` could be used instead.
 		
-	``sample = silicon(0,5) | nickel(100,5) | air`` 
+.. literalinclude:: /examples/ex1/nifilm.py
+    :lines: 4
 
-		Stack the materials (silicon, nickel and air) into a sample.  The
-		substrate is silicon with a 5 |Ang| $1-\sigma$ Si:Ni interface.  
-		The nickel layer is 100 |Ang| thick with a 5 |Ang| Ni:Air interface.
-		Air is on the surface.  Note that silicon and air were predefined in
-		refl1d.names.
+Stack the materials (silicon, nickel and air) into a sample.  The
+substrate is silicon with a 5 |Ang| 1-\ $\sigma$ Si:Ni interface.  
+The nickel layer is 100 |Ang| thick with a 5 |Ang| Ni:Air interface.
+Air is on the surface.  Note that silicon and air were predefined in
+refl1d.names.
 
-	``T = numpy.linspace(0, 5, 100)``
-	
-		Specify which angles we wish to view the reflectivity.  The
-		`numpy <http://numpy.scipy.org/>`_ library extends python to
-		support vector and matrix operations.  The ``linspace`` function
-		above returns values from 0 to 5 in 100 steps for incident angles
-		from 0 |deg| to 5 |deg|.
-	
-	``probe = NeutronProbe(T=T, dT=0.01, L=4.75, dL=0.0475)``
-	
-		We are going to simulate a neutron measurement.  For simplicity,
-		use an angular divergence ``dT=0.01`` |deg|, a wavelength
-		``L=4.75`` |Ang| and wavelength dispersion ``dL=0.0475``.  Using
-		vectors for ``T, dT, L, dL`` the resolution of each point can be
-		explicitly controlled.
-	
-	``M = Experiment(probe=probe, sample=sample)``
-	
-		Combine the neutron probe with the sample stack to define an
-		experiment.  Using chemical formula and mass density, the same
-		sample can be simulated for both neutron and x-ray experiments.
+.. literalinclude:: /examples/ex1/nifilm.py
+    :lines: 6
 
-	``M.simulate_data(5)``
+Specify which angles we wish to view the reflectivity.  The
+`numpy <http://numpy.scipy.org/>`_ library extends python to
+support vector and matrix operations.  The ``linspace`` function
+above returns values from 0 to 5 in 100 steps for incident angles
+from 0\ |deg| to 5\ |deg|.
 	
-		Generate a random data set with 5% noise. While not necessary
-		to display a reflectivity curve, it is useful in showing how
-		the data set should look.
+.. literalinclude:: /examples/ex1/nifilm.py
+    :lines: 7
 
-	``problem = FitProblem(M)``
+We are going to simulate a neutron measurement.  For simplicity,
+use an angular divergence ``dT=0.01`` |deg|, a wavelength
+``L=4.75`` |Ang| and wavelength dispersion ``dL=0.0475``.  Using
+vectors for ``T, dT, L, dL`` the resolution of each point can be
+explicitly controlled.
 	
-		Combine a set of experiments into a fitting problem.  The problem
-		is used by refl1d to for all operations on the model.
+.. literalinclude:: /examples/ex1/nifilm.py
+    :lines: 9
+	
+Combine the neutron probe with the sample stack to define an
+experiment.  Using chemical formula and mass density, the same
+sample can be simulated for both neutron and x-ray experiments.
+
+.. literalinclude:: /examples/ex1/nifilm.py
+    :lines: 10
+        
+Generate a random data set with 5% noise. While not necessary
+to display a reflectivity curve, it is useful in showing how
+the data set should look.
+
+.. literalinclude:: /examples/ex1/nifilm.py
+    :lines: 11
+	
+Combine a set of experiments into a fitting problem.  The problem
+is used by refl1d to for all operations on the model.
 
 
 Because this
@@ -152,7 +167,7 @@ A model consists of the following:
 * A roughness value at each interface between layers.
 
 Roughness
-++++++++++
+=============
 
 The roughness is used to smooth the interfaces between layers.
 Each interface between layers has an associated roughness. Hence,
@@ -160,7 +175,7 @@ if there are N user-specified layers (in addition to the two
 semi-infinite layers), there are N+1 roughness. Note that each 
 layer has both a "Left Rough" (the roughness on its left interface) 
 and a "Right Rough" (the roughness on its right interface). The
-smoothing uses an error function where sigma is equal to the
+smoothing uses an error function where $\sigma$ is equal to the
 roughness. Hence, two adjacent flat layers with a roughness of zero
 (indicating no smoothing) will look like a step function,
 while if there is a positive roughness it will look like

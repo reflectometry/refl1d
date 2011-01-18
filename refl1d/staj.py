@@ -173,7 +173,7 @@ class MlayerModel(object):
     Layers have thickness, interface roughness and real and imaginary
     scattering length density (SLD).  Roughness is stored in the file
     using full width at half maximum (FWHM) for the given profile type.
-    For convenience, roughness can also be set or queried using a 1-sigma
+    For convenience, roughness can also be set or queried using a 1-\ $\sigma$
     equivalent roughness on an error function profile.  Regardless,
     layer parameters are represented as vectors with one entry for each
     top, middle and bottom layer using the following attributes:
@@ -186,7 +186,7 @@ class MlayerModel(object):
     Computed attributes are provided for convenience:
 
         *sigma_roughness* : float | |Ang|
-            1-sigma equivalent roughness for erf profile
+            1-\ $\sigma$ equivalent roughness for erf profile
         *mu*
             absorption cross section (2*wavelength*irho + incoh)
 
@@ -317,7 +317,7 @@ class MlayerModel(object):
         Return the resolution at Q for mlayer with the current settings
         for wavelength, wavelength divergence and angular divergence.
 
-        Resolution is full-width at half maximum (FWHM), not $1-\sigma$.
+        Resolution is full-width at half maximum (FWHM), not 1-\ $\sigma$.
         """
         return (abs(Q) * self.wavelength_dispersion
                 + 4 * pi * self.angular_divergence) / self.wavelength
@@ -715,7 +715,7 @@ class MlayerMagnetic(object):
     Layers have thickness, interface roughness and real and imaginary
     scattering length density (SLD).  Roughness is stored in the file
     using full width at half maximum (FWHM) for the given profile type.
-    For convenience, roughness can also be set or queried using a 1-sigma
+    For convenience, roughness can also be set or queried using a 1-\ $\sigma$
     equivalent roughness on an error function profile.  Regardless,
     layer parameters are represented as vectors with one entry for each
     top, middle and bottom layer using the following attributes:
@@ -731,7 +731,7 @@ class MlayerMagnetic(object):
         *mtheta* : float | |deg|
             magnetic angle
         *sigma_roughness*, *sigma_mroughness* : float | |Ang|
-            computed 1-sigma equivalent roughness for erf profile
+            computed 1-\ $\sigma$ equivalent roughness for erf profile
 
     The conversion from stored $16 \pi \rho$, $\rho_i/(2\lambda)$ to
     in memory $10^6 \rho$,$10^6 \rho_i$  happens automatically on

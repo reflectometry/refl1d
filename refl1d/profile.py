@@ -6,7 +6,7 @@ Scattering length density profile.
 
 In order to render a reflectometry model, the theory function calculator
 renders each layer in the model for each energy in the probe.  For slab
-layers this is easy: just accumulate the slabs, with the $1-sigma$ Gaussian
+layers this is easy: just accumulate the slabs, with the 1-\ $\sigma$ Gaussian
 interface width between the slabs.  For freeform or functional layers,
 this is more complicated.  The rendering needs to chop each layer into
 microslabs and evaluate the profile at each of these slabs.  

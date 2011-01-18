@@ -38,7 +38,7 @@ circumstances.  Given the computational advantage of the error function
 profile, there will be little reason to choose anything else.
 
 Some interfaces can be defined using full width at half maximum (FWHM)
-rather than $1-\sigma$::
+rather than 1-\ $\sigma$::
 
     Erf.as_fwhm(width=fwhm)  Gaussian interface using FWHM
     Tanh.as_fwhm(width=fwhm) sech**2 interface using FWHM
@@ -46,7 +46,7 @@ rather than $1-\sigma$::
 To see what the effect of choosing width FWHM, use :func:`demo_fwhm`
 
 Defined using FWHM, tanh and erf profiles are significantly different
-for the same value of width.  From the 1-sigma plots above, though, we
+for the same value of width.  From the 1-\ $\sigma$ plots above, though, we
 know that some values of width for tanh will closely match the shape
 of the erf sigmoid.  What this means is that you will get different
 values for the interface width from *Erf.as_fwhm* and *Tanh.as_fwhm*, but
@@ -152,18 +152,18 @@ class Erf(Interface):
 
     *width* (Parameter: 0 Angstroms)
 
-        1-sigma roughness.  For roughness w measured by the
-        full width at half maximum (FWHM), use Erf.as_fwhm(w).
+        1-\ $\sigma$ roughness.  For roughness w measured by the
+        full width at half maximum (FWHM), use :meth:`Erf.as_fwhm`\ (w).
 
     *name* (string: "erf")
 
     The erf profile has the form:
 
-        CDF(z) = (1 - erf(z/(sqrt(2)*sigma)))
-        PDF(z) = 1/sqrt(2 pi sigma**2) exp( (z/sigma)**2/2 )
-        PPF(z) = sigma*sqrt(2)*erfinv(2*z-1)
+        CDF(z) = $(1 - \text{erf}(z/(\sqrt{2} \sigma)))$
+        PDF(z) = $1/\sqrt{2 \pi \sigma**2} \exp( (z/\sigma)^2/2 )$
+        PPF(z) = $\sigma*\sqrt{2}*\text{erf}^{-1}(2*z-1)$
 
-    To convert from a $1-\sigma$ error function to the equivalent FWHM,
+    To convert from a 1-\ $\sigma$ error function to the equivalent FWHM,
     you need to scale the error function roughness by $\sqrt(8 \log 2)$
     which is about 2.35.
 
@@ -247,7 +247,7 @@ class Tanh(Interface):
 
     *width* (Parameter: 0 Angstroms)
 
-        $1-\sigma$ equivalent roughness.  For roughness $w$ measured by the
+        1-\ $\sigma$ equivalent roughness.  For roughness $w$ measured by the
         full width at half maximum (FWHM), use Tanh.as_fwhm(w).
 
     *name* (string: "tanh")
@@ -261,8 +261,9 @@ class Tanh(Interface):
         \text{PPF}(z) = (w/C) \tanh^{-1}(2z-1)
 
     where $w$ is the interface roughness and $C$ is a scaling constant.
-    $C$ is $\tanh^{-1}(\text{erf}(1/\sqrt(2)))$ for width defined 
-    by $1-\sigma$, or $C$ is $2\cosh^{-1}(\sqrt(2))$ for width defined by FWHM.
+    $C$ is $\tanh^{-1}(\text{erf}(1/\sqrt{2}))$ for width defined 
+    by 1-\ $\sigma$, or $C$ is $2\cosh^{-1}(\sqrt{2})$ for width 
+    defined by FWHM.
 
     .. Note::
        This profile was derived from the free energy of a nonuniform system:
@@ -307,7 +308,7 @@ class Tanh(Interface):
     @classmethod
     def as_fwhm(cls, *args, **kw):
         """
-        Defines interface using FWHM rather than 1-sigma.
+        Defines interface using FWHM rather than 1-\ $\sigma$.
         """
         self = cls(*args, **kw)
         self._scale = Tanh.C/Tanh.Cfwhm
@@ -389,7 +390,7 @@ def demo_tanh_to_erf():
     pylab.subplot(211)
     pylab.plot(z,perf.cdf(z),hold=False)
     pylab.plot(z,ptanh.cdf(z),hold=True)
-    pylab.title("""FWHM tanh -> 1-sigma erf
+    pylab.title("""FWHM tanh -> 1-sigma erf 
 scale by atanh(erf(1/sqrt(2))) / (2 acosh(sqrt(2)))""")
     pylab.legend(['erf','tanh'])
     pylab.grid(True)

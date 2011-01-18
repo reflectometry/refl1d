@@ -111,7 +111,7 @@ constant should be added to the computed $\Delta \theta$ for all angles and
 slit geometries.  You will not usually have this information on hand, but
 you can leave space for users to enter it if it is available.
 
-FWHM can be converted to $1-\sigma$ resolution using the scale factor of
+FWHM can be converted to 1-\ $\sigma$ resolution using the scale factor of
 $1/\sqrt{8 \ln 2}$.
 
 With opening slits we assume $\Delta \theta/\theta$ is held constant, so if
@@ -134,21 +134,25 @@ from numpy import ones_like, arange, isscalar, asarray
 
 def QL2T(Q=None,L=None):
     """
-    Compute angle from Q and wavelength.
+    Compute angle from $Q$ and wavelength.
 
-    T = asin( |Q| L / 4 pi )
+    .. math::
 
-    Returns T in degrees.
+        \theta = \sin^{-1}( |Q| \lambda / 4 \pi )
+
+    Returns $\theta$\ |deg|.
     """
     return degrees(asin(abs(Q) * L / (4*pi)))
 
 def TL2Q(T=None,L=None):
     """
-    Compute Q from angle and wavelength.
+    Compute $Q$ from angle and wavelength.
 
-    Q = 4 pi sin(T) / L
+    .. math::
+    
+        Q = 4 \pi \sin(\theta) / \lambda
 
-    Returns Q in inverse Angstroms.
+    Returns $Q$ |1/Ang|
     """
     return 4 * pi * sin(radians(T)) / L
 
@@ -161,12 +165,12 @@ def sigma2FWHM(s):
 
 def dTdL2dQ(T=None, dT=None, L=None, dL=None):
     """
-    Convert wavelength dispersion and angular divergence to Q resolution.
+    Convert wavelength dispersion and angular divergence to $Q$ resolution.
 
     *T*,*dT*  (degrees) angle and FWHM angular divergence
     *L*,*dL*  (Angstroms) wavelength and FWHM wavelength dispersion
 
-    Returns 1-sigma dQ
+    Returns 1-\ $\sigma$ $\Delta Q$
     """
 
     # Compute dQ from wavelength dispersion (dL) and angular divergence (dT)
@@ -182,10 +186,10 @@ def dQdT2dLoL(Q, dQ, T, dT):
     Convert a calculated Q resolution and wavelength divergence to a
     wavelength dispersion.
 
-    *Q*, *dQ* (inv Angstroms)  Q and 1-sigma Q resolution
-    *T*, *dT* (degrees) angle and FWHM angular divergence
+    *Q*, *dQ* |1/Ang|  $Q$ and 1-\ $\sigma$ $Q$ resolution
+    *T*, *dT* |deg| angle and FWHM angular divergence
 
-    Returns FWHM dL/L
+    Returns FWHM $\Delta\lambda/\lambda$
     """
     return sqrt( (sigma2FWHM(dQ)/Q)**2 - (radians(dT)/tan(radians(T)))**2 )
 
@@ -197,7 +201,7 @@ def bins(low, high, dLoL):
     Return bin centers from low to high preserving a fixed resolution.
 
     *low*, *high* are the minimum and maximum wavelength.
-    *dLoL* is the desired resolution FWHM dL/L for the bins.
+    *dLoL* is the desired resolution FWHM $\Delta\lambda/\lambda$ for the bins.
     """
 
     step = 1 + dLoL;
