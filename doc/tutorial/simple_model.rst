@@ -1,11 +1,87 @@
-First define materials that you are going to use.
+Simple Models
+=============
 
-Common materials defined in :module:`materialdb`::
+Model scripts are defined using `Python <http://www.python.org>`_.  A
+complete introduction to programming and Python is beyond the
+scope of this document, and the reader is referred to the many fine
+tutorials that exist on line.
+
+We start with a basic example, a nickel film on silicon:
+
+.. literalinclude:: /examples/1-nifilm.py
+
+We can save this to NiFilm1.py and preview the reflectivity with refl1d 
+on the command line::
+
+	$ refl1d 1-nifilm.py --preview
+
+Lets break the code down on a line by line basis to understand what is
+going on.
+
+	``from refl1d.names import *``
+
+		Bring in all of the functions from refl1d.names so that we can
+		use them in the remainder of the script.
+
+	``nickel = Material('Ni')``
+	
+		Define a new material composed of pure nickel.  The more traditional
+		``nickel = SLD(rho=9.4)`` could be used instead.
+		
+	``sample = silicon(0,5) | nickel(100,5) | air`` 
+
+		Stack the materials (silicon, nickel and air) into a sample.  The
+		substrate is silicon with a 5 |Ang| $1-\sigma$ Si:Ni interface.  
+		The nickel layer is 100 |Ang| thick with a 5 |Ang| Ni:Air interface.
+		Air is on the surface.  Note that silicon and air were predefined in
+		refl1d.names.
+
+	``T = numpy.linspace(0, 5, 100)``
+	
+		Specify which angles we wish to view the reflectivity.  The
+		`numpy <http://numpy.scipy.org/>`_ library extends python to
+		support vector and matrix operations.  The ``linspace`` function
+		above returns values from 0 to 5 in 100 steps for incident angles
+		from 0 |deg| to 5 |deg|.
+	
+	``probe = NeutronProbe(T=T, dT=0.01, L=4.75, dL=0.0475)``
+	
+		We are going to simulate a neutron measurement.  For simplicity,
+		use an angular divergence ``dT=0.01`` |deg|, a wavelength
+		``L=4.75`` |Ang| and wavelength dispersion ``dL=0.0475``.  Using
+		vectors for ``T, dT, L, dL`` the resolution of each point can be
+		explicitly controlled.
+	
+	``M = Experiment(probe=probe, sample=sample)``
+	
+		Combine the neutron probe with the sample stack to define an
+		experiment.  Using chemical formula and mass density, the same
+		sample can be simulated for both neutron and x-ray experiments.
+
+	``M.simulate_data(5)``
+	
+		Generate a random data set with 5% noise. While not necessary
+		to display a reflectivity curve, it is useful in showing how
+		the data set should look.
+
+	``problem = FitProblem(M)``
+	
+		Combine a set of experiments into a fitting problem.  The problem
+		is used by refl1d to for all operations on the model.
+
+
+Because this
+is elemental nickel, we already know it's density.  For compounds
+such as 'SiO2' we would have to specify an additional
+``density=2.634`` parameter.      
+
+
+Common materials defined in :mod:`materialdb`::
 
     *air*, *water*, *silicon*, *sapphire*, ...
 
 Specific elements, molecules or mixtures can be added using the
-classes in :module:`material`::
+classes in :mod:`refl1d.material`::
 
     *SLD*       unknown material with fittable SLD
     *Material*  known chemical formula and fittable density

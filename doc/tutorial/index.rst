@@ -4,14 +4,15 @@
 Tutorial
 ############
 
-tutorial info goes here..............
+This tutorial will describe walk through the steps of setting up a
+model with Python scripting.  Scripting allows the user to create
+complex models with many constraints relatively easily.
 
 .. toctree::
    :maxdepth: 2
 
-   fit_basic.rst
-   single_model.rst
+   simple_model.rst
    multidata.rst
    special_model.rst
-   fit.rst
+   fitting.rst
    uncertainity.rst

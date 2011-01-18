@@ -11,6 +11,7 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
+from __future__ import with_statement
 import sys, os
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -28,7 +29,6 @@ import sys, os
 
 sys.path.append(os.path.abspath('..'))
 sys.path.append(os.path.abspath('_extensions'))
-import refl1d
 
 """
 import glob
@@ -52,9 +52,9 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest',
               'matplotlib.sphinxext.plot_directive',
               #'inheritance_diagram',
               'dollarmath',
+              'slink',
              ]
 jsmath_path = 'MathJax/MathJax.js'
-
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -68,15 +68,15 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Refl1D'
-copyright = u'2010, Paul Kienzle, Nikunj Patel, James Krycka'
+project = 'Refl1D'
+copyright = '2006-2011, Paul Kienzle, Nikunj Patel, James Krycka'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
-version = refl1d.version
+from refl1d import __version__ as version
 # The full version, including alpha/beta/rc tags.
 release = version
 
@@ -193,7 +193,7 @@ html_static_path = ['_static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Refl1Ddocumentationdoc'
+htmlhelp_basename = 'Refl1D'
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -207,8 +207,8 @@ htmlhelp_basename = 'Refl1Ddocumentationdoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'Refl1Ddocumentation.tex', u'Refl1D documentation Documentation',
-   u'Nikunj Patel', 'manual'),
+  ('index', 'Refl1D.tex', '1-D Reflectometry Modeling',
+   'Paul Kienzle', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -242,24 +242,25 @@ latex_elements = {'preamble' : LATEX_PREAMBLE}
 # If false, no module index is generated.
 #latex_domain_indices = True
 
-htmlroot="http://www.reflectometry.org/danse"
-winexe="`Windows executable <%s/download.php?file=refl1d-%s-win32.exe>`"%(htmlroot,version)
-srczip="`source <%s/download.php?file=refl1d-%s.zip>`"%(htmlroot,version)
-rst_prolog = """\
-.. |version| replace:: %(version)s
-.. |winexe| replace:: %(winexe)s
-.. |srczip| replace:: %(srczip)s
-"""%dict(version=version, winexe=winexe, srczip=srczip)
 if os.path.exists('rst_prolog'):
     with open('rst_prolog') as fid:
-        rst_prolog += fid.read()
-else:
+        rst_prolog = fid.read()
+
+htmlroot="http://www.reflectometry.org/danse"
+def download(name):
+    subs = dict(file=name%dict(version=version), path=htmlroot)
+    return "%(file)s <%(path)s/download.php?file=%(file)s>"%subs
+slink_vars=dict(version=version, htmlroot=htmlroot, 
+                srczip=download("refl1d-%(version)s.zip"), 
+                winexe=download("refl1d-%(version)s-win32.exe"),
+                vcredist=download("vcredist_x86.exe"),
+                )
 
 # -- Options for manual page output --------------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'refl1ddocumentation', u'Refl1D documentation Documentation',
-     [u'Nikunj Patel'], 1)
+    ('index', 'refl1d', '1-D reflectometry modeling',
+     ['Paul Kienzle'], 1)
 ]

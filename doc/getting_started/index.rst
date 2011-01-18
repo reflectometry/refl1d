@@ -10,5 +10,7 @@ Getting started info goes here...............
    :maxdepth: 2
 
    intro.rst
+   install.rst
+   contributing.rst
    license.rst
    
