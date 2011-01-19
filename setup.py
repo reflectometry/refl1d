@@ -15,6 +15,7 @@ def configuration(parent_package='', top_path=None):
     # this name may already be used), so we define our dream substructure here.
     config.add_subpackage('amqp_map')
     config.add_data_dir('bin')
+    config.add_data_dir('doc')
     config.add_data_dir('examples')
     config.add_subpackage('dream.dream')
     config.add_data_dir('dream.examples')
@@ -27,7 +28,6 @@ def configuration(parent_package='', top_path=None):
     config.add_data_files('refl1d.ico')
     config.add_data_files('refl1d.iss')
     config.add_data_files('*.txt')
-
 
     for line in open('refl1d/__init__.py').readlines():
         if (line.startswith('__version__')):

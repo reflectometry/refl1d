@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# Authors: James Krycka
+# Author: James Krycka
 
 """
 This script builds the Refl1D application and documentation from source and
@@ -30,8 +30,8 @@ Usually, you downloaded this script into a top-level directory (the root)
 and run it from there which downloads the files from the application
 repository into a subdirectory (the package directory).  For example if
 test1 is the root directory, we might have:
-  E:/work/test1/this-script.py
-               /refl1d/this-script.py
+  E:/work/test1/master_builder.py
+               /refl1d/master_builder.py
                /refl1d/...
 
 Alternatively, you can download the whole application repository and run
@@ -41,7 +41,7 @@ directory and makes the necessary adjustments.  In this case, the root
 directory is defined as one-level-up and the repository is not downloaded
 (as it is assumed to be fully present).  In the example below test1 is the
 implicit root (i.e. top-level) directory.
-  E:/work/test1/refl1d/this-script.py
+  E:/work/test1/refl1d/master_builder.py
                /refl1d/...
 """
 
@@ -61,8 +61,8 @@ SVN_REPO_URL = "svn://svn@danse.us/reflectometry/trunk/refl1d"
 PKG_NAME = "refl1d" # temporary name
 # Name of the application we're building
 APP_NAME = "refl1d" # temporary name
-# Relative path for local install (by default the installation path on Windows
-# is C:\PythonNN\Lib\site-packages)
+# Relative path for local install under our build tree; this is used in place
+# of the default installation path on Windows of C:\PythonNN\Lib\site-packages
 LOCAL_INSTALL = "local-site-packages"
 
 # Required Python packages and utilities and their minimum versions
@@ -108,13 +108,16 @@ def build_it():
     # Checkout code from repository.
     checkout_code()
 
-    # Get the version string for the application to use later.
+    # Get the version string of the application for use later.
     # This has to be done after we have checked out the repository.
-    import refl1d
+    for line in open(os.path.join(SRC_DIR, 'refl1d/__init__.py')).readlines():
+        if (line.startswith('__version__')):
+            exec(line.strip())
+            break
 
     # Create an archive of the source code.
     if not (len(sys.argv) > 1 and '-a' in sys.argv[1:]):
-        create_archive(refl1d.__version__)
+        create_archive(__version__)
 
     # Install the application in a local directory tree.
     install_package()
@@ -127,9 +130,8 @@ def build_it():
     # Create a Windows installer/uninstaller exe using the Inno Setup Compiler.
     if not (len(sys.argv) > 1 and '-w' in sys.argv[1:]):
         if os.name == 'nt':
-            create_windows_installer(refl1d.__version__)
+            create_windows_installer(__version__)
 
-    '''
     # Build HTML and PDF documentaton using sphinx.
     if not (len(sys.argv) > 1 and '-b' in sys.argv[1:]):
         build_documentation()
@@ -143,7 +145,6 @@ def build_it():
     if not (len(sys.argv) > 1 and ('-t' in sys.argv[1:] or
                                    '-d' in sys.argv[1:])):
         run_doctests()
-    '''
 
 
 def checkout_code():
@@ -151,13 +152,13 @@ def checkout_code():
     # under the top level directory.
     print SEPARATOR
     print "\nStep 1 - Checking out application code from the repository ...\n"
-    os.chdir(TOP_DIR)
 
     if RUN_DIR == TOP_DIR:
+        os.chdir(TOP_DIR)
         exec_cmd("%s checkout %s %s" %(SVN, SVN_REPO_URL, PKG_NAME))
     else:
-        print "*** Skipping checkout of repository because the executing script"
-        print "*** is within the repository, not in the top-level directory."
+        os.chdir(SRC_DIR)
+        exec_cmd("%s update" %SVN)
 
 
 def create_archive(version=None):
@@ -246,14 +247,14 @@ def build_documentation():
     # Run the Sphinx utility to build the application's documentation.
     print SEPARATOR
     print "\nStep 6 - Running the Sphinx utility to build documentation ...\n"
-    os.chdir(os.path.join(INS_DIR, PKG_NAME, "doc", "sphinx"))
+    os.chdir(os.path.join(INS_DIR, PKG_NAME, "doc"))
 
     # Delete any left over files from a previous build.
     exec_cmd("make clean")
     # Create documentation in HTML format.
     exec_cmd("make html")
     # Create documentation in PDF format.
-    exec_cmd("make pdf")
+    exec_cmd("make latexpdf")
     # Copy PDF file to the top-level directory.
     os.chdir(os.path.join("_build", "latex"))
     if os.path.isfile("Refl1D.pdf"):
