@@ -3,7 +3,7 @@
 """
 import numpy
 
-from reflectometry.reduction import _reduction
+from . import reflmodule as _reduction
 
 def rebin(x,I,xo,Io=None,dtype=numpy.float64):
     """
@@ -63,7 +63,7 @@ def rebin2d(x,y,I,xo,yo,Io=None,dtype=None):
     y representing the row edges in each column, the following
     represents a uniform field::
 
-        >>> from reflectometry.reduction.rebin import rebin2d
+        >>> from refl1d.rebin import rebin2d
         >>> x,y = [0,2,4,5], [0,1,3]
         >>> z = [[2,2,1],[4,4,2]]
 
