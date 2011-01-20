@@ -212,6 +212,12 @@ def install_package():
     exec_cmd("%s setup.py -q install --install-lib=%s" %(PYTHON, INS_DIR))
     os.environ["PYTHONPATH"] = INS_DIR
 
+    # WORKAROUND: copy reflmodule.pyd from the INS_DIR path to the SRC_DIR
+    # path so that later py2exe will find it - py2exe finds .pyc files in
+    # INS_DIR but looks for reflmodule.pyd in SRC_DIR ???
+    shutil.copy(os.path.join(INS_DIR, PKG_NAME, "refl1d", "reflmodule.pyd"),
+                os.path.join(SRC_DIR, "refl1d"))
+
 
 def create_windows_exe():
     # Use py2exe to create a Win32 executable along with auxiliary files in the
