@@ -232,7 +232,7 @@ class Target():
 client = Target(
     name = 'refl1d',
     description = 'Refl1d command line application',
-    script = 'bin/reflfit',  # module to run on application start
+    script = 'bin/refl1d',  # module to run on application start
     dest_base = 'refl1d',  # file name part of the exe file to create
     #icon_resources = [(1, 'refl1d.ico')],  # also need to specify in data_files
     bitmap_resources = [],

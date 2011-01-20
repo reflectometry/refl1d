@@ -23,7 +23,7 @@ if not hasattr(sys, 'frozen'):
 # ========================== wxPython Workaround ==============================
 # The following import of wx only appears to be necessary to support building
 # a py2exe executable using Python 2.5.  It is not necessary when using py2exe
-# on 2.6, nor is it required if running reflfit from source code on 2.5 or 2.6.
+# on 2.6, nor is it required if running refl1d from source code on 2.5 or 2.6.
 if sys.version_info < (2, 6):
     import wx
 

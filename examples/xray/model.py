@@ -19,24 +19,24 @@ Usage
 
 Show the initial model as described by the sample grower::
 
-    $ reflfit model.py grower --preview
+    $ refl1d model.py grower --preview
 
 Show the model fitted with reflpak::
 
-    $ reflfit model.py --preview
+    $ refl1d model.py --preview
 
 Tune the reflpak fitted model::
 
-    $ reflfit model.py jiggle
+    $ refl1d model.py jiggle
 
 Fit the depth of neighbouring layers.  This is a 2-D problem with many
 local minima::
 
-    $ reflfit model.py d2Xd3
+    $ refl1d model.py d2Xd3
 
 Perform a complete analysis on the system with very loose constraints::
 
-    $ reflfit model.py open -fit=dream
+    $ refl1d model.py open --fit=dream
 
 References
 ----------

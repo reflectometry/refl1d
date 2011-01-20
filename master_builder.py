@@ -106,7 +106,8 @@ def build_it():
         check_dependencies()
 
     # Checkout code from repository.
-    checkout_code()
+    if not (len(sys.argv) > 1 and '-r' in sys.argv[1:]):
+        checkout_code()
 
     # Get the version string of the application for use later.
     # This has to be done after we have checked out the repository.
@@ -443,6 +444,7 @@ if __name__ == "__main__":
             print "  -b  Skip build of books (documentation)"
             print "  -d  Skip doctests"
             print "  -h  Show this help text"
+            print "  -r  Skip checkout or update from repository"
             print "  -s  Skip software dependency checks"
             print "  -t  Skip all tests (unittests and doctests); same as -u -d"
             print "  -u  Skip unittests"

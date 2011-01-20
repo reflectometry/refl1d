@@ -9,8 +9,8 @@ Refl1D |version| is provided as a Windows installer or as source:
 	- Windows installer: :slink:`%(winexe)s`
 	- Source: :slink:`%(srczip)s`
 
-Th Windows installer walks through the steps of setting the program up 
-to run on your machine and provides the sample data to be used in the 
+Th Windows installer walks through the steps of setting the program up
+to run on your machine and provides the sample data to be used in the
 tutorial.  Installers for other platforms are not yet available, and
 must be built from source.
 
@@ -18,25 +18,25 @@ must be built from source.
 Building from source
 ###########################
 
-Building the application from source requires some preparation.  
+Building the application from source requires some preparation.
 
 First you will need to set up your python environment.  We depend on
-numerous external packages.  The versions listed below are a snapshot 
-of a configuration that we are using. Both older or more recent versions 
+numerous external packages.  The versions listed below are a snapshot
+of a configuration that we are using. Both older or more recent versions
 may work.
 
 Our base scientific python environment contains:
 
 	- Python 2.6  (not 3.x)
 	- Matplotlib 1.0.0
-	- Numpy 1.3	
+	- Numpy 1.3
 	- Scipy 0.7.0
 	- WxPython 2.8.11.0
 	- SetupTools 0.6c9
 	- gcc 3.4.4
 	- PyParsing 1.5.5
 	- Periodictable 1.3
-	
+
 To run tests you will need:
 
 	- Nose 0.10 - 1.0
@@ -56,15 +56,15 @@ Platform specific details for setting up your environment are given below.
 Windows
 -------
 
-The `Python(X,Y) <http://code.google.com/p/pythonxy/>`_ package contains 
-most of the pieces required to build the application.  You can select 
-"Full Install" for convenience, or you can select "Custom Install" and make 
+The `Python(X,Y) <http://code.google.com/p/pythonxy/>`_ package contains
+most of the pieces required to build the application.  You can select
+"Full Install" for convenience, or you can select "Custom Install" and make
 sure the above packages are selected.  In particular, wx is not selected
 by default.  Be sure to select py2exe as well, since you may want to
 build a self contained release package.
 
-The Python(x,y) package supplies a C/C++ compiler, but the package does 
-not set it as the default compiler.  To do this you will need to create 
+The Python(x,y) package supplies a C/C++ compiler, but the package does
+not set it as the default compiler.  To do this you will need to create
 *C:\\Python26\\Lib\\distutils\\distutils.cfg* with the following content::
 
 	[build]
@@ -83,7 +83,7 @@ Next change to the directory containing the source.  This will be a command
 like the following::
 
     cd "C:\Documents and Settings\<username>\My Documents\refl1d-src"
-    
+
 Now type the command to build and install refl1d::
 
     python setup.py install
@@ -93,7 +93,7 @@ Now change to your data directory::
 
 	cd "C:\Documents and Settings\<username>\My Documents\data"
 
-To run the program use::  
+To run the program use::
 
 	python "C:\Python26\Scripts\refl1d" -h
 
@@ -112,11 +112,11 @@ From a terminal, change to the directory containing the source and type::
 	python setup.py install
 	python test.py
 
-This should install the reflfit file somewhere on your path.
+This should install the refl1d file somewhere on your path.
 
 To run the program use::
 
-	reflfit	-h
+	refl1d -h
 
 OS/X
 ----
@@ -125,7 +125,7 @@ Building a useful python environment on OS/X is somewhat involved, and
 this documentation will be expanded to provide more detail.
 
 You will need to download python, numpy, scipy, wx and matplotlib
-packages from their respective sites (use the links above). Setuptools 
+packages from their respective sites (use the links above). Setuptools
 will need to be installed by hand.
 
 From a terminal, change to the directory containing the source and type::
@@ -134,11 +134,11 @@ From a terminal, change to the directory containing the source and type::
 	python setup.py install
 	python test.py
 
-This should install the reflfit file somewhere on your path.
+This should install the refl1d file somewhere on your path.
 
 To run the program use::
 
-	reflfit	-h
+	refl1d -h
 
 
 ###########################
@@ -146,8 +146,8 @@ Building Documentation
 ###########################
 
 Building the package documentation requires a working sphinx installation,
-a working LaTex installation and a copy of MathJax.   Download and unzip 
-the MathJax package into the doc/sphinx directory to install MathJax.  You 
+a working LaTex installation and a copy of MathJax.   Download and unzip
+the MathJax package into the doc/sphinx directory to install MathJax.  You
 can then build the documentation as follows::
 
     (cd doc && make clean html latexpdf)
@@ -170,7 +170,7 @@ with the additional symbol AA using::
   + AA:           '212B',
     aleph:        ['2135',{mathvariant: MML.VARIANT.NORMAL}],
 
-If you are using unusual math characters, you may need similar patches 
+If you are using unusual math characters, you may need similar patches
 for your own documentation.
 
 ReStructured text format does not have a nice syntax for superscripts and
@@ -179,8 +179,8 @@ subscripts.  Units such as |g/cm^3| are entered using macros such as
 
         doc/sphinx/rst_prolog
 
-In addition to macros for units, we also define cdot, angstrom and degrees 
-unicode characters here.  The corresponding latex symbols are defined in 
+In addition to macros for units, we also define cdot, angstrom and degrees
+unicode characters here.  The corresponding latex symbols are defined in
 doc/sphinx/conf.py.
 
 
@@ -193,8 +193,8 @@ to create an empty file named
 *C:\\Python26\\Lib\\numpy\\distutils\\tests\\__init__.py*.
 Without this file, py2exe raises an error when it is searching for
 the parts of the numpy package.  This may be fixed on recent versions
-of numpy. Next, update the __version__ tag in refl1d/__init__.py to mark 
-it as your own.  
+of numpy. Next, update the __version__ tag in refl1d/__init__.py to mark
+it as your own.
 
 Now you can build the standalone executable using::
 
@@ -209,18 +209,18 @@ To build the Windows installer, you will need two more downloads:
 	- Visual C++ 2008 Redistributable Package (x86) 11/29/2007
 	- `Inno Setup <http://www.jrsoftware.org/isdl.php>`_ 5.3.10 QuickStart Pack
 
-The C++ redistributable package is needed for programs compiled with the 
-Microsoft Visual C++ compiler, including the standard build of the Python 
+The C++ redistributable package is needed for programs compiled with the
+Microsoft Visual C++ compiler, including the standard build of the Python
 interpreter for Windows.  It is available as vcredist_x86.exe from the
 `Microsoft Download Center <http://www.microsoft.com/downloads/>`_.
-Be careful to select the version that corresponds to the one used 
+Be careful to select the version that corresponds to the one used
 to build the Python interpreter --- different versions can have the
-same name.  For the Python 2.6 standard build, the file is 1.7 Mb 
+same name.  For the Python 2.6 standard build, the file is 1.7 Mb
 and is dated 11/29/2007.  We have a copy (:slink:`%(vcredist)s`) on
 our website for your convenience.  Save it to the *C:\\Python26*
 directory so the installer script can find it.
 
-Inno Setup creates the installer executable.  When installing Inno Setup, 
+Inno Setup creates the installer executable.  When installing Inno Setup,
 be sure to choose the 'Install Inno Setup Preprocessor' option.
 
 With all the pieces in place, you can run through all steps of the
@@ -228,6 +228,6 @@ build and install by changing to the top level python directory and
 typing::
 
 	python master_builder.py
-	
-This creates the redistributable install refl1d-<version>.exe one level
+
+This creates the redistributable installer refl1d-<version>.exe one level
 up in the directory tree.
