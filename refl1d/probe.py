@@ -281,7 +281,9 @@ class Probe(object):
         """
         Set the data for the probe to R, adding random noise dR.
         """
-        self.Ro, self.dR = R, dR
+        self.Ro, self.dR = R+0, dR+0
+        self.Ro[R==0] = 1e-10
+        self.dR[dR==0] = 1e-11
         self.resynth_data()
         self.Ro = self.R
 
@@ -291,12 +293,22 @@ class Probe(object):
         """
         self.R = self.Ro
 
-    def write_data(self, filename, header="# title: simulated data\n"):
-        """Save the data to a file"""
+    def write_data(self, filename, 
+                   columns=['Q','R','dR'],
+                   header=None):
+        """
+        Save the data to a file.
+        
+        *header* is a string with trailing \\n containing the file header.
+        *columns* is a list of column names from Q, dQ, R, dR, L, dL, T, dT.
+        
+        The default is to write Q,R,dR data.
+        """
+        if header == None:
+            header = "# %s\n"%' '.join(columns)
         with open(filename,'w') as fid:
             fid.write(header)
-            fid.write('# Q R dR\n')
-            data = numpy.vstack([self.Q, self.R, self.dR])
+            data = numpy.vstack([getattr(self,c) for c in columns])
             numpy.savetxt(fid,data.T)
 
     def _set_calc(self, T, L):
@@ -801,7 +813,7 @@ def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
 
 class ProbeSet(Probe):
     def __init__(self, probes):
-        self.probes = probes
+        self.probes = list(probes)
         self.R = numpy.hstack(p.R for p in self.probes)
         self.dR = numpy.hstack(p.dR for p in self.probes)
         self._len = sum([len(p) for p in self.probes])
@@ -840,7 +852,11 @@ class ProbeSet(Probe):
         result = [p.apply_beam(calc_Q, calc_R, **kw) for p in self.probes]
         return [numpy.hstack(v) for v in zip(*result)]
     def plot(self, theory=None, **kw):
+        import pylab
+        pylab.clf()
+        pylab.hold(True)
         for p,th in self._plotparts(theory): p.plot(theory=th, **kw)
+        pylab.hold(False)
     plot.__doc__ = Probe.plot.__doc__
     def plot_resolution(self, **kw):
         for p in self.probes: p.plot_resolution(**kw)

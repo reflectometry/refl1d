@@ -501,7 +501,7 @@ class Pulsed(object):
             probe.shared_beam()  # Share the beam parameters by default
         return probe
 
-    def simulate(self, sample, uncertainty=0.01, **kw):
+    def simulate(self, sample, uncertainty=1, **kw):
         """
         Simulate a run with a particular sample.
 
@@ -511,11 +511,11 @@ class Pulsed(object):
             *T* : [float] | |deg|
                 List of angles to be measured, such as [0.15,0.4,1,2].
             *slits* : [float] or [(float,float)] | mm
-                Slit settings for each angle. Default is 0.2*T
-            *uncertainty* = 0.01 : float or [float]
-                Incident intensity is set so that the worst dF/F is better
-                than *uncertainty*, where F is the idealized Fresnel
-                reflectivity of the sample.
+                Slit settings for each angle.
+            *uncertainty* = 1 : float or [float] | %
+                Incident intensity is set so that the median dR/R is equal
+                to *uncertainty*, where R is the idealized reflectivity 
+                of the sample.
             *dLoL* = 0.02: float
                 Wavelength resolution
             *normalize* = True : boolean
@@ -537,7 +537,8 @@ class Pulsed(object):
         from .probe import ProbeSet
         T = kw.pop('T', self.T)
         slits = kw.pop('slits', self.slits)
-        if slits is None: slits = [0.2*Ti for Ti in T]
+        if slits is None:
+            raise TypeError('Need slit openings for simulation')
 
         dLoL = kw.pop('dLoL', self.dLoL)
         normalize = kw.pop('normalize', True)
@@ -545,6 +546,7 @@ class Pulsed(object):
         background = kw.pop('background', 0)
         back_reflectivity = kw.pop('back_reflectivity', False)
         back_absorption = kw.pop('back_absorption', 1)
+        uncertainty *= 0.01
 
         # Compute reflectivity with resolution and added noise
         probes = []
@@ -554,14 +556,14 @@ class Pulsed(object):
             probe.theta_offset.value = theta_offset
             probe.back_absorption.value = back_absorption
             M = Experiment(probe=probe, sample=sample)
+            _, Rth = M.reflectivity()
             # Note: probe.L is reversed because L is sorted by increasing
             # Q in probe.
             I = rebin(binedges(self.feather[0]),self.feather[1],
                       binedges(probe.L[::-1]))[::-1]
-            Ci = max(1./(uncertainty**2 * I * M.fresnel()))
+            Ci = numpy.median(1./(uncertainty**2 * I * Rth))
             Icounts = Ci*I
 
-            _, Rth = M.reflectivity()
             Rcounts = numpy.random.poisson(Rth*Icounts)
             if background > 0:
                 Rcounts += numpy.random.poisson(Icounts*background,
@@ -578,7 +580,8 @@ class Pulsed(object):
             #       = (1/X + 1/Y) * (X/Y)**2
             #       = (Y + X) * X/Y**3
             R = Rcounts/Icounts
-            dR = numpy.sqrt((Icounts + Rcounts)*Rcounts/Icounts**3)
+            dR = numpy.sqrt(((Icounts + Rcounts)*Rcounts+1)/Icounts**3)
+            #print "median",numpy.median(dR/R)
 
             if not normalize:
                 #Ci = 1./max(R)

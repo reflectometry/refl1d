@@ -183,7 +183,7 @@ def dTdL2dQ(T=None, dT=None, L=None, dL=None):
 
 def dQdT2dLoL(Q, dQ, T, dT):
     """
-    Convert a calculated Q resolution and wavelength divergence to a
+    Convert a calculated Q resolution and angular divergence to a
     wavelength dispersion.
 
     *Q*, *dQ* |1/Ang|  $Q$ and 1-\ $\sigma$ $Q$ resolution
@@ -194,6 +194,40 @@ def dQdT2dLoL(Q, dQ, T, dT):
     return sqrt( (sigma2FWHM(dQ)/Q)**2 - (radians(dT)/tan(radians(T)))**2 )
 
 
+
+def dQdL2dT(Q, dQ, L, dL):
+    """
+    Convert a calculated Q resolution and wavelength dispersion to
+    angular divergence.
+
+    *Q*, *dQ* |1/Ang|  $Q$ and 1-\ $\sigma$ $Q$ resolution
+    *L*, *dL* |deg| angle and FWHM angular divergence
+
+    Returns FWHM $\theta, \Delta\theta$
+    """
+    T = QL2T(Q,L)
+    dT = degrees( sqrt( (sigma2FWHM(dQ)/Q)**2 - (dL/L)**2) * tan(radians(T)) )
+    return T,dT
+
+
+Plancks_constant=6.62618e-27 # Planck constant (erg*sec)
+neutron_mass=1.67495e-24;    # neutron mass (g)
+def TOF2L(d_moderator, TOF):
+    """
+    Convert neutron time-of-flight to wavelength.
+    
+    .. math::
+    
+        \lambda = (t/d) (h/n_m)
+        
+    where::
+    
+        $\lambda$ is wavelength in |Ang|
+        $t$ is time-of-flight in $u$\s
+        $h$ is Planck's constant in erg seconds
+        $n_m$ is the neutron mass in g
+    """
+    return TOF*(Plancks_constant/neutron_mass/d_moderator)
 
 
 def bins(low, high, dLoL):

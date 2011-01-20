@@ -4,15 +4,20 @@ Adaptors for fitting.
 parameters associated with the model.  Within fit problems, self.parameters
 is a list of fitted parameters only.
 """
-from __future__ import division
+from __future__ import division, with_statement
+import os
 import sys
+import time
 from copy import deepcopy
+
 from numpy import inf, nan, isnan
 import numpy
-from mystic import parameter, bounds as mbounds, monitor
-from mystic.formatnum import format_uncertainty
-from mystic.history import History
-import time
+
+from .mystic import parameter, bounds as mbounds, monitor
+from .mystic.formatnum import format_uncertainty
+from .mystic.history import History
+
+from .util import pushdir
 
 class ConsoleMonitor(monitor.TimedUpdate):
     def __init__(self, problem, progress=1, improvement=30):
@@ -620,8 +625,8 @@ class FitProblem(object):
         return 2*self.nllf(pvec)/self.dof
 
     def show(self):
-        #print parameter.format(self.model_parameters())
-        #print "[chisq=%g, nllf=%g]" % (self.chisq(), self.nllf()/self.dof)
+        print parameter.format(self.model_parameters())
+        print "[chisq=%g, nllf=%g]" % (self.chisq(), self.nllf()/self.dof)
         print parameter.summarize(self.parameters)
 
     def save(self, basename):
@@ -707,15 +712,17 @@ def load_problem(file, options=[]):
 
     Raises ValueError if the script does not define problem.
     """
-    ctx = dict(__file__=file)
-    argv = sys.argv
-    sys.argv = [file] + options
-    execfile(file, ctx) # 2.x
-    #exec(compile(open(model_file).read(), model_file, 'exec'), ctx) # 3.0
-    sys.argv = argv
-    try:
-        problem = ctx["problem"]
-    except AttributeError:
-        raise ValueError(file+" does not define 'problem=FitProblem(...)'")
+    dir,file = os.path.split(file)
+    with pushdir(dir):
+        ctx = dict(__file__=file)
+        argv = sys.argv
+        sys.argv = [file] + options
+        execfile(file, ctx) # 2.x
+        #exec(compile(open(model_file).read(), model_file, 'exec'), ctx) # 3.0
+        sys.argv = argv
+        try:
+            problem = ctx["problem"]
+        except AttributeError:
+            raise ValueError(file+" does not define 'problem=FitProblem(...)'")
 
     return problem

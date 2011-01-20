@@ -1,6 +1,6 @@
 # This program is in the public domain
 # Author: Paul Kienzle
-"""
+r"""
 .. sidebar:: On this Page
 
         * :class:`Mlayer magnetic <refl1d.staj.MlayerMagnetic>`
@@ -120,7 +120,7 @@ TANH_FWHM = 0.47320111770856327 # 1/2 atanh(erf(1/sqrt(2))) / acosh(sqrt(2))
 #for a non-magnetic (6 values) or a magnetic (4 values) Staj file.
 
 class MlayerModel(object):
-    """
+    r"""
     Model definition used by MLayer program.
 
     **Attributes:**
@@ -135,8 +135,9 @@ class MlayerModel(object):
 
     Resolution is defined by wavelength and by incident angle:
 
-        *wavelength*, *wavelength_dispersion*, *angular_divergence*
-            resolution equation uses dQ/Q = dL/L + dT/sin(T)
+        *wavelength*, *wavelength_dispersion*, *angular_divergence*    
+            resolution is calculated as 
+            $\Delta Q/Q = \Delta\lambda/\lambda + \Delta\theta/\theta$
 
     Additional beam parameters correct for intensity, background and
     possibly sample alignment:
@@ -181,7 +182,7 @@ class MlayerModel(object):
         *thickness*, *roughness* : float | |Ang|
             layer thickness and FWHM roughness
         *rho*, *irho*, *incoh* : float | |1e-6/Ang^2|
-            complex coherent rho + 1j * irho and incoherent SLD
+            complex coherent $\rho + j \rho_i$ and incoherent SLD
 
     Computed attributes are provided for convenience:
 
@@ -191,10 +192,10 @@ class MlayerModel(object):
             absorption cross section (2*wavelength*irho + incoh)
 
     .. Note::
-          The staj files store SLD as 16*pi*rho, 2*wavelength*irho+incoh
-          with an additional column of 0 for magnetic SLD. This conversion will
-          happen automatically on read/write. Note that there is no way to separate
-          irho and incoh on read so incoh is set to 0.
+          The staj files store SLD as $16\pi\rho$, $2\lambda\rho_i$
+          with an additional column of 0 for magnetic SLD. This conversion 
+          happens automatically on read/write. The incoherent cross section
+          is assumed to be zero.
 
     The layers are ordered from surface to substrate.
 
@@ -313,7 +314,7 @@ class MlayerModel(object):
             fid.close()
 
     def FWHMresolution(self, Q):
-        """
+        r"""
         Return the resolution at Q for mlayer with the current settings
         for wavelength, wavelength divergence and angular divergence.
 
@@ -323,28 +324,30 @@ class MlayerModel(object):
                 + 4 * pi * self.angular_divergence) / self.wavelength
 
     def fit_FWHMresolution(self, Q, dQ, weight=1):
-        """
+        r"""
         Choose the best dL and dT to match the resolution dQ.
 
         Given that mlayer uses the following resolution function:
         
-        ..math::
+        .. math::
 
-            \Delta Q = (|Q| \Delta\lambda + 4 \pi \Delta\theta)/\lambda
+            \Delta Q_k = (|Q_k| \Delta\lambda + 4 \pi \Delta\theta)/\lambda_k
 
         we can use a linear system solver to find the optimal 
-        $\Delta \lambda$ and $\Delta \theta$:
+        $\Delta \lambda$ and $\Delta \theta$ across our dataset from the 
+        over-determined system:
         
-        ..math::
+        .. math::
 
-          [|Q|/\lambda 4\pi/\lambda][\Delta\lambda \Delta\theta]^T = \Delta Q
+          [|Q_k|/\lambda_k, 4\pi/\lambda_k][\Delta\lambda, \Delta\theta]^T 
+              = \Delta Q_k
 
-        If weights are provided (e.g., $\Delta R/R$), then weight each point 
-        before fitting.
+        If weights are provided (e.g., $\Delta R_k/R_k$), then weigh each 
+        point during the fit.
 
         Given that the experiment is often run with fixed slits at the
         start and end, you may choose to match the resolution across the
-        entire Q range, or instead restrict it to just the region where
+        entire $Q$ range, or instead restrict it to just the region where
         the slits are opening.  You will generally want to get the resolution
         correct at the critical edge since that's where it will have the
         largest effect on the fit.
@@ -684,7 +687,7 @@ class MlayerMagnetic(object):
 
         *wavelength*, *wavelength_dispersion*, *angular_divergence*
             resolution is calculated as 
-            $\Delta Q/Q = \Delta\lambda/\lambda + \Delta\theta/\sin\theta$
+            $\Delta Q/Q = \Delta\lambda/\lambda + \Delta\theta/\theta$
 
     Additional beam parameters correct for intensity, background and
     possibly guide field angle:
@@ -722,7 +725,7 @@ class MlayerMagnetic(object):
 
         *thickness*, *roughness* : float | |Ang|
             layer thickness and FWHM roughness
-        *rho*, *irho* : float, float | $16 \pi \rho$, $irho/(2\lambda)$
+        *rho*, *irho* : float, float | $16 \pi \rho$, $2\lambda\rho_i$
             complex scattering length density
         *mthickness*, *mroughness* : float | |Ang|
             magnetic thickness and roughness
@@ -733,8 +736,8 @@ class MlayerMagnetic(object):
         *sigma_roughness*, *sigma_mroughness* : float | |Ang|
             computed 1-\ $\sigma$ equivalent roughness for erf profile
 
-    The conversion from stored $16 \pi \rho$, $\rho_i/(2\lambda)$ to
-    in memory $10^6 \rho$,$10^6 \rho_i$  happens automatically on
+    The conversion from stored $16 \pi \rho$, $2\lambda\rho_i$ to
+    in memory $10^6 \rho$, $10^6 \rho_i$  happens automatically on
     read/write.
 
     The layers are ordered from surface to substrate.

@@ -11,7 +11,7 @@ complex models with many constraints relatively easily.
 .. toctree::
    :maxdepth: 2
 
-   simple_model.rst
+   intro.rst
    multidata.rst
    special_model.rst
    fitting.rst

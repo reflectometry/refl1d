@@ -219,3 +219,14 @@ class redirect_console(object):
         del self.sys_stdout[-1]
         del self.sys_stderr[-1]
         return False
+
+import os
+class pushdir(object):
+    def __init__(self, path):
+        self.path = os.path.abspath(path)
+    def __enter__(self):
+        self._cwd = os.getcwd()
+        os.chdir(self.path)
+    def __exit__(self, *args):
+        os.chdir(self._cwd)
+    

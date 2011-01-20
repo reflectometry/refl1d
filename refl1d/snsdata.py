@@ -13,7 +13,7 @@ The following instruments are defined::
 
     Liquids, Magnetic
 
-These are :class:`resolution.Polychromatic` classes tuned with
+These are :class:`resolution.Pulsed` classes tuned with
 default instrument parameters and loaders for reduced SNS data.
 See :mod:`resolution` for details.
 """
@@ -25,17 +25,10 @@ from numpy import sqrt
 from .instrument import Pulsed
 from . import resolution
 from . import util
+from .probe import make_probe
 
 ## Estimated intensity vs. wavelength for liquids reflectometer
 LIQUIDS_FEATHER = numpy.array([
-  (0.821168,28.5669),
-  (0.930657,23.5032),
-  (1.04015,19.0127),
-  (1.14964,16.9108),
-  (1.25912,15.4777),
-  (1.45073,15.6688),
-  (1.61496,16.6242),
-  (1.83394,18.4395),
   (2.02555,20.6369),
   (2.29927,23.6943),
   (2.57299,23.6943),
@@ -61,16 +54,18 @@ def load(filename, instrument=None, **kw):
     """
     Return a probe for NCNR data.
     """
-    header, data = parse_file(filename)
-    return _make_probe(geometry=Pulsed(), header=header, data=data, **kw)
-
-def _make_probe(geometry, header, data, **kw):
-    header.update(**kw)
+    if instrument is None: instrument=Monochromatic()
+    header,data = parse_file(filename)
+    header.update(**kw) # calling parameters override what's in the file.
     Q,dQ,R,dR,L = data
     dL = resolution.binwidths(L)
-    T = kw.pop('angle',resolution.QL2T(Q[0],L[0]))
-    resolution = geometry.resolution(L=L, dL=dL, T=T, **header)
-    probe = resolution.probe(data=(R,dR), **header)
+    if 'angle' in kw and 'slits_at_Tlo' in w:
+        T = kw.pop('angle',resolution)
+        probe = instrument.probe(L=L, dL=dL, T=T, data=(R,dR), **header)
+    else:
+        T,dT = resolution.dQdL2dT(Q[0],dQ[0],L[0],dL[0])
+        probe = make_probe(T=T,dT=dT,L=L,dL=dL,radiation='neutron',
+                           data=(R,dR), **kw)
     probe.title = header['title']
     probe.date = header['date']
     probe.instrument = header['instrument']
@@ -108,7 +103,7 @@ def parse_file(filename):
     header['date'] = raw_header.get('D','')
 
     # Column names and units
-    columnpat = re.compile(r'(?P<name>\w+)[(](?P<units>\w*)[)]')
+    columnpat = re.compile(r'(?P<name>\w+)[(](?P<units>[^)]*)[)]')
     columns,units = zip(*columnpat.findall(raw_header.get('L','')))
     header['columns'] = columns
     header['units'] = units
@@ -129,11 +124,52 @@ def parse_file(filename):
 
     return header, data
 
+def write_file(filename, probe, original=None, date=None,
+               title=None, notes=None, run=None, charge=None):     
+    """
+    Save probe as SNS reduced file.
+    """
+## Example header
+#F /SNSlocal/REF_L/2007_1_4B_SCI/2895/NeXus/REF_L_2895.nxs
+#E 1174593434.7
+#D 2007-03-22 15:57:14
+#C Run Number: 2895
+#C Title: MK NR4 dry 032007_No2Rep0
+#C Notes: MK NR 4 DU 53 dry from air
+#C Detector Angle: (0.0, 'degree')
+#C Proton Charge: 45.3205833435
+
+#S 1 Spectrum ID ('bank1', (85, 151))
+#N 3
+#L time_of_flight(microsecond) data() Sigma()
+    from datetime import datetime as dt
+
+    parts = []
+    if original is None: original = filename
+    if date is None:     date = dt.strftime ( dt.now(), '%Y-%m-%d %H:%M:%S')
+    parts.append('#F '+original)
+    parts.append('#D '+date)
+    if run is not None:
+        parts.append('#C Run Number: %s'%run)
+    if title is not None:
+        parts.append('#C Title: %s'%title)
+    if notes is not None:
+        parts.append('#C Notes: %s'%notes)
+    parts.append("#C Detector Angle: (%g, 'degree')"%probe.T[0])
+    if charge is not None:
+        parts.append('#C Proton Charge: %s'%charge)
+    parts.append('')
+    parts.append('#N 5')
+    parts.append('#L Q(1/A) dQ(1/A) R() dR() L(A)')
+    parts.append('')
+    header = "\n".join(parts)
+    probe.write_data(filename, columns=['Q','dQ','R','dR','L'],
+                     header=header)
+
 
 class SNSData(object):
     def load(self, filename, **kw):
-        header,data = parse_file(filename)
-        return _make_probe(geometry=self, header=header, data=data, **kw)
+        return load(filename, instrument=self, **kw)
 
 # TODO: print "Insert correct slit distances for Liquids and Magnetic"
 class Liquids(SNSData, Pulsed):
@@ -143,13 +179,14 @@ class Liquids(SNSData, Pulsed):
     instrument = "Liquids"
     radiation = "neutron"
     feather = LIQUIDS_FEATHER
-    wavelength = 1.5,5.
+    wavelength = 2.,15.
     #wavelength = 0.5,5
     #wavelength = 5.5,10
     #wavelength = 10.5,15
     dLoL = 0.02
     d_s1 = 230.0 + 1856.0
     d_s2 = 230.0
+    d_moderator = 14.850 # moderator to detector distance
 
 class Magnetic(SNSData, Pulsed):
     """

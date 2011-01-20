@@ -73,7 +73,9 @@ class ExperimentBase(object):
             raise ValueError("No data from which to calculate residuals")
         if 'residuals' not in self._cache:
             _,R = self.reflectivity()
-            self._cache['residuals'] = (self.probe.R - R)/self.probe.dR
+            resid = (self.probe.R - R)/self.probe.dR
+            self._cache['residuals'] = resid
+            
         return self._cache['residuals']
 
     def nllf(self):
