@@ -7,6 +7,7 @@ from numpy.distutils.core import setup
 
 def configuration(parent_package='', top_path=None):
     config = Configuration('refl1d', parent_package, top_path)
+    config.set_options(quiet=True) # silence debug/informational messages
 
     # Create the reflectometry library extension.
     srcpath = os.path.join(config.package_path, 'lib')

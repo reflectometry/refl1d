@@ -8,6 +8,7 @@ from numpy.distutils.misc_util import Configuration
 
 def configuration(parent_package='', top_path=None):
     config = Configuration('amqp_map', parent_package, top_path)
+    config.set_options(quiet=True) # silence debug/informational messages
 
     config.add_data_dir('example')
 

@@ -265,10 +265,13 @@ def build_documentation():
 def run_unittests():
     # Run Nose unittests.
     print SEPARATOR
-    print "\nStep 7 - Running Nose unittests ...\n"
+    print "\nStep 7 - Running unittests using Nose and test.py ...\n"
     os.chdir(INS_DIR)
 
     exec_cmd("nosetests -v %s" %PKG_NAME)
+
+    os.chdir(os.path.join(INS_DIR, PKG_NAME))
+    exec_cmd("%s test.py" %PYTHON)
 
 
 def run_doctests():
