@@ -25,7 +25,6 @@ adjusts the variables of the model yielding the best fit to the data.
 .. toctree::
    :maxdepth: 2
 
-   intro.rst
    install.rst
    contributing.rst
    license.rst
