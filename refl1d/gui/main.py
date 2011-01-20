@@ -107,14 +107,14 @@ def load_staj(file):
         if p.value != 0: p.pmp(20)
         #p.fixed = False
 
-    job = FitProblem(M)
-    job.file = file
-    job.title = file
-    job.name = file
-    job.options = []
-    return job
+    problem = FitProblem(M)
+    problem.file = file
+    problem.title = file
+    problem.name = file
+    problem.options = []
+    return problem
 
-def load_job(args):
+def load_problem(args):
     #import refl1d.context
     file, options = args[0], args[1:]
 
@@ -131,12 +131,12 @@ def load_job(args):
     #exec(compile(open(model_file).read(), model_file, 'exec'), ctx) # 3.0
     sys.argv = argv
     try:
-        job = ctx["problem"]
+        problem = ctx["problem"]
     except AttributeError:
         raise ValueError(file+" does not define 'problem=FitProblem(models)'")
-    job.file = file
-    job.options = options
-    return job
+    problem.file = file
+    problem.options = options
+    return problem
 
 # ==== Mappers ====
 
@@ -145,8 +145,8 @@ class SerialMapper:
     def start_worker(model):
         pass
     @staticmethod
-    def start_mapper(job, modelargs):
-        return lambda points: map(job.nllf, points)
+    def start_mapper(problem, modelargs):
+        return lambda points: map(problem.nllf, points)
     @staticmethod
     def stop_mapper(mapper):
         pass

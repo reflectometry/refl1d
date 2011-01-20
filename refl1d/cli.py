@@ -148,9 +148,7 @@ def random_population(problem, pop_size):
     return population
 
 
-def load_staj(file):
-    M = load_mlayer(file)
-
+def fit_all(M, pmp=20):
     # Exclude unlikely fitting parameters
     exclude = set((M.sample[0].thickness,
                M.sample[-1].thickness,
@@ -161,12 +159,6 @@ def load_staj(file):
         exclude.add(M.probe.intensity)
     if M.probe.background.value < 2e-10:
         exclude.add(M.probe.background.value)
-    ## Zero values are excluded below
-    #if M.probe.theta_offset.value == 0:
-    #    exclude.add(M.probe.theta_offset)
-    #for L in M.sample:
-    #    if L.rho.value == 0: exclude.add(L.rho)
-    #    if L.irho.value == 0: exclude.add(L.irho)
 
     # Fit everything else using a range of +/- 20 %
     for p in parameter.unique(M.parameters()):
@@ -174,12 +166,16 @@ def load_staj(file):
         if p.value != 0: p.pmp(20)
         #p.fixed = False
 
-    job = FitProblem(M)
-    job.file = file
-    job.title = os.path.basename(file)
-    job.name = file
-    job.options = []
-    return job
+
+def load_staj(file):
+    M = load_mlayer(file)
+    fit_all(M, pmp=20)
+    problem = FitProblem(M)
+    problem.file = file
+    problem.title = os.path.basename(file)
+    problem.name = file
+    problem.options = []
+    return problem
 
 def load_script(file, options):
     ctx = dict(__file__=file)
@@ -189,16 +185,16 @@ def load_script(file, options):
     #exec(compile(open(model_file).read(), model_file, 'exec'), ctx) # 3.0
     sys.argv = argv
     try:
-        job = ctx["problem"]
+        problem = ctx["problem"]
     except AttributeError:
         raise ValueError(file+" does not define 'problem=FitProblem(models)'")
-    job.file = file
-    job.title = os.path.basename(file)
-    job.name = file
-    job.options = options
-    return job
+    problem.file = file
+    problem.title = os.path.basename(file)
+    problem.name = file
+    problem.options = options
+    return problem
 
-def load_job(args):
+def load_problem(args):
     file, options = args[0], args[1:]
 
     if file.endswith('.staj'):
@@ -206,70 +202,70 @@ def load_job(args):
     else:
         return load_script(file, options)
 
-def preview(job):
-    job.show()
-    job.plot()
+def preview(problem):
+    problem.show()
+    problem.plot()
     pylab.show()
 
-def remember_best(fitter, job, best):
-    fitter.save(job.output_path)
+def remember_best(fitter, problem, best):
+    fitter.save(problem.output_path)
 
     #try:
-    #    job.save(job.output_path, best)
+    #    problem.save(problem.output_path, best)
     #except:
     #    pass
-    with util.redirect_console(job.output_path+".out"):
+    with util.redirect_console(problem.output_path+".out"):
         fitter.show()
     fitter.show()
-    fitter.plot(job.output_path)
+    fitter.plot(problem.output_path)
 
     # Plot
 
-def make_store(job, opts):
+def make_store(problem, opts):
     # Determine if command line override
     if opts.store != None:
-        job.store = opts.store
-    job.output_path = os.path.join(job.store,job.name)
+        problem.store = opts.store
+    problem.output_path = os.path.join(problem.store,problem.name)
 
     # Check if already exists
-    if not opts.overwrite and os.path.exists(job.output_path+'.out'):
+    if not opts.overwrite and os.path.exists(problem.output_path+'.out'):
         if opts.batch:
-            print >>sys.stderr, job.output_path+" already exists.  Use --overwrite to replace."
+            print >>sys.stderr, problem.output_path+" already exists.  Use --overwrite to replace."
             sys.exit(1)
-        print job.output_path,"already exists."
+        print problem.output_path,"already exists."
         print "Press 'y' to overwrite, or 'n' to abort and restart with --store=newpath"
         ans = raw_input("Overwrite [y/n]? ")
         if ans not in ("y","Y","yes"):
             sys.exit(1)
 
     # Create it and copy model
-    try: os.mkdir(job.store)
+    try: os.mkdir(problem.store)
     except: pass
-    shutil.copy2(job.file, job.store)
+    shutil.copy2(problem.file, problem.store)
 
     # Redirect sys.stdout to capture progress
     if opts.batch:
-        sys.stdout = open(job.output_path+".mon","w")
+        sys.stdout = open(problem.output_path+".mon","w")
 
     # Show command line arguments and initial model
     print "#"," ".join(sys.argv)
-    job.show()
+    problem.show()
 
 
-def run_profile(job):
+def run_profile(problem):
     from .util import profile
-    p = random_population(job,1000)
-    profile(map,job.nllf,p)
+    p = random_population(problem,1000)
+    profile(map,problem.nllf,p)
 
 # ==== Mappers ====
 
 class SerialMapper:
     @staticmethod
-    def start_worker(job):
+    def start_worker(problem):
         pass
     @staticmethod
-    def start_mapper(job, modelargs):
-        return lambda points: map(job.nllf, points)
+    def start_mapper(problem, modelargs):
+        return lambda points: map(problem.nllf, points)
     @staticmethod
     def stop_mapper(mapper):
         pass
@@ -277,7 +273,7 @@ class SerialMapper:
 class AMQPMapper:
 
     @staticmethod
-    def start_worker(job):
+    def start_worker(problem):
         #sys.stderr = open("dream-%d.log"%os.getpid(),"w")
         #print >>sys.stderr,"worker is starting"; sys.stdout.flush()
         from amqp_map.config import SERVICE_HOST
@@ -285,11 +281,11 @@ class AMQPMapper:
         server = connect(SERVICE_HOST)
         #os.system("echo 'serving' > /tmp/map.%d"%(os.getpid()))
         #print "worker is serving"; sys.stdout.flush()
-        serve(server, "dream", job.nllf)
+        serve(server, "dream", problem.nllf)
         #print >>sys.stderr,"worker ended"; sys.stdout.flush()
 
     @staticmethod
-    def start_mapper(job, modelargs):
+    def start_mapper(problem, modelargs):
         import multiprocessing
         from amqp_map.config import SERVICE_HOST
         from amqp_map.core import connect, Mapper
@@ -480,21 +476,21 @@ def main():
     opts.Tmin = float(opts.Tmin)
     opts.Tmax = float(opts.Tmax)
 
-    job = load_job(opts.args)
+    problem = load_problem(opts.args)
     if opts.random:
-        job.randomize()
+        problem.randomize()
     if opts.simulate:
-        job.simulate_data(noise=float(opts.noise))
+        problem.simulate_data(noise=float(opts.noise))
         # If fitting, then generate a random starting point different
         # from the simulation
         if not (opts.edit or opts.check or opts.preview):
-            job.randomize()
+            problem.randomize()
 
     if opts.fit == 'dream':
-        fitter = DreamProxy(problem=job, opts=opts)
+        fitter = DreamProxy(problem=problem, opts=opts)
     else:
         fitter = FitProxy(FITTERS[opts.fit],
-                          problem=job, opts=opts)
+                          problem=problem, opts=opts)
     if opts.parallel or opts.worker:
         mapper = AMQPMapper
     else:
@@ -506,19 +502,19 @@ def main():
 
     if opts.edit:
         from .profileview.demo import demo
-        demo(job)
+        demo(problem)
     elif opts.profile:
-        run_profile(job)
+        run_profile(problem)
     elif opts.worker:
-        mapper.start_worker(job)
+        mapper.start_worker(problem)
     elif opts.check:
-        print "chisq",job()
+        print "chisq",problem()
     elif opts.preview:
-        preview(job)
+        preview(problem)
     else:
-        make_store(job,opts)
-        fitter.mapper = mapper.start_mapper(job, opts.args)
+        make_store(problem,opts)
+        fitter.mapper = mapper.start_mapper(problem, opts.args)
         best = fitter.fit()
-        remember_best(fitter, job, best)
+        remember_best(fitter, problem, best)
         if not opts.batch:
             pylab.show()
