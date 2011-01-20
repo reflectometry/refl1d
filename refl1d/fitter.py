@@ -696,3 +696,26 @@ class MultiFitProblem(FitProblem):
             f.plot(fignum=i+fignum)
             pylab.suptitle('Model %d'%i)
             if figfile != None: pylab.savefig(figfile+"-model%d"%i)
+
+def load_problem(file, options=[]):
+    """
+    Load a problem definition from a python script file.
+
+    sys.argv is set to ``[file] + options`` within the context of the script.
+
+    The user must define ``problem=FitProblem(...)`` within the script.
+
+    Raises ValueError if the script does not define problem.
+    """
+    ctx = dict(__file__=file)
+    argv = sys.argv
+    sys.argv = [file] + options
+    execfile(file, ctx) # 2.x
+    #exec(compile(open(model_file).read(), model_file, 'exec'), ctx) # 3.0
+    sys.argv = argv
+    try:
+        problem = ctx["problem"]
+    except AttributeError:
+        raise ValueError(file+" does not define 'problem=FitProblem(...)'")
+
+    return problem

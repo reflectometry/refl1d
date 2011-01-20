@@ -9,8 +9,9 @@ import subprocess
 import numpy
 import pylab
 import dream
-from .stajconvert import load_mlayer
-from .fitter import DEFit, AmoebaFit, SnobFit, BFGSFit, RLFit, PTFit, FitProblem
+from .stajconvert import load_mlayer, fit_all
+from .fitter import DEFit, AmoebaFit, SnobFit, BFGSFit, RLFit, PTFit
+from . import fitter
 from . import util
 from .mystic import parameter
 from .probe import Probe
@@ -147,60 +148,21 @@ def random_population(problem, pop_size):
 
     return population
 
+def load_problem(args):
+    filename = args[0]
+    if filename.endswith('.staj'):
+        model = load_mlayer(filename, fit_pmp=20)
+        options = []
+        problem = fitter.FitProblem(model)
+    else:
+        options = args[1:]
+        problem = fitter.load_problem(filename, options=options)
 
-def fit_all(M, pmp=20):
-    # Exclude unlikely fitting parameters
-    exclude = set((M.sample[0].thickness,
-               M.sample[-1].thickness,
-               M.sample[-1].interface,
-               M.probe.back_absorption,
-               ))
-    if M.probe.intensity.value == 1:
-        exclude.add(M.probe.intensity)
-    if M.probe.background.value < 2e-10:
-        exclude.add(M.probe.background.value)
-
-    # Fit everything else using a range of +/- 20 %
-    for p in parameter.unique(M.parameters()):
-        if p in exclude: continue
-        if p.value != 0: p.pmp(20)
-        #p.fixed = False
-
-
-def load_staj(file):
-    M = load_mlayer(file)
-    fit_all(M, pmp=20)
-    problem = FitProblem(M)
-    problem.file = file
-    problem.title = os.path.basename(file)
-    problem.name = file
-    problem.options = []
-    return problem
-
-def load_script(file, options):
-    ctx = dict(__file__=file)
-    argv = sys.argv
-    sys.argv = [file] + options
-    execfile(file, ctx) # 2.x
-    #exec(compile(open(model_file).read(), model_file, 'exec'), ctx) # 3.0
-    sys.argv = argv
-    try:
-        problem = ctx["problem"]
-    except AttributeError:
-        raise ValueError(file+" does not define 'problem=FitProblem(models)'")
-    problem.file = file
-    problem.title = os.path.basename(file)
-    problem.name = file
+    problem.file = filename
+    problem.title = os.path.basename(filename)
+    problem.name = filename
     problem.options = options
     return problem
-
-def load_problem(args):
-    file, options = args[0], args[1:]
-
-    if file.endswith('.staj'):
-        return load_staj(file)
-    else:
-        return load_script(file, options)
 
 def preview(problem):
     problem.show()

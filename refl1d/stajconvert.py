@@ -6,20 +6,45 @@ from .material import SLD
 from .resolution import QL2T,sigma2FWHM
 from .probe import NeutronProbe, XrayProbe
 
-def load_mlayer(filename):
+def load_mlayer(filename, fit_pmp=0):
     """
-    Load a staj file as a model
+    Load a staj file as a model.
     """
     staj = MlayerModel.load(filename)
-    return mlayer_to_model(staj)
+    model = mlayer_to_model(staj)
+    if fit_pmp != 0:
+        fit_all(model, pmp=fit_pmp)
+    return model
 
 def save_mlayer(experiment, filename):
     """
-    Save a model to a staj file
+    Save a model to a staj file.
     """
     staj = model_to_mlayer(experiment)
     #print staj
     staj.save(filename)
+
+def fit_all(M, pmp=20):
+    """
+    Set all non-zero parameters to fitted parameters inside the model.
+    """
+
+    # Exclude unlikely fitting parameters
+    exclude = set((M.sample[0].thickness,
+               M.sample[-1].thickness,
+               M.sample[-1].interface,
+               M.probe.back_absorption,
+               ))
+    if M.probe.intensity.value == 1:
+        exclude.add(M.probe.intensity)
+    if M.probe.background.value < 2e-10:
+        exclude.add(M.probe.background.value)
+
+    # Fit everything else using a range of +/- 20 %
+    for p in parameter.unique(M.parameters()):
+        if p in exclude: continue
+        if p.value != 0: p.pmp(20)
+        #p.fixed = False
 
 def mlayer_to_model(staj):
     """
@@ -99,9 +124,9 @@ def _mlayer_to_probe(s):
 
 def model_to_mlayer(model):
     """
-    Return an mlayer model based on the a slab stack
+    Return an mlayer model based on the a slab stack.
 
-    Raises TypeError if model cannot be stored as a staj file
+    Raises TypeError if model cannot be stored as a staj file.
     """
     #TODO: when back reflectivity is handled properly, need to support it here
     stack = model.sample
