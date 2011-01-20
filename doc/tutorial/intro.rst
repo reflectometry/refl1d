@@ -166,7 +166,7 @@ Performing a fit
 
 With the sample defined and the data loaded, the last step is to define
 the fitting parameters.  This is shown in
-:file:`ex1/nifilm-fit.py </examples/ex1/nifilm-fit.py>`:
+:download:`ex1/nifilm-fit.py </examples/ex1/nifilm-fit.py>`:
 
 .. literalinclude:: /examples/ex1/nifilm-fit.py
     :linenos:
@@ -198,3 +198,6 @@ We can now load and run the fit::
     p.setp(x)
     p.plot()
     pylab.show()
+
+All is well: $\chi^2$ will be approximately 1 and the line goes nicely
+through the data.

@@ -44,8 +44,8 @@ Materials can be stacked as slabs, with a thickness for each layer and
 roughness at the top of each layer.  Because this is such a common
 operation, there is special syntax to do it, using '|' as the layer
 separator and `()` to specify thickness and interface.  For example, 
-the following is a 30 A gold layer on top of silicon, with a 
-silicon:gold interface of 5 A and a gold:air interface of 2 A:
+the following is a 30 |Ang| gold layer on top of silicon, with a 
+silicon:gold interface of 5 |Ang| and a gold:air interface of 2 |Ang|::
 
     >> from refl1d import *
     >> sample = silicon(0,5) | gold(30,2) | air
