@@ -27,9 +27,10 @@ import sys, os
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 
-sys.path.append(os.path.abspath('..'))
-sys.path.append(os.path.abspath('../dream'))
-sys.path.append(os.path.abspath('_extensions'))
+sys.path.append(os.path.abspath('.')) # for sitedoc
+sys.path.append(os.path.abspath('..')) # for refl1d
+sys.path.append(os.path.abspath('../dream')) # for dream
+sys.path.append(os.path.abspath('_extensions')) # for sphinx extensions
 
 """
 import glob

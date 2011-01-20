@@ -223,17 +223,17 @@ class Stepper(object):
         #print "pop",pop
 
         # Select the dims to update based on the crossover ratio, making
-        # sure at least one dim is selected
-        vars = nonzero(rand(N) < CR)
-        if len(vars) == 0: vars = [randint(N)]
+        # sure at least one significant dim is selected
+        while True:
+            vars = nonzero(rand(N) < CR)
+            if len(vars) == 0: vars = [randint(N)]
+            step = numpy.sum(pop[:k]-pop[k:], axis=0)
+            if norm(step[vars]) > 0: break
 
         # Weight the size of the jump inversely proportional to the
         # number of contributions, both from the parameters being
         # updated and from the population defining the step direction.
         gamma = 2.38/sqrt(2 * len(vars) * k)
-
-        # Find and average step from the selected pairs
-        step = numpy.sum(pop[:k]-pop[k:], axis=0)
 
         # Apply that step with F scaling and noise
         eps = 1 + noise * (2 * rand(N) - 1)
@@ -243,6 +243,7 @@ class Stepper(object):
         #print "vars",vars.shape
         delta = zeros_like(p)
         delta[vars] = gamma*(eps*step)[vars]
+        assert norm(delta) != 0
         return p + delta
 
     def direct(self, p, stream):
@@ -250,7 +251,9 @@ class Stepper(object):
             #print "jiggling",stream,len(self.history.buffer[stream])
             return self.jiggle(p,1e-6)
         pair = self.history.draw(stream, 2)
-        return p + pair[0][3] - pair[1][3]
+        delta = pair[0][3] - pair[1][3]
+        assert norm(delta) != 0
+        return p + delta
     def jiggle(self, p, noise):
         delta = randn(len(p))*self.step*noise
         assert norm(delta) != 0
@@ -264,6 +267,7 @@ class Stepper(object):
             idx = choose(n,k)
         delta = zeros_like(p)
         delta[idx] = randn(k)*self.step[idx]*noise
+        assert norm(delta) != 0
         return p + delta
 
 class ReflectBounds(object):

@@ -10,10 +10,8 @@ We start with a basic example, a nickel film on silicon:
 
 .. plot::
 
-    import pylab
-    from refl1d.fitter import load_problem
-    load_problem('examples/ex1/nifilm.py').plot()
-    pylab.show()
+    from sitedoc import plot_model
+    plot_model('ex1/nifilm.py')
 
 This model shows three layers (silicon, nickel, and air) as seen in the
 solid green line (the step profile).  In addition we have a dashed green
@@ -102,10 +100,8 @@ the SNS Liquids reflectometer:
 
 .. plot::
 
-    import pylab
-    from refl1d.fitter import load_problem
-    load_problem('examples/ex1/nifilm-tof.py').plot()
-    pylab.show()
+    from sitedoc import plot_model
+    plot_model('ex1/nifilm-tof.py')
 
 This model is defined by 
 :download:`ex1/nifilm-tof.py </examples/ex1/nifilm-tof.py>`:
@@ -156,10 +152,8 @@ The plot remains the same:
 
 .. plot::
 
-    import pylab
-    from refl1d.fitter import load_problem
-    load_problem('examples/ex1/nifilm-tof.py').plot()
-    pylab.show()
+    from sitedoc import plot_model
+    plot_model('ex1/nifilm-data.py')
 
 Performing a fit
 ================
@@ -185,19 +179,21 @@ original value $\pm 50\%$::
 
     sample[1].thickness.pmp(50)
 
-We can now load and run the fit::
-
-    $ refl1d ex1/nifilm-fit.py --fit=newton --steps=100
+As you can see this changes the theory curve significantly:
 
 .. plot::
 
-    import pylab
-    from refl1d.fitter import load_problem, BFGSFit
-    p = load_problem('examples/ex1/nifilm-fit.py')
-    x = BFGSFit(p).solve(steps=100)
-    p.setp(x)
-    p.plot()
-    pylab.show()
+    from sitedoc import plot_model
+    plot_model('ex1/nifilm-fit.py')
+
+We can now load and run the fit::
+
+    $ refl1d ex1/nifilm-fit.py --fit=de --steps=200
+
+.. plot::
+
+    from sitedoc import fit_model
+    fit_model('ex1/nifilm-fit.py')
 
 All is well: $\chi^2$ will be approximately 1 and the line goes nicely
 through the data.

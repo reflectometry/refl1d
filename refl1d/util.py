@@ -229,4 +229,72 @@ class pushdir(object):
         os.chdir(self.path)
     def __exit__(self, *args):
         os.chdir(self._cwd)
+
+class push_seed(object):
+    """
+    Set the seed value for the random number generator.
+
+    When used in a with statement, the random number generator state is
+    restored after the with statement is complete.
+
+    Parameters
+    ----------
     
+    *seed* : int or array_like, optional
+        Seed for RandomState
+    
+    Example
+    -------
+
+    Seed can be used directly to set the seed::
+    
+        >>> import numpy
+        >>> push_seed(24) # doctest:+ELLIPSIS
+        <...push_seed object at...>
+        >>> print numpy.random.randint(0,1000000,3)
+        [242082    899 211136]
+
+    Seed can also be used in a with statement, which sets the random
+    number generator state for the enclosed computations and restores 
+    it to the previous state on completion::
+    
+        >>> with push_seed(24):
+        ...    print numpy.random.randint(0,1000000,3)
+        [242082    899 211136]
+
+    Using nested contexts, we can demonstrate that state is indeed
+    restored after the block completes::
+    
+        >>> with push_seed(24):
+        ...    print numpy.random.randint(0,1000000)
+        ...    with push_seed(24):
+        ...        print numpy.random.randint(0,1000000,3)
+        ...    print numpy.random.randint(0,1000000)
+        242082
+        [242082    899 211136]
+        899
+
+    The restore step is protected against exceptions in the block::
+    
+        >>> with push_seed(24):
+        ...    print numpy.random.randint(0,1000000)
+        ...    try:
+        ...        with push_seed(24):
+        ...            print numpy.random.randint(0,1000000,3)
+        ...            raise Exception()
+        ...    except:
+        ...        print "Exception raised"
+        ...    print numpy.random.randint(0,1000000)
+        242082
+        [242082    899 211136]
+        Exception raised
+        899
+    """
+    def __init__(self, seed=None):
+        self._state = numpy.random.get_state()
+        numpy.random.seed(seed)
+    def __enter__(self):
+        return None
+    def __exit__(self, *args):
+        numpy.random.set_state(self._state)
+        pass

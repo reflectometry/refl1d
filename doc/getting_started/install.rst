@@ -146,10 +146,9 @@ Building Documentation
 ###########################
 
 Building the package documentation requires a working sphinx installation,
-a working LaTex installation and in a copy of 
-`MathJax <http://www.mathjax.org/>`_ to view the equations in HTML.  
-Download and unzip the MathJax package into the doc/sphinx directory to 
-install MathJax.  You can then build the documentation as follows::
+a working LaTex installation and a copy of MathJax.   Download and unzip 
+the MathJax package into the doc/sphinx directory to install MathJax.  You 
+can then build the documentation as follows::
 
     (cd doc && make clean html latexpdf)
 
