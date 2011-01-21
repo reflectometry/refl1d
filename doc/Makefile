@@ -34,7 +34,7 @@ help:
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 
 clean:
-	# Adding build dir since that's where matplotlib puts plots
+	# Cleaning matplotlib plots from build and html/pdf from _build
 	-rm -rf $(BUILDDIR)/* build
 
 _build/html:

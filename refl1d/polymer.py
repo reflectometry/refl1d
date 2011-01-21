@@ -32,7 +32,7 @@ from .model import Layer
 
 
 class PolymerBrush(Layer):
-    """
+    r"""
     Polymer brushes in a solvent
 
     Parameters:
@@ -51,14 +51,24 @@ class PolymerBrush(Layer):
     such as PDMS = SLD(0.063, 0.00006) or they can use chemical composition
     and material density such as PDMS=Material("C2H6OSi",density=0.965).
 
-    These parameters combine in the following profile formula::
+    These parameters combine in the following profile formula:
 
-        brush(z) = base_vf   for z <= base
-                 = base_vf * (1 - ((z-base)/length)**2)**power
-                             for base <= z <= base+length
-                 = 0         for z >= base+length
-        profile(z) = conv(brush(z), gaussian(sigma))
-        sld(z) = material.sld * profile(z) + solvent.sld * (1 - profile(z))
+    .. math::
+
+        V(z) &= \left{ 
+          \begin{array}{ll}
+            V_o                        & \mbox{if } z <= z_o
+            V_o (1 - ((z-z_o)/L)^2)^p  & \mbox{if } z_o < z < z_o + L
+            0                          & \mbox{if } z >= z_o + L
+          \end{array}
+        \right. //
+        V_\sigma(z) 
+           &= V(z) \star \exp(-(z/\sigma)^2/2)/\sqrt{2\pi\sigma^2} //
+        \rho(z) &= \rho_p V_\sigma(z) + \rho_s (1-V_\sigma(z))
+        
+    where $V_\sigma(z)$ is volume fraction convoluted with brush
+    roughness $\sigma$ and $\rho(z)$ is the complex scattering
+    length density of the profile.
     """
     def __init__(self, thickness=0, interface=0, name="brush",
                  polymer=None, solvent=None, base_vf=None,

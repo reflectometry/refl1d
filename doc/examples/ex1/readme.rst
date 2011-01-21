@@ -1,5 +1,9 @@
-Defining a film
-===============
+**********************
+Example 1: Nickel film
+**********************
+
+Defining the film
+=================
 
 Model scripts are defined using `Python <http://www.python.org>`_.  A
 complete introduction to programming and Python is beyond the
@@ -18,9 +22,9 @@ solid green line (the step profile).  In addition we have a dashed green
 line (the smoothed profile) which corresponds the effective reflectivity
 profile, with the $\exp(-2 k_n k_{n+1} \sigma^2)$ interface factored in.
 
-This model is defined by :download:`ex1/nifilm.py </examples/ex1/nifilm.py>`:
+This model is defined by :download:`nifilm.py <nifilm.py>`:
 
-.. literalinclude:: /examples/ex1/nifilm.py
+.. literalinclude:: nifilm.py
     :linenos:
 
 You can preview the model on the command line::
@@ -33,13 +37,13 @@ going on.
 1.  Bring in all of the functions from refl1d.names so that we can
     use them in the remainder of the script.
 
-    .. literalinclude:: /examples/ex1/nifilm.py
+    .. literalinclude:: nifilm.py
         :lines: 1
 
 3.  Define a new material composed of pure nickel.  The more 
     traditional ``nickel = SLD(rho=9.4)`` could be used instead.
 
-    .. literalinclude:: /examples/ex1/nifilm.py
+    .. literalinclude:: nifilm.py
         :lines: 3
 
 4.  Stack the materials (silicon, nickel and air) into a sample.  The
@@ -48,7 +52,7 @@ going on.
     Air is on the surface.  Note that silicon and air were predefined in
     refl1d.names.
         
-    .. literalinclude:: /examples/ex1/nifilm.py
+    .. literalinclude:: nifilm.py
         :lines: 4
 
 6.  Specify which angles we wish to view the reflectivity.  The
@@ -58,7 +62,7 @@ going on.
     from 0\ |deg| to 5\ |deg|.
         
 
-    .. literalinclude:: /examples/ex1/nifilm.py
+    .. literalinclude:: nifilm.py
         :lines: 6
 
 7.  Create a neutron probe.  The probe defines the wavelengths and
@@ -68,27 +72,27 @@ going on.
     wavelength ``L=4.75`` |Ang| and wavelength dispersion ``dL=0.0475`` in
     this example, but each angle and wavelength is independent.
         
-    .. literalinclude:: /examples/ex1/nifilm.py
+    .. literalinclude:: nifilm.py
         :lines: 7
 
 9.  Combine the neutron probe with the sample stack to define an
     experiment.  Using chemical formula and mass density, the same
     sample can be simulated for both neutron and x-ray experiments.
 
-    .. literalinclude:: /examples/ex1/nifilm.py
+    .. literalinclude:: nifilm.py
         :lines: 9
 	
 10. Generate a random data set with 5% noise. While not necessary
     to display a reflectivity curve, it is useful in showing how
     the data set should look.
 
-    .. literalinclude:: /examples/ex1/nifilm.py
+    .. literalinclude:: nifilm.py
         :lines: 10
 
 12. Combine a set of experiments into a fitting problem.  The problem
     is used by refl1d for all operations on the model.
 
-    .. literalinclude:: /examples/ex1/nifilm.py
+    .. literalinclude:: nifilm.py
         :lines: 12
 
 
@@ -104,9 +108,9 @@ the SNS Liquids reflectometer:
     plot_model('ex1/nifilm-tof.py')
 
 This model is defined by 
-:download:`ex1/nifilm-tof.py </examples/ex1/nifilm-tof.py>`:
+:download:`nifilm-tof.py <nifilm-tof.py>`:
 
-.. literalinclude:: /examples/ex1/nifilm-tof.py
+.. literalinclude:: nifilm-tof.py
     :linenos:
 
 Here we are using an instrument to control the simulation::
@@ -135,11 +139,13 @@ on all simulation parameters.
 Attaching data
 ==============
 
-We saved the data simulated above into files named :file:`nifilm-tof-1.dat`,
-:file:`nifile-tof-2.dat`, etc.  We can load these datasets into a new
-model using :download:`ex1/nifilm-data.py </examples/ex1/nifilm-data.py>`:
+We saved the data simulated above into files named
+:download:`nifilm-tof-1.dat`, :download:`nifilm-tof-2.dat`,
+:download:`nifilm-tof-3.dat` and :download:`nifilm-tof-4.dat`.
+We can load these datasets into a new model using 
+:download:`nifilm-data.py <nifilm-data.py>`:
 
-.. literalinclude:: /examples/ex1/nifilm-data.py
+.. literalinclude:: nifilm-data.py
     :linenos:
 
 In this case we are loading multiple data sets into the same
@@ -160,9 +166,9 @@ Performing a fit
 
 With the sample defined and the data loaded, the last step is to define
 the fitting parameters.  This is shown in
-:download:`ex1/nifilm-fit.py </examples/ex1/nifilm-fit.py>`:
+:download:`nifilm-fit.py <nifilm-fit.py>`:
 
-.. literalinclude:: /examples/ex1/nifilm-fit.py
+.. literalinclude:: nifilm-fit.py
     :linenos:
 
 Within the sample, layer 0 is the substrate, layer 1 is the film and layer 2
@@ -175,9 +181,9 @@ best interface values in the range $[0,20]$::
 
 We changed the thickness value for this model to start at 125 to give
 little challenge to the problem and set the model thickness to this
-original value $\pm 50\%$::
+original value $\pm 50$::
 
-    sample[1].thickness.pmp(50)
+    sample[1].thickness.pm(50)
 
 As you can see this changes the theory curve significantly:
 
@@ -188,7 +194,14 @@ As you can see this changes the theory curve significantly:
 
 We can now load and run the fit::
 
-    $ refl1d ex1/nifilm-fit.py --fit=de --steps=200
+    $ refl1d nifilm-fit.py --fit=newton --steps=100 --store=T1
+
+The ``--fit=newton`` option says to use the quasi-newton optimizer for
+not more than 100 steps.  The ``--store=T1`` option says to store the
+initial model, the fit results and any monitoring information in the
+directory T1.
+
+Here is the resulting fit:
 
 .. plot::
 
