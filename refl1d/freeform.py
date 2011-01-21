@@ -14,7 +14,7 @@ from .bspline import pbs, bspline
 #TODO: access left_sld,right_sld so freeform doesn't need left,right
 #TODO: restructure to use vector parameters
 #TODO: allow the number of layers to be adjusted by the fit
-class Freeform(Layer):
+class FreeLayer(Layer):
     """
     A freeform section of the sample modeled with B-splines.
 
@@ -156,7 +156,7 @@ class FreeInterface(Layer):
         return Par(w,name=self.name+" thickness")
     def _set_thickness(self, v):
         if v != 0:
-            raise ValueError("thickness cannot be set for FreeformInterface")
+            raise ValueError("thickness cannot be set for FreeInterface")
     thickness = property(_get_thickness, _set_thickness)
 
     def parameters(self):
@@ -176,6 +176,7 @@ class FreeInterface(Layer):
         p /= p[-1]
         Pw,Pz = slabs.microslabs(z[-1])
         _,profile = pbs(z, p, Pz, parametric=False, clamp=True)
+        profile = clip(profile, 0, 1)
         lidx,ridx = numpy.searchsorted(profile,[0.01,0.99])
         ridx = min( (ridx, len(profile)-1) )
         Prho  = (1-profile)*left_rho  + profile*right_rho

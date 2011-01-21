@@ -1,13 +1,17 @@
 """
 .. sidebar:: On this Page
 
-        * :class:`Free form <refl1d.freeform.Freeform>`
+        * :class:`FreeLayer <refl1d.mono.FreeLayer>`
+        * :class:`FreeInterface <refl1d.mono.FreeInterface>`
+
+Monotonic spline modeling for free interfaces.  
+
 """
 
 
 from __future__ import division, with_statement
 from numpy import (diff, hstack, sqrt, searchsorted, asarray, cumsum,
-                   inf, nonzero, linspace, sort, isnan)
+                   inf, nonzero, linspace, sort, isnan, clip)
 from mystic.parameter import Parameter as Par, Function as ParFunction
 from . import numpyerrors
 from .model import Layer
@@ -144,7 +148,7 @@ class FreeInterface(Layer):
         if p[-1] == 0: p[-1] = 1
         p *= 1/p[-1]
         z *= thickness/z[-1]
-        profile = monospline(z, p, Pz)
+        profile = clip(monospline(z, p, Pz), 0, 1)
         return profile
     def render(self, probe, slabs):
         thickness = self.thickness.value
