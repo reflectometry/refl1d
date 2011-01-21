@@ -438,7 +438,7 @@ class Probe(object):
         # (condition)*C is C when condition is True or 0 when False,
         # (condition)*(C-1)+1 is C when condition is True or 1 when False.
         back = (calc_Q<0)*(self.back_absorption.value-1)+1
-        calc_R *= back
+        calc_R = calc_R * back
 
         # For back reflectivity, reverse the sign of Q after computing
         if self.back_reflectivity:
@@ -848,9 +848,12 @@ class ProbeSet(Probe):
         result = [p.scattering_factors(material) for p in self.probes]
         return [numpy.hstack(v) for v in zip(*result)]
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
-    def apply_beam(self, calc_Q, calc_R, **kw):
+    def apply_beam(self, calc_Q, calc_R, resolution=True, **kw):
+        if not resolution:
+            raise UnimplementedError("apply_beam without resolution not supported on ProbeSet; use dQ=0 instead")
         result = [p.apply_beam(calc_Q, calc_R, **kw) for p in self.probes]
-        return [numpy.hstack(v) for v in zip(*result)]
+        Q,R = [numpy.hstack(v) for v in zip(*result)]
+        return Q,R
     def plot(self, theory=None, **kw):
         import pylab
         pylab.clf()
@@ -875,7 +878,8 @@ class ProbeSet(Probe):
     plot_Q4.__doc__ = Probe.plot_Q4.__doc__
     def _plotparts(self, theory):
         if theory == None:
-            for p in self.probes: yield p
+            for p in self.probes:
+                yield p,None
         else:
             offset = 0
             Q,R = theory

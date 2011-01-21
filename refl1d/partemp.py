@@ -201,6 +201,7 @@ class History(object):
 class Stepper(object):
     def __init__(self, bounds, history):
         low, high = bounds
+        self.offset = low
         self.step = (high-low)
         self.history = history
 
@@ -252,12 +253,22 @@ class Stepper(object):
             return self.jiggle(p,1e-6)
         pair = self.history.draw(stream, 2)
         delta = pair[0][3] - pair[1][3]
+        if norm(delta) == 0:
+            print "direct should never return identical points!!"
+            return self.random(p)
         assert norm(delta) != 0
         return p + delta
+
     def jiggle(self, p, noise):
         delta = randn(len(p))*self.step*noise
         assert norm(delta) != 0
         return p + delta
+
+    def random(self, p):
+        delta = rand(len(p))*self.step + self.offset
+        assert norm(delta) != 0
+        return p + delta
+
     def subspace_jiggle(self, p, noise, k):
         n = len(self.step)
         if n < k:
@@ -305,4 +316,6 @@ def choose(n, k):
         while len(s) < k:
             s.add(randint(n))
         idx = array([si for si in s])
+    if len(set(idx)) != len(idx):
+        print "choose(n,k) contains dups!!",n,k
     return idx

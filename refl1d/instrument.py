@@ -532,6 +532,7 @@ class Pulsed(object):
                 Absorption factor for beam traveling through substrate.
                 Only needed for back reflectivity measurements.
         """
+        from numpy.random import poisson as pois
         from .rebin import rebin
         from .experiment import Experiment
         from .probe import ProbeSet
@@ -562,12 +563,15 @@ class Pulsed(object):
             I = rebin(binedges(self.feather[0]),self.feather[1],
                       binedges(probe.L[::-1]))[::-1]
             Ci = numpy.median(1./(uncertainty**2 * I * Rth))
-            Icounts = Ci*I
+            Igoal = Ci*I
+            Ibeam = pois(Igoal)+1.
 
-            Rcounts = numpy.random.poisson(Rth*Icounts)
+            Irefl = pois(Igoal*Rth)+1.
             if background > 0:
-                Rcounts += numpy.random.poisson(Icounts*background,
-                                                size=Rcounts.shape)
+                Irefl += pois(Igoal*background)+1.
+                Iback  = pois(Igoal*background)+1.
+            else:
+                Iback = 0
             # Set intensity/background _after_ calculating the theory function
             # since we don't want the theory function altered by them.
             probe.background.value = background
@@ -576,11 +580,20 @@ class Pulsed(object):
             # the feather, though, we haven't necessarily corrected for
             # the overall number of counts in the measurement.
             # Z = X/Y
-            # var Z = (var X / X**2 + var Y / Y**2) * Z**2
+            # var Z = ( (var X / X)**2 + (var Y / Y)**2 ) * Z**2
             #       = (1/X + 1/Y) * (X/Y)**2
             #       = (Y + X) * X/Y**3
-            R = Rcounts/Icounts
-            dR = numpy.sqrt(((Icounts + Rcounts)*Rcounts+1)/Icounts**3)
+            #    dZ = sqrt( (Y+X)*X/Y**3) = sqrt((Y+X)*(X/Y))/Y
+            R = (Irefl-Iback)/Ibeam
+            dR = numpy.sqrt((Irefl + Iback + Ibeam)*(Irefl/Ibeam))/Ibeam
+            if numpy.isnan(dR).any() or (dR==0).any() or (R<=0).any():
+                print "Ibeam",Ibeam
+                print "Irefl",Irefl
+                print "Iback",Iback
+                print "R",R
+                print "dR",dR
+                raise RuntimeError("Should not be able to get here!!")
+            #dR[Irefl==0] == 1./Ibeam[Irefl==0]
             #print "median",numpy.median(dR/R)
 
             if not normalize:
