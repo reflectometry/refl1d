@@ -17,7 +17,7 @@ Refl1d intoduction goes here.............
    :maxdepth: 2
 
    getting_started/index.rst
-   tutorial/index.rst
+   examples/index.rst
    guide/index.rst
    api/index.rst
 

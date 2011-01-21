@@ -145,10 +145,18 @@ Finally, we define the fitting problem from the probes and samples:
 
 This is a multifit problem where both models contribute to the goodness
 of fit measure $\chi^2$.  Since no weight vector was defined the fits
-have equal weight.  The parameter ``dA=1`` controls the slab size in
-the smooth tethered polymer profile.  The microslabs defining the profile
-are joined together so long as the error in the slab density is less than
-``dA``.
+have equal weight.  
+
+The polymer brush model is a smooth profile function, which is evaluated
+by slicing it into thin slabs, then joining together similar slabs to
+improve evaluation time.  The ``dz=0.5`` parameter tells us that we
+should slice the brush into 0.5 |Ang| steps.  The ``dA=1`` parameter
+says we should join together thin slabs while the scattering density 
+uncertainty in the joined slabs $\Delta A < 1$, where
+$\Delta A = (\max\rho - \min\rho)*(\max z - \min z)$.  Similarly for 
+the absorption cross section $\rho_i$ and the effective magnetic cross 
+section $\rho_M \cos(\theta_M)$.  If ``dA=None`` (the default) then no
+profile contraction occurs.
 
 The resulting model looks like:
 

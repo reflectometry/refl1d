@@ -56,8 +56,8 @@ D_probe = instrument.load('10ndt001.refl', back_reflectivity=True)
 H_probe = instrument.load('10nht001.refl', back_reflectivity=True)
 
 # === Problem definition ===
-D_model = Experiment(sample=D, probe=D_probe, dA=1)
-H_model = Experiment(sample=H, probe=H_probe, dA=1)
+D_model = Experiment(sample=D, probe=D_probe, dz=0.5, dA=1)
+H_model = Experiment(sample=H, probe=H_probe, dz=0.5, dA=1)
 models = D_model, H_model
 
 problem = MultiFitProblem(models=models)

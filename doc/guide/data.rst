@@ -1,4 +1,4 @@
-.. _data:
+.. _data_guide:
 
 ####################
 Data Representation

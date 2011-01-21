@@ -63,13 +63,17 @@ modules=[
     ('experiment', 'Experiment'),
     ('materialdb', 'Materials Database'),
     ('polymer', 'Polymer'),
-    ('cheby', 'Cheby'),
-    ('freeform', 'Freeform Model'),
+    ('cheby', 'Freeform - Chebyshev'),
+    ('mono', 'Freeform - Monotonic Spline'),
+    ('freeform', 'Freeform - Parametric B-Spline'),
     ('magnetic', 'Magnetic Models'),
     ('ncnrdata', 'NCNR Data'),
     ('snsdata', 'SNS Data'),
     ('staj', 'Staj File'),
     ('stajconvert', 'Staj File Converter'),
+    ('mystic.parameter', 'Parameters'),
+    ('mystic.bounds', 'Bounds'),
+    ('mystic.formatnum', 'Format numbers'),
 
 ]
 package='refl1d'
