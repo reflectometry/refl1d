@@ -20,6 +20,9 @@ at the end bulk solvent. For these swelling measurements, the beam
 penetrate the system from the silicon side and the bottom layer is 
 deuterated or hydrogenated toluene.
 
+Defining the film
+=================
+
 We first need to define the materials:
 
 .. literalinclude:: tethered.py
@@ -105,6 +108,9 @@ for interface.  When the refinement engine sets a new value for a
 thickness parameter and asks the two models to evaluate $\chi^2$, both
 models will see the same thickness parameter value.
 
+Setting fit ranges
+==================
+
 With both samples defined, we next specify the ranges on the fitted
 parameters:
 
@@ -121,6 +127,10 @@ have to reference it via the stack.   We did however create a variable
 to contain ``Material(name="D_toluene")`` so we can access its parameters
 directly.  Also, notice that we only need to set one of ``D[1].thickness``
 and ``H[1].thickness`` since they are the same underlying parameter.
+
+
+Attaching data
+==================
 
 Next we associate the reflectivity curves with the samples:
 
