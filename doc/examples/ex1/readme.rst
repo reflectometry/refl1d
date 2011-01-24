@@ -15,7 +15,7 @@ We start with a basic example, a nickel film on silicon:
 .. plot::
 
     from sitedoc import plot_model
-    plot_model('ex1/nifilm.py')
+    plot_model('nifilm.py')
 
 This model shows three layers (silicon, nickel, and air) as seen in the
 solid green line (the step profile).  In addition we have a dashed green
@@ -105,7 +105,7 @@ the SNS Liquids reflectometer:
 .. plot::
 
     from sitedoc import plot_model
-    plot_model('ex1/nifilm-tof.py')
+    plot_model('nifilm-tof.py')
 
 This model is defined by 
 :download:`nifilm-tof.py <nifilm-tof.py>`:
@@ -159,7 +159,7 @@ The plot remains the same:
 .. plot::
 
     from sitedoc import plot_model
-    plot_model('ex1/nifilm-data.py')
+    plot_model('nifilm-data.py')
 
 Performing a fit
 ================
@@ -190,7 +190,7 @@ As you can see this changes the theory curve significantly:
 .. plot::
 
     from sitedoc import plot_model
-    plot_model('ex1/nifilm-fit.py')
+    plot_model('nifilm-fit.py')
 
 We can now load and run the fit::
 
@@ -206,7 +206,7 @@ Here is the resulting fit:
 .. plot::
 
     from sitedoc import fit_model
-    fit_model('ex1/nifilm-fit.py')
+    fit_model('nifilm-fit.py')
 
 All is well: $\chi^2$ will be approximately 1 and the line goes nicely
 through the data.

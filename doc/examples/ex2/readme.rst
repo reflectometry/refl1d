@@ -173,7 +173,7 @@ The resulting model looks like:
 .. plot::
 
     from sitedoc import plot_model
-    plot_model('ex2/tethered.py')
+    plot_model('tethered.py')
 
 This complete model script is defined in 
 :download:`tethered.py <tethered.py>`:
