@@ -78,6 +78,9 @@ class ExperimentBase(object):
             
         return self._cache['residuals']
 
+    def numpoints(self):
+        return len(self.probe.Q)
+
     def nllf(self):
         """
         Return the -log(P(data|model)).
@@ -95,9 +98,8 @@ class ExperimentBase(object):
 
     def plot_reflectivity(self, show_resolution=False):
         Q,R = self.reflectivity()
-        self.probe.plot(theory=(Q,R),
-                        substrate=self.sample[0].material,
-                        surface=self.sample[-1].material)
+        self.probe.plot(theory=(Q,R), 
+                        substrate=self._substrate, surface=self._surface)
         if show_resolution:
             import pylab
             Q,R = self.reflectivity(resolution=False)
@@ -110,6 +112,28 @@ class ExperimentBase(object):
         pylab.subplot(212)
         self.plot_reflectivity()
 
+
+    def resynth_data(self):
+        """Resynthesize data with noise from the uncertainty estimates."""
+        self.probe.resynth_data()
+    def restore_data(self):
+        """Restore original data after resynthesis."""
+        self.probe.restore_data()
+    def write_data(self, filename, **kw):
+        """Save simulated data to a file"""
+        self.probe.write_data(filename, **kw)
+    def simulate_data(self, noise=2):
+        """
+        Simulate a random data set for the model
+
+        **Parameters:**
+        
+        *noise* = 2 : float | %
+            Percentage noise to add to the data.
+        """
+        _,R = self.reflectivity(resolution=True)
+        dR = 0.01*noise*R
+        self.probe.simulate_data(R,dR)
 
 class Experiment(ExperimentBase):
     """
@@ -152,6 +176,8 @@ class Experiment(ExperimentBase):
     def __init__(self, sample=None, probe=None,
                  roughness_limit=2.5, dz=None, dA=None):
         self.sample = sample
+        self._substrate=self.sample[0].material
+        self._surface=self.sample[-1].material
         self.probe = probe
         self.roughness_limit = roughness_limit
         if dz is None:
@@ -165,9 +191,6 @@ class Experiment(ExperimentBase):
     def parameters(self):
         return dict(sample=self.sample.parameters(),
                     probe=self.probe.parameters())
-
-    def numpoints(self):
-        return len(self.probe.R)
 
     def _render_slabs(self):
         """
@@ -353,30 +376,8 @@ class Experiment(ExperimentBase):
         pylab.xlabel('depth (A)')
         pylab.ylabel('SLD (10^6 inv A**2)')
 
-    def resynth_data(self):
-        """Resynthesize data with noise from the uncertainty estimates."""
-        self.probe.resynth_data()
-    def restore_data(self):
-        """Restore original data after resynthesis."""
-        self.probe.restore_data()
-    def write_data(self, filename, **kw):
-        """Save simulated data to a file"""
-        self.probe.write_data(filename, **kw)
-    def simulate_data(self, noise=2):
-        """
-        Simulate a random data set for the model
 
-        **Parameters:**
-        
-        *noise* = 2 : float | %
-            Percentage noise to add to the data.
-        """
-        _,R = self.reflectivity(resolution=True)
-        dR = 0.01*noise*R
-        self.probe.simulate_data(R,dR)
-
-
-class CompositeExperiment(ExperimentBase):
+class MixedExperiment(ExperimentBase):
     """
     Support composite sample reflectivity measurements.
 
@@ -398,10 +399,14 @@ class CompositeExperiment(ExperimentBase):
     using composite.parts[i] for the various samples.
     """
     def __init__(self, samples=None, ratio=None,
-                 probe=None, roughness_limit=2.5):
+                 probe=None, **kw):
         self.samples = samples
+        self.probe = probe
         self.ratio = [Parameter.default(r) for r in ratio]
-        self.parts = [Experiment(s,probe) for s in samples]
+        self.parts = [Experiment(s,probe,**kw) for s in samples]
+        self._cache = {}  # Cache calculated profiles/reflectivities
+        self._substrate=self.samples[0][0].material
+        self._surface=self.samples[0][-1].material
 
     def parameters(self):
         return dict(samples = [s.parameters() for s in self.samples],
@@ -417,11 +422,22 @@ class CompositeExperiment(ExperimentBase):
 
         If *beam* is true, include absorption and intensity effects.
         """
-        f = numpy.array(r.value for r in self.ratio)
+        f = numpy.array([r.value for r in self.ratio],'d')
+        f /= numpy.sum(f)
         Qs,Rs = zip(*[p.reflectivity() for p in self.parts])
         Q = Qs[0]
-        R = f/numpy.sum(f,axis=0)*numpy.array(Rs)
-        return Q, R
+        R = f*numpy.array(Rs).T
+        return Q, numpy.sum(R,axis=1)
+    
+    def plot_profile(self):
+        import pylab
+        f = numpy.array([r.value for r in self.ratio],'d')
+        f /= numpy.sum(f)
+        held = pylab.hold()
+        for p in self.parts:
+            p.plot_profile()
+            pylab.hold(True)
+        pylab.hold(held)
 
 
 class Weights:
@@ -505,6 +521,7 @@ class DistributionExperiment(ExperimentBase):
         self.P = P
         self.distribution = distribution
         self.experiment = experiment
+        self._cache = {}  # Cache calculated profiles/reflectivities
     def parameters(self):
         return dict(distribution=self.distribution.parameters(),
                     experiment=self.experiment.parameters())
