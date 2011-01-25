@@ -1,8 +1,8 @@
 .. _materials_guide:
 
-####################
+*******************
 Materials
-####################
+*******************
 
 Because this
 is elemental nickel, we already know it's density.  For compounds

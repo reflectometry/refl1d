@@ -1,4 +1,4 @@
-.. _experiment:
+.. _experiment_guide:
 
 ####################
 Experiment

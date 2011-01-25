@@ -1,8 +1,8 @@
 .. _users-guide-index:
 
-###################
-Refl1D User's Guide
-###################
+############
+User's Guide
+############
 
 Refl1d is a complex piece of software hiding some simple mathematics.
 The reflectivity of a sample is a simple function of its optical
@@ -14,24 +14,27 @@ reflectivity best matches the calculated reflectivty.
 
 The complexity comes from multiple sources:
 
-   * Determining depth structure from reflectivity is in general an
+   * Determining depth structure from reflectivity is an
      inverse problem requiring a search through a landscape with multiple
      minima, whose global minimum is small and often in an unpromising
      region of the landscape.
    * The solution is not unique:  multiple minima may be equally valid
      solutions to the inversion problem.
    * The measurement is sensitive to nuisance parameters such as sample
-     alignment.  That means the analysis program must allow for various
-     steps more usually considered data reduction, and makes data handling
-     complicated.
+     alignment.  That means the analysis program must include data
+     reduction steps, making data handling complicated.
    * The models are complex.  Since the ideal profile is not unique and
      is difficult to locate, we often constrain our search to feasible
      physical models to limit the search space, and to account for
-     information from other sources.  The reflectivity itself is
-     dependent on the type of radiation used to probe the sample and
-     even its energy.
+     information from other sources.  
+   * The reflectivity is dependent on the type of radiation used to probe 
+     the sample and even its energy.
 
-The program is structured as a series of interacting components:
+
+`Introduction <intro_guide>`_
+
+     Model scripts associate a sample description with data and fitting
+     options to define the system you wish to refine.
 
 `Parameters <parameter_guide>`_ 
 
@@ -95,11 +98,11 @@ The program is structured as a series of interacting components:
      in which the parameter values are known.
 
 
-
 .. toctree::
    :maxdepth: 2
    :hidden:
 
+   intro.rst
    parameter.rst
    data.rst
    materials.rst

@@ -163,7 +163,7 @@ improve evaluation time.  The ``dz=0.5`` parameter tells us that we
 should slice the brush into 0.5 |Ang| steps.  The ``dA=1`` parameter
 says we should join together thin slabs while the scattering density
 uncertainty in the joined slabs $\Delta A < 1$, where
-$\Delta A = (\max\rho - \min\rho)*(\max z - \min z)$.  Similarly for
+$\Delta A = (\max\rho - \min\rho)(\max z - \min z)$.  Similarly for
 the absorption cross section $\rho_i$ and the effective magnetic cross
 section $\rho_M \cos(\theta_M)$.  If ``dA=None`` (the default) then no
 profile contraction occurs.

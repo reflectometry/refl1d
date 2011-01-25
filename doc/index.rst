@@ -1,17 +1,13 @@
-.. Refl1D documentation documentation master file, created by
-   sphinx-quickstart on Wed Oct 13 15:11:19 2010.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Introduction
-============
-Refl1d intoduction goes here.............
-
 .. htmlonly::
    :Release: |version|
    :Date:    |today|
 
-   Download pdf version `here <Refl1D.pdf>`_
+   Printable manual: `Relf1D.pdf <Refl1D.pdf>`_
+   
+   :ref:`Index <genindex>` :ref:`Search <search>`
+
+Contents
+========
 
 .. toctree::
    :maxdepth: 2
@@ -20,13 +16,3 @@ Refl1d intoduction goes here.............
    examples/index.rst
    guide/index.rst
    api/index.rst
-
-Indices and Tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-
-.. htmlonly::
-  * :ref:`search`
-

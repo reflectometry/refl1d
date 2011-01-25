@@ -1,8 +1,8 @@
 .. _installing:
 
-###########################
+**************************
 Installing the application
-###########################
+**************************
 
 Refl1D |version| is provided as a Windows installer or as source:
 
@@ -14,9 +14,8 @@ to run on your machine and provides the sample data to be used in the
 tutorial.  Installers for other platforms are not yet available, and
 must be built from source.
 
-###########################
 Building from source
-###########################
+====================
 
 Building the application from source requires some preparation.
 
@@ -141,9 +140,8 @@ To run the program use::
 	refl1d -h
 
 
-###########################
 Building Documentation
-###########################
+======================
 
 Building the package documentation requires a working sphinx installation,
 a working LaTex installation and a copy of MathJax.   Download and unzip
@@ -184,9 +182,8 @@ unicode characters here.  The corresponding latex symbols are defined in
 doc/sphinx/conf.py.
 
 
-###########################
 Windows Installer
-###########################
+=================
 
 To build a windows standalone executable with py2exe you may first need
 to create an empty file named

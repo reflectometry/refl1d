@@ -41,7 +41,6 @@ The combined work is released under the following license:
 Additional pieces may be available under the GPL. When these pieces 
 are used in the package, the combined work is also subject to the GPL.
 
-
 *******
 Credits
 *******

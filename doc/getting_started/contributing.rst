@@ -38,4 +38,3 @@ When all the tests run, generate a patch and send it to the
 
 Windows user can use `TortoiseSvn <http://tortoisesvn.tigris.org/>`_ 
 package which provides similar operations.
-

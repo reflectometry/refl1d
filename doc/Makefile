@@ -39,7 +39,7 @@ clean:
 	# Resetting api/
 	-rm -rf $(BUILDDIR)/* build api
 
-api:
+api: genmods.py
 	python genmods.py
 
 _build/html:
