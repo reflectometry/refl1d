@@ -45,7 +45,7 @@ sys.path.insert(0, os.path.abspath(buildpath))
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest',
-              'sphinx.ext.coverage', 
+              'sphinx.ext.coverage',
               #'sphinx.ext.pngmath',
               'sphinx.ext.jsmath',
               #'only_directives',
@@ -128,7 +128,7 @@ html_theme = 'haiku'
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-#html_theme_options = {}
+html_theme_options = {}
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []
@@ -142,7 +142,7 @@ html_theme = 'haiku'
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-#html_logo = None
+html_logo = 'logo.png'
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
@@ -253,8 +253,8 @@ htmlroot="http://www.reflectometry.org/danse"
 def download(name):
     subs = dict(file=name%dict(version=version), path=htmlroot)
     return "%(file)s <%(path)s/download.php?file=%(file)s>"%subs
-slink_vars=dict(version=version, htmlroot=htmlroot, 
-                srczip=download("refl1d-%(version)s.zip"), 
+slink_vars=dict(version=version, htmlroot=htmlroot,
+                srczip=download("refl1d-%(version)s.zip"),
                 winexe=download("refl1d-%(version)s-win32.exe"),
                 vcredist=download("vcredist_x86.exe"),
                 )

@@ -6,18 +6,18 @@ We will now model a data set for tethered deuterated polystyrene chains.
 The chains start out at approximately 10 nm thick in dry conditions, and
 swell to 14-18 nm thickness in toluene.  Two measurements were made:
 
-    * :download:`10ndt001.refl <10ndt001.refl>` 
+    * :download:`10ndt001.refl <10ndt001.refl>`
       in deuterated toluene
-    * :download:`10nht001.refl <10nht001.refl>` 
+    * :download:`10nht001.refl <10nht001.refl>`
       in hydrogenated toluene
 
 The chains are bound to the substrate by an initiator layer between the
-substrate and brush chains. So the model needs a silicon layer, silicon 
-oxide layer, an initiator layer which is mostly hydrocarbon and 
-scattering length density should be between 0 and 1.5 depending on how 
-much solvent is in the layer. Then you have the swollen brush chains and 
-at the end bulk solvent. For these swelling measurements, the beam 
-penetrate the system from the silicon side and the bottom layer is 
+substrate and brush chains. So the model needs a silicon layer, silicon
+oxide layer, an initiator layer which is mostly hydrocarbon and
+scattering length density should be between 0 and 1.5 depending on how
+much solvent is in the layer. Then you have the swollen brush chains and
+at the end bulk solvent. For these swelling measurements, the beam
+penetrate the system from the silicon side and the bottom layer is
 deuterated or hydrogenated toluene.
 
 Defining the film
@@ -29,7 +29,7 @@ We first need to define the materials:
     :lines: 8-13
 
 In this case we are using the neutron scattering length density as is
-standard practice in reflectivity experiments rather than the chemical 
+standard practice in reflectivity experiments rather than the chemical
 formula and mass density.  The :class:`SLD <refl1d.material.SLD>` class
 allows us to name the material and define the real and imaginary components
 of scattering length density $\rho$.  Note that we are using the imaginary
@@ -44,10 +44,10 @@ solvent, and that the polymer chains tail off like:
 
 .. math::
 
-	V(z) = \left{ 
+	V(z) = \left\{
 	       \begin{array}{ll}
-	         V_o                        & \mbox{if } z <= z_o
-	         V_o (1 - ((z-z_o)/L)^2)^p  & \mbox{if } z_o < z < z_o + L
+	         V_o                        & \mbox{if } z <= z_o \\
+	         V_o (1 - ((z-z_o)/L)^2)^p  & \mbox{if } z_o < z < z_o + L \\
 	         0                          & \mbox{if } z >= z_o + L
 	       \end{array}
 	       \right.
@@ -64,7 +64,7 @@ The tethered polymer layer definition looks like:
 .. literalinclude:: tethered.py
     :lines: 17-19
 
-This layer can be combined with the remaining layers to form the 
+This layer can be combined with the remaining layers to form the
 deuterated measurement sample:
 
 .. literalinclude:: tethered.py
@@ -85,10 +85,10 @@ slabs are then gathered together into a stack::
     L_D_toluene = Slab(material=D_toluene)
     D = Stack([L_silicon, L_SiOx, L_D_initiator, L_D_brush, L_D_toluene])
 
-The undeuterated sample is similar to the deuterated sample. We start 
-by copying the polymer brush layer so that parameters such as *length*, 
-*power*, etc. will be shared between the two systems, but we replace the 
-deuterated toluene solvent with undeuterated toluene.  We then use 
+The undeuterated sample is similar to the deuterated sample. We start
+by copying the polymer brush layer so that parameters such as *length*,
+*power*, etc. will be shared between the two systems, but we replace the
+deuterated toluene solvent with undeuterated toluene.  We then use
 this *H_brush* to define a new stack with undeuterated tolune:
 
 .. literalinclude:: tethered.py
@@ -155,16 +155,16 @@ Finally, we define the fitting problem from the probes and samples:
 
 This is a multifit problem where both models contribute to the goodness
 of fit measure $\chi^2$.  Since no weight vector was defined the fits
-have equal weight.  
+have equal weight.
 
 The polymer brush model is a smooth profile function, which is evaluated
 by slicing it into thin slabs, then joining together similar slabs to
 improve evaluation time.  The ``dz=0.5`` parameter tells us that we
 should slice the brush into 0.5 |Ang| steps.  The ``dA=1`` parameter
-says we should join together thin slabs while the scattering density 
+says we should join together thin slabs while the scattering density
 uncertainty in the joined slabs $\Delta A < 1$, where
-$\Delta A = (\max\rho - \min\rho)*(\max z - \min z)$.  Similarly for 
-the absorption cross section $\rho_i$ and the effective magnetic cross 
+$\Delta A = (\max\rho - \min\rho)*(\max z - \min z)$.  Similarly for
+the absorption cross section $\rho_i$ and the effective magnetic cross
 section $\rho_M \cos(\theta_M)$.  If ``dA=None`` (the default) then no
 profile contraction occurs.
 
@@ -175,7 +175,7 @@ The resulting model looks like:
     from sitedoc import plot_model
     plot_model('tethered.py')
 
-This complete model script is defined in 
+This complete model script is defined in
 :download:`tethered.py <tethered.py>`:
 
 .. literalinclude:: tethered.py

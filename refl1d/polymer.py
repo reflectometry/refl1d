@@ -55,17 +55,18 @@ class PolymerBrush(Layer):
 
     .. math::
 
-        V(z) &= \left{ 
+        V(z) &= \left\{
           \begin{array}{ll}
-            V_o                        & \mbox{if } z <= z_o
-            V_o (1 - ((z-z_o)/L)^2)^p  & \mbox{if } z_o < z < z_o + L
+            V_o                        & \mbox{if } z <= z_o \\
+            V_o (1 - ((z-z_o)/L)^2)^p  & \mbox{if } z_o < z < z_o + L \\
             0                          & \mbox{if } z >= z_o + L
           \end{array}
-        \right. //
-        V_\sigma(z) 
-           &= V(z) \star \exp(-(z/\sigma)^2/2)/\sqrt{2\pi\sigma^2} //
+        \right. \\
+        V_\sigma(z)
+           &= V(z) \star
+                 \frac{e^{-\frac{1}{2}(z/\sigma)^2}}{\sqrt{2\pi\sigma^2}} \\
         \rho(z) &= \rho_p V_\sigma(z) + \rho_s (1-V_\sigma(z))
-        
+
     where $V_\sigma(z)$ is volume fraction convoluted with brush
     roughness $\sigma$ and $\rho(z)$ is the complex scattering
     length density of the profile.
