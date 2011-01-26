@@ -254,14 +254,14 @@ def build_documentation():
     # Run the Sphinx utility to build the application's documentation.
     print SEPARATOR
     print "\nStep 6 - Running the Sphinx utility to build documentation ...\n"
-    os.chdir(os.path.join(INS_DIR, PKG_NAME, "doc"))
+    os.chdir(os.path.join(SRC_DIR, "doc"))
 
     # Delete any left over files from a previous build.
     exec_cmd("make clean")
     # Create documentation in HTML format.
     exec_cmd("make html")
     # Create documentation in PDF format.
-    exec_cmd("make latexpdf")
+    exec_cmd("make pdf")
     # Copy PDF file to the top-level directory.
     os.chdir(os.path.join("_build", "latex"))
     if os.path.isfile("Refl1D.pdf"):
