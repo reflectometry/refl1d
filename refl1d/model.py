@@ -385,12 +385,14 @@ class Slab(Layer):
     """
     A block of material.
     """
-    def __init__(self, material=None, thickness=0, interface=0):
+    def __init__(self, material=None, thickness=0, interface=0, name=None):
+        if name is None: name = material.name
+        self.name = name
         self.material = material
         self.thickness = Par.default(thickness, limits=(0,inf),
-                                     name=material.name+" thickness")
+                                     name=name+" thickness")
         self.interface = Par.default(interface, limits=(0,inf),
-                                     name=material.name+" interface")
+                                     name=name+" interface")
 
     def parameters(self):
         return dict(thickness=self.thickness,

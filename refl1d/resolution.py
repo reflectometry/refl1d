@@ -1,9 +1,9 @@
 r"""
 Resolution calculations
 
-Given $Q = 4 \pi \sin(\theta)/\lambda$, the instrumental resolution in $Q$ is
-determined by the dispersion angle $\theta$ and wavelength $\lambda$.  For
-monochromatic instruments, the wavelength resolution is fixed and the
+Given $Q = 4 \pi \sin(\theta)/\lambda$, the instrumental resolution in 
+$Q$ is determined by the dispersion angle $\theta$ and wavelength $\lambda$.  
+For monochromatic instruments, the wavelength resolution is fixed and the
 angular resolution varies.  For polychromatic instruments, the wavelength
 resolution varies and the angular resolution is fixed for each measurement.
 
@@ -20,7 +20,7 @@ reflected onto the detector.  This results in a resolution that is
 tighter than expected given the slit openings.  If the sample width
 is available, we can use that to determine how much of the beam is
 intercepted by the sample, which we then use as an alternative second
-slit.  This simple calculation isn't quite correct for very low Q, but
+slit.  This simple calculation isn't quite correct for very low $Q$, but
 data in this region will be contaminated by the direct beam, so we
 won't be using those points.
 
@@ -28,7 +28,7 @@ When the sample is warped, it may act to either focus or spread the
 incident beam.  Some samples are diffuse scatters, which also acts
 to spread the beam.  The degree of spread can be estimated from the
 full-width at half max (FWHM) of a rocking curve at known slit settings.
-The expected FWHM will be $1/2 (s_1+s_2)/(d_1-d_2)$.  The difference
+The expected FWHM will be $\frac{1}{2}(s_1+s_2)/(d_1-d_2)$.  The difference
 between this and the measured FWHM is the sample_broadening value.
 A second order effect is that at low angles the warping will cast
 shadows, changing the resolution and intensity in very complex ways.
@@ -46,7 +46,7 @@ Algorithms
 Resolution in Q is computed from uncertainty in wavelength $\sigma_\lambda$
 and angle $\sigma_\theta$ using propagation of errors:
 
-..math::
+.. math::
 
     \sigma^2_Q
         &= \left|\frac{\partial Q}{\partial \lambda}\right|^2 \sigma_\lambda^2
@@ -58,22 +58,22 @@ and angle $\sigma_\theta$ using propagation of errors:
     Q &= 4 \pi \sin(\theta) / \lambda \\
     \frac{\partial Q}{\partial \lambda} &= -4 \pi \sin(\theta)/\lambda^2
          = -Q/\lambda \\
-    \frac{\partial Q}{\partial \theta} &= 4 pi \cos(\theta)/\lambda
+    \frac{\partial Q}{\partial \theta} &= 4 \pi \cos(\theta)/\lambda
          = \cos(\theta) \cdot Q/\sin(\theta) = Q/\tan(\theta)
 
 With no correlation between wavelength dispersion and angular divergence,
 $\sigma_{\theta\lambda} = 0$, yielding the traditional form:
 
-..math::
+.. math::
 
     \left(\frac{\Delta Q}{Q}\right)^2
          = \left(\frac{\Delta \lambda}{\lambda}\right)^2
-         + \left(\frac{\Delta \theta}{\theta}\right)^2
+         + \left(\frac{\Delta \theta}{\tan(\theta)}\right)^2
 
-Computationally, $1/\tan(\theta)$ is infinity at $\theta=0$, so it is better
-to use the direct calculation:
+Computationally, $1/\tan(\theta) \rightarrow \infty$ at $\theta=0$, so 
+it is better to use the direct calculation:
 
-..math::
+.. math::
 
     \Delta Q = 4 \pi/\lambda \sqrt{\sin(\theta)^2 (\Delta\lambda/\lambda)^2
                                    + \cos(\theta)^2 \Delta \theta^2}
@@ -86,7 +86,7 @@ Angular divergence $\delta \theta$ comes primarily from the slit geometry,
 but can have broadening or focusing due to a warped sample.  The FWHM
 divergence in radians due to slits is:
 
-..math::
+.. math::
 
     \Delta\theta_{\rm slits} = \frac{1}{2} \frac{s_1 + s_2}{d_1 - d_2}
 
@@ -95,13 +95,13 @@ between the sample and the slits.  For tiny samples of width $m$, the sample
 itself can act as a slit.  If $s = m \sin(\theta)$ is smaller than $s_2$ for
 some $\theta$, then use:
 
-..math::
+.. math::
 
     \Delta\theta_{\rm slits} = \frac{1}{2} \frac{s_1 + m \sin(\theta)}{d_1}
 
 The sample broadening can be read off a rocking curve using:
 
-..math::
+.. math::
 
     \Delta\theta_{\rm sample} = w - \Delta\theta_{\rm slits}
 
@@ -119,7 +119,7 @@ you know $s$ and $\theta_o$ at the start of the opening slits region you
 can compute $\Delta \theta/\theta_o$, and later scale that to your
 particular $\theta$:
 
-..math::
+.. math::
 
     \Delta\theta(Q) = \Delta\theta/\theta_o \cdot \theta(Q)
 
@@ -133,7 +133,7 @@ from numpy import arcsin as asin, ceil, clip
 from numpy import ones_like, arange, isscalar, asarray, hstack
 
 def QL2T(Q=None,L=None):
-    """
+    r"""
     Compute angle from $Q$ and wavelength.
 
     .. math::
@@ -145,7 +145,7 @@ def QL2T(Q=None,L=None):
     return degrees(asin(abs(Q) * L / (4*pi)))
 
 def TL2Q(T=None,L=None):
-    """
+    r"""
     Compute $Q$ from angle and wavelength.
 
     .. math::
@@ -164,7 +164,7 @@ def sigma2FWHM(s):
 
 
 def dTdL2dQ(T=None, dT=None, L=None, dL=None):
-    """
+    r"""
     Convert wavelength dispersion and angular divergence to $Q$ resolution.
 
     *T*,*dT*  (degrees) angle and FWHM angular divergence
@@ -182,7 +182,7 @@ def dTdL2dQ(T=None, dT=None, L=None, dL=None):
     return FWHM2sigma(dQ)
 
 def dQdT2dLoL(Q, dQ, T, dT):
-    """
+    r"""
     Convert a calculated Q resolution and angular divergence to a
     wavelength dispersion.
 
@@ -196,7 +196,7 @@ def dQdT2dLoL(Q, dQ, T, dT):
 
 
 def dQdL2dT(Q, dQ, L, dL):
-    """
+    r"""
     Convert a calculated Q resolution and wavelength dispersion to
     angular divergence.
 
@@ -213,19 +213,19 @@ def dQdL2dT(Q, dQ, L, dL):
 Plancks_constant=6.62618e-27 # Planck constant (erg*sec)
 neutron_mass=1.67495e-24;    # neutron mass (g)
 def TOF2L(d_moderator, TOF):
-    """
+    r"""
     Convert neutron time-of-flight to wavelength.
     
     .. math::
     
         \lambda = (t/d) (h/n_m)
         
-    where::
+    where:
     
-        $\lambda$ is wavelength in |Ang|
-        $t$ is time-of-flight in $u$\s
-        $h$ is Planck's constant in erg seconds
-        $n_m$ is the neutron mass in g
+        | $\lambda$ is wavelength in |Ang|
+        | $t$ is time-of-flight in $u$\s
+        | $h$ is Planck's constant in erg seconds
+        | $n_m$ is the neutron mass in g
     """
     return TOF*(Plancks_constant/neutron_mass/d_moderator)
 
@@ -245,26 +245,20 @@ def bins(low, high, dLoL):
     return L
 
 def binwidths(L):
-    """
-    Construct dL assuming that L represents the bin centers of a
-    measured TOF data set, and dL is the bin width.
+    r"""
+    Determine the wavelength dispersion from bin centers *L*.
+    
+    The wavelength dispersion $\Delta\lambda$ is just the difference
+    between consecutive bin edges, so:
 
-    The bins L are assumed to be spaced logarithmically with edges::
-
-        E[0] = min wavelength
-        E[i+1] = E[i] + dLoL*E[i]
-
-    and centers::
-
-        L[i] = (E[i]+E[i+1])/2
-             = (E[i] + E[i]*(1+dLoL))/2
-             = E[i]*(2 + dLoL)/2
-
-    so::
-
-        L[i+1]/L[i] = E[i+1]/E[i] = (1+dLoL)
-        dL[i] = E[i+1]-E[i] = (1+dLoL)*E[i]-E[i]
-              = dLoL*E[i] = 2*dLoL/(2+dLoL)*L[i]
+    .. math::
+    
+        \Delta L_i  = E_{i+1}-E_{i}             
+                    = (1+\omega) E_i - E_i     
+                    = \omega E_i               
+                    = \frac{2 \omega}{2+\omega} L_i
+                    
+    where $E$ and $\omega$ are as defined in :func:`binedges`.
     """
     if L[1] > L[0]:
         dLoL = L[1]/L[0] - 1
@@ -274,25 +268,48 @@ def binwidths(L):
     return dL
 
 def binedges(L):
-    """
-    Construct bin edges E assuming that L represents the bin centers of a
-    measured TOF data set.
+    r"""
+    Construct bin edges *E* from bin centers *L*.
+    
+    Assuming fixed $\omega = \Delta\lambda/\lambda$ in the bins, the 
+    edges will be spaced logarithmically at:
 
-    The bins L are assumed to be spaced logarithmically with edges::
+    .. math::
+    
+        E_0     &= \min \lambda \\
+        E_{i+1} &= E_i + \omega E_i = E_i (1+\omega)
 
-        E[0] = min wavelength
-        E[i+1] = E[i] + dLoL*E[i]
+    with centers $L$ half way between the edges:
+    
+    .. math::
 
-    and centers::
+        L_i = (E_i+E_{i+1})/2 
+            = (E_i + E_i (1+\omega))/2 
+            = E_i (2 + \omega)/2
 
-        L[i] = (E[i]+E[i+1])/2
-             = (E[i] + E[i]*(1+dLoL))/2
-             = E[i]*(2 + dLoL)/2
+    Solving for $E_i$, we can recover the edges from the centers:
+    
+    .. math::
 
-    so::
+        E_i = L_i \frac{2}{2+\omega} 
 
-        E[i] = L[i]*2/(2+dLoL)
-        E[n+1] = L[n]*2/(2+dLoL)*(1+dLoL)
+    The final edge, $E_{n+1}$, does not have a corresponding center
+    $L_{n+1}$ so we must determine it from the previous edge $E_n$:
+    
+    .. math::
+    
+        E_{n+1} = L_n \frac{2}{2+\omega}(1+\omega)
+
+    The fixed $\omega$ can be retrieved from the ratio of any pair
+    of bin centers using:
+    
+    .. math::
+    
+        \frac{L_{i+1}}{L_i} = \frac{ (E_{i+2}+E_{i+1})/2 }{ (E_{i+1}+E_i)/2 }
+                          = \frac{ (E_{i+1}(1+\omega)+E_{i+1} }
+                                  { (E_i(1+\omega)+E_i }
+                          = \frac{E_{i+1}}{E_i}
+                          = \frac{E_i(1+\omega)}{E_i} = 1 + \omega 
     """
     if L[1] > L[0]:
         dLoL = L[1]/L[0] - 1
@@ -305,7 +322,7 @@ def binedges(L):
 
 def divergence(T=None, slits=None, distance=None,
                sample_width=1e10, sample_broadening=0):
-    """
+    r"""
     Calculate divergence due to slit and sample geometry.
 
     :Parameters:
@@ -326,23 +343,44 @@ def divergence(T=None, slits=None, distance=None,
 
     **Algorithm:**
 
-    Uses the following formula:
+    The divergence is based on the slit openings and the distance between
+    the slits.  For very small samples, where the slit opening is larger
+    than the width of the sample across the beam, the sample itself acts 
+    like the second slit.
+    
+    First find $p$, the projection of the beam on the sample:
 
-        p = w * sin(radians(T))
-        dT = /  1/2 (s1+s2) / (d1-d2)   if p >= s2
-             \  1/2 (s1+p) /  d1        otherwise
-        dT = degrees(dT) + sample_broadening
+    .. math::
+    
+        p &= w \sin\left(\frac{\pi}{180}\theta\right)
 
-    where p is the projection of the sample into the beam.
+    Depending on whether $p$ is larger than $s_2$, determine the slit
+    divergence $\Delta\theta_d$ in radians:
+    
+    .. math::
+    
+        \Delta\theta_d &= \left\{
+          \begin{array}{ll}
+            \frac{1}{2}\frac{s_1+s_2}{d_1-d_2} & \mbox{if } p \geq s_2 \\
+            \frac{1}{2}\frac{s_1+p}{d_1}       & \mbox{if } p < s_2
+          \end{array}
+        \right.
+        
+    In addition to the slit divergence, we need to add in any sample
+    broadening $\Delta\theta_s$ returning the total divergence in degrees:
+    
+    .. math::
 
-    *sample_broadening* can be estimated from W, the FWHM of a rocking curve::
+        \Delta\theta &= \frac{180}{\pi} \Delta\theta_d + \Delta\theta_s
 
-        sample_broadening = W - degrees( 0.5*(s1+s2) / (d1-d2))
-
-    .. Note::
-        Default sample width is large but not infinite so that at T=0,
-        sin(0)*sample_width returns 0 rather than NaN.
-
+    Reversing this equation, the sample broadening contribution can 
+    be measured from the full width at half maximum of the rocking 
+    curve, $B$, measured in degrees at a particular angle and slit 
+    opening:
+    
+    .. math::
+    
+        \Delta\theta_s = B - \frac{180}{\pi}\Delta\theta_d
     """
     # TODO: check that the formula is correct for T=0 => dT = s1 / d1
     # TODO: add sample_offset and compute full footprint
