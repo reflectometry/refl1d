@@ -59,7 +59,7 @@ import pylab
 #from pylab import *
 
 from refl1d.mystic import monitor, parameter
-from .gui_logic import Fit_Tab, Log_tab, load_problem
+from .gui_logic import Fit_Tab, Log_tab, Summary_tab, Parameter_Tab, load_problem
 from .work_thread import Worker
 
 from .utilities import (get_appdir, log_time,
@@ -279,8 +279,8 @@ class AppPanel(wx.Panel):
         from refl1d.profileview.panel import ProfileView
         self.page0 = ProfileView(nb)
         self.page1 = Fit_Tab(nb)
-        self.page2 = Fit_Tab(nb)
-        self.page3 = Fit_Tab(nb)
+        self.page2 = Summary_tab(nb)
+        self.page3 = Parameter_Tab(nb)
         self.page4 = Fit_Tab(nb)
         self.page5 = Fit_Tab(nb)
         self.page6 = Log_tab(nb)
@@ -355,6 +355,11 @@ class AppPanel(wx.Panel):
         self.problem = load_problem(self.args)
         self.view(self.problem)
 
+        # get the model parameter and send message to parameter tab to update
+        # the model parameter tab
+        parameters = self.problem.model_parameters()
+        pub.sendMessage("parameter", parameters)
+        
         ######## notebook tab 1 (profile view) ##############
         try:
             experiment = self.problem.fits[0].fitness
@@ -441,6 +446,7 @@ class AppPanel(wx.Panel):
         Receives data from thread and update the plot
         """
         self.view(self.problem)
+        pub.sendMessage("summary", d.data)
 
     def OnInteractor(self, event):
         """

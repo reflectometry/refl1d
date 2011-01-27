@@ -423,12 +423,15 @@ def format(p, indent=0):
     if isinstance(p,dict) and p != {}:
         res = []
         for k in sorted(p.keys()):
+	    if k.startswith('_'): continue
             s = format(p[k], indent+2)
             label = " "*indent+"."+k
             if s.endswith('\n'):
                 res.append(label+"\n"+s)
             else:
                 res.append(label+" = "+s+'\n')
+        if '_index' in p:
+            res .append(format(p['_index'], indent))
         return "".join(res)
     elif isinstance(p, list) and p != []:
         res = []
@@ -440,8 +443,8 @@ def format(p, indent=0):
             else:
                 res.append(label+' = '+s+'\n')
         return "".join(res)
-    elif isinstance(p, tuple) and p != ():
-        return "".join(format(v, indent) for v in p)
+    #elif isinstance(p, tuple) and p != ():
+    #    return "".join(format(v, indent) for v in p)
 
     elif isinstance(p, Parameter):
         if p.fixed:

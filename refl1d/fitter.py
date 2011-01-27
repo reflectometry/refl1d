@@ -626,8 +626,8 @@ class FitProblem(object):
 
     def show(self):
         print parameter.format(self.model_parameters())
-        print "[chisq=%g, nllf=%g]" % (self.chisq(), self.nllf()/self.dof)
-        print parameter.summarize(self.parameters)
+        #print "[chisq=%g, nllf=%g]" % (self.chisq(), self.nllf()/self.dof)
+        #print parameter.summarize(self.parameters)
 
     def save(self, basename):
         self.fitness.save(basename)
