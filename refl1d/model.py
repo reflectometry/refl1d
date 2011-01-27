@@ -199,7 +199,10 @@ class Stack(Layer):
     def __repr__(self):
         return "Stack("+", ".join(repr(L) for L in self._layers)+")"
     def parameters(self):
-        layers = [L.parameters() for L in self._layers]
+        layers=[L.parameters() for L in self._layers]
+
+	return dict(thickness=self.thickness, _index = layers)
+
         attrs = dict(thickness=self.thickness)
         return (attrs,layers)
         #return [L.parameters() for L in self._layers]
