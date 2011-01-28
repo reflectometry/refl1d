@@ -173,11 +173,18 @@ data_files.append( ('.', [os.path.join('.', 'bin', 'refllaunch.bat')]) )
 for path in glob.glob(os.path.join('examples', '*')):
     if os.path.isdir(path):
         for file in glob.glob(os.path.join(path, '*.*')):
-            print "*******1", path, file
             data_files.append( (path, [file]) )
     else:
-        print "*******2", "examples", path
         data_files.append( ('examples', [path]) )
+
+for path in glob.glob(os.path.join('doc', 'examples', '*')):
+    if os.path.isdir(path):
+        for file in glob.glob(os.path.join(path, '*.*')):
+            data_files.append( (path, [file]) )
+    else:
+        data_files.append( ('doc', [path]) )
+
+data_files.append( ('doc', [os.path.join('doc', 'Refl1D.pdf')]) )
 
 # Add the Microsoft Visual C++ 2008 redistributable kit if we are building with
 # Python 2.6 or 2.7.  This kit will be installed on the target system as part

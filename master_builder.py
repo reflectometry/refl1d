@@ -123,6 +123,10 @@ def build_it():
     # Install the application in a local directory tree.
     install_package()
 
+    # Build HTML and PDF documentaton using sphinx.
+    if not (len(sys.argv) > 1 and '-b' in sys.argv[1:]):
+        build_documentation()
+
     # Create a Windows executable file using py2exe.
     if not (len(sys.argv) > 1 and '-w' in sys.argv[1:]):
         if os.name == 'nt':
@@ -132,10 +136,6 @@ def build_it():
     if not (len(sys.argv) > 1 and '-w' in sys.argv[1:]):
         if os.name == 'nt':
             create_windows_installer(__version__)
-
-    # Build HTML and PDF documentaton using sphinx.
-    if not (len(sys.argv) > 1 and '-b' in sys.argv[1:]):
-        build_documentation()
 
     # Run unittests using nose.
     if not (len(sys.argv) > 1 and ('-t' in sys.argv[1:] or
@@ -223,7 +223,7 @@ def create_windows_exe():
     # Use py2exe to create a Win32 executable along with auxiliary files in the
     # <SRC_DIR>/dist directory tree.
     print SEPARATOR
-    print "\nStep 4 - Using py2exe to create a Win32 executable ...\n"
+    print "\nStep 5 - Using py2exe to create a Win32 executable ...\n"
     os.chdir(SRC_DIR)
 
     exec_cmd("%s setup_py2exe.py" %PYTHON)
@@ -233,7 +233,7 @@ def create_windows_installer(version=None):
     # Run the Inno Setup Compiler to create a Win32 installer/uninstaller for
     # the application.
     print SEPARATOR
-    print "\nStep 5 - Running Inno Setup Compiler to create Win32 "\
+    print "\nStep 6 - Running Inno Setup Compiler to create Win32 "\
           "installer/uninstaller ...\n"
     os.chdir(SRC_DIR)
 
@@ -253,7 +253,7 @@ def create_windows_installer(version=None):
 def build_documentation():
     # Run the Sphinx utility to build the application's documentation.
     print SEPARATOR
-    print "\nStep 6 - Running the Sphinx utility to build documentation ...\n"
+    print "\nStep 4 - Running the Sphinx utility to build documentation ...\n"
     os.chdir(os.path.join(SRC_DIR, "doc"))
 
     # Delete any left over files from a previous build.
@@ -262,10 +262,10 @@ def build_documentation():
     exec_cmd("make html")
     # Create documentation in PDF format.
     exec_cmd("make pdf")
-    # Copy PDF file to the top-level directory.
-    os.chdir(os.path.join("_build", "latex"))
-    if os.path.isfile("Refl1D.pdf"):
-        shutil.copy("Refl1D.pdf", TOP_DIR)
+    # Copy PDF to the doc directory where the py2exe script will look for it.
+    pdf = os.path.join("_build", "latex", "Refl1D.pdf")
+    if os.path.isfile(pdf):
+        shutil.copy(pdf, ".")
 
 
 def run_unittests():

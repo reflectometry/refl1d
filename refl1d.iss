@@ -79,8 +79,9 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Files]
 ; This script assumes that the output from the previously run py2exe packaging process is in .\dist\...
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
-Source: "dist\*"; Excludes: "examples"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\*"; Excludes: "examples,doc"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "dist\examples\*"; DestDir: "{userdocs}\{#MyAppName}\examples"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\doc\*"; DestDir: "{userdocs}\{#MyAppName}\doc"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; The following Pascal function checks for the presence of the VC++ 2008 DLL folder on the target system
 ; to determine if the VC++ 2008 Redistributable kit needs to be installed.

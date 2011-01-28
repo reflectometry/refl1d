@@ -16,7 +16,7 @@ def configuration(parent_package='', top_path=None):
     # this name may already be used), so we define our dream substructure here.
     config.add_subpackage('amqp_map')
     config.add_data_dir('bin')
-    config.add_data_dir('doc')
+    config.add_data_dir(os.path.join('doc', 'examples'))
     config.add_data_dir('examples')
     config.add_subpackage('dream.dream')
     config.add_data_dir(os.path.join('dream', 'examples'))
