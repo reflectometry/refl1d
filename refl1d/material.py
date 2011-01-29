@@ -149,9 +149,11 @@ class Material(Scatterer):
 
             True if incoherent scattering should be interpreted as absorption.
 
-        *fitby* = 'bulk_density' : string
+        *fitby* = 'bulk_density' : string 
 
-            See :meth:`fitby` for details
+            Which density parameter is the fitting parameter.  The choices
+            are *bulk_density*, *natural_density*, *relative_density* or
+            *cell_volume*.  See :meth:`fitby` for details.
 
         *value* : Parameter or float | units depends on fitby type
 
@@ -200,14 +202,16 @@ class Material(Scatterer):
                 Density is mass / *cell_volume*
 
         The resulting material will have a *density* attribute with the
-        computed material density and the appropriately named attribute.
+        computed material density in addition to the *fitby*
+        attribute specified.
 
         .. Note::
 
-            This will delete the underlying parameter, so be sure you specify
-            fitby type before using *m.density* in a parameter expression.
-            Alternatively, you can use WrappedParameter(m,'density') in your
-            expression so that it doesn't matter if fitby is set.
+            Calling *fitby* replaces the *density* parameter in the 
+            material, so be sure to do so before using *density* in
+            a parameter expression.  Using :class:`WrappedParameter
+            <refl1d.mystic.parameter.WrappedParameter>` for *density*
+            is another alternative.
         """
 
         # Clean out old parameter
@@ -265,7 +269,7 @@ class Material(Scatterer):
             raise NotImplementedError("incoherent scattering not supported")
             irho += incoh
         scale = self.density.value
-        #print "Material sld ",self.name,scale*coh,scale*absorp
+        #print "Material sld ",self.name,scale,scale*rho,scale*irho
         return (scale*rho,scale*irho)
     def __str__(self):
         return self.name

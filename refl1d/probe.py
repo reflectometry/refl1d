@@ -14,21 +14,7 @@ The experimental probe describes the incoming beam for the experiment.
 Scattering properties of the sample are dependent on the type and
 energy of the radiation.
 
-For time-of-flight measurements, each angle should be represented as
-a different probe.  This eliminates the 'stitching' problem, where
-$Q = 4 \pi \sin(\theta_1)/\lambda_1 = 4 \pi \sin(\theta_2)/\lambda_2$ 
-for some $(\theta_1,\lambda_1)$ and $(\theta_2,\lambda_2)$.
-With stitching, it is impossible to account for effects such as
-alignment offset since two nominally identical Q values will in
-fact be different.  No information is lost treating the two data sets
-separately --- each points will contribute to the overall cost function
-in accordance with its statistical weight.
-
-
-.. [#Daymond2002] M.R. Daymond, P.J. Withers and M.W. Johnson;
-   The expected uncertainty of diffraction-peak location",
-   Appl. Phys. A 74 [Suppl.], S112 - S114 (2002).
-   http://dx.doi.org/10.1007/s003390201392
+See `data_guide`_ for details.
 
 """
 
@@ -87,16 +73,6 @@ class Probe(object):
     r"""
     Defines the incident beam used to study the material.
 
-    The probe is used to compute the scattering potential for the individual
-    materials that the beam will bass through.  This potential is normalized
-    to density=1 |g/cm^3|.  To use these values in the calculation of
-    reflectivity, they need to be scaled by density and volume fraction.
-
-    The choice of normalized density is dictated by the cost of lookups
-    in the CXRO scattering tables.  With normalized density only one lookup
-    is necessary during the fit, rather than one for each choice of density
-    even when density is not the fitting parameter.
-
     For calculation purposes, probe needs to return the values $Q_\text{calc}$
     at which the model is evaluated.  This is normally going to be the measured
     points only, but for some systems, such as those with very thick layers,
@@ -108,6 +84,7 @@ class Probe(object):
         *background* is the background
         *back_absorption* is the amount of absorption through the substrate
         *theta_offset* is the offset of the sample from perfect alignment
+        *back_reflectivity* is true if the beam enters through the substrate
 
     Measurement properties are fittable parameters.  *theta_offset* in
     particular should be set using probe.theta_offset.dev(dT), with dT
@@ -203,29 +180,9 @@ class Probe(object):
 
         **Returns:**
 
-        *dtheta* : float | degrees
-        
-            uncertainty in alignment angle
-        
-        **Algorithm:**
-        
-        The uncertainty in the peak position is not the same as the width 
-        of the peak.  The peak stays roughly the same as statistics are 
-        improved, but the uncertainty in position and width will 
-        decrease. [#Daymond2002]_ There is an additional uncertainty in 
-        the angle due to motor step size, easily computed from the 
-        variance in a uniform distribution.  Combined, the uncertainty 
-        in *theta_offset* is:
-
-        .. math:
-    
-            \Delta\theta \approx \sqrt{w^2/I + d^2/12}
-
-        where $w$ is the full-width of the peak in radians at half maximum, 
-        $I$ is the integrated intensity under the peak and $d$ is the motor 
-        step size is radians.
+        *dtheta* : float | degrees        
+            uncertainty in alignment angle        
         """
-
         return sqrt(w**2/I + d**2/12.)
 
 
@@ -424,15 +381,16 @@ class Probe(object):
         L = L.flatten()
         self._set_calc(T,L)
 
+    def _apply_resolution(self, Qin, Rin):
+        """
+        Apply the instrument resolution function
+        """
+        return self.Q, convolve(Qin, Rin, self.Q, self.dQ)
+
     def apply_beam(self, calc_Q, calc_R, resolution=True):
         """
         Apply factors such as beam intensity, background, backabsorption,
-        resolution and footprint to the data.
-
-        Users who wish to create complex resolution functions, e.g.,
-        with wavelength following the TOF feather will need to control
-        both the sampling and the resolution calculation.  Probe is the
-        natural place for this calculation since it controls both of these.
+        resolution to the data.
         """
         # Handle absorption through the substrate, which occurs when Q<0
         # (condition)*C is C when condition is True or 0 when False,
@@ -446,7 +404,7 @@ class Probe(object):
         if resolution:
             if calc_Q[-1] < calc_Q[0]:
                 calc_Q, calc_R = [v[::-1] for v in calc_Q, calc_R]
-            Q,R = self.Q, convolve(calc_Q, calc_R, self.Q, self.dQ)
+            Q,R = self._apply_resolution(calc_Q, calc_R)
         else:
             Q,R = calc_Q, calc_R
         R = self.intensity.value*R + self.background.value
