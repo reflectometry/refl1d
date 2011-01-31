@@ -4,6 +4,8 @@
 Data Representation
 *******************
 
+.. contents:: :local:
+
 Data is represented using :class:`Probe <refl1d.probe.Probe>` objects.
 The probe defines the Q values and the resolution of the individual 
 measurements, returning the scattering factors associated with the 
@@ -274,12 +276,6 @@ where $w$ is the full-width of the peak in radians at half maximum,
 $I$ is the integrated intensity under the peak and $d$ is the motor 
 step size is radians.
 
-.. [#Daymond2002] M.R. Daymond, P.J. Withers and M.W. Johnson;
-   The expected uncertainty of diffraction-peak location",
-   Appl. Phys. A 74 [Suppl.], S112 - S114 (2002).
-   http://dx.doi.org/10.1007/s003390201392
-
-
 
 .. _data_scattering_factors:
 
@@ -314,3 +310,8 @@ extending periodic table with magnetic scattering information and
 adding support to 
 :class:`PolarizedNeutronProbe <refl1d.probe.PolarizedNeutronProbe>`
 
+
+.. [#Daymond2002] M.R. Daymond, P.J. Withers and M.W. Johnson;
+   The expected uncertainty of diffraction-peak location",
+   Appl. Phys. A 74 [Suppl.], S112 - S114 (2002).
+   http://dx.doi.org/10.1007/s003390201392

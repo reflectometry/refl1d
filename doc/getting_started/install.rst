@@ -4,6 +4,8 @@
 Installing the application
 **************************
 
+.. contents:: :local:
+
 Refl1D |version| is provided as a Windows installer or as source:
 
 	- Windows installer: :slink:`%(winexe)s`

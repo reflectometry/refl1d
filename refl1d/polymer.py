@@ -1,13 +1,6 @@
 # This program is public domain
 # Author Paul Kienzle
 """
-.. sidebar:: On this Page
-
-        * :class:`Polymer brush <refl1d.polymer.PolymerBrush>`
-        * :class:`Volume profile <refl1d.polymer.VolumeProfile>`
-        * :func:`Layer thickness <refl1d.polymer.layer_thickness>`
-        * :func:`Smear <refl1d.polymer.smear>`
-
 Layer models for polymer systems.
 
 Analytic Self-consistent Field (SCF) profile [#Zhulina]_ [#Karima]_

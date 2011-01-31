@@ -1,12 +1,5 @@
 r"""
-.. sidebar:: On this Page
-
-        * :class:`Cheby volume fraction <refl1d.cheby.ChebyVF>`
-        * :class:`Free form cheby <refl1d.cheby.FreeformCheby>`
-        * :func:`Layer thickness <refl1d.polymer.layer_thickness>`
-        * :func:`Smear <refl1d.polymer.smear>`
-
-Freeform modeling with Chebyshev polynomials.
+Freeform modeling with Chebyshev polynomials
 
 `Chebyshev polynomials <http://en.wikipedia.org/wiki/Chebyshev_polynomials>`_ 
 $T_k$ form a basis set for functions over $[-1,1]$.  The truncated

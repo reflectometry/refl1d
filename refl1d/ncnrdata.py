@@ -1,14 +1,7 @@
 # This program is in the public domain
 # Author: Paul Kienzle
 """
-.. sidebar:: On this Page
-
-        * :class:`NCNR AND/R diffractometer/reflectometer <refl1d.ncnrdata.ANDR>`
-        * :class:`NCNR X-ray reflectometer <refl1d.ncnrdata.XRay>`
-        * :class:`NCNR NG-1 reflectometer <refl1d.ncnrdata.NG1>`
-        * :class:`NCNR NG-7 reflectometer <refl1d.ncnrdata.NG7>`
-
-NCNR data loaders.
+NCNR data loaders
 
 The following instruments are defined:
 

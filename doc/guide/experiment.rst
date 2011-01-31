@@ -4,6 +4,8 @@
 Experiment
 *******************
 
+.. contents:: :local:
+
 The :class:`Experiment <refl1d.experiment.Experiment>` object links a
 `sample <sample_guide>`_ with an experimental `probe <data_guide>`_.
 The probe defines the Q values and the resolution of the individual 

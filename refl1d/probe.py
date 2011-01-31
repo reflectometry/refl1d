@@ -1,13 +1,6 @@
 # This program is in the public domain
 # Author: Paul Kienzle
 r"""
-.. sidebar:: On this Page
-
-        * :class:`Base probe <refl1d.probe.Probe>`
-        * :class:`Polarized neutron probe <refl1d.probe.PolarizedNeutronProbe>`
-        * :class:`Neutron probe <refl1d.probe.NeutronProbe>`
-        * :class:`X-ray probe <refl1d.probe.XrayProbe>`
-
 Experimental probe.
 
 The experimental probe describes the incoming beam for the experiment.
@@ -732,25 +725,25 @@ def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
         Measured ++ cross section and uncertainty.
     *Qm*, *Rm*, *dRm* : vector
         Measured -- cross section and uncertainty.
-    
-    If *dRp*, *dRm* are None then the returned uncertainty will also be None.
 
+    If *dRp*, *dRm* are None then the returned uncertainty will also be None.
+    
     **Returns:**
     
     *Q*, *SA*, *dSA* : vector
         Computed spin asymmetry and uncertainty.
 
     **Algorithm:**
-    
+        
     Spin asymmetry, $S_A$, is:
     
-    .. math:
+    .. math::
 
-        S_A = (R_{++} - R_{--})/(R_{++} + R_{--})
+        S_A = \frac{R_{++} - R_{--}}{R_{++} + R_{--}}
 
     Uncertainty $\Delta S_A$ follows from propagation of error:
     
-    .. math:
+    .. math::
 
         \Delta S_A^2 = \frac{4(R_{++}^2\Delta R_{--}^2-R_{--}^2\Delta R_{++})}
                             {(R_{++} + R_{--})^4}

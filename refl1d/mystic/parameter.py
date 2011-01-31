@@ -1,6 +1,9 @@
 # This program is public domain
 # Author: Paul Kienzle
-__all__ = [ 'Parameter', 'ParameterSet']
+r"""
+Parameter definitions for models
+"""
+#__all__ = [ 'Parameter', 'ParameterSet']
 
 import sys
 import numpy

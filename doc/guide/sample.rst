@@ -4,6 +4,8 @@
 Sample Representation
 *********************
 
+.. contents:: :local:
+
 Stacks
 ================
 
@@ -240,6 +242,8 @@ correspond to the likelihood of finding the system in that particularly
 state:  that is, don't expect your sample to show zebra stripes unless
 you are on an African safari or visiting a zoo.
 
+
+.. _new_layers:
 
 Subclassing Layer
 =================

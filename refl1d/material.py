@@ -1,14 +1,6 @@
 # This program is in the public domain
 # Author Paul Kienzle
 """
-.. sidebar:: On this Page
-
-        * :class:`Base Material <refl1d.material.Material>`
-        * :class:`Mixture (mixed block of material) <refl1d.material.Mixture>`
-        * :class:`Scattering Length Density (SLD) <refl1d.material.SLD>`
-        * :class:`Material Probe Proxy <refl1d.material.ProbeCache>`
-        * :class:`Empty Layer (Vacuum) <refl1d.material.Vacuum>`
-
 Reflectometry materials.
 
 Materials (see :class:`Material`) have a composition and a density.

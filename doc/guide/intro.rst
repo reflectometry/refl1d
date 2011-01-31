@@ -1,8 +1,10 @@
 .. _intro_guide:
 
-######################
+*******************
 Using Refl1D
-######################
+*******************
+
+.. contents:: :local:
 
 The Refl1D library is organized into modules.  Specific functions and
 classes can be imported from a module, such as::

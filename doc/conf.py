@@ -45,6 +45,7 @@ sys.path.insert(0, os.path.abspath(buildpath))
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest',
+              'sphinx.ext.autosummary',
               'sphinx.ext.coverage',
               'sphinx.ext.viewcode',
               #'sphinx.ext.pngmath',
@@ -56,6 +57,7 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest',
               #'inheritance_diagram',
               'dollarmath',
               'slink',
+              #'numpydoc.numpydoc',
              ]
 #plot_formats = [('png', 120), ('pdf', 50)] # Only make 80 dpi plots
 jsmath_path = 'MathJax/MathJax.js'
@@ -125,6 +127,7 @@ pygments_style = 'sphinx'
 # a list of builtin themes.
 html_theme = 'haiku'
 #html_theme = 'default'
+html_style = 'haiku-site.css'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -161,7 +164,7 @@ html_static_path = ['_static']
 
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
-#html_use_smartypants = True
+html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
 #html_sidebars = {}

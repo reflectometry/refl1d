@@ -1,11 +1,5 @@
 """
-.. sidebar:: On this Page
-
-        * :class:`FreeLayer <refl1d.mono.FreeLayer>`
-        * :class:`FreeInterface <refl1d.mono.FreeInterface>`
-
-Monotonic spline modeling for free interfaces.  
-
+Monotonic spline modeling for free interfaces
 """
 
 

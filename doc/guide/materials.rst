@@ -4,6 +4,8 @@
 Materials
 *******************
 
+.. contents:: :local:
+
 Because this
 is elemental nickel, we already know it's density.  For compounds
 such as 'SiO2' we would have to specify an additional

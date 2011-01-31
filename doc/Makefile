@@ -41,6 +41,7 @@ clean:
 	-rm -rf $(BUILDDIR)/* build api
 
 api: genmods.py
+	-rm -rf api
 	python genmods.py
 
 _build/html:

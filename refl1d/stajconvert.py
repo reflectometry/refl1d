@@ -1,3 +1,9 @@
+# This program is in the public domain
+# Author: Paul Kienzle
+"""
+Convert staj files to Refl1D models
+"""
+
 import numpy
 from numpy import tan, cos, sqrt, radians, degrees, pi
 from .staj import MlayerModel

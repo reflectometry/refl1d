@@ -2,6 +2,8 @@
 Example 2: Tethered Polymer
 ***************************
 
+.. contents:: :local:
+
 We will now model a data set for tethered deuterated polystyrene chains.
 The chains start out at approximately 10 nm thick in dry conditions, and
 swell to 14-18 nm thickness in toluene.  Two measurements were made:

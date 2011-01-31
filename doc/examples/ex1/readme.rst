@@ -2,6 +2,8 @@
 Example 1: Nickel film
 **********************
 
+.. contents:: :local:
+
 Defining the film
 =================
 

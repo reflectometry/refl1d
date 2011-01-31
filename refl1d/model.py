@@ -1,14 +1,7 @@
 # This program is in the public domain
 # Author: Paul Kienzle
 """
-.. sidebar:: On this Page
-
-        * :class:`Layer of material <refl1d.model.Layer>`
-        * :class:`Layer Stack <refl1d.model.Stack>`
-        * :class:`Block of material (Slab) <refl1d.model.Slab>`
-        * :class:`Repeat a Stack or Layer <refl1d.model.Repeat>`
-
-Reflectometry models.
+Reflectometry models
 
 Reflectometry models consist of 1-D stacks of layers. Layers are joined
 by gaussian interfaces. The layers themselves may be uniform, or the

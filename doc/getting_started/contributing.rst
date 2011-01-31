@@ -4,6 +4,8 @@
 Contributing Changes
 ********************
 
+.. contents:: :local:
+
 The best way to contribute to the reflectometry package is to work
 from a copy of the source tree in the revision control system.
 

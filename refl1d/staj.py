@@ -1,16 +1,13 @@
 # This program is in the public domain
 # Author: Paul Kienzle
 r"""
-.. sidebar:: On this Page
+Read and write staj files
 
-        * :class:`Mlayer magnetic <refl1d.staj.MlayerMagnetic>`
-        * :class:`Mlayer model <refl1d.staj.MlayerModel>`
-
-This module reads and writes staj files.  These are the model files for the
-mlayer and gj2 programs, which are used as the calculation engine for the
-reflpak suite. Mlayer supports unpolarized beam with multilayer models,
-and has files ending in **.staj**. GJ2 supports polarized beam without
-multilayer models, and has files ending in **.sta**.
+Staj files are the model files for the mlayer and gj2 programs, which are 
+used as the calculation engine for the reflpak suite. Mlayer supports 
+unpolarized beam with multilayer models,  and has files ending in 
+**.staj**. GJ2 supports polarized beam without multilayer models, and 
+has files ending in **.sta**.
 """
 
 from math import pi

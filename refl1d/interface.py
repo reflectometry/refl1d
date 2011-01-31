@@ -1,14 +1,6 @@
 # This program is public domain
 # Author: Paul Kienzle
 """
-.. sidebar:: On this Page
-
-        * :class:`Base interface <refl1d.interface.Interface>`
-        * :class:`Sharp interface <refl1d.interface.Sharp>`
-        * :class:`Error function profile <refl1d.interface.Erf>`
-        * :class:`Hyperbolic tangent profile <refl1d.interface.Tanh>`
-        * :class:`Linear interface <refl1d.interface.Linear>`
-
 Interfacial roughness
 
 Interfacial roughness is defined by a probability distribution P and the

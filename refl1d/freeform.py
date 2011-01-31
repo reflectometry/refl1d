@@ -1,7 +1,5 @@
 """
-.. sidebar:: On this Page
-
-        * :class:`Free form <refl1d.freeform.Freeform>`
+Freeform modeling with B-Splines
 """
 
 import numpy

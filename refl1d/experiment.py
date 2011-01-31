@@ -2,11 +2,10 @@
 # Author: Paul Kienzle
 
 """
-.. sidebar:: On this Page
+Experiment definition
 
-        * :class:`Experiment <refl1d.experiment.Experiment>`
-        * :class:`MixedExperiment <refl1d.experiment.MixedExperiment>`
-
+An experiment combines the sample definition with a measurement probe
+to create a fittable reflectometry model.
 """
 
 from math import log, pi, log10, ceil, floor

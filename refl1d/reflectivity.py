@@ -1,29 +1,15 @@
 #!/usr/bin/env python
 
 """
-.. sidebar:: On this Page
+Basic reflectometry calculations
 
-   * :class:`Reflectivity <refl1d.reflectivity.reflectivity>`
-   * :class:`Reflectivity amplitude <refl1d.reflectivity.reflectivity_amplitude>`
-   * :class:`Magnetic reflectivity <refl1d.reflectivity.magnetic_reflectivity>`
-
-Basic reflectometry calculations.
-
-:class:`reflectivity <refl1d.reflectivity.reflectivity>`,
-:class:`magnetic_reflectivity <refl1d.reflectivity.magnetic_reflectivity>`,
-:class:`unpolarized_magnetic <refl1d.reflectivity.unpolarized_magnetic>`:
-
-    Slab model reflectivity calculator with optional absorption and roughness.
-    The function reflectivity_amplitude returns the complex waveform.
-    Slab model with supporting magnetic scattering.  The function
-    magnetic_reflectivity returns the complex reflection for the four
-    spin polarization cross sections [++, +-, -+, --].  The function
-    unpolarized_magnetic returns the expected magnitude for a measurement
-    of the magnetic scattering using an unpolarized beam.
-
-:class:`convolve <refl1d.reflectivity.convolve>`
-
-    Apply Q-dependent resolution function to the theory.
+Slab model reflectivity calculator with optional absorption and roughness.
+The function reflectivity_amplitude returns the complex waveform.
+Slab model with supporting magnetic scattering.  The function
+magnetic_reflectivity returns the complex reflection for the four
+spin polarization cross sections [++, +-, -+, --].  The function
+unpolarized_magnetic returns the expected magnitude for a measurement
+of the magnetic scattering using an unpolarized beam.
 """
 
 #__doc__ = "Fundamental reflectivity calculations"
@@ -78,8 +64,8 @@ def reflectivity_amplitude(kz=None,
                            sigma=0,
                            rho_index=None,
                            ):
-    """
-    Calculate reflectivity r(k_z) from slab model.
+    r"""
+    Calculate reflectivity amplitude $r(k_z)$ from slab model.
 
     :Parameters :
         *depth* : float[N] | |Ang|
@@ -218,7 +204,9 @@ def magnetic_amplitude(Q,
 
 def convolve(Qi,Ri,Q,dQ):
     """
-    Return convolution R[k] of width dQ[k] at points Q[k].
+    Apply Q-dependent resolution function to the theory.
+
+    Returns convolution R[k] of width dQ[k] at points Q[k].
     """
     R = numpy.empty(Q.shape,'d')
     reflmodule._convolve(_dense(Qi),_dense(Ri),_dense(Q),_dense(dQ),R)
