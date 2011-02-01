@@ -86,7 +86,7 @@ class Probe(object):
     in the cost function for the fit as if it were another measurement.  Use
     :meth:`alignment_uncertainty` to compute dT from the shape of the
     rocking curve.
-    
+
     *intensity* and *back_absorption* are generally not needed --- scaling
     the reflected signal by an appropriate intensity measurement will correct
     for both of these during reduction.  *background* may be needed,
@@ -173,8 +173,8 @@ class Probe(object):
 
         **Returns:**
 
-        *dtheta* : float | degrees        
-            uncertainty in alignment angle        
+        *dtheta* : float | degrees
+            uncertainty in alignment angle
         """
         return sqrt(w**2/I + d**2/12.)
 
@@ -243,15 +243,15 @@ class Probe(object):
         """
         self.R = self.Ro
 
-    def write_data(self, filename, 
+    def write_data(self, filename,
                    columns=['Q','R','dR'],
                    header=None):
         """
         Save the data to a file.
-        
+
         *header* is a string with trailing \\n containing the file header.
         *columns* is a list of column names from Q, dQ, R, dR, L, dL, T, dT.
-        
+
         The default is to write Q,R,dR data.
         """
         if header == None:
@@ -720,29 +720,29 @@ def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
     Compute spin asymmetry for R++, R--.
 
     **Parameters:**
-    
+
     *Qp*, *Rp*, *dRp* : vector
         Measured ++ cross section and uncertainty.
     *Qm*, *Rm*, *dRm* : vector
         Measured -- cross section and uncertainty.
 
     If *dRp*, *dRm* are None then the returned uncertainty will also be None.
-    
+
     **Returns:**
-    
+
     *Q*, *SA*, *dSA* : vector
         Computed spin asymmetry and uncertainty.
 
     **Algorithm:**
-        
+
     Spin asymmetry, $S_A$, is:
-    
+
     .. math::
 
         S_A = \frac{R_{++} - R_{--}}{R_{++} + R_{--}}
 
     Uncertainty $\Delta S_A$ follows from propagation of error:
-    
+
     .. math::
 
         \Delta S_A^2 = \frac{4(R_{++}^2\Delta R_{--}^2-R_{--}^2\Delta R_{++})}

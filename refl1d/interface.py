@@ -160,9 +160,9 @@ class Erf(Interface):
     which is about 2.35.
 
     This interface can be computed analytically. When computing
-    the slab product of the reflectivity, scale the Fresnel coefficient 
+    the slab product of the reflectivity, scale the Fresnel coefficient
     $F$ by the interface function yielding:
-    
+
     .. math:
 
         F = (k_i-k_{i+1})/(k_i+k_{i+1}) \exp(-2 k_i k_{i+1} \sigma_i^2)
@@ -247,14 +247,14 @@ class Tanh(Interface):
     The tanh profile has the form:
 
     .. math:
-    
+
         \text{CDF}(z) = (1 + \tanh(C/wz))/2
         \text{PDF}(z) = C/(2w) \sech((C/w)z)^2
         \text{PPF}(z) = (w/C) \tanh^{-1}(2z-1)
 
     where $w$ is the interface roughness and $C$ is a scaling constant.
-    $C$ is $\tanh^{-1}(\text{erf}(1/\sqrt{2}))$ for width defined 
-    by 1-\ $\sigma$, or $C$ is $2\cosh^{-1}(\sqrt{2})$ for width 
+    $C$ is $\tanh^{-1}(\text{erf}(1/\sqrt{2}))$ for width defined
+    by 1-\ $\sigma$, or $C$ is $2\cosh^{-1}(\sqrt{2})$ for width
     defined by FWHM.
 
     .. Note::
@@ -382,7 +382,7 @@ def demo_tanh_to_erf():
     pylab.subplot(211)
     pylab.plot(z,perf.cdf(z),hold=False)
     pylab.plot(z,ptanh.cdf(z),hold=True)
-    pylab.title("""FWHM tanh -> 1-sigma erf 
+    pylab.title("""FWHM tanh -> 1-sigma erf
 scale by atanh(erf(1/sqrt(2))) / (2 acosh(sqrt(2)))""")
     pylab.legend(['erf','tanh'])
     pylab.grid(True)

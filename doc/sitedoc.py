@@ -18,7 +18,7 @@ def rstdir():
     # If this code breaks, you could probably get away with searching up
     # the stack for the variable 'state_machine', which is a sphinx defined
     # variable, and use:
-    # 
+    #
     #  rstdir, _ = os.path.split(state_machine.document.attributes['source'])
     #
     # Even better would be to modify the plot directive to make rstdir
@@ -54,4 +54,3 @@ def fit_model(filename):
         raise RuntimeError("Fit did not converge")
     p.plot()
     pylab.show()
-    

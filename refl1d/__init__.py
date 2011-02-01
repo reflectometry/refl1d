@@ -4,10 +4,10 @@
 1-D Reflectometry Modeller
 
 This package provides tools for modeling a variety of systems from
-simple slabs to complex systems with a mixture models involving 
+simple slabs to complex systems with a mixture models involving
 smoothly varying layers.
 
-X-ray and neutron and polarized neutron data can be loaded and the model 
+X-ray and neutron and polarized neutron data can be loaded and the model
 parameters adjusted to achieve the best fit.
 
 A graphical interface allows direct manipulation of the model profiles.

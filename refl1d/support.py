@@ -28,7 +28,7 @@ def get_data_path():
         raise RuntimeError("Could not find sample data")
 
 
-REGISTRY = { 
+REGISTRY = {
     'exp123.dat': ['xray','e1085009.log'],
     'chale207.refl': ['polymer','10ndt001.refl'],
     '10ndt001.refl': ['polymer','10ndt001.refl'],

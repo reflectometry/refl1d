@@ -426,7 +426,7 @@ def format(p, indent=0):
     if isinstance(p,dict) and p != {}:
         res = []
         for k in sorted(p.keys()):
-	    if k.startswith('_'): continue
+            if k.startswith('_'): continue
             s = format(p[k], indent+2)
             label = " "*indent+"."+k
             if s.endswith('\n'):

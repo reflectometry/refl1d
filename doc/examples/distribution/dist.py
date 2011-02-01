@@ -107,7 +107,7 @@ class DistributionExperiment(ExperimentBase):
         x,w = zip(*self.distribution)
         idx = numpy.argmax(w)
         return x[idx]
-    
+
     def smooth_profile(self,dz=1):
         """
         Compute a density profile for the material
@@ -143,4 +143,3 @@ class DistributionExperiment(ExperimentBase):
         pylab.title('Weight distribution')
         pylab.xlabel(self.P.name)
         pylab.ylabel('Percentage')
-        

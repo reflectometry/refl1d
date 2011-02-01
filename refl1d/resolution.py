@@ -24,7 +24,7 @@ def TL2Q(T=None,L=None):
     Compute $Q$ from angle and wavelength.
 
     .. math::
-    
+
         Q = 4 \pi \sin(\theta) / \lambda
 
     Returns $Q$ |1/Ang|
@@ -90,13 +90,13 @@ neutron_mass=1.67495e-24;    # neutron mass (g)
 def TOF2L(d_moderator, TOF):
     r"""
     Convert neutron time-of-flight to wavelength.
-    
+
     .. math::
-    
+
         \lambda = (t/d) (h/n_m)
-        
+
     where:
-    
+
         | $\lambda$ is wavelength in |Ang|
         | $t$ is time-of-flight in $u$\s
         | $h$ is Planck's constant in erg seconds
@@ -122,17 +122,17 @@ def bins(low, high, dLoL):
 def binwidths(L):
     r"""
     Determine the wavelength dispersion from bin centers *L*.
-    
+
     The wavelength dispersion $\Delta\lambda$ is just the difference
     between consecutive bin edges, so:
 
     .. math::
-    
-        \Delta L_i  = E_{i+1}-E_{i}             
-                    = (1+\omega) E_i - E_i     
-                    = \omega E_i               
+
+        \Delta L_i  = E_{i+1}-E_{i}
+                    = (1+\omega) E_i - E_i
+                    = \omega E_i
                     = \frac{2 \omega}{2+\omega} L_i
-                    
+
     where $E$ and $\omega$ are as defined in :func:`binedges`.
     """
     if L[1] > L[0]:
@@ -145,46 +145,46 @@ def binwidths(L):
 def binedges(L):
     r"""
     Construct bin edges *E* from bin centers *L*.
-    
-    Assuming fixed $\omega = \Delta\lambda/\lambda$ in the bins, the 
+
+    Assuming fixed $\omega = \Delta\lambda/\lambda$ in the bins, the
     edges will be spaced logarithmically at:
 
     .. math::
-    
+
         E_0     &= \min \lambda \\
         E_{i+1} &= E_i + \omega E_i = E_i (1+\omega)
 
     with centers $L$ half way between the edges:
-    
+
     .. math::
 
-        L_i = (E_i+E_{i+1})/2 
-            = (E_i + E_i (1+\omega))/2 
+        L_i = (E_i+E_{i+1})/2
+            = (E_i + E_i (1+\omega))/2
             = E_i (2 + \omega)/2
 
     Solving for $E_i$, we can recover the edges from the centers:
-    
+
     .. math::
 
-        E_i = L_i \frac{2}{2+\omega} 
+        E_i = L_i \frac{2}{2+\omega}
 
     The final edge, $E_{n+1}$, does not have a corresponding center
     $L_{n+1}$ so we must determine it from the previous edge $E_n$:
-    
+
     .. math::
-    
+
         E_{n+1} = L_n \frac{2}{2+\omega}(1+\omega)
 
     The fixed $\omega$ can be retrieved from the ratio of any pair
     of bin centers using:
-    
+
     .. math::
-    
+
         \frac{L_{i+1}}{L_i} = \frac{ (E_{i+2}+E_{i+1})/2 }{ (E_{i+1}+E_i)/2 }
                           = \frac{ (E_{i+1}(1+\omega)+E_{i+1} }
                                   { (E_i(1+\omega)+E_i }
                           = \frac{E_{i+1}}{E_i}
-                          = \frac{E_i(1+\omega)}{E_i} = 1 + \omega 
+                          = \frac{E_i(1+\omega)}{E_i} = 1 + \omega
     """
     if L[1] > L[0]:
         dLoL = L[1]/L[0] - 1
@@ -220,41 +220,41 @@ def divergence(T=None, slits=None, distance=None,
 
     The divergence is based on the slit openings and the distance between
     the slits.  For very small samples, where the slit opening is larger
-    than the width of the sample across the beam, the sample itself acts 
+    than the width of the sample across the beam, the sample itself acts
     like the second slit.
-    
+
     First find $p$, the projection of the beam on the sample:
 
     .. math::
-    
+
         p &= w \sin\left(\frac{\pi}{180}\theta\right)
 
     Depending on whether $p$ is larger than $s_2$, determine the slit
     divergence $\Delta\theta_d$ in radians:
-    
+
     .. math::
-    
+
         \Delta\theta_d &= \left\{
           \begin{array}{ll}
             \frac{1}{2}\frac{s_1+s_2}{d_1-d_2} & \mbox{if } p \geq s_2 \\
             \frac{1}{2}\frac{s_1+p}{d_1}       & \mbox{if } p < s_2
           \end{array}
         \right.
-        
+
     In addition to the slit divergence, we need to add in any sample
     broadening $\Delta\theta_s$ returning the total divergence in degrees:
-    
+
     .. math::
 
         \Delta\theta &= \frac{180}{\pi} \Delta\theta_d + \Delta\theta_s
 
-    Reversing this equation, the sample broadening contribution can 
-    be measured from the full width at half maximum of the rocking 
-    curve, $B$, measured in degrees at a particular angle and slit 
+    Reversing this equation, the sample broadening contribution can
+    be measured from the full width at half maximum of the rocking
+    curve, $B$, measured in degrees at a particular angle and slit
     opening:
-    
+
     .. math::
-    
+
         \Delta\theta_s = B - \frac{180}{\pi}\Delta\theta_d
     """
     # TODO: check that the formula is correct for T=0 => dT = s1 / d1

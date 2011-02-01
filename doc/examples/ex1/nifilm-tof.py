@@ -3,7 +3,7 @@ Simulated TOF reflectivity for a 100 A Ni film.
 """
 
 from refl1d.names import *
-    
+
 nickel = Material('Ni')
 sample = silicon(0,5) | nickel(100,5) | air
 

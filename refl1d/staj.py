@@ -3,10 +3,10 @@
 r"""
 Read and write staj files
 
-Staj files are the model files for the mlayer and gj2 programs, which are 
-used as the calculation engine for the reflpak suite. Mlayer supports 
-unpolarized beam with multilayer models,  and has files ending in 
-**.staj**. GJ2 supports polarized beam without multilayer models, and 
+Staj files are the model files for the mlayer and gj2 programs, which are
+used as the calculation engine for the reflpak suite. Mlayer supports
+unpolarized beam with multilayer models,  and has files ending in
+**.staj**. GJ2 supports polarized beam without multilayer models, and
 has files ending in **.sta**.
 """
 
@@ -132,8 +132,8 @@ class MlayerModel(object):
 
     Resolution is defined by wavelength and by incident angle:
 
-        *wavelength*, *wavelength_dispersion*, *angular_divergence*    
-            resolution is calculated as 
+        *wavelength*, *wavelength_dispersion*, *angular_divergence*
+            resolution is calculated as
             $\Delta Q/Q = \Delta\lambda/\lambda + \Delta\theta/\theta$
 
     Additional beam parameters correct for intensity, background and
@@ -190,7 +190,7 @@ class MlayerModel(object):
 
     .. Note::
           The staj files store SLD as $16\pi\rho$, $2\lambda\rho_i$
-          with an additional column of 0 for magnetic SLD. This conversion 
+          with an additional column of 0 for magnetic SLD. This conversion
           happens automatically on read/write. The incoherent cross section
           is assumed to be zero.
 
@@ -325,21 +325,21 @@ class MlayerModel(object):
         Choose the best dL and dT to match the resolution dQ.
 
         Given that mlayer uses the following resolution function:
-        
+
         .. math::
 
             \Delta Q_k = (|Q_k| \Delta\lambda + 4 \pi \Delta\theta)/\lambda_k
 
-        we can use a linear system solver to find the optimal 
-        $\Delta \lambda$ and $\Delta \theta$ across our dataset from the 
+        we can use a linear system solver to find the optimal
+        $\Delta \lambda$ and $\Delta \theta$ across our dataset from the
         over-determined system:
-        
+
         .. math::
 
-          [|Q_k|/\lambda_k, 4\pi/\lambda_k][\Delta\lambda, \Delta\theta]^T 
+          [|Q_k|/\lambda_k, 4\pi/\lambda_k][\Delta\lambda, \Delta\theta]^T
               = \Delta Q_k
 
-        If weights are provided (e.g., $\Delta R_k/R_k$), then weigh each 
+        If weights are provided (e.g., $\Delta R_k/R_k$), then weigh each
         point during the fit.
 
         Given that the experiment is often run with fixed slits at the
@@ -683,7 +683,7 @@ class MlayerMagnetic(object):
     Resolution is defined by wavelength and by incident angle:
 
         *wavelength*, *wavelength_dispersion*, *angular_divergence*
-            resolution is calculated as 
+            resolution is calculated as
             $\Delta Q/Q = \Delta\lambda/\lambda + \Delta\theta/\theta$
 
     Additional beam parameters correct for intensity, background and
@@ -708,7 +708,7 @@ class MlayerMagnetic(object):
     same width. The following attributes are used:
 
         *roughness_steps*
-            number of roughness steps (13 is coarse; 51 is fine)            
+            number of roughness steps (13 is coarse; 51 is fine)
         *roughness_profile*
             roughness profile is either 'E' for error function or 'H' for tanh
 

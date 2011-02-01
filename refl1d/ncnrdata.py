@@ -260,7 +260,7 @@ INSTRUMENTS = {
     }
 
 _ = '''
-def _counting_time(instrument, sample, uncertainty, 
+def _counting_time(instrument, sample, uncertainty,
     Qrange, Qstep, beam_rate, num_parts):
     r"""
     Simulate counting time for a particular sample.
@@ -276,26 +276,26 @@ def _counting_time(instrument, sample, uncertainty,
 
     Returns
     -------
-    
+
     *experiment* : Experiment
         Sample + probe with simulated data.
 
     Algorithm
     ---------
-    
+
     Assuming our counts follow approximately the Fresnel reflectivity
     of the sample, $F$, and we are targeting an fractional uncertainty
-    $\Delta R/R = \sigma$, we can calculate the desired incident beam 
-    $I = 1/(F\sigma^2)$ that will yield this uncertainty.  With $I$, 
-    we can compute the  expected number of counts on the detector due 
-    to reflection off the sample (this is just $R_{\rm th} I$) and use 
-    that to simulate detector counts $D$ by drawing from a Poisson 
+    $\Delta R/R = \sigma$, we can calculate the desired incident beam
+    $I = 1/(F\sigma^2)$ that will yield this uncertainty.  With $I$,
+    we can compute the  expected number of counts on the detector due
+    to reflection off the sample (this is just $R_{\rm th} I$) and use
+    that to simulate detector counts $D$ by drawing from a Poisson
     distribution $D ~ P(R_{\rm th} I)$.  Given $D$ and $I$ we can use
     the normal reflectometry reduction process to get $(R,\Delta R)$
     as:
-    
+
     .. math:
-    
+
         I &=& 1/(F \sigma^2) //
         D &~& P(R_{\rm th} I) //
         R &=& D/I //

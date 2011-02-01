@@ -67,5 +67,5 @@ def demo():
     frame.Show(True)
     # start the event loop
     app.MainLoop()
-    
+
 if __name__ == "__main__": demo()

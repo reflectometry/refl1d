@@ -1,7 +1,7 @@
 r"""
 Freeform modeling with Chebyshev polynomials
 
-`Chebyshev polynomials <http://en.wikipedia.org/wiki/Chebyshev_polynomials>`_ 
+`Chebyshev polynomials <http://en.wikipedia.org/wiki/Chebyshev_polynomials>`_
 $T_k$ form a basis set for functions over $[-1,1]$.  The truncated
 interpolating polynomial $P_n$ is a weighted sum of Chebyshev polynomials
 up to degree $n$:
@@ -16,13 +16,13 @@ of degree $n$ under the maximum norm.  For well behaved functions,
 the coefficients $c_k$ decrease rapidly, and furthermore are independent
 of the degree $n$ of the polynomial.
 
-:class:`FreeformCheby` models the scattering length density profile 
+:class:`FreeformCheby` models the scattering length density profile
 of the material within a layer, and :class:`ChebyVF` models the volume
 fraction profile of two materials mixed in the layer.
 
 The models can either be defined directly in terms of the Chebyshev
-coefficients $c_k$ (*method* = 'direct'), or can instead be 
-defined in terms of control points $(z_k, f(z_k))$ at the Chebyshev 
+coefficients $c_k$ (*method* = 'direct'), or can instead be
+defined in terms of control points $(z_k, f(z_k))$ at the Chebyshev
 nodes :func:`cheby_points` (*method* = 'interp').  Bounds on the
 parameters are easier to control using 'interp', but the function
 may oscillate wildly outside the bounds.  Bounds on the oscillation

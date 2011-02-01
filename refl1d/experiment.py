@@ -70,7 +70,7 @@ class ExperimentBase(object):
             _,R = self.reflectivity()
             resid = (self.probe.R - R)/self.probe.dR
             self._cache['residuals'] = resid
-            
+
         return self._cache['residuals']
 
     def numpoints(self):
@@ -93,7 +93,7 @@ class ExperimentBase(object):
 
     def plot_reflectivity(self, show_resolution=False):
         Q,R = self.reflectivity()
-        self.probe.plot(theory=(Q,R), 
+        self.probe.plot(theory=(Q,R),
                         substrate=self._substrate, surface=self._surface)
         if show_resolution:
             import pylab
@@ -122,7 +122,7 @@ class ExperimentBase(object):
         Simulate a random data set for the model
 
         **Parameters:**
-        
+
         *noise* = 2 : float | %
             Percentage noise to add to the data.
         """
@@ -423,7 +423,7 @@ class MixedExperiment(ExperimentBase):
         Q = Qs[0]
         R = f*numpy.array(Rs).T
         return Q, numpy.sum(R,axis=1)
-    
+
     def plot_profile(self):
         import pylab
         f = numpy.array([r.value for r in self.ratio],'d')

@@ -1,5 +1,5 @@
 from refl1d.names import *
-    
+
 nickel = Material('Ni')
 sample = silicon(0,5) | nickel(100,5) | air
 
@@ -10,4 +10,3 @@ M = Experiment(probe=probe, sample=sample)
 M.simulate_data(5)
 
 problem = FitProblem(M)
-

@@ -359,7 +359,7 @@ class AppPanel(wx.Panel):
         # the model parameter tab
         parameters = self.problem.model_parameters()
         pub.sendMessage("parameter", parameters)
-        
+
         ######## notebook tab 1 (profile view) ##############
         try:
             experiment = self.problem.fits[0].fitness

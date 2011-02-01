@@ -119,7 +119,7 @@ def parse_file(filename):
     return header, data
 
 def write_file(filename, probe, original=None, date=None,
-               title=None, notes=None, run=None, charge=None):     
+               title=None, notes=None, run=None, charge=None):
     """
     Save probe as SNS reduced file.
     """

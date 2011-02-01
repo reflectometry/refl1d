@@ -4,13 +4,13 @@ Demonstration of alignment compensation using a change in substrate SLD.
 Using::
 
       Qc = 4 pi/lambda sin(Tc)
-    Qc^2 = 16 pi rho 
+    Qc^2 = 16 pi rho
 
 we can compute Tc from rho using::
 
       Tc = arcsin( lambda/(4 pi) sqrt(16 pi rho) )
 
-With Tc we can compute the compensated rho_adj which matches the critical 
+With Tc we can compute the compensated rho_adj which matches the critical
 edge of the true rho measured with an alignment offset T_offset::
 
     Qc_offset = 4 pi/lambda sin(Tc - T_offset)

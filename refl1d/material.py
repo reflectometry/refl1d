@@ -141,7 +141,7 @@ class Material(Scatterer):
 
             True if incoherent scattering should be interpreted as absorption.
 
-        *fitby* = 'bulk_density' : string 
+        *fitby* = 'bulk_density' : string
 
             Which density parameter is the fitting parameter.  The choices
             are *bulk_density*, *natural_density*, *relative_density* or
@@ -199,7 +199,7 @@ class Material(Scatterer):
 
         .. Note::
 
-            Calling *fitby* replaces the *density* parameter in the 
+            Calling *fitby* replaces the *density* parameter in the
             material, so be sure to do so before using *density* in
             a parameter expression.  Using :class:`WrappedParameter
             <refl1d.mystic.parameter.WrappedParameter>` for *density*

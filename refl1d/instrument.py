@@ -18,10 +18,10 @@ generic scanning and time of flight instruments, respectively.
 To perform a simulation or load a data set, a measurement geometry must
 be defined.  In the following example, we set up the geometry for a
 pretend instrument SP:2. The complete geometry needs to include information
-to calculate wavelength resolution (wavelength and wavelength dispersion) 
+to calculate wavelength resolution (wavelength and wavelength dispersion)
 as well as angular resolution (slit distances and openings, and perhaps
 sample size and sample warp).  In this case, we are using a scanning
-monochromatic instrument with slits of 0.1 mm below 0.5\ |deg| and 
+monochromatic instrument with slits of 0.1 mm below 0.5\ |deg| and
 opening slits  above 0.5\ |deg| starting at 0.2 mm.  The monochromatic
 instrument assumes a fixed $\Delta \theta / \theta$ while opening.
 
@@ -30,7 +30,7 @@ instrument assumes a fixed $\Delta \theta / \theta$ while opening.
     ...    wavelength=5.0042, dLoL=0.009, d_s1=230+1856, d_s2=230,
     ...    Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
 
-This instrument can be used to  a data file, or generate a 
+This instrument can be used to  a data file, or generate a
 measurement probe for use in modeling or to read in a previously
 measured data set or generate a probe for simulation:
 
@@ -41,7 +41,7 @@ measured data set or generate a probe for simulation:
     >>> simulation = geometry.probe(T=linspace(0,5,51))
 
 All instrument parameters can be specified when constructing the probe,
-replacing the defaults that are associated with the instrument.  For 
+replacing the defaults that are associated with the instrument.  For
 example, to include sample broadening effects in the resolution:
 
     >>> probe2 = geometry.probe(Q=Q, data=(R,dR), sample_broadening=0.1)
@@ -514,7 +514,7 @@ class Pulsed(object):
                 Slit settings for each angle.
             *uncertainty* = 1 : float or [float] | %
                 Incident intensity is set so that the median dR/R is equal
-                to *uncertainty*, where R is the idealized reflectivity 
+                to *uncertainty*, where R is the idealized reflectivity
                 of the sample.
             *dLoL* = 0.02: float
                 Wavelength resolution

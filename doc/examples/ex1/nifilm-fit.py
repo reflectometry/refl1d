@@ -12,10 +12,9 @@ sample[1].interface.range(3,12)
 sample[1].thickness.pmp(50)
 
 instrument = SNS.Liquids()
-files = ['nifilm-tof-%d.dat'%d for d in 1,2,3,4] 
+files = ['nifilm-tof-%d.dat'%d for d in 1,2,3,4]
 probe = ProbeSet(instrument.load(f) for f in files)
 
 M = Experiment(probe=probe, sample=sample)
 
 problem = FitProblem(M)
-

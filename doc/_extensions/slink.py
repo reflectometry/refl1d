@@ -23,7 +23,7 @@ For example::
                       source="sputter-%s.zip"%version,
                       )
     ...
-    
+
     -- download.rst --
     ...
     Source: :slink:`latest sputter <%(url)s/downloads/%(source)s>`
@@ -38,7 +38,7 @@ def setup(app):
         def warn(err):
             msg = "\n  error in %s\n  %s"%(rawtext,err)
             inliner.reporter.warning(msg,line=lineno)
-            
+
         try:
             text = text%app.config.slink_vars
         except Exception,exc:

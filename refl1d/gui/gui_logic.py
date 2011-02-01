@@ -14,7 +14,7 @@ class Fit_Tab(wx.Panel):
 
         wx.Panel.__init__(self, parent=parent, id=wx.ID_ANY)
         self.parent = parent
-        
+
         extra_space1 = wx.BoxSizer(wx.HORIZONTAL)
         extra_space1.Add((5,5), 1)
 
@@ -73,7 +73,7 @@ class Fit_Tab(wx.Panel):
 
     def OnPreview(self, event):
         pass
-    
+
 class Log_tab(scrolled.ScrolledPanel):
     def __init__(self, parent):
         scrolled.ScrolledPanel.__init__(self, parent, -1)
@@ -148,11 +148,11 @@ class Summary_tab(scrolled.ScrolledPanel):
 class Parameter_Tab(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
-        
+
         #sizers
         vbox = wx.BoxSizer(wx.VERTICAL)
         text_hbox = wx.BoxSizer(wx.HORIZONTAL)
-                
+
         # create textctrl box and add to sizer
         self.empty_label = wx.StaticText(self, wx.ID_ANY, '            ')
         self.fixed_value = wx.TextCtrl(self, wx.ID_ANY, '')
@@ -160,7 +160,7 @@ class Parameter_Tab(wx.Panel):
         self.min_range = wx.TextCtrl(self, wx.ID_ANY, '')
         self.max_range = wx.TextCtrl(self, wx.ID_ANY, '')
         self.fittable = wx.CheckBox(self, wx.ID_ANY, '')
-        
+
         # add textctrl and checkbox to sizer
         text_hbox.Add(self.empty_label, 1, wx.LEFT|wx.RIGHT|wx.TOP|wx.BOTTOM,10)
         text_hbox.Add(self.fixed_value, 1, wx.LEFT|wx.RIGHT|wx.TOP|wx.BOTTOM,10)
@@ -169,14 +169,14 @@ class Parameter_Tab(wx.Panel):
         text_hbox.Add(self.max_range, 1, wx.LEFT|wx.RIGHT|wx.BOTTOM|wx.TOP,10)
         text_hbox.Add(self.fittable, 1, wx.LEFT|wx.RIGHT|wx.BOTTOM|wx.TOP,10)
         vbox.Add(text_hbox, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, 2)
-        
+
         self.tree = gizmos.TreeListCtrl(self, -1, style =
                                         wx.TR_DEFAULT_STYLE
                                         | wx.TR_HAS_BUTTONS
                                         | wx.TR_TWIST_BUTTONS
                                         | wx.TR_ROW_LINES
                                         | wx.TR_COLUMN_LINES
-                                        | wx.TR_NO_LINES 
+                                        | wx.TR_NO_LINES
                                         | wx.TR_FULL_ROW_HIGHLIGHT
                                    )
 
@@ -185,7 +185,7 @@ class Parameter_Tab(wx.Panel):
         fldridx     = il.Add(wx.ArtProvider_GetBitmap(wx.ART_FOLDER,      wx.ART_OTHER, isz))
         fldropenidx = il.Add(wx.ArtProvider_GetBitmap(wx.ART_FILE_OPEN,   wx.ART_OTHER, isz))
         fileidx     = il.Add(wx.ArtProvider_GetBitmap(wx.ART_NORMAL_FILE, wx.ART_OTHER, isz))
-        
+
         self.tree.SetImageList(il)
         self.il = il
 
@@ -196,8 +196,8 @@ class Parameter_Tab(wx.Panel):
         self.tree.AddColumn("Min Range")
         self.tree.AddColumn("Max Range")
         self.tree.AddColumn("Fittable")
-        
-        # Align the textctrl box with treelistctrl 
+
+        # Align the textctrl box with treelistctrl
         self.tree.SetMainColumn(0) # the one with the tree in it...
         self.tree.SetColumnWidth(0, 210)
         self.tree.SetColumnWidth(1, 185)
@@ -205,9 +205,9 @@ class Parameter_Tab(wx.Panel):
         self.tree.SetColumnWidth(3, 195)
         self.tree.SetColumnWidth(4, 195)
 
-        # got the parameter data from the script then load the treectlrlist 
+        # got the parameter data from the script then load the treectlrlist
         pub.subscribe(self.OnParameter, "parameter") # recieving paramater message from fit tab
-        
+
         self.tree.GetMainWindow().Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
         self.tree.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.OnActivate)
         vbox.Add(self.tree, 1, wx.EXPAND)
@@ -216,7 +216,7 @@ class Parameter_Tab(wx.Panel):
 
 
     def OnParameter(self, event):
-        
+
         # Add a root node
         self.root = self.tree.AddRoot("Model")
         self.tree.Expand(self.root)
@@ -224,7 +224,7 @@ class Parameter_Tab(wx.Panel):
         self.AddTreeNodes(self.root, event.data)
 
     def AddTreeNodes(self, branch, nodes):
-        
+
         if isinstance(nodes,dict) and nodes != {}:
             for k in sorted(nodes.keys()):
                 child = self.tree.AppendItem(branch, k)
@@ -237,28 +237,28 @@ class Parameter_Tab(wx.Panel):
 
         elif isinstance(nodes, BaseParameter):
 
-             if nodes.fixed:
-             	 low_bounds = ""
-                 up_bounds = ""
-             else:
-                 low_bounds = nodes.bounds.limits[0]
-                 up_bounds = nodes.bounds.limits[1]
-            
-             self.tree.SetItemPyData(branch, nodes)
-             self.tree.SetItemText(branch, str(nodes.value), 1)
-             self.tree.SetItemText(branch, str(nodes.name), 2)
-             self.tree.SetItemText(branch, str(low_bounds), 3)
-             self.tree.SetItemText(branch, str(up_bounds), 4)
-            
-        
+            if nodes.fixed:
+                low_bounds = ""
+                up_bounds = ""
+            else:
+                low_bounds = nodes.bounds.limits[0]
+                up_bounds = nodes.bounds.limits[1]
+
+            self.tree.SetItemPyData(branch, nodes)
+            self.tree.SetItemText(branch, str(nodes.value), 1)
+            self.tree.SetItemText(branch, str(nodes.name), 2)
+            self.tree.SetItemText(branch, str(low_bounds), 3)
+            self.tree.SetItemText(branch, str(up_bounds), 4)
+
+
     def OnActivate(self, evt):
         pass
-        
+
 
     def OnRightUp(self, evt):
         pos = evt.GetPosition()
         item, flags, col = self.tree.HitTest(pos)
-        
+
 
 def load_problem(args):
     file, options = args[0], args[1:]

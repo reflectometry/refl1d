@@ -17,11 +17,11 @@ def mixture_cdf(x, loc=0, scale=1):
     sample having the nickel layer, a certain portion having no nickel
     layer and the parts in between with part nickel and part no-nickel.
 
-    In the equation for a line $y=mx+b$, *loc* is $b$ and *scale* 
+    In the equation for a line $y=mx+b$, *loc* is $b$ and *scale*
     is $m \gt 0$.
-    
-    We are interested in the region $[0,1]$, representing the relative 
-    density of nickel.  If some portion $p_s$ of the sample is pure 
+
+    We are interested in the region $[0,1]$, representing the relative
+    density of nickel.  If some portion $p_s$ of the sample is pure
     silicon, then set $b=p_s$.  If some portion $p_n$ of the sample is
     pure nickel layer, then set $m = 1-p_n - b$.  If all portions of the
     sample are some mixture of the two, then $b \lt 0$ and $m \gt 1-b$.

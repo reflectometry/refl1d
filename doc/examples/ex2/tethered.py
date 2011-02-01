@@ -62,6 +62,3 @@ models = D_model, H_model
 
 problem = MultiFitProblem(models=models)
 problem.name = "tethered"
-
-
-

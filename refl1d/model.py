@@ -194,7 +194,7 @@ class Stack(Layer):
     def parameters(self):
         layers=[L.parameters() for L in self._layers]
 
-	return dict(thickness=self.thickness, _index = layers)
+        return dict(thickness=self.thickness, _index = layers)
 
         attrs = dict(thickness=self.thickness)
         return (attrs,layers)

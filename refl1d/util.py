@@ -111,7 +111,7 @@ def dhsv(color, dh=0, ds=0, dv=0, da=0):
     -------
 
     Make sea green 10% darker:
-    
+
         >>> darker = dhsv('seagreen', dv=-0.1)
         >>> print [int(v*255) for v in darker]
         [37, 113, 71, 255]
@@ -239,15 +239,15 @@ class push_seed(object):
 
     Parameters
     ----------
-    
+
     *seed* : int or array_like, optional
         Seed for RandomState
-    
+
     Example
     -------
 
     Seed can be used directly to set the seed::
-    
+
         >>> import numpy
         >>> push_seed(24) # doctest:+ELLIPSIS
         <...push_seed object at...>
@@ -255,16 +255,16 @@ class push_seed(object):
         [242082    899 211136]
 
     Seed can also be used in a with statement, which sets the random
-    number generator state for the enclosed computations and restores 
+    number generator state for the enclosed computations and restores
     it to the previous state on completion::
-    
+
         >>> with push_seed(24):
         ...    print numpy.random.randint(0,1000000,3)
         [242082    899 211136]
 
     Using nested contexts, we can demonstrate that state is indeed
     restored after the block completes::
-    
+
         >>> with push_seed(24):
         ...    print numpy.random.randint(0,1000000)
         ...    with push_seed(24):
@@ -275,7 +275,7 @@ class push_seed(object):
         899
 
     The restore step is protected against exceptions in the block::
-    
+
         >>> with push_seed(24):
         ...    print numpy.random.randint(0,1000000)
         ...    try:

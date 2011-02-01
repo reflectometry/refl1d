@@ -9,12 +9,12 @@ renders each layer in the model for each energy in the probe.  For slab
 layers this is easy: just accumulate the slabs, with the 1-\ $\sigma$ Gaussian
 interface width between the slabs.  For freeform or functional layers,
 this is more complicated.  The rendering needs to chop each layer into
-microslabs and evaluate the profile at each of these slabs.  
+microslabs and evaluate the profile at each of these slabs.
 
 Example
 -------
 
-This example sets up a model which uses tanh to transition from 
+This example sets up a model which uses tanh to transition from
 silicon to gold in 20 |Ang| with 2 |Ang| steps.
 
 First define the profile, and put in the substrate:
@@ -22,8 +22,8 @@ First define the profile, and put in the substrate:
     >>> S = Microslabs(nprobe=1,dz=2)
     >>> S.clear()
     >>> S.extend(w=[0],rho=[2.07])
-    
-Next add the interface.  This uses :meth:`microslabs` to select 
+
+Next add the interface.  This uses :meth:`microslabs` to select
 the points at which the interface is evaluated, much like you
 would do when defining your own special layer type.  Note that the
 points Pz are in the center of the micro slabs.  The width of the
@@ -40,7 +40,7 @@ serves the same purpose with less work on your part.
     centers = 1 3 5 7 9 ...
     >>> rho = (1-tanh((Pz-10)/5))/2*(2.07-4.5)+4.5
     >>> S.extend(w=Pw, rho=[rho])
-    
+
 Finally, add the incident medium and see the results.  Note that *rho*
 is a matrix, with one column for each incident energy.  We are only
 using one energy so we only show the first column.
@@ -52,7 +52,7 @@ using one energy so we only show the first column.
     rho = 2.07 2.13 2.21 2.36 2.63 ...
 
  Since *irho* and *sigma* were not specified, they will be zero.
- 
+
     >>> print "sigma = %s ..."%(" ".join("%g"%v for v in S.sigma[:5]))
     sigma = 0 0 0 0 0 ...
     >>> print "irho = %s ..."%(" ".join("%g"%v for v in S.irho[0,:5]))
