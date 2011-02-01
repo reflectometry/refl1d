@@ -49,9 +49,14 @@ sys.path.insert(1, os.path.join(path, 'dream'))
 nose_args = [__file__, '-v', '--with-doctest', '--doctest-extension=.rst',
              '--cover-package=refl1d']
 nose_args += sys.argv[1:]  # allow coverage arguments
+nose_args += [os.path.join('tests', 'refl1d'), 'refl1d',
+              #'doc/sphinx/guide'
+             ]
+'''
 nose_args += ['tests/refl1d', 'refl1d',
               #'doc/sphinx/guide'
              ]
+'''
 if not nose.run(argv=nose_args): sys.exit(1)
 
 # Run isolated tests in their own environment.  In this case we will have
@@ -62,6 +67,8 @@ if 'PYTHONPATH' in os.environ:
 else:
     PYTHONPATH = path
 os.putenv('PYTHONPATH', PYTHONPATH)
-for p in []:
-    ret = os.system(" ".join( (sys.executable, 'tests', 'refl1d', 'test_%s.py'%p) ))
+
+# Run the command line version of Refl1D which should display help text.
+for p in ['refl1d']:
+    ret = os.system(" ".join( (sys.executable, os.path.join('bin', '%s'%p)) ))
     if ret != 0: sys.exit()

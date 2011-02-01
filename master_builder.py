@@ -106,7 +106,7 @@ def build_it():
         check_dependencies()
 
     # Checkout code from repository.
-    if not (len(sys.argv) > 1 and '-r' in sys.argv[1:]):
+    if not (len(sys.argv) > 1 and '-u' in sys.argv[1:]):
         checkout_code()
 
     # Get the version string of the application for use later.
@@ -124,7 +124,9 @@ def build_it():
     install_package()
 
     # Build HTML and PDF documentaton using sphinx.
-    if not (len(sys.argv) > 1 and '-b' in sys.argv[1:]):
+    # This step is done before building a Windows installer so that PDF
+    # documentation can be included in the installable product.
+    if not (len(sys.argv) > 1 and '-d' in sys.argv[1:]):
         build_documentation()
 
     # Create a Windows executable file using py2exe.
@@ -137,16 +139,19 @@ def build_it():
         if os.name == 'nt':
             create_windows_installer(__version__)
 
-    # Run unittests using nose.
-    if not (len(sys.argv) > 1 and ('-t' in sys.argv[1:] or
-                                   '-u' in sys.argv[1:])):
+    # Run unittests and doctests using a test script.
+    if not (len(sys.argv) > 1 and '-t' in sys.argv[1:]):
+        run_tests()
+
+'''
+    # Run unittests using Nose.
+    if not (len(sys.argv) > 1 and '-t' in sys.argv[1:]):
         run_unittests()
 
-    # Run doctests using nose.
-    if not (len(sys.argv) > 1 and ('-t' in sys.argv[1:] or
-                                   '-d' in sys.argv[1:])):
+    # Run doctests using Nose.
+    if not (len(sys.argv) > 1 and '-t' in sys.argv[1:]):
         run_doctests()
-
+'''
 
 def checkout_code():
     # Checkout the application code from the repository into a directory tree
@@ -268,16 +273,24 @@ def build_documentation():
         shutil.copy(pdf, ".")
 
 
+def run_tests():
+    # Run unittests and doctests using a test script.
+    # Running from a test script allows customization of the system path.
+    print SEPARATOR
+    print "\nStep 7 - Running tests from test.py (using Nose) ...\n"
+    os.chdir(os.path.join(INS_DIR, PKG_NAME))
+
+    exec_cmd("%s test.py" %PYTHON)
+
+
+'''
 def run_unittests():
     # Run Nose unittests.
     print SEPARATOR
-    print "\nStep 7 - Running unittests using Nose and test.py ...\n"
+    print "\nStep 7 - Running Nose unittests ...\n"
     os.chdir(INS_DIR)
 
     exec_cmd("nosetests -v %s" %PKG_NAME)
-
-    os.chdir(os.path.join(INS_DIR, PKG_NAME))
-    exec_cmd("%s test.py" %PYTHON)
 
 
 def run_doctests():
@@ -286,9 +299,8 @@ def run_doctests():
     print "\nStep 8 - Running Nose doctests ...\n"
     os.chdir(INS_DIR)
 
-    #exec_cmd("nosetests -v --with-doctest %s"
-    #             %os.path.join(PKG_NAME, "tests/util_test.py"))
-
+    exec_cmd("nosetests -v --with-doctest %s" %PKG_NAME)
+'''
 
 def check_dependencies():
     """
@@ -450,14 +462,12 @@ if __name__ == "__main__":
             print "\nUsage: python master_builder.py [options]\n"
             print "Options:"
             print "  -a  Skip build of source archive"
-            print "  -b  Skip build of books (documentation)"
-            print "  -d  Skip doctests"
+            print "  -d  Skip build of documentation"
             print "  -h  Show this help text"
-            print "  -r  Skip checkout or update from repository"
             print "  -s  Skip software dependency checks"
-            print "  -t  Skip all tests (unittests and doctests); same as -u -d"
-            print "  -u  Skip unittests"
+            print "  -t  Skip all tests (unittests and doctests)"
             print "  -w  Skip build of Windows executable and installer"
+            print "  -u  Skip checkout or update from repository"
             sys.exit()
 
     print "\nBuilding the %s application from the %s repository ...\n" \
