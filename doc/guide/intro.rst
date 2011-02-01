@@ -1,4 +1,4 @@
-.. _intro_guide:
+.. _intro-guide:
 
 *******************
 Using Refl1D

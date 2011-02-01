@@ -1,4 +1,4 @@
-.. _parameter_guide:
+.. _parameter-guide:
 
 *****************
 Parameters

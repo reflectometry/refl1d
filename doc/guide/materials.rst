@@ -1,4 +1,4 @@
-.. _materials_guide:
+.. _materials-guide:
 
 *******************
 Materials

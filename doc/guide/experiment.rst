@@ -1,4 +1,4 @@
-.. _experiment_guide:
+.. _experiment-guide:
 
 *******************
 Experiment
@@ -7,7 +7,7 @@ Experiment
 .. contents:: :local:
 
 The :class:`Experiment <refl1d.experiment.Experiment>` object links a
-`sample <sample_guide>`_ with an experimental `probe <data_guide>`_.
+`sample <sample>`_ with an experimental `probe <data>`_.
 The probe defines the Q values and the resolution of the individual 
 measurements, and returns the scattering factors associated with the 
 different materials in the sample.

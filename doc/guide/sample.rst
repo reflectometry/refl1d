@@ -1,4 +1,4 @@
-.. _sample_guide:
+.. _sample-guide:
 
 *********************
 Sample Representation

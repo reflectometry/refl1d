@@ -31,12 +31,12 @@ The complexity comes from multiple sources:
      the sample and even its energy.
 
 
-`Introduction <intro_guide>`_
+`Introduction <intro>`_
 
      Model scripts associate a sample description with data and fitting
      options to define the system you wish to refine.
 
-`Parameters <parameter_guide>`_ 
+`Parameters <parameter>`_
 
      The adjustable values in each component of the system are defined
      by :class:`Parameter <refl1d.mystic.parameter>` objects.  When you
@@ -44,7 +44,7 @@ The complexity comes from multiple sources:
      adjust the value in order to find the best match between theory
      and data.
 
-`Data <data_guide>`_ 
+`Data <data>`_
 
      Data is loaded from instrument specific file 
      formats into a generic :class:`Probe <refl1d.probe.Probe>`.  The 
@@ -53,7 +53,7 @@ The complexity comes from multiple sources:
      and controls the set of theory points that must be evaluated
      in order to computed the expected value at each point.
 
-`Materials <materials_guide>`_ 
+`Materials <materials>`_
 
      The strength of the interaction can be represented either in
      terms of their scattering length density using 
@@ -63,7 +63,7 @@ The complexity comes from multiple sources:
      probe.  :class:`Mixture <refl1d.material.Mixture>` can be used
      to make a composite material whose parts vary be mass or by volume.
      
-`Samples <sample_guide>`_ 
+`Samples <sample>`_
 
      Materials are composed into samples, usually as a
      :class:`Stack <refl1d.model.Stack>` of 
@@ -76,7 +76,7 @@ The complexity comes from multiple sources:
      arbitrary transitions from one SLD to another.  New layer types
      can be defined by subclassing :class:`Layer <refl1d.model.Layer>`.
    
-`Experiments <experiment_guide>`_ 
+`Experiments <experiment>`_
 
      Sample descriptions and data sets are combined into an
      :class:`Experiment <refl1d.experiment.Experiment>` object, 
@@ -87,7 +87,7 @@ The complexity comes from multiple sources:
      of the probe, you may need to model your measurement with a 
      :class:`CompositeExperiment <refl1d.experiment.CompositeExperiment>`.
 
-`Fitting <fitting_guide>`_ 
+`Fitting <fitting>`_
 
      One or more experiments can be combined into a 
      :class:`FitProblem <refl1d.fitter.FitProblem>`.  This is then

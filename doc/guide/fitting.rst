@@ -1,4 +1,4 @@
-.. _fitting_guide:
+.. _fitting-guide:
 
 *******************
 Fitting
