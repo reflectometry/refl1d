@@ -23,12 +23,11 @@ def configuration(parent_package='', top_path=None):
     config.add_subpackage('models')
     config.add_subpackage('park')
     config.add_subpackage('refl1d')
-    config.add_data_dir('refltests')
     config.add_data_dir('tests')
 
-    config.add_data_files('refl1d.ico')
+    config.add_data_files('LICENSE.txt')
+    config.add_data_files('README.txt')
     config.add_data_files('refl1d.iss')
-    config.add_data_files('*.txt')
     config.add_data_files('test.py')
 
     for line in open('refl1d/__init__.py').readlines():

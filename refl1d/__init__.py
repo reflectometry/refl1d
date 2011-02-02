@@ -1,7 +1,7 @@
 # This program is in the public domain
 # Author: Paul Kienzle
 """
-1-D Reflectometry Modeller
+Refl1D: 1-D Reflectometry Modeler
 
 This package provides tools for modeling a variety of systems from
 simple slabs to complex systems with a mixture models involving
@@ -12,8 +12,7 @@ parameters adjusted to achieve the best fit.
 
 A graphical interface allows direct manipulation of the model profiles.
 
-See http://www.reflectometry.org/danse/reflectometry for online
-manuals.
+See http://www.reflectometry.org/danse/reflectometry for online manuals.
 """
 
 __version__ = "0.5.4"

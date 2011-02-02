@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Run nose tests for Refl1d.
+Run nose tests for Refl1D.
 
 Usage:
 

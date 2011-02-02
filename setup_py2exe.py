@@ -25,12 +25,12 @@
 """
 This script uses py2exe to create dist\refl1d.exe for Windows.
 
-The resulting executable bundles the Refl1d application, the python runtime
+The resulting executable bundles the Refl1D application, the python runtime
 environment, and other required python packages into a single file.  Additional
-resource files that are needed when Refl1d is run are placed in the dist
+resource files that are needed when Refl1D is run are placed in the dist
 directory tree.  On completion, the contents of the dist directory tree can be
 used by the Inno Setup Compiler (via a separate script) to build a Windows
-installer/uninstaller for deployment of the Refl1d application.  For testing
+installer/uninstaller for deployment of the Refl1D application.  For testing
 purposes, refl1d.exe can be run from the dist directory.
 """
 
@@ -159,9 +159,11 @@ data_files = matplotlib.get_py2exe_datafiles()
 data_files += periodictable.data_files()
 
 # Add resource files that need to reside in the same directory as the image.
-data_files.append( ('.', [os.path.join('.', 'refl1d.ico')]) )
 data_files.append( ('.', [os.path.join('.', 'LICENSE.txt')]) )
 data_files.append( ('.', [os.path.join('.', 'README.txt')]) )
+data_files.append( ('.', [os.path.join('.', 'bin', 'refl1d.ico')]) )
+data_files.append( ('.', [os.path.join('.', 'bin', 'refl1d_splash.jpg')]) )
+data_files.append( ('.', [os.path.join('.', 'test.py')]) )
 
 # Add batch files to implement commands useful for launching the program.
 # Note that Inno Setup will determine where these files will be placed.
@@ -238,12 +240,12 @@ class Target():
 
 client = Target(
     name = 'refl1d',
-    description = 'Refl1d command line application',
-    script = 'bin/refl1d',  # module to run on application start
+    description = 'Refl1D command line application',
+    script = os.path.join('bin', 'refl1d'),  # module to run on application start
     dest_base = 'refl1d',  # file name part of the exe file to create
-    #icon_resources = [(1, 'refl1d.ico')],  # also need to specify in data_files
+    icon_resources = [(1, os.path.join('bin', 'refl1d.ico'))],  # also need to specify in data_files
     bitmap_resources = [],
-    other_resources = [(24, 1, manifest % dict(prog='Refl1d'))])
+    other_resources = [(24, 1, manifest)] )
 
 # Now do the work to create a standalone distribution using py2exe.
 # Specify either console mode or windows mode build.

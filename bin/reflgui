@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (C) 2006-2010, University of Maryland
+# Copyright (C) 2006-2011, University of Maryland
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -23,33 +23,28 @@
 # Author: James Krycka
 
 """
-This module is used to start the GUI for the KsRefl Depth Profile Modeller
-application.  It creates the initial wxPython frame, presents a splash screen
-to the user, and then constructs the rest of the GUI.
+This module runs the Refl1D Reflectometry Modeler application in GUI mode.
+It creates the initial wxPython frame, presents a splash screen to the user,
+and then constructs the rest of the GUI.
 
 From the command line, the application can be run as follows:
 
-$ python ksrefl.py [<optional parameters>]
+$ python reflgui [<optional parameters>]
 
 The following is a list of command line parameters for development and
 debugging purposes.  None are documented and they may change at any time.
 
 Options for showing diagnostic info:
     --platform      Display platform specific info, especially about fonts
-    --tracep        Display values from user input fields
-    --debug         Display info for debugging purposes (changes frequently)
-    --time          Display diagnostic timing information
     --syspath       Display the contents of sys.path
+    --time          Display diagnostic timing information
 
 Options for overriding the default font and point size attributes where
 parameters within each set are mutually exclusive (last one takes precedence):
-    --tahoma, --arial, --verdana
+    --arial, --tahoma, --verdana
     --6pt, --7pt, --8pt, --9pt, --10pt, --11pt, --12pt
 
 Options for controlling the development and testing environment:
-    --xtabs         Add extra notebook pages for test purposes
-        --test1     Execute test1() in a test page
-        --test2     Execute test2() in a test page
     --inspect       Run the wxPython Widget Inspection Tool in a debug window
 """
 
@@ -59,31 +54,29 @@ import os
 import sys
 import time
 # TODO: fix path properly
-sys.path.insert(0,os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-#print "\n".join(sys.path)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import wx
 
-from refl1d.gui.common import get_appdir, log_time
-
-# Normally the reflmod package will be installed, but if it is not installed,
+# Normally the refl1d package will be installed, but if it is not installed,
 # augment sys.path to include the parent directory of the package.  This allows
 # any module of this application to specify an import path that explicity uses
-# the package name as in 'from reflmod.dir1.dir2 import foo'.  Thus when the
+# the package name as in 'from refl1d.dir1.dir2 import foo'.  Thus when the
 # application is run directly from the source tree, the package name will be
 # found in the module search path even if the package has not been installed.
 try:
-    import reflmod
+    from refl1d import __version__
 except:
     sys.path.insert(1, (os.path.dirname(get_appdir())))
 
 if len(sys.argv) > 1 and '--syspath' in sys.argv[1:]:
-    print "*** App root dir is", get_appdir(),
+    print "*** App root dir is", get_appdir()
     print "*** __file__ is" , __file__
     print "*** Python path is:"
     for i, p in enumerate(sys.path):
         print "%5d  %s" %(i, p)
 
+from refl1d.gui.common import get_appdir, log_time
 from refl1d.gui.app_frame import AppFrame
 from refl1d.gui.about import APP_TITLE
 
@@ -92,13 +85,13 @@ DISPLAY_WIDTH = 1200
 DISPLAY_HEIGHT = 900
 
 # Resource files.
-PROG_SPLASH_SCREEN = "ksrefl_splash.jpg"
+PROG_SPLASH_SCREEN = "refl1d_splash.jpg"
 
 #==============================================================================
 
-class KsReflApp(wx.App):
+class ReflGUIApp(wx.App):
     """
-    This class builds the wxPython GUI for the KsRefl Depth Profile Modeller
+    This class builds the wxPython GUI for the Refl1D Reflectometry Modeler
     application.
     """
 
@@ -172,7 +165,7 @@ class KsReflApp(wx.App):
     def display_splash_screen(self, parent):
         """Displays the splash screen.  It will exactly cover the main frame."""
 
-        # Prepare the picture.  On a 2GHz intel cpu, this takes about a second.
+        # Prepare the picture.  On a 2GHz Intel CPU, this takes about a second.
         x, y = parent.GetSizeTuple()
         image = wx.Image(os.path.join(get_appdir(), PROG_SPLASH_SCREEN),
                          wx.BITMAP_TYPE_JPEG)
@@ -214,10 +207,10 @@ class KsReflApp(wx.App):
 
 if __name__ == '__main__':
     if len(sys.argv) > 1 and '--time' in sys.argv[1:]:
-        log_time("Starting KsRefl")
+        log_time("Starting Refl1D")
 
     # Instantiate the application class and give control to wxPython.
-    app = KsReflApp(redirect=False, filename=None)
+    app = ReflGUIApp(redirect=False, filename=None)
 
     # For wx debugging, load the wxPython Widget Inspection Tool if requested.
     # It will cause a separate interactive debugger window to be displayed.

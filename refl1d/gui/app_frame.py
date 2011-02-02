@@ -1,4 +1,4 @@
-# Copyright (C) 2006-2010, University of Maryland
+# Copyright (C) 2006-2011, University of Maryland
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,7 @@
 
 """
 This module implements the AppFrame class which creates the main frame of the
-GUI for the KsRefl Depth Profile Modeller application including a basic menu,
+GUI for the Refl1D Reflectometry Modeler application including a basic menu,
 tool bar, and status bar.
 """
 
@@ -41,7 +41,7 @@ from .app_panel import AppPanel
 from .wx_utils import choose_fontsize, display_fontsize
 
 # Resource files.
-PROG_ICON = "ksrefl.ico"
+PROG_ICON = "refl1d.ico"
 
 #==============================================================================
 

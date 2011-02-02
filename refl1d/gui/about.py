@@ -1,4 +1,4 @@
-# Copyright (C) 2006-2010, University of Maryland
+# Copyright (C) 2006-2011, University of Maryland
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -40,22 +40,22 @@ from .. import __version__ as APP_VERSION
 from .common import get_appdir
 
 # Resource files.
-PROG_ICON = "ksrefl.ico"
+PROG_ICON = "refl1d.ico"
 
 # Text strings used in About Dialog boxes and for other project identification
 # purposes.
 APP_NAME = "Refl1D"
 
-APP_TITLE = "Reflectometry-1D"
+APP_TITLE = "1-D Reflectometry Modeler"
 
-APP_COPYRIGHT = "(C) 2010 University of Maryland"
+APP_COPYRIGHT = "(C) 2011 University of Maryland"
 
 APP_DESCRIPTION = """\
-The KsRefl Depth Profile Modeller provides an interactive user interface for \
+The Refl1D Reflectometry Modeler provides an interactive user interface for \
 modelling an experimental sample and generating a scattering length density \
 (SLD) profile of the layers in the sample.  Using 1D models, reflectometry \
 data sets from either polarized or unpolarized neutron scattering experiments, \
-and a fitting service, KsRefl calculates and plots the depth profile of the \
+and a fitting service, Refl1D calculates and plots the depth profile of the \
 material which can be composed of a mixture of thin film and continuously \
 varying free form layers.
 """
@@ -104,7 +104,7 @@ APP_TUTORIAL_TAG = "DANSE/Reflectometry documentation"
 APP_TUTORIAL = """\
 Note: the tutorial is not currently available.
 
-For a tutorial and other documentation on KsRefl, please visit:\
+For a tutorial and other documentation on Refl1D, please visit:\
 """
 
 #==============================================================================

@@ -57,7 +57,7 @@ def log_time(text=None, reset=False):
     log_time maintains a single instance of TimeStamp during program execution.
     Example output from calls to log_time('...'):
 
-    ==>     0.000s   0.000s  Starting KsRefl
+    ==>     0.000s   0.000s  Starting application
     ==>     0.031s   0.031s  Starting to display the splash screen
     ==>     1.141s   1.110s  Starting to build the GUI on the frame
     ==>     1.422s   0.281s  Done initializing - entering the event loop

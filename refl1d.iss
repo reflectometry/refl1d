@@ -1,9 +1,9 @@
-; -- refl1d.iss -- an Inno Setup Script for Refl1d
+; -- refl1d.iss -- an Inno Setup Script for Refl1D
 ; This script is used by the Inno Setup Compiler to build a Windows XP
-; installer/uninstaller for the DANSE Reflectometry application named Refl1d.
+; installer/uninstaller for the DANSE Reflectometry application named Refl1D.
 ; The script is written to explicitly allow multiple versions of the
 ; application to be installed simulaneously in separate subdirectories such
-; as "Refl1d 0.5.0", "Refl1d 0.7.2", and "Refl1d 1.0" under a group directory.
+; as "Refl1D 0.5.0", "Refl1D 0.7.2", and "Refl1D 1.0" under a group directory.
 
 ; NOTE: In order to support more than one version of the application
 ; installed simultaneously, the AppName, Desktop shortcut name, and Quick
@@ -11,35 +11,35 @@
 ; having unique names (in the more obvious places) for DefaultDirNam,
 ; DefaultGroupName, and output file name.
 
-; By default, when installing Refl1d:
-; - The destination folder will be "C:\Program Files\DANSE\Refl1d x.y.z"
-; - A desktop icon will be created with the label "Refl1d x.y.z"
+; By default, when installing Refl1D:
+; - The destination folder will be "C:\Program Files\DANSE\Refl1D x.y.z"
+; - A desktop icon will be created with the label "Refl1D x.y.z"
 ; - A quickstart icon is optional
-; - A start menu folder will be created with the name DANSE -> Refl1d x.y.z
-; By default, when uninstalling Refl1d x.y.z
+; - A start menu folder will be created with the name DANSE -> Refl1D x.y.z
+; By default, when uninstalling Refl1D x.y.z
 ; - The uninstall can be initiated from either the:
-;   * Start menu via DANSE -> Refl1d x.y.z -> Uninstall Refl1d
-;   * Start menu via Control Panel - > Add or Remove Programs -> Refl1d x.y.z
-; - It will not delete the C:\Program Files\DANSE\Refl1d x.y.z folder if it
+;   * Start menu via DANSE -> Refl1D x.y.z -> Uninstall Refl1D
+;   * Start menu via Control Panel - > Add or Remove Programs -> Refl1D x.y.z
+; - It will not delete the C:\Program Files\DANSE\Refl1D x.y.z folder if it
 ;   contains any user created files
-; - It will delete any desktop or quickstart icons for Refl1d that were
+; - It will delete any desktop or quickstart icons for Refl1D that were
 ;   created on installation
 
 ; NOTE: The Quick Start Pack for the Inno Setup Compiler needs to be installed
 ; with the Preprocessor add-on selected to support use of #define statements.
-#define MyAppName "Refl1d"
+#define MyAppName "Refl1D"
 #define MyAppNameLowercase "refl1d"
 #define MyAppVersion "0.0.0"
 #define MyGroupFolderName "DANSE"
 #define MyAppPublisher "NIST & University of Maryland"
 #define MyAppURL "http://www.reflectometry.org/danse/"
 #define MyAppFileName "refl1d.exe"
-#define MyIconFileName "refl1d.ico"
+#define MyIconFileName "bin\refl1d.ico"
 #define MyReadmeFileName "README.txt"
 #define MyLicenseFileName "LICENSE.txt"
 #define Space " "
 ; Use updated version string if present in the include file.  It is expected that the
-; Refl1d build script will create this file using the version string from version.py.
+; Refl1D build script will create this file using the version string from version.py.
 #ifexist "refl1d.iss-include"
     #include "refl1d.iss-include"
 #endif
