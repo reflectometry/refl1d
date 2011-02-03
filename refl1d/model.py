@@ -20,7 +20,7 @@ scattering density may vary with depth in the layer.
 # Xray thickness variance = neutron roughness - xray roughness
 
 
-__all__ = ['Repeat','Slab','Stack','Layer', '_MaterialStacker']
+__all__ = ['Repeat','Slab','Stack','Layer']
 
 from copy import copy, deepcopy
 import numpy

@@ -49,6 +49,7 @@ To build the HTML documentation you will need:
 	- Pyments 1.0
 	- Jinja2 2.2
 	- `MathJax <http://www.mathjax.org/download/>`_ 1.0.1
+	- PyPNG 0.11
 
 The PDF documentation requires a working LaTeX installation.
 

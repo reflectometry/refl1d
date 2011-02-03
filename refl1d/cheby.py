@@ -6,7 +6,7 @@ $T_k$ form a basis set for functions over $[-1,1]$.  The truncated
 interpolating polynomial $P_n$ is a weighted sum of Chebyshev polynomials
 up to degree $n$:
 
-.. math:
+.. math::
 
     f(x) \approx P_n(x) = \sum_{k=0}^n c_i T_k(x)
 
@@ -21,13 +21,12 @@ of the material within a layer, and :class:`ChebyVF` models the volume
 fraction profile of two materials mixed in the layer.
 
 The models can either be defined directly in terms of the Chebyshev
-coefficients $c_k$ (*method* = 'direct'), or can instead be
-defined in terms of control points $(z_k, f(z_k))$ at the Chebyshev
-nodes :func:`cheby_points` (*method* = 'interp').  Bounds on the
-parameters are easier to control using 'interp', but the function
-may oscillate wildly outside the bounds.  Bounds on the oscillation
-are easier to control using 'direct', but the shape of the profile
-is difficult to control.
+coefficients $c_k$ with *method* = 'direct', or in terms of control 
+points $(z_k, f(z_k))$ at the Chebyshev nodes :func:`cheby_points` 
+with *method* = 'interp'.  Bounds on the parameters are easier to 
+control using 'interp', but the function may oscillate wildly outside 
+the bounds.  Bounds on the oscillation are easier to control using 
+'direct', but the shape of the profile is difficult to control.
 """
 #TODO: clipping volume fraction to [0,1] distorts parameter space
 # Option 0: clip to [0,1]
@@ -143,9 +142,10 @@ class ChebyVF(Layer):
     polynomial coefficients or 'interp' if *vf* values refer to
     control points located at $z_k$.
 
-    The control point $k$ is located at $z_k L$, with layer thickness $L$
-    and $z_k \in [0,1]$ returned by :func:`cheby_points`.
-
+    The control point $k$ is located at $z_k \in [0,L]$ for layer
+    thickness $L$, as returned by :func:`cheby_points` called with 
+    n=len(*vf*) and range=\ $[0,L]$.
+    
     The materials can either use the scattering length density directly,
     such as PDMS = SLD(0.063, 0.00006) or they can use chemical composition
     and material density such as PDMS=Material("C2H6OSi",density=0.965).

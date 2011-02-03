@@ -57,6 +57,7 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest',
               #'inheritance_diagram',
               'dollarmath',
               'slink',
+              'wx_directive',
               #'numpydoc.numpydoc',
              ]
 #plot_formats = [('png', 120), ('pdf', 50)] # Only make 80 dpi plots

@@ -13,7 +13,7 @@ def get_data_path():
     """
 
     # Check for data path in the environment
-    key = 'REFLECTOMETRY_DATA'
+    key = 'REFL1D_DATA'
     if os.environ.has_key(key):
         path = os.path.join(os.environ[key],data)
         if not os.path.isdir(path):
@@ -28,7 +28,7 @@ def get_data_path():
         raise RuntimeError("Could not find sample data")
 
 
-REGISTRY = {
+_REGISTRY = {
     'exp123.dat': ['xray','e1085009.log'],
     'chale207.refl': ['polymer','10ndt001.refl'],
     '10ndt001.refl': ['polymer','10ndt001.refl'],
@@ -36,7 +36,7 @@ REGISTRY = {
     }
 def sample_data(file):
     examples = get_data_path()
-    if file in REGISTRY:
-        return os.path.join(examples, *REGISTRY[file])
+    if file in _REGISTRY:
+        return os.path.join(examples, *_REGISTRY[file])
     else:
         raise ValueError("Sample dataset %s not available"%file)
