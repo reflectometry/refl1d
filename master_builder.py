@@ -65,21 +65,28 @@ APP_NAME = "refl1d" # temporary name
 # of the default installation path on Windows of C:\PythonNN\Lib\site-packages
 LOCAL_INSTALL = "local-site-packages"
 
-# Required Python packages and utilities and their minimum versions
+# Required versions of Python packages and utilities to build the application.
 MIN_PYTHON = "2.5"
 MAX_PYTHON = "3.0"
 MIN_MATPLOTLIB = "0.99.0"
 MIN_NUMPY = "1.2.1"
 MIN_SCIPY = "0.7.0"
 MIN_WXPYTHON = "2.8.10.0"
-MIN_PERIODICTABLE = "1.3"
 MIN_SETUPTOOLS = "0.6c9"
+MIN_GCC = "3.4.4"
+MIN_PYPARSING = "1.5.5"
+MIN_PERIODICTABLE = "1.3"
+# Required versions of Python packages to run tests.
+MIN_NOSE = "0.11"
+# Required versions of Python packages and utilities to build documentation.
 MIN_SPHINX = "1.0"
 MIN_DOCUTILS = "0.5"
 MIN_PYGMENTS = "1.0"
 MIN_JINJA2 = "2.2"
-MIN_NOSE = "0.11"
-MIN_GCC = "3.4.4"
+#MIN_MATHJAX = "1.0.1"
+#MIN_PYPNG = "0.0.11"
+# Required versions of Python packages and utilities to build Windows frozen
+# image and Windows installer.
 MIN_PY2EXE = "0.6.9"
 MIN_INNO = "5.3.10"
 
@@ -124,7 +131,7 @@ def build_it():
     install_package()
 
     # Build HTML and PDF documentaton using sphinx.
-    # This step is done before building a Windows installer so that PDF
+    # This step is done before building the Windows installer so that PDF
     # documentation can be included in the installable product.
     if not (len(sys.argv) > 1 and '-d' in sys.argv[1:]):
         build_documentation()
@@ -224,6 +231,24 @@ def install_package():
                 os.path.join(SRC_DIR, "refl1d"))
 
 
+def build_documentation():
+    # Run the Sphinx utility to build the application's documentation.
+    print SEPARATOR
+    print "\nStep 4 - Running the Sphinx utility to build documentation ...\n"
+    os.chdir(os.path.join(SRC_DIR, "doc"))
+
+    # Delete any left over files from a previous build.
+    exec_cmd("make clean")
+    # Create documentation in HTML format.
+    exec_cmd("make html")
+    # Create documentation in PDF format.
+    exec_cmd("make pdf")
+    # Copy PDF to the doc directory where the py2exe script will look for it.
+    pdf = os.path.join("_build", "latex", "Refl1D.pdf")
+    if os.path.isfile(pdf):
+        shutil.copy(pdf, ".")
+
+
 def create_windows_exe():
     # Use py2exe to create a Win32 executable along with auxiliary files in the
     # <SRC_DIR>/dist directory tree.
@@ -253,24 +278,6 @@ def create_windows_installer(version=None):
     # Override the output specification in <APP_NAME>.iss to put the executable
     # and the manifest file in the top-level directory.
     exec_cmd("%s /Q /O%s %s.iss" %(INNO, TOP_DIR, APP_NAME))
-
-
-def build_documentation():
-    # Run the Sphinx utility to build the application's documentation.
-    print SEPARATOR
-    print "\nStep 4 - Running the Sphinx utility to build documentation ...\n"
-    os.chdir(os.path.join(SRC_DIR, "doc"))
-
-    # Delete any left over files from a previous build.
-    exec_cmd("make clean")
-    # Create documentation in HTML format.
-    exec_cmd("make html")
-    # Create documentation in PDF format.
-    exec_cmd("make pdf")
-    # Copy PDF to the doc directory where the py2exe script will look for it.
-    pdf = os.path.join("_build", "latex", "Refl1D.pdf")
-    if os.path.isfile(pdf):
-        shutil.copy(pdf, ".")
 
 
 def run_tests():
@@ -310,6 +317,7 @@ def check_dependencies():
     import platform
     from pkg_resources import parse_version as PV
 
+    # ------------------------------------------------------
     python_ver = platform.python_version()
     print "Using Python", python_ver
     print ""
@@ -318,9 +326,9 @@ def check_dependencies():
                                                                 MAX_PYTHON)
         sys.exit()
 
-
     req_pkg = {}
 
+    # ------------------------------------------------------
     try:
         from matplotlib import __version__ as mpl_ver
     except:
@@ -328,6 +336,7 @@ def check_dependencies():
     finally:
         req_pkg["matplotlib"] = (mpl_ver, MIN_MATPLOTLIB)
 
+    # ------------------------------------------------------
     try:
         from numpy import __version__ as numpy_ver
     except:
@@ -335,6 +344,7 @@ def check_dependencies():
     finally:
         req_pkg["numpy"] = (numpy_ver, MIN_NUMPY)
 
+    # ------------------------------------------------------
     try:
         from scipy import __version__ as scipy_ver
     except:
@@ -342,6 +352,7 @@ def check_dependencies():
     finally:
         req_pkg["scipy"] = (scipy_ver, MIN_SCIPY)
 
+    # ------------------------------------------------------
     try:
         from wx import __version__ as wx_ver
     except:
@@ -349,13 +360,7 @@ def check_dependencies():
     finally:
         req_pkg["wxpython"] = (wx_ver, MIN_WXPYTHON)
 
-    try:
-        from periodictable import __version__ as pt_ver
-    except:
-        pt_ver = "0"
-    finally:
-        req_pkg["periodictable"] = (pt_ver, MIN_PERIODICTABLE)
-
+    # ------------------------------------------------------
     try:
         from setuptools import __version__ as setup_ver
     except:
@@ -363,41 +368,7 @@ def check_dependencies():
     finally:
         req_pkg["setuptools"] = (setup_ver, MIN_SETUPTOOLS)
 
-    try:
-        from sphinx import __version__ as sphinx_ver
-    except:
-        sphinx_ver = "0"
-    finally:
-        req_pkg["sphinx"] = (sphinx_ver, MIN_SPHINX)
-
-    try:
-        from docutils import __version__ as docutils_ver
-    except:
-        docutils_ver = "0"
-    finally:
-        req_pkg["docutils"] = (docutils_ver, MIN_DOCUTILS)
-
-    try:
-        from pygments import __version__ as pygments_ver
-    except:
-        pygments_ver = "0"
-    finally:
-        req_pkg["pygments"] = (pygments_ver, MIN_PYGMENTS)
-
-    try:
-        from jinja2 import __version__ as jinja2_ver
-    except:
-        jinja2_ver = "0"
-    finally:
-        req_pkg["jinja2"] = (jinja2_ver, MIN_JINJA2)
-
-    try:
-        from nose import __version__ as nose_ver
-    except:
-        nose_ver = "0"
-    finally:
-        req_pkg["nose"] = (nose_ver, MIN_NOSE)
-
+    # ------------------------------------------------------
     try:
         if os.name == 'nt': flag = False
         else:               flag = True
@@ -409,6 +380,63 @@ def check_dependencies():
     finally:
         req_pkg["gcc"] = (gcc_ver, MIN_GCC)
 
+    # ------------------------------------------------------
+    try:
+        from pyparsing import __version__ as parse_ver
+    except:
+        parse_ver = "0"
+    finally:
+        req_pkg["pyparsing"] = (parse_ver, MIN_PYPARSING)
+
+    # ------------------------------------------------------
+    try:
+        from periodictable import __version__ as ptab_ver
+    except:
+        ptab_ver = "0"
+    finally:
+        req_pkg["periodictable"] = (ptab_ver, MIN_PERIODICTABLE)
+
+    # ------------------------------------------------------
+    try:
+        from nose import __version__ as nose_ver
+    except:
+        nose_ver = "0"
+    finally:
+        req_pkg["nose"] = (nose_ver, MIN_NOSE)
+
+    # ------------------------------------------------------
+    try:
+        from sphinx import __version__ as sphinx_ver
+    except:
+        sphinx_ver = "0"
+    finally:
+        req_pkg["sphinx"] = (sphinx_ver, MIN_SPHINX)
+
+    # ------------------------------------------------------
+    try:
+        from docutils import __version__ as docutils_ver
+    except:
+        docutils_ver = "0"
+    finally:
+        req_pkg["docutils"] = (docutils_ver, MIN_DOCUTILS)
+
+    # ------------------------------------------------------
+    try:
+        from pygments import __version__ as pygments_ver
+    except:
+        pygments_ver = "0"
+    finally:
+        req_pkg["pygments"] = (pygments_ver, MIN_PYGMENTS)
+
+    # ------------------------------------------------------
+    try:
+        from jinja2 import __version__ as jinja2_ver
+    except:
+        jinja2_ver = "0"
+    finally:
+        req_pkg["jinja2"] = (jinja2_ver, MIN_JINJA2)
+
+    # ------------------------------------------------------
     if os.name == 'nt':
         try:
             from py2exe import __version__ as py2exe_ver
@@ -422,7 +450,7 @@ def check_dependencies():
         else:
             req_pkg["Inno Setup Compiler"] = ("0", MIN_INNO)
 
-
+    # ------------------------------------------------------
     error = False
     for key, values in req_pkg.items():
         if req_pkg[key][0] == "0":
