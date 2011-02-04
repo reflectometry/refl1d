@@ -186,7 +186,11 @@ for path in glob.glob(os.path.join('doc', 'examples', '*')):
     else:
         data_files.append( ('doc', [path]) )
 
-data_files.append( ('doc', [os.path.join('doc', 'Refl1D.pdf')]) )
+pdf = os.path.join('doc', 'Refl1D.pdf')
+if os.path.isfile(pdf):
+    data_files.append( ('doc', pdf) )
+else:
+    print "*** %s not found - building frozen image without it ***" %pdf
 
 # Add the Microsoft Visual C++ 2008 redistributable kit if we are building with
 # Python 2.6 or 2.7.  This kit will be installed on the target system as part
