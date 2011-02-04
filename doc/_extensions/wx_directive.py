@@ -42,7 +42,7 @@ import png
 sphinx_version = sphinx.__version__.split(".")
 # The split is necessary for sphinx beta versions where the string is
 # '6b1'
-sphinx_version = tuple([int(re.split('[a-z]', x)[0]) 
+sphinx_version = tuple([int(re.split('[a-z]', x)[0])
                         for x in sphinx_version[:2]])
 
 
@@ -199,14 +199,14 @@ def annotate(dc, widget, label, position='c', framesize=(0,0)):
     dc.SetPen(pen)
     dc.SetBrush(brush)
     dc.SetFont(font)
-    
+
     # Determine box dimensions
     tw,th = dc.GetTextExtent(label)
     rw,rh = tw+2*padx,th+2*pady
     if rw < rh:
         padx += (rh-rw)//2
         rw = rh
-    
+
     # Determine box position
     try:
         bx,by = widget
@@ -235,6 +235,10 @@ def annotate(dc, widget, label, position='c', framesize=(0,0)):
     # Make sure box doesn't fall off the frame
     #fw,fh = dc.GetSize()
     fw,fh = framesize # Grrr... antialiasing DC does not preserve size
+    #print "*** text",label,tw,th
+    #print " ** widget",bx,by,bw,bh
+    #print " ** rect",rx,ry,rw,rh
+    #print " ** frame",fw,fh
     if rx+rw >= fw: rx = fw-(rw+bordersize//2 + 1)
     if ry+rh >= fh: ry = fh-(rh+bordersize//2 + 1)
     if rx < 0:   rx = bordersize//2
@@ -277,12 +281,13 @@ def make_image(fullpath, code, outdir, context='', options={}):
             warnings.warn("current path "+os.getcwd())
             s = cbook.exception_to_str("Exception running wx %s %s" % (fullpath,context))
             warnings.warn(s)
-            return False        
+            return False
 
     try:    labels
     except: labels = []
     img = capture_image(frame,labels)
     frame.Destroy()
+    wx.Yield()
     write_png(outpath, img)
 
     return True
@@ -390,7 +395,7 @@ def wx_directive(name, arguments, options, content, lineno,
 def setup(app):
     global _WXAPP
     _WXAPP = wx.PySimpleApp()
-    
+
     setup.app = app
     setup.config = app.config
     setup.confdir = app.confdir

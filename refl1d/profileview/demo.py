@@ -10,6 +10,7 @@ def make_frame(experiment):
     panel = ProfileView(frame)
     panel.quit_on_error()
     panel.SetProfile(experiment)
+    frame.panel = panel
     return frame
 
 def demo(experiment):

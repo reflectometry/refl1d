@@ -196,15 +196,15 @@ The Refl1D application will have an interactive interactor
     p = load_problem(os.path.join(example_dir(), 'tethered.py'))
     frame = make_frame(p.fits[0].fitness)
     labels = [
-      ( frame, 'center', 'c' ),
-      ( frame, 'top',    't' ),
-      ( frame, 'left',   'l' ),
-      ( frame, 'bottom', 'b' ),
-      ( frame, 'right',  'r' ),
-      ( (50,200), 't', 't' ),
-      ( (50,200), 'l', 'l' ),
-      ( (50,200), 'r', 'r' ),
-      ( (50,200), 'b', 'b' ),
-      ( (50,200), 'c',   'c' ),
+      ( frame.panel, 'center', 'c' ),
+      ( frame.panel, 'top',    't' ),
+      ( frame.panel, 'left',   'l' ),
+      ( frame.panel, 'bottom', 'b' ),
+      ( frame.panel, 'right',  'r' ),
+      ( (50,50), 't', 't' ),
+      ( (50,50), 'l', 'l' ),
+      ( (50,50), 'r', 'r' ),
+      ( (50,50), 'b', 'b' ),
+      ( (50,50), 'c', 'c' ),
     ]
 
