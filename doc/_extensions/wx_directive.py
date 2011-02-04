@@ -136,8 +136,7 @@ def runfile(fullpath):
         sys.stdout = stdout
     return module
 
-def capture_image(frame):
-    # Force the window to draw
+def capture_image(frame, labels):
     frame.Show()
     wx.Yield()
 
@@ -148,6 +147,12 @@ def capture_image(frame):
     memdc = wx.MemoryDC()
     memdc.SelectObject(bmp)
     memdc.Blit(0,0, w, h, graphdc, 0, 0)
+
+    gcdc = wx.GCDC(memdc)
+    for widget,label,position in labels:
+        annotate(gcdc, widget=widget, label=label, position=position,
+                 framesize=(w,h))
+
     memdc.SelectObject(wx.NullBitmap)
 
     # Render it as a numpy array
@@ -162,6 +167,84 @@ def write_png(outpath,img):
     with open(outpath,'wb') as fid:
         writer.write(fid, numpy.reshape(img,(h,w*p)))
 
+def annotate(dc, widget, label, position='c', framesize=(0,0)):
+    """
+    Draws label relative to the widget on the frame.
+
+    *frame* is the frame to receive the annotation
+    *widget* is the widget or coordinates (x,y) in frame to be annotated
+    *label* is the annotation label
+    *position* is the location of the annotation, which is one of:
+        * t: above the widget
+        * b: below the widget
+        * l: left of the widget
+        * r: right of the widget
+        * c: center of the widget
+    """
+    padx, pady = 4,4        # Space around rectangle
+    bordersize = 2          # Size of border line
+    fontsize = 18           # Size of text
+    radius = (fontsize+pady+bordersize)//2   # Rounding radius on rectangle
+    marginx, marginy = 2,2  # Space be edge rectangle and edge of widget
+    foreground = 'black'    # Font and outline colour
+    background = '#C1A004'  # Gold fill
+
+    pen = wx.Pen(colour=foreground, width=bordersize)
+    brush = wx.Brush(colour=background)
+    font = wx.Font(pointSize=fontsize,
+                   family=wx.FONTFAMILY_SWISS,
+                   style=wx.FONTSTYLE_NORMAL,
+                   weight=wx.FONTWEIGHT_NORMAL
+                   )
+    dc.SetPen(pen)
+    dc.SetBrush(brush)
+    dc.SetFont(font)
+    
+    # Determine box dimensions
+    tw,th = dc.GetTextExtent(label)
+    rw,rh = tw+2*padx,th+2*pady
+    if rw < rh:
+        padx += (rh-rw)//2
+        rw = rh
+    
+    # Determine box position
+    try:
+        bx,by = widget
+        bw,bh = 0,0
+    except:
+        bx,by = widget.GetPositionTuple()
+        bw,bh = widget.GetSizeTuple()
+    if position == 't':
+        rx = bx + (bw-rw)//2
+        ry = by - (marginy + rh)
+    elif position == 'b':
+        rx = bx + (bw-rw)//2
+        ry = by + bh + marginy
+    elif position == 'l':
+        rx = bx - (marginx + rw)
+        ry = by + (bh-rh)//2
+    elif position == 'r':
+        rx = bx + bw + marginx
+        ry = by + (bh-rh)//2
+    elif position == 'c':
+        rx = bx + (bw-rw)//2
+        ry = by + (bh-rh)//2
+    else:
+        raise ValueError('position should be t, l, b, r, or c')
+
+    # Make sure box doesn't fall off the frame
+    #fw,fh = dc.GetSize()
+    fw,fh = framesize # Grrr... antialiasing DC does not preserve size
+    if rx+rw >= fw: rx = fw-(rw+bordersize//2 + 1)
+    if ry+rh >= fh: ry = fh-(rh+bordersize//2 + 1)
+    if rx < 0:   rx = bordersize//2
+    if ry < 0:   ry = bordersize//2
+
+    # Draw the box and the annotation label
+    dc.BeginDrawing()
+    dc.DrawRoundedRectangle(rx,ry,rw,rh,radius)
+    dc.DrawText(text=label,x=rx+padx,y=ry+pady)
+    dc.EndDrawing()
 
 def make_image(fullpath, code, outdir, context='', options={}):
     """
@@ -196,9 +279,9 @@ def make_image(fullpath, code, outdir, context='', options={}):
             warnings.warn(s)
             return False        
 
-
-    frame.Show(True)
-    img = capture_image(frame)
+    try:    labels
+    except: labels = []
+    img = capture_image(frame,labels)
     frame.Destroy()
     write_png(outpath, img)
 

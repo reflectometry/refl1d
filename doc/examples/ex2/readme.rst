@@ -195,4 +195,16 @@ The Refl1D application will have an interactive interactor
     from refl1d.profileview.demo import make_frame
     p = load_problem(os.path.join(example_dir(), 'tethered.py'))
     frame = make_frame(p.fits[0].fitness)
+    labels = [
+      ( frame, 'center', 'c' ),
+      ( frame, 'top',    't' ),
+      ( frame, 'left',   'l' ),
+      ( frame, 'bottom', 'b' ),
+      ( frame, 'right',  'r' ),
+      ( (50,200), 't', 't' ),
+      ( (50,200), 'l', 'l' ),
+      ( (50,200), 'r', 'r' ),
+      ( (50,200), 'b', 'b' ),
+      ( (50,200), 'c',   'c' ),
+    ]
 
