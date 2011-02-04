@@ -1,7 +1,7 @@
-"""A special directive for including wx frames.
+"""A special directive for including wx panels.
 
 Given a path to a .py file, it includes the source code inline, and an
-image of the frame it produces.
+image of the panel it produces.
 
 This directive supports all of the options of the `image` directive,
 except for `target` (since plot will add its own target).
@@ -136,12 +136,15 @@ def runfile(fullpath):
         sys.stdout = stdout
     return module
 
-def capture_image(frame, labels):
-    frame.Show()
+def capture_image(panel, labels):
+    panel.Show()
     wx.Yield()
 
     # Grab the bitmap
-    graphdc = wx.ClientDC(frame)
+    if panel.IsTopLevel():
+        graphdc = wx.WindowDC(panel)
+    else:
+        graphdc = wx.ClientDC(panel)
     w,h = graphdc.GetSize()
     bmp = wx.EmptyBitmap(w,h)
     memdc = wx.MemoryDC()
@@ -151,7 +154,7 @@ def capture_image(frame, labels):
     gcdc = wx.GCDC(memdc)
     for widget,label,position in labels:
         annotate(gcdc, widget=widget, label=label, position=position,
-                 framesize=(w,h))
+                 panelsize=(w,h))
 
     memdc.SelectObject(wx.NullBitmap)
 
@@ -167,12 +170,12 @@ def write_png(outpath,img):
     with open(outpath,'wb') as fid:
         writer.write(fid, numpy.reshape(img,(h,w*p)))
 
-def annotate(dc, widget, label, position='c', framesize=(0,0)):
+def annotate(dc, widget, label, position='c', panelsize=(0,0)):
     """
-    Draws label relative to the widget on the frame.
+    Draws label relative to the widget on the panel.
 
-    *frame* is the frame to receive the annotation
-    *widget* is the widget or coordinates (x,y) in frame to be annotated
+    *panel* is the panel to receive the annotation
+    *widget* is the widget or coordinates (x,y) in panel to be annotated
     *label* is the annotation label
     *position* is the location of the annotation, which is one of:
         * t: above the widget
@@ -232,13 +235,13 @@ def annotate(dc, widget, label, position='c', framesize=(0,0)):
     else:
         raise ValueError('position should be t, l, b, r, or c')
 
-    # Make sure box doesn't fall off the frame
+    # Make sure box doesn't fall off the panel
     #fw,fh = dc.GetSize()
-    fw,fh = framesize # Grrr... antialiasing DC does not preserve size
+    fw,fh = panelsize # Grrr... antialiasing DC does not preserve size
     #print "*** text",label,tw,th
     #print " ** widget",bx,by,bw,bh
     #print " ** rect",rx,ry,rw,rh
-    #print " ** frame",fw,fh
+    #print " ** panel",fw,fh
     if rx+rw >= fw: rx = fw-(rw+bordersize//2 + 1)
     if ry+rh >= fh: ry = fh-(rh+bordersize//2 + 1)
     if rx < 0:   rx = bordersize//2
@@ -276,7 +279,7 @@ def make_image(fullpath, code, outdir, context='', options={}):
     else:
         try:
             module = runfile(fullpath)
-            frame = module.frame
+            panel = module.panel
         except:
             warnings.warn("current path "+os.getcwd())
             s = cbook.exception_to_str("Exception running wx %s %s" % (fullpath,context))
@@ -285,8 +288,8 @@ def make_image(fullpath, code, outdir, context='', options={}):
 
     try:    labels
     except: labels = []
-    img = capture_image(frame,labels)
-    frame.Destroy()
+    img = capture_image(panel,labels)
+    panel.Destroy()
     wx.Yield()
     write_png(outpath, img)
 
