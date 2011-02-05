@@ -27,10 +27,9 @@ def configuration(parent_package='', top_path=None):
 
     config.add_data_files('LICENSE.txt')
     config.add_data_files('README.txt')
-    config.add_data_files('refl1d.iss')
     config.add_data_files('test.py')
 
-    for line in open('refl1d/__init__.py').readlines():
+    for line in open(os.path.join('refl1d', '__init__.py')).readlines():
         if (line.startswith('__version__')):
             exec(line.strip())
             config.version = __version__

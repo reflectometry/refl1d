@@ -118,7 +118,7 @@ def build_it():
 
     # Get the version string of the application for use later.
     # This has to be done after we have checked out the repository.
-    for line in open(os.path.join(SRC_DIR, 'refl1d/__init__.py')).readlines():
+    for line in open(os.path.join('SRC_DIR', 'refl1d', '__init__.py')).readlines():
         if (line.startswith('__version__')):
             exec(line.strip())
             break

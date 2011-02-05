@@ -34,7 +34,7 @@
 #define MyAppPublisher "NIST & University of Maryland"
 #define MyAppURL "http://www.reflectometry.org/danse/"
 #define MyAppFileName "refl1d.exe"
-#define MyIconFileName "bin\refl1d.ico"
+#define MyIconFileName "refl1d.ico"
 #define MyReadmeFileName "README.txt"
 #define MyLicenseFileName "LICENSE.txt"
 #define Space " "
@@ -60,7 +60,8 @@ DisableProgramGroupPage=yes
 ; A file extension of .exe will be appended to OutputBaseFilename.
 OutputBaseFilename={#MyAppNameLowercase}-{#MyAppVersion}-win32
 OutputManifestFile={#MyAppNameLowercase}-{#MyAppVersion}-win32-manifest.txt
-SetupIconFile={#MyIconFileName}
+; Note that the icon file is in the bin subdirectory, not in the top-level directory.
+SetupIconFile=bin\{#MyIconFileName}
 LicenseFile={#MyLicenseFileName}
 SourceDir=.
 OutputDir=.

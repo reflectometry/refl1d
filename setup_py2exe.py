@@ -163,7 +163,6 @@ data_files.append( ('.', [os.path.join('.', 'LICENSE.txt')]) )
 data_files.append( ('.', [os.path.join('.', 'README.txt')]) )
 data_files.append( ('.', [os.path.join('.', 'bin', 'refl1d.ico')]) )
 data_files.append( ('.', [os.path.join('.', 'bin', 'refl1d_splash.jpg')]) )
-data_files.append( ('.', [os.path.join('.', 'test.py')]) )
 
 # Add batch files to implement commands useful for launching the program.
 # Note that Inno Setup will determine where these files will be placed.

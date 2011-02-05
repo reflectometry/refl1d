@@ -7,8 +7,12 @@
 # Note: apparently due to a bug in setup, you cannot include a file whose name
 # starts with 'build' as in 'build_everything.py'.
 
-# Add files that are not required to run or use the application.
-#include master_builder.py
+# Add files to the archive in addition to those that are installed by running
+# 'python setup.py install'.  Typically these extra files are build related.
+include MANIFEST.in  # this file
+include master_builder.py
+include refl1d.iss
+include setup_py2exe.py
 
 # Delete files
 #prune this that
