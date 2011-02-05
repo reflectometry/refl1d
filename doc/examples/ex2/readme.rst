@@ -186,7 +186,32 @@ The model can be fit using the parallel tempering optimizer::
 
     $ refl1d tethered.py --fit=pt --store=T1
 
+**We are testing the UI documentation tools: please ignore**
+
 The Refl1D application will have an interactive interactor
+
+.. wx::
+
+    from sitedoc import example_dir
+    from refl1d.fitter import load_problem
+    from refl1d.profileview.demo import make_frame
+    p = load_problem(os.path.join(example_dir(), 'tethered.py'))
+    frame = make_frame(p.fits[0].fitness)
+    panel = frame.panel
+    labels = [
+      ( frame.panel, 'center', 'c' ),
+      ( frame.panel, 'top',    't' ),
+      ( frame.panel, 'left',   'l' ),
+      ( frame.panel, 'bottom', 'b' ),
+      ( frame.panel, 'right',  'r' ),
+      ( (50,50), 't', 't' ),
+      ( (50,50), 'l', 'l' ),
+      ( (50,50), 'r', 'r' ),
+      ( (50,50), 'b', 'b' ),
+      ( (50,50), 'c', 'c' ),
+    ]
+
+And again, with decorations?
 
 .. wx::
 

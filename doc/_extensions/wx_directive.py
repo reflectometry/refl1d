@@ -137,10 +137,15 @@ def runfile(fullpath):
     return module
 
 def capture_image(panel, labels):
-    panel.Show()
+    # Need to be at a top level window in order to force a redraw
+    frame = panel
+    while not frame.IsTopLevel():
+        frame = frame.parent
+    frame.Show()
     wx.Yield()
 
-    # Grab the bitmap
+    # Grab the bitmap; if it is the top level, then include WindowDC so we
+    # can grab the window decorations.  This only works on Windows!
     if panel.IsTopLevel():
         graphdc = wx.WindowDC(panel)
     else:
@@ -151,16 +156,22 @@ def capture_image(panel, labels):
     memdc.SelectObject(bmp)
     memdc.Blit(0,0, w, h, graphdc, 0, 0)
 
+    # Add annotations using a GCDC so we get antialiased corners
     gcdc = wx.GCDC(memdc)
     for widget,label,position in labels:
         annotate(gcdc, widget=widget, label=label, position=position,
                  panelsize=(w,h))
 
+    # Release the bitmap from the DC
     memdc.SelectObject(wx.NullBitmap)
 
-    # Render it as a numpy array
+    # Copy bitmap to a numpy array
     img = numpy.empty((w,h,3),'uint8')
     bmp.CopyToBuffer(buffer(img), format=wx.BitmapBufferFormat_RGB)
+
+    # Destroy the frame
+    frame.Destroy()
+    wx.Yield()
     return img
 
 def write_png(outpath,img):
@@ -206,17 +217,24 @@ def annotate(dc, widget, label, position='c', panelsize=(0,0)):
     # Determine box dimensions
     tw,th = dc.GetTextExtent(label)
     rw,rh = tw+2*padx,th+2*pady
+
+    # If the box is tall and thin, force it to be a circle because it looks
+    # better.  Conveniently, numbers 1-9 as annotations should all be circles.
+    # TODO: maybe draw this as a circle rather than rounded rectangle?
     if rw < rh:
         padx += (rh-rw)//2
         rw = rh
 
-    # Determine box position
-    try:
+    # Determine anchor position on the screen, which is either the
+    # rectangle containing a specific widget, or is a pair of coordinates (x,y)
+    try:     # Is it (x,y)?
         bx,by = widget
         bw,bh = 0,0
-    except:
+    except:  # No.  Hope it is a widget
         bx,by = widget.GetPositionTuple()
         bw,bh = widget.GetSizeTuple()
+
+    # Position the label relative to the anchor
     if position == 't':
         rx = bx + (bw-rw)//2
         ry = by - (marginy + rh)
@@ -235,7 +253,7 @@ def annotate(dc, widget, label, position='c', panelsize=(0,0)):
     else:
         raise ValueError('position should be t, l, b, r, or c')
 
-    # Make sure box doesn't fall off the panel
+    # Make sure label box doesn't fall off the panel
     #fw,fh = dc.GetSize()
     fw,fh = panelsize # Grrr... antialiasing DC does not preserve size
     #print "*** text",label,tw,th
@@ -289,8 +307,6 @@ def make_image(fullpath, code, outdir, context='', options={}):
     try:    labels
     except: labels = []
     img = capture_image(panel,labels)
-    panel.Destroy()
-    wx.Yield()
     write_png(outpath, img)
 
     return True
