@@ -420,4 +420,3 @@ def setup(app):
     setup.confdir = app.confdir
 
     app.add_directive('wx', wx_directive, True, (0, 1, 0), **options)
-
