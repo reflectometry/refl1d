@@ -201,7 +201,7 @@ def annotate(dc, widget, label, position='c', panelsize=(0,0)):
     radius = (fontsize+pady+bordersize)//2   # Rounding radius on rectangle
     marginx, marginy = 2,2  # Space be edge rectangle and edge of widget
     foreground = 'black'    # Font and outline colour
-    background = '#C1A004'  # Gold fill
+    background = '#C1A004C0'  # Gold fill
 
     pen = wx.Pen(colour=foreground, width=bordersize)
     brush = wx.Brush(colour=background)

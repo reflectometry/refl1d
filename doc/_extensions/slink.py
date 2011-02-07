@@ -50,7 +50,7 @@ def setup(app):
             ref = text[lidx+1:ridx]
             name = utils.unescape(text[:lidx].strip())
         elif lidx > 0 or ridx > 0:
-            warn('Incorrect reference `text <url>` in expanded link')
+            warn('Incorrect reference format in expanded link: '+text)
             ref = ''
             name = utils.unescape(text)
         else:
