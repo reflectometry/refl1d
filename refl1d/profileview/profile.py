@@ -88,8 +88,9 @@ class ProfileInteractor(object):
 
 
         # Set interactors
+        self.x_offset = 0
+        self._find_layer_boundaries()
         self.layer_num = None
-        self.boundary = self._layer_boundaries()
         self.thickness_interactor = ThicknessInteractor(self)
         self.interface_interactor = InterfaceInteractor(self)
         self.layer_interactor = BaseInteractor(self)
@@ -131,17 +132,17 @@ class ProfileInteractor(object):
 
     # === Sample information ===
     def find(self, z):
-        return self.experiment.sample.find(z)
+        return self.experiment.sample.find(z-self.x_offset)
 
-    def _layer_boundaries(self):
-        boundary = [-inf, 0]
-        offset = 0
+    def _find_layer_boundaries(self):
+        offset = self.x_offset
+        boundary = [-inf, offset]
         for L in self.experiment.sample[1:-1]:
             dx = L.thickness.value
             offset += dx
             boundary.append(offset)
         boundary.append(inf)
-        return numpy.asarray(boundary)
+        self.boundary = numpy.asarray(boundary)
 
     def sample_labels(self):
         return [str(L) for L in self.experiment.sample]
@@ -169,7 +170,7 @@ class ProfileInteractor(object):
         self.draw_idle()
 
     def update_markers(self):
-        self.boundary = self._layer_boundaries()
+        self._find_layer_boundaries()
         self.thickness_interactor.update_markers()
         self.interface_interactor.update_markers()
         self.layer_interactor.update_markers()
@@ -182,8 +183,8 @@ class ProfileInteractor(object):
             self.hthetaM.set_data(z,thetaM)
         else:
             z,rho,rhoI = self.experiment.smooth_profile()
-        self.hrho.set_data(z,rho)
-        self.hrhoI.set_data(z,rhoI)
+        self.hrho.set_data(z+self.x_offset,rho)
+        self.hrhoI.set_data(z+self.x_offset,rhoI)
 
     def reset_limits(self):
 
@@ -237,10 +238,8 @@ class ProfileInteractor(object):
         except: self._delayed = wx.FutureCall(50, lambda:(self.update_profile(),self.draw_now()))
 
     def _signal(self):
-        print "sending update signal"
-        self.p  = '1' # dummy variable for abiding message passing syntax
         try:
-            pub.sendMessage("inter_update", self.p)
+            pub.sendMessage("inter_update")
         except:
             print 'error in message sending'
         self.listener.signal('update',self)

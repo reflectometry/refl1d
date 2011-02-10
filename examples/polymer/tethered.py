@@ -60,6 +60,12 @@ for i,_ in enumerate(D):
     H[i].thickness = D[i].thickness
     H[i].interface = D[i].interface
 
+D = (silicon(0,5) | D_initiator(100,20) | SiOx(100,5) | D_initiator(100,20) | D_brush(400,0)
+     | D_toluene)
+D[3].thickness=D[2].thickness
+
+
+
 # =============== fitted values ==================
 
 if 0:

@@ -1,6 +1,10 @@
 """
 Extension to MPL to support the binding of artists to key/mouse events.
 """
+import warnings
+import traceback
+import sys
+
 from matplotlib      import transforms
 
 # CRUFT: matplotlib doesn't yet support canvas.draw_now()
@@ -289,7 +293,12 @@ class BindArtist:
 
             # TODO: optimization - exclude artists not inaxes
             # Note: errors tend to show up on move
-            inside,prop = artist.contains(event)
+            try:
+                inside,prop = artist.contains(event)
+            except:
+                warn_exception("Exception in %s contains() method"%artist)
+                inside = False
+
             if inside:
                 found.artist = artist
                 found.prop   = prop
@@ -435,3 +444,9 @@ class BindArtist:
         """
         found = self._find_current(event)
         self.trigger(found, 'scroll', event)
+
+def warn_exception(str):
+    trace = traceback.format_exception(*sys.exc_info())
+    print str
+    print trace[-2][:-1]
+    print trace[-1][:-1]

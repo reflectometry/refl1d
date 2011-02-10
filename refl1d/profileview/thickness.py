@@ -41,8 +41,12 @@ class ThicknessInteractor(BaseInteractor):
         self.markers = [ax.axvline(x=z, **style)
                         for z in self.profile.boundary[1:-1]]
 
-        self.markers[0].set(linestyle=':')
-        self.connect_markers(self.markers[1:])
+        fittable = [self.profile.sample_layer(idx).thickness.fittable
+                    for idx,_ in enumerate(self.markers)]
+        fittable[0] = False # First interface is not fittable
+        for f,m in zip(fittable,self.markers):
+            if not f: m.set(linestyle=':')
+        self.connect_markers(m for f,m in zip(fittable,self.markers) if f)
 
         # Add labels
         offsets = self.label_offsets()
@@ -77,15 +81,17 @@ class ThicknessInteractor(BaseInteractor):
 
     def save(self, ev):
         idx = self.markers.index(ev.artist)
-        self._curr = self.profile.sample_layer(idx).thickness
-        self._curr_saved = self._curr.value
-        self._prev_offset = self.profile.boundary[idx]
-        self._next_offset = self.profile.boundary[idx+2]
-        if idx<len(self.markers)-1: # last
-            self._next = self.profile.sample_layer(idx+1).thickness
-            self._next_saved = self._next.value
-        else:
-            self._next = None
+        curr = self.profile.sample_layer(idx).thickness
+        next = self.profile.sample_layer(idx+1).thickness \
+               if idx<len(self.markers)-1 else None
+        if not curr.fittable: curr = None
+        if next is not None and not next.fittable: next = None
+
+        self._idx = idx
+        self._curr = curr
+        self._next = next
+        if curr is not None: self._curr_saved = curr.value
+        if next is not None: self._next_saved = next.value
 
     def restore(self, ev):
         self._curr.value = self._curr_saved
@@ -96,24 +102,44 @@ class ThicknessInteractor(BaseInteractor):
         """
         Process move to a new position, making sure that the move is allowed.
         """
-        if event.shift:
-            # move boundary between layers
+        if self._curr is None: return
+
+        prev_offset = self.profile.boundary[self._idx]
+        next_offset = self.profile.boundary[self._idx+2]
+
+        # Limit the position according to parameter limits
+        if event.shift and self._next is not None:
+            # shifting interface between two layers
             lo_curr,hi_curr = self._curr.bounds.limits
             lo_next,hi_next = self._next.bounds.limits
-            lo = min(lo_curr+self._prev_offset,
-                     self._next_offset-hi_next)
-            hi = max(hi_curr+self._prev_offset,
-                     self._next_offset-lo_next)
+            lo = min(lo_curr+prev_offset, next_offset-hi_next)
+            hi = min(hi_curr+prev_offset, next_offset-lo_next)
         else:
+            # resizing a layer
             lo_curr,hi_curr = self._curr.bounds.limits
-            lo = lo_curr+self._prev_offset
-            hi = hi_curr+self._prev_offset
-
+            lo = lo_curr+prev_offset
+            hi = hi_curr+prev_offset
         x = clip(event.xdata, lo, hi)
-        self._curr.value = x - self._prev_offset
+
+        # Set the current and next value based on offsets.  We set the next
+        # in case the user is shifting the interface between two layers
+        # instead of resizing the current layer.  We set it even when not
+        # shifting in case the previous action was to shift, and the current
+        # action triggers a restore.  We set the next before the current
+        # so that if the two parameters are tied, the current takes
+        # precedence.
         if self._next is not None:
-            self._next.value = (self._next_offset-x if event.shift
-                                else self._next_saved)
+            if event.shift:
+                self._next.value = next_offset-x
+            else:
+                self._next.value = self._next_saved
+        self._curr.value = x - prev_offset
+
+        # Adjust x_offset such that the layer boundary will stay under the
+        # curesor even if previous layers grow or shrink as a result of being
+        # tied to the current layer thickness.
+        self.profile._find_layer_boundaries()
+        self.profile.x_offset -= self.profile.boundary[self._idx]-prev_offset
 
     def drag_start(self, ev):
         """

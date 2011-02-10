@@ -464,7 +464,7 @@ def main():
 
     if opts.edit:
         from .profileview.demo import demo
-        demo(problem)
+        demo(problem.fitness)
     elif opts.profile:
         run_profile(problem)
     elif opts.worker:

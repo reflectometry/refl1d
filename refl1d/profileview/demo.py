@@ -15,7 +15,7 @@ def make_frame(experiment):
 
 def demo(experiment):
     app = wx.PySimpleApp(0)
-    frame = show_frame(experiment)
+    frame = make_frame(experiment)
     frame.Show(True)
     app.MainLoop()
 
