@@ -218,6 +218,11 @@ class ProfileInteractor(object):
             fluff = 0.05*(hi-lo)
             self.axes.set_ylim(lo-fluff, hi+fluff)
 
+    def redraw(self):
+        self.update_markers()
+        self.update_profile()
+        self.draw_now()
+    
     def update(self):
         """
         Respond to changes in the model by recalculating the profiles and
@@ -226,10 +231,7 @@ class ProfileInteractor(object):
         # We are done the manipulation; let the model send its update signal
         # to whomever is listening.
         #self.listener.signal('update',self)
-
-        self.update_markers()
-        self.update_profile()
-        self.draw_now()
+        self.redraw()
         self.delayed_signal()
         #self.delayed_profile()
 
@@ -239,9 +241,10 @@ class ProfileInteractor(object):
 
     def _signal(self):
         try:
-            pub.sendMessage("inter_update")
+            pub.sendMessage("update_parameters")
         except:
             print 'error in message sending'
+            raise
         self.listener.signal('update',self)
     def delayed_signal(self):
         try: self._delayed_signal.Restart(50)

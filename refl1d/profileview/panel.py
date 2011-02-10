@@ -4,6 +4,8 @@ A base panel to draw the profile
 
 import os
 import wx
+from wx.lib.pubsub import Publisher as pub
+
 import numpy
 from matplotlib.figure import Figure
 from matplotlib.axes   import Subplot
@@ -50,8 +52,15 @@ class ProfileView(AuiPanel):
         self.toolbar.Show(True)
 
         # Create a figure manager to manage things
+        
         self.figmgr = FigureManager( self.canvas, 1, self )
-
+        # set new model
+        pub.subscribe(self.OnInitialModel, "initial_model")
+        # change model structure message
+        pub.subscribe(self.OnUpdateModel, "update_model")
+        # change model parameter message
+        pub.subscribe(self.OnUpdateParameters, "update_parameters")
+        
         self.sizer = wx.BoxSizer( wx.VERTICAL )
         self.sizer.Add( self.canvas,1, border=2, flag= wx.LEFT|wx.TOP|wx.GROW)
         self.sizer.Add(self.toolbar)
@@ -59,9 +68,26 @@ class ProfileView(AuiPanel):
         self.Fit()
         self.listener = Listener()
 
-    def SetProfile(self, experiment):
+    # ============= Signal bindings =========================
+
+    def OnInitialModel(self, event):
+        self.set_job(event.data)
+
+    def OnUpdateModel(self, event):
+        self.set_job(event.data)
+
+    def OnUpdateParameters(self, event):
+        self.profile.redraw()
+
+    def set_job(self, job):
         """Initialize model by profile."""
 
+        self.job = job
+        try:
+            experiment = self.job.fits[0].fitness
+        except:
+            experiment = self.job.fitness
+            
         # Turn the model into a user interface
         self.profile = ProfileInteractor(self.axes,
                                          experiment,

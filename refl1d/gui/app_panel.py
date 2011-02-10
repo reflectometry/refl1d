@@ -362,15 +362,6 @@ class AppPanel(wx.Panel):
         # send new model (problem) loaded message to all listening tabs and panel
         pub.sendMessage("initial_model", self.problem)
 
-        ######## notebook tab 1 (profile view tab) ##############
-        try:
-            self.experiment = self.problem.fits[0].fitness
-        except:
-            self.experiment = self.problem.fitness
-
-        # draw the interactive plot on notebook tab 1
-        self.page0.SetProfile(self.experiment)
-
         # recieving fit message from fit tab
         pub.subscribe(self.on_fit, "fit")
 
