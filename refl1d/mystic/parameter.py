@@ -167,7 +167,18 @@ class Parameter(BaseParameter):
         else:
             return cls(value, **kw)
     def set(self, value):
+        """
+        Set a new value for the parameter, ignoring the bounds.
+        """
         self.value = value
+        
+    def clip_set(self, value):
+        """
+        Set a new value for the parameter, clipping it to the bounds.
+        """
+        low,high = self.bounds.limits
+        self.value = min(max(value,low),high)
+    
     def __init__(self, value=None, bounds=None, fixed=None, name=None, **kw):
         # UI nicities:
         # 1. check if we are started with value=range or bounds=range; if we are given bounds, then assume

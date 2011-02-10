@@ -153,7 +153,7 @@ class ParameterView(wx.Panel):
         # send update message to other tabs/panels only if parameter value
         # is updated
         if new_value != str(self.node_object.value):
-            self.node_object.value = float(new_value)
+            self.node_object.clip_set(float(new_value))
             pub.sendMessage("update_parameters", self.model)
 
     def get_new_name(self, item, column):
