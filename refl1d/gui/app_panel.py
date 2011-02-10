@@ -56,10 +56,15 @@ from matplotlib import _pylab_helpers
 from matplotlib.backend_bases import FigureManagerBase
 
 import pylab
-#from pylab import *
+
+from .summary_view import SummaryView
+from .fit_view import FitView
+from .parameter_view import ParameterView
+from .log_view import LogView
+from .other_view import OtherView
 
 from refl1d.mystic import monitor, parameter
-from .gui_logic import Fit_Tab, Log_tab, Summary_tab, Parameter_Tab, load_problem
+from .gui_logic import load_problem, make_store
 from .work_thread import Worker
 
 from .utilities import (get_appdir, log_time,
@@ -106,7 +111,6 @@ class GUIMonitor(monitor.TimedUpdate):
     def __init__(self, problem, progress=1, improvement=15):
         monitor.TimedUpdate.__init__(self, progress=progress,
                                      improvement=improvement)
-        #self.problem = deepcopy(problem)
         self.problem = problem
 
     def show_progress(self, history):
@@ -131,6 +135,7 @@ class AppPanel(wx.Panel):
         # Create a panel on the frame.  This will be the only child panel of
         # the frame and it inherits its size from the frame which is useful
         # during resize operations (as it provides a minimal size to sizers).
+
         wx.Panel.__init__(self, parent=frame, id=id, style=style, name=name)
 
         self.SetBackgroundColour("WHITE")
@@ -149,7 +154,7 @@ class AppPanel(wx.Panel):
         self.modify_menubar()
 
         # create a pubsub receiver
-        Publisher().subscribe(self.updateDisplay, "update")
+        Publisher().subscribe(self.update_display, "update")
         Publisher().subscribe(self.update_plot, "update_plot")
         EVT_RESULT(self,self.OnFitResult)
 
@@ -166,7 +171,7 @@ class AppPanel(wx.Panel):
                                              "Import a script file")
         frame.Bind(wx.EVT_MENU, self.OnLoadScript, _item)
         _item = file_menu.Prepend(wx.ID_ANY, "Save&As",
-                                             "Save a script file in specified location")
+                                        "Save a script file in specified location")
         _item = file_menu.Prepend(wx.ID_ANY, "&Save",
                                              "Save a script file")
         _item = file_menu.Prepend(wx.ID_ANY, "&Open",
@@ -278,15 +283,15 @@ class AppPanel(wx.Panel):
         # Create page windows as children of the notebook.
         from refl1d.profileview.panel import ProfileView
         self.page0 = ProfileView(nb)
-        self.page1 = Fit_Tab(nb)
-        self.page2 = Summary_tab(nb)
-        self.page3 = Parameter_Tab(nb)
-        self.page4 = Fit_Tab(nb)
-        self.page5 = Fit_Tab(nb)
-        self.page6 = Log_tab(nb)
-        self.page7 = Fit_Tab(nb)
-        self.page8 = Fit_Tab(nb)
-        self.page9 = Fit_Tab(nb)
+        self.page1 = OtherView(nb) # not implemented
+        self.page2 = SummaryView(nb)
+        self.page3 = ParameterView(nb)
+        self.page4 = OtherView(nb) # not implemented
+        self.page5 = OtherView(nb) # not implemented
+        self.page6 = LogView(nb)
+        self.page7 = OtherView(nb)  # not implemented
+        self.page8 = OtherView(nb)  # not implemented
+        self.page9 = FitView(nb)
 
         # Add the pages to the notebook with a label to show on the tab.
         nb.AddPage(self.page0, "Profile")
@@ -331,9 +336,7 @@ class AppPanel(wx.Panel):
         event.Skip()
 
     def OnLoadScript(self, event):
-        # The user can select both file1 and file2 from the file dialog box
-        # by using the shift or control key to pick two files.  The order in
-        # which they are selected determines which is file1 and file2.
+        # Load the script which will contain model defination and data.
         dlg = wx.FileDialog(self,
                             message="Select Script File",
                             defaultDir=os.getcwd(),
@@ -341,6 +344,7 @@ class AppPanel(wx.Panel):
                             wildcard=(PYTHON_FILES+"|"+REFL_FILES+"|"+DATA_FILES+"|"+
                                       TEXT_FILES+"|"+ALL_FILES),
                             style=wx.OPEN|wx.MULTIPLE|wx.CHANGE_DIR)
+
         # Wait for user to close the dialog.
         sts = dlg.ShowModal()
         if sts == wx.ID_OK:
@@ -355,33 +359,53 @@ class AppPanel(wx.Panel):
         self.problem = load_problem(self.args)
         self.view(self.problem)
 
-        # get the model parameter and send message to parameter tab to update
-        # the model parameter tab
-        parameters = self.problem.model_parameters()
-        pub.sendMessage("parameter", parameters)
+        # send new model (problem) loaded message to all listening tabs and panel
+        pub.sendMessage("initial_model", self.problem)
 
-        ######## notebook tab 1 (profile view) ##############
+        ######## notebook tab 1 (profile view tab) ##############
         try:
-            experiment = self.problem.fits[0].fitness
+            self.experiment = self.problem.fits[0].fitness
         except:
-            experiment = self.problem.fitness
+            self.experiment = self.problem.fitness
 
         # draw the interactive plot on notebook tab 1
-        self.page0.SetProfile(experiment)
-        pub.subscribe(self.OnInteractor, "inter_update") # recieving interactor update message from profile interactor
-        pub.subscribe(self.OnFit, "fit") # recieving fit message from fit tab
+        self.page0.SetProfile(self.experiment)
 
+        # recieving fit message from fit tab
+        pub.subscribe(self.on_fit, "fit")
+
+        # recieving parameter update message from parameter tab
+        # this will trigger on_para_change method to update all the views of
+        # model (profile tab, summary tab and the canvas will be redrawn will
+        # new model parameters)
+        pub.subscribe(self.OnUpdateModel, "update_model")
+        pub.subscribe(self.OnUpdateParameters, "update_parameters")
+
+
+    def OnUpdateModel(self, event):
+        # update the profile tab and redraw the canvas with new values
+        self.problem.fitness.update()
+        self.view(self.problem)
+
+    def OnUpdateParameters(self, event):
+        print 'in para update main panel'
+        #self.problem = event.data
+        self.view(self.problem)
 
     def view(self, model):
+        # redraws the canvas
+        print 'in view method'
         pylab.clf() #### clear the canvas
         self._activate_figure()
         model.show()
         model.fitness.plot_reflectivity()
         pylab.draw()
 
-    def OnFit(self, event):
+
+    def on_fit(self, event):
         """
-        On recieving fit message this event is triggered to fit the data and model
+        On recieving fit message this event is triggered to
+        fit the data and model
         """
         # TODO: need to put options on fit panel
         from .main import FitOpts, FitProxy, SerialMapper
@@ -393,7 +417,7 @@ class AppPanel(wx.Panel):
         opts = FitOpts(self.args)
 
         FITTERS = dict(dream=None, rl=RLFit,
-                        de=DEFit, newton=BFGSFit, amoeba=AmoebaFit, snobfit=SnobFit)
+                   de=DEFit, newton=BFGSFit, amoeba=AmoebaFit, snobfit=SnobFit)
 
         self.fitter = FitProxy(FITTERS[opts.fit],
                                problem=self.problem, moniter=moniter,opts=opts,)
@@ -401,16 +425,19 @@ class AppPanel(wx.Panel):
 
         Probe.view = opts.plot
 
-        self.make_store(self.problem,opts)
+        make_store(self.problem,opts)
         self.progress_gauge.Start()
         self.progress_gauge.Show(True)
         self.pan1.Layout()
+
+        # start a new thread worker and give fit problem to the worker
         self.worker = Worker(self, self.problem, fn = self.fitter,
                                        pars = opts.args,
                                        mapper = mapper)
 
     def OnFitResult(self, event):
         self.sb.SetStatusText('Fit status: Complete', 2)
+        pub.sendMessage("fit_complete", 1)
         if event.data is None:
             # Thread aborted (using our convention of None return)
             print 'Computation failed/aborted'
@@ -434,7 +461,7 @@ class AppPanel(wx.Panel):
 
         self.view(problem)
 
-    def updateDisplay(self, msg):
+    def update_display(self, msg):
         """
         Receives fit update messages from the thread
         and redirects the update messages to log tab for dispaly
@@ -445,34 +472,20 @@ class AppPanel(wx.Panel):
         """
         Receives data from thread and update the plot
         """
+        # get the model fitable parameter and send message to summary tab
+        # to update the model summary tab
+        up_fitable_parameters = self.problem.parameters
+        pub.sendMessage("up_summary_parameter", up_fitable_parameters)
         self.view(self.problem)
-        pub.sendMessage("summary", d.data)
 
-    def OnInteractor(self, event):
+    def on_interactor(self, event):
         """
         Receives interactor updates from interactor profile tab
         and redraws the top panel canvas with updated data.
         """
+        # get the new updated model parameter and send message to parameter
+        # tab to update the model parameter tab
+        updated_para1 = self.problem.model_parameters()
+        pub.sendMessage("update_model", self.problem)
         self.view(self.problem)
 
-    def make_store(self, problem, opts):
-        # Determine if command line override
-        if opts.store != None:
-            problem.store = opts.store
-        problem.output = os.path.join(problem.store,problem.name)
-
-        # Check if already exists
-        if not opts.overwrite and os.path.exists(problem.output+'.out'):
-            if opts.batch:
-                print >>sys.stderr, problem.output+" already exists.  Use -overwrite to replace."
-                sys.exit(1)
-            msg_dlg = wx.MessageDialog(self,str(problem.store)+" Already exists. Press 'yes' to overwrite, or 'No' to abort and restart with newpath",'Overwrite Directory',wx.YES_NO | wx.ICON_QUESTION)
-            retCode = msg_dlg.ShowModal()
-            if (retCode != wx.ID_YES):
-                sys.exit(1)
-            msg_dlg.Destroy()
-
-        # Create it and copy model
-        try: os.mkdir(problem.store)
-        except: pass
-        shutil.copy2(problem.file, problem.store)
