@@ -38,9 +38,10 @@ class SummaryView(scrolled.ScrolledPanel):
             self.update_model()
 
     def OnUpdateParameters(self, event):
-        print 'in summary update'
         if self.model == event.data:
             self.update_parameters()
+        else:
+            print 'model and data donot match'
 
     def OnShow(self, event):
         if self._reset_model:
@@ -103,8 +104,7 @@ class SummaryView(scrolled.ScrolledPanel):
             bagSizer.Add(item, pos = (index+3,0))
 
         self.SetSizerAndFit(bagSizer)
-        #self.Show(True)
-
+        
 
     def update_parameters(self):
         if not self.IsShown():
@@ -149,7 +149,7 @@ class ParameterSummary(wx.Panel):
 
         self.SetSizer(text_hbox)
 
-        self.slider.Bind(wx.EVT_SCROLL, self.on_scroll)
+        self.slider.Bind(wx.EVT_SCROLL, self.OnScroll)
         self.update_slider()
 
     def update_slider(self):
@@ -160,7 +160,7 @@ class ParameterSummary(wx.Panel):
         self.slider.SetValue(slider_pos)
         self.value.SetLabel(str(self.parameter.value))
 
-    def on_scroll(self, event):
+    def OnScroll(self, event):
         value = self.slider.GetValue()
         new_value  = self.parameter.bounds.put01(value/100)
         self.parameter.value = new_value

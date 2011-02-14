@@ -1,16 +1,11 @@
 import wx
 import sys
 
-import  wx.gizmos   as  gizmos
+import wx.gizmos as gizmos
 from wx.lib.pubsub import Publisher as pub
-import wx.lib.newevent
 
 from refl1d.mystic.parameter import Parameter, BaseParameter
 from refl1d.profileview.panel import ProfileView
-
-EVT_RESULT_ID = 1
-
-
 
 class ParameterView(wx.Panel):
     def __init__(self, parent):
@@ -20,6 +15,12 @@ class ParameterView(wx.Panel):
         vbox = wx.BoxSizer(wx.VERTICAL)
         text_hbox = wx.BoxSizer(wx.HORIZONTAL)
 
+        # flag to set True if updation of parameter happened locally (this means
+        # this view has been updated by the user). So we do not need to redraw 
+        # the whole tree but we need to refresh the tree with new updated values.
+        # As some other values may depend upon updated values.
+        self.update_local = False
+        
         self.tree = gizmos.TreeListCtrl(self, -1, style =
                                         wx.TR_DEFAULT_STYLE
                                         | wx.TR_HAS_BUTTONS
@@ -28,7 +29,7 @@ class ParameterView(wx.Panel):
                                         | wx.TR_COLUMN_LINES
                                         | wx.TR_NO_LINES
                                         | wx.TR_FULL_ROW_HIGHLIGHT
-                                   )
+                                       )
 
         # create some columns
         self.tree.AddColumn("Model")
@@ -59,34 +60,53 @@ class ParameterView(wx.Panel):
         pub.subscribe(self.OnUpdateModel, "update_model")
         # change model parameter message
         pub.subscribe(self.OnUpdateParameters, "update_parameters")
-        # recieving paramater message from fit tab after change in any model
-        # parameters
-        #pub.subscribe(self.updated_parameter, "updated_para")
-
+        
         self.tree.GetMainWindow().Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
-        self.tree.Bind(wx.EVT_TREE_END_LABEL_EDIT, self.on_end_edit)
-
+        self.tree.Bind(wx.EVT_TREE_END_LABEL_EDIT, self.OnEndEdit)
+        self.tree.Bind(wx.EVT_TREE_ITEM_GETTOOLTIP,self.OnTreeTooltip)
+        wx.EVT_MOTION(self.tree, self.OnMouseMotion) 
+        
         vbox.Add(self.tree, 1, wx.EXPAND)
         self.SetSizer(vbox)
         self.SetAutoLayout(1)
+        
+    
+    def OnTreeTooltip(self, event):
+         print 'in tool tip'
+         itemtext = self.tree.GetItemText(event.GetItem())
+         event.SetToolTip("This is a ToolTip for %s!" % itemtext)
+         event.Skip() 
+         
+    def OnMouseMotion(self, event):
+        pos = event.GetPosition()
+        item, flags, col = self.tree.HitTest(pos)
+        """
+        if wx.TREE_HITTEST_ONITEMLABEL:
+            print 'in if'
+            self.tree.SetToolTipString("tool tip")
+        else:
+            print 'in else'
+            self.tree.SetToolTipString("")
+        """
+        event.Skip() 
+
 
     # ============= Signal bindings =========================
 
     def OnInitialModel(self, event):
-        print 'in initial'
         self.set_model(event.data)
 
     def OnUpdateModel(self, event):
-         print 'in update'
-         if self.model == event.data:
+        if self.model == event.data:
             # Delete the prevoius tree (if any)
             self.tree.DeleteAllItems()
             self.update_model()
 
     def OnUpdateParameters(self, event):
         if self.model == event.data:
-            pass
-            #self.update_parameters()
+            self.update_parameters()    
+        else:
+            print 'model donot match'
 
     # ============ Operations on the model  ===============
 
@@ -100,7 +120,20 @@ class ParameterView(wx.Panel):
         self.root = self.tree.AddRoot("Model")
         # Add nodes from our data set
         self.add_tree_nodes(self.root, parameters)
+        self.update_tree_nodes()
         self.tree.ExpandAll(self.root)
+        
+    def update_parameters(self):
+        if not self.update_local:
+            self.tree.DeleteAllItems()
+            self.update_model()
+        else:
+            # we need to refresh the tree with only updated values
+            # TODO not full implemented yet
+            self.update_tree_nodes()
+            self.tree.Update()
+            self.update_local = False
+        
 
     def add_tree_nodes(self, branch, nodes):
         if isinstance(nodes,dict) and nodes != {}:
@@ -114,28 +147,38 @@ class ParameterView(wx.Panel):
                 self.add_tree_nodes(child,v)
 
         elif isinstance(nodes, BaseParameter):
-            # for checking wheather the parameters are fittable or not.
-            if nodes.fittable == True:
-                fittable = 'Yes'
-                low, high = (str(v) for v in nodes.bounds.limits)
-            else:
-                fittable = 'No'
-                low, high = '', ''
-
-
             self.tree.SetItemPyData(branch, nodes)
-            self.tree.SetItemText(branch, str(nodes.value), 1)
-            self.tree.SetItemText(branch, str(nodes.name), 2)
-            self.tree.SetItemText(branch, low, 3)
-            self.tree.SetItemText(branch, high, 4)
-            self.tree.SetItemText(branch, fittable, 5)
+        
+    def update_tree_nodes(self):
+        node = self.tree.GetRootItem()
+        while node.IsOk():
+            self.set_leaf(node)
+            node = self.tree.GetNext(node)
+                    
+    def set_leaf(self, branch):
+        par = self.tree.GetItemPyData(branch)
+        if par is None: return
+        
+        # for checking wheather the parameters are fittable or not.
+        if par.fittable == True:
+            fittable = 'Yes'
+            low, high = (str(v) for v in par.bounds.limits)
+        else:
+            fittable = 'No'
+            low, high = '', ''
+
+        self.tree.SetItemText(branch, str(par.value), 1)
+        self.tree.SetItemText(branch, str(par.name), 2)
+        self.tree.SetItemText(branch, low, 3)
+        self.tree.SetItemText(branch, high, 4)
+        self.tree.SetItemText(branch, fittable, 5)
 
 
     def OnRightUp(self, evt):
         pos = evt.GetPosition()
         item, flags, col = self.tree.HitTest(pos)
 
-    def on_end_edit(self, evt):
+    def OnEndEdit(self, evt):
         item = self.tree.GetSelection()
         self.node_object = self.tree.GetItemPyData(evt.GetItem())
 
@@ -154,6 +197,7 @@ class ParameterView(wx.Panel):
         # is updated
         if new_value != str(self.node_object.value):
             self.node_object.clip_set(float(new_value))
+            self.update_local = True
             pub.sendMessage("update_parameters", self.model)
 
     def get_new_name(self, item, column):
@@ -163,6 +207,7 @@ class ParameterView(wx.Panel):
         # is updated
         if new_name != str(self.node_object.name):
             self.node_object.name = new_name
+            self.update_local = True
             pub.sendMessage("update_parameters", self.model)
 
 
@@ -174,6 +219,7 @@ class ParameterView(wx.Panel):
         # value is updated
         if low != self.node_object.bounds.limits[0]:
             self.node_object.range(low, high)
+            self.update_local = True
             pub.sendMessage("update_parameters", self.model)
 
     def get_new_max(self, item, column):
@@ -184,5 +230,6 @@ class ParameterView(wx.Panel):
         # value is updated
         if high != self.node_object.bounds.limits[1]:
             self.node_object.range(low, high)
+            self.update_local = True
             pub.sendMessage("update_parameters", self.model)
 

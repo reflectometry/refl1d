@@ -207,7 +207,7 @@ class AppPanel(wx.Panel):
 
         # Split the panel into two pieces.
         sp = wx.SplitterWindow(self, style=wx.SP_3D|wx.SP_LIVE_UPDATE)
-        sp.SetMinimumPaneSize(300)
+        sp.SetMinimumPaneSize(100)
 
         self.pan1 = wx.Panel(sp, wx.ID_ANY, style=wx.SUNKEN_BORDER)
         self.pan1.SetBackgroundColour("WHITE")
@@ -232,7 +232,7 @@ class AppPanel(wx.Panel):
     def init_top_panel(self):
 
         # Instantiate a figure object that will contain our plots.
-        figure = Figure()
+        figure = Figure(figsize=(1,1), dpi=72)
 
         # Initialize the figure canvas, mapping the figure object to the plot
         # engine backend.
@@ -363,7 +363,7 @@ class AppPanel(wx.Panel):
         pub.sendMessage("initial_model", self.problem)
 
         # recieving fit message from fit tab
-        pub.subscribe(self.on_fit, "fit")
+        pub.subscribe(self.OnFit, "fit")
 
         # recieving parameter update message from parameter tab
         # this will trigger on_para_change method to update all the views of
@@ -379,13 +379,10 @@ class AppPanel(wx.Panel):
         self.view(self.problem)
 
     def OnUpdateParameters(self, event):
-        print 'in para update main panel'
-        #self.problem = event.data
         self.view(self.problem)
 
     def view(self, model):
         # redraws the canvas
-        print 'in view method'
         pylab.clf() #### clear the canvas
         self._activate_figure()
         model.show()
@@ -393,7 +390,7 @@ class AppPanel(wx.Panel):
         pylab.draw()
 
 
-    def on_fit(self, event):
+    def OnFit(self, event):
         """
         On recieving fit message this event is triggered to
         fit the data and model
@@ -463,10 +460,9 @@ class AppPanel(wx.Panel):
         """
         Receives data from thread and update the plot
         """
-        # get the model fitable parameter and send message to summary tab
-        # to update the model summary tab
-        up_fitable_parameters = self.problem.parameters
-        pub.sendMessage("up_summary_parameter", up_fitable_parameters)
+        # get the model fitable parameter and send message all views to update
+        # itself
+        pub.sendMessage("update_parameters", self.problem)
         self.view(self.problem)
 
     def on_interactor(self, event):
