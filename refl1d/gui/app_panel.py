@@ -31,6 +31,7 @@ from __future__ import division
 import os
 import sys
 import shutil
+import copy
 import wx
 import logging
 from wx.lib.pubsub import Publisher as pub
@@ -116,6 +117,7 @@ class GUIMonitor(monitor.TimedUpdate):
     def show_progress(self, history):
         temp = "  "
         wx.CallAfter(Publisher().sendMessage, "update", "step  " + str(history.step[0])+temp + "chisq  " + str(history.value[0]))
+        wx.CallAfter(Publisher().sendMessage, "chisq_update", str(history.value[0]))
 
     def show_improvement(self, history):
         self.problem.setp(history.point[0])
@@ -145,7 +147,7 @@ class AppPanel(wx.Panel):
         self.modify_toolbar()
 
         # Reconfigure the status bar.
-        self.modify_statusbar([-34, -50, -16])
+        self.modify_statusbar([-34, -50, -16, -16])
 
         # Split the panel into left and right halves.
         self.split_panel()
@@ -154,8 +156,9 @@ class AppPanel(wx.Panel):
         self.modify_menubar()
 
         # create a pubsub receiver
-        Publisher().subscribe(self.update_display, "update")
-        Publisher().subscribe(self.update_plot, "update_plot")
+        Publisher().subscribe(self.OnUpdateDisplay, "update")
+        Publisher().subscribe(self.OnUpdatePlot, "update_plot")
+        Publisher().subscribe(self.OnChisqUpdate, "chisq_update")
         EVT_RESULT(self,self.OnFitResult)
 
         self.worker = None   #worker for fitting job
@@ -254,17 +257,19 @@ class AppPanel(wx.Panel):
         mpl_toolbar.Realize()
 
         # Create a progress bar to be displayed during a lengthy computation.
-        self.progress_gauge = WorkInProgress(self.pan1)
-        self.progress_gauge.Show(False)
-
+        #self.progress_gauge = WorkInProgress(self.pan1)
+        #self.progress_gauge.Show(False)
+        
+        """
         # Create a horizontal box sizer to hold the title and progress bar.
         hbox1_sizer = wx.BoxSizer(wx.HORIZONTAL)
         hbox1_sizer.Add((10,25), 1)  # stretchable whitespace
         hbox1_sizer.Add(self.progress_gauge, 0)
-
+        """
+        
         # Create a vertical box sizer to manage the widgets in the main panel.
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(hbox1_sizer, 0, wx.EXPAND|wx.ALL, border=10)
+        #sizer.Add(hbox1_sizer, 0, wx.EXPAND|wx.ALL, border=10)
         sizer.Add(canvas, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, border=10)
         sizer.Add(mpl_toolbar, 0, wx.EXPAND|wx.ALL, border=10)
 
@@ -400,7 +405,7 @@ class AppPanel(wx.Panel):
         from refl1d.fitter import RLFit, DEFit, BFGSFit, AmoebaFit, SnobFit
         from refl1d.probe import Probe
 
-        self.sb.SetStatusText('Fit status: Running', 2)
+        self.sb.SetStatusText('Fit status: Running', 3)
         moniter = GUIMonitor(self.problem)
         opts = FitOpts(self.args)
 
@@ -414,18 +419,18 @@ class AppPanel(wx.Panel):
         Probe.view = opts.plot
 
         make_store(self.problem,opts)
-        self.progress_gauge.Start()
-        self.progress_gauge.Show(True)
+        #self.progress_gauge.Start()
+        #self.progress_gauge.Show(True)
         self.pan1.Layout()
-
+        #self.temp = copy.deepcopy(self.problem)
         # start a new thread worker and give fit problem to the worker
         self.worker = Worker(self, self.problem, fn = self.fitter,
                                        pars = opts.args,
                                        mapper = mapper)
 
     def OnFitResult(self, event):
-        self.sb.SetStatusText('Fit status: Complete', 2)
-        pub.sendMessage("fit_complete", 1)
+        self.sb.SetStatusText('Fit status: Complete', 3)
+        pub.sendMessage("fit_complete")
         if event.data is None:
             # Thread aborted (using our convention of None return)
             print 'Computation failed/aborted'
@@ -443,20 +448,20 @@ class AppPanel(wx.Panel):
             pass
         sys.stdout = open(problem.output+".out","w")
 
-        self.progress_gauge.Stop()
-        self.progress_gauge.Show(False)
+        #self.progress_gauge.Stop()
+        #self.progress_gauge.Show(False)
         self.pan1.Layout()
 
         self.view(problem)
 
-    def update_display(self, msg):
+    def OnUpdateDisplay(self, msg):
         """
         Receives fit update messages from the thread
         and redirects the update messages to log tab for dispaly
         """
         pub.sendMessage("log", msg.data)
 
-    def update_plot(self, d):
+    def OnUpdatePlot(self, d):
         """
         Receives data from thread and update the plot
         """
@@ -464,15 +469,12 @@ class AppPanel(wx.Panel):
         # itself
         pub.sendMessage("update_parameters", self.problem)
         self.view(self.problem)
-
-    def on_interactor(self, event):
+        
+    def OnChisqUpdate(self, msg):
         """
-        Receives interactor updates from interactor profile tab
-        and redraws the top panel canvas with updated data.
+        Receives fit update messages from the thread
+        and redirects the update messages to log tab for dispaly
         """
-        # get the new updated model parameter and send message to parameter
-        # tab to update the model parameter tab
-        updated_para1 = self.problem.model_parameters()
-        pub.sendMessage("update_model", self.problem)
-        self.view(self.problem)
-
+        self.sb.SetStatusText('Chisq:'+msg.data, 2)
+       
+   

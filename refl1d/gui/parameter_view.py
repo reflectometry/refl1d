@@ -80,14 +80,12 @@ class ParameterView(wx.Panel):
     def OnMouseMotion(self, event):
         pos = event.GetPosition()
         item, flags, col = self.tree.HitTest(pos)
-        """
+        
         if wx.TREE_HITTEST_ONITEMLABEL:
-            print 'in if'
             self.tree.SetToolTipString("tool tip")
         else:
-            print 'in else'
             self.tree.SetToolTipString("")
-        """
+        
         event.Skip() 
 
 
@@ -129,9 +127,7 @@ class ParameterView(wx.Panel):
             self.update_model()
         else:
             # we need to refresh the tree with only updated values
-            # TODO not full implemented yet
             self.update_tree_nodes()
-            self.tree.Update()
             self.update_local = False
         
 
