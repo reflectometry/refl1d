@@ -28,28 +28,27 @@ may work.
 
 Our base scientific python environment contains:
 
-	- Python 2.6  (not 3.x)
+	- Python 2.6 (not 3.x)
 	- Matplotlib 1.0.0
-	- Numpy 1.3
+	- Numpy 1.3.0
 	- Scipy 0.7.0
-	- WxPython 2.8.11.0
+	- WxPython 2.8.10.1
 	- SetupTools 0.6c9
 	- gcc 3.4.4
-	- PyParsing 1.5.5
+	- PyParsing 1.5.2
 	- Periodictable 1.3
 
 To run tests you will need:
 
-	- Nose 0.10 - 1.0
+	- Nose 0.11
 
 To build the HTML documentation you will need:
 
 	- Sphinx 1.0.4
 	- DocUtils 0.5
 	- Pyments 1.0
-	- Jinja2 2.2
+	- Jinja2 2.5.2
 	- `MathJax <http://www.mathjax.org/download/>`_ 1.0.1
-	- PyPNG 0.11
 
 The PDF documentation requires a working LaTeX installation.
 
