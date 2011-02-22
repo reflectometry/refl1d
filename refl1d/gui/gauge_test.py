@@ -7,7 +7,7 @@
 
 import wx
 import time
-
+'''
 class MyPanel(wx.Panel):
     """
     class MyPanel creates a panel with a slider, button and a gauge (progress bar)
@@ -56,8 +56,34 @@ class MyPanel(wx.Panel):
             self.slider1.SetValue(k)
             # 0.015 second intervals
             time.sleep(0.015)
+'''           
+def nice_range(range):
+    """
+    Given a range, return an enclosing range accurate to two digits.
+    """
+    import math
+    step = range[1]-range[0]
+    if step > 0:
+        d = 10**(math.floor(math.log10(step))-1)
+        return (math.floor(range[0]/d)*d,math.ceil(range[1]/d)*d)
+    else:
+        return range        
 
+def nice(v, digits = 4):
+    from math import log, pi, log10, ceil, floor
+    """Fix v to a value with a given number of digits of precision"""
+    if v == 0.: return v
+    sign = v/abs(v)
+    place = floor(log10(abs(v)))
+    scale = 10**(place-(digits-1))
+    return sign*floor(abs(v)/scale+0.5)*scale
+    
 def demo():
+    r = [1.22345550,100.34563323]
+    rr = 69.5599477778
+    nice1 = nice(rr)
+    print 'nice', nice1
+    """
     app = wx.PySimpleApp()
     # create a window/frame, no parent, -1 is default ID, title, size
     frame = wx.Frame(None, -1, "wxGauge Test1", size = (420, 310))
@@ -67,5 +93,5 @@ def demo():
     frame.Show(True)
     # start the event loop
     app.MainLoop()
-
+    """
 if __name__ == "__main__": demo()

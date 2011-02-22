@@ -4,6 +4,8 @@ import wx
 import  wx.lib.scrolledpanel as scrolled
 from wx.lib.pubsub import Publisher as pub
 
+from .util import nice
+
 class SummaryView(scrolled.ScrolledPanel):
     def __init__(self, parent):
         """
@@ -66,11 +68,7 @@ class SummaryView(scrolled.ScrolledPanel):
         self._reset_parameters = False
 
         bagSizer = wx.GridBagSizer(hgap=3, vgap=5)
-
-        INTRO_TEXT = "Fitting Parameter Summary:"
-
-        self.log_text = wx.StaticText(self, wx.ID_ANY, label=INTRO_TEXT)
-
+        
         # Not an efficient way to making label align with the values in
         # GridBagSizer
         self.layer_label = wx.StaticText(self, wx.ID_ANY, 'Layer Name                                                          Value                     Low Range                        High Range')
@@ -80,8 +78,6 @@ class SummaryView(scrolled.ScrolledPanel):
         #self.high_label = wx.StaticText(self, wx.ID_ANY, 'High Range')
 
         line = wx.StaticLine(self, -1 )
-
-        bagSizer.Add(self.log_text, (0,0), flag=wx.LEFT, border=5)
 
         bagSizer.Add(self.layer_label, pos=(1,0),
                      flag=wx.LEFT, border=5)
@@ -158,12 +154,12 @@ class ParameterSummary(wx.Panel):
         # of range
         #slider_pos = min(max(slider_pos,0),100)
         self.slider.SetValue(slider_pos)
-        self.value.SetLabel(str(self.parameter.value))
+        self.value.SetLabel(str(nice(self.parameter.value)))
 
     def OnScroll(self, event):
         value = self.slider.GetValue()
         new_value  = self.parameter.bounds.put01(value/100)
         self.parameter.value = new_value
-        self.value.SetLabel(str(new_value))
+        self.value.SetLabel(str(nice(new_value)))
         pub.sendMessage("update_parameters", self.model)
 

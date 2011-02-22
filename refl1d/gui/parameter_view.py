@@ -4,8 +4,8 @@ import sys
 import wx.gizmos as gizmos
 from wx.lib.pubsub import Publisher as pub
 
-from refl1d.mystic.parameter import Parameter, BaseParameter
-from refl1d.profileview.panel import ProfileView
+from refl1d.mystic.parameter import BaseParameter
+from .util import nice
 
 class ParameterView(wx.Panel):
     def __init__(self, parent):
@@ -33,8 +33,8 @@ class ParameterView(wx.Panel):
 
         # create some columns
         self.tree.AddColumn("Model")
-        self.tree.AddColumn("Fixed Value")
-        self.tree.AddColumn("Layer Name")
+        self.tree.AddColumn("Parameter Name")
+        self.tree.AddColumn("Parameter Value")
         self.tree.AddColumn("Min Range")
         self.tree.AddColumn("Max Range")
         self.tree.AddColumn("Fittable")
@@ -49,10 +49,11 @@ class ParameterView(wx.Panel):
 
         # making all colunm editable except first column
         self.tree.SetColumnEditable(0, False)
-        self.tree.SetColumnEditable(1, True)
+        self.tree.SetColumnEditable(1, False)
         self.tree.SetColumnEditable(2, True)
         self.tree.SetColumnEditable(3, True)
         self.tree.SetColumnEditable(4, True)
+        self.tree.SetColumnEditable(5, True)
 
         # set new model
         pub.subscribe(self.OnInitialModel, "initial_model")
@@ -72,7 +73,6 @@ class ParameterView(wx.Panel):
         
     
     def OnTreeTooltip(self, event):
-         print 'in tool tip'
          itemtext = self.tree.GetItemText(event.GetItem())
          event.SetToolTip("This is a ToolTip for %s!" % itemtext)
          event.Skip() 
@@ -139,7 +139,7 @@ class ParameterView(wx.Panel):
         elif ( ( isinstance(nodes, tuple) and nodes != () ) or
               ( isinstance(nodes, list) and nodes != [] ) ):
             for i,v in enumerate(nodes):
-                child = self.tree.AppendItem(branch, '[%d]'%i)
+                child = self.tree.AppendItem(branch, 'Layer[%d]'%i)
                 self.add_tree_nodes(child,v)
 
         elif isinstance(nodes, BaseParameter):
@@ -163,8 +163,8 @@ class ParameterView(wx.Panel):
             fittable = 'No'
             low, high = '', ''
 
-        self.tree.SetItemText(branch, str(par.value), 1)
-        self.tree.SetItemText(branch, str(par.name), 2)
+        self.tree.SetItemText(branch, str(nice(par.value)), 2)
+        self.tree.SetItemText(branch, str(par.name), 1)
         self.tree.SetItemText(branch, low, 3)
         self.tree.SetItemText(branch, high, 4)
         self.tree.SetItemText(branch, fittable, 5)
@@ -181,8 +181,8 @@ class ParameterView(wx.Panel):
         # Not an efficient way of updating values of Parameters
         # but its hard to find out which column changed during edit
         # operation. May be fixed in Future.
-        wx.CallAfter(self.get_new_value, item, 1)
-        wx.CallAfter(self.get_new_name, item, 2)
+        wx.CallAfter(self.get_new_name, item, 1)
+        wx.CallAfter(self.get_new_value, item, 2)
         wx.CallAfter(self.get_new_min, item, 3)
         wx.CallAfter(self.get_new_max, item, 4)
 

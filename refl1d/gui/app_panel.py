@@ -67,7 +67,7 @@ from .other_view import OtherView
 from refl1d.mystic import monitor, parameter
 from .gui_logic import load_problem, make_store
 from .work_thread import Worker
-
+from .util import nice
 from .utilities import (get_appdir, log_time,
                         popup_error_message, popup_warning_message,
                         StatusBarInfo, ExecuteInThread, WorkInProgress)
@@ -116,9 +116,9 @@ class GUIMonitor(monitor.TimedUpdate):
 
     def show_progress(self, history):
         temp = "  "
-        wx.CallAfter(Publisher().sendMessage, "update", "step  " + str(history.step[0])+temp + "chisq  " + str(history.value[0]))
-        wx.CallAfter(Publisher().sendMessage, "chisq_update", str(history.value[0]))
-
+        chisq_rounded = nice(history.value[0])
+        wx.CallAfter(Publisher().sendMessage, "update", "step  " + str(history.step[0])+temp + "chisq  " + str(chisq_rounded))
+        
     def show_improvement(self, history):
         self.problem.setp(history.point[0])
         out = parameter.summarize(self.problem.parameters)
@@ -158,7 +158,6 @@ class AppPanel(wx.Panel):
         # create a pubsub receiver
         Publisher().subscribe(self.OnUpdateDisplay, "update")
         Publisher().subscribe(self.OnUpdatePlot, "update_plot")
-        Publisher().subscribe(self.OnChisqUpdate, "chisq_update")
         EVT_RESULT(self,self.OnFitResult)
 
         self.worker = None   #worker for fitting job
@@ -259,14 +258,7 @@ class AppPanel(wx.Panel):
         # Create a progress bar to be displayed during a lengthy computation.
         #self.progress_gauge = WorkInProgress(self.pan1)
         #self.progress_gauge.Show(False)
-        
-        """
-        # Create a horizontal box sizer to hold the title and progress bar.
-        hbox1_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        hbox1_sizer.Add((10,25), 1)  # stretchable whitespace
-        hbox1_sizer.Add(self.progress_gauge, 0)
-        """
-        
+                        
         # Create a vertical box sizer to manage the widgets in the main panel.
         sizer = wx.BoxSizer(wx.VERTICAL)
         #sizer.Add(hbox1_sizer, 0, wx.EXPAND|wx.ALL, border=10)
@@ -288,27 +280,17 @@ class AppPanel(wx.Panel):
         # Create page windows as children of the notebook.
         from refl1d.profileview.panel import ProfileView
         self.page0 = ProfileView(nb)
-        self.page1 = OtherView(nb) # not implemented
+        self.page1 = ParameterView(nb)
         self.page2 = SummaryView(nb)
-        self.page3 = ParameterView(nb)
-        self.page4 = OtherView(nb) # not implemented
-        self.page5 = OtherView(nb) # not implemented
-        self.page6 = LogView(nb)
-        self.page7 = OtherView(nb)  # not implemented
-        self.page8 = OtherView(nb)  # not implemented
-        self.page9 = FitView(nb)
+        self.page3 = LogView(nb)
+        self.page4 = FitView(nb)
 
         # Add the pages to the notebook with a label to show on the tab.
         nb.AddPage(self.page0, "Profile")
-        nb.AddPage(self.page1, "Residual")
+        nb.AddPage(self.page1, "Parameters")
         nb.AddPage(self.page2, "Summary")
-        nb.AddPage(self.page3, "Parameters")
-        nb.AddPage(self.page4, "Table")
-        nb.AddPage(self.page5, "Simulate")
-        nb.AddPage(self.page6, "Log")
-        nb.AddPage(self.page7, "Data")
-        nb.AddPage(self.page8, "Console")
-        nb.AddPage(self.page9, "Fit")
+        nb.AddPage(self.page3, "Log")
+        nb.AddPage(self.page4, "Fit")
 
         self.pan2.sizer = wx.BoxSizer(wx.VERTICAL)
         self.pan2.sizer.Add(nb, 1, wx.EXPAND)
@@ -392,8 +374,10 @@ class AppPanel(wx.Panel):
         self._activate_figure()
         model.show()
         model.fitness.plot_reflectivity()
+        pylab.text(0, 0, 'chisq=%g' % model.chisq(),
+                   transform=pylab.gca().transAxes)        
         pylab.draw()
-
+        
 
     def OnFit(self, event):
         """
@@ -419,9 +403,8 @@ class AppPanel(wx.Panel):
         Probe.view = opts.plot
 
         make_store(self.problem,opts)
-        #self.progress_gauge.Start()
-        #self.progress_gauge.Show(True)
         self.pan1.Layout()
+        
         #self.temp = copy.deepcopy(self.problem)
         # start a new thread worker and give fit problem to the worker
         self.worker = Worker(self, self.problem, fn = self.fitter,
@@ -464,17 +447,10 @@ class AppPanel(wx.Panel):
     def OnUpdatePlot(self, d):
         """
         Receives data from thread and update the plot
+        get the model fittable parameter and send message all views to update
+        itself
         """
-        # get the model fitable parameter and send message all views to update
-        # itself
         pub.sendMessage("update_parameters", self.problem)
         self.view(self.problem)
         
-    def OnChisqUpdate(self, msg):
-        """
-        Receives fit update messages from the thread
-        and redirects the update messages to log tab for dispaly
-        """
-        self.sb.SetStatusText('Chisq:'+msg.data, 2)
-       
-   
+    
