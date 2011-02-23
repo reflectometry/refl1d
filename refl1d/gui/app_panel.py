@@ -62,7 +62,7 @@ from .fit_view import FitView
 from .parameter_view import ParameterView
 from .log_view import LogView
 from .other_view import OtherView
-
+from .fit_dialog import FitControl
 from refl1d.mystic import monitor, parameter
 from .gui_logic import load_problem, make_store
 from .work_thread import Worker
@@ -229,6 +229,8 @@ class AppPanel(wx.Panel):
         _item = fit_menu.Append(wx.ID_ANY,
                                 "Fit &Options ...",
                                 "Select fitting options")
+        
+        frame.Bind(wx.EVT_MENU, self.OnFitSelect, _item)                                
 
         mb.Insert(2, fit_menu, "&Fit")
 
@@ -395,6 +397,9 @@ class AppPanel(wx.Panel):
         # new model parameters)
         pub.subscribe(self.OnUpdateModel, "update_model")
         pub.subscribe(self.OnUpdateParameters, "update_parameters")
+        
+    def OnFitSelect(self, event):
+        fit_dlg = FitControl(self, -1, "Fit Control")
 
     def OnUpdateModel(self, event):
         # update the profile tab and redraw the canvas with new values

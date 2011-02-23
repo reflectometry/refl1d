@@ -4,7 +4,7 @@
 
 import wx
 
-class FindReplace(wx.Dialog):
+class FitControl(wx.Dialog):
     def __init__(self, parent, id, title):
         wx.Dialog.__init__(self, parent, id, title, size=(450, 445))
 
@@ -157,8 +157,8 @@ class FindReplace(wx.Dialog):
         self.ShowModal()
         self.Destroy()
 
-
-app = wx.App()
-FindReplace(None, -1, 'Find/Replace')
-app.MainLoop()
+if __name__=="__main__":
+    app = wx.App()
+    FindReplace(None, -1, 'Fit Control')
+    app.MainLoop()
 
