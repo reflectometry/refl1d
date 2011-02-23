@@ -118,7 +118,7 @@ class GUIMonitor(monitor.TimedUpdate):
         temp = "  "
         chisq_rounded = nice(history.value[0])
         wx.CallAfter(Publisher().sendMessage, "update", "step  " + str(history.step[0])+temp + "chisq  " + str(chisq_rounded))
-        
+
     def show_improvement(self, history):
         self.problem.setp(history.point[0])
         out = parameter.summarize(self.problem.parameters)
@@ -164,34 +164,73 @@ class AppPanel(wx.Panel):
 
     def modify_menubar(self):
         """Adds items to the menu bar, menus, and menu options."""
+
         frame = self.frame
         mb = frame.GetMenuBar()
+
+        # Add items to the "File" menu (prepending them in reverse order).
+        # Grey out items that are not currently implemented.
         file_menu = mb.GetMenu(0)
         file_menu.PrependSeparator()
 
-        ############File menu#########################
-        
-        _item = file_menu.Prepend(wx.ID_ANY, "&Import",
-                                             "Import a script file")
+        _item = file_menu.Prepend(wx.ID_ANY,
+                                  "&Import",
+                                  "Import script file")
         frame.Bind(wx.EVT_MENU, self.OnLoadScript, _item)
-        _item = file_menu.Prepend(wx.ID_ANY, "Save&As",
-                                        "Save a script file in specified location")
-        _item = file_menu.Prepend(wx.ID_ANY, "&Save",
-                                             "Save a script file")
-        _item = file_menu.Prepend(wx.ID_ANY, "&Open",
-                                             "Open a script file")
-        _item = file_menu.Prepend(1, "&New",
-                                             "Create a new script file")
-        # grey out New option for this release will be active in next release
-        file_menu.Enable(id=1, enable=False)                                             
+        file_menu.PrependSeparator()
+        _item = file_menu.Prepend(wx.ID_SAVEAS,
+                                  "Save&As",
+                                  "Save model as another name")
+        file_menu.Enable(id=wx.ID_SAVEAS, enable=False)
+        _item = file_menu.Prepend(wx.ID_SAVE,
+                                  "&Save",
+                                  "Save model")
+        file_menu.Enable(id=wx.ID_SAVE, enable=False)
+        _item = file_menu.Prepend(wx.ID_OPEN,
+                                  "&Open",
+                                  "Open existing model")
+        file_menu.Enable(id=wx.ID_OPEN, enable=False)
+        _item = file_menu.Prepend(wx.ID_NEW,
+                                  "&New",
+                                  "Create new model")
+        file_menu.Enable(id=wx.ID_NEW, enable=False)
 
-        ############View menu#########################
+        # Add 'View' menu to the menu bar and define its options.
+        # Present y-axis plotting scales as radio buttons.
         view_menu = wx.Menu()
-        _item = view_menu.Append(wx.ID_ANY, "&Theory",
-                                            "view theory")
-        _item = view_menu.Append(wx.ID_ANY, "&Panel",
-                                            "view panel")
+        _item = view_menu.AppendRadioItem(wx.ID_ANY,
+                                          "&Log Scale",
+                                          "Plot y-axis in log scale")
+        _item.Check(True)
+        _item = view_menu.AppendRadioItem(wx.ID_ANY,
+                                          "Li&near",
+                                          "Plot y-axis in linear scale")
+        _item = view_menu.AppendRadioItem(wx.ID_ANY,
+                                          "&Q4",
+                                          "Plot y-axis in Q4 scale")
+        _item = view_menu.AppendRadioItem(wx.ID_ANY,
+                                          "&Fresnel",
+                                          "Plot y-axis in Fresnel scale")
+
         mb.Insert(1, view_menu, "&View")
+
+        # Add 'Fit' menu to the menu bar and define its options.
+        fit_menu = wx.Menu()
+
+        _item = fit_menu.Append(wx.ID_ANY,
+                                "&Start Fit",
+                                "Start fitting operation")
+        fit_menu.Enable(id=_item.GetId(), enable=False)
+        _item = fit_menu.Append(wx.ID_ANY,
+                                "&Stop Fit",
+                                "Stop fitting operation")
+        fit_menu.Enable(id=_item.GetId(), enable=False)
+        fit_menu.AppendSeparator()
+        _item = fit_menu.Append(wx.ID_ANY,
+                                "Fit &Options ...",
+                                "Select fitting options")
+
+        mb.Insert(2, fit_menu, "&Fit")
 
 
     def modify_toolbar(self):
@@ -262,10 +301,9 @@ class AppPanel(wx.Panel):
         # Create a progress bar to be displayed during a lengthy computation.
         #self.progress_gauge = WorkInProgress(self.pan1)
         #self.progress_gauge.Show(False)
-                        
+
         # Create a vertical box sizer to manage the widgets in the main panel.
         sizer = wx.BoxSizer(wx.VERTICAL)
-        #sizer.Add(hbox1_sizer, 0, wx.EXPAND|wx.ALL, border=10)
         sizer.Add(canvas, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, border=0)
         sizer.Add(mpl_toolbar, 0, wx.EXPAND|wx.ALL, border=0)
 
@@ -379,9 +417,9 @@ class AppPanel(wx.Panel):
         model.show()
         model.fitness.plot_reflectivity()
         pylab.text(0, 0, 'chisq=%g' % model.chisq(),
-                   transform=pylab.gca().transAxes)        
+                   transform=pylab.gca().transAxes)
         pylab.draw()
-        
+
 
     def OnFit(self, event):
         """
@@ -408,7 +446,7 @@ class AppPanel(wx.Panel):
 
         make_store(self.problem,opts)
         self.pan1.Layout()
-        
+
         #self.temp = copy.deepcopy(self.problem)
         # start a new thread worker and give fit problem to the worker
         self.worker = Worker(self, self.problem, fn = self.fitter,
@@ -456,5 +494,5 @@ class AppPanel(wx.Panel):
         """
         pub.sendMessage("update_parameters", self.problem)
         self.view(self.problem)
-        
-    
+
+
