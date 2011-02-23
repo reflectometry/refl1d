@@ -35,7 +35,6 @@ import copy
 import wx
 import logging
 from wx.lib.pubsub import Publisher as pub
-from wx.lib.pubsub import Publisher
 import wx.lib.newevent
 
 ############### matplotlib imports #####################
@@ -87,7 +86,7 @@ from .auxiliary_page import AuxiliaryPage
 
 
 #### File selection
-PYTHON_FILES = "py files (*.py)|*.py"
+PYTHON_FILES = "Script files (*.py)|*.py"
 REFL_FILES = "Refl files (*.refl)|*.refl"
 DATA_FILES = "Data files (*.dat)|*.dat"
 TEXT_FILES = "Text files (*.txt)|*.txt"
@@ -117,12 +116,13 @@ class GUIMonitor(monitor.TimedUpdate):
     def show_progress(self, history):
         temp = "  "
         chisq_rounded = nice(history.value[0])
-        wx.CallAfter(Publisher().sendMessage, "update", "step  " + str(history.step[0])+temp + "chisq  " + str(chisq_rounded))
+        wx.CallAfter(pub.sendMessage, "update",
+            "step  " + str(history.step[0])+temp + "chisq  " + str(chisq_rounded))
 
     def show_improvement(self, history):
         self.problem.setp(history.point[0])
         out = parameter.summarize(self.problem.parameters)
-        wx.CallAfter(Publisher().sendMessage, "update_plot", out)
+        wx.CallAfter(pub.sendMessage, "update_plot", out)
 
 
 class AppPanel(wx.Panel):
@@ -155,9 +155,9 @@ class AppPanel(wx.Panel):
         # Modify the menu bar.
         self.modify_menubar()
 
-        # create a pubsub receiver
-        Publisher().subscribe(self.OnUpdateDisplay, "update")
-        Publisher().subscribe(self.OnUpdatePlot, "update_plot")
+        # Create a PubSub receiver.
+        pub.subscribe(self.OnUpdateDisplay, "update")
+        pub.subscribe(self.OnUpdatePlot, "update_plot")
         EVT_RESULT(self,self.OnFitResult)
 
         self.worker = None   #worker for fitting job
@@ -232,13 +232,11 @@ class AppPanel(wx.Panel):
 
         mb.Insert(2, fit_menu, "&Fit")
 
-
     def modify_toolbar(self):
         """Populates the tool bar."""
         tb = self.frame.GetToolBar()
         tb.Realize()
         self.frame.SetToolBar(tb)
-
 
     def modify_statusbar(self, subbars):
         """Divides the status bar into multiple segments."""
@@ -260,8 +258,7 @@ class AppPanel(wx.Panel):
         self.pan2 = wx.Panel(sp, wx.ID_ANY, style=wx.SUNKEN_BORDER)
         self.pan2.SetBackgroundColour("WHITE")
 
-
-        sp.SplitHorizontally(self.pan1,self.pan2)
+        sp.SplitHorizontally(self.pan1, self.pan2)
 
         # Initialize the left and right panels.
         self.init_top_panel()
@@ -272,7 +269,6 @@ class AppPanel(wx.Panel):
         sizer.Add(sp, 1, wx.EXPAND)
         self.SetSizer(sizer)
         sizer.Fit(self)
-
 
     def init_top_panel(self):
 
@@ -370,9 +366,8 @@ class AppPanel(wx.Panel):
                             message="Select Script File",
                             defaultDir=os.getcwd(),
                             defaultFile="",
-                            wildcard=(PYTHON_FILES+"|"+REFL_FILES+"|"+DATA_FILES+"|"+
-                                      TEXT_FILES+"|"+ALL_FILES),
-                            style=wx.OPEN|wx.MULTIPLE|wx.CHANGE_DIR)
+                            wildcard=(PYTHON_FILES+"|"+ALL_FILES),
+                            style=wx.OPEN|wx.CHANGE_DIR)
 
         # Wait for user to close the dialog.
         sts = dlg.ShowModal()
@@ -401,7 +396,6 @@ class AppPanel(wx.Panel):
         pub.subscribe(self.OnUpdateModel, "update_model")
         pub.subscribe(self.OnUpdateParameters, "update_parameters")
 
-
     def OnUpdateModel(self, event):
         # update the profile tab and redraw the canvas with new values
         self.problem.fitness.update()
@@ -420,11 +414,9 @@ class AppPanel(wx.Panel):
                    transform=pylab.gca().transAxes)
         pylab.draw()
 
-
     def OnFit(self, event):
         """
-        On recieving fit message this event is triggered to
-        fit the data and model
+        On recieving a fit message, start a fit of the model to the data.
         """
         # TODO: need to put options on fit panel
         from .main import FitOpts, FitProxy, SerialMapper
@@ -449,9 +441,8 @@ class AppPanel(wx.Panel):
 
         #self.temp = copy.deepcopy(self.problem)
         # start a new thread worker and give fit problem to the worker
-        self.worker = Worker(self, self.problem, fn = self.fitter,
-                                       pars = opts.args,
-                                       mapper = mapper)
+        self.worker = Worker(self, self.problem, fn=self.fitter,
+                                   pars=opts.args, mapper=mapper)
 
     def OnFitResult(self, event):
         self.sb.SetStatusText('Fit status: Complete', 3)
@@ -462,7 +453,6 @@ class AppPanel(wx.Panel):
         else:
             self.remember_best(self.fitter, self.problem, event.data)
 
-
     def remember_best(self,fitter, problem, best):
 
         fitter.save(problem.output)
@@ -471,7 +461,7 @@ class AppPanel(wx.Panel):
             problem.save(problem.output, best)
         except:
             pass
-        sys.stdout = open(problem.output+".out","w")
+        sys.stdout = open(problem.output+".out", "w")
 
         #self.progress_gauge.Stop()
         #self.progress_gauge.Show(False)
@@ -481,8 +471,8 @@ class AppPanel(wx.Panel):
 
     def OnUpdateDisplay(self, msg):
         """
-        Receives fit update messages from the thread
-        and redirects the update messages to log tab for dispaly
+        Receives fit update messages from the thread and redirects
+        the update messages to the log view tab for display.
         """
         pub.sendMessage("log", msg.data)
 
