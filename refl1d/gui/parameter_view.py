@@ -139,7 +139,7 @@ class ParameterView(wx.Panel):
         elif ( ( isinstance(nodes, tuple) and nodes != () ) or
               ( isinstance(nodes, list) and nodes != [] ) ):
             for i,v in enumerate(nodes):
-                child = self.tree.AppendItem(branch, 'Layer[%d]'%i)
+                child = self.tree.AppendItem(branch, 'layer[%d]'%i)
                 self.add_tree_nodes(child,v)
 
         elif isinstance(nodes, BaseParameter):

@@ -71,7 +71,7 @@ class SummaryView(scrolled.ScrolledPanel):
         
         # Not an efficient way to making label align with the values in
         # GridBagSizer
-        self.layer_label = wx.StaticText(self, wx.ID_ANY, 'Layer Name                                                          Value                     Low Range                        High Range')
+        self.layer_label = wx.StaticText(self, wx.ID_ANY, 'Layer Name                                                          Value                     Low Range                        High Range                    Fixed')
         #self.slider_label = wx.StaticText(self, wx.ID_ANY, '            ')
         #self.value_label = wx.StaticText(self, wx.ID_ANY, 'Value')
         #self.low_label = wx.StaticText(self, wx.ID_ANY, 'Low Range')
@@ -134,6 +134,8 @@ class ParameterSummary(wx.Panel):
                          style=wx.TE_LEFT )
         self.max_range = wx.StaticText(self, wx.ID_ANY, str(self.high),
                          style=wx.TE_LEFT )
+        self.fixed_cb = wx.CheckBox(self, wx.ID_ANY)
+                         
 
         # add static box and slider to sizer
 
@@ -142,6 +144,7 @@ class ParameterSummary(wx.Panel):
         text_hbox.Add(self.value, 1, wx.EXPAND|wx.LEFT,20)
         text_hbox.Add(self.min_range, 1, wx.LEFT,1)
         text_hbox.Add(self.max_range, 1, wx.LEFT,1)
+        text_hbox.Add(self.fixed_cb, 1, wx.LEFT,1)
 
         self.SetSizer(text_hbox)
 

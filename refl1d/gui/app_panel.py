@@ -169,6 +169,8 @@ class AppPanel(wx.Panel):
         file_menu = mb.GetMenu(0)
         file_menu.PrependSeparator()
 
+        ############File menu#########################
+        
         _item = file_menu.Prepend(wx.ID_ANY, "&Import",
                                              "Import a script file")
         frame.Bind(wx.EVT_MENU, self.OnLoadScript, _item)
@@ -178,8 +180,10 @@ class AppPanel(wx.Panel):
                                              "Save a script file")
         _item = file_menu.Prepend(wx.ID_ANY, "&Open",
                                              "Open a script file")
-        _item = file_menu.Prepend(wx.ID_ANY, "&New",
+        _item = file_menu.Prepend(1, "&New",
                                              "Create a new script file")
+        # grey out New option for this release will be active in next release
+        file_menu.Enable(id=1, enable=False)                                             
 
         ############View menu#########################
         view_menu = wx.Menu()
@@ -262,8 +266,8 @@ class AppPanel(wx.Panel):
         # Create a vertical box sizer to manage the widgets in the main panel.
         sizer = wx.BoxSizer(wx.VERTICAL)
         #sizer.Add(hbox1_sizer, 0, wx.EXPAND|wx.ALL, border=10)
-        sizer.Add(canvas, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, border=10)
-        sizer.Add(mpl_toolbar, 0, wx.EXPAND|wx.ALL, border=10)
+        sizer.Add(canvas, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, border=0)
+        sizer.Add(mpl_toolbar, 0, wx.EXPAND|wx.ALL, border=0)
 
         # Associate the sizer with its container.
         self.pan1.SetSizer(sizer)
