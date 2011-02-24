@@ -57,13 +57,14 @@ from matplotlib.backend_bases import FigureManagerBase
 
 import pylab
 
+from refl1d.mystic import monitor, parameter
+from refl1d.profileview.panel import ProfileView
 from .summary_view import SummaryView
 from .fit_view import FitView
 from .parameter_view import ParameterView
 from .log_view import LogView
 from .other_view import OtherView
 from .fit_dialog import FitControl
-from refl1d.mystic import monitor, parameter
 from .gui_logic import load_problem, make_store
 from .work_thread import Worker
 from .util import nice
@@ -163,7 +164,10 @@ class AppPanel(wx.Panel):
         self.worker = None   #worker for fitting job
 
     def modify_menubar(self):
-        """Adds items to the menu bar, menus, and menu options."""
+        """
+        Adds items to the menu bar, menus, and menu options.
+        The menu bar should have a simple File menu and a Help menu present.
+        """
 
         frame = self.frame
         mb = frame.GetMenuBar()
@@ -176,63 +180,78 @@ class AppPanel(wx.Panel):
         _item = file_menu.Prepend(wx.ID_ANY,
                                   "&Import",
                                   "Import script file")
-        frame.Bind(wx.EVT_MENU, self.OnLoadScript, _item)
+        frame.Bind(wx.EVT_MENU, self.OnImportScript, _item)
         file_menu.PrependSeparator()
+
         _item = file_menu.Prepend(wx.ID_SAVEAS,
                                   "Save&As",
                                   "Save model as another name")
+        frame.Bind(wx.EVT_MENU, self.OnSaveAsModel, _item)
         file_menu.Enable(id=wx.ID_SAVEAS, enable=False)
         _item = file_menu.Prepend(wx.ID_SAVE,
                                   "&Save",
                                   "Save model")
+        frame.Bind(wx.EVT_MENU, self.OnSaveModel, _item)
         file_menu.Enable(id=wx.ID_SAVE, enable=False)
         _item = file_menu.Prepend(wx.ID_OPEN,
                                   "&Open",
                                   "Open existing model")
+        frame.Bind(wx.EVT_MENU, self.OnOpenModel, _item)
         file_menu.Enable(id=wx.ID_OPEN, enable=False)
         _item = file_menu.Prepend(wx.ID_NEW,
                                   "&New",
                                   "Create new model")
+        frame.Bind(wx.EVT_MENU, self.OnNewModel, _item)
         file_menu.Enable(id=wx.ID_NEW, enable=False)
 
         # Add 'View' menu to the menu bar and define its options.
         # Present y-axis plotting scales as radio buttons.
+        # Grey out items that are not currently implemented.
         view_menu = wx.Menu()
         _item = view_menu.AppendRadioItem(wx.ID_ANY,
-                                          "&Log Scale",
-                                          "Plot y-axis in log scale")
-        _item.Check(True)
+                                          "&Fresnel",
+                                          "Plot y-axis in Fresnel scale")
         _item = view_menu.AppendRadioItem(wx.ID_ANY,
                                           "Li&near",
                                           "Plot y-axis in linear scale")
         _item = view_menu.AppendRadioItem(wx.ID_ANY,
+                                          "&Log",
+                                          "Plot y-axis in log scale")
+        _item.Check(True)
+        _item = view_menu.AppendRadioItem(wx.ID_ANY,
                                           "&Q4",
                                           "Plot y-axis in Q4 scale")
-        _item = view_menu.AppendRadioItem(wx.ID_ANY,
-                                          "&Fresnel",
-                                          "Plot y-axis in Fresnel scale")
+        view_menu.AppendSeparator()
+
+        _item = view_menu.Append(wx.ID_ANY,
+                                 "&Show &Residuals",
+                                 "Show residuals on model data plot")
+        frame.Bind(wx.EVT_MENU, self.OnShowResiduals, _item)
+        view_menu.Enable(id=_item.GetId(), enable=False)
 
         mb.Insert(1, view_menu, "&View")
 
-        # Add 'Fit' menu to the menu bar and define its options.
+        # Add 'Fitting' menu to the menu bar and define its options.
+        # Grey out items that are not currently implemented.
         fit_menu = wx.Menu()
 
         _item = fit_menu.Append(wx.ID_ANY,
                                 "&Start Fit",
                                 "Start fitting operation")
+        frame.Bind(wx.EVT_MENU, self.OnStartFit, _item)
         fit_menu.Enable(id=_item.GetId(), enable=False)
         _item = fit_menu.Append(wx.ID_ANY,
                                 "&Stop Fit",
                                 "Stop fitting operation")
+        frame.Bind(wx.EVT_MENU, self.OnStopFit, _item)
         fit_menu.Enable(id=_item.GetId(), enable=False)
-        fit_menu.AppendSeparator()
+
         _item = fit_menu.Append(wx.ID_ANY,
                                 "Fit &Options ...",
                                 "Select fitting options")
-        
-        frame.Bind(wx.EVT_MENU, self.OnFitSelect, _item)                                
+        frame.Bind(wx.EVT_MENU, self.OnFitOptions, _item)
 
-        mb.Insert(2, fit_menu, "&Fit")
+        mb.Insert(2, fit_menu, "&Fitting")
 
     def modify_toolbar(self):
         """Populates the tool bar."""
@@ -309,21 +328,18 @@ class AppPanel(wx.Panel):
         self.pan1.SetSizer(sizer)
         sizer.Fit(self.pan1)
 
-    def _activate_figure(self):
-        _pylab_helpers.Gcf.set_active(self.fm)
-
     def init_bottom_panel(self):
         nb = self.notebook = wx.Notebook(self.pan2, wx.ID_ANY,
                              style=wx.NB_TOP|wx.NB_FIXEDWIDTH|wx.NB_NOPAGETHEME)
         nb.SetTabSize((100,20))  # works on Windows but not on Linux
 
         # Create page windows as children of the notebook.
-        from refl1d.profileview.panel import ProfileView
         self.page0 = ProfileView(nb)
         self.page1 = ParameterView(nb)
         self.page2 = SummaryView(nb)
         self.page3 = LogView(nb)
         self.page4 = FitView(nb)
+        #self.page5 = OtherView(nb)
 
         # Add the pages to the notebook with a label to show on the tab.
         nb.AddPage(self.page0, "Profile")
@@ -331,6 +347,7 @@ class AppPanel(wx.Panel):
         nb.AddPage(self.page2, "Summary")
         nb.AddPage(self.page3, "Log")
         nb.AddPage(self.page4, "Fit")
+        #nb.AddPage(self.page5, "Dummy")
 
         self.pan2.sizer = wx.BoxSizer(wx.VERTICAL)
         self.pan2.sizer.Add(nb, 1, wx.EXPAND)
@@ -362,7 +379,19 @@ class AppPanel(wx.Panel):
         sel = self.notebook.GetSelection()
         event.Skip()
 
-    def OnLoadScript(self, event):
+    def OnNewModel(self, event):
+        pass  # not implemented
+
+    def OnOpenModel(self, event):
+        pass  # not implemented
+
+    def OnSaveModel(self, event):
+        pass  # not implemented
+
+    def OnSaveAsModel(self, event):
+        pass  # not implemented
+
+    def OnImportScript(self, event):
         # Load the script which will contain model defination and data.
         dlg = wx.FileDialog(self,
                             message="Select Script File",
@@ -383,9 +412,9 @@ class AppPanel(wx.Panel):
         os.chdir(dir)
         self.args = [file, 'T1']
         self.problem = load_problem(self.args)
-        self.view(self.problem)
+        self.redraw(self.problem)
 
-        # send new model (problem) loaded message to all listening tabs and panel
+        # Send new model (problem) loaded message to all interested panels.
         pub.sendMessage("initial_model", self.problem)
 
         # recieving fit message from fit tab
@@ -397,33 +426,24 @@ class AppPanel(wx.Panel):
         # new model parameters)
         pub.subscribe(self.OnUpdateModel, "update_model")
         pub.subscribe(self.OnUpdateParameters, "update_parameters")
-        
-    def OnFitSelect(self, event):
+
+    def OnShowResiduals(self, event):
+        pass  # not implemented
+
+    def OnStartFit(self, event):
+        pass  # not implemented
+
+    def OnStopFit(self, event):
+        pass  # not implemented
+
+    def OnFitOptions(self, event):
         fit_dlg = FitControl(self, -1, "Fit Control")
-
-    def OnUpdateModel(self, event):
-        # update the profile tab and redraw the canvas with new values
-        self.problem.fitness.update()
-        self.view(self.problem)
-
-    def OnUpdateParameters(self, event):
-        self.view(self.problem)
-
-    def view(self, model):
-        # redraws the canvas
-        pylab.clf() #### clear the canvas
-        self._activate_figure()
-        model.show()
-        model.fitness.plot_reflectivity()
-        pylab.text(0, 0, 'chisq=%g' % model.chisq(),
-                   transform=pylab.gca().transAxes)
-        pylab.draw()
 
     def OnFit(self, event):
         """
         On recieving a fit message, start a fit of the model to the data.
         """
-        # TODO: need to put options on fit panel
+        # TODO: Need to put options on fit panel.
         from .main import FitOpts, FitProxy, SerialMapper
         from refl1d.fitter import RLFit, DEFit, BFGSFit, AmoebaFit, SnobFit
         from refl1d.probe import Probe
@@ -445,7 +465,7 @@ class AppPanel(wx.Panel):
         self.pan1.Layout()
 
         #self.temp = copy.deepcopy(self.problem)
-        # start a new thread worker and give fit problem to the worker
+        # Start a new thread worker and give fit problem to the worker.
         self.worker = Worker(self, self.problem, fn=self.fitter,
                                    pars=opts.args, mapper=mapper)
 
@@ -472,7 +492,15 @@ class AppPanel(wx.Panel):
         #self.progress_gauge.Show(False)
         self.pan1.Layout()
 
-        self.view(problem)
+        self.redraw(problem)
+
+    def OnUpdateModel(self, event):
+        # Update the profile tab and redraw the canvas with new values.
+        self.problem.fitness.update()
+        self.redraw(self.problem)
+
+    def OnUpdateParameters(self, event):
+        self.redraw(self.problem)
 
     def OnUpdateDisplay(self, msg):
         """
@@ -488,6 +516,17 @@ class AppPanel(wx.Panel):
         itself
         """
         pub.sendMessage("update_parameters", self.problem)
-        self.view(self.problem)
+        self.redraw(self.problem)
 
+    def redraw(self, model):
+        # Redraw the canvas.
+        pylab.clf() #### clear the canvas
+        self._activate_figure()
+        model.show()
+        model.fitness.plot_reflectivity()
+        pylab.text(0, 0, 'chisq=%g' % model.chisq(),
+                   transform=pylab.gca().transAxes)
+        pylab.draw()
 
+    def _activate_figure(self):
+        _pylab_helpers.Gcf.set_active(self.fm)

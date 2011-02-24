@@ -1,22 +1,14 @@
 import wx
-import sys
+import wx.lib.scrolledpanel as scrolled
 
-import  wx.lib.scrolledpanel as scrolled
-from wx.lib.pubsub import Publisher as pub
-import wx.lib.newevent
-
-from refl1d.mystic.parameter import Parameter, BaseParameter
-from refl1d.profileview.panel import ProfileView
-
-
-# Other non-implemented tabs
-# This tabs will be not implemented in this release
+INTRO_TEXT = "Not Implemented Yet....Under Construction:"
 
 class OtherView(scrolled.ScrolledPanel):
+    """
+    This class creates a dummy scrolled panel.
+    """
     def __init__(self, parent):
         scrolled.ScrolledPanel.__init__(self, parent, -1)
-
-        INTRO_TEXT = "Not Implemented Yet....Under Construction:"
 
         self.intro_text = INTRO_TEXT
         self.log_text = wx.StaticText(self, wx.ID_ANY, label=INTRO_TEXT)
