@@ -253,6 +253,21 @@ class AppPanel(wx.Panel):
 
         mb.Insert(2, fit_menu, "&Fitting")
 
+        # Add 'Advanced' menu to the menu bar and define its options.
+        adv_menu = wx.Menu()
+
+        _item = adv_menu.AppendRadioItem(wx.ID_ANY,
+                               "&Top-Bottom",
+                               "Display plot and view panels top to bottom")
+        _item.Check(True)
+        frame.Bind(wx.EVT_MENU, self.OnSplitHorizontal, _item)
+        _item = adv_menu.AppendRadioItem(wx.ID_ANY,
+                               "&Left-Right",
+                               "Display plot and view panels left to right")
+        frame.Bind(wx.EVT_MENU, self.OnSplitVertical, _item)
+
+        mb.Insert(3, adv_menu, "&Advanced")
+
     def modify_toolbar(self):
         """Populates the tool bar."""
         tb = self.frame.GetToolBar()
@@ -270,7 +285,7 @@ class AppPanel(wx.Panel):
         """Creates separate left and right panels."""
 
         # Split the panel into two pieces.
-        sp = wx.SplitterWindow(self, style=wx.SP_3D|wx.SP_LIVE_UPDATE)
+        self.sp = sp = wx.SplitterWindow(self, style=wx.SP_3D|wx.SP_LIVE_UPDATE)
         sp.SetMinimumPaneSize(100)
 
         self.pan1 = wx.Panel(sp, wx.ID_ANY, style=wx.SUNKEN_BORDER)
@@ -493,6 +508,14 @@ class AppPanel(wx.Panel):
         self.pan1.Layout()
 
         self.redraw(problem)
+
+    def OnSplitHorizontal(self, event):
+        self.sp.SetSplitMode(wx.SPLIT_HORIZONTAL)
+        self.sp.SizeWindows()
+
+    def OnSplitVertical(self, event):
+        self.sp.SetSplitMode(wx.SPLIT_VERTICAL)
+        self.sp.SizeWindows()
 
     def OnUpdateModel(self, event):
         # Update the profile tab and redraw the canvas with new values.
