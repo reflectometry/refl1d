@@ -25,9 +25,9 @@ class FitView(wx.Panel):
         self.btn_fit = wx.Button(self, wx.ID_ANY, "Fit")
         self.btn_fit.SetToolTip(wx.ToolTip("click to start fit"))
         self.Bind(wx.EVT_BUTTON, self.OnFit, self.btn_fit)
-        
+
         pub.subscribe(self.OnFitComplete, "fit_complete")
-        
+
         # Create a horizontal box sizer for the buttons.
         sizer2 = wx.BoxSizer(wx.HORIZONTAL)
         sizer2.Add((5,5), 1)  # stretchable whitespace
@@ -42,6 +42,7 @@ class FitView(wx.Panel):
         sizer.Add(sizer2, 0, wx.ALL, 5)
 
         self.SetSizer(sizer)
+        self.SetAutoLayout(True)
 
     def OnFit(self, event):
         btnLabel = self.btn_fit.GetLabel()
@@ -64,5 +65,5 @@ class FitView(wx.Panel):
 
     def OnFitComplete(self, event):
         self.btn_fit.SetLabel("Fit")
-       
-    
+
+

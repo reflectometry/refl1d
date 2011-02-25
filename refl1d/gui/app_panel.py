@@ -315,7 +315,6 @@ class AppPanel(wx.Panel):
         sizer.Fit(self)
 
     def init_top_panel(self):
-
         # Instantiate a figure object that will contain our plots.
         figure = Figure(figsize=(1,1), dpi=72)
 
@@ -361,7 +360,7 @@ class AppPanel(wx.Panel):
         self.page1 = ParameterView(nb)
         self.page2 = SummaryView(nb)
         self.page3 = LogView(nb)
-        self.page4 = FitView(nb)
+        #self.page4 = FitView(nb)
         #self.page5 = OtherView(nb)
 
         # Add the pages to the notebook with a label to show on the tab.
@@ -369,15 +368,14 @@ class AppPanel(wx.Panel):
         nb.AddPage(self.page1, "Parameters")
         nb.AddPage(self.page2, "Summary")
         nb.AddPage(self.page3, "Log")
-        nb.AddPage(self.page4, "Fit")
+        #nb.AddPage(self.page4, "Fit")
         #nb.AddPage(self.page5, "Dummy")
 
         self.pan2.sizer = wx.BoxSizer(wx.VERTICAL)
         self.pan2.sizer.Add(nb, 1, wx.EXPAND)
         self.pan2.SetSizer(self.pan2.sizer)
-        self.pan2.SetAutoLayout(1)
+        self.pan2.SetAutoLayout(True)
         self.pan2.sizer.Fit(self.pan2)
-        self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.OnPageChanged)
 
         # Make sure the first page is the active one.
         # Note that SetSelection generates a page change event only if the
