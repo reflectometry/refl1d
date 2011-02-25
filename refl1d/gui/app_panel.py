@@ -360,7 +360,7 @@ class AppPanel(wx.Panel):
         self.page1 = ParameterView(nb)
         self.page2 = SummaryView(nb)
         self.page3 = LogView(nb)
-        #self.page4 = FitView(nb)
+        self.page4 = FitView(nb)
         #self.page5 = OtherView(nb)
 
         # Add the pages to the notebook with a label to show on the tab.
@@ -368,7 +368,7 @@ class AppPanel(wx.Panel):
         nb.AddPage(self.page1, "Parameters")
         nb.AddPage(self.page2, "Summary")
         nb.AddPage(self.page3, "Log")
-        #nb.AddPage(self.page4, "Fit")
+        nb.AddPage(self.page4, "Fit")
         #nb.AddPage(self.page5, "Dummy")
 
         self.pan2.sizer = wx.BoxSizer(wx.VERTICAL)
