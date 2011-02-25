@@ -224,9 +224,9 @@ class AppPanel(wx.Panel):
         view_menu.AppendSeparator()
 
         _item = view_menu.Append(wx.ID_ANY,
-                                 "&Show &Residuals",
+                                 "&Residuals",
                                  "Show residuals on model data plot")
-        frame.Bind(wx.EVT_MENU, self.OnShowResiduals, _item)
+        frame.Bind(wx.EVT_MENU, self.OnResiduals, _item)
         view_menu.Enable(id=_item.GetId(), enable=False)
 
         mb.Insert(1, view_menu, "&View")
@@ -265,6 +265,12 @@ class AppPanel(wx.Panel):
                                "&Left-Right",
                                "Display plot and view panels left to right")
         frame.Bind(wx.EVT_MENU, self.OnSplitVertical, _item)
+        adv_menu.AppendSeparator()
+
+        _item = adv_menu.Append(wx.ID_ANY,
+                                "&Swap Panels",
+                                "Switch positions of plot and view panels")
+        frame.Bind(wx.EVT_MENU, self.OnSwapPanels, _item)
 
         mb.Insert(3, adv_menu, "&Advanced")
 
@@ -442,7 +448,7 @@ class AppPanel(wx.Panel):
         pub.subscribe(self.OnUpdateModel, "update_model")
         pub.subscribe(self.OnUpdateParameters, "update_parameters")
 
-    def OnShowResiduals(self, event):
+    def OnResiduals(self, event):
         pass  # not implemented
 
     def OnStartFit(self, event):
@@ -512,10 +518,19 @@ class AppPanel(wx.Panel):
     def OnSplitHorizontal(self, event):
         self.sp.SetSplitMode(wx.SPLIT_HORIZONTAL)
         self.sp.SizeWindows()
+        self.sp.Refresh(eraseBackground=False)
 
     def OnSplitVertical(self, event):
         self.sp.SetSplitMode(wx.SPLIT_VERTICAL)
         self.sp.SizeWindows()
+        self.sp.Refresh(eraseBackground=False)
+
+    def OnSwapPanels(self, event):
+        win1 = self.sp.GetWindow1()
+        win2 = self.sp.GetWindow2()
+        self.sp.ReplaceWindow(win1, win2)
+        self.sp.ReplaceWindow(win2, win1)
+        self.sp.Refresh(eraseBackground=False)
 
     def OnUpdateModel(self, event):
         # Update the profile tab and redraw the canvas with new values.
