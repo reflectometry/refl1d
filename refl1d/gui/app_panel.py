@@ -26,18 +26,17 @@ of the frame of the GUI for the Refl1D application.
 """
 
 #==============================================================================
-######### systen imports ############################
 from __future__ import division
 import os
 import sys
 import shutil
-import copy
-import wx
 import logging
-from wx.lib.pubsub import Publisher as pub
-import wx.lib.newevent
+from copy import deepcopy
 
-############### matplotlib imports #####################
+import wx
+import wx.lib.newevent
+from wx.lib.pubsub import Publisher as pub
+
 import matplotlib
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wxagg import NavigationToolbar2Wx as Toolbar
@@ -81,12 +80,9 @@ matplotlib.interactive(False)
 # Specify the backend to use for plotting and import backend dependent classes.
 # Note that this must be done before importing pyplot to have an effect.
 
-from copy import deepcopy
-from .images import getOpenBitmap
-from .auxiliary_page import AuxiliaryPage
+#from .images import getOpenBitmap
 
-
-#### File selection
+# File selection strings.
 PYTHON_FILES = "Script files (*.py)|*.py"
 REFL_FILES = "Refl files (*.refl)|*.refl"
 DATA_FILES = "Data files (*.dat)|*.dat"

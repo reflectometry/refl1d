@@ -76,9 +76,9 @@ if len(sys.argv) > 1 and '--syspath' in sys.argv[1:]:
     for i, p in enumerate(sys.path):
         print "%5d  %s" %(i, p)
 
-from refl1d.gui.common import get_appdir, log_time
-from refl1d.gui.app_frame import AppFrame
 from refl1d.gui.about import APP_TITLE
+from refl1d.gui.app_frame import AppFrame
+from refl1d.gui.utilities import get_appdir, log_time
 
 # Desired initial window size (if physical screen size permits).
 DISPLAY_WIDTH = 1200

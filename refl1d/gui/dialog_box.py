@@ -61,3 +61,12 @@ class FolderDialog(wx.Dialog):
 
         panel.SetSizer(vbox_sizer)
         vbox_sizer.Fit(panel)
+
+        self.Centre()
+        self.ShowModal()
+        self.Destroy()
+
+if __name__ == "__main__":
+    app = wx.PySimpleApp()
+    FolderDialog(None, -1, 'Folder Dialog')
+    app.MainLoop()

@@ -37,7 +37,7 @@ except ImportError: # if it's not there, try the older location.
 from wx.lib.wordwrap import wordwrap
 
 from .. import __version__ as APP_VERSION
-from .common import get_appdir
+from .utilities import get_appdir
 
 # Resource files.
 PROG_ICON = "refl1d.ico"
