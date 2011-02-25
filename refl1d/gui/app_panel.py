@@ -166,7 +166,7 @@ class AppPanel(wx.Panel):
     def modify_menubar(self):
         """
         Adds items to the menu bar, menus, and menu options.
-        The menu bar should have a simple File menu and a Help menu present.
+        The menu bar should already have a simple File menu and a Help menu.
         """
 
         frame = self.frame
@@ -264,6 +264,7 @@ class AppPanel(wx.Panel):
         _item = adv_menu.AppendRadioItem(wx.ID_ANY,
                                "&Left-Right",
                                "Display plot and view panels left to right")
+        self.vert_sash_pos = 0  # set sash to center on first vertical split
         frame.Bind(wx.EVT_MENU, self.OnSplitVertical, _item)
         adv_menu.AppendSeparator()
 
@@ -301,6 +302,7 @@ class AppPanel(wx.Panel):
         self.pan2.SetBackgroundColour("WHITE")
 
         sp.SplitHorizontally(self.pan1, self.pan2)
+        sp.SetSashGravity(0.5)  # on resize expand/contract panels equally
 
         # Initialize the left and right panels.
         self.init_top_panel()
@@ -499,7 +501,7 @@ class AppPanel(wx.Panel):
         else:
             self.remember_best(self.fitter, self.problem, event.data)
 
-    def remember_best(self,fitter, problem, best):
+    def remember_best(self, fitter, problem, best):
 
         fitter.save(problem.output)
 
@@ -516,20 +518,30 @@ class AppPanel(wx.Panel):
         self.redraw(problem)
 
     def OnSplitHorizontal(self, event):
+        # Place panels in Top-Bottom orientation.
+        # Note that this event does not occur if user chooses same orientation.
+        self.vert_sash_pos = self.sp.GetSashPosition()
         self.sp.SetSplitMode(wx.SPLIT_HORIZONTAL)
+        self.sp.SetSashPosition(position=self.horz_sash_pos, redraw=False)
         self.sp.SizeWindows()
         self.sp.Refresh(eraseBackground=False)
 
     def OnSplitVertical(self, event):
+        # Place panels in Left-Right orientation.
+        # Note that this event does not occur if user chooses same orientation.
+        self.horz_sash_pos = self.sp.GetSashPosition()
         self.sp.SetSplitMode(wx.SPLIT_VERTICAL)
+        self.sp.SetSashPosition(position=self.vert_sash_pos, redraw=False)
         self.sp.SizeWindows()
         self.sp.Refresh(eraseBackground=False)
 
     def OnSwapPanels(self, event):
         win1 = self.sp.GetWindow1()
         win2 = self.sp.GetWindow2()
-        self.sp.ReplaceWindow(win1, win2)
-        self.sp.ReplaceWindow(win2, win1)
+        self.sp.ReplaceWindow(winOld=win1, winNew=win2)
+        self.sp.ReplaceWindow(winOld=win2, winNew=win1)
+        sash_pos = -self.sp.GetSashPosition()  # set sash to keep panel sizes
+        self.sp.SetSashPosition(position=sash_pos, redraw=False)
         self.sp.Refresh(eraseBackground=False)
 
     def OnUpdateModel(self, event):
