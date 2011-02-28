@@ -1,224 +1,240 @@
 #!/usr/bin/python
+# Copyright (C) 2006-2011, University of Maryland
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/ or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
+# Author: Nikunj Patel and James Krycka
+
+"""
+This module implements the FitControl class which presents a pop-up dialog box
+for the user to control fitting options.
+"""
+
+#==============================================================================
 
 import wx
 
 from util import Validator
 
 class FitControl(wx.Dialog):
-    def __init__(self, parent, id, title):
-        wx.Dialog.__init__(self, parent, id, title, size=(300, 575))
+    """
+    FitControl lets the user set fitting options from a pop-up a dialog box.
+    """
 
-        vbox_top = wx.BoxSizer(wx.VERTICAL)
-        panel = wx.Panel(self, -1)
+    def __init__(self,
+                 parent = None,
+                 id     = wx.ID_ANY,
+                 title  = "Fit Dialog",
+                 pos    = wx.DefaultPosition,
+                 size   = wx.DefaultSize, # dialog box size will be calculated
+                 style  = wx.DEFAULT_DIALOG_STYLE,
+                 name   = ""
+                ):
+        wx.Dialog.__init__(self, parent, id, title, pos, size, style, name)
 
         vbox = wx.BoxSizer(wx.VERTICAL)
 
-        vbox.Add((-1, 15))
-
-        # panel1
-
-        panel1 = wx.Panel(panel, -1)
+        # Section 1
 
         vbox1 = wx.BoxSizer(wx.VERTICAL)
         hbox1 = wx.BoxSizer(wx.HORIZONTAL)
 
-        save_label = wx.StaticText(panel1, -1, 'Save location: ')
-        self.save = wx.TextCtrl(panel1, -1, 'T1', size=(200, -1), style=wx.TE_RIGHT)
-        self.overwrite = wx.CheckBox(panel1, wx.ID_ANY, 'overwrite')
+        save_label = wx.StaticText(self, -1, "Save location: ")
+        self.save = wx.TextCtrl(self, -1, "T1", style=wx.TE_RIGHT)
+        self.overwrite = wx.CheckBox(self, wx.ID_ANY, " Overwrite")
         hbox1.Add(save_label, 0, wx.ALIGN_CENTER_VERTICAL)
-        hbox1.Add(self.save)
-        vbox1.Add(hbox1)
-        vbox1.Add(self.overwrite)
+        hbox1.Add(self.save, 1, wx.EXPAND)
 
-        panel1.SetSizer(vbox1)
-        vbox.Add(panel1, 0, wx.BOTTOM | wx.TOP, 9)
+        vbox.Add(hbox1, 0, wx.ALL|wx.EXPAND, 10)
+        vbox.Add(self.overwrite, 0, wx.LEFT|wx.RIGHT|wx.BOTTOM, 10)
 
-        vbox.Add((-1, 15))
+        # Section 2
 
-        # panel2
+        panel2 = wx.Panel(self, -1)
 
-        panel2 = wx.Panel(panel, -1)
-        hbox2 = wx.BoxSizer(wx.VERTICAL)
+        static_box1 = wx.StaticBox(panel2, -1, "Fit Algorithms")
 
-        static_box1 = wx.StaticBox(panel2, -1, 'Fit Algorithms')
-
-        self.ameoba_radio = wx.RadioButton(panel2, -1, 'Ameoba')
-        self.de_radio = wx.RadioButton(panel2, -1, 'DE')
+        self.amoeba_radio = wx.RadioButton(panel2, -1, "Amoeba")
+        self.de_radio = wx.RadioButton(panel2, -1, "DE")
         self.de_radio.SetValue(True)
-        self.dream_radio = wx.RadioButton(panel2, -1, 'Dream')
-        self.pt_radio = wx.RadioButton(panel2, -1, 'Parallel Tempering')
-        self.rl_radio = wx.RadioButton(panel2, -1, 'Random Lines')
+        self.dream_radio = wx.RadioButton(panel2, -1, "Dream")
+        self.pt_radio = wx.RadioButton(panel2, -1, "Parallel Tempering")
+        self.rl_radio = wx.RadioButton(panel2, -1, "Random Lines")
 
-        # radio button event to enable/disable other options based on 
-        # algorithm selected        
-        self.Bind(wx.EVT_RADIOBUTTON, self.OnDe, id=self.de_radio.GetId())
-        self.Bind(wx.EVT_RADIOBUTTON, self.OnAmeoba, id=self.ameoba_radio.GetId())
+        # Radio button events to enable/disable other options based on the
+        # algorithm selected.
+        self.Bind(wx.EVT_RADIOBUTTON, self.OnDE, id=self.de_radio.GetId())
+        self.Bind(wx.EVT_RADIOBUTTON, self.OnAmoeba, id=self.amoeba_radio.GetId())
         self.Bind(wx.EVT_RADIOBUTTON, self.OnDream, id=self.dream_radio.GetId())
-        self.Bind(wx.EVT_RADIOBUTTON, self.OnPt, id=self.pt_radio.GetId())
-        self.Bind(wx.EVT_RADIOBUTTON, self.OnRl, id=self.rl_radio.GetId())
-
+        self.Bind(wx.EVT_RADIOBUTTON, self.OnPT, id=self.pt_radio.GetId())
+        self.Bind(wx.EVT_RADIOBUTTON, self.OnRL, id=self.rl_radio.GetId())
 
         fit_hsizer = wx.StaticBoxSizer(static_box1, orient=wx.VERTICAL)
-        fit_hsizer.Add(self.ameoba_radio, 0, wx.ALL, 5)
+        fit_hsizer.Add(self.amoeba_radio, 0, wx.ALL, 5)
         fit_hsizer.Add(self.de_radio, 0, wx.ALL, 5)
         fit_hsizer.Add(self.dream_radio, 0, wx.ALL, 5)
         fit_hsizer.Add(self.pt_radio, 0, wx.ALL, 5)
         fit_hsizer.Add(self.rl_radio, 0, wx.ALL, 5)
 
-        hbox2.Add(fit_hsizer, 1, wx.RIGHT, 5)
-        panel2.SetSizer(hbox2)
-        vbox.Add(panel2, 0)
+        panel2.SetSizer(fit_hsizer)
+        vbox.Add(panel2, 0, wx.ALL, 10)
 
-        vbox.Add((-1, 15))
-        
-        
-        # panel4
+        # Section 3
 
-        panel4 = wx.Panel(panel, -1)
-        static_box3 = wx.StaticBox(panel4, -1, 'Other Options')
-        other_hsizer = wx.StaticBoxSizer(static_box3, orient=wx.HORIZONTAL)
-        vbox4 = wx.BoxSizer(wx.VERTICAL)
+        panel3 = wx.Panel(self, -1)
+        static_box3 = wx.StaticBox(panel3, -1, "Fitting Options")
+
+        opts_hsizer = wx.StaticBoxSizer(static_box3, orient=wx.HORIZONTAL)
+        vbox3 = wx.BoxSizer(wx.VERTICAL)
         sizer1 = wx.BoxSizer(wx.HORIZONTAL)
         sizer2 = wx.BoxSizer(wx.HORIZONTAL)
         sizer3 = wx.BoxSizer(wx.HORIZONTAL)
         sizer4 = wx.BoxSizer(wx.HORIZONTAL)
         sizer5 = wx.BoxSizer(wx.HORIZONTAL)
         sizer6 = wx.BoxSizer(wx.HORIZONTAL)
-          
-        burn_label = wx.StaticText(panel4, -1, 'Burn:                       ')
-        self.burn = wx.TextCtrl(panel4, -1, '0', size=(100, -1),
+
+        step_label = wx.StaticText(panel3, -1, "Step Size:", size=(90, -1))
+        self.stepsize = wx.TextCtrl(panel3, -1, "1000", size=(100, -1),
                            style=wx.TE_RIGHT, validator=Validator("no-alpha"))
-                           
-        stepsize_label = wx.StaticText(panel4, -1, 'Step size:               ')
-        self.stepsize = wx.TextCtrl(panel4, -1, '1000', size=(100, -1), 
-                           style=wx.TE_RIGHT, validator=Validator("no-alpha"))
-                                                      
-        tmin_label = wx.StaticText(panel4,  -1, 'T min:                      ')
-        self.tmin = wx.TextCtrl(panel4, -1, '0.1',  size=(100, -1),
-                       style=wx.TE_RIGHT, validator=Validator("no-alpha"))
-        tmax_label = wx.StaticText(panel4,  -1, 'T max:                     ')
-        self.tmax = wx.TextCtrl(panel4, -1, '10',  size=(100, -1),
-                       style=wx.TE_RIGHT, validator=Validator("no-alpha"))
-        crossover_label = wx.StaticText(panel4,  -1, 'Crossover Ratio:  ')
-        self.crossover = wx.TextCtrl(panel4, -1, '0.9', size=(100, -1), 
-                           style=wx.TE_RIGHT, validator=Validator("no-alpha"))
-        pop_label = wx.StaticText(panel4, -1, 'Population:             ')
-        self.pop = wx.TextCtrl(panel4, -1, '10', size=(100, -1), 
+
+        pop_label = wx.StaticText(panel3, -1, "Population:", size=(90, -1))
+        self.pop = wx.TextCtrl(panel3, -1, "10", size=(100, -1),
                       style=wx.TE_RIGHT, validator=Validator("no-alpha"))
 
-        # make following option disable as 'de' algorithm is choosen by default
-        self.burn.Enable(False)
-        self.tmin.Enable(False)
-        self.tmax.Enable(False)                      
+        co_label = wx.StaticText(panel3, -1, "Crossover Ratio:", size=(90, -1))
+        self.crossover = wx.TextCtrl(panel3, -1, "0.9", size=(100, -1),
+                            style=wx.TE_RIGHT, validator=Validator("no-alpha"))
 
-        sizer1.Add(burn_label, 0, wx.ALL, 5)
-        sizer1.Add(self.burn, 0, wx.ALL, 5)
-        
-        sizer2.Add(stepsize_label, 0, wx.ALL, 5)
-        sizer2.Add(self.stepsize, 0, wx.ALL, 5)
+        burn_label = wx.StaticText(panel3, -1, "Burn:", size=(90, -1))
+        self.burn = wx.TextCtrl(panel3, -1, "0", size=(100, -1),
+                       style=wx.TE_RIGHT, validator=Validator("no-alpha"))
 
-        sizer3.Add(crossover_label, 0, wx.ALL, 5)
+        tmin_label = wx.StaticText(panel3, -1, "T min:", size=(90, -1))
+        self.tmin = wx.TextCtrl(panel3, -1, "0.1",  size=(100, -1),
+                       style=wx.TE_RIGHT, validator=Validator("no-alpha"))
+
+        tmax_label = wx.StaticText(panel3, -1, "T max:", size=(90, -1))
+        self.tmax = wx.TextCtrl(panel3, -1, "10",  size=(100, -1),
+                       style=wx.TE_RIGHT, validator=Validator("no-alpha"))
+
+        self.OnDE(event=None) # Set fit options for default 'DE' algorithm
+
+        sizer1.Add(step_label, 0, wx.ALL, 5)
+        sizer1.Add(self.stepsize, 0, wx.ALL, 5)
+
+        sizer2.Add(pop_label, 0, wx.ALL, 5)
+        sizer2.Add(self.pop, 0, wx.ALL, 5)
+
+        sizer3.Add(co_label, 0, wx.ALL, 5)
         sizer3.Add(self.crossover, 0, wx.ALL, 5)
-        
-        sizer4.Add(pop_label, 0, wx.ALL, 5)
-        sizer4.Add(self.pop, 0, wx.ALL, 5)
+
+        sizer4.Add(burn_label, 0, wx.ALL, 5)
+        sizer4.Add(self.burn, 0, wx.ALL, 5)
 
         sizer5.Add(tmin_label, 0, wx.ALL, 5)
         sizer5.Add(self.tmin, 0, wx.ALL, 5)
 
         sizer6.Add(tmax_label, 0, wx.ALL, 5)
         sizer6.Add(self.tmax, 0, wx.ALL, 5)
-        
-        vbox4.Add(sizer1)
-        vbox4.Add(sizer2)
-        vbox4.Add(sizer3)
-        vbox4.Add(sizer4)
-        vbox4.Add(sizer5)
-        vbox4.Add(sizer6)
 
-        other_hsizer.Add(vbox4, 0, wx.TOP, 4)
+        vbox3.Add(sizer1)
+        vbox3.Add(sizer2)
+        vbox3.Add(sizer3)
+        vbox3.Add(sizer4)
+        vbox3.Add(sizer5)
+        vbox3.Add(sizer6)
 
-        panel4.SetSizer(other_hsizer)
-        vbox.Add(panel4, 0, wx.BOTTOM, 15)
+        opts_hsizer.Add(vbox3, 0, wx.TOP, 5)
 
-        vbox.Add((-1, 15))
+        panel3.SetSizer(opts_hsizer)
+        vbox.Add(panel3, 0, wx.ALL, 10)
 
-        # panel5
+        # Section 4
 
-        panel5 = wx.Panel(panel, -1)
-        sizer5 = wx.BoxSizer(wx.HORIZONTAL)
-        sizer5.Add((145, -1), 1, wx.EXPAND | wx.ALIGN_RIGHT)
+        panel4 = wx.Panel(self, -1)
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        self.ok_btn = wx.Button(panel5, -1, 'Fit', size=(50, -1))
-        self.ok_btn.SetDefault()
-        self.cancel_btn = wx.Button(panel5, -1, 'Cancel', size=(50, -1))
-        
-        self.Bind(wx.EVT_BUTTON, self.OnFit, self.ok_btn)
+        # Create the button controls (Fit and Cancel) and bind their events.
+        self.fit_btn = wx.Button(panel4, -1, "Fit")
+        self.fit_btn.SetDefault()
+        self.cancel_btn = wx.Button(panel4, -1, "Cancel")
+
+        self.Bind(wx.EVT_BUTTON, self.OnFit, self.fit_btn)
         self.Bind(wx.EVT_BUTTON, self.OnCancel, self.cancel_btn)
-        
-        sizer5.Add(self.ok_btn)
-        sizer5.Add(self.cancel_btn)
 
-        panel5.SetSizer(sizer5)
-        vbox.Add(panel5, 1, wx.BOTTOM, 9)
+        btn_sizer.Add((10,-1), 1)  # stretchable whitespace
+        btn_sizer.Add(self.fit_btn)
+        btn_sizer.Add((10,-1), 0)  # non-stretchable whitespace
+        btn_sizer.Add(self.cancel_btn, 0)
 
-        vbox_top.Add(vbox, 1, wx.LEFT, 5)
+        panel4.SetSizer(btn_sizer)
+        vbox.Add(panel4, 0, wx.EXPAND|wx.ALL, 10)
 
-        panel.SetSizer(vbox_top)
-        vbox_top.Fit(panel)
+        self.SetSizer(vbox)
+        vbox.Fit(self)
 
         self.Centre()
         self.ShowModal()
-        #self.Destroy()
-        
-    def OnDe(self, event):
-        
-        self.burn.Enable(False)
-        self.tmin.Enable(False)
-        self.tmax.Enable(False)
-        self.crossover.Enable(True)
-        self.pop.Enable(True)
-        
-    def OnAmeoba(self, event):
-        
-        self.burn.Enable(False)
-        self.tmin.Enable(False)
-        self.tmax.Enable(False)
-        self.crossover.Enable(False)
+
+    def OnAmoeba(self, event):
         self.pop.Enable(False)
-        
-    
-    def OnDream(self, event):
-        
-        self.pop.Enable(True) 
-        self.burn.Enable(True)       
-        self.tmin.Enable(False)
-        self.tmax.Enable(False)
         self.crossover.Enable(False)
-                     
-    def OnRl(self, event):
-        
         self.burn.Enable(False)
         self.tmin.Enable(False)
         self.tmax.Enable(False)
-                
-    def OnPt(self, event):
-        
-        self.pop.Enable(True) 
-        self.burn.Enable(True)       
+
+    def OnDE(self, event):
+        self.pop.Enable(True)
+        self.crossover.Enable(True)
+        self.burn.Enable(False)
+        self.tmin.Enable(False)
+        self.tmax.Enable(False)
+
+    def OnDream(self, event):
+        self.pop.Enable(True)
+        self.crossover.Enable(False)
+        self.burn.Enable(True)
+        self.tmin.Enable(False)
+        self.tmax.Enable(False)
+
+    def OnPT(self, event):
+        self.pop.Enable(True)
+        self.crossover.Enable(True)
+        self.burn.Enable(True)
         self.tmin.Enable(True)
         self.tmax.Enable(True)
-        self.crossover.Enable(True)       
-                        
+
+    def OnRL(self, event):
+        self.pop.Enable(True)
+        self.crossover.Enable(True)
+        self.burn.Enable(False)
+        self.tmin.Enable(False)
+        self.tmax.Enable(False)
+
     def OnFit(self, event):
-        
-        print 'fit button pressed' 
-        self.Destroy()   
-        
+        print 'fit button pressed'
+        self.Destroy()
+
     def OnCancel(self, event):
-        print 'cancel button pressed' 
-        self.Destroy()   
-        
+        print 'cancel button pressed'
+        self.Destroy()
+
 if __name__=="__main__":
     app = wx.App()
     FitControl(None, -1, 'Fit Control')
