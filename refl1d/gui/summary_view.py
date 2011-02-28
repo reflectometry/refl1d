@@ -42,9 +42,7 @@ class SummaryView(scrolled.ScrolledPanel):
     def OnUpdateParameters(self, event):
         if self.model == event.data:
             self.update_parameters()
-        else:
-            print 'model and data donot match'
-
+        
     def OnShow(self, event):
         if self._reset_model:
            self.update_model()
@@ -71,7 +69,7 @@ class SummaryView(scrolled.ScrolledPanel):
         
         # Not an efficient way to making label align with the values in
         # GridBagSizer
-        self.layer_label = wx.StaticText(self, wx.ID_ANY, 'Layer Name                                                          Value                     Low Range                        High Range                    Fixed')
+        self.layer_label = wx.StaticText(self, wx.ID_ANY, 'Layer Name                                                          Value                     Low Range                        High Range')
         #self.slider_label = wx.StaticText(self, wx.ID_ANY, '            ')
         #self.value_label = wx.StaticText(self, wx.ID_ANY, 'Value')
         #self.low_label = wx.StaticText(self, wx.ID_ANY, 'Low Range')
@@ -134,18 +132,14 @@ class ParameterSummary(wx.Panel):
                          style=wx.TE_LEFT )
         self.max_range = wx.StaticText(self, wx.ID_ANY, str(self.high),
                          style=wx.TE_LEFT )
-        self.fixed_cb = wx.CheckBox(self, wx.ID_ANY)
-                         
-
+        
         # add static box and slider to sizer
-
         text_hbox.Add(self.layer_name,1, wx.LEFT,1 )
         text_hbox.Add(self.slider, 1, wx.EXPAND|wx.LEFT,20)
         text_hbox.Add(self.value, 1, wx.EXPAND|wx.LEFT,20)
         text_hbox.Add(self.min_range, 1, wx.LEFT,1)
         text_hbox.Add(self.max_range, 1, wx.LEFT,1)
-        text_hbox.Add(self.fixed_cb, 1, wx.LEFT,1)
-
+        
         self.SetSizer(text_hbox)
 
         self.slider.Bind(wx.EVT_SCROLL, self.OnScroll)
@@ -158,6 +152,14 @@ class ParameterSummary(wx.Panel):
         #slider_pos = min(max(slider_pos,0),100)
         self.slider.SetValue(slider_pos)
         self.value.SetLabel(str(nice(self.parameter.value)))
+
+        # update new min and max range of values if changed
+        newlow, newhigh = (v for v in self.parameter.bounds.limits)
+        if newlow != self.low:
+            self.min_range.SetLabel(str(newlow)) 
+
+        #if newhigh != self.high:
+        self.max_range.SetLabel(str(newhigh)) 
 
     def OnScroll(self, event):
         value = self.slider.GetValue()

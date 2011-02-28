@@ -96,6 +96,7 @@ WINDOW_BKGD_COLOUR = "#ECE9D8"
 PALE_YELLOW = "#FFFFB0"
 
 #==============================================================================
+IMPROVEMENT_DELAY = 5
 
 EVT_RESULT_ID = 1
 
@@ -105,7 +106,8 @@ def EVT_RESULT(win, func):
 
 
 class GUIMonitor(monitor.TimedUpdate):
-    def __init__(self, problem, progress=1, improvement=15):
+    def __init__(self, problem, progress=1, improvement=None):
+        improvement = improvement if improvement else IMPROVEMENT_DELAY
         monitor.TimedUpdate.__init__(self, progress=progress,
                                      improvement=improvement)
         self.problem = problem
@@ -443,7 +445,7 @@ class AppPanel(wx.Panel):
         # new model parameters)
         pub.subscribe(self.OnUpdateModel, "update_model")
         pub.subscribe(self.OnUpdateParameters, "update_parameters")
-
+        
     def OnResiduals(self, event):
         pass  # not implemented
 

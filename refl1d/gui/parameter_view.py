@@ -37,7 +37,7 @@ class ParameterView(wx.Panel):
         self.tree.AddColumn("Parameter Value")
         self.tree.AddColumn("Min Range")
         self.tree.AddColumn("Max Range")
-        self.tree.AddColumn("Fittable")
+        self.tree.AddColumn("Fixed")
 
         # Align the textctrl box with treelistctrl
         self.tree.SetMainColumn(0) # the one with the tree in it...
@@ -64,18 +64,19 @@ class ParameterView(wx.Panel):
         
         self.tree.GetMainWindow().Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
         self.tree.Bind(wx.EVT_TREE_END_LABEL_EDIT, self.OnEndEdit)
-        self.tree.Bind(wx.EVT_TREE_ITEM_GETTOOLTIP,self.OnTreeTooltip)
+        #self.tree.Bind(wx.EVT_TREE_ITEM_GETTOOLTIP,self.OnTreeTooltip)
         wx.EVT_MOTION(self.tree, self.OnMouseMotion) 
         
         vbox.Add(self.tree, 1, wx.EXPAND)
         self.SetSizer(vbox)
         self.SetAutoLayout(1)
         
-    
+    """
     def OnTreeTooltip(self, event):
          itemtext = self.tree.GetItemText(event.GetItem())
          event.SetToolTip("This is a ToolTip for %s!" % itemtext)
          event.Skip() 
+    """
          
     def OnMouseMotion(self, event):
         pos = event.GetPosition()
@@ -103,9 +104,7 @@ class ParameterView(wx.Panel):
     def OnUpdateParameters(self, event):
         if self.model == event.data:
             self.update_parameters()    
-        else:
-            print 'model donot match'
-
+        
     # ============ Operations on the model  ===============
 
     def set_model(self, model):
@@ -177,7 +176,6 @@ class ParameterView(wx.Panel):
     def OnEndEdit(self, evt):
         item = self.tree.GetSelection()
         self.node_object = self.tree.GetItemPyData(evt.GetItem())
-
         # Not an efficient way of updating values of Parameters
         # but its hard to find out which column changed during edit
         # operation. May be fixed in Future.
@@ -185,7 +183,7 @@ class ParameterView(wx.Panel):
         wx.CallAfter(self.get_new_value, item, 2)
         wx.CallAfter(self.get_new_min, item, 3)
         wx.CallAfter(self.get_new_max, item, 4)
-
+        
     def get_new_value(self, item, column):
         new_value = self.tree.GetItemText(item, column)
 
@@ -221,11 +219,10 @@ class ParameterView(wx.Panel):
     def get_new_max(self, item, column):
         low = self.node_object.bounds.limits[0]
         high = float(self.tree.GetItemText(item, column))
-
         # send update message to other tabs/panels only if parameter max range
         # value is updated
         if high != self.node_object.bounds.limits[1]:
             self.node_object.range(low, high)
             self.update_local = True
             pub.sendMessage("update_parameters", self.model)
-
+        
