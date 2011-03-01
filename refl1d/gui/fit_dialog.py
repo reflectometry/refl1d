@@ -31,6 +31,7 @@ for the user to control fitting options.
 import wx
 
 from util import Validator
+from wx.lib.pubsub import Publisher as pub
 
 class FitControl(wx.Dialog):
     """
@@ -228,11 +229,74 @@ class FitControl(wx.Dialog):
         self.tmax.Enable(False)
 
     def OnFit(self, event):
-        print 'fit button pressed'
-        self.Destroy()
+        # send fit options based on algorithm selected
+        if self.de_radio.GetValue():
+            # de algorithm is selected, send all fit options related to de
+            algo = 'de'
+            steps = self.stepsize.GetValue()
+            pop = self.pop.GetValue()
+            cross = self.crossover.GetValue()
+            fit_option = dict(steps=steps, pop=pop,cross=cross, algo=algo,)
+            
+            # send fit options to main panel to start fit
+            pub.sendMessage("fit_option", fit_option)
+            self.Destroy()
+        
+        if self.amoeba_radio.GetValue():
+            # ameoba algorithm is selected, send all fit options related 
+            # to ameoba
+            algo = 'amoeba'
+            steps = self.stepsize.GetValue()
+            fit_option = dict(steps=steps, algo=algo,)
+            
+            # send fit options to main panel to start fit
+            pub.sendMessage("fit_option", fit_option)
+            self.Destroy()
+            
+        if self.dream_radio.GetValue():
+            # dream algorithm is selected, send all fit options related to dream
+            algo = 'dream'
+            steps = self.stepsize.GetValue()
+            burn = self.burn.GetValue()
+            pop = self.pop.GetValue()
+            fit_option = dict(steps=steps, pop=pop, burn=burn, algo=algo,)
+            
+            # send fit options to main panel to start fit
+            pub.sendMessage("fit_option", fit_option)
+            self.Destroy()
+        
+        if self.pt_radio.GetValue():
+            # parallel temparing algorithm is selected, send all fit options 
+            # related to parallel temparing
+            algo = 'pt'
+            steps = self.stepsize.GetValue()
+            pop = self.pop.GetValue()
+            tmin = self.tmin.GetValue()
+            tmax = self.tmax.GetValue()
+            burn = self.burn.GetValue()
+            cross = self.crossover.GetValue()
+            fit_option = dict(steps=steps, tmin=tmin, tmax=tmax, burn=burn,
+                                      pop=pop, cross=cross, algo=algo,)
+            
+            # send fit options to main panel to start fit
+            pub.sendMessage("fit_option", fit_option)
+            self.Destroy()    
+            
+        if self.rl_radio.GetValue():
+            # random lines algorithm is selected, send all fit options related 
+            # to random lines
+            algo = 'rl'
+            steps = self.stepsize.GetValue()
+            pop = self.pop.GetValue()
+            cross = self.crossover.GetValue()
+            fit_option = dict(steps=steps, pop=pop, cross=cross, algo=algo,)
+            
+            # send fit options to main panel to start fit
+            pub.sendMessage("fit_option", fit_option)
+            self.Destroy()    
 
     def OnCancel(self, event):
-        print 'cancel button pressed'
+        # exit the fit control dialog box
         self.Destroy()
 
 if __name__=="__main__":

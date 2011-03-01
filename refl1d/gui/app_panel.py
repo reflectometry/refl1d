@@ -70,6 +70,8 @@ from .util import nice
 from .utilities import (get_appdir, log_time,
                         popup_error_message, popup_warning_message,
                         StatusBarInfo, ExecuteInThread, WorkInProgress)
+                        
+from refl1d.probe import Probe                        
 
 # Disable interactive mode so that plots are only updated on show() or draw().
 # Note that the interactive function must be called before selecting a backend
@@ -209,16 +211,20 @@ class AppPanel(wx.Panel):
         _item = view_menu.AppendRadioItem(wx.ID_ANY,
                                           "&Fresnel",
                                           "Plot y-axis in Fresnel scale")
+        frame.Bind(wx.EVT_MENU, self.OnFresnel, _item)                                          
         _item = view_menu.AppendRadioItem(wx.ID_ANY,
                                           "Li&near",
                                           "Plot y-axis in linear scale")
+        frame.Bind(wx.EVT_MENU, self.OnLinear, _item)
         _item = view_menu.AppendRadioItem(wx.ID_ANY,
                                           "&Log",
                                           "Plot y-axis in log scale")
         _item.Check(True)
+        frame.Bind(wx.EVT_MENU, self.OnLog, _item)
         _item = view_menu.AppendRadioItem(wx.ID_ANY,
                                           "&Q4",
                                           "Plot y-axis in Q4 scale")
+        frame.Bind(wx.EVT_MENU, self.OnQ, _item)
         view_menu.AppendSeparator()
 
         _item = view_menu.Append(wx.ID_ANY,
@@ -358,7 +364,7 @@ class AppPanel(wx.Panel):
         self.page1 = ParameterView(nb)
         self.page2 = SummaryView(nb)
         self.page3 = LogView(nb)
-        self.page4 = FitView(nb)
+        #self.page4 = FitView(nb)
         #self.page5 = OtherView(nb)
 
         # Add the pages to the notebook with a label to show on the tab.
@@ -366,7 +372,7 @@ class AppPanel(wx.Panel):
         nb.AddPage(self.page1, "Parameters")
         nb.AddPage(self.page2, "Summary")
         nb.AddPage(self.page3, "Log")
-        nb.AddPage(self.page4, "Fit")
+        #nb.AddPage(self.page4, "Fit")
         #nb.AddPage(self.page5, "Dummy")
 
         self.pan2.sizer = wx.BoxSizer(wx.VERTICAL)
@@ -432,13 +438,13 @@ class AppPanel(wx.Panel):
         self.args = [file, 'T1']
         self.problem = load_problem(self.args)
         self.redraw(self.problem)
-
+        
         # Send new model (problem) loaded message to all interested panels.
         pub.sendMessage("initial_model", self.problem)
 
         # recieving fit message from fit tab
-        pub.subscribe(self.OnFit, "fit")
-
+        #pub.subscribe(self.OnFit, "fit")
+        pub.subscribe(self.OnFit, "fit_option")
         # recieving parameter update message from parameter tab
         # this will trigger on_para_change method to update all the views of
         # model (profile tab, summary tab and the canvas will be redrawn will
@@ -457,7 +463,39 @@ class AppPanel(wx.Panel):
 
     def OnFitOptions(self, event):
         fit_dlg = FitControl(self, -1, "Fit Control")
+        
+    def OnFit(self, event):
+    
+        from .main import FitOpts, FitProxy, SerialMapper
+        from refl1d.fitter import RLFit, DEFit, BFGSFit, AmoebaFit, SnobFit
+        #from refl1d.probe import Probe
 
+        opts = FitOpts(self.args)
+        FITTERS = dict(dream=None, rl=RLFit,
+                   de=DEFit, newton=BFGSFit, amoeba=AmoebaFit, snobfit=SnobFit)
+
+        self.sb.SetStatusText('Fit status: Running', 3)
+        moniter = GUIMonitor(self.problem)
+        
+        options = event.data
+        algorithm = options['algo']
+        
+        self.fitter = FitProxy(FITTERS[algorithm],
+                               problem=self.problem, moniter=moniter, 
+                               options=options)
+        mapper = SerialMapper
+        
+        Probe.view = opts.plot
+        
+        make_store(self.problem,opts)
+
+        self.pan1.Layout()
+
+        # Start a new thread worker and give fit problem to the worker.
+        self.worker = Worker(self, self.problem, fn=self.fitter,
+                                   pars=opts.args, mapper=mapper)
+      
+    '''    
     def OnFit(self, event):
         """
         On recieving a fit message, start a fit of the model to the data.
@@ -487,7 +525,8 @@ class AppPanel(wx.Panel):
         # Start a new thread worker and give fit problem to the worker.
         self.worker = Worker(self, self.problem, fn=self.fitter,
                                    pars=opts.args, mapper=mapper)
-
+    '''
+    
     def OnFitResult(self, event):
         self.sb.SetStatusText('Fit status: Complete', 3)
         pub.sendMessage("fit_complete")
@@ -507,8 +546,6 @@ class AppPanel(wx.Panel):
             pass
         sys.stdout = open(problem.output+".out", "w")
 
-        #self.progress_gauge.Stop()
-        #self.progress_gauge.Show(False)
         self.pan1.Layout()
 
         self.redraw(problem)
@@ -564,13 +601,30 @@ class AppPanel(wx.Panel):
         pub.sendMessage("update_parameters", self.problem)
         self.redraw(self.problem)
 
+    def OnFresnel(self, event):
+        Probe.view ='fresnel'
+        self.redraw(self.problem)
+        
+    def OnLinear(self, event):
+        Probe.view ='linear'
+        self.redraw(self.problem)
+        
+    def OnQ(self, event):
+        Probe.view ='q4'
+        self.redraw(self.problem)
+        
+    def OnLog(self, event):
+        Probe.view ='log'
+        self.redraw(self.problem)
+    
+    
     def redraw(self, model):
         # Redraw the canvas.
         pylab.clf() #### clear the canvas
         self._activate_figure()
         model.show()
         model.fitness.plot_reflectivity()
-        pylab.text(0, 0, 'chisq=%g' % model.chisq(),
+        pylab.text(0.01, 0.01, 'chisq=%g' % model.chisq(),
                    transform=pylab.gca().transAxes)
         pylab.draw()
 
