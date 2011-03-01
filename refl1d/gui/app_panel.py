@@ -58,6 +58,8 @@ import pylab
 
 from refl1d.mystic import monitor, parameter
 from refl1d.profileview.panel import ProfileView
+from refl1d.probe import Probe
+
 from .summary_view import SummaryView
 from .fit_view import FitView
 from .parameter_view import ParameterView
@@ -70,8 +72,6 @@ from .util import nice
 from .utilities import (get_appdir, log_time,
                         popup_error_message, popup_warning_message,
                         StatusBarInfo, ExecuteInThread, WorkInProgress)
-                        
-from refl1d.probe import Probe                        
 
 # Disable interactive mode so that plots are only updated on show() or draw().
 # Note that the interactive function must be called before selecting a backend
@@ -181,6 +181,7 @@ class AppPanel(wx.Panel):
                                   "&Import",
                                   "Import script file")
         frame.Bind(wx.EVT_MENU, self.OnImportScript, _item)
+
         file_menu.PrependSeparator()
 
         _item = file_menu.Prepend(wx.ID_SAVEAS,
@@ -188,16 +189,19 @@ class AppPanel(wx.Panel):
                                   "Save model as another name")
         frame.Bind(wx.EVT_MENU, self.OnSaveAsModel, _item)
         file_menu.Enable(id=wx.ID_SAVEAS, enable=False)
+
         _item = file_menu.Prepend(wx.ID_SAVE,
                                   "&Save",
                                   "Save model")
         frame.Bind(wx.EVT_MENU, self.OnSaveModel, _item)
         file_menu.Enable(id=wx.ID_SAVE, enable=False)
+
         _item = file_menu.Prepend(wx.ID_OPEN,
                                   "&Open",
                                   "Open existing model")
         frame.Bind(wx.EVT_MENU, self.OnOpenModel, _item)
         file_menu.Enable(id=wx.ID_OPEN, enable=False)
+
         _item = file_menu.Prepend(wx.ID_NEW,
                                   "&New",
                                   "Create new model")
@@ -211,20 +215,24 @@ class AppPanel(wx.Panel):
         _item = view_menu.AppendRadioItem(wx.ID_ANY,
                                           "&Fresnel",
                                           "Plot y-axis in Fresnel scale")
-        frame.Bind(wx.EVT_MENU, self.OnFresnel, _item)                                          
+        frame.Bind(wx.EVT_MENU, self.OnFresnel, _item)
+        _item.Check(True)
+
         _item = view_menu.AppendRadioItem(wx.ID_ANY,
                                           "Li&near",
                                           "Plot y-axis in linear scale")
         frame.Bind(wx.EVT_MENU, self.OnLinear, _item)
+
         _item = view_menu.AppendRadioItem(wx.ID_ANY,
                                           "&Log",
                                           "Plot y-axis in log scale")
-        _item.Check(True)
         frame.Bind(wx.EVT_MENU, self.OnLog, _item)
+
         _item = view_menu.AppendRadioItem(wx.ID_ANY,
                                           "&Q4",
                                           "Plot y-axis in Q4 scale")
-        frame.Bind(wx.EVT_MENU, self.OnQ, _item)
+        frame.Bind(wx.EVT_MENU, self.OnQ4, _item)
+
         view_menu.AppendSeparator()
 
         _item = view_menu.Append(wx.ID_ANY,
@@ -244,6 +252,7 @@ class AppPanel(wx.Panel):
                                 "Start fitting operation")
         frame.Bind(wx.EVT_MENU, self.OnStartFit, _item)
         fit_menu.Enable(id=_item.GetId(), enable=False)
+
         _item = fit_menu.Append(wx.ID_ANY,
                                 "&Stop Fit",
                                 "Stop fitting operation")
@@ -263,13 +272,15 @@ class AppPanel(wx.Panel):
         _item = adv_menu.AppendRadioItem(wx.ID_ANY,
                                "&Top-Bottom",
                                "Display plot and view panels top to bottom")
-        _item.Check(True)
         frame.Bind(wx.EVT_MENU, self.OnSplitHorizontal, _item)
+        _item.Check(True)
+
         _item = adv_menu.AppendRadioItem(wx.ID_ANY,
                                "&Left-Right",
                                "Display plot and view panels left to right")
-        self.vert_sash_pos = 0  # set sash to center on first vertical split
         frame.Bind(wx.EVT_MENU, self.OnSplitVertical, _item)
+        self.vert_sash_pos = 0  # set sash to center on first vertical split
+
         adv_menu.AppendSeparator()
 
         _item = adv_menu.Append(wx.ID_ANY,
@@ -293,7 +304,7 @@ class AppPanel(wx.Panel):
         self.sb.SetStatusWidths(subbars)
 
     def split_panel(self):
-        """Creates separate left and right panels."""
+        """Splits panel into a top panel and a bottom panel."""
 
         # Split the panel into two pieces.
         self.sp = sp = wx.SplitterWindow(self, style=wx.SP_3D|wx.SP_LIVE_UPDATE)
@@ -308,7 +319,7 @@ class AppPanel(wx.Panel):
         sp.SplitHorizontally(self.pan1, self.pan2)
         sp.SetSashGravity(0.5)  # on resize expand/contract panels equally
 
-        # Initialize the left and right panels.
+        # Initialize the panels.
         self.init_top_panel()
         self.init_bottom_panel()
 
@@ -364,16 +375,14 @@ class AppPanel(wx.Panel):
         self.page1 = ParameterView(nb)
         self.page2 = SummaryView(nb)
         self.page3 = LogView(nb)
-        #self.page4 = FitView(nb)
-        #self.page5 = OtherView(nb)
+        #self.page4 = OtherView(nb)
 
         # Add the pages to the notebook with a label to show on the tab.
         nb.AddPage(self.page0, "Profile")
         nb.AddPage(self.page1, "Parameters")
         nb.AddPage(self.page2, "Summary")
         nb.AddPage(self.page3, "Log")
-        #nb.AddPage(self.page4, "Fit")
-        #nb.AddPage(self.page5, "Dummy")
+        #nb.AddPage(self.page4, "Dummy")
 
         self.pan2.sizer = wx.BoxSizer(wx.VERTICAL)
         self.pan2.sizer.Add(nb, 1, wx.EXPAND)
@@ -438,20 +447,20 @@ class AppPanel(wx.Panel):
         self.args = [file, 'T1']
         self.problem = load_problem(self.args)
         self.redraw(self.problem)
-        
+
         # Send new model (problem) loaded message to all interested panels.
         pub.sendMessage("initial_model", self.problem)
 
-        # recieving fit message from fit tab
+        # Recieving message to start a fit operation.
         #pub.subscribe(self.OnFit, "fit")
         pub.subscribe(self.OnFit, "fit_option")
-        # recieving parameter update message from parameter tab
-        # this will trigger on_para_change method to update all the views of
-        # model (profile tab, summary tab and the canvas will be redrawn will
-        # new model parameters)
+        # Recieving parameter update message from parameter tab
+        # This will trigger on_para_change method to update all the views of
+        # model (profile tab, summary tab and the canvas will be redrawn with
+        # new model parameters).
         pub.subscribe(self.OnUpdateModel, "update_model")
         pub.subscribe(self.OnUpdateParameters, "update_parameters")
-        
+
     def OnResiduals(self, event):
         pass  # not implemented
 
@@ -463,30 +472,28 @@ class AppPanel(wx.Panel):
 
     def OnFitOptions(self, event):
         fit_dlg = FitControl(self, -1, "Fit Control")
-        
+
     def OnFit(self, event):
-    
         from .main import FitOpts, FitProxy, SerialMapper
         from refl1d.fitter import RLFit, DEFit, BFGSFit, AmoebaFit, SnobFit
-        #from refl1d.probe import Probe
 
         opts = FitOpts(self.args)
         FITTERS = dict(dream=None, rl=RLFit,
                    de=DEFit, newton=BFGSFit, amoeba=AmoebaFit, snobfit=SnobFit)
 
         self.sb.SetStatusText('Fit status: Running', 3)
-        moniter = GUIMonitor(self.problem)
-        
+        monitor = GUIMonitor(self.problem)
+
         options = event.data
         algorithm = options['algo']
-        
+
         self.fitter = FitProxy(FITTERS[algorithm],
-                               problem=self.problem, moniter=moniter, 
+                               problem=self.problem, monitor=monitor,
                                options=options)
         mapper = SerialMapper
-        
+
         Probe.view = opts.plot
-        
+
         make_store(self.problem,opts)
 
         self.pan1.Layout()
@@ -494,8 +501,8 @@ class AppPanel(wx.Panel):
         # Start a new thread worker and give fit problem to the worker.
         self.worker = Worker(self, self.problem, fn=self.fitter,
                                    pars=opts.args, mapper=mapper)
-      
-    '''    
+
+    '''
     def OnFit(self, event):
         """
         On recieving a fit message, start a fit of the model to the data.
@@ -506,14 +513,14 @@ class AppPanel(wx.Panel):
         from refl1d.probe import Probe
 
         self.sb.SetStatusText('Fit status: Running', 3)
-        moniter = GUIMonitor(self.problem)
+        monitor = GUIMonitor(self.problem)
         opts = FitOpts(self.args)
 
         FITTERS = dict(dream=None, rl=RLFit,
                    de=DEFit, newton=BFGSFit, amoeba=AmoebaFit, snobfit=SnobFit)
 
         self.fitter = FitProxy(FITTERS[opts.fit],
-                               problem=self.problem, moniter=moniter,opts=opts,)
+                               problem=self.problem, monitor=monitor,opts=opts,)
         mapper = SerialMapper
 
         Probe.view = opts.plot
@@ -526,7 +533,7 @@ class AppPanel(wx.Panel):
         self.worker = Worker(self, self.problem, fn=self.fitter,
                                    pars=opts.args, mapper=mapper)
     '''
-    
+
     def OnFitResult(self, event):
         self.sb.SetStatusText('Fit status: Complete', 3)
         pub.sendMessage("fit_complete")
@@ -537,7 +544,6 @@ class AppPanel(wx.Panel):
             self.remember_best(self.fitter, self.problem, event.data)
 
     def remember_best(self, fitter, problem, best):
-
         fitter.save(problem.output)
 
         try:
@@ -547,7 +553,6 @@ class AppPanel(wx.Panel):
         sys.stdout = open(problem.output+".out", "w")
 
         self.pan1.Layout()
-
         self.redraw(problem)
 
     def OnSplitHorizontal(self, event):
@@ -604,20 +609,19 @@ class AppPanel(wx.Panel):
     def OnFresnel(self, event):
         Probe.view ='fresnel'
         self.redraw(self.problem)
-        
+
     def OnLinear(self, event):
         Probe.view ='linear'
         self.redraw(self.problem)
-        
-    def OnQ(self, event):
+
+    def OnQ4(self, event):
         Probe.view ='q4'
         self.redraw(self.problem)
-        
+
     def OnLog(self, event):
         Probe.view ='log'
         self.redraw(self.problem)
-    
-    
+
     def redraw(self, model):
         # Redraw the canvas.
         pylab.clf() #### clear the canvas

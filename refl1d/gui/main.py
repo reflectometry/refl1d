@@ -16,13 +16,13 @@ from refl1d.mystic import parameter
 from refl1d.probe import Probe
 
 class FitProxy(object):
-    def __init__(self, fitter, problem, moniter, options):
+    def __init__(self, fitter, problem, monitor, options):
 
         self.fitter = fitter
         self.problem = problem
-        self.moniter = moniter
+        self.monitor = monitor
         self.options = options
-   
+
     def fit(self):
         import time
         from refl1d.fitter import Result
@@ -30,13 +30,13 @@ class FitProxy(object):
             t0 = time.clock()
             optimizer = self.fitter(self.problem)
             x = optimizer.solve(steps=int(self.options['steps']),
-                                monitors = self.moniter,
+                                monitors = self.monitor,
                                 burn=0,
                                 pop=int(self.options['pop']))
             print "time", time.clock() - t0
         else:
             x = self.problem.getp()
-   
+
         self.result = x
         self.problem.setp(x)
         return x
@@ -51,15 +51,15 @@ class FitProxy(object):
         P = self.problem
         pylab.suptitle(":".join((P.store,P.title)))
         P.plot(figfile=output_path)
-        
+
 class FitProxy1(object):
-    def __init__(self, fitter, problem, moniter ,opts):
+    def __init__(self, fitter, problem, monitor ,opts):
 
         self.fitter = fitter
         self.problem = problem
-        self.moniter = moniter
+        self.monitor = monitor
         self.opts = opts
-   
+
     def fit(self):
         import time
         from refl1d.fitter import Result
@@ -67,13 +67,13 @@ class FitProxy1(object):
             t0 = time.clock()
             optimizer = self.fitter(self.problem)
             x = optimizer.solve(steps=int(self.opts.steps),
-                                monitors = self.moniter,
+                                monitors = self.monitor,
                                 burn=int(self.opts.burn),
                                 pop=int(self.opts.pop))
             print "time", time.clock() - t0
         else:
             x = self.problem.getp()
-   
+
         self.result = x
         self.problem.setp(x)
         return x

@@ -54,6 +54,7 @@ def make_probe(**kw):
     """
     Return a reflectometry measurement object of the given resolution.
     """
+
     radiation = kw.pop('radiation')
     kw = dict((k,v) for k,v in kw.items() if k in PROBE_KW)
     if radiation == 'neutron':
@@ -104,10 +105,12 @@ class Probe(object):
     substrate and surface materials are a property of the sample,
     and should share the same material.
     """
+
     polarized = False
     view = "fresnel"
     substrate = None
     surface = None
+
     def __init__(self, T=None, dT=0, L=None, dL=0, data = None,
                  intensity=1, background=0, back_absorption=1, theta_offset=0,
                  back_reflectivity=False):
@@ -178,7 +181,6 @@ class Probe(object):
         """
         return sqrt(w**2/I + d**2/12.)
 
-
     def log10_to_linear(self):
         """
         Convert data from log to linear.
@@ -196,6 +198,7 @@ class Probe(object):
     def _get_data(self):
         raise NotImplementedError
         return self.Ro,self.dR
+
     def _set_data(self, data):
         # Setting data is dangerous since the Q points may have been
         # reordered to keep them sorted.  The external user may be
@@ -218,6 +221,7 @@ class Probe(object):
         # Remember the original so we can resynthesize as needed
         self.Ro = self.R
     data = property(_get_data, _set_data)
+
     def resynth_data(self):
         """
         Generate new data according to the model R ~ N(Ro,dR).
@@ -281,6 +285,7 @@ class Probe(object):
             Q = self.Qo
         return Q
     Q = property(_Q)
+
     def _calc_Q(self):
         if self.theta_offset.value != 0:
             Q = TL2Q(T=self.calc_T+self.theta_offset.value, L=self.calc_L)
@@ -289,17 +294,20 @@ class Probe(object):
             Q = self.calc_Qo
         return Q if not self.back_reflectivity else -Q
     calc_Q = property(_calc_Q)
+
     def parameters(self):
         return dict(intensity=self.intensity,
                     background=self.background,
                     back_absorption=self.back_absorption,
                     theta_offset=self.theta_offset)
+
     def scattering_factors(self, material):
         """
         Returns the scattering factors associated with the material given
         the range of wavelengths/energies used in the probe.
         """
         raise NotImplementedError
+
     def __len__(self):
         """
         Returns the number of scattering factors that will be returned for
@@ -323,6 +331,7 @@ class Probe(object):
         will be biased toward peaks, and smallest absolute error dR will
         be biased toward valleys.
         """
+
         # Assumes self contains sorted Qo and associated T,L
         # Note: calc_Qo is already sorted
         Q = numpy.arange(self.Qo[0],self.Qo[-1],dQ)
@@ -367,6 +376,7 @@ class Probe(object):
         The measurement point itself will not be used to avoid accidental
         bias from uniform Q steps.
         """
+
         rng = numpy.random.RandomState(seed=seed)
         T = rng.normal(self.T[:,None],self.dT[:,None],size=(len(self.dT),n))
         L = rng.normal(self.L[:,None],self.dL[:,None],size=(len(self.dL),n))
@@ -385,6 +395,7 @@ class Probe(object):
         Apply factors such as beam intensity, background, backabsorption,
         resolution to the data.
         """
+
         # Handle absorption through the substrate, which occurs when Q<0
         # (condition)*C is C when condition is True or 0 when False,
         # (condition)*(C-1)+1 is C when condition is True or 1 when False.
@@ -410,6 +421,7 @@ class Probe(object):
 
         Returns F = R(probe.Q), where R is magnitude squared reflectivity.
         """
+
         # Doesn't use ProbeCache, but this routine is not time critical
         Srho,Sirho = (0,0) if substrate is None else substrate.sld(self)[:2]
         Vrho,Virho = (0,0) if surface is None else surface.sld(self)[:2]
@@ -424,6 +436,7 @@ class Probe(object):
 
         Need substrate/surface for Fresnel reflectivity
         """
+
         view = view if view is not None else self.view
         if view == 'linear':
             self.plot_linear(theory=theory)
@@ -446,7 +459,6 @@ class Probe(object):
         pylab.ylabel(r'Q resolution ($1-\sigma \AA^{-1}$)')
         pylab.title('Measurement resolution')
 
-
     def plot_linear(self, theory=None):
         """
         Plot the data associated with probe.
@@ -461,6 +473,7 @@ class Probe(object):
         pylab.yscale('linear')
         pylab.xlabel('Q (inv Angstroms)')
         pylab.ylabel('Reflectivity')
+
     def plot_log(self, theory=None):
         """
         Plot the data associated with probe.
@@ -475,6 +488,7 @@ class Probe(object):
         pylab.yscale('log')
         pylab.xlabel('Q (inv Angstroms)')
         pylab.ylabel('Reflectivity')
+
     def plot_fresnel(self, theory=None, substrate=None, surface=None):
         """
         Plot the Fresnel reflectivity associated with the probe.
@@ -497,6 +511,7 @@ class Probe(object):
         else:
             name = "%s:%s"%(substrate.name, surface.name)
         pylab.ylabel('R/R(%s)'%(name))
+
     def plot_Q4(self, theory=None):
         """
         Plot the Q**4 reflectivity associated with the probe.
@@ -513,6 +528,7 @@ class Probe(object):
         pylab.xlabel('Q (inv Angstroms)')
         pylab.ylabel('R (100 Q)^4')
 
+
 class XrayProbe(Probe):
     """
     X-Ray probe.
@@ -523,6 +539,7 @@ class XrayProbe(Probe):
     X-ray data is traditionally recorded by angle and energy, rather
     than angle and wavelength as is used by neutron probes.
     """
+
     def scattering_factors(self, material):
         # doc string is inherited from parent (see below)
         rho, irho = xsf.xray_sld(material,
@@ -532,6 +549,7 @@ class XrayProbe(Probe):
         return rho[0], irho[0], 0
         return rho[self._sf_idx], irho[self._sf_idx], 0
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
+
 
 class NeutronProbe(Probe):
     def scattering_factors(self, material):
@@ -557,6 +575,7 @@ def measurement_union(xs):
     idx = numpy.argsort(Q)
     return T[idx],dT[idx],L[idx],dL[idx],Q[idx],dQ[idx]
 
+
 class PolarizedNeutronProbe(object):
     """
     Polarized neutron probe
@@ -564,9 +583,11 @@ class PolarizedNeutronProbe(object):
     *xs* (4 x NeutronProbe) is a sequence pp, pm, mp and mm.
     *Tguide* (degrees) is the angle of the guide field
     """
+
     view = None  # Default to Probe.view so only need to change in one place
     substrate = surface = None
     polarized = True
+
     def __init__(self, xs=None, Tguide=270):
         self.pp, self.pm, self.mp, self.mm = xs
 
@@ -671,15 +692,20 @@ class PolarizedNeutronProbe(object):
 
     def plot_resolution(self, theory=None):
         self._xs_plot('plot_resolution', theory=theory)
+
     def plot_linear(self, theory=None):
         self._xs_plot('plot_linear', theory=theory)
+
     def plot_log(self, theory=None):
         self._xs_plot('plot_log', theory=theory)
+
     def plot_fresnel(self, theory=None, substrate=None, surface=None):
         self._xs_plot('plot_fresnel', theory=theory,
                       substrate=substrate, surface=surface)
+
     def plot_Q4(self, theory=None):
         self._xs_plot('plot_Q4', theory=theory)
+
     def plot_SA(self, theory):
         import pylab
         if self.pp is None or self.mm is None:
@@ -714,6 +740,7 @@ class PolarizedNeutronProbe(object):
                 fn(theory=xstheory, **kw)
                 pylab.hold(True)
         if not isheld: pylab.hold(False)
+
 
 def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
     r"""
@@ -760,8 +787,6 @@ def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
         return Qp, v, None
 
 
-
-
 class ProbeSet(Probe):
     def __init__(self, probes):
         self.probes = list(probes)
@@ -785,26 +810,32 @@ class ProbeSet(Probe):
 
     def __len__(self):
         return self._len
+
     def _Q(self):
         return numpy.hstack(p.Q for p in self.probes)
     Q = property(_Q)
+
     def _calc_Q(self):
         return numpy.unique(numpy.hstack(p.calc_Q for p in self.probes))
     calc_Q = property(_calc_Q)
+
     def oversample(self, **kw):
         for p in self.probes: p.oversample(**kw)
     oversample.__doc__ = Probe.oversample.__doc__
+
     def scattering_factors(self, material):
         return self.probes[0].scattering_factors(material)
         result = [p.scattering_factors(material) for p in self.probes]
         return [numpy.hstack(v) for v in zip(*result)]
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
+
     def apply_beam(self, calc_Q, calc_R, resolution=True, **kw):
         if not resolution:
             raise UnimplementedError("apply_beam without resolution not supported on ProbeSet; use dQ=0 instead")
         result = [p.apply_beam(calc_Q, calc_R, **kw) for p in self.probes]
         Q,R = [numpy.hstack(v) for v in zip(*result)]
         return Q,R
+
     def plot(self, theory=None, **kw):
         import pylab
         pylab.clf()
@@ -812,21 +843,27 @@ class ProbeSet(Probe):
         for p,th in self._plotparts(theory): p.plot(theory=th, **kw)
         pylab.hold(False)
     plot.__doc__ = Probe.plot.__doc__
+
     def plot_resolution(self, **kw):
         for p in self.probes: p.plot_resolution(**kw)
     plot_resolution.__doc__ = Probe.plot_resolution.__doc__
+
     def plot_linear(self, theory=None, **kw):
         for p,th in self._plotparts(theory): p.plot_linear(theory=th, **kw)
     plot_linear.__doc__ = Probe.plot_linear.__doc__
+
     def plot_log(self, theory=None, **kw):
         for p,th in self._plotparts(theory): p.plot_log(theory=th, **kw)
     plot_log.__doc__ = Probe.plot_log.__doc__
+
     def plot_fresnel(self, theory=None, **kw):
         for p,th in self._plotparts(theory): p.plot_fresnel(theory=th, **kw)
     plot_fresnel.__doc__ = Probe.plot_fresnel.__doc__
+
     def plot_Q4(self, theory=None, **kw):
         for p,th in self._plotparts(theory): p.plot_Q4(theory=th, **kw)
     plot_Q4.__doc__ = Probe.plot_Q4.__doc__
+
     def _plotparts(self, theory):
         if theory == None:
             for p in self.probes:
@@ -861,6 +898,7 @@ class ProbeSet(Probe):
             p.background = background
             p.back_absorption = back_absorption
             p.theta_offset = theta_offset
+
     def stitch(self, tol=0.01):
         r"""
         Stitch together multiple datasets into a single dataset.
