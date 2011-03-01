@@ -7,10 +7,11 @@ from wx.lib.pubsub import Publisher as pub
 from .util import nice
 
 class SummaryView(scrolled.ScrolledPanel):
+    """
+    Model view showing summary of fit (only fittable parameters).
+    """
+
     def __init__(self, parent):
-        """
-        Model view showing summary of fit (only fittable parameters)
-        """
         scrolled.ScrolledPanel.__init__(self, parent, -1)
         self.parent = parent
 
@@ -42,7 +43,7 @@ class SummaryView(scrolled.ScrolledPanel):
     def OnUpdateParameters(self, event):
         if self.model == event.data:
             self.update_parameters()
-        
+
     def OnShow(self, event):
         if self._reset_model:
            self.update_model()
@@ -56,21 +57,22 @@ class SummaryView(scrolled.ScrolledPanel):
         self.update_model()
 
     def update_model(self):
-        #TODO not implemented but need to figure how to hide/show notebook tab
+        # TODO: Need to figure how to hide/show notebook tab.
         #if not self.IsShown():
-            #print "parameter tab is hidden"
-            #self._reset_model = True
-            #return
+        #    print "parameter tab is hidden"
+        #    self._reset_model = True
+        #    return
 
         self._reset_model = False
         self._reset_parameters = False
 
         bagSizer = wx.GridBagSizer(hgap=3, vgap=5)
-        
-        # Not an efficient way to making label align with the values in
-        # GridBagSizer
-        self.layer_label = wx.StaticText(self, wx.ID_ANY, 'Layer Name                                                          Value                     Low Range                        High Range')
-        #self.slider_label = wx.StaticText(self, wx.ID_ANY, '            ')
+
+        # TODO: Use columns in GridBagSizer, instead of putting all row data
+        #       in the first column.
+        self.layer_label = wx.StaticText(self, wx.ID_ANY,
+            'Layer Name                                                Value                 Low Range               High Range')
+        #self.slider_label = wx.StaticText(self, wx.ID_ANY, '')
         #self.value_label = wx.StaticText(self, wx.ID_ANY, 'Value')
         #self.low_label = wx.StaticText(self, wx.ID_ANY, 'Low Range')
         #self.high_label = wx.StaticText(self, wx.ID_ANY, 'High Range')
@@ -98,7 +100,7 @@ class SummaryView(scrolled.ScrolledPanel):
             bagSizer.Add(item, pos = (index+3,0))
 
         self.SetSizerAndFit(bagSizer)
-        
+
 
     def update_parameters(self):
         if not self.IsShown():
@@ -122,9 +124,9 @@ class ParameterSummary(wx.Panel):
         text_hbox = wx.BoxSizer(wx.HORIZONTAL)
 
         self.layer_name = wx.StaticText(self, wx.ID_ANY,
-                          str(self.parameter.name), style=wx.TE_LEFT )
+                          str(self.parameter.name), style=wx.TE_LEFT)
         self.slider = wx.Slider(self, -1, 0, 0, 100,
-                      size=(100, 8), style=wx.SL_AUTOTICKS|wx.SL_HORIZONTAL )
+                      size=(100, 8), style=wx.SL_AUTOTICKS|wx.SL_HORIZONTAL)
         self.slider.SetThumbLength(3)
         self.value = wx.StaticText(self, wx.ID_ANY, str(self.parameter.value),
                      style=wx.TE_LEFT )
@@ -132,14 +134,14 @@ class ParameterSummary(wx.Panel):
                          style=wx.TE_LEFT )
         self.max_range = wx.StaticText(self, wx.ID_ANY, str(self.high),
                          style=wx.TE_LEFT )
-        
+
         # add static box and slider to sizer
-        text_hbox.Add(self.layer_name,1, wx.LEFT,1 )
-        text_hbox.Add(self.slider, 1, wx.EXPAND|wx.LEFT,20)
-        text_hbox.Add(self.value, 1, wx.EXPAND|wx.LEFT,20)
-        text_hbox.Add(self.min_range, 1, wx.LEFT,1)
-        text_hbox.Add(self.max_range, 1, wx.LEFT,1)
-        
+        text_hbox.Add(self.layer_name, 1, wx.LEFT, 1)
+        text_hbox.Add(self.slider, 1, wx.EXPAND|wx.LEFT, 20)
+        text_hbox.Add(self.value, 1, wx.EXPAND|wx.LEFT, 20)
+        text_hbox.Add(self.min_range, 1, wx.LEFT, 1)
+        text_hbox.Add(self.max_range, 1, wx.LEFT, 1)
+
         self.SetSizer(text_hbox)
 
         self.slider.Bind(wx.EVT_SCROLL, self.OnScroll)
@@ -156,10 +158,10 @@ class ParameterSummary(wx.Panel):
         # update new min and max range of values if changed
         newlow, newhigh = (v for v in self.parameter.bounds.limits)
         if newlow != self.low:
-            self.min_range.SetLabel(str(newlow)) 
+            self.min_range.SetLabel(str(newlow))
 
         #if newhigh != self.high:
-        self.max_range.SetLabel(str(newhigh)) 
+        self.max_range.SetLabel(str(newhigh))
 
     def OnScroll(self, event):
         value = self.slider.GetValue()

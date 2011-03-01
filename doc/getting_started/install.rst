@@ -74,7 +74,7 @@ not set it as the default compiler.  To do this you will need to create
 Once python is prepared, you can install the periodic table package using
 the Windows console.  To start the console, click the "Start" icon on your
 task bar and select "Run...".  In the Run box, type "cmd".  Enter the
-following in the console::
+following command in the console::
 
 	python -m easy_install periodictable
 
@@ -85,7 +85,7 @@ like the following::
 
     cd "C:\Documents and Settings\<username>\My Documents\refl1d-src"
 
-Now type the command to build and install refl1d::
+Now type the command to build and install Refl1D::
 
     python setup.py install
     python test.py
@@ -126,7 +126,7 @@ Building a useful python environment on OS/X is somewhat involved, and
 this documentation will be expanded to provide more detail.
 
 You will need to download python, numpy, scipy, wx and matplotlib
-packages from their respective sites (use the links above). Setuptools
+packages from their respective sites (use the links above).  Setuptools
 will need to be installed by hand.
 
 From a terminal, change to the directory containing the source and type::
@@ -145,16 +145,16 @@ To run the program use::
 Building Documentation
 ======================
 
-Building the package documentation requires a working sphinx installation,
-a working LaTex installation and a copy of MathJax.   Download and unzip
+Building the package documentation requires a working Sphinx installation,
+a working LaTex installation and a copy of MathJax.  Download and unzip
 the MathJax package into the doc/sphinx directory to install MathJax.  You
 can then build the documentation as follows::
 
-    (cd doc && make clean html latexpdf)
+    (cd doc && make clean html pdf)
 
 Note that this only works under cygwin/msys for now since we are
 using *make*.  There is a skeleton *make.bat* in the directory
-that will work using *cmd* but it doesn't yet build pdf files.
+that will work using *cmd* but it doesn't yet build PDF files.
 
 You can see the result by pointing your browser to::
 
@@ -228,5 +228,7 @@ typing::
 
 	python master_builder.py
 
-This creates the redistributable installer refl1d-<version>.exe one level
-up in the directory tree.
+This creates the redistributable installer refl1d-<version>-win32.exe for
+Windows one level up in the directory tree.  In addition, source archives
+in zip and tar.gz format are produced as well as text files listing the
+contents of the installer and the archives.
