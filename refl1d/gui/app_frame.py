@@ -145,7 +145,7 @@ class AppFrame(wx.Frame):
         # Add a 'File' menu to the menu bar and define its options.
         file_menu = wx.Menu()
 
-        _item = file_menu.Append(wx.ID_ANY, "&Exit", "Exit the application")
+        _item = file_menu.Append(wx.ID_ANY, "&Exit", "Terminate application")
         self.Bind(wx.EVT_MENU, self.OnExit, _item)
 
         mb.Append(file_menu, "&File")

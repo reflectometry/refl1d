@@ -178,7 +178,7 @@ class AppPanel(wx.Panel):
 
         _item = file_menu.Prepend(wx.ID_ANY,
                                   "&Import",
-                                  "Import script file")
+                                  "Import script to define model")
         frame.Bind(wx.EVT_MENU, self.OnImportScript, _item)
 
         file_menu.PrependSeparator()
@@ -230,7 +230,7 @@ class AppPanel(wx.Panel):
 
         _item = view_menu.Append(wx.ID_ANY,
                                  "&Residuals",
-                                 "Show residuals on model data plot")
+                                 "Show residuals on plot panel")
         frame.Bind(wx.EVT_MENU, self.OnResiduals, _item)
         view_menu.Enable(id=_item.GetId(), enable=False)
 
@@ -252,7 +252,7 @@ class AppPanel(wx.Panel):
         fit_menu.Enable(id=_item.GetId(), enable=False)
         _item = fit_menu.Append(wx.ID_ANY,
                                 "Fit &Options ...",
-                                "Select fitting options")
+                                "Edit fitting options")
         frame.Bind(wx.EVT_MENU, self.OnFitOptions, _item)
 
         mb.Insert(2, fit_menu, "&Fitting")
