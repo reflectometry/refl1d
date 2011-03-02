@@ -136,18 +136,26 @@ def get_appdir():
     return os.path.dirname(os.path.abspath(path))
 
 
+def get_bitmap(filename, imgType=wx.BITMAP_TYPE_PNG):
+    """
+    Returns the bitmap from an image file (png, jpg, ico)
+    """
+
+    # TODO: This code was borrowed from KsRefl - pdir lookup needs fixing.
+    imgdir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images')
+    if not os.path.exists(imgdir):  # for py2exe
+        pdir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        imgdir = os.path.join(pdir, 'images')
+
+    fullname = os.path.join(imgdir, filename)
+
+    return wx.BitmapFromImage(wx.Image(fullname, imgType).Scale(16, 16))
+
+
 def popup_error_message(caption, message):
     """Displays an error message in a pop-up dialog box with an OK button."""
 
     msg = wx.MessageDialog(None, message, caption, style=wx.ICON_ERROR|wx.OK)
-    msg.ShowModal()
-    msg.Destroy()
-
-
-def popup_warning_message(caption, message):
-    """Displays a warning message in a pop-up dialog box with an OK button."""
-
-    msg = wx.MessageDialog(None, message, caption, style=wx.ICON_WARNING|wx.OK)
     msg.ShowModal()
     msg.Destroy()
 
@@ -166,6 +174,14 @@ def popup_question(caption, message):
 
     msg = wx.MessageDialog(None, message, caption,
                            style=wx.ICON_QUESTION|wx.YES_NO)
+    msg.ShowModal()
+    msg.Destroy()
+
+
+def popup_warning_message(caption, message):
+    """Displays a warning message in a pop-up dialog box with an OK button."""
+
+    msg = wx.MessageDialog(None, message, caption, style=wx.ICON_WARNING|wx.OK)
     msg.ShowModal()
     msg.Destroy()
 

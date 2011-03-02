@@ -69,7 +69,7 @@ from .fit_dialog import FitControl
 from .gui_logic import load_problem, make_store
 from .work_thread import Worker
 from .util import nice
-from .utilities import (get_appdir, log_time,
+from .utilities import (get_appdir, get_bitmap, log_time,
                         popup_error_message, popup_warning_message,
                         StatusBarInfo, ExecuteInThread, WorkInProgress)
 
@@ -168,7 +168,6 @@ class AppPanel(wx.Panel):
         Adds items to the menu bar, menus, and menu options.
         The menu bar should already have a simple File menu and a Help menu.
         """
-
         frame = self.frame
         mb = frame.GetMenuBar()
 
@@ -189,19 +188,16 @@ class AppPanel(wx.Panel):
                                   "Save model as another name")
         frame.Bind(wx.EVT_MENU, self.OnSaveAsModel, _item)
         file_menu.Enable(id=wx.ID_SAVEAS, enable=False)
-
         _item = file_menu.Prepend(wx.ID_SAVE,
                                   "&Save",
                                   "Save model")
         frame.Bind(wx.EVT_MENU, self.OnSaveModel, _item)
         file_menu.Enable(id=wx.ID_SAVE, enable=False)
-
         _item = file_menu.Prepend(wx.ID_OPEN,
                                   "&Open",
                                   "Open existing model")
         frame.Bind(wx.EVT_MENU, self.OnOpenModel, _item)
         file_menu.Enable(id=wx.ID_OPEN, enable=False)
-
         _item = file_menu.Prepend(wx.ID_NEW,
                                   "&New",
                                   "Create new model")
@@ -217,17 +213,14 @@ class AppPanel(wx.Panel):
                                           "Plot y-axis in Fresnel scale")
         frame.Bind(wx.EVT_MENU, self.OnFresnel, _item)
         _item.Check(True)
-
         _item = view_menu.AppendRadioItem(wx.ID_ANY,
                                           "Li&near",
                                           "Plot y-axis in linear scale")
         frame.Bind(wx.EVT_MENU, self.OnLinear, _item)
-
         _item = view_menu.AppendRadioItem(wx.ID_ANY,
                                           "&Log",
                                           "Plot y-axis in log scale")
         frame.Bind(wx.EVT_MENU, self.OnLog, _item)
-
         _item = view_menu.AppendRadioItem(wx.ID_ANY,
                                           "&Q4",
                                           "Plot y-axis in Q4 scale")
@@ -252,13 +245,11 @@ class AppPanel(wx.Panel):
                                 "Start fitting operation")
         frame.Bind(wx.EVT_MENU, self.OnStartFit, _item)
         fit_menu.Enable(id=_item.GetId(), enable=False)
-
         _item = fit_menu.Append(wx.ID_ANY,
                                 "&Stop Fit",
                                 "Stop fitting operation")
         frame.Bind(wx.EVT_MENU, self.OnStopFit, _item)
         fit_menu.Enable(id=_item.GetId(), enable=False)
-
         _item = fit_menu.Append(wx.ID_ANY,
                                 "Fit &Options ...",
                                 "Select fitting options")
@@ -274,7 +265,6 @@ class AppPanel(wx.Panel):
                                "Display plot and view panels top to bottom")
         frame.Bind(wx.EVT_MENU, self.OnSplitHorizontal, _item)
         _item.Check(True)
-
         _item = adv_menu.AppendRadioItem(wx.ID_ANY,
                                "&Left-Right",
                                "Display plot and view panels left to right")
@@ -292,9 +282,31 @@ class AppPanel(wx.Panel):
 
     def modify_toolbar(self):
         """Populates the tool bar."""
-        tb = self.frame.GetToolBar()
+        frame = self.frame
+        tb = frame.GetToolBar()
+
+        script_bmp = get_bitmap("import_script.png", wx.BITMAP_TYPE_PNG)
+        start_bmp = get_bitmap("start_fit.png", wx.BITMAP_TYPE_PNG)
+        stop_bmp = get_bitmap("stop_fit.png", wx.BITMAP_TYPE_PNG)
+
+        _tool = tb.AddSimpleTool(wx.ID_ANY, script_bmp,
+                                 "Import Script",
+                                 "Load model from script")
+        frame.Bind(wx.EVT_TOOL, self.OnImportScript, _tool)
+
+        tb.AddSeparator()
+
+        _tool = tb.AddSimpleTool(wx.ID_ANY, start_bmp,
+                                 "Start Fit",
+                                 "Start fitting operation")
+        frame.Bind(wx.EVT_TOOL, self.OnStartFit, _tool)
+        _tool = tb.AddSimpleTool(wx.ID_ANY, stop_bmp,
+                                 "Stop Fit",
+                                 "Stop fitting operation")
+        frame.Bind(wx.EVT_TOOL, self.OnStopFit, _tool)
+
         tb.Realize()
-        self.frame.SetToolBar(tb)
+        frame.SetToolBar(tb)
 
     def modify_statusbar(self, subbars):
         """Divides the status bar into multiple segments."""
@@ -414,16 +426,16 @@ class AppPanel(wx.Panel):
         event.Skip()
 
     def OnNewModel(self, event):
-        pass  # not implemented
+        print "Clicked on new model ..." # not implemented
 
     def OnOpenModel(self, event):
-        pass  # not implemented
+        print "Clicked on open model ..." # not implemented
 
     def OnSaveModel(self, event):
-        pass  # not implemented
+        print "Clicked on save model ..." # not implemented
 
     def OnSaveAsModel(self, event):
-        pass  # not implemented
+        print "Clicked on save as model ..." # not implemented
 
     def OnImportScript(self, event):
         # Load the script which will contain model defination and data.
@@ -444,7 +456,7 @@ class AppPanel(wx.Panel):
 
         dir,file = os.path.split(file_path)
         os.chdir(dir)
-        self.args = [file, 'T1']
+        self.args = [file, "T1"]
         self.problem = load_problem(self.args)
         self.redraw(self.problem)
 
@@ -462,13 +474,13 @@ class AppPanel(wx.Panel):
         pub.subscribe(self.OnUpdateParameters, "update_parameters")
 
     def OnResiduals(self, event):
-        pass  # not implemented
+        print "Clicked on residuals ..." # not implemented
 
     def OnStartFit(self, event):
-        pass  # not implemented
+        print "Clicked on start fit ..." # not implemented
 
     def OnStopFit(self, event):
-        pass  # not implemented
+        print "Clicked on stop fit ..." # not implemented
 
     def OnFitOptions(self, event):
         fit_dlg = FitControl(self, -1, "Fit Control")
@@ -481,11 +493,11 @@ class AppPanel(wx.Panel):
         FITTERS = dict(dream=None, rl=RLFit,
                    de=DEFit, newton=BFGSFit, amoeba=AmoebaFit, snobfit=SnobFit)
 
-        self.sb.SetStatusText('Fit status: Running', 3)
+        self.sb.SetStatusText("Fit status: Running", 3)
         monitor = GUIMonitor(self.problem)
 
         options = event.data
-        algorithm = options['algo']
+        algorithm = options["algo"]
 
         self.fitter = FitProxy(FITTERS[algorithm],
                                problem=self.problem, monitor=monitor,
@@ -535,11 +547,11 @@ class AppPanel(wx.Panel):
     '''
 
     def OnFitResult(self, event):
-        self.sb.SetStatusText('Fit status: Complete', 3)
+        self.sb.SetStatusText("Fit status: Complete", 3)
         pub.sendMessage("fit_complete")
         if event.data is None:
             # Thread aborted (using our convention of None return)
-            print 'Computation failed/aborted'
+            print "Computation failed/aborted"
         else:
             self.remember_best(self.fitter, self.problem, event.data)
 
@@ -607,19 +619,19 @@ class AppPanel(wx.Panel):
         self.redraw(self.problem)
 
     def OnFresnel(self, event):
-        Probe.view ='fresnel'
+        Probe.view = "fresnel"
         self.redraw(self.problem)
 
     def OnLinear(self, event):
-        Probe.view ='linear'
+        Probe.view = "linear"
         self.redraw(self.problem)
 
     def OnQ4(self, event):
-        Probe.view ='q4'
+        Probe.view = "q4"
         self.redraw(self.problem)
 
     def OnLog(self, event):
-        Probe.view ='log'
+        Probe.view = "log"
         self.redraw(self.problem)
 
     def redraw(self, model):
@@ -628,7 +640,7 @@ class AppPanel(wx.Panel):
         self._activate_figure()
         model.show()
         model.fitness.plot_reflectivity()
-        pylab.text(0.01, 0.01, 'chisq=%g' % model.chisq(),
+        pylab.text(0.01, 0.01, "chisq=%g" % model.chisq(),
                    transform=pylab.gca().transAxes)
         pylab.draw()
 

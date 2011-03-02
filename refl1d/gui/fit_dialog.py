@@ -118,7 +118,7 @@ class FitControl(wx.Dialog):
         self.pop = wx.TextCtrl(panel3, -1, "10", size=(100, -1),
                       style=wx.TE_RIGHT, validator=Validator("no-alpha"))
 
-        co_label = wx.StaticText(panel3, -1, "Crossover Ratio:", size=(90, -1))
+        cr_label = wx.StaticText(panel3, -1, "Crossover Ratio:", size=(90, -1))
         self.crossover = wx.TextCtrl(panel3, -1, "0.9", size=(100, -1),
                             style=wx.TE_RIGHT, validator=Validator("no-alpha"))
 
@@ -142,7 +142,7 @@ class FitControl(wx.Dialog):
         sizer2.Add(pop_label, 0, wx.ALL, 5)
         sizer2.Add(self.pop, 0, wx.ALL, 5)
 
-        sizer3.Add(co_label, 0, wx.ALL, 5)
+        sizer3.Add(cr_label, 0, wx.ALL, 5)
         sizer3.Add(self.crossover, 0, wx.ALL, 5)
 
         sizer4.Add(burn_label, 0, wx.ALL, 5)
@@ -237,22 +237,22 @@ class FitControl(wx.Dialog):
             pop = self.pop.GetValue()
             cross = self.crossover.GetValue()
             fit_option = dict(steps=steps, pop=pop,cross=cross, algo=algo,)
-            
+
             # send fit options to main panel to start fit
             pub.sendMessage("fit_option", fit_option)
             self.Destroy()
-        
+
         if self.amoeba_radio.GetValue():
-            # ameoba algorithm is selected, send all fit options related 
+            # ameoba algorithm is selected, send all fit options related
             # to ameoba
             algo = 'amoeba'
             steps = self.stepsize.GetValue()
             fit_option = dict(steps=steps, algo=algo,)
-            
+
             # send fit options to main panel to start fit
             pub.sendMessage("fit_option", fit_option)
             self.Destroy()
-            
+
         if self.dream_radio.GetValue():
             # dream algorithm is selected, send all fit options related to dream
             algo = 'dream'
@@ -260,13 +260,13 @@ class FitControl(wx.Dialog):
             burn = self.burn.GetValue()
             pop = self.pop.GetValue()
             fit_option = dict(steps=steps, pop=pop, burn=burn, algo=algo,)
-            
+
             # send fit options to main panel to start fit
             pub.sendMessage("fit_option", fit_option)
             self.Destroy()
-        
+
         if self.pt_radio.GetValue():
-            # parallel temparing algorithm is selected, send all fit options 
+            # parallel temparing algorithm is selected, send all fit options
             # related to parallel temparing
             algo = 'pt'
             steps = self.stepsize.GetValue()
@@ -277,23 +277,23 @@ class FitControl(wx.Dialog):
             cross = self.crossover.GetValue()
             fit_option = dict(steps=steps, tmin=tmin, tmax=tmax, burn=burn,
                                       pop=pop, cross=cross, algo=algo,)
-            
+
             # send fit options to main panel to start fit
             pub.sendMessage("fit_option", fit_option)
-            self.Destroy()    
-            
+            self.Destroy()
+
         if self.rl_radio.GetValue():
-            # random lines algorithm is selected, send all fit options related 
+            # random lines algorithm is selected, send all fit options related
             # to random lines
             algo = 'rl'
             steps = self.stepsize.GetValue()
             pop = self.pop.GetValue()
             cross = self.crossover.GetValue()
             fit_option = dict(steps=steps, pop=pop, cross=cross, algo=algo,)
-            
+
             # send fit options to main panel to start fit
             pub.sendMessage("fit_option", fit_option)
-            self.Destroy()    
+            self.Destroy()
 
     def OnCancel(self, event):
         # exit the fit control dialog box
