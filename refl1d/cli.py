@@ -326,21 +326,21 @@ FITTERS = dict(dream=None, rl=RLFit, pt=PTFit,
                de=DEFit, newton=BFGSFit, amoeba=AmoebaFit, snobfit=SnobFit)
 class FitOpts(ParseOpts):
     MINARGS = 1
-    FLAGS = set(("preview","check","profile","edit","random","simulate",
-                 "worker","batch","overwrite","parallel",
-                 ))
-    VALUES = set(("plot","store","fit","noise",
-                  "CR","Tmin","Tmax","burn","steps","pop",
+    FLAGS = set(("preview", "check", "profile", "random", "simulate",
+                 "worker", "batch", "overwrite", "parallel",
+               ))
+    VALUES = set(("plot", "store", "fit", "noise", "steps", "pop",
+                  "CR", "burn", "Tmin", "Tmax",
                   #"mesh","meshsteps",
-                 ))
+                ))
     noise="5"
+    steps="1000"
+    pop="10"
     CR="0.9"
+    burn="0"
     Tmin="0.1"
     Tmax="10"
-    pop="10"
-    steps="1000"
-    burn="0"
-    PLOTTERS="log","linear","fresnel","q4"
+    PLOTTERS="fresnel", "linear", "log", "q4"
     USAGE = """\
 Usage: refl1d modelfile [modelargs] [options]
 
@@ -422,7 +422,6 @@ Options:
     fit = property(fget=lambda self: self._fitter, fset=_set_fitter)
     meshsteps = 40
 
-
 # ==== Main ====
 
 def main():
@@ -433,8 +432,8 @@ def main():
     opts = FitOpts(sys.argv)
     opts.steps = int(opts.steps)
     opts.pop = float(opts.pop)
-    opts.burn = int(opts.burn)
     opts.CR = float(opts.CR)
+    opts.burn = int(opts.burn)
     opts.Tmin = float(opts.Tmin)
     opts.Tmax = float(opts.Tmax)
 
@@ -445,14 +444,13 @@ def main():
         problem.simulate_data(noise=float(opts.noise))
         # If fitting, then generate a random starting point different
         # from the simulation
-        if not (opts.edit or opts.check or opts.preview):
+        if not (opts.check or opts.preview):
             problem.randomize()
 
     if opts.fit == 'dream':
         fitter = DreamProxy(problem=problem, opts=opts)
     else:
-        fitter = FitProxy(FITTERS[opts.fit],
-                          problem=problem, opts=opts)
+        fitter = FitProxy(FITTERS[opts.fit], problem=problem, opts=opts)
     if opts.parallel or opts.worker:
         mapper = AMQPMapper
     else:
@@ -461,11 +459,7 @@ def main():
     # Which format to view the plots
     Probe.view = opts.plot
 
-
-    if opts.edit:
-        from .profileview.demo import demo
-        demo(problem.fitness)
-    elif opts.profile:
+    if opts.profile:
         run_profile(problem)
     elif opts.worker:
         mapper.start_worker(problem)

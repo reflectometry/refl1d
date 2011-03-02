@@ -9,7 +9,7 @@ def make_frame(experiment):
     frame = wx.Frame(None, -1, "profile interactor")
     panel = ProfileView(frame)
     panel.quit_on_error()
-    panel.SetProfile(experiment)
+    panel.set_job(experiment)
     frame.panel = panel
     return frame
 
