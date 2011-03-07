@@ -5,13 +5,6 @@ import  wx.lib.scrolledpanel as scrolled
 from wx.lib.pubsub import Publisher as pub
 import wx.lib.newevent
 
-from refl1d.mystic.parameter import Parameter, BaseParameter
-from refl1d.profileview.panel import ProfileView
-
-EVT_RESULT_ID = 1
-
-
-
 class LogView(scrolled.ScrolledPanel):
     def __init__(self, parent):
         scrolled.ScrolledPanel.__init__(self, parent, -1)
@@ -26,10 +19,13 @@ class LogView(scrolled.ScrolledPanel):
         sizer1.Add(self.log_text, 0, wx.ALIGN_CENTER_VERTICAL)
 
         vsizer = wx.BoxSizer(wx.VERTICAL)
+
         self.progress = wx.TextCtrl(self,-1,style=wx.TE_MULTILINE|wx.HSCROLL)
         self.progress.Clear()
+
         vsizer.Add(sizer1, 0, wx.EXPAND|wx.ALL, border=10)
         vsizer.Add(self.progress, 1, wx.EXPAND)
+
         self.SetSizer(vsizer)
         self.SetAutoLayout(1)
         self.SetupScrolling()
@@ -37,7 +33,7 @@ class LogView(scrolled.ScrolledPanel):
         # subscribe to the log (fit update) message coming from the
         # main GUI panel and update the log tab with the log tab
         # with the log messages.
-        pub.subscribe(self.Onlog, "log") # recieving fit message from fit tab
+        pub.subscribe(self.Onlog, "log") # recieving fit message from main panel
 
 
     def Onlog(self,event):

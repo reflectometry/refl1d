@@ -4,6 +4,7 @@ A base panel to draw the profile
 
 import os
 import wx
+
 from wx.lib.pubsub import Publisher as pub
 
 import numpy
@@ -45,19 +46,20 @@ class ProfileView(AuiPanel):
         # Axes
         self.axes = self.fig.get_axes()[0]
         self.axes.set_autoscale_on(False)
-
-
+        
         # Show toolbar or not?
         self.toolbar = NavigationToolbar2WxAgg( self.canvas )
         self.toolbar.Show(True)
 
         # Create a figure manager to manage things
-        
         self.figmgr = FigureManager( self.canvas, 1, self )
+ 
         # set new model
         pub.subscribe(self.OnInitialModel, "initial_model")
+ 
         # change model structure message
         pub.subscribe(self.OnUpdateModel, "update_model")
+ 
         # change model parameter message
         pub.subscribe(self.OnUpdateParameters, "update_parameters")
         
@@ -67,10 +69,12 @@ class ProfileView(AuiPanel):
         self.SetSizer( self.sizer)
         self.Fit()
         self.listener = Listener()
-
+        
+    
     # ============= Signal bindings =========================
 
     def OnInitialModel(self, event):
+        self.axes.cla()
         self.set_job(event.data)
 
     def OnUpdateModel(self, event):
@@ -81,7 +85,7 @@ class ProfileView(AuiPanel):
 
     def set_job(self, job):
         """Initialize model by profile."""
-
+        
         self.job = job
         try:
             experiment = self.job.fits[0].fitness
@@ -91,7 +95,7 @@ class ProfileView(AuiPanel):
         # Turn the model into a user interface
         self.profile = ProfileInteractor(self.axes,
                                          experiment,
-                                         self.listener)
+                                         self.listener, self.job)
         self.profile.update_markers()
         self.profile.update_profile()
         self.profile.reset_limits()
@@ -106,7 +110,6 @@ class ProfileView(AuiPanel):
     def onPrint(self,event=None):
         self.canvas.Printer_Print(event=event)
 
-
     def OnSaveFigureMenu(self, evt ):
         """
         Save the current figure as an image file
@@ -118,7 +121,6 @@ class ProfileView(AuiPanel):
                        wildcard="PNG files (*.png)|*.png|BMP files (*.bmp)|*.bmp|All files (*.*)|*.*",
                        style=wx.SAVE
                       )
-
         _val = dlg.ShowModal()
         if  _val == wx.ID_CANCEL:  return  #Do nothing
         if  _val == wx.ID_OK:
@@ -128,7 +130,6 @@ class ProfileView(AuiPanel):
 
         # Save
         self.fig.savefig( outfile )
-
 
     def GetToolBar(self):
         """
@@ -143,7 +144,6 @@ class ProfileView(AuiPanel):
         self.Destroy()
         evt.Skip()
 
-
     def OnCopyFigureMenu(self, evt ):
         """
         Copy the current figure
@@ -157,3 +157,4 @@ class ProfileView(AuiPanel):
         numpy.seterr(all='raise')
         ProfileInteractor._debug = True
         BaseInteractor._debug = True
+   

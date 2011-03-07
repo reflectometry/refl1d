@@ -214,7 +214,6 @@ def fit(models=[], weights=None, fitter=DEFit, **kw):
     else:
         x = problem.getp()
     result = Result(problem, x)
-    print 'result', result
     result.show()
 
     return result
@@ -563,6 +562,7 @@ class FitProblem(object):
         Return the model residuals.
         """
         return self.fitness.residuals()
+          
     def chisq(self):
         """
         Return sum squared residuals normalized by the degrees of freedom.
@@ -626,8 +626,8 @@ class FitProblem(object):
 
     def show(self):
         print parameter.format(self.model_parameters())
-        #print "[chisq=%g, nllf=%g]" % (self.chisq(), self.nllf()/self.dof)
-        #print parameter.summarize(self.parameters)
+        print "[chisq=%g, nllf=%g]" % (self.chisq(), self.nllf()/self.dof)
+        print parameter.summarize(self.parameters)
 
     def save(self, basename):
         self.fitness.save(basename)

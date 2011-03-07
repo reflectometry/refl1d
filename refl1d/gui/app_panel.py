@@ -24,7 +24,6 @@
 This module implements the AppPanel class which creates the main panel on top
 of the frame of the GUI for the Refl1D application.
 """
-
 #==============================================================================
 from __future__ import division
 import os
@@ -160,9 +159,9 @@ class AppPanel(wx.Panel):
         pub.subscribe(self.OnUpdateDisplay, "update")
         pub.subscribe(self.OnUpdatePlot, "update_plot")
         EVT_RESULT(self,self.OnFitResult)
-
+        self.view = "fresnel" # default view for the plot
         self.worker = None   #worker for fitting job
-
+        
     def modify_menubar(self):
         """
         Adds items to the menu bar, menus, and menu options.
@@ -232,7 +231,7 @@ class AppPanel(wx.Panel):
                                  "&Residuals",
                                  "Show residuals on plot panel")
         frame.Bind(wx.EVT_MENU, self.OnResiduals, _item)
-        view_menu.Enable(id=_item.GetId(), enable=False)
+        view_menu.Enable(id=_item.GetId(), enable=True)
 
         mb.Insert(1, view_menu, "&View")
 
@@ -363,11 +362,7 @@ class AppPanel(wx.Panel):
         # Instantiate the matplotlib navigation toolbar and explicitly show it.
         mpl_toolbar = Toolbar(canvas)
         mpl_toolbar.Realize()
-
-        # Create a progress bar to be displayed during a lengthy computation.
-        #self.progress_gauge = WorkInProgress(self.pan1)
-        #self.progress_gauge.Show(False)
-
+        
         # Create a vertical box sizer to manage the widgets in the main panel.
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(canvas, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, border=0)
@@ -459,7 +454,7 @@ class AppPanel(wx.Panel):
         self.args = [file, "T1"]
         self.problem = load_problem(self.args)
         self.redraw(self.problem)
-
+                
         # Send new model (problem) loaded message to all interested panels.
         pub.sendMessage("initial_model", self.problem)
 
@@ -474,8 +469,9 @@ class AppPanel(wx.Panel):
         pub.subscribe(self.OnUpdateParameters, "update_parameters")
 
     def OnResiduals(self, event):
-        print "Clicked on residuals ..." # not implemented
-
+        self.view = "residual"
+        self.redraw(self.problem)
+           
     def OnStartFit(self, event):
         print "Clicked on start fit ..." # not implemented
 
@@ -503,57 +499,24 @@ class AppPanel(wx.Panel):
                                problem=self.problem, monitor=monitor,
                                options=options)
         mapper = SerialMapper
-
-        Probe.view = opts.plot
-
-        make_store(self.problem,opts)
+        #make_store(self.problem,opts)
 
         self.pan1.Layout()
 
         # Start a new thread worker and give fit problem to the worker.
         self.worker = Worker(self, self.problem, fn=self.fitter,
                                    pars=opts.args, mapper=mapper)
-
-    '''
-    def OnFit(self, event):
-        """
-        On recieving a fit message, start a fit of the model to the data.
-        """
-        # TODO: Need to put options on fit panel.
-        from .main import FitOpts, FitProxy, SerialMapper
-        from refl1d.fitter import RLFit, DEFit, BFGSFit, AmoebaFit, SnobFit
-        from refl1d.probe import Probe
-
-        self.sb.SetStatusText('Fit status: Running', 3)
-        monitor = GUIMonitor(self.problem)
-        opts = FitOpts(self.args)
-
-        FITTERS = dict(dream=None, rl=RLFit,
-                   de=DEFit, newton=BFGSFit, amoeba=AmoebaFit, snobfit=SnobFit)
-
-        self.fitter = FitProxy(FITTERS[opts.fit],
-                               problem=self.problem, monitor=monitor,opts=opts,)
-        mapper = SerialMapper
-
-        Probe.view = opts.plot
-
-        make_store(self.problem,opts)
-        self.pan1.Layout()
-
-        #self.temp = copy.deepcopy(self.problem)
-        # Start a new thread worker and give fit problem to the worker.
-        self.worker = Worker(self, self.problem, fn=self.fitter,
-                                   pars=opts.args, mapper=mapper)
-    '''
 
     def OnFitResult(self, event):
+        self.redraw(self.problem) # redraw the plot last time with fitted chsiq
         self.sb.SetStatusText("Fit status: Complete", 3)
         pub.sendMessage("fit_complete")
         if event.data is None:
             # Thread aborted (using our convention of None return)
             print "Computation failed/aborted"
         else:
-            self.remember_best(self.fitter, self.problem, event.data)
+            pass
+            #self.remember_best(self.fitter, self.problem, event.data)
 
     def remember_best(self, fitter, problem, best):
         fitter.save(problem.output)
@@ -619,30 +582,29 @@ class AppPanel(wx.Panel):
         self.redraw(self.problem)
 
     def OnFresnel(self, event):
-        Probe.view = "fresnel"
+        self.view = "fresnel"
         self.redraw(self.problem)
 
     def OnLinear(self, event):
-        Probe.view = "linear"
+        self.view = "linear"
         self.redraw(self.problem)
 
     def OnQ4(self, event):
-        Probe.view = "q4"
+        self.view = "q4"
         self.redraw(self.problem)
 
     def OnLog(self, event):
-        Probe.view = "log"
+        self.view = "log"
         self.redraw(self.problem)
 
     def redraw(self, model):
         # Redraw the canvas.
         pylab.clf() #### clear the canvas
         self._activate_figure()
-        model.show()
-        model.fitness.plot_reflectivity()
+        model.fitness.plot_reflectivity(view=self.view)
         pylab.text(0.01, 0.01, "chisq=%g" % model.chisq(),
                    transform=pylab.gca().transAxes)
         pylab.draw()
-
+        
     def _activate_figure(self):
         _pylab_helpers.Gcf.set_active(self.fm)

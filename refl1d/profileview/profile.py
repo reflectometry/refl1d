@@ -30,12 +30,13 @@ class ProfileInteractor(object):
     Reflectometry profile editor
     """
     _debug = False
-    def __init__(self, axes, experiment, listener):
+    def __init__(self, axes, experiment, listener, job):
         self.axes = axes
         self.xcoords = blend_xy(axes.transData, axes.transAxes)
         self.listener = listener
         self.experiment = experiment
         self.magnetic = experiment.sample.magnetic
+        self.job = job
 
         # Theta needs a separate axis, we put these two axes into a figure
         if self.magnetic:
@@ -241,7 +242,7 @@ class ProfileInteractor(object):
 
     def _signal(self):
         try:
-            pub.sendMessage("update_parameters")
+            pub.sendMessage("update_parameters", self.job)
         except:
             print 'error in message sending'
             raise

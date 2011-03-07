@@ -72,7 +72,7 @@ class ExperimentBase(object):
             self._cache['residuals'] = resid
 
         return self._cache['residuals']
-
+        
     def numpoints(self):
         return len(self.probe.Q)
 
@@ -91,15 +91,18 @@ class ExperimentBase(object):
         # TODO: add sigma^2 effects back into nllf
         return 0.5*numpy.sum(self.residuals()**2) # + self._cache['nllf_scale']
 
-    def plot_reflectivity(self, show_resolution=False):
+    def plot_reflectivity(self, show_resolution=False, view=None):
+        
         Q,R = self.reflectivity()
         self.probe.plot(theory=(Q,R),
-                        substrate=self._substrate, surface=self._surface)
+                        substrate=self._substrate, surface=self._surface,
+                        view=view)
+                        
         if show_resolution:
             import pylab
             Q,R = self.reflectivity(resolution=False)
             pylab.plot(Q,R,':g',hold=True)
-
+              
     def plot(self):
         import pylab
         pylab.subplot(211)
