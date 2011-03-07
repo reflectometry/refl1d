@@ -30,13 +30,23 @@ import os
 import sys
 import shutil
 import logging
-from copy import deepcopy
 
 import wx
 import wx.lib.newevent
 from wx.lib.pubsub import Publisher as pub
 
 import matplotlib
+
+# Disable interactive mode so that plots are only updated on show() or draw().
+# Note that the interactive function must be called before selecting a backend
+# or importing pyplot, otherwise it will have no effect.
+
+matplotlib.interactive(False)
+
+# Specify the backend to use for plotting and import backend dependent classes.
+# Note that this must be done before importing pyplot to have an effect.
+matplotlib.use('WXAgg')
+
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wxagg import NavigationToolbar2Wx as Toolbar
 
@@ -71,17 +81,6 @@ from .util import nice
 from .utilities import (get_appdir, get_bitmap, log_time,
                         popup_error_message, popup_warning_message,
                         StatusBarInfo, ExecuteInThread, WorkInProgress)
-
-# Disable interactive mode so that plots are only updated on show() or draw().
-# Note that the interactive function must be called before selecting a backend
-# or importing pyplot, otherwise it will have no effect.
-
-matplotlib.interactive(False)
-
-# Specify the backend to use for plotting and import backend dependent classes.
-# Note that this must be done before importing pyplot to have an effect.
-
-#from .images import getOpenBitmap
 
 # File selection strings.
 PYTHON_FILES = "Script files (*.py)|*.py"
@@ -127,8 +126,8 @@ class GUIMonitor(monitor.TimedUpdate):
 
 class AppPanel(wx.Panel):
     """
-    This class creates the main panel of the frame and builds the GUI for the
-    application on it.
+    This class builds the GUI for the application on a panel and attaches it
+    to the frame.
     """
 
     def __init__(self, frame, id=wx.ID_ANY, style=wx.RAISED_BORDER,
@@ -599,7 +598,7 @@ class AppPanel(wx.Panel):
 
     def redraw(self, model):
         # Redraw the canvas.
-        pylab.clf() #### clear the canvas
+        pylab.clf() # clear the canvas
         self._activate_figure()
         model.fitness.plot_reflectivity(view=self.view)
         pylab.text(0.01, 0.01, "chisq=%g" % model.chisq(),

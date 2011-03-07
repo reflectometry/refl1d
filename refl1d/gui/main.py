@@ -52,43 +52,6 @@ class FitProxy(object):
         pylab.suptitle(":".join((P.store,P.title)))
         P.plot(figfile=output_path)
 
-class FitProxy1(object):
-    def __init__(self, fitter, problem, monitor ,opts):
-
-        self.fitter = fitter
-        self.problem = problem
-        self.monitor = monitor
-        self.opts = opts
-
-    def fit(self):
-        import time
-        from refl1d.fitter import Result
-        if self.fitter is not None:
-            t0 = time.clock()
-            optimizer = self.fitter(self.problem)
-            x = optimizer.solve(steps=int(self.opts.steps),
-                                monitors = self.monitor,
-                                burn=int(self.opts.burn),
-                                pop=int(self.opts.pop))
-            print "time", time.clock() - t0
-        else:
-            x = self.problem.getp()
-
-        self.result = x
-        self.problem.setp(x)
-        return x
-
-    def show(self):
-        self.problem.show()
-
-    def save(self, output_path):
-        pass
-
-    def plot(self, output_path):
-        P = self.problem
-        pylab.suptitle(":".join((P.store,P.title)))
-        P.plot(figfile=output_path)
-
 def mesh(problem, vars=None, n=40):
     x,y = [numpy.linspace(p.bounds.limits[0],p.bounds.limits[1],n) for p in vars]
     p1, p2 = vars
