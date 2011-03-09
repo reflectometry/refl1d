@@ -124,9 +124,9 @@ def display_fontsize(fontname=None, benchmark_text=BENCHMARK_TEXT,
 
 def get_appdir():
     """
-    Returns the directory path of the main module of the application, i.e, the
-    root directory from which the application was started.  Note that this may
-    be different than the current working directory.
+    Returns the path of the directory that contains the application being run
+    (i.e., the directory path of the executing python script or frozen image).
+    Note that this path may be different than the current working directory.
     """
 
     if hasattr(sys, "frozen"):  # check for py2exe image
@@ -134,6 +134,40 @@ def get_appdir():
     else:
         path = sys.argv[0]
     return os.path.dirname(os.path.abspath(path))
+
+
+def get_rootdir(subdirlevel=0):
+    """
+    Returns the path of the root directory of the package from which the
+    application is running (i.e., the path of the top-level directory of the
+    python package or the directory containing the frozen image being run).
+    If subdirlevel = 0 then the script being run is assumed to be located in
+    the top-level directory of the package, otherwise n levels down.  For
+    example, if the script is in <package>/bin, subdirlevel should be 1.
+    """
+
+    path = get_appdir()
+    if hasattr(sys, "frozen"):  # check for py2exe image
+        return path
+    if subdirlevel > 0:
+        for x in range(subdirlevel):
+            path = os.path.abspath(os.path.join(path, '..'))
+    return path
+
+
+def get_rootdir_parent(subdirlevel=0):
+    """
+    Returns the path of the parent directory of the package from which the
+    application is running (i.e., the path one level above the top-level
+    directory of the package or returns None if a frozen image is being run).
+    If subdirlevel = 0 then the script being run is assumed to be located in
+    the top-level directory of the package, otherwise n levels down.  For
+    example, if the script is in <package>/bin, subdirlevel should be 1.
+    """
+
+    if hasattr(sys, "frozen"):  # check for py2exe image
+        return None
+    return os.path.abspath(os.path.join(get_rootdir(subdirlevel), '..'))
 
 
 def get_bitmap(filename, imgType=wx.BITMAP_TYPE_PNG):
@@ -352,7 +386,30 @@ class TimeStamp():
 #==============================================================================
 
 if __name__ == '__main__':
+    # Test the display_fontsize and choose_fontsize functions.
+    app = wx.PySimpleApp()
+    print "For Arial font:"
+    display_fontsize(fontname="Arial")
+    print "Calculated font size =", choose_fontsize(fontname="Arial")
+    app.Destroy()
+
+    # Test get_appdir(), get_rootdir(), and get_rootdir_parent() functions.
+    print ""
+    print "Assuming this script lives in the top-level directory of <package>:"
+    print "  Application directory is:    ", get_appdir()
+    print "  Package root directory is:   ", get_rootdir()
+    print "  Parent of root directory is: ", get_rootdir_parent()
+    print "Assuming this script lives 1 subdirectory level below <package>:"
+    print "  Application directory is:    ", get_appdir()
+    print "  Package root directory is:   ", get_rootdir(subdirlevel=1)
+    print "  Parent of root directory is: ", get_rootdir_parent(subdirlevel=1)
+    print "Assuming this script lives 2 subdirectory levels below <package>:"
+    print "  Application directory is:    ", get_appdir()
+    print "  Package root directory is:   ", get_rootdir(subdirlevel=2)
+    print "  Parent of root directory is: ", get_rootdir_parent(subdirlevel=2)
+
     # Test the TimeStamp class and the convenience function.
+    print ""
     log_time("Using log_time() function")
     print "Sleeping for 0.54 seconds ..."
     time.sleep(0.54)
