@@ -46,7 +46,7 @@ PROG_ICON = "refl1d.ico"
 # purposes.
 APP_NAME = "Refl1D"
 
-APP_TITLE = "1-D Reflectometry Modeler"
+APP_TITLE = "Specular Reflectometry Modeler and Fitter"
 
 APP_COPYRIGHT = "(C) 2011 University of Maryland"
 
@@ -94,6 +94,8 @@ James Krycka, UMD
     - GUI development
 Nikunj Patel, UMD
     - GUI development
+Christopher Metting, UMD
+    - Artwork
 """
 
 APP_PROJECT_URL = "http://reflectometry.org/danse"

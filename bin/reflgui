@@ -80,12 +80,17 @@ from refl1d.gui.about import APP_TITLE
 from refl1d.gui.app_frame import AppFrame
 from refl1d.gui.utilities import get_appdir, log_time
 
-# Desired initial window size (if physical screen size permits).
+# Desired default initial window size (if physical screen size permits).
 DISPLAY_WIDTH = 1200
 DISPLAY_HEIGHT = 900
 
-# Resource files.
-PROG_SPLASH_SCREEN = "refl1d_splash.jpg"
+# Splash screen picture and timeout value.
+SPLASH_SCREEN_FILE = "refl1d_splash.jpg"
+SPLASH_SCREEN_TIMEOUT = 4000  # in miliseconds
+SPLASH_SCREEN_SCALE = 0.6  # scale factor relative to frame dimensions
+
+# Diagnostic timing information.
+LOGTIM = True if (len(sys.argv) > 1 and '--time' in sys.argv[1:]) else False
 
 #==============================================================================
 
@@ -95,32 +100,42 @@ class ReflGUIApp(wx.App):
     application.
     """
 
-    # Design note: The basic application frame is created, the splash screen is
+    # Design note: The application frame is created, then the splash screen is
     # displayed, and finally the frame is populated.  The frame initialization
     # is performed in two parts so that the splash screen is visible while the
     # application specific packages are imported and the application is set up.
+    # Once the application frame is initialized, the splash screen can exit
+    # (via timeout or mouse click) which causes the frame to be made visible.
 
     def OnInit(self):
-        # Determine the position and size of the application frame and likewise
-        # for the splash window that will cover it.
+        # Determine the position and size of the application frame base on the
+        # screen real estate that we have to work with.  Indirectly, this also
+        # will determine the position and size of the splash screen window.
         pos, size = self.window_placement()
         #print "window pos and size =", pos, size
 
         # Create a basic application frame without any child panels.
-        frame = AppFrame(parent=None, title=APP_TITLE, pos=pos, size=size)
+        self.frame = AppFrame(parent=None, title=APP_TITLE, pos=pos, size=size)
 
-        # Display a splash screen on top of the frame.
-        if len(sys.argv) > 1 and '--time' in sys.argv[1:]:
-            log_time("Starting to display the splash screen")
-        self.display_splash_screen(frame)
+        # Display a splash screen on top of the frame which is not yet visible.
+        if LOGTIM: log_time("Starting to display the splash screen")
+        self.display_splash_screen()
 
         # Create the graphical user interface for the application on the frame.
-        if len(sys.argv) > 1 and '--time' in sys.argv[1:]:
-            log_time("Starting to build the GUI on the frame")
-        frame.init_GUI()
+        if LOGTIM: log_time("Starting to build the GUI on the frame")
+        self.frame.init_GUI()
 
-        frame.Show(True)
-        self.SetTopWindow(frame)
+        # To test that the splash screen will not go away until the frame
+        # initialization is complete, simulate an increase in frame startup
+        # time by taking a nap.
+        #time.sleep(6)
+
+        # Delay showing the frame until the splash screen has exited.  To have
+        # the spash screen visible over the frame, comment out the line below.
+        #self.frame.Show(True)
+
+        # Make the applicate fram the top window when it is shown.
+        self.SetTopWindow(self.frame)
 
         # The splash screen can be dismissed by the user via a left mouse click
         # as soon as the wxPython event loop is entered (i.e. when the caller
@@ -162,14 +177,16 @@ class ReflGUIApp(wx.App):
         return (xpos, ypos), (min(x, DISPLAY_WIDTH), min(y, DISPLAY_HEIGHT))
 
 
-    def display_splash_screen(self, parent):
-        """Displays the splash screen.  It will exactly cover the main frame."""
+    def display_splash_screen(self):
+        """Displays the splash screen."""
 
-        # Prepare the picture.  On a 2GHz Intel CPU, this takes about a second.
-        x, y = parent.GetSizeTuple()
-        image = wx.Image(os.path.join(get_appdir(), PROG_SPLASH_SCREEN),
+        # Prepare the picture.
+        x, y = self.frame.GetSizeTuple()
+        ssx = SPLASH_SCREEN_SCALE * x
+        ssy = SPLASH_SCREEN_SCALE * y
+        image = wx.Image(os.path.join(get_appdir(), SPLASH_SCREEN_FILE),
                          wx.BITMAP_TYPE_JPEG)
-        image.Rescale(x, y, wx.IMAGE_QUALITY_HIGH)
+        image.Rescale(ssx, ssy, wx.IMAGE_QUALITY_HIGH)
         bm = image.ConvertToBitmap()
 
         # Create and show the splash screen.  It will disappear only when the
@@ -181,33 +198,38 @@ class ReflGUIApp(wx.App):
         #
         # Note that on Linux, the timeout appears to occur immediately in which
         # case the splash screen disappears upon entering the event loop.
-        wx.SplashScreen(bitmap=bm,
-                        splashStyle=(wx.SPLASH_CENTRE_ON_PARENT|
-                                     wx.SPLASH_TIMEOUT|
-                                     wx.STAY_ON_TOP),
-                        milliseconds=4000,
-                        parent=parent,
-                        id=wx.ID_ANY)
+        splash = wx.SplashScreen(bitmap=bm,
+                                 splashStyle=(wx.SPLASH_CENTRE_ON_PARENT|
+                                              wx.SPLASH_TIMEOUT|
+                                              wx.STAY_ON_TOP),
+                                 milliseconds=SPLASH_SCREEN_TIMEOUT,
+                                 parent=self.frame,
+                                 id=wx.ID_ANY)
+
+        splash.Bind(wx.EVT_CLOSE, self.OnCloseSplashScreen)
 
         # Keep the splash screen up a minimum amount of time for non-Windows
         # systems.  This is a workaround for Linux and possibly MacOS that
         # appear to ignore the splash screen timeout option.
         if '__WXMSW__' not in wx.PlatformInfo:
-            if len(sys.argv) > 1 and '--time' in sys.argv[1:]:
-                log_time("Starting sleep of 2 secs")
-            time.sleep(2)
+            if LOGTIM: log_time("Sleeping for 3 secs")
+            time.sleep(3)
 
-        # A call to wx.Yield does not appear to be required.  If used on
-        # Windows, the cursor changes from 'busy' to 'ready' before the event
-        # loop is reached which is not desirable.  On Linux it seems to have
-        # no effect.
-        #wx.Yield()
+
+    def OnCloseSplashScreen(self, event):
+        """
+        Make the application frame visible when the splash screen is closed.
+        """
+
+        # To show the frame earlier, change the commented out code in OnInit.
+        if LOGTIM: log_time("Terminating splash screen and showing the frame")
+        self.frame.Show(True)
+        event.Skip()
 
 #==============================================================================
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1 and '--time' in sys.argv[1:]:
-        log_time("Starting Refl1D")
+    if LOGTIM: log_time("Starting Refl1D")
 
     # Instantiate the application class and give control to wxPython.
     app = ReflGUIApp(redirect=False, filename=None)
@@ -218,7 +240,6 @@ if __name__ == '__main__':
         import wx.lib.inspection
         wx.lib.inspection.InspectionTool().Show()
 
-    if len(sys.argv) > 1 and '--time' in sys.argv[1:]:
-        log_time("Done initializing - entering the event loop")
-
+    # Allow the user to interact with the application.
+    if LOGTIM: log_time("Finished building the GUI and entering the event loop")
     app.MainLoop()

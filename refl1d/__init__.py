@@ -1,7 +1,7 @@
 # This program is in the public domain
 # Author: Paul Kienzle
 """
-Refl1D: 1-D Reflectometry Modeler
+Refl1D: Specular Reflectometry Modeling and Fitting Software
 
 This package provides tools for modeling a variety of systems from
 simple slabs to complex systems with a mixture models involving
