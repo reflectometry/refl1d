@@ -143,7 +143,6 @@ class ReflGUIApp(wx.App):
         # itself when its timeout expires.
         return True
 
-
     def window_placement(self):
         """
         Determines the position and size of the application frame such that it
@@ -175,7 +174,6 @@ class ReflGUIApp(wx.App):
 
         # Return the suggested position and size for the application frame.
         return (xpos, ypos), (min(x, DISPLAY_WIDTH), min(y, DISPLAY_HEIGHT))
-
 
     def display_splash_screen(self):
         """Displays the splash screen."""
@@ -212,16 +210,15 @@ class ReflGUIApp(wx.App):
         # systems.  This is a workaround for Linux and possibly MacOS that
         # appear to ignore the splash screen timeout option.
         if '__WXMSW__' not in wx.PlatformInfo:
-            if LOGTIM: log_time("Sleeping for 3 secs")
-            time.sleep(3)
-
+            if LOGTIM: log_time("Sleeping ...")
+            time.sleep(max(0, SPLASH_SCREEN_TIMEOUT/1000 - 1))
 
     def OnCloseSplashScreen(self, event):
         """
         Make the application frame visible when the splash screen is closed.
         """
 
-        # To show the frame earlier, change the commented out code in OnInit.
+        # To show the frame earlier, uncomment Show() code in OnInit.
         if LOGTIM: log_time("Terminating splash screen and showing the frame")
         self.frame.Show(True)
         event.Skip()
