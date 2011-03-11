@@ -1,4 +1,4 @@
-# Copyright (C) 2006-2010, University of Maryland
+# Copyright (C) 2006-2011, University of Maryland
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -90,13 +90,9 @@ TEXT_FILES = "Text files (*.txt)|*.txt"
 ALL_FILES = "All files (*.*)|*.*"
 
 # Custom colors.
-PALE_GREEN = "#C8FFC8"
-PALE_BLUE  = "#E8E8FF"
 WINDOW_BKGD_COLOUR = "#ECE9D8"
-PALE_YELLOW = "#FFFFB0"
 
 #==============================================================================
-IMPROVEMENT_DELAY = 5
 
 EVT_RESULT_ID = 1
 
@@ -104,6 +100,9 @@ def EVT_RESULT(win, func):
     """Define Result Event."""
     win.Connect(-1, -1, EVT_RESULT_ID, func)
 
+#==============================================================================
+
+IMPROVEMENT_DELAY = 5
 
 class GUIMonitor(monitor.TimedUpdate):
     def __init__(self, problem, progress=1, improvement=None):
@@ -123,6 +122,7 @@ class GUIMonitor(monitor.TimedUpdate):
         out = parameter.summarize(self.problem.parameters)
         wx.CallAfter(pub.sendMessage, "update_plot", out)
 
+#==============================================================================
 
 class AppPanel(wx.Panel):
     """
@@ -160,7 +160,7 @@ class AppPanel(wx.Panel):
         EVT_RESULT(self,self.OnFitResult)
         self.view = "fresnel" # default view for the plot
         self.worker = None   #worker for fitting job
-        
+
     def modify_menubar(self):
         """
         Adds items to the menu bar, menus, and menu options.
@@ -326,7 +326,7 @@ class AppPanel(wx.Panel):
         self.pan2 = wx.Panel(sp, wx.ID_ANY, style=wx.SUNKEN_BORDER)
         self.pan2.SetBackgroundColour("WHITE")
 
-        sp.SplitHorizontally(self.pan1, self.pan2)
+        sp.SplitHorizontally(self.pan1, self.pan2, sashPosition=0)
         sp.SetSashGravity(0.5)  # on resize expand/contract panels equally
 
         # Initialize the panels.
@@ -338,6 +338,10 @@ class AppPanel(wx.Panel):
         sizer.Add(sp, 1, wx.EXPAND)
         self.SetSizer(sizer)
         sizer.Fit(self)
+
+        # Workaround: For some unknown reason, the sash is not placed in the
+        # middle of the enclosing panel.  As a workaround, we reset is here.
+        sp.SetSashPosition(position=0, redraw=False)
 
     def init_top_panel(self):
         # Instantiate a figure object that will contain our plots.
@@ -361,7 +365,7 @@ class AppPanel(wx.Panel):
         # Instantiate the matplotlib navigation toolbar and explicitly show it.
         mpl_toolbar = Toolbar(canvas)
         mpl_toolbar.Realize()
-        
+
         # Create a vertical box sizer to manage the widgets in the main panel.
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(canvas, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, border=0)
@@ -374,7 +378,6 @@ class AppPanel(wx.Panel):
     def init_bottom_panel(self):
         nb = self.notebook = wx.Notebook(self.pan2, wx.ID_ANY,
                              style=wx.NB_TOP|wx.NB_FIXEDWIDTH|wx.NB_NOPAGETHEME)
-        nb.SetTabSize((100,20))  # works on Windows but not on Linux
 
         # Create page windows as children of the notebook.
         self.page0 = ProfileView(nb)
@@ -453,7 +456,7 @@ class AppPanel(wx.Panel):
         self.args = [file, "T1"]
         self.problem = load_problem(self.args)
         self.redraw(self.problem)
-                
+
         # Send new model (problem) loaded message to all interested panels.
         pub.sendMessage("initial_model", self.problem)
 
@@ -470,7 +473,7 @@ class AppPanel(wx.Panel):
     def OnResiduals(self, event):
         self.view = "residual"
         self.redraw(self.problem)
-           
+
     def OnStartFit(self, event):
         print "Clicked on start fit ..." # not implemented
 
@@ -604,6 +607,6 @@ class AppPanel(wx.Panel):
         pylab.text(0.01, 0.01, "chisq=%g" % model.chisq(),
                    transform=pylab.gca().transAxes)
         pylab.draw()
-        
+
     def _activate_figure(self):
         _pylab_helpers.Gcf.set_active(self.fm)
