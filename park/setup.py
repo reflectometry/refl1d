@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os
-import sys
 
 from numpy.distutils.core import setup
 from numpy.distutils.misc_util import Configuration

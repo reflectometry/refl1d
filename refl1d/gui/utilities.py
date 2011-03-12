@@ -175,11 +175,10 @@ def get_bitmap(filename, imgType=wx.BITMAP_TYPE_PNG):
     Returns the bitmap from an image file (png, jpg, ico)
     """
 
-    # TODO: This code was borrowed from KsRefl - pdir lookup needs fixing.
+    # TODO: Move images to <root>/refl1d-data.
     imgdir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images')
     if not os.path.exists(imgdir):  # for py2exe
-        pdir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-        imgdir = os.path.join(pdir, 'images')
+        imgdir = get_rootdir()
 
     fullname = os.path.join(imgdir, filename)
 

@@ -33,7 +33,21 @@ import logging
 
 import wx
 import wx.lib.newevent
-from wx.lib.pubsub import Publisher as pub
+
+# This is a workaround for a py2exe problem when using pubsub from wxPython ...
+# wxPython 2.8.11.0 supports both the pubsub V1 and V3 APIs (V1 is the default;
+# there is no V2), whereas 2.8.9.x and 2.8.10.1 offer only the V1 API. Since
+# we want to build with older versions of wxPython we will use the V1 API.
+# However, py2exe does not find pubsub when 2.8.11.0 is used unless there is
+# an explicit import of setupv1.  This is not a problem with older versions
+# of wxPython.  The import of setupv1 should only be done once because it
+# establishes the interface for all subsequent pubsub imports.
+try:
+    from wx.lib.pubsub import setupv1  # necessary for py2exe with 2.8.11.0
+except:
+    pass
+from wx.lib.pubsub import Publisher as pub  # when using the V1 API
+# from wx.lib.pubsub import pub  # in the future when using the V3 API
 
 # If we are running from an image built by py2exe, keep the frozen environment
 # self contained by having matplotlib use a private directory instead of using

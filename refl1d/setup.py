@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os.path
+import os
 
 from numpy.distutils.misc_util import Configuration
 from numpy.distutils.core import setup
@@ -24,10 +24,13 @@ def configuration(parent_package='', top_path=None):
     # Add subpackages.
     # Note that for convenience, we define subpackages of mystic here instead
     # of using separate setup.py files in the subdirectories.
+    config.add_subpackage('gui')
+    config.add_data_dir(os.path.join('gui', 'images'))
     config.add_subpackage('mystic')
     config.add_subpackage('mystic.examples')
     config.add_subpackage('mystic.optimizer')
     config.add_subpackage('mystic.optimizer.newton')
+    config.add_subpackage('profileview')
 
     return config
 

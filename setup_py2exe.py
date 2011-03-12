@@ -163,6 +163,9 @@ data_files.append( ('.', [os.path.join('.', 'LICENSE.txt')]) )
 data_files.append( ('.', [os.path.join('.', 'README.txt')]) )
 data_files.append( ('.', [os.path.join('.', 'bin', 'refl1d.ico')]) )
 data_files.append( ('.', [os.path.join('.', 'bin', 'refl1d_splash.jpg')]) )
+data_files.append( ('.', [os.path.join('.', 'refl1d', 'gui', 'images', 'import_script.png')]) )
+data_files.append( ('.', [os.path.join('.', 'refl1d', 'gui', 'images', 'start_fit.png')]) )
+data_files.append( ('.', [os.path.join('.', 'refl1d', 'gui', 'images', 'stop_fit.png')]) )
 
 # Add batch files to implement commands useful for launching the program.
 # Note that Inno Setup will determine where these files will be placed.
@@ -203,8 +206,8 @@ if sys.version_info >= (2, 6):
     data_files.append( ('.', [os.path.join(pypath, 'vcredist_x86.exe')]) )
 
 # Specify required packages to bundle in the executable image.
-packages = ['numpy', 'scipy', 'matplotlib', 'pytz', 'pyparsing', 'wx',
-            'periodictable', 'refl1d.names']
+packages = ['numpy', 'scipy', 'matplotlib', 'pytz', 'pyparsing',
+            'wx', 'wx.lib.pubsub', 'periodictable', 'refl1d.names']
 
 # Specify files to include in the executable image.
 includes = []
@@ -241,11 +244,20 @@ class Target():
         self.__dict__.update(kw)
         self.version = version
 
-client = Target(
+clientCLI = Target(
     name = 'refl1d',
     description = 'Refl1D command line application',
     script = os.path.join('bin', 'refl1d'),  # module to run on application start
     dest_base = 'refl1d',  # file name part of the exe file to create
+    icon_resources = [(1, os.path.join('bin', 'refl1d.ico'))],  # also need to specify in data_files
+    bitmap_resources = [],
+    other_resources = [(24, 1, manifest)] )
+
+clientGUI = Target(
+    name = 'reflgui',
+    description = 'Refl1D GUI application',
+    script = os.path.join('bin', 'reflgui'),  # module to run on application start
+    dest_base = 'reflgui',  # file name part of the exe file to create
     icon_resources = [(1, os.path.join('bin', 'refl1d.ico'))],  # also need to specify in data_files
     bitmap_resources = [],
     other_resources = [(24, 1, manifest)] )
@@ -260,8 +272,8 @@ client = Target(
 # When the application is run in windows mode, it will create a GUI application
 # window and no console window will be provided.
 setup(
-      console=[client],
-      #windows=[client],
+      console=[clientCLI],
+      windows=[clientGUI],
       options={'py2exe': {
                    'packages': packages,
                    'includes': includes,
