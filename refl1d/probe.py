@@ -413,6 +413,7 @@ class Probe(object):
         # Doesn't use ProbeCache, but this routine is not time critical
         Srho,Sirho = (0,0) if substrate is None else substrate.sld(self)[:2]
         Vrho,Virho = (0,0) if surface is None else surface.sld(self)[:2]
+        if Srho == Vrho: Srho = Vrho + 1
         I = numpy.ones_like(self.Q)
         calculator = fresnel.Fresnel(rho=Srho*I, irho=Sirho*I,
                                      Vrho=Vrho*I, Virho=Virho*I)
@@ -424,9 +425,9 @@ class Probe(object):
 
         Need substrate/surface for Fresnel reflectivity
         """
-         
+
         view = view if view is not None else self.view
-        
+
         if view == 'linear':
             self.plot_linear(theory=theory)
         elif view == 'log':
@@ -442,8 +443,8 @@ class Probe(object):
             self.plot_residuals(theory=theory)
         else:
             raise TypeError("incorrect reflectivity view '%s'"%view)
-              
-        
+
+
     def plot_resolution(self, theory=None):
         import pylab
         pylab.plot(self.Q, self.dQ)
@@ -466,7 +467,7 @@ class Probe(object):
         pylab.yscale('linear')
         pylab.xlabel('Q (inv Angstroms)')
         pylab.ylabel('Reflectivity')
-   
+
     def plot_log(self, theory=None):
         """
         Plot the data associated with probe.
@@ -481,7 +482,7 @@ class Probe(object):
         pylab.yscale('log')
         pylab.xlabel('Q (inv Angstroms)')
         pylab.ylabel('Reflectivity')
-    
+
     def plot_fresnel(self, theory=None, substrate=None, surface=None):
         """
         Plot the Fresnel reflectivity associated with the probe.
@@ -504,7 +505,7 @@ class Probe(object):
         else:
             name = "%s:%s"%(substrate.name, surface.name)
         pylab.ylabel('R/R(%s)'%(name))
-    
+
     def plot_Q4(self, theory=None):
         """
         Plot the Q**4 reflectivity associated with the probe.
@@ -520,7 +521,7 @@ class Probe(object):
             pylab.plot(Q, R*Q4, hold=True)
         pylab.xlabel('Q (inv Angstroms)')
         pylab.ylabel('R (100 Q)^4')
-        
+
     def plot_residuals(self, theory):
         import matplotlib.pyplot as plt
         if theory is None:
@@ -534,7 +535,7 @@ class Probe(object):
         plt.axhline(-1, color='black', ls='--',lw=1)
         plt.xlabel('Q (inv A)')
         plt.ylabel('Residuals')
-        
+
 
 class XrayProbe(Probe):
     """
@@ -674,9 +675,9 @@ class PolarizedNeutronProbe(object):
         Need substrate/surface for Fresnel reflectivity
         """
         view = view if view is not None else self.view
-        
+
         if view is None: view = Probe.view  # Default to Probe.view
-        
+
         if view == 'linear':
             self.plot_linear(theory=theory)
         elif view == 'log':

@@ -15,6 +15,7 @@ from . import fitter
 from . import util
 from .mystic import parameter
 from .probe import Probe
+from . import garefl
 
 # ==== Fitters ====
 
@@ -150,7 +151,11 @@ def random_population(problem, pop_size):
 
 def load_problem(args):
     filename = args[0]
-    if filename.endswith('.staj'):
+    if (filename.endswith('.so') or filename.endswith('.dll')
+        or filename.endswith('.dyld')):
+        options = []
+        problem = garefl.load(filename)
+    elif filename.endswith('.staj'):
         model = load_mlayer(filename, fit_pmp=20)
         options = []
         problem = fitter.FitProblem(model)

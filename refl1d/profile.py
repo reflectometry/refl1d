@@ -124,7 +124,7 @@ class Microslabs(object):
 
     def __len__(self):
         return self._num_slabs
-        
+
     def repeat(self, start=0, count=1):
         """
         Extend the model so that there are *count* versions of the slabs
@@ -196,24 +196,24 @@ class Microslabs(object):
 
     def _w(self):
         return self._slabs[:self._num_slabs,0]
-            
+
     def _sigma(self):
         return self._slabs[:self._num_slabs-1,1]
-            
+
     def _rho(self):
         return self._slabsQ[:self._num_slabs,:,0].T
-            
+
     def _irho(self):
         return self._slabsQ[:self._num_slabs,:,1].T
-            
+
     def _rhoM(self):
         raise NotImplementedError
         #return self._slabs[:self._num_slabs,2].T
-        
+
     def _thetaM(self):
         raise NotImplementedError
         #return self._slabs[:self._num_slabs,3].T
-        
+
     w = property(_w, doc="Thickness (A)")
     sigma = property(_sigma, doc="1-sigma Gaussian roughness (A)")
     rho = property(_rho, doc="Scattering length density (10^-6 number density)")
