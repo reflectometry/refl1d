@@ -53,32 +53,31 @@ Options for controlling the development and testing environment:
 import os
 import sys
 import time
-# TODO: fix path properly
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import wx
 
-# Normally the refl1d package will be installed, but if it is not installed,
-# augment sys.path to include the parent directory of the package.  This allows
-# any module of this application to specify an import path that explicity uses
-# the package name as in 'from refl1d.dir1.dir2 import foo'.  Thus when the
-# application is run directly from the source tree, the package name will be
-# found in the module search path even if the package has not been installed.
-try:
-    from refl1d import __version__
-except:
-    sys.path.insert(1, (os.path.dirname(get_appdir())))
-
-if len(sys.argv) > 1 and '--syspath' in sys.argv[1:]:
-    print "*** App root dir is", get_appdir()
-    print "*** __file__ is" , __file__
-    print "*** Python path is:"
-    for i, p in enumerate(sys.path):
-        print "%5d  %s" %(i, p)
+# When this script is run interactively (i.e., from a Python command prompt),
+# sys.path needs to be updated for some imports to work, namely 'from refl1d'
+# and 'from dream'.  However, when this module is executed from a frozen image,
+# sys.path will be automatically setup to include the full path of the frozen
+# image and python will be able to perform the aforementioned imports.  Thus,
+# for the interactive case, we will augment sys.path.  Assumptions:
+#   <root> is the top-level directory of the package, it can have any name
+#   script dir -> <root>/bin
+#   'from refl1d' -> <root>/refl1d
+#   'from dream' -> <root>/dream/dream
+# Although <root> is currently named 'refl1d', it does not have an__init__.py.
+# Likewise, <root>/dream does not have an __init__.py file.
+if not hasattr(sys, 'frozen'):
+    path = os.path.realpath(__file__)
+    root = os.path.abspath(os.path.join(os.path.dirname(path), '..'))
+    sys.path.insert(0, root)
+    sys.path.insert(1, os.path.join(root, 'dream'))
 
 from refl1d.gui.about import APP_TITLE
 from refl1d.gui.app_frame import AppFrame
-from refl1d.gui.utilities import get_appdir, log_time
+from refl1d.gui.utilities import (get_appdir, get_rootdir, get_rootdir_parent,
+                                  log_time)
 
 # Desired default initial window size (if physical screen size permits).
 DISPLAY_WIDTH = 1200
@@ -238,5 +237,14 @@ if __name__ == '__main__':
         wx.lib.inspection.InspectionTool().Show()
 
     # Allow the user to interact with the application.
-    if LOGTIM: log_time("Finished building the GUI and entering the event loop")
+    if LOGTIM: log_time("Finished building the GUI and entering event loop")
+
+    if len(sys.argv) > 1 and '--syspath' in sys.argv[1:]:
+        print "*** Application directory is:    ", get_appdir()
+        print "*** Package root directory is:   ", get_rootdir(subdirlevel=1)
+        print "*** Parent of root directory is: ", get_rootdir_parent(subdirlevel=1)
+        print "*** Python path is:"
+        for i, p in enumerate(sys.path):
+            print "%5d  %s" %(i, p)
+
     app.MainLoop()

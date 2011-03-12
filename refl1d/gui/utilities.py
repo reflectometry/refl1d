@@ -1,4 +1,4 @@
-# Copyright (C) 2006-2010, University of Maryland
+# Copyright (C) 2006-2011, University of Maryland
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -133,7 +133,7 @@ def get_appdir():
         path = sys.executable
     else:
         path = sys.argv[0]
-    return os.path.dirname(os.path.abspath(path))
+    return os.path.dirname(os.path.realpath(path))
 
 
 def get_rootdir(subdirlevel=0):
@@ -318,10 +318,11 @@ def log_time(text=None, reset=False):
     log_time maintains a single instance of TimeStamp during program execution.
     Example output from calls to log_time('...'):
 
-    ==>     0.000s   0.000s  Starting application
-    ==>     0.031s   0.031s  Starting to display the splash screen
-    ==>     1.141s   1.110s  Starting to build the GUI on the frame
-    ==>     1.422s   0.281s  Done initializing - entering the event loop
+    ==>    0.000s    0.000s  Starting <application name>
+    ==>    0.031s    0.031s  Starting to display the splash screen
+    ==>    0.016s    0.047s  Starting to build the GUI on the frame
+    ==>    0.078s    0.125s  Finished building the GUI and entering event loop
+    ==>    3.922s    4.047s  Terminating splash screen and showing the frame
     """
 
     global log_time_handle

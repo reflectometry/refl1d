@@ -35,6 +35,16 @@ import wx
 import wx.lib.newevent
 from wx.lib.pubsub import Publisher as pub
 
+# If we are running from an image built by py2exe, keep the frozen environment
+# self contained by having matplotlib use a private directory instead of using
+# .matplotlib under the user's home directory for storing shared data files
+# such as fontList.cache.  Note that a Windows installer/uninstaller such as
+# Inno Setup should explicitly delete this private directory on uninstall.
+if hasattr(sys, 'frozen'):
+    mplconfigdir = os.path.join(sys.prefix, '.matplotlib')
+    if not os.path.exists(mplconfigdir):
+        os.mkdir(mplconfigdir)
+    os.environ['MPLCONFIGDIR'] = mplconfigdir
 import matplotlib
 
 # Disable interactive mode so that plots are only updated on show() or draw().
