@@ -85,7 +85,7 @@ DISPLAY_HEIGHT = 900
 
 # Splash screen picture and timeout value.
 SPLASH_SCREEN_FILE = "refl1d_splash.jpg"
-SPLASH_SCREEN_TIMEOUT = 4000  # in miliseconds
+SPLASH_SCREEN_TIMEOUT = 2000  # in miliseconds
 SPLASH_SCREEN_SCALE = 0.6  # scale factor relative to frame dimensions
 
 # Diagnostic timing information.
@@ -133,7 +133,7 @@ class ReflGUIApp(wx.App):
         # the spash screen visible over the frame, comment out the line below.
         #self.frame.Show(True)
 
-        # Make the applicate fram the top window when it is shown.
+        # Make the application frame the top window when it is shown.
         self.SetTopWindow(self.frame)
 
         # The splash screen can be dismissed by the user via a left mouse click
@@ -204,13 +204,16 @@ class ReflGUIApp(wx.App):
                                  id=wx.ID_ANY)
 
         splash.Bind(wx.EVT_CLOSE, self.OnCloseSplashScreen)
+        wx.Yield()
 
-        # Keep the splash screen up a minimum amount of time for non-Windows
-        # systems.  This is a workaround for Linux and possibly MacOS that
-        # appear to ignore the splash screen timeout option.
-        if '__WXMSW__' not in wx.PlatformInfo:
-            if LOGTIM: log_time("Sleeping ...")
-            time.sleep(max(0, SPLASH_SCREEN_TIMEOUT/1000 - 1))
+        ## Keep the splash screen up a minimum amount of time for non-Windows
+        ## systems.  This is a workaround for Linux and possibly MacOS that
+        ## appear to ignore the splash screen timeout option.
+        #if '__WXMSW__' not in wx.PlatformInfo:
+        #    if LOGTIM: log_time("Sleeping ...")
+        #    time.sleep(max(0, SPLASH_SCREEN_TIMEOUT/1000 - 1))
+
+
 
     def OnCloseSplashScreen(self, event):
         """
