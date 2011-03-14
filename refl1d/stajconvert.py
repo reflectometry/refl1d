@@ -46,10 +46,10 @@ def fit_all(M, pmp=20):
     if M.probe.background.value < 2e-10:
         exclude.add(M.probe.background.value)
 
-    # Fit everything else using a range of +/- 20 %
+    # Fit everything else using a range of +/- pmp %
     for p in parameter.unique(M.parameters()):
         if p in exclude: continue
-        if p.value != 0: p.pmp(20)
+        if p.value != 0: p.pmp(pmp)
         #p.fixed = False
 
 def mlayer_to_model(staj):

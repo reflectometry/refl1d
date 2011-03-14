@@ -85,22 +85,24 @@ class DreamProxy(object):
         P.plot(figfile=output_path)
 
 class FitProxy(object):
-    def __init__(self, fitter, problem, opts):
+    def __init__(self, fitter, problem, options, monitor=None):
         self.fitter = fitter
         self.problem = problem
-        self.opts = opts
+        self.options = options
+        self.monitor = monitor
     def fit(self):
         import time
         from .fitter import Result
         if self.fitter is not None:
             t0 = time.clock()
             optimizer = self.fitter(self.problem)
-            x = optimizer.solve(steps=self.opts.steps,
-                                burn=self.opts.burn,
-                                pop=self.opts.pop,
-                                CR=self.opts.CR,
-                                Tmin=self.opts.Tmin,
-                                Tmax=self.opts.Tmax,
+            x = optimizer.solve(steps=self.options.steps,
+                                burn=self.options.burn,
+                                pop=self.options.pop,
+                                CR=self.options.CR,
+                                Tmin=self.options.Tmin,
+                                Tmax=self.options.Tmax,
+                                monitor=self.monitor,
                                 )
             print "time", time.clock() - t0
         else:
@@ -120,6 +122,7 @@ class FitProxy(object):
         P = self.problem
         pylab.suptitle(": ".join((P.store,P.title)))
         P.plot(figfile=output_path)
+
 
 def mesh(problem, vars=None, n=40):
     x,y = [numpy.linspace(p.bounds.limits[0],p.bounds.limits[1],n) for p in vars]
@@ -150,15 +153,15 @@ def random_population(problem, pop_size):
     return population
 
 def load_problem(args):
-    filename = args[0]
+    filename, options = args[0], args[1:]
+
     if (filename.endswith('.so') or filename.endswith('.dll')
         or filename.endswith('.dyld')):
         options = []
         problem = garefl.load(filename)
     elif filename.endswith('.staj'):
-        model = load_mlayer(filename, fit_pmp=20)
         options = []
-        problem = fitter.FitProblem(model)
+        problem = FitProblem(load_mlayer(filename))
     else:
         options = args[1:]
         problem = fitter.load_problem(filename, options=options)
@@ -188,7 +191,22 @@ def remember_best(fitter, problem, best):
 
     # Plot
 
-def make_store(problem, opts):
+def store_overwrite_query_gui(path):
+    import wx
+    msg_dlg = wx.MessageDialog(None,path+" Already exists. Press 'yes' to overwrite, or 'No' to abort and restart with newpath",'Overwrite Directory',wx.YES_NO | wx.ICON_QUESTION)
+    retCode = msg_dlg.ShowModal()
+    msg_dlg.Destroy()
+    if retCode != wx.ID_YES:
+        raise RuntimeError("Could not create path")
+
+def store_overwrite_query(path):
+    print path,"already exists."
+    print "Press 'y' to overwrite, or 'n' to abort and restart with --store=newpath"
+    ans = raw_input("Overwrite [y/n]? ")
+    if ans not in ("y","Y","yes"):
+        sys.exit(1)
+
+def make_store(problem, opts, exists_handler):
     # Determine if command line override
     if opts.store != None:
         problem.store = opts.store
@@ -197,13 +215,9 @@ def make_store(problem, opts):
     # Check if already exists
     if not opts.overwrite and os.path.exists(problem.output_path+'.out'):
         if opts.batch:
-            print >>sys.stderr, problem.output_path+" already exists.  Use --overwrite to replace."
+            print >>sys.stderr, path+" already exists.  Use --overwrite to replace."
             sys.exit(1)
-        print problem.output_path,"already exists."
-        print "Press 'y' to overwrite, or 'n' to abort and restart with --store=newpath"
-        ans = raw_input("Overwrite [y/n]? ")
-        if ans not in ("y","Y","yes"):
-            sys.exit(1)
+        exists_handler(problem.output_path)
 
     # Create it and copy model
     try: os.mkdir(problem.store)
@@ -213,10 +227,6 @@ def make_store(problem, opts):
     # Redirect sys.stdout to capture progress
     if opts.batch:
         sys.stdout = open(problem.output_path+".mon","w")
-
-    # Show command line arguments and initial model
-    print "#"," ".join(sys.argv)
-    problem.show()
 
 
 def run_profile(problem):
@@ -318,13 +328,8 @@ class ParseOpts:
             setattr(self, name, value)
 
         positionargs = [v for v in sys.argv[1:] if not v.startswith('-')]
-        if len(positionargs) < self.MINARGS:
-            raise ValueError("Not enough arguments. Use -? for help.")
         self.args = positionargs
 
-        #print "flags",flags
-        #print "vals",valueargs
-        #print "args",positionargs
 
 
 FITTERS = dict(dream=None, rl=RLFit, pt=PTFit,
@@ -455,7 +460,7 @@ def main():
     if opts.fit == 'dream':
         fitter = DreamProxy(problem=problem, opts=opts)
     else:
-        fitter = FitProxy(FITTERS[opts.fit], problem=problem, opts=opts)
+        fitter = FitProxy(FITTERS[opts.fit], problem=problem, options=opts)
     if opts.parallel or opts.worker:
         mapper = AMQPMapper
     else:
@@ -473,7 +478,12 @@ def main():
     elif opts.preview:
         preview(problem)
     else:
-        make_store(problem,opts)
+        make_store(problem,opts,exists_handler=store_overwrite_query)
+
+        # Show command line arguments and initial model
+        print "#"," ".join(sys.argv)
+        problem.show()
+
         fitter.mapper = mapper.start_mapper(problem, opts.args)
         best = fitter.fit()
         remember_best(fitter, problem, best)

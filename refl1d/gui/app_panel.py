@@ -92,6 +92,7 @@ import pylab
 from refl1d.mystic import monitor, parameter
 from refl1d.profileview.panel import ProfileView
 from refl1d.probe import Probe
+from refl1d.cli import FITTERS, FitOpts, FitProxy, SerialMapper, load_problem
 
 from .summary_view import SummaryView
 from .fit_view import FitView
@@ -99,7 +100,6 @@ from .parameter_view import ParameterView
 from .log_view import LogView
 from .other_view import OtherView
 from .fit_dialog import FitControl
-from .gui_logic import load_problem, make_store
 from .work_thread import Worker
 from .util import nice
 from .utilities import (get_appdir, get_bitmap, log_time,
@@ -476,9 +476,7 @@ class AppPanel(wx.Panel):
             return  # Do nothing
 
         dir,file = os.path.split(file_path)
-        os.chdir(dir)
-        self.args = [file, "T1"]
-        self.problem = load_problem(self.args)
+        self.problem = load_problem([file])
         self.redraw(self.problem)
 
         # Send new model (problem) loaded message to all interested panels.
@@ -508,12 +506,7 @@ class AppPanel(wx.Panel):
         fit_dlg = FitControl(self, -1, "Fit Control")
 
     def OnFit(self, event):
-        from .main import FitOpts, FitProxy, SerialMapper
-        from refl1d.fitter import RLFit, DEFit, BFGSFit, AmoebaFit, SnobFit
-
         opts = FitOpts(self.args)
-        FITTERS = dict(dream=None, rl=RLFit,
-                   de=DEFit, newton=BFGSFit, amoeba=AmoebaFit, snobfit=SnobFit)
 
         self.sb.SetStatusText("Fit status: Running", 3)
         monitor = GUIMonitor(self.problem)

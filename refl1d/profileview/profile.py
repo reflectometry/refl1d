@@ -223,7 +223,7 @@ class ProfileInteractor(object):
         self.update_markers()
         self.update_profile()
         self.draw_now()
-    
+
     def update(self):
         """
         Respond to changes in the model by recalculating the profiles and

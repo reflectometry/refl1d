@@ -179,6 +179,7 @@ class SnobFit(FitBase):
     def _monitor(self, k, x, fx, improved):
         self._update(step=k, point=x, value=fx)
 
+
 def preview(models=[], weights=None):
     """Preview the models in preparation for fitting"""
     problem = _make_problem(models=models, weights=weights)
@@ -562,7 +563,7 @@ class FitProblem(object):
         Return the model residuals.
         """
         return self.fitness.residuals()
-          
+
     def chisq(self):
         """
         Return sum squared residuals normalized by the degrees of freedom.

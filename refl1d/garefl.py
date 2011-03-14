@@ -14,7 +14,7 @@ from .experiment import Experiment
 from .model import Stack
 from .profile import Microslabs
 from .fitter import FitProblem, MultiFitProblem
-from .material import SLD
+from .material import SLD, Vacuum
 
 def trace(fn):
     """simple function trace function"""
@@ -42,12 +42,16 @@ def load(filename):
     else:
         return FitProblem(M[0])
 
+NOTHING=Vacuum()
+NOTHING.name = ''
+
 class GareflExperiment(Experiment):
     def __init__(self, model, index, dz=1):
         self.model = model
         self.index = index
         self.probe = model.get_probe(index)
-        self.sample = Stack()
+        self.sample = Stack([NOTHING,NOTHING])
+        self.sample[0].interface.fittable = False
         self._slabs = Microslabs(1, dz=dz)
         self._cache = {}  # Cache calculated profiles/reflectivities
         self._pars = None
@@ -209,6 +213,7 @@ class GareflProbe(Probe):
     def __init__(self, data, name):
         self.name = name
         self.theta_offset = Parameter(0)
+        self.intensity = Parameter(1)
         self.Qo,self.dQ,self.R,self.dR = data
 
 class GareflPolarizedProbe(PolarizedNeutronProbe):

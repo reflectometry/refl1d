@@ -59,7 +59,7 @@ if len(sys.argv) > 1:
 
 # Slits computed from dT given in the staj file
 slits = 0.03
-instrument = ncnrdata.XRay(dLoL=0.005, slits_at_Tlo=slits)
+instrument = NCNR.XRay(dLoL=0.005, slits_at_Tlo=slits)
 probe = instrument.load('e1085009.log')
 probe.log10_to_linear()  # data was stored as log_10 (R) rather than R
 
