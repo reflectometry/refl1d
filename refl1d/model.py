@@ -327,11 +327,11 @@ class Repeat(Layer):
             return L,start+offset,end+offset
     def parameters(self):
         if self.interface is not None:
-            return dict(stack=self.stack.parameters,
+            return dict(stack=self.stack.parameters(),
                         repeat=self.repeat,
                         interface=self.interface)
         else:
-            return dict(stack=self.stack.parameters,
+            return dict(stack=self.stack.parameters(),
                         repeat=self.repeat)
     def _calc_thickness(self):
         return self.stack.thickness.value*self.repeat.value
