@@ -171,14 +171,14 @@ class Parameter(BaseParameter):
         Set a new value for the parameter, ignoring the bounds.
         """
         self.value = value
-        
+
     def clip_set(self, value):
         """
         Set a new value for the parameter, clipping it to the bounds.
         """
         low,high = self.bounds.limits
         self.value = min(max(value,low),high)
-    
+
     def __init__(self, value=None, bounds=None, fixed=None, name=None, **kw):
         # UI nicities:
         # 1. check if we are started with value=range or bounds=range; if we are given bounds, then assume
@@ -562,13 +562,9 @@ class ParameterSet:
 
 class IntegerParameter(Parameter):
     discrete = True
-    def rand(self, rng=mbounds.RNG):
-        """
-        Set a random value for the parameter.
-        """
-        self.value = numpy.floor(self.bounds.rand(rng))
-
-    pass
+    def _get_value(self): return self._value
+    def _set_value(self, value): self._value = int(value)
+    value = property(_get_value, _set_value)
 
 class VectorParameter(Parameter):
     pass

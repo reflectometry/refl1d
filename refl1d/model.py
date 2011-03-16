@@ -134,14 +134,15 @@ class Stack(Layer):
     has an interface describing how the top of the layer interacts with
     the bottom of the overlaying layer. The stack may contain
     """
-    def __init__(self, base=None):
+    def __init__(self, base=None, name="Stack"):
+        self.name = name
         self.interface = None
         self._layers = []
         if base is not None:
             self.add(base)
         # TODO: can we make this a class variable?
-        
-        self._thickness = Function(self._calc_thickness,name="sample thickness")
+
+        self._thickness = Function(self._calc_thickness,name="stack thickness")
 
     @property
     def magnetic(self):
@@ -168,6 +169,8 @@ class Stack(Layer):
     def add(self, other):
         if isinstance(other,Stack):
             self._layers.extend(other._layers)
+        elif isinstance(other,Repeat):
+            self._layers.extend([other])
         else:
             try:
                 L = iter(other)
@@ -176,10 +179,10 @@ class Stack(Layer):
             self._layers.extend(_check_layer(el) for el in L)
 
     def __getstate__(self):
-        return self.interface, self._layers
+        return self.interface, self._layers, self.name
     def __setstate__(self, state):
-        self.interface, self._layers = state
-        self._thickness = Function(self._calc_thickness,name="sample thickness")
+        self.interface, self._layers, self.name = state
+        self._thickness = Function(self._calc_thickness,name="stack thickness")
     def __copy__(self):
         newone = Stack()
         newone.interface = self.interface
@@ -196,7 +199,7 @@ class Stack(Layer):
         layers=[L.parameters() for L in self._layers]
 
         return dict(thickness=self.thickness, layers = layers)
-        
+
         #attrs = dict(thickness=self.thickness)
         #return (attrs,layers)
         #return [L.parameters() for L in self._layers]
@@ -251,6 +254,7 @@ class Stack(Layer):
     # Stacks as lists
     def __getitem__(self, idx):
         if isinstance(idx,slice):
+            print "slicing"
             s = Stack()
             s._layers = self._layers[idx]
             return s
@@ -311,7 +315,12 @@ class Repeat(Layer):
         self.interface = Par.default(interface, limits=(0,inf),
                                      name=name+" top interface")
         # Thickness is computed; don't make it a simple attribute
-        self._thickness = Function(self._calc_thickness,name="sample thickness")
+        self._thickness = Function(self._calc_thickness,name="repeat thickness")
+    def __getstate__(self):
+        return self.interface, self.repeat, self.name, self.stack
+    def __setstate__(self, state):
+        self.interface, self.repeat, self.name, self.stack = state
+        self._thickness = Function(self._calc_thickness,name="repeat thickness")
     @property
     def magnetic(self):
         return self.stack.magnetic
@@ -331,6 +340,14 @@ class Repeat(Layer):
             offset = n*unit
             L,start,end = self.stack.find(unit)
             return L,start+offset,end+offset
+    # Stacks as lists
+    def __getitem__(self, idx):
+        return self.stack[idx]
+    def __setitem__(self, idx, other):
+        self.stack[idx] = other
+    def __delitem__(self, idx):
+        del self.stack[idx]
+
     def parameters(self):
         return dict(stack=self.stack.parameters(),
                     repeat=self.repeat,

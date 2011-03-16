@@ -542,8 +542,7 @@ class FitProblem(object):
         """
         Generates a random model.
         """
-        for p in self.parameters:
-            p.value = p.bounds.random(1)[0]
+        self.setp([p.bounds.random(1)[0] for p in self.parameters])
 
     def parameter_nllf(self):
         """
