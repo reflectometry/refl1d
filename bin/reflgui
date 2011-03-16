@@ -189,12 +189,8 @@ class ReflGUIApp(wx.App):
         # Create and show the splash screen.  It will disappear only when the
         # program has entered the event loop AND either the timeout has expired
         # or the user has left clicked on the screen.  Thus any processing
-        # performed in this routine (including sleeping) or processing in the
-        # calling routine (including doing imports) will prevent the splash
-        # screen from disappearing.
-        #
-        # Note that on Linux, the timeout appears to occur immediately in which
-        # case the splash screen disappears upon entering the event loop.
+        # performed by the calling routine (including doing imports) will
+        # prevent the splash screen from disappearing.
         splash = wx.SplashScreen(bitmap=bm,
                                  splashStyle=(wx.SPLASH_CENTRE_ON_PARENT|
                                               wx.SPLASH_TIMEOUT|
@@ -234,10 +230,10 @@ if __name__ == '__main__':
     if LOGTIM: log_time("Finished building the GUI and entering event loop")
 
     if len(sys.argv) > 1 and '--syspath' in sys.argv[1:]:
-        print "*** Application directory is:    ", get_appdir()
-        print "*** Package data directory is:   ", get_datadir(subdirlevel=1)
-        print "*** Package root directory is:   ", get_rootdir(subdirlevel=1)
-        print "*** Parent of root directory is: ", get_rootdir_parent(subdirlevel=1)
+        print "*** Application directory is:   ", get_appdir()
+        print "*** Data directory is:          ", get_datadir()
+        print "*** Package root directory is:  ", get_rootdir()
+        print "*** Parent of root directory is:", get_rootdir_parent()
         print "*** Python path is:"
         for i, p in enumerate(sys.path):
             print "%5d  %s" %(i, p)

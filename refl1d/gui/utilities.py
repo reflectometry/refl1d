@@ -173,9 +173,7 @@ def get_rootdir_parent(subdirlevel=1):
 
 def get_datadir(subdirlevel=1):
     """
-    Returns the path of the data directory of the package from which the
-    application is running (i.e., the path one level above the top-level
-    directory of the package or returns None if a frozen image is being run).
+    Returns the path of the data directory of the package.
 
     See description of get_rootdir for definition of the subdirlevel parameter.
     """
@@ -185,7 +183,8 @@ def get_datadir(subdirlevel=1):
 
 def get_bitmap(filename, type=wx.BITMAP_TYPE_PNG, scale_factor=16):
     """
-    Returns the scaled bitmap from an image file (bmp, jpg, png)
+    Returns the scaled bitmap from an image file (bmp, jpg, png) stored in
+    the data directory of the package.
     """
 
     fullname = os.path.join(get_datadir(), filename)
@@ -399,23 +398,22 @@ if __name__ == '__main__':
     app = wx.PySimpleApp()
     print "For Arial font:"
     display_fontsize(fontname="Arial")
-    print "Calculated font size =", choose_fontsize(fontname="Arial")
+    print "    Calculated font size =", choose_fontsize(fontname="Arial")
     app.Destroy()
 
-    # Test get_appdir(), get_rootdir(), and get_rootdir_parent() functions.
+    # Test the get_*dir*() functions.
+    # For this test, pretent where running this script from the bin directory
+    # to simulate running the real application."
     print ""
-    print "Assuming this script lives in the top-level directory of <package>:"
-    print "  Application directory is:    ", get_appdir()
-    print "  Package root directory is:   ", get_rootdir(subdirlevel=0)
-    print "  Parent of root directory is: ", get_rootdir_parent(subdirlevel=0)
-    print "Assuming this script lives 1 subdirectory level below <package>:"
-    print "  Application directory is:    ", get_appdir()
-    print "  Package root directory is:   ", get_rootdir()
-    print "  Parent of root directory is: ", get_rootdir_parent()
-    print "Assuming this script lives 2 subdirectory levels below <package>:"
-    print "  Application directory is:    ", get_appdir()
-    print "  Package root directory is:   ", get_rootdir(subdirlevel=2)
-    print "  Parent of root directory is: ", get_rootdir_parent(subdirlevel=2)
+    save = sys.argv
+    sys.argv[0] = os.path.abspath(os.path.join(get_appdir(), '..', '..',
+                                               'bin', 'script.py'))
+    print "Assume the application is running from ...refl1d/refl1d/bin, then:"
+    print "*** Application directory is:   ", get_appdir()
+    print "*** Data directory is:          ", get_datadir(subdirlevel=1)
+    print "*** Package root directory is:  ", get_rootdir(1)
+    print "*** Parent of root directory is:", get_rootdir_parent()
+    restore = save
 
     # Test the TimeStamp class and the convenience function.
     print ""
