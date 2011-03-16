@@ -23,6 +23,7 @@ def configuration(parent_package='', top_path=None):
     config.add_subpackage('models')
     config.add_subpackage('park')
     config.add_subpackage('refl1d')
+    config.add_data_dir('refl1d-data')
     config.add_data_dir('tests')
 
     config.add_data_files('LICENSE.txt')

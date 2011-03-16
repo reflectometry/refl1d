@@ -76,8 +76,8 @@ if not hasattr(sys, 'frozen'):
 
 from refl1d.gui.about import APP_TITLE
 from refl1d.gui.app_frame import AppFrame
-from refl1d.gui.utilities import (get_appdir, get_rootdir, get_rootdir_parent,
-                                  log_time)
+from refl1d.gui.utilities import (get_appdir, get_datadir, get_rootdir,
+                                  get_rootdir_parent, log_time)
 
 # Desired default initial window size (if physical screen size permits).
 DISPLAY_WIDTH = 1200
@@ -85,7 +85,7 @@ DISPLAY_HEIGHT = 900
 
 # Splash screen picture and timeout value.
 SPLASH_SCREEN_FILE = "refl1d_splash.jpg"
-SPLASH_SCREEN_TIMEOUT = 2000  # in miliseconds
+SPLASH_SCREEN_TIMEOUT = 4000  # in miliseconds
 SPLASH_SCREEN_SCALE = 0.6  # scale factor relative to frame dimensions
 
 # Diagnostic timing information.
@@ -181,7 +181,7 @@ class ReflGUIApp(wx.App):
         x, y = self.frame.GetSizeTuple()
         ssx = SPLASH_SCREEN_SCALE * x
         ssy = SPLASH_SCREEN_SCALE * y
-        image = wx.Image(os.path.join(get_appdir(), SPLASH_SCREEN_FILE),
+        image = wx.Image(os.path.join(get_datadir(), SPLASH_SCREEN_FILE),
                          wx.BITMAP_TYPE_JPEG)
         image.Rescale(ssx, ssy, wx.IMAGE_QUALITY_HIGH)
         bm = image.ConvertToBitmap()
@@ -204,15 +204,6 @@ class ReflGUIApp(wx.App):
                                  id=wx.ID_ANY)
 
         splash.Bind(wx.EVT_CLOSE, self.OnCloseSplashScreen)
-        wx.Yield()
-
-        ## Keep the splash screen up a minimum amount of time for non-Windows
-        ## systems.  This is a workaround for Linux and possibly MacOS that
-        ## appear to ignore the splash screen timeout option.
-        #if '__WXMSW__' not in wx.PlatformInfo:
-        #    if LOGTIM: log_time("Sleeping ...")
-        #    time.sleep(max(0, SPLASH_SCREEN_TIMEOUT/1000 - 1))
-
 
 
     def OnCloseSplashScreen(self, event):
@@ -244,6 +235,7 @@ if __name__ == '__main__':
 
     if len(sys.argv) > 1 and '--syspath' in sys.argv[1:]:
         print "*** Application directory is:    ", get_appdir()
+        print "*** Package data directory is:   ", get_datadir(subdirlevel=1)
         print "*** Package root directory is:   ", get_rootdir(subdirlevel=1)
         print "*** Parent of root directory is: ", get_rootdir_parent(subdirlevel=1)
         print "*** Python path is:"

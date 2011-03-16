@@ -136,14 +136,16 @@ def get_appdir():
     return os.path.dirname(os.path.realpath(path))
 
 
-def get_rootdir(subdirlevel=0):
+def get_rootdir(subdirlevel=1):
     """
     Returns the path of the root directory of the package from which the
     application is running (i.e., the path of the top-level directory of the
     python package or the directory containing the frozen image being run).
-    If subdirlevel = 0 then the script being run is assumed to be located in
-    the top-level directory of the package, otherwise n levels down.  For
-    example, if the script is in <package>/bin, subdirlevel should be 1.
+
+    The path returned is relative to where the application was started.
+    If subdirlevel = 0 then the script being run is assumed to be located
+    in the top-level directory of the package, otherwise n levels down.
+    For example, if the script is in <package>/bin, subdirlevel should be 1.
     """
 
     path = get_appdir()
@@ -155,14 +157,13 @@ def get_rootdir(subdirlevel=0):
     return path
 
 
-def get_rootdir_parent(subdirlevel=0):
+def get_rootdir_parent(subdirlevel=1):
     """
     Returns the path of the parent directory of the package from which the
     application is running (i.e., the path one level above the top-level
     directory of the package or returns None if a frozen image is being run).
-    If subdirlevel = 0 then the script being run is assumed to be located in
-    the top-level directory of the package, otherwise n levels down.  For
-    example, if the script is in <package>/bin, subdirlevel should be 1.
+
+    See description of get_rootdir for definition of the subdirlevel parameter.
     """
 
     if hasattr(sys, "frozen"):  # check for py2exe image
@@ -170,19 +171,27 @@ def get_rootdir_parent(subdirlevel=0):
     return os.path.abspath(os.path.join(get_rootdir(subdirlevel), '..'))
 
 
-def get_bitmap(filename, imgType=wx.BITMAP_TYPE_PNG):
+def get_datadir(subdirlevel=1):
     """
-    Returns the bitmap from an image file (png, jpg, ico)
+    Returns the path of the data directory of the package from which the
+    application is running (i.e., the path one level above the top-level
+    directory of the package or returns None if a frozen image is being run).
+
+    See description of get_rootdir for definition of the subdirlevel parameter.
     """
 
-    # TODO: Move images to <root>/refl1d-data.
-    imgdir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'images')
-    if not os.path.exists(imgdir):  # for py2exe
-        imgdir = get_rootdir()
+    return os.path.abspath(os.path.join(get_rootdir(subdirlevel), 'refl1d-data'))
 
-    fullname = os.path.join(imgdir, filename)
 
-    return wx.BitmapFromImage(wx.Image(fullname, imgType).Scale(16, 16))
+def get_bitmap(filename, type=wx.BITMAP_TYPE_PNG, scale_factor=16):
+    """
+    Returns the scaled bitmap from an image file (bmp, jpg, png)
+    """
+
+    fullname = os.path.join(get_datadir(), filename)
+
+    return wx.BitmapFromImage(wx.Image(name=fullname, type=type)
+                                      .Scale(scale_factor, scale_factor))
 
 
 def popup_error_message(caption, message):
@@ -397,12 +406,12 @@ if __name__ == '__main__':
     print ""
     print "Assuming this script lives in the top-level directory of <package>:"
     print "  Application directory is:    ", get_appdir()
-    print "  Package root directory is:   ", get_rootdir()
-    print "  Parent of root directory is: ", get_rootdir_parent()
+    print "  Package root directory is:   ", get_rootdir(subdirlevel=0)
+    print "  Parent of root directory is: ", get_rootdir_parent(subdirlevel=0)
     print "Assuming this script lives 1 subdirectory level below <package>:"
     print "  Application directory is:    ", get_appdir()
-    print "  Package root directory is:   ", get_rootdir(subdirlevel=1)
-    print "  Parent of root directory is: ", get_rootdir_parent(subdirlevel=1)
+    print "  Package root directory is:   ", get_rootdir()
+    print "  Parent of root directory is: ", get_rootdir_parent()
     print "Assuming this script lives 2 subdirectory levels below <package>:"
     print "  Application directory is:    ", get_appdir()
     print "  Package root directory is:   ", get_rootdir(subdirlevel=2)

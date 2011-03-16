@@ -151,6 +151,17 @@ elif sys.version_info >= (2, 5):
 # consisting of a path (relative to dist\) and a list of files in that path.
 data_files = []
 
+# Add resource files that need to reside in the same directory as the image.
+data_files.append( ('.', [os.path.join('.', 'LICENSE.txt')]) )
+data_files.append( ('.', [os.path.join('.', 'README.txt')]) )
+data_files.append( ('.', [os.path.join('.', 'bin', 'refl1d.ico')]) )
+data_files.append( ('.', [os.path.join('.', 'bin', 'refllaunch.bat')]) )
+
+# Add application specific data files from the refl1d\refl1d-data folder.
+# image.
+for path in glob.glob(os.path.join('refl1d-data', '*')):
+    data_files.append( ('refl1d-data', [path]) )
+
 # Add data files from the matplotlib\mpl-data folder and its subfolders.
 # For matploblib prior to version 0.99 see the examples at the end of the file.
 data_files = matplotlib.get_py2exe_datafiles()
@@ -158,22 +169,9 @@ data_files = matplotlib.get_py2exe_datafiles()
 # Add data files from the periodictable\xsf folder.
 data_files += periodictable.data_files()
 
-# Add resource files that need to reside in the same directory as the image.
-data_files.append( ('.', [os.path.join('.', 'LICENSE.txt')]) )
-data_files.append( ('.', [os.path.join('.', 'README.txt')]) )
-data_files.append( ('.', [os.path.join('.', 'bin', 'refl1d.ico')]) )
-data_files.append( ('.', [os.path.join('.', 'bin', 'refl1d_splash.jpg')]) )
-data_files.append( ('.', [os.path.join('.', 'refl1d', 'gui', 'images', 'import_script.png')]) )
-data_files.append( ('.', [os.path.join('.', 'refl1d', 'gui', 'images', 'start_fit.png')]) )
-data_files.append( ('.', [os.path.join('.', 'refl1d', 'gui', 'images', 'stop_fit.png')]) )
-
-# Add batch files to implement commands useful for launching the program.
-# Note that Inno Setup will determine where these files will be placed.
-data_files.append( ('.', [os.path.join('.', 'bin', 'refllaunch.bat')]) )
-
 # Add example directories and their files.  An empty directory is ignored.
 # Note that Inno Setup will determine where these files will be placed such as
-# C:\My Documents\... instead of the installation directory.
+# C:\My Documents\... instead of the installation folder.
 for path in glob.glob(os.path.join('examples', '*')):
     if os.path.isdir(path):
         for file in glob.glob(os.path.join(path, '*.*')):
@@ -188,6 +186,7 @@ for path in glob.glob(os.path.join('doc', 'examples', '*')):
     else:
         data_files.append( ('doc', [path]) )
 
+# Add PDF documentation to the dist staging directory.
 pdf = os.path.join('doc', 'Refl1D.pdf')
 if os.path.isfile(pdf):
     data_files.append( ('doc', [pdf]) )
