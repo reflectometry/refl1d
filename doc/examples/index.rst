@@ -13,3 +13,4 @@ complex models with many constraints relatively easily.
 
    /examples/ex1/readme.rst
    /examples/ex2/readme.rst
+   /examples/superlattice/readme.rst

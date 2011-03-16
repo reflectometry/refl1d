@@ -125,7 +125,7 @@ class Microslabs(object):
     def __len__(self):
         return self._num_slabs
 
-    def repeat(self, start=0, count=1):
+    def repeat(self, start=0, count=1, interface=0):
         """
         Extend the model so that there are *count* versions of the slabs
         from *start* to the final slab.
@@ -145,6 +145,9 @@ class Microslabs(object):
         self._slabs[toidx] = numpy.tile(self._slabs[fromidx],[repeats,1])
         self._slabsQ[toidx] = numpy.tile(self._slabsQ[fromidx],[repeats,1,1])
         self._num_slabs += repeats*length
+        
+        # Replace interface on the top
+        self._slabs[self._num_slabs-1,1] = interface
 
         # TODO: any magnetic sections within the repeat need to be
         # repeated as well

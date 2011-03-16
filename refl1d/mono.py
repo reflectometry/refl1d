@@ -34,6 +34,9 @@ class FreeLayer(Layer):
         self.below, self.above = below,above
         self.thickness = Par.default(thickness,name=name+" thickness",
                                      limits=(0,inf))
+        self.interface = Par.default(0, name=name+" interface",
+                                     limits=(0,inf))
+        self.interface.fittable = False
         def parvec(vector,name,limits):
             return [Par.default(p,name=name+"[%d]"%i,limits=limits)
                     for i,p in enumerate(vector)]

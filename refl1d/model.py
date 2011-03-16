@@ -140,6 +140,7 @@ class Stack(Layer):
         if base is not None:
             self.add(base)
         # TODO: can we make this a class variable?
+        
         self._thickness = Function(self._calc_thickness,name="sample thickness")
 
     @property
@@ -196,8 +197,8 @@ class Stack(Layer):
 
         return dict(thickness=self.thickness, layers = layers)
         
-        attrs = dict(thickness=self.thickness)
-        return (attrs,layers)
+        #attrs = dict(thickness=self.thickness)
+        #return (attrs,layers)
         #return [L.parameters() for L in self._layers]
     def _calc_thickness(self):
         """returns the total thickness of the stack"""
@@ -300,11 +301,16 @@ class Repeat(Layer):
     multilayers may be different from the roughness between the repeated
     stack and the following layer.
     """
-    def __init__(self, stack, repeat=1, interface=None):
+    def __init__(self, stack, repeat=1, interface=None, name=None):
+        if name is None: name = "multilayer"
+        if interface is None: interface = stack[-1].interface.value
+        self.name = name
         self.repeat = IntPar(repeat, limits=(0,inf),
-                             name="repeats")
+                             name=name + " repeats")
         self.stack = stack
-        self.interface = interface
+        self.interface = Par.default(interface, limits=(0,inf),
+                                     name=name+" top interface")
+        # Thickness is computed; don't make it a simple attribute
         self._thickness = Function(self._calc_thickness,name="sample thickness")
     @property
     def magnetic(self):
@@ -326,25 +332,21 @@ class Repeat(Layer):
             L,start,end = self.stack.find(unit)
             return L,start+offset,end+offset
     def parameters(self):
-        if self.interface is not None:
-            return dict(stack=self.stack.parameters(),
-                        repeat=self.repeat,
-                        interface=self.interface)
-        else:
-            return dict(stack=self.stack.parameters(),
-                        repeat=self.repeat)
+        return dict(stack=self.stack.parameters(),
+                    repeat=self.repeat,
+                    thickness=self._thickness,
+                    interface=self.interface)
+    # Mark thickness as read only
+    @property
+    def thickness(self): return self._thickness
     def _calc_thickness(self):
         return self.stack.thickness.value*self.repeat.value
-    @property # Read only thickness parameter
-    def thickness(self): return self._thickness
     def render(self, probe, slabs):
         nr = self.repeat.value
         if nr <= 0: return
         mark = len(slabs)
         self.stack.render(probe, slabs)
-        slabs.repeat(mark, nr)
-        if self.interface != None:
-            slabs.interface(self.interface)
+        slabs.repeat(mark, nr, interface=self.interface.value)
     def __str__(self):
         return "(%s)x%d"%(str(self.stack),self.repeat.value)
     def __repr__(self):
