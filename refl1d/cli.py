@@ -169,7 +169,7 @@ def load_problem(args):
 
     problem.file = filename
     problem.title = os.path.basename(filename)
-    problem.name = filename
+    problem.name, _ = os.path.splitext(os.path.basename(filename))
     problem.options = options
     return problem
 

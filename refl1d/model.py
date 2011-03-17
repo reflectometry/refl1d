@@ -254,7 +254,6 @@ class Stack(Layer):
     # Stacks as lists
     def __getitem__(self, idx):
         if isinstance(idx,slice):
-            print "slicing"
             s = Stack()
             s._layers = self._layers[idx]
             return s

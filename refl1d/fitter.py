@@ -641,7 +641,7 @@ class FitProblem(object):
         pylab.text(0, 0, 'chisq=%g' % self.chisq(),
                    transform=pylab.gca().transAxes)
         if figfile != None:
-            pylab.savefig(figfile+"-model", format='png')
+            pylab.savefig(figfile+"-model.png", format='png')
 
 class MultiFitProblem(FitProblem):
     """
@@ -701,7 +701,8 @@ class MultiFitProblem(FitProblem):
         for i, f in enumerate(self.fits):
             f.plot(fignum=i+fignum)
             pylab.suptitle('Model %d'%i)
-            if figfile != None: pylab.savefig(figfile+"-model%d"%i)
+            if figfile != None:
+                pylab.savefig(figfile+"-model%d.png"%i, format='png')
 
 def load_problem(file, options=[]):
     """
