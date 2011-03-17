@@ -16,7 +16,7 @@ class ResultEvent(wx.PyEvent):
 # Thread class that executes processing
 class Worker(Thread):
     """Worker Thread Class."""
-    def __init__(self, panel,problem, fn,pars=None,mapper = None,):
+    def __init__(self, panel, problem, fn, pars=None, mapper = None,):
         """Init Worker Thread Class."""
         # base class initialization
         #Process.__init__(self)

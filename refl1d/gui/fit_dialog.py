@@ -230,13 +230,18 @@ class FitControl(wx.Dialog):
 
     def OnFit(self, event):
         # send fit options based on algorithm selected
+        steps = self.stepsize.GetValue()
+        pop = self.pop.GetValue()
+        cross = self.crossover.GetValue()
+        tmin = self.tmin.GetValue()
+        tmax = self.tmax.GetValue()
+        burn = self.burn.GetValue()
+        
         if self.de_radio.GetValue():
             # de algorithm is selected, send all fit options related to de
             algo = 'de'
-            steps = self.stepsize.GetValue()
-            pop = self.pop.GetValue()
-            cross = self.crossover.GetValue()
-            fit_option = dict(steps=steps, pop=pop,cross=cross, algo=algo,)
+            fit_option = dict(steps=steps, pop=pop,cross=cross, algo=algo,
+                                tmin=tmin, tmax=tmax, burn=burn)
 
             # send fit options to main panel to start fit
             pub.sendMessage("fit_option", fit_option)
@@ -246,8 +251,8 @@ class FitControl(wx.Dialog):
             # ameoba algorithm is selected, send all fit options related
             # to ameoba
             algo = 'amoeba'
-            steps = self.stepsize.GetValue()
-            fit_option = dict(steps=steps, algo=algo,)
+            fit_option = dict(steps=steps, tmin=tmin, tmax=tmax, burn=burn,
+                                      pop=pop, cross=cross, algo=algo,)
 
             # send fit options to main panel to start fit
             pub.sendMessage("fit_option", fit_option)
@@ -256,10 +261,8 @@ class FitControl(wx.Dialog):
         if self.dream_radio.GetValue():
             # dream algorithm is selected, send all fit options related to dream
             algo = 'dream'
-            steps = self.stepsize.GetValue()
-            burn = self.burn.GetValue()
-            pop = self.pop.GetValue()
-            fit_option = dict(steps=steps, pop=pop, burn=burn, algo=algo,)
+            fit_option = dict(steps=steps, tmin=tmin, tmax=tmax, burn=burn,
+                                      pop=pop, cross=cross, algo=algo,)
 
             # send fit options to main panel to start fit
             pub.sendMessage("fit_option", fit_option)
@@ -269,12 +272,6 @@ class FitControl(wx.Dialog):
             # parallel temparing algorithm is selected, send all fit options
             # related to parallel temparing
             algo = 'pt'
-            steps = self.stepsize.GetValue()
-            pop = self.pop.GetValue()
-            tmin = self.tmin.GetValue()
-            tmax = self.tmax.GetValue()
-            burn = self.burn.GetValue()
-            cross = self.crossover.GetValue()
             fit_option = dict(steps=steps, tmin=tmin, tmax=tmax, burn=burn,
                                       pop=pop, cross=cross, algo=algo,)
 
@@ -286,10 +283,8 @@ class FitControl(wx.Dialog):
             # random lines algorithm is selected, send all fit options related
             # to random lines
             algo = 'rl'
-            steps = self.stepsize.GetValue()
-            pop = self.pop.GetValue()
-            cross = self.crossover.GetValue()
-            fit_option = dict(steps=steps, pop=pop, cross=cross, algo=algo,)
+            fit_option = dict(steps=steps, tmin=tmin, tmax=tmax, burn=burn,
+                                      pop=pop, cross=cross, algo=algo,)
 
             # send fit options to main panel to start fit
             pub.sendMessage("fit_option", fit_option)
