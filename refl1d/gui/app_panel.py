@@ -485,7 +485,6 @@ class AppPanel(wx.Panel):
         pub.sendMessage("initial_model", self.problem)
 
         # Recieving message to start a fit operation.
-        #pub.subscribe(self.OnFit, "fit")
         pub.subscribe(self.OnFit, "fit_option")
         # Recieving parameter update message from parameter tab
         # This will trigger on_para_change method to update all the views of
@@ -525,8 +524,6 @@ class AppPanel(wx.Panel):
                                problem=self.problem, monitor=monitor,
                                options=opts)
         mapper = SerialMapper
-        #make_store(self.problem,opts)
-
         self.pan1.Layout()
                 
         # Start a new thread worker and give fit problem to the worker.

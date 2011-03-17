@@ -69,14 +69,14 @@ class DEFit(FitBase):
         from mystic.optimizer import de
         from mystic.solver import Minimizer
         from mystic.stop import Steps
-        monitors = kw.pop('monitors', None)
-        if monitors == None:
-            monitors = [ConsoleMonitor(self.problem)]
+        monitor = kw.pop('monitor', None)
+        if monitor == None:
+            monitor = [ConsoleMonitor(self.problem)]
         else:
-            monitors = [monitors]
+            monitor = [monitor]
         strategy = de.DifferentialEvolution(npop=pop)
         minimize = Minimizer(strategy=strategy, problem=self.problem,
-                             monitors=monitors,
+                             monitors=monitor,
                              failure=Steps(steps))
         x = minimize()
         return x
@@ -542,7 +542,8 @@ class FitProblem(object):
         """
         Generates a random model.
         """
-        self.setp([p.bounds.random(1)[0] for p in self.parameters])
+        for p in self.parameters:
+            p.value = p.bounds.random(1)[0]
 
     def parameter_nllf(self):
         """

@@ -90,6 +90,7 @@ class FitProxy(object):
         self.problem = problem
         self.options = options
         self.monitor = monitor
+        
     def fit(self):
         import time
         from .fitter import Result
