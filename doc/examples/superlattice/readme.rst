@@ -25,15 +25,15 @@ critically important for device fabrication and reliability.
 .. plot::
 
     from sitedoc import plot_model
-    plot_model('TiNi.py')
+    plot_model('NiTi.py')
 
-The model is defined by :download:`TiNi.py <TiNi.py>`:
+The model is defined by :download:`NiTi.py <NiTi.py>`:
 
-.. literalinclude:: TiNi.py
+.. literalinclude:: NiTi.py
     :linenos:
 
 Within the superlattice definition, the first line defines the repeating
-stack as *bilayer* and the second line uses *bilayer*\ *10 to specify
+stack as bilayer and the second line uses bilayer*10 to specify
 10 repeats of the bilayer.
 
 The interface between repeats is defined by the interface at the top
@@ -60,76 +60,122 @@ the number of repeats.
 Soft material structures
 =========================
 
-Another example involves the inter-diffusion of polyelectrolyte polymer multi-layers.
+Another example involves the inter-diffusion of polyelectrolyte
+polymer multi-layers.
+
+
+.. plot::
+
+    from sitedoc import plot_model
+    plot_model('PEMU.py')
 
 Reference: Jomaa, H., Schlenoff, Macromolecules, 38 (2005), 8473-8480
 
-Inter-diffusion properties of multilayer systems are of great interest in both hard and soft materials. Jomaa, et. al  has showed that reflectometry can be used to elucidate the kinetics of a diffusion process in polyelectrolytes multi-layers. Although the purpose of this paper was not to fit the presented system, it offers a good model for an experimentally relevant system for which information from neutron reflectometry can be obtained. In this model system we will show that we can create a model for this type of system and determine the relevant parameters through our optimisation scheme. This particular example uses deuterated reference layers to determine the kinetics of the overall system. 
-
+Inter-diffusion properties of multilayer systems are of great interest in both
+hard and soft materials. Jomaa, et. al  have shown that reflectometry can be
+used to elucidate the kinetics of a diffusion process in polyelectrolytes
+multilayers. Although the purpose of this paper was not to fit the presented
+system, it offers a good model for an experimentally relevant system for which
+information from neutron reflectometry can be obtained. In this model system
+we will show that we can create a model for this type of system and determine
+the relevant parameters through our optimisation scheme. This particular
+example uses deuterated reference layers to determine the kinetics of
+the overall system.
 
 To model the system described in figure 2 of the reference, we do the following:
 
-    .. literalinclude:: PEMU.py
-        :lines: 8,13-14,17,20,23,26,29,32,33,36-38,41-42,45-46
+.. literalinclude:: PEMU.py
+    :lines: 8,13-14,17,20,23,26,29,32,33,36-38,41-42,45-46
 
 The steps are detailed as follows:
 
-1.  Bring in all of the functions from refl1d.names so that we can use them in the remainder of the script.
+1. Bring in all of the functions from refl1d.names so that we can use them
+   in the remainder of the script.
 
-    .. literalinclude:: PEMU.py
+   .. literalinclude:: PEMU.py
         :lines: 8
 
-2.	The polymer system is deposited on a gold film with chromium as an adhesion layer. Because these are standard films which are very well-known in this experiment we can use the build-in materials library to create these layers.
+2. The polymer system is deposited on a gold film with chromium as an
+   adhesion layer. Because these are standard films which are very well-known
+   in this experiment we can use the build-in materials library to create
+   these layers.
 
-	.. literalinclude:: PEMU.py
-		:line: 13-14
+   .. literalinclude:: PEMU.py
+        :lines: 13-14
 
-3.	Now we can created the PDADMA/dPSS layer. In this particular example, the two materials are modelled as a single layer and the make-up of this material is complicated so it is more convenient to use the scattering length density(SLD) functionality. We assume calculations were carried out to estimate the SLD value. We also have an idea of the layer thickness based on ellipsometery(as stated in the paper).
+3. Now we can created the PDADMA/dPSS layer. In this particular example, the
+   two materials are modelled as a single layer and the make-up of this
+   material is complicated so it is more convenient to use the scattering
+   length density(SLD) functionality. We assume calculations were carried out
+   to estimate the SLD value. We also have an idea of the layer thickness
+   based on ellipsometery(as stated in the paper).
 
-	.. literalinclude:: PEMU.py
-		:line: 17
+   .. literalinclude:: PEMU.py
+	:lines: 17
 
-4.	We now do the same for the non-deuterated PDADMA/PAA layer. Again, the two layers are estimated to have only a single SLD and so only one layer is created. Similar knowledge about the SLD and thickness is assumed:
-	
-	.. literalinclude:: PEMU.py
-		:line: 20
+4. We now do the same for the non-deuterated PDADMA/PAA layer. Again, the two
+   layers are estimated to have only a single SLD and so only one layer is
+   created. Similar knowledge about the SLD and thickness is assumed:
 
-5.	Now we can create the repeat stack. This is accomplished quite conveniently by using the | notation to create a variable 'bilayer':
+   .. literalinclude:: PEMU.py
+	:lines: 20
 
-	.. literalinclude:: PEMU.py
-		:line: 23
+5. Now we can create the repeat stack. This is accomplished quite conveniently
+   by using the | notation to create a variable 'bilayer':
 
-6. 	Now we can build the model sample. We can use the bilayer variable and repeat it as seen below:
+   .. literalinclude:: PEMU.py
+	:lines: 23
 
- 	.. literalinclude:: PEMU.py
-		:line: 26
-	
-.. Note:: In this system we expect the kinetics of the surface diffusion to differ from that of the bulk layer structure. Because we want the top bilayer to optimise independently of the other bilayers, the fifth layer was not included in the stack. If the diffusion properties of each layer were expected to vary widely from one-another, the stack would have to forgo the refl1d Repeat functionality.
- 
-7. Now that the model sample is built, we can start adding ranges to the fit parameters. We assume that the chromium/gold layer is well known through other methods and will not fit it; however, additional optimisation could certainly be included here. We assume all interfaces in the bilayer act in the same way and that they could potentially diffuse a significant distance.
+6. Now we can build the model sample. We can use the bilayer variable and
+   repeat it as seen below:
 
-	.. literalinclude:: PEMU.py
-		:line: 29
+   .. literalinclude:: PEMU.py
+	:lines: 26
 
-8. 	We also expect, as diffusion occurs, the SLD of the deuterated polymer will decrease and the undeuterated segment will increase. These are seen in the limits chosen for the optimiser:
+.. Note::
 
-	.. literalinclude:: PEMU.py
-		:line: 32-33
+  In this system we expect the kinetics of the surface diffusion to differ
+  from that of the bulk layer structure. Because we want the top bilayer to
+  optimise independently of the other bilayers, the fifth layer was not
+  included in the stack. If the diffusion properties of each layer were
+  expected to vary widely from one-another, the stack would have to forgo the
+  refl1d Repeat functionality.
 
-9. 	Finally, limits need to be assigned to the top bilayer. Although we want the optimiser to threat these parameters independently because surface diffusion is expected to occur faster, the overall nature of the diffusion is expected to be the same and so we use the same limits.
+7. Now that the model sample is built, we can start adding ranges to the fit
+   parameters. We assume that the chromium/gold layer is well known through
+   other methods and will not fit it; however, additional optimisation could
+   certainly be included here. We assume all interfaces in the bilayer act in
+   the same way and that they could potentially diffuse a significant distance.
 
-	.. literalinclude:: PEMU.py
-		:line: 36-38
+   .. literalinclude:: PEMU.py
+	:lines: 29
 
-10.	Now we can finish preparing the experiment. The probe is a neutron probe and so we have:
+8. We also expect, as diffusion occurs, the SLD of the deuterated polymer
+   will decrease and the undeuterated segment will increase. These are seen
+   in the limits chosen for the optimiser:
 
-	.. literalinclude:: PEMU.py
-		:line: 41-42
+   .. literalinclude:: PEMU.py
+	:lines: 32-33
 
-11. We can now create the experiment, simulate the data, and finish the fit problem:
-	
-	.. literalinclude:: PEMU.py
-		:line: 45-48
+9. Finally, limits need to be assigned to the top bilayer. Although we want
+   the optimiser to threat these parameters independently because surface
+   diffusion is expected to occur faster, the overall nature of the diffusion
+   is expected to be the same and so we use the same limits.
+
+   .. literalinclude:: PEMU.py
+	:lines: 36-38
+
+10. Now we can finish preparing the experiment. The probe is a neutron probe
+    and so we have:
+
+    .. literalinclude:: PEMU.py
+        :lines: 41-42
+
+11. We can now create the experiment, simulate the data, and finish
+    the fit problem:
+
+    .. literalinclude:: PEMU.py
+	:lines: 45-48
 
 Freeform structures
 ===================
