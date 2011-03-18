@@ -22,7 +22,7 @@ PDADMA_PSS = SLD(name = 'PDADMA PSS',rho = 1.15)
 bilayer = PDADMA_PSS(178,10) | PDADMA_dPSS(44.3,10)
 
 #This is the sample. because we are expecting the top layer to act differently than the multilayer, I have added an extra piece on top. This probably isn't needed but I had trouble with the model building syntax.
-sample = silicon(0,5) | chrome(30,3) | gold(120,5) | (PDADMA_PSS(178,10) | PDADMA_dPSS(44.3,10))*4 | PDADMA_PSS(178,10) | PDADMA_dPSS(44.3,10) | air
+sample = silicon(0,5) | chrome(30,3) | gold(120,5) | (bilayer)*4 | PDADMA_PSS(178,10) | PDADMA_dPSS(44.3,10) | air
 
 #I need to fit the roughness to determine how much diffusion has occurred. I have set the maximum interfacial roughness to be the thickness of the thin layer to simulate total diffusion. How will the software proceed? 
 sample[3].interface.range(5,44.3)
