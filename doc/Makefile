@@ -18,7 +18,7 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 	$(PYTHON) pylit.py $< $@
 	$(PYTHON) pylit.py $@ $(patsubst %.txt,%.py,$@) -s -t
 
-WEBFILES = superlattice/PEMU
+WEBFILES = superlattice/PEMU superlattice/NiTi
 
 WEBDEPS = $(patsubst %,examples/%.txt,$(WEBFILES))
 
