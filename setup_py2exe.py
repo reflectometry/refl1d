@@ -158,13 +158,12 @@ data_files.append( ('.', [os.path.join('.', 'bin', 'refl1d.ico')]) )
 data_files.append( ('.', [os.path.join('.', 'bin', 'refllaunch.bat')]) )
 
 # Add application specific data files from the refl1d\refl1d-data folder.
-# image.
 for path in glob.glob(os.path.join('refl1d-data', '*')):
     data_files.append( ('refl1d-data', [path]) )
 
 # Add data files from the matplotlib\mpl-data folder and its subfolders.
 # For matploblib prior to version 0.99 see the examples at the end of the file.
-data_files = matplotlib.get_py2exe_datafiles()
+data_files += matplotlib.get_py2exe_datafiles()
 
 # Add data files from the periodictable\xsf folder.
 data_files += periodictable.data_files()

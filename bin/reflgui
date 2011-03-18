@@ -85,7 +85,7 @@ DISPLAY_HEIGHT = 900
 
 # Splash screen picture and timeout value.
 SPLASH_SCREEN_FILE = "refl1d_splash.jpg"
-SPLASH_SCREEN_TIMEOUT = 4000  # in miliseconds
+SPLASH_SCREEN_TIMEOUT = 3000  # in miliseconds
 SPLASH_SCREEN_SCALE = 0.6  # scale factor relative to frame dimensions
 
 # Diagnostic timing information.
