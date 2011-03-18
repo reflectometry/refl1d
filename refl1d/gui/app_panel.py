@@ -480,7 +480,7 @@ class AppPanel(wx.Panel):
         self.args = [file, "T1"]
         self.problem = load_problem(self.args)
         self.redraw(self.problem)
-        
+
         # Send new model (problem) loaded message to all interested panels.
         pub.sendMessage("initial_model", self.problem)
 
@@ -507,9 +507,9 @@ class AppPanel(wx.Panel):
         fit_dlg = FitControl(self, -1, "Fit Control")
 
     def OnFit(self, event):
-        
+
         opts = FitOpts(self.args)
-        monitor = GUIMonitor(self.problem)
+        monitors = [GUIMonitor(self.problem)]
 
         options = event.data
         opts.steps = int(options['steps'])
@@ -521,16 +521,16 @@ class AppPanel(wx.Panel):
         algorithm = options["algo"]
 
         self.fitter = FitProxy(FITTERS[algorithm],
-                               problem=self.problem, monitor=monitor,
+                               problem=self.problem, monitors=monitors,
                                options=opts)
         mapper = SerialMapper
         self.pan1.Layout()
-                
+
         # Start a new thread worker and give fit problem to the worker.
         self.worker = Worker(self, self.problem, fn=self.fitter,
                                    pars=opts.args, mapper=mapper)
 
-        self.sb.SetStatusText("Fit status: Running", 3)                                   
+        self.sb.SetStatusText("Fit status: Running", 3)
 
     def OnFitResult(self, event):
         self.redraw(self.problem) # redraw the plot last time with fitted chsiq
