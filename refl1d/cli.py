@@ -11,6 +11,7 @@ import pylab
 import dream
 from .stajconvert import load_mlayer, fit_all
 from .fitter import DEFit, AmoebaFit, SnobFit, BFGSFit, RLFit, PTFit
+from .fitter import StepMonitor, ConsoleMonitor
 from . import fitter
 from . import util
 from .mystic import parameter
@@ -85,11 +86,11 @@ class DreamProxy(object):
         P.plot(figfile=output_path)
 
 class FitProxy(object):
-    def __init__(self, fitter, problem, options, monitor=None):
+    def __init__(self, fitter, problem, options, monitors=None):
         self.fitter = fitter
         self.problem = problem
         self.options = options
-        self.monitor = monitor
+        self.monitors = monitors
         
     def fit(self):
         import time
@@ -103,7 +104,7 @@ class FitProxy(object):
                                 CR=self.options.CR,
                                 Tmin=self.options.Tmin,
                                 Tmax=self.options.Tmax,
-                                monitor=self.monitor,
+                                monitors=self.monitors,
                                 )
             print "time", time.clock() - t0
         else:
@@ -338,7 +339,7 @@ FITTERS = dict(dream=None, rl=RLFit, pt=PTFit,
 class FitOpts(ParseOpts):
     MINARGS = 1
     FLAGS = set(("preview", "check", "profile", "random", "simulate",
-                 "worker", "batch", "overwrite", "parallel",
+                 "worker", "batch", "overwrite", "parallel", "stepmon",
                ))
     VALUES = set(("plot", "store", "fit", "noise", "steps", "pop",
                   "CR", "burn", "Tmin", "Tmax",
@@ -381,6 +382,8 @@ Options:
         run fit using all processors
     --batch
         batch mode; don't show plots after fit
+    --stepmon
+        show details for each step
 
     --fit=de        [%(fitter)s]
         fitting engine to use; see manual for details
@@ -481,9 +484,13 @@ def main():
     else:
         make_store(problem,opts,exists_handler=store_overwrite_query)
 
+
         # Show command line arguments and initial model
         print "#"," ".join(sys.argv)
         problem.show()
+        if opts.stepmon:
+            fid = open(problem.output_path+'.log', 'w')
+            fitter.monitors = [ConsoleMonitor(problem), StepMonitor(fid)]
 
         fitter.mapper = mapper.start_mapper(problem, opts.args)
         best = fitter.fit()

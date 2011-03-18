@@ -20,11 +20,13 @@ from .mystic.history import History
 from .util import pushdir
 
 class ConsoleMonitor(monitor.TimedUpdate):
+    """
+    Display fit progress on the console
+    """
     def __init__(self, problem, progress=1, improvement=30):
         monitor.TimedUpdate.__init__(self, progress=progress,
                                      improvement=improvement)
         self.problem = deepcopy(problem)
-    # TimedUpdate profiles
     def show_progress(self, history):
         print "step", history.step[0], "cost", history.value[0]
     def show_improvement(self, history):
@@ -38,6 +40,35 @@ class ConsoleMonitor(monitor.TimedUpdate):
             pylab.gcf().canvas.draw()
         except:
             raise
+
+class StepMonitor(monitor.Monitor):
+    """
+    Collect information at every step of the fit and save it to a file.
+
+    *fid* is the file to save the information to
+    *fields* is the list of "step|time|value|point" fields to save
+    
+    The point field should be last in the list.
+    """
+    FIELDS = ['step', 'time', 'value', 'point']
+    def __init__(self, fid, fields=FIELDS):
+        if any(f not in self.FIELDS for f in fields): 
+            raise ValueError("invalid monitor field")
+        self.fid = fid
+        self.fields = fields
+        self._pattern = "%%(%s)s\n" % (")s %(".join(fields))
+        fid.write("# "+' '.join(fields)+'\n')
+    def config_history(self, history):
+        history.requires(time=1, value=1, point=1, step=1)
+    def __call__(self, history):
+        point = " ".join("%.15g"%v for v in history.point[0])
+        time = "%g"%history.time[0]
+        step = "%d"%history.step[0]
+        value = "%.15g"%history.value[0]
+        out = self._pattern%dict(point=point, time=time,
+                                 value=value, step=step)
+        self.fid.write(out)
+
 
 class MonitorRunner(object):
     """
@@ -64,19 +95,31 @@ class FitBase(object):
     def solve(self, **kw):
         raise NotImplementedError
 
+class MultiStart(FitBase):
+    def __init__(self, fitter):
+        self.fitter = fitter
+        self.problem = fitter.problem 
+    def solve(self, starts=0, **kw):
+        fbest = inf
+        if starts < 1: starts = 1
+        for _ in range(starts):
+            x,fx = self.fitter.solve(**kw)
+            if fx < f_best:
+                x_best, f_best = x,fx
+            randomize(self.problem)
+        return x_best, fx
+
 class DEFit(FitBase):
     def solve(self, pop=10, steps=100, **kw):
         from mystic.optimizer import de
         from mystic.solver import Minimizer
         from mystic.stop import Steps
-        monitor = kw.pop('monitor', None)
-        if monitor == None:
-            monitor = [ConsoleMonitor(self.problem)]
-        else:
-            monitor = [monitor]
+        monitors = kw.pop('monitors', None)
+        if monitors == None:
+            monitors = [ConsoleMonitor(self.problem)]
         strategy = de.DifferentialEvolution(npop=pop)
         minimize = Minimizer(strategy=strategy, problem=self.problem,
-                             monitors=monitor,
+                             monitors=monitors,
                              failure=Steps(steps))
         x = minimize()
         return x
@@ -112,6 +155,7 @@ class RLFit(FitBase):
                    x2 = bounds[1],
                    monitor = self._monitor)
         NP = int(cfo['n']*pop)
+        
         f_best_overall = inf
         if burn < 1: burn = 1
         assert burn<100
