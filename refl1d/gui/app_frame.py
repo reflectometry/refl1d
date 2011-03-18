@@ -50,8 +50,7 @@ class AppFrame(wx.Frame):
     """
 
     def __init__(self, parent=None, id=wx.ID_ANY, title=APP_TITLE,
-                 pos=wx.DefaultPosition, size=(800, 600), name="AppFrame"
-                ):
+                 pos=wx.DefaultPosition, size=wx.DefaultSize, name="AppFrame"):
         wx.Frame.__init__(self, parent, id, title, pos, size, name=name)
 
         # Display the application's icon in the title bar.
@@ -71,20 +70,11 @@ class AppFrame(wx.Frame):
         # Initialize the status bar.
         self.add_statusbar()
 
-        # Comment out the call to Fit() to keep the frame at its initial size,
-        # otherwise it will be reduced to its minimum size.
-        #self.Fit()
-
-
-    def init_GUI(self):
-        """
-        Constructs the GUI for the application on top of the basic frame
-        already created.  The GUI should be built after the splash screen
-        (if used) is displayed so that this work is done while the user is
-        viewing the splash screen.
-        """
+        # Build the application panels for the GUI on the frame.
         AppPanel(frame=self)
 
+        # Note: Do not call self.Fit() as this will reduce the frame to its
+        # bare minimum size; we want it to keep its default size.
 
     def set_default_font(self):
         """

@@ -326,10 +326,10 @@ def log_time(text=None, reset=False):
     Example output from calls to log_time('...'):
 
     ==>    0.000s    0.000s  Starting <application name>
-    ==>    0.031s    0.031s  Starting to display the splash screen
-    ==>    0.016s    0.047s  Starting to build the GUI on the frame
-    ==>    0.078s    0.125s  Finished building the GUI and entering event loop
-    ==>    3.922s    4.047s  Terminating splash screen and showing the frame
+    ==>    0.016s    0.016s  Starting to display the splash screen
+    ==>    0.015s    0.031s  Starting to build the GUI application
+    ==>    0.094s    0.125s  Entering the event loop
+    ==>    2.906s    3.031s  Terminating the splash screen and showing the GUI
     """
 
     global log_time_handle
