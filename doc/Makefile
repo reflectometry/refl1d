@@ -14,13 +14,14 @@ PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
 ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
-%.txt: %-web.py
+%.rst: %-web.py
 	$(PYTHON) pylit.py $< $@
-	$(PYTHON) pylit.py $@ $(patsubst %.txt,%.py,$@) -s -t
+	$(PYTHON) pylit.py $@ $(patsubst %.rst,%.py,$@) -s -t
 
-WEBFILES = superlattice/PEMU superlattice/NiTi
+WEBFILES = superlattice/PEMU superlattice/NiTi superlattice/freeform \
+	ex1/nifilm ex1/nifilm-tof ex1/nifilm-fit ex1/nifilm-data
 
-WEBDEPS = $(patsubst %,examples/%.txt,$(WEBFILES))
+WEBDEPS = $(patsubst %,examples/%.rst,$(WEBFILES))
 
 .PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp \
         devhelp epub latex pdf text man changes linkcheck doctest generated
