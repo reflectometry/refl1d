@@ -47,12 +47,12 @@ class StepMonitor(monitor.Monitor):
 
     *fid* is the file to save the information to
     *fields* is the list of "step|time|value|point" fields to save
-    
+
     The point field should be last in the list.
     """
     FIELDS = ['step', 'time', 'value', 'point']
     def __init__(self, fid, fields=FIELDS):
-        if any(f not in self.FIELDS for f in fields): 
+        if any(f not in self.FIELDS for f in fields):
             raise ValueError("invalid monitor field")
         self.fid = fid
         self.fields = fields
@@ -98,16 +98,16 @@ class FitBase(object):
 class MultiStart(FitBase):
     def __init__(self, fitter):
         self.fitter = fitter
-        self.problem = fitter.problem 
+        self.problem = fitter.problem
     def solve(self, starts=0, **kw):
-        fbest = inf
+        f_best = inf
         if starts < 1: starts = 1
         for _ in range(starts):
             x,fx = self.fitter.solve(**kw)
             if fx < f_best:
                 x_best, f_best = x,fx
-            randomize(self.problem)
-        return x_best, fx
+            self.problem.randomize()
+        return x_best, f_best
 
 class DEFit(FitBase):
     def solve(self, pop=10, steps=100, **kw):
@@ -122,7 +122,7 @@ class DEFit(FitBase):
                              monitors=monitors,
                              failure=Steps(steps))
         x = minimize()
-        return x
+        return x, minimize.history.value[0]
 
 
 class BFGSFit(FitBase):
@@ -137,13 +137,13 @@ class BFGSFit(FitBase):
                              )
         code = result['status']
         print "%d: %s" % (code, STATUS[code])
-        return result['x']
+        return result['x'], result['fx']
     def _monitor(self, step, x, fx):
         self._update(step=step, point=x, value=fx)
         return True
 
 class RLFit(FitBase):
-    def solve(self, pop=1, steps=2000, burn=10, CR=0.9, **kw):
+    def solve(self, pop=1, steps=2000, CR=0.9, **kw):
         from random_lines import random_lines
         self._update = MonitorRunner(problem=self.problem,
                                      monitors=kw.pop('monitors', None))
@@ -155,18 +155,12 @@ class RLFit(FitBase):
                    x2 = bounds[1],
                    monitor = self._monitor)
         NP = int(cfo['n']*pop)
-        
-        f_best_overall = inf
-        if burn < 1: burn = 1
-        assert burn<100
-        for _ in range(burn):
-            result = random_lines(cfo, NP, maxiter=steps, CR=CR)
-            satisfied_sc, n_feval, i_best, f_best, x_best = result
-            if f_best < f_best_overall:
-                f_best_overall = f_best
-                x_best_overall = x_best
-        # Note: success if satisfied_sc is 4, failure otherwise.
-        return x_best_overall
+
+        result = random_lines(cfo, NP, maxiter=steps, CR=CR)
+        satisfied_sc, n_feval, i_best, f_best, x_best = result
+
+        return x_best, f_best
+
     def _monitor(self, step, x, fx):
         self._update(step=step, point=x, value=fx)
         return True
@@ -190,7 +184,7 @@ class PTFit(FitBase):
                                     steps=steps,
                                     burn=burn,
                                     monitor=self._monitor)
-        return history.best_point
+        return history.best_point, history.best
     def _monitor(self, step, x, fx):
         self._update(step=step, point=x, value=2*fx/self.problem.dof)
         return True
@@ -206,7 +200,7 @@ class AmoebaFit(FitBase):
                               for p in self.problem.parameters]).T
         result = simplex(f=self.problem, x0=self.problem.getp(), bounds=bounds,
                          update_handler=self._monitor, maxiter=steps)
-        return result.x
+        return result.x, result.fx
     def _monitor(self, k, n, x, fx):
         self._update(step=k, point=x, value=fx)
 
@@ -217,9 +211,9 @@ class SnobFit(FitBase):
                                      monitors=kw.pop('monitors', None))
         bounds = numpy.array([p.bounds.limits
                               for p in self.problem.parameters]).T
-        x, _, _ = snobfit(self.problem, self.problem.getp(), bounds,
+        x, fx, _ = snobfit(self.problem, self.problem.getp(), bounds,
                           fglob=0, callback=self._monitor)
-        return x
+        return x, fx
     def _monitor(self, k, x, fx, improved):
         self._update(step=k, point=x, value=fx)
 

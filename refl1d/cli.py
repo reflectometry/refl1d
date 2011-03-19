@@ -10,7 +10,7 @@ import numpy
 import pylab
 import dream
 from .stajconvert import load_mlayer, fit_all
-from .fitter import DEFit, AmoebaFit, SnobFit, BFGSFit, RLFit, PTFit
+from .fitter import DEFit, AmoebaFit, SnobFit, BFGSFit, RLFit, PTFit, MultiStart
 from .fitter import StepMonitor, ConsoleMonitor
 from . import fitter
 from . import util
@@ -91,24 +91,28 @@ class FitProxy(object):
         self.problem = problem
         self.options = options
         self.monitors = monitors
-        
+
     def fit(self):
         import time
         from .fitter import Result
         if self.fitter is not None:
             t0 = time.clock()
             optimizer = self.fitter(self.problem)
-            x = optimizer.solve(steps=self.options.steps,
-                                burn=self.options.burn,
-                                pop=self.options.pop,
-                                CR=self.options.CR,
-                                Tmin=self.options.Tmin,
-                                Tmax=self.options.Tmax,
-                                monitors=self.monitors,
-                                )
+            if self.options.starts > 1:
+                optimizer = MultiStart(optimizer)
+            x, fx = optimizer.solve(steps=self.options.steps,
+                                    burn=self.options.burn,
+                                    pop=self.options.pop,
+                                    CR=self.options.CR,
+                                    Tmin=self.options.Tmin,
+                                    Tmax=self.options.Tmax,
+                                    monitors=self.monitors,
+                                    starts=self.options.starts,
+                                    )
             print "time", time.clock() - t0
         else:
             x = self.problem.getp()
+            fx = inf
 
         self.result = x
         self.problem.setp(x)
@@ -342,10 +346,11 @@ class FitOpts(ParseOpts):
                  "worker", "batch", "overwrite", "parallel", "stepmon",
                ))
     VALUES = set(("plot", "store", "fit", "noise", "steps", "pop",
-                  "CR", "burn", "Tmin", "Tmax",
+                  "CR", "burn", "Tmin", "Tmax", "starts",
                   #"mesh","meshsteps",
                 ))
     noise="5"
+    starts="1"
     steps="1000"
     pop="10"
     CR="0.9"
@@ -399,6 +404,8 @@ Options:
         population if your fit is getting stuck in local minima.
     --CR=0.9        [de, rl, pt]
         crossover ratio for population mixing
+    --starts=1      [%(fitter)s]
+        number of times to run the fit from random starting points
 
     --check
         print the model description and chisq value and exit
@@ -450,6 +457,7 @@ def main():
     opts.burn = int(opts.burn)
     opts.Tmin = float(opts.Tmin)
     opts.Tmax = float(opts.Tmax)
+    opts.starts = int(opts.starts)
 
     problem = load_problem(opts.args)
     if opts.random:
@@ -490,7 +498,8 @@ def main():
         problem.show()
         if opts.stepmon:
             fid = open(problem.output_path+'.log', 'w')
-            fitter.monitors = [ConsoleMonitor(problem), StepMonitor(fid)]
+            fitter.monitors = [ConsoleMonitor(problem),
+                               StepMonitor(fid,fields=['step','value'])]
 
         fitter.mapper = mapper.start_mapper(problem, opts.args)
         best = fitter.fit()

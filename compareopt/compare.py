@@ -11,15 +11,21 @@ root = 'out'
 
 problems = {
     'xray': '../examples/xray/model.py',
+    'pemu': '../doc/examples/superlattice/PEMU-web.py',
     }
 
+# Aim for 1000000 fcalls
 fitters = {
-    'de': '--fit=de --steps=50',
-    'rl': '--fit=rl --steps=50',
+    'de'   : '--fit=de     --steps=10000 --pop=10',
+    'rl'   : '--fit=rl     --steps=1000 --starts=500 --pop=1',
+    'dream': '--fit=dream  --steps=2000 --pop=10 --burn=8000',
+    'pt'   : '--fit=pt     --steps=100000 --pop=10 --burn=0',
+    'bfgs' : '--fit=newton --steps=1000 --starts=100',
+    'nm'   : '--fit=amoeba --steps=1000 --starts=100',
     }
 
 nthread = None # Use #cpus
-nrepeat = 3
+nrepeat = 20
 
 def cmd(store,model,opts):
     pat = "nice ../bin/refl1d --batch --stepmon --overwrite --random --store=%s '%s' %s"
@@ -35,12 +41,13 @@ def run(job):
 
 def main(problems, fitters, nthread, root):
     if os.path.exists(root):
-        raise RuntimeError("directory %s exists."%root)
+        raise RuntimeError("directory <%s> exists."%root)
     pool = Pool(processes=nthread)
     pool.map(run, [(i,pi,j,fj,k)
+                   for k in range(nrepeat)
                    for i,pi in problems.items()
                    for j,fj in fitters.items()
-                   for k in range(nrepeat)] )
+                   ] )
 
 if __name__ == "__main__":
     main(problems, fitters, nthread, root)
