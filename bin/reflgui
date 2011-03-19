@@ -79,11 +79,13 @@ from refl1d.gui.app_frame import AppFrame
 from refl1d.gui.utilities import (get_appdir, get_datadir, get_rootdir,
                                   get_rootdir_parent, log_time)
 
-# Desired initial application window size (if physical screen size permits).
-DISPLAY_WIDTH = 1200
-DISPLAY_HEIGHT = 900
+# Desired initial application frame size (if physical screen size permits).
+FRAME_WIDTH = 1200
+FRAME_HEIGHT = 900
 
-# Splash screen information.
+# Desired plash screen size and other information.
+# Note that it is best to start with an image having the desired dimensions or
+# larger.  If image is smaller the image conversion time may be noticeable.
 SPLASH_FILE = "refl1d_splash.jpg"
 SPLASH_TIMEOUT = 3000  # in miliseconds
 SPLASH_WIDTH = 720
@@ -110,16 +112,22 @@ class ReflGUIApp(wx.App):
     """
 
     def OnInit(self):
+        # Determine the position and size of the splash screen based on the
+        # desired size and screen real estate that we have to work with.
+        pos, size = self.window_placement(SPLASH_WIDTH, SPLASH_HEIGHT)
+        #print "splash pos and size =", pos, size
+
         # Display the splash screen.  It will remain visible until the caller
         # executes app.MainLoop() AND either the splash screen timeout expires
         # or the user left clicks over the splash screen.
         if LOGTIM: log_time("Starting to display the splash screen")
-        self.display_splash_screen()
+        pic = os.path.join(get_datadir(), SPLASH_FILE)
+        self.display_splash_screen(img_name=pic, pos=pos, size=size)
 
         # Determine the position and size of the application frame based on the
-        # screen real estate that we have to work with.
-        pos, size = self.window_placement()
-        #print "window pos and size =", pos, size
+        # desired size and screen real estate that we have to work with.
+        pos, size = self.window_placement(FRAME_WIDTH, FRAME_HEIGHT)
+        #print "frame pos and size =", pos, size
 
         # Create the application frame, but it will not be shown until the
         # splash screen terminates.
@@ -140,45 +148,48 @@ class ReflGUIApp(wx.App):
 
         return True
 
-    def window_placement(self):
+    def window_placement(self, desired_width, desired_height):
         """
-        Determines the position and size of the application frame such that it
-        fits on the user's screen without obstructing (or being obstructed by)
-        the Windows task bar.  The maximum initial size in pixels is bounded by
-        DISPLAY_WIDTH x DISPLAY_HEIGHT.  For most monitors, the application
-        will be centered on the screen; for very large monitors it will be
-        placed on the left side of the screen.
+        Determines the position and size of a window such that it fits on the
+        user's screen without obstructing (or being obstructed by) the task bar.
+        The returned size is bounded by the desired width and height passed in,
+        but it may be smaller if the screen is too small.  Usually the returned
+        position (upper left coordinates) will result in centering the window
+        on the screen excluding the task bar area.  However, for very large
+        monitors it will be placed on the left side of the screen.
         """
 
         xpos = ypos = 0
 
-        # Note that when running Linux and using an Xming (X11) server on a PC
-        # with a dual  monitor configuration, the reported display size may be
-        # that of both monitors combined with an incorrect display count of 1.
-        # To avoid displaying this app across both monitors, we check for
+        # WORKAROUND: When running Linux and using an Xming (X11) server on a
+        # PC with a dual monitor configuration, the reported display count may
+        # be 1 (instead of 2) with a display size of both monitors combined.
+        # (For example, on a target PC with an extended desktop consisting of
+        # two 1280x1024 monitors, the reported monitor size was 2560x1045.)
+        # To avoid displaying the window across both monitors, we check for
         # screen 'too big'.  If so, we assume a smaller width which means the
         # application will be placed towards the left hand side of the screen.
 
-        j, k, x, y = wx.Display().GetClientArea() # size excludes task bar
+        x, y, w, h = wx.Display().GetClientArea() # size excludes task bar
         if len(sys.argv) > 1 and '--platform' in sys.argv[1:]:
-            w, h = wx.DisplaySize()  # size includes task bar area
-            print "*** Reported screen size including taskbar is %d x %d"%(w, h)
-            print "*** Reported screen size excluding taskbar is %d x %d"%(x, y)
+            j, k = wx.DisplaySize()  # size includes task bar area
+            print "*** Reported screen size including taskbar is %d x %d"%(j, k)
+            print "*** Reported screen size excluding taskbar is %d x %d"%(w, h)
 
-        if x > 1920: x = 1280  # display on left side, not centered on screen
-        if x > DISPLAY_WIDTH:  xpos = (x - DISPLAY_WIDTH)/2
-        if y > DISPLAY_HEIGHT: ypos = (y - DISPLAY_HEIGHT)/2
+        if w > 1920: w = 1280  # display on left side, not centered on screen
+        if w > desired_width:  xpos = (w - desired_width)/2
+        if h > desired_height: ypos = (h - desired_height)/2
 
         # Return the suggested position and size for the application frame.
-        return (xpos, ypos), (min(x, DISPLAY_WIDTH), min(y, DISPLAY_HEIGHT))
+        return (xpos, ypos), (min(w, desired_width), min(h, desired_height))
 
-    def display_splash_screen(self):
-        """Displays the splash screen."""
+    def display_splash_screen(self, img_name=None, pos=None, size=(320, 240)):
+        """Displays a splash screen and the specified position and size."""
 
         # Prepare the picture.
-        image = wx.Image(os.path.join(get_datadir(), SPLASH_FILE),
-                         wx.BITMAP_TYPE_JPEG)
-        image.Rescale(SPLASH_WIDTH, SPLASH_HEIGHT, wx.IMAGE_QUALITY_HIGH)
+        w, h = size
+        image = wx.Image(img_name, wx.BITMAP_TYPE_JPEG)
+        image.Rescale(w, h, wx.IMAGE_QUALITY_HIGH)
         bm = image.ConvertToBitmap()
 
         # Create and show the splash screen.  It will disappear only when the
@@ -187,14 +198,18 @@ class ReflGUIApp(wx.App):
         # performed by the calling routine (including doing imports) will
         # prevent the splash screen from disappearing.
         splash = wx.SplashScreen(bitmap=bm,
-                                 splashStyle=(wx.SPLASH_CENTRE_ON_SCREEN|
-                                              wx.SPLASH_TIMEOUT|
-                                              wx.STAY_ON_TOP),
+                                 splashStyle=(wx.SPLASH_TIMEOUT|
+                                              wx.SPLASH_CENTRE_ON_SCREEN),
+                                 style=(wx.SIMPLE_BORDER|
+                                        wx.FRAME_NO_TASKBAR|
+                                        wx.STAY_ON_TOP),
                                  milliseconds=SPLASH_TIMEOUT,
-                                 parent=None,
-                                 id=wx.ID_ANY)
-
+                                 parent=None, id=wx.ID_ANY)
         splash.Bind(wx.EVT_CLOSE, self.OnCloseSplashScreen)
+
+        # Repositon if center of screen placement is overridden by caller.
+        if pos is not None:
+            splash.SetPosition(pos)
         splash.Show()
 
     def OnCloseSplashScreen(self, event):
