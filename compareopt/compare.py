@@ -7,7 +7,7 @@ import sys
 import subprocess
 from multiprocessing import Pool
 
-root = 'out'
+root = 'out2'
 
 problems = {
     'xray': '../examples/xray/model.py',
@@ -17,11 +17,13 @@ problems = {
 # Aim for 1000000 fcalls
 fitters = {
     'de'   : '--fit=de     --steps=10000 --pop=10',
-    'rl'   : '--fit=rl     --steps=1000 --starts=500 --pop=1',
-    'dream': '--fit=dream  --steps=2000 --pop=10 --burn=8000',
+    'ps'   : '--fit=ps     --steps=10000 --pop=10',
+    'rl1'  : '--fit=rl     --steps=10000 --pop=10 --starts=1',
+    'rln'  : '--fit=rl     --steps=1000 --starts=100 --pop=0.5',
     'pt'   : '--fit=pt     --steps=100000 --pop=10 --burn=0',
-    'bfgs' : '--fit=newton --steps=1000 --starts=1000',
-    'nm'   : '--fit=amoeba --steps=1000 --starts=100',
+    #'dream': '--fit=dream  --steps=2000 --pop=10 --burn=8000',
+    'bfgs' : '--fit=newton --steps=100 --starts=10000',
+    'nm'   : '--fit=amoeba --steps=1000 --starts=1000',
     }
 
 nthread = None # Use #cpus

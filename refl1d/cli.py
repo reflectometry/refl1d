@@ -1,5 +1,7 @@
 from __future__ import with_statement
 
+from math import ceil
+
 import sys
 import os
 
@@ -18,6 +20,7 @@ from . import util
 from .mystic import parameter
 from .probe import Probe
 from . import garefl
+from . import initpop
 
 # ==== Fitters ====
 
@@ -50,6 +53,7 @@ class DreamProxy(object):
     def __init__(self, problem, opts):
         self.dream_model = DreamModel(problem)
         self.pop = opts.pop
+        self.pop_init = opts.init
         self.steps = opts.steps
         self.burn = opts.burn
     def _get_mapper(self):
@@ -59,8 +63,17 @@ class DreamProxy(object):
     mapper = property(fget=_get_mapper, fset=_set_mapper)
 
     def fit(self):
-        pop_size = self.pop*len(self.dream_model.problem.parameters)
-        population = random_population(self.dream_model.problem, pop_size)
+        pars = self.dream_model.problem.parameters
+        pop_size = int(ceil(self.pop*len(pars)))
+        if self.pop_init == 'random':
+            population = initpop.random_init(N=pop_size, pars=pars)
+        elif self.pop_init == 'cov':
+            cov = self.dream_model.problem.cov()
+            population = initpop.cov_init(N=pop_size, pars=pars, cov=cov)
+        elif self.pop_init == 'lhs':
+            population = initpop.cov_init(N=pop_size, pars=pars)
+        else:
+            raise ValueError("Unknown population initializer '%s'"%self.pop_init)
         population = population[None,:,:]
         sampler = dream.Dream(model=self.dream_model, population=population,
                               draws = pop_size*(self.steps+self.burn),
@@ -143,21 +156,6 @@ def mesh(problem, vars=None, n=40):
     return x,y,numpy.asarray(z)
 
 # ===== Model manipulation ====
-
-def random_population(problem, pop_size):
-    """
-    Generate a random population from the problem parameters.
-    """
-    # Generate a random population
-    population = [p.bounds.random(pop_size) for p in problem.parameters]
-    population = numpy.array(population).T
-
-    # Plug in the initial guess
-    guess = problem.getp()
-    if guess != None:
-        population[0] = numpy.asarray(guess)
-
-    return population
 
 def load_problem(args):
     filename, options = args[0], args[1:]
@@ -345,9 +343,10 @@ class FitOpts(ParseOpts):
     MINARGS = 1
     FLAGS = set(("preview", "check", "profile", "random", "simulate",
                  "worker", "batch", "overwrite", "parallel", "stepmon",
+                 "cov"
                ))
     VALUES = set(("plot", "store", "fit", "noise", "steps", "pop",
-                  "CR", "burn", "Tmin", "Tmax", "starts",
+                  "CR", "burn", "Tmin", "Tmax", "starts", "seed", "init"
                   #"mesh","meshsteps",
                 ))
     noise="5"
@@ -358,6 +357,8 @@ class FitOpts(ParseOpts):
     burn="0"
     Tmin="0.1"
     Tmax="10"
+    seed=""
+    init="lhs"
     PLOTTERS="fresnel", "linear", "log", "q4"
     USAGE = """\
 Usage: refl1d modelfile [modelargs] [options]
@@ -379,6 +380,8 @@ Options:
         simulate the data to fit
     --noise=5%%
         percent noise to add to the simulated data
+    --cov
+        compute the covariance matrix for the model when done
 
     --store=path
         output directory for plots and models
@@ -407,7 +410,11 @@ Options:
         crossover ratio for population mixing
     --starts=1      [%(fitter)s]
         number of times to run the fit from random starting points
-
+    --init='lhs|cov|random' [dream]
+        population initialization method, with 'lhs' for latin hypersquares,
+        'cov' for covariance, and 'random' for uniform within parameter
+        distribution.
+    
     --check
         print the model description and chisq value and exit
     -?/-h/--help
@@ -444,13 +451,7 @@ Options:
     fit = property(fget=lambda self: self._fitter, fset=_set_fitter)
     meshsteps = 40
 
-# ==== Main ====
-
-def main():
-    if len(sys.argv) == 1:
-        sys.argv.append("-?")
-        print "\nNo modelfile parameter was specified.\n"
-
+def getopts():
     opts = FitOpts(sys.argv)
     opts.steps = int(opts.steps)
     opts.pop = float(opts.pop)
@@ -459,6 +460,19 @@ def main():
     opts.Tmin = float(opts.Tmin)
     opts.Tmax = float(opts.Tmax)
     opts.starts = int(opts.starts)
+    opts.seed = int(opts.seed) if opts.seed != "" else None
+    return opts
+
+# ==== Main ====
+
+def main():
+    if len(sys.argv) == 1:
+        sys.argv.append("-?")
+        print "\nNo modelfile parameter was specified.\n"
+
+    opts = getopts()
+    if opts.seed is not None:
+        numpy.random.seed(opts.seed)
 
     problem = load_problem(opts.args)
     if opts.random:
@@ -487,12 +501,13 @@ def main():
     elif opts.worker:
         mapper.start_worker(problem)
     elif opts.check:
+        if opts.cov: print problem.cov()
         print "chisq",problem()
     elif opts.preview:
+        if opts.cov: print problem.cov()
         preview(problem)
     else:
         make_store(problem,opts,exists_handler=store_overwrite_query)
-
 
         # Show command line arguments and initial model
         print "#"," ".join(sys.argv)
@@ -505,5 +520,6 @@ def main():
         fitter.mapper = mapper.start_mapper(problem, opts.args)
         best = fitter.fit()
         remember_best(fitter, problem, best)
-        if not opts.batch:
-            pylab.show()
+        if opts.cov: print cov(problem)
+        if not opts.batch: pylab.show()
+

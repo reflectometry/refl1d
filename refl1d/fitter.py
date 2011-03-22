@@ -179,7 +179,7 @@ class RLFit(FitBase):
                    x2 = bounds[1],
                    f_opt = 0,
                    monitor = self._monitor)
-        NP = int(cfo['n']*pop)
+        NP = max(int(cfo['n']*pop),3)
 
         result = random_lines(cfo, NP, maxiter=steps, CR=CR)
         satisfied_sc, n_feval, i_best, f_best, x_best = result
@@ -524,7 +524,25 @@ class Fitness(object):
 class FitProblem(object):
     def __init__(self, fitness):
         self.fitness = fitness
-        self._prepare()
+        self.model_reset()
+    def model_reset(self):
+        """
+        Prepare for the fit.
+
+        This sets the parameters and the bounds properties that the
+        solver is expecting from the fittable object.  We also compute
+        the degrees of freedom so that we can return a normalized fit
+        likelihood.
+        
+        If the set of fit parameters changes, then model_reset must
+        be called.
+        """
+        all_parameters = parameter.unique(self.model_parameters())
+        self.parameters = parameter.varying(all_parameters)
+        self.bounded = [p for p in all_parameters
+                       if not isinstance(p.bounds, mbounds.Unbounded)]
+        self.dof = self.model_points() - len(self.parameters)
+        #self.constraints = pars.constraints()
     def model_parameters(self):
         """
         Parameters associated with the model.
@@ -555,21 +573,6 @@ class FitProblem(object):
     def restore_data(self):
         """Restore original data after resynthesis."""
         self.fitness.restore_data()
-    def _prepare(self):
-        """
-        Prepare for the fit.
-
-        This sets the parameters and the bounds properties that the
-        solver is expecting from the fittable object.  We also compute
-        the degrees of freedom so that we can return a normalized fit
-        likelihood.
-        """
-        all_parameters = parameter.unique(self.model_parameters())
-        self.parameters = parameter.varying(all_parameters)
-        self.bounded = [p for p in all_parameters
-                       if not isinstance(p.bounds, mbounds.Unbounded)]
-        self.dof = self.model_points() - len(self.parameters)
-        #self.constraints = pars.constraints()
     def valid(self, pvec):
         return all(v in p.bounds for p,v in zip(self.parameters,pvec))
 
@@ -605,9 +608,10 @@ class FitProblem(object):
         """
         Generates a random model.
         """
+        print "pars",self.parameters
         for p in self.parameters:
             p.value = p.bounds.random(1)[0]
-
+ 
     def parameter_nllf(self):
         """
         Returns negative log likelihood of seeing parameters p.
@@ -706,6 +710,88 @@ class FitProblem(object):
         if figfile != None:
             pylab.savefig(figfile+"-model.png", format='png')
 
+    def jacobian(self, pvec=None, step=None):
+        """
+        Returns the derivative wrt the fit parameters at point p.
+
+        Numeric derivatives are calculated based on step, where step is
+        the portion of the total range for parameter j, or the portion of
+        point value p_j if the range on parameter j is infinite.
+        """
+        if step is None: step = 1e-8
+        # Make sure the input vector is an array
+        if pvec is None:
+            pvec = [p.value for p in self.parameters]
+        pvec = numpy.asarray(pvec)
+        # We are being lazy here.  We can precompute the bounds, we can
+        # use the residuals_deriv from the sub-models which have analytic
+        # derivatives and we need only recompute the models which depend
+        # on the varying parameters.
+        # Meanwhile, let's compute the numeric derivative using the
+        # three point formula.
+        # We are not checking that the varied parameter in numeric
+        # differentiation is indeed feasible in the interval of interest.
+        range = zip(*[p.bounds.limits for p in self.parameters])
+        lo,hi = [numpy.asarray(v) for v in range]
+        delta = (hi-lo)*step
+        # For infinite ranges, use p*1e-8 for the step size
+        idx = numpy.isinf(delta)
+        #print "J",idx,delta,pvec,type(idx),type(delta),type(pvec)
+        delta[idx] = pvec[idx]*step
+        delta[delta==0] = step
+
+        # Set the initial value
+        for k,v in enumerate(pvec):
+            self.parameters[k].value = v
+        # Gather the residuals
+        r = []
+        for k,v in enumerate(pvec):
+            # Center point formula:
+            #     df/dv = lim_{h->0} ( f(v+h)-f(v-h) ) / ( 2h )
+            h = delta[k]
+            self.parameters[k].value = v + h
+            self.model_update()
+            rk = self.residuals()
+            self.parameters[k].value = v - h
+            self.model_update()
+            rk -= self.residuals()
+            r.append(rk/(2*h))
+            self.parameters[k].value = v
+        self.model_update()  # Restore model parameters
+        # return the jacobian
+        return numpy.vstack(r).T
+
+
+    def cov(self, pvec=None, step=None):
+        """
+        Return the covariance matrix inv(J'J) at point p.
+        """
+
+        # Find cov of f at p
+        #     cov(f,p) = inv(J'J)
+        # Use SVD
+        #     J = U S V'
+        #     J'J = (U S V')' (U S V')
+        #         = V S' U' U S V'
+        #         = V S S V'
+        #     inv(J'J) = inv(V S S V')
+        #              = inv(V') inv(S S) inv(V)
+        #              = V inv (S S) V'
+        J = self.jacobian(pvec, step=step)
+        u,s,vh = numpy.linalg.svd(J,0)
+        JTJinv = numpy.dot(vh.T.conj()/s**2,vh)
+        return JTJinv
+
+    def stderr(self, pvec=None, step=None):
+        """
+        Return parameter uncertainty.
+
+        This is just the sqrt diagonal of covariance matrix inv(J'J) at point p.
+        """
+        return numpy.sqrt(numpy.diag(self.cov(pvec, step=step)))
+
+
+
 class MultiFitProblem(FitProblem):
     """
     Weighted fits for multiple models.
@@ -715,7 +801,7 @@ class MultiFitProblem(FitProblem):
         if weights is None:
             weights = [1 for m in models]
         self.weights = weights
-        self._prepare()
+        self.model_reset()
     def model_parameters(self):
         """Return parameters from all models"""
         return [f.model_parameters() for f in self.fits]
@@ -791,3 +877,4 @@ def load_problem(file, options=[]):
             raise ValueError(file+" does not define 'problem=FitProblem(...)'")
 
     return problem
+

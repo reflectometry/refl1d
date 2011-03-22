@@ -396,11 +396,11 @@ class MixedExperiment(ExperimentBase):
     profiles can be accessed from the underlying experiments
     using composite.parts[i] for the various samples.
     """
-    def __init__(self, samples=None, ratio=None,
-                 probe=None, **kw):
+    def __init__(self, samples=None, ratio=None, probe=None, **kw):
         self.samples = samples
         self.probe = probe
-        self.ratio = [Parameter.default(r) for r in ratio]
+        self.ratio = [Parameter.default(r, name="ratio %d"%i) 
+                      for i,r in enumerate(ratio)]
         self.parts = [Experiment(s,probe,**kw) for s in samples]
         self._cache = {}  # Cache calculated profiles/reflectivities
         self._substrate=self.samples[0][0].material
