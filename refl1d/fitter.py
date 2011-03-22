@@ -142,6 +142,30 @@ class BFGSFit(FitBase):
         self._update(step=step, point=x, value=fx)
         return True
 
+class PSFit(FitBase):
+    def solve(self, pop=1, steps=2000, CR=0.9, **kw):
+        from random_lines import particle_swarm
+        self._update = MonitorRunner(problem=self.problem,
+                                     monitors=kw.pop('monitors', None))
+        bounds = numpy.array([p.bounds.limits
+                              for p in self.problem.parameters]).T
+        cfo = dict(cost=self.problem,
+                   n = len(bounds[0]),
+                   x1 = bounds[0],
+                   x2 = bounds[1],
+                   f_opt = 0,
+                   monitor = self._monitor)
+        NP = int(cfo['n']*pop)
+
+        result = particle_swarm(cfo, NP, maxiter=steps)
+        satisfied_sc, n_feval, i_best, f_best, x_best = result
+
+        return x_best, f_best
+
+    def _monitor(self, step, x, fx):
+        self._update(step=step, point=x, value=fx)
+        return True
+
 class RLFit(FitBase):
     def solve(self, pop=1, steps=2000, CR=0.9, **kw):
         from random_lines import random_lines
@@ -153,6 +177,7 @@ class RLFit(FitBase):
                    n = len(bounds[0]),
                    x1 = bounds[0],
                    x2 = bounds[1],
+                   f_opt = 0,
                    monitor = self._monitor)
         NP = int(cfo['n']*pop)
 

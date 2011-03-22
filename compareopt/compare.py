@@ -20,7 +20,7 @@ fitters = {
     'rl'   : '--fit=rl     --steps=1000 --starts=500 --pop=1',
     'dream': '--fit=dream  --steps=2000 --pop=10 --burn=8000',
     'pt'   : '--fit=pt     --steps=100000 --pop=10 --burn=0',
-    'bfgs' : '--fit=newton --steps=1000 --starts=100',
+    'bfgs' : '--fit=newton --steps=1000 --starts=1000',
     'nm'   : '--fit=amoeba --steps=1000 --starts=100',
     }
 

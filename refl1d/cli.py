@@ -10,7 +10,8 @@ import numpy
 import pylab
 import dream
 from .stajconvert import load_mlayer, fit_all
-from .fitter import DEFit, AmoebaFit, SnobFit, BFGSFit, RLFit, PTFit, MultiStart
+from .fitter import (DEFit, AmoebaFit, SnobFit, BFGSFit,
+                     PSFit, RLFit, PTFit, MultiStart)
 from .fitter import StepMonitor, ConsoleMonitor
 from . import fitter
 from . import util
@@ -338,7 +339,7 @@ class ParseOpts:
 
 
 
-FITTERS = dict(dream=None, rl=RLFit, pt=PTFit,
+FITTERS = dict(dream=None, rl=RLFit, pt=PTFit, ps=PSFit,
                de=DEFit, newton=BFGSFit, amoeba=AmoebaFit, snobfit=SnobFit)
 class FitOpts(ParseOpts):
     MINARGS = 1
@@ -394,7 +395,7 @@ Options:
         fitting engine to use; see manual for details
     --steps=1000    [all optimizers]
         number of fit iterations after any burn-in time
-    --pop=10        [dream, de, rl, pt]
+    --pop=10        [dream, de, rl, pt, ps]
         population size
     --burn=0        [dream, pt]
         number of burn-in iterations before accumulating stats
