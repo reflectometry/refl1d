@@ -43,7 +43,7 @@ the end, sld is just the returned scattering factors times density.
 __all__ = ['Material','Mixture','SLD','Vacuum', 'Scatterer', 'ProbeCache']
 import sys;
 import numpy
-from numpy import inf, sqrt, pi
+from numpy import inf, sqrt, pi, NaN
 import periodictable
 from periodictable.constants import avogadro_number
 from mystic import Parameter as Par
@@ -412,8 +412,8 @@ class Mixture(Scatterer):
         material = [parts[i] for i in range(0, len(parts), 2)]
         fraction = [parts[i] for i in range(1, len(parts), 2)]
         # Convert M1,M2, ... to materials if necessary
-        if not isinstance(base,Material): base = Material(base)
-        material = [p if isinstance(p,Material) else Material(p)
+        if not isinstance(base,Scatterer): base = Material(base)
+        material = [p if isinstance(p,Scatterer) else Material(p)
                     for p in material]
 
         # Specify the volume calculator based on the type of fraction
@@ -429,9 +429,10 @@ class Mixture(Scatterer):
 
         # Make the fractions into fittable parameters
         fraction = [Par.default(w,limits=(0,100), name=f.name+"% "+by)
-                    for w,f in zip(fraction,material[1:])]
+                    for w,f in zip(fraction,material)]
 
         self._volume = _volume
+        self.base = base
         self.material = material
         self.fraction = fraction
         self.name = name
@@ -472,7 +473,8 @@ class Mixture(Scatterer):
         Return the scattering length density and absorption of the mixture.
         """
         # Convert fractions into an array, with the final fraction
-        fraction = numpy.array([f.value for f in self.fraction])
+        fraction = numpy.array([0.]+[f.value for f in self.fraction])
+        fraction[0] = 100 - sum(fraction)
         # TODO: handle invalid fractions using penalty functions
         # S = sum(fraction)
         # scale = S/100 if S > 100 else 1
@@ -488,6 +490,7 @@ class Mixture(Scatterer):
         # Use calculator to convert individual SLDs to overall SLD
         volume_fraction = self._volume(fraction)
         rho = numpy.sum(rho*volume_fraction)
+
         irho = numpy.sum(irho*volume_fraction)
         if self.use_incoherent:
             raise NotImplementedError("incoherent scattering not supported")
