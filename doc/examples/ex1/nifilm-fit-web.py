@@ -49,7 +49,7 @@ problem = FitProblem(M)
 #
 # We can now load and run the fit::
 #
-#   $ refl1d nifilm-fit.py --fit=newton --steps=100 --store=T1
+#   # refl1d nifilm-fit.py --fit=newton --steps=100 --store=T1
 #
 # The ``--fit=newton`` option says to use the quasi-newton optimizer for
 # not more than 100 steps.  The ``--store=T1`` option says to store the

@@ -108,7 +108,6 @@ class FitProxy(object):
 
     def fit(self):
         import time
-        from .fitter import Result
         if self.fitter is not None:
             t0 = time.clock()
             optimizer = self.fitter(self.problem)
@@ -130,7 +129,7 @@ class FitProxy(object):
 
         self.result = x
         self.problem.setp(x)
-        return x
+        return x, fx
 
     def show(self):
         self.problem.show()
@@ -194,7 +193,14 @@ def remember_best(fitter, problem, best):
     fitter.show()
     fitter.plot(problem.output_path)
 
-    # Plot
+    pardata = "".join("%s %.15g\n"%(p.name, p.value)
+                      for p in problem.parameters)
+    open(problem.output_path+".par",'wt').write(pardata)
+
+def recall_best(problem, path):
+    data = open(path,'rt').readlines()
+    for par,line in zip(problem.parameters, data):
+        par.value = float(line.split()[-1])
 
 def store_overwrite_query_gui(path):
     import wx
@@ -338,7 +344,8 @@ class ParseOpts:
 
 
 FITTERS = dict(dream=None, rl=RLFit, pt=PTFit, ps=PSFit,
-               de=DEFit, newton=BFGSFit, amoeba=AmoebaFit, snobfit=SnobFit)
+               de=DEFit, newton=BFGSFit, amoeba=AmoebaFit,
+               snobfit=SnobFit)
 class FitOpts(ParseOpts):
     MINARGS = 1
     FLAGS = set(("preview", "check", "profile", "random", "simulate",
@@ -346,9 +353,12 @@ class FitOpts(ParseOpts):
                  "cov"
                ))
     VALUES = set(("plot", "store", "fit", "noise", "steps", "pop",
-                  "CR", "burn", "Tmin", "Tmax", "starts", "seed", "init"
+                  "CR", "burn", "Tmin", "Tmax", "starts", "seed", "init",
+                  "pars", "resynth",
                   #"mesh","meshsteps",
                 ))
+    pars=None
+    resynth="0"
     noise="5"
     starts="1"
     steps="1000"
@@ -372,6 +382,8 @@ Options:
 
     --preview
         display model but do not perform a fitting operation
+    --pars=filename
+        initial parameter values; fit results are saved as <modelname>.par
     --plot=log      [%(plotter)s]
         type of reflectivity plot to display
     --random
@@ -383,6 +395,7 @@ Options:
     --cov
         compute the covariance matrix for the model when done
 
+
     --store=path
         output directory for plots and models
     --overwrite
@@ -393,6 +406,9 @@ Options:
         batch mode; don't show plots after fit
     --stepmon
         show details for each step
+
+    --resynth=0
+        run resynthesis error analysis for n generations
 
     --fit=de        [%(fitter)s]
         fitting engine to use; see manual for details
@@ -414,7 +430,7 @@ Options:
         population initialization method, with 'lhs' for latin hypersquares,
         'cov' for covariance, and 'random' for uniform within parameter
         distribution.
-    
+
     --check
         print the model description and chisq value and exit
     -?/-h/--help
@@ -453,6 +469,7 @@ Options:
 
 def getopts():
     opts = FitOpts(sys.argv)
+    opts.resynth = int(opts.resynth)
     opts.steps = int(opts.steps)
     opts.pop = float(opts.pop)
     opts.CR = float(opts.CR)
@@ -475,6 +492,8 @@ def main():
         numpy.random.seed(opts.seed)
 
     problem = load_problem(opts.args)
+    if opts.pars is not None:
+        recall_best(problem, opts.pars)
     if opts.random:
         problem.randomize()
     if opts.simulate:
@@ -506,6 +525,20 @@ def main():
     elif opts.preview:
         if opts.cov: print problem.cov()
         preview(problem)
+    elif opts.resynth > 0:
+        make_store(problem,opts,exists_handler=store_overwrite_query)
+        fid = open(problem.output_path+".rsy",'at')
+        fitter.mapper = mapper.start_mapper(problem, opts.args)
+        for i in range(opts.resynth):
+            problem.resynth_data()
+            best, fbest = fitter.fit()
+            print "found %g"%fbest
+            fid.write('%.15g '%fbest)
+            fid.write(' '.join('%.15g'%v for v in best))
+            fid.write('\n')
+        problem.restore_data()
+        fid.close()
+
     else:
         make_store(problem,opts,exists_handler=store_overwrite_query)
 
@@ -518,7 +551,7 @@ def main():
                                StepMonitor(fid,fields=['step','value'])]
 
         fitter.mapper = mapper.start_mapper(problem, opts.args)
-        best = fitter.fit()
+        best, fbest = fitter.fit()
         remember_best(fitter, problem, best)
         if opts.cov: print cov(problem)
         if not opts.batch: pylab.show()
