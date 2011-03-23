@@ -22,7 +22,7 @@ class LogView(scrolled.ScrolledPanel):
 
         self.progress = wx.TextCtrl(self,-1,style=wx.TE_MULTILINE|wx.HSCROLL)
         self.progress.Clear()
-
+        
         vsizer.Add(sizer1, 0, wx.EXPAND|wx.ALL, border=10)
         vsizer.Add(self.progress, 1, wx.EXPAND)
 
@@ -40,3 +40,4 @@ class LogView(scrolled.ScrolledPanel):
         space = "    "
         self.progress.AppendText('\n')
         self.progress.AppendText(space + event.data)
+        

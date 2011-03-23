@@ -30,6 +30,7 @@ import os
 import sys
 import shutil
 import logging
+import copy
 
 import wx
 import wx.lib.newevent
@@ -480,7 +481,7 @@ class AppPanel(wx.Panel):
         self.args = [file, "T1"]
         self.problem = load_problem(self.args)
         self.redraw(self.problem)
-
+        
         # Send new model (problem) loaded message to all interested panels.
         pub.sendMessage("initial_model", self.problem)
 
@@ -508,7 +509,9 @@ class AppPanel(wx.Panel):
 
     def OnFit(self, event):
 
+        self.problem_copy = copy.deepcopy(self.problem)
         opts = FitOpts(self.args)
+        
         monitors = [GUIMonitor(self.problem)]
 
         options = event.data
@@ -518,23 +521,24 @@ class AppPanel(wx.Panel):
         opts.CR = float(options['cross'])
         opts.Tmin = float(options['tmin'])
         opts.Tmax= float(options['tmax'])
+        opts.starts=1
         algorithm = options["algo"]
 
         self.fitter = FitProxy(FITTERS[algorithm],
-                               problem=self.problem, monitors=monitors,
+                               problem=self.problem_copy, monitors=monitors,
                                options=opts)
         mapper = SerialMapper
         self.pan1.Layout()
-
+        
         # Start a new thread worker and give fit problem to the worker.
-        self.worker = Worker(self, self.problem, fn=self.fitter,
+        self.worker = Worker(self, self.problem_copy, fn=self.fitter,
                                    pars=opts.args, mapper=mapper)
 
         self.sb.SetStatusText("Fit status: Running", 3)
 
     def OnFitResult(self, event):
         self.redraw(self.problem) # redraw the plot last time with fitted chsiq
-        self.sb.SetStatusText("Fit status: Complete", 3)
+        
         pub.sendMessage("fit_complete")
         if event.data is None:
             # Thread aborted (using our convention of None return)
@@ -542,6 +546,8 @@ class AppPanel(wx.Panel):
         else:
             pass
             #self.remember_best(self.fitter, self.problem, event.data)
+
+        self.sb.SetStatusText("Fit status: Complete", 3)
 
     def remember_best(self, fitter, problem, best):
         fitter.save(problem.output)

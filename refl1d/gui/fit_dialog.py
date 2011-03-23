@@ -50,23 +50,9 @@ class FitControl(wx.Dialog):
         wx.Dialog.__init__(self, parent, id, title, pos, size, style, name)
 
         vbox = wx.BoxSizer(wx.VERTICAL)
-
+        
         # Section 1
-
-        vbox1 = wx.BoxSizer(wx.VERTICAL)
-        hbox1 = wx.BoxSizer(wx.HORIZONTAL)
-
-        save_label = wx.StaticText(self, -1, "Save location: ")
-        self.save = wx.TextCtrl(self, -1, "T1", style=wx.TE_RIGHT)
-        self.overwrite = wx.CheckBox(self, wx.ID_ANY, " Overwrite")
-        hbox1.Add(save_label, 0, wx.ALIGN_CENTER_VERTICAL)
-        hbox1.Add(self.save, 1, wx.EXPAND)
-
-        vbox.Add(hbox1, 0, wx.ALL|wx.EXPAND, 10)
-        vbox.Add(self.overwrite, 0, wx.LEFT|wx.RIGHT|wx.BOTTOM, 10)
-
-        # Section 2
-
+        
         panel2 = wx.Panel(self, -1)
 
         static_box1 = wx.StaticBox(panel2, -1, "Fit Algorithms")
@@ -96,7 +82,7 @@ class FitControl(wx.Dialog):
         panel2.SetSizer(fit_hsizer)
         vbox.Add(panel2, 0, wx.ALL, 10)
 
-        # Section 3
+        # Section 2
 
         panel3 = wx.Panel(self, -1)
         static_box3 = wx.StaticBox(panel3, -1, "Fitting Options")
@@ -110,48 +96,48 @@ class FitControl(wx.Dialog):
         sizer5 = wx.BoxSizer(wx.HORIZONTAL)
         sizer6 = wx.BoxSizer(wx.HORIZONTAL)
 
-        step_label = wx.StaticText(panel3, -1, "Step Size:", size=(90, -1))
+        self.step_label = wx.StaticText(panel3, -1, "Steps:", size=(90, -1))
         self.stepsize = wx.TextCtrl(panel3, -1, "1000", size=(100, -1),
                            style=wx.TE_RIGHT, validator=Validator("no-alpha"))
 
-        pop_label = wx.StaticText(panel3, -1, "Population:", size=(90, -1))
+        self.pop_label = wx.StaticText(panel3, -1, "Population:", size=(90, -1))
         self.pop = wx.TextCtrl(panel3, -1, "10", size=(100, -1),
                       style=wx.TE_RIGHT, validator=Validator("no-alpha"))
 
-        cr_label = wx.StaticText(panel3, -1, "Crossover Ratio:", size=(90, -1))
+        self.cr_label = wx.StaticText(panel3, -1, "Crossover Ratio:", size=(90, -1))
         self.crossover = wx.TextCtrl(panel3, -1, "0.9", size=(100, -1),
                             style=wx.TE_RIGHT, validator=Validator("no-alpha"))
 
-        burn_label = wx.StaticText(panel3, -1, "Burn:", size=(90, -1))
+        self.burn_label = wx.StaticText(panel3, -1, "Burn:", size=(90, -1))
         self.burn = wx.TextCtrl(panel3, -1, "0", size=(100, -1),
                        style=wx.TE_RIGHT, validator=Validator("no-alpha"))
 
-        tmin_label = wx.StaticText(panel3, -1, "T min:", size=(90, -1))
+        self.tmin_label = wx.StaticText(panel3, -1, "T min:", size=(90, -1))
         self.tmin = wx.TextCtrl(panel3, -1, "0.1",  size=(100, -1),
                        style=wx.TE_RIGHT, validator=Validator("no-alpha"))
 
-        tmax_label = wx.StaticText(panel3, -1, "T max:", size=(90, -1))
+        self.tmax_label = wx.StaticText(panel3, -1, "T max:", size=(90, -1))
         self.tmax = wx.TextCtrl(panel3, -1, "10",  size=(100, -1),
                        style=wx.TE_RIGHT, validator=Validator("no-alpha"))
 
         self.OnDE(event=None) # Set fit options for default 'DE' algorithm
 
-        sizer1.Add(step_label, 0, wx.ALL, 5)
+        sizer1.Add(self.step_label, 0, wx.ALL, 5)
         sizer1.Add(self.stepsize, 0, wx.ALL, 5)
 
-        sizer2.Add(pop_label, 0, wx.ALL, 5)
+        sizer2.Add(self.pop_label, 0, wx.ALL, 5)
         sizer2.Add(self.pop, 0, wx.ALL, 5)
 
-        sizer3.Add(cr_label, 0, wx.ALL, 5)
+        sizer3.Add(self.cr_label, 0, wx.ALL, 5)
         sizer3.Add(self.crossover, 0, wx.ALL, 5)
 
-        sizer4.Add(burn_label, 0, wx.ALL, 5)
+        sizer4.Add(self.burn_label, 0, wx.ALL, 5)
         sizer4.Add(self.burn, 0, wx.ALL, 5)
 
-        sizer5.Add(tmin_label, 0, wx.ALL, 5)
+        sizer5.Add(self.tmin_label, 0, wx.ALL, 5)
         sizer5.Add(self.tmin, 0, wx.ALL, 5)
 
-        sizer6.Add(tmax_label, 0, wx.ALL, 5)
+        sizer6.Add(self.tmax_label, 0, wx.ALL, 5)
         sizer6.Add(self.tmax, 0, wx.ALL, 5)
 
         vbox3.Add(sizer1)
@@ -166,7 +152,7 @@ class FitControl(wx.Dialog):
         panel3.SetSizer(opts_hsizer)
         vbox.Add(panel3, 0, wx.ALL, 10)
 
-        # Section 4
+        # Section 3
 
         panel4 = wx.Panel(self, -1)
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -194,6 +180,12 @@ class FitControl(wx.Dialog):
         self.ShowModal()
 
     def OnAmoeba(self, event):
+        self.pop_label.Enable(False)
+        self.cr_label.Enable(False)
+        self.burn_label.Enable(False)
+        self.tmin_label.Enable(False)
+        self.tmax_label.Enable(False)
+        
         self.pop.Enable(False)
         self.crossover.Enable(False)
         self.burn.Enable(False)
@@ -201,13 +193,26 @@ class FitControl(wx.Dialog):
         self.tmax.Enable(False)
 
     def OnDE(self, event):
+    
+        self.burn_label.Enable(False)
+        self.tmin_label.Enable(False)
+        self.tmax_label.Enable(False)
+        self.pop_label.Enable(True)
+        self.cr_label.Enable(True)
+        
         self.pop.Enable(True)
         self.crossover.Enable(True)
         self.burn.Enable(False)
         self.tmin.Enable(False)
         self.tmax.Enable(False)
-
+                
     def OnDream(self, event):
+        self.pop_label.Enable(True)
+        self.cr_label.Enable(False)
+        self.burn_label.Enable(True)
+        self.tmin_label.Enable(False)
+        self.tmax_label.Enable(False)
+                
         self.pop.Enable(True)
         self.crossover.Enable(False)
         self.burn.Enable(True)
@@ -215,6 +220,12 @@ class FitControl(wx.Dialog):
         self.tmax.Enable(False)
 
     def OnPT(self, event):
+        self.pop_label.Enable(True)
+        self.cr_label.Enable(True)
+        self.burn_label.Enable(True)
+        self.tmin_label.Enable(True)
+        self.tmax_label.Enable(True)
+        
         self.pop.Enable(True)
         self.crossover.Enable(True)
         self.burn.Enable(True)
@@ -222,6 +233,12 @@ class FitControl(wx.Dialog):
         self.tmax.Enable(True)
 
     def OnRL(self, event):
+        self.pop_label.Enable(True)
+        self.cr_label.Enable(True)
+        self.burn_label.Enable(False)
+        self.tmin_label.Enable(False)
+        self.tmax_label.Enable(False)
+        
         self.pop.Enable(True)
         self.crossover.Enable(True)
         self.burn.Enable(False)

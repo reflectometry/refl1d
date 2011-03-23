@@ -238,7 +238,8 @@ class ProfileInteractor(object):
 
     def delayed_profile(self):
         try: self._delayed.Restart(50)
-        except: self._delayed = wx.FutureCall(50, lambda:(self.update_profile(),self.draw_now()))
+        except: self._delayed = wx.FutureCall(50, lambda:(self.update_profile(),
+                                                 self.draw_now()))
 
     def _signal(self):
         try:
@@ -247,6 +248,7 @@ class ProfileInteractor(object):
             print 'error in message sending'
             raise
         self.listener.signal('update',self)
+        
     def delayed_signal(self):
         try: self._delayed_signal.Restart(50)
         except: self._delayed_signal = wx.FutureCall(50, self._signal)
