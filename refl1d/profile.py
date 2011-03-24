@@ -179,6 +179,8 @@ class Microslabs(object):
         """
         Extend the micro slab model with a single layer.
         """
+        #self.extend(w=[w],sigma=[sigma],rho=[rho],irho=[irho])
+        #return
         self._reserve(1)
         self._slabs[self._num_slabs,0] = w
         self._slabs[self._num_slabs,1] = sigma

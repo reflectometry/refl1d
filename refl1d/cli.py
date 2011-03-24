@@ -108,6 +108,7 @@ class FitProxy(object):
         self.problem = problem
         self.options = options
         self.monitors = monitors
+        self.mapper = lambda p: map(problem.nllf,p)
 
     def fit(self):
         import time
@@ -124,6 +125,7 @@ class FitProxy(object):
                                     Tmax=self.options.Tmax,
                                     monitors=self.monitors,
                                     starts=self.options.starts,
+                                    mapper=self.mapper,
                                     )
             print "time", time.clock() - t0
         else:

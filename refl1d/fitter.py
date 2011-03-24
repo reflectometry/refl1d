@@ -28,7 +28,8 @@ class ConsoleMonitor(monitor.TimedUpdate):
                                      improvement=improvement)
         self.problem = deepcopy(problem)
     def show_progress(self, history):
-        print "step", history.step[0], "cost", history.value[0]
+        print "step", history.step[0], \
+            "cost", 2*history.value[0]/self.problem.dof
     def show_improvement(self, history):
         #print "step",history.step[0],"chisq",history.value[0]
         self.problem.setp(history.point[0])
@@ -110,18 +111,17 @@ class MultiStart(FitBase):
         return x_best, f_best
 
 class DEFit(FitBase):
-    def solve(self, pop=10, steps=100, **kw):
+    def solve(self, pop=10, steps=100, monitors=None, mapper=None, **kw):
         from mystic.optimizer import de
         from mystic.solver import Minimizer
         from mystic.stop import Steps
-        monitors = kw.pop('monitors', None)
         if monitors == None:
             monitors = [ConsoleMonitor(self.problem)]
         strategy = de.DifferentialEvolution(npop=pop)
         minimize = Minimizer(strategy=strategy, problem=self.problem,
                              monitors=monitors,
                              failure=Steps(steps))
-        x = minimize()
+        x = minimize(mapper=lambda p,x: mapper(x))
         return x, minimize.history.value[0]
 
 
@@ -533,7 +533,7 @@ class FitProblem(object):
         solver is expecting from the fittable object.  We also compute
         the degrees of freedom so that we can return a normalized fit
         likelihood.
-        
+
         If the set of fit parameters changes, then model_reset must
         be called.
         """
@@ -611,7 +611,7 @@ class FitProblem(object):
         print "pars",self.parameters
         for p in self.parameters:
             p.value = p.bounds.random(1)[0]
- 
+
     def parameter_nllf(self):
         """
         Returns negative log likelihood of seeing parameters p.

@@ -26,7 +26,8 @@ from __future__ import division
 
 __all__ = ['lhs_init', 'cov_init', 'random_init']
 
-from numpy import eye, diag, asarray, array, empty, random
+import numpy
+from numpy import eye, diag, asarray, array, empty
 
 def lhs(N, pars, include_current=False):
     """
@@ -97,7 +98,7 @@ def cov(N, pars, include_current=False, cov=None, dx=None):
         cov = eye(len(x))
     elif cov == None:
         cov = diag(asarray(dx)**2)
-    population = random.multivariate_normal(mean=x, cov=cov, size=N)
+    population = numpy.random.multivariate_normal(mean=x, cov=cov, size=N)
     if include_current:
         population[0] = [p.value for p in pars]
     return population
