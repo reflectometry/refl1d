@@ -131,8 +131,6 @@ def dhsv(color, dh=0, ds=0, dv=0, da=0):
 def profile(fn, *args, **kw):
     """
     Profile a function called with the given arguments.
-
-    Note that this is different from
     """
     import cProfile, pstats, os
     global call_result
@@ -142,8 +140,11 @@ def profile(fn, *args, **kw):
     datafile = 'profile.out'
     cProfile.runctx('call()', dict(call=call), {}, datafile)
     stats = pstats.Stats(datafile)
-    #stats.sort_stats('time')
-    stats.sort_stats('calls')
+    #order='calls'
+    order='cumulative'
+    #order='pcalls'
+    #order='time'
+    stats.sort_stats(order)
     stats.print_stats()
     os.unlink(datafile)
     return call_result

@@ -158,13 +158,13 @@ class FreeInterface(Layer):
         ridx = min( (ridx, len(profile)-1) )
         Prho  = (1-profile)*below_rho  + profile*above_rho
         Pirho = (1-profile)*below_irho + profile*above_irho
-        slabs.extend(rho=[below_rho], irho=[below_irho], w=[Pz[lidx]])
+        slabs.append(rho=below_rho, irho=below_irho, w=Pz[lidx])
         slabs.extend(rho=[Prho[lidx:ridx]],
                      irho=[Pirho[lidx:ridx]],
                      w=Pw[lidx:ridx])
-        slabs.extend(rho=[above_rho],irho=[above_irho],
-                     sigma=[interface],
-                     w=[thickness-Pz[ridx]])
+        slabs.append(rho=above_rho,irho=above_irho,
+                     sigma=interface,
+                     w=thickness-Pz[ridx])
 
 @numpyerrors.ignored
 def count_inflections(x,y):
@@ -316,10 +316,10 @@ class _FreeInterfaceW(Layer):
         ridx = min( (ridx, len(profile)-1) )
         Prho  = (1-profile)*below_rho  + profile*above_rho
         Pirho = (1-profile)*below_irho + profile*above_irho
-        slabs.extend(rho=[below_rho], irho=[below_irho], w=[Pz[lidx]])
+        slabs.append(rho=below_rho, irho=below_irho, w=Pz[lidx])
         slabs.extend(rho=[Prho[lidx:ridx]],
                      irho=[Pirho[lidx:ridx]],
                      w=Pw[lidx:ridx])
-        slabs.extend(rho=[above_rho],irho=[above_irho],
-                     sigma=[interface],
-                     w=[thickness-Pz[ridx]])
+        slabs.append(rho=above_rho,irho=above_irho,
+                     sigma=interface,
+                     w=thickness-Pz[ridx])

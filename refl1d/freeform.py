@@ -111,13 +111,13 @@ class FreeformInterface01(Layer):
         lidx,ridx = numpy.searchsorted(profile,[0.01,0.99])
         Prho  = (1-profile)*left_rho  + profile*right_rho
         Pirho = (1-profile)*left_irho + profile*right_irho
-        slabs.extend(rho=[left_rho], irho=[left_irho], w=[Pz[lidx]])
+        slabs.append(rho=left_rho, irho=left_irho, w=Pz[lidx])
         slabs.extend(rho=[Prho[lidx:ridx]],
                      irho=[Pirho[lidx:ridx]],
                      w=Pw[lidx:ridx])
-        slabs.extend(rho=[right_rho],irho=[right_irho],
-                     sigma=[interface],
-                     w=[thickness-Pz[ridx]])
+        slabs.append(rho=right_rho,irho=right_irho,
+                     sigma=interface,
+                     w=thickness-Pz[ridx])
 
 class FreeInterface(Layer):
     """
@@ -179,13 +179,13 @@ class FreeInterface(Layer):
         ridx = min( (ridx, len(profile)-1) )
         Prho  = (1-profile)*left_rho  + profile*right_rho
         Pirho = (1-profile)*left_irho + profile*right_irho
-        slabs.extend(rho=[left_rho], irho=[left_irho], w=[Pz[lidx]])
+        slabs.append(rho=left_rho, irho=left_irho, w=Pz[lidx])
         slabs.extend(rho=[Prho[lidx:ridx]],
                      irho=[Pirho[lidx:ridx]],
                      w=Pw[lidx:ridx])
-        slabs.extend(rho=[right_rho],irho=[right_irho],
-                     sigma=[interface],
-                     w=[thickness-Pz[ridx]])
+        slabs.append(rho=right_rho,irho=right_irho,
+                     sigma=interface,
+                     w=thickness-Pz[ridx])
 
 
 def _profile(left,right,control,z,t):

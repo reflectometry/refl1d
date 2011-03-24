@@ -66,12 +66,15 @@ class DreamProxy(object):
         pars = self.dream_model.problem.parameters
         pop_size = int(ceil(self.pop*len(pars)))
         if self.pop_init == 'random':
-            population = initpop.random_init(N=pop_size, pars=pars)
+            population = initpop.random(N=pop_size,
+                                        pars=pars, include_current=True)
         elif self.pop_init == 'cov':
             cov = self.dream_model.problem.cov()
-            population = initpop.cov_init(N=pop_size, pars=pars, cov=cov)
+            population = initpop.cov(N=pop_size,
+                                     pars=pars, include_current=False, cov=cov)
         elif self.pop_init == 'lhs':
-            population = initpop.cov_init(N=pop_size, pars=pars)
+            population = initpop.cov(N=pop_size,
+                                     pars=pars, include_current=True)
         else:
             raise ValueError("Unknown population initializer '%s'"%self.pop_init)
         population = population[None,:,:]
@@ -240,10 +243,40 @@ def make_store(problem, opts, exists_handler):
         sys.stdout = open(problem.output_path+".mon","w")
 
 
-def run_profile(problem):
+def run_profile(problem, steps):
+    """
+    Model execution time profiler.
+
+    Run the program with "--profile --steps=N" to generate a function
+    profile chart breaking down the cost of evaluating N models.
+
+    Here is the findings from one profiling session::
+
+       23 ms total
+        6 ms rendering model
+        8 ms abeles
+        4 ms convolution
+        1 ms setting parameters and computing nllf
+
+    Using the GPU for abeles/convolution will only give us 2-3x speedup.
+    """
     from .util import profile
-    p = random_population(problem,1000)
+    p = initpop.random(N=steps, pars=problem.parameters)
+
+    # The cost of
+    # To get good information from the profiler, you wil
+    # Modify this function to obtain different information
+
+    # For gathering stats on just the rendering.
+    fits = getattr(problem,'fits',[problem])
+    def rendering(p):
+        problem.setp(p)
+        for f in fits:
+            f.fitness._render_slabs()
+
+    #profile(map,rendering,p)
     profile(map,problem.nllf,p)
+    #map(problem.nllf,p)
 
 # ==== Mappers ====
 
@@ -516,7 +549,7 @@ def main():
     Probe.view = opts.plot
 
     if opts.profile:
-        run_profile(problem)
+        run_profile(problem, steps=opts.steps)
     elif opts.worker:
         mapper.start_worker(problem)
     elif opts.check:

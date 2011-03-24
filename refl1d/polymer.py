@@ -139,15 +139,15 @@ class PolymerBrush(Layer):
         if left > right: raise RuntimeError("broken profile search")
 
         if left > 0:
-            slabs.extend(rho=[Pr[0:1]], irho=[Pi[0:1]],
-                         w=[numpy.sum(Pw[:left])])
+            slabs.append(rho=Pr[0:1], irho=Pi[0:1],
+                         w=numpy.sum(Pw[:left]))
         if left < right:
             slabs.extend(rho=[Pr[left:right]], irho=[Pi[left:right]],
                          w=Pw[left:right])
         if right < len(P):
-            slabs.extend(rho=[Pr[-1:]], irho=[Pi[-1:]],
-                         w=[numpy.sum(Pw[:right])],
-                         sigma = [interface])
+            slabs.append(rho=Pr[-1:], irho=Pi[-1:],
+                         w=numpy.sum(Pw[:right]),
+                         sigma = interface)
 
 
 

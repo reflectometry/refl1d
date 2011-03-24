@@ -421,7 +421,7 @@ class Slab(Layer):
         #print "irho",irho
         #print "w",w
         #print "sigma",sigma
-        slabs.extend(rho=[rho], irho=[irho], w=[w], sigma=[sigma])
+        slabs.append(rho=rho, irho=irho, w=w, sigma=sigma)
     def __str__(self):
         if self.thickness.value > 0:
             return str(self.material)

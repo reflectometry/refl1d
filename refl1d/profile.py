@@ -21,7 +21,7 @@ First define the profile, and put in the substrate:
 
     >>> S = Microslabs(nprobe=1,dz=2)
     >>> S.clear()
-    >>> S.extend(w=[0],rho=[2.07])
+    >>> S.append(w=0,rho=2.07)
 
 Next add the interface.  This uses :meth:`microslabs` to select
 the points at which the interface is evaluated, much like you
@@ -45,7 +45,7 @@ Finally, add the incident medium and see the results.  Note that *rho*
 is a matrix, with one column for each incident energy.  We are only
 using one energy so we only show the first column.
 
-    >>> S.extend(w=[0],rho=[4.5])
+    >>> S.append(w=0,rho=4.5)
     >>> print "width = %s ..."%(" ".join("%g"%v for v in S.w[:5]))
     width = 0 2 2 2 2 ...
     >>> print "rho = %s ..."%(" ".join("%.2f"%v for v in S.rho[0,:5]))
@@ -145,7 +145,7 @@ class Microslabs(object):
         self._slabs[toidx] = numpy.tile(self._slabs[fromidx],[repeats,1])
         self._slabsQ[toidx] = numpy.tile(self._slabsQ[fromidx],[repeats,1,1])
         self._num_slabs += repeats*length
-        
+
         # Replace interface on the top
         self._slabs[self._num_slabs-1,1] = interface
 
@@ -174,6 +174,19 @@ class Microslabs(object):
         self._slabs[idx,1] = sigma
         self._slabsQ[idx,:,0] = numpy.asarray(rho).T
         self._slabsQ[idx,:,1] = numpy.asarray(irho).T
+
+    def append(self, w=0, sigma=0, rho=0, irho=0):
+        """
+        Extend the micro slab model with a single layer.
+        """
+        self._reserve(1)
+        self._slabs[self._num_slabs,0] = w
+        self._slabs[self._num_slabs,1] = sigma
+        self._slabsQ[self._num_slabs,:,0] = rho
+        self._slabsQ[self._num_slabs,:,1] = irho
+        self._num_slabs += 1
+
+
 
     def magnetic(self, anchor, w, rhoM=0, thetaM=0):
         """

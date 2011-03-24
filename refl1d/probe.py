@@ -385,6 +385,8 @@ class Probe(object):
         Apply factors such as beam intensity, background, backabsorption,
         resolution to the data.
         """
+        # Note: in-place vector operations are not notably faster.
+
         # Handle absorption through the substrate, which occurs when Q<0
         # (condition)*C is C when condition is True or 0 when False,
         # (condition)*(C-1)+1 is C when condition is True or 1 when False.

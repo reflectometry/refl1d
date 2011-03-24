@@ -72,7 +72,7 @@ class ExperimentBase(object):
             self._cache['residuals'] = resid
 
         return self._cache['residuals']
-        
+
     def numpoints(self):
         return len(self.probe.Q)
 
@@ -83,26 +83,29 @@ class ExperimentBase(object):
         Using the assumption that data uncertainty is uncorrelated, with
         measurements normally distributed with mean R and variance dR**2,
         this is just sum( resid**2/2 + log(2*pi*dR**2)/2 ).
+
+        The current version drops the constant term, sum(log(2*pi*dR**2)/2).
         """
-        if 'nllf_scale' not in self._cache:
-            if self.probe.dR is None:
-                raise ValueError("No data from which to calculate nllf")
-            self._cache['nllf_scale'] = numpy.sum(numpy.log(2*pi*self.probe.dR**2))
-        # TODO: add sigma^2 effects back into nllf
+        #if 'nllf_scale' not in self._cache:
+        #    if self.probe.dR is None:
+        #        raise ValueError("No data from which to calculate nllf")
+        #    self._cache['nllf_scale'] = numpy.sum(numpy.log(2*pi*self.probe.dR**2))
+        # TODO: add sigma^2 effects back into nllf; only needs to be calculated
+        # when dR changes, so maybe it belongs in probe.
         return 0.5*numpy.sum(self.residuals()**2) # + self._cache['nllf_scale']
 
     def plot_reflectivity(self, show_resolution=False, view=None):
-        
+
         Q,R = self.reflectivity()
         self.probe.plot(theory=(Q,R),
                         substrate=self._substrate, surface=self._surface,
                         view=view)
-                        
+
         if show_resolution:
             import pylab
             Q,R = self.reflectivity(resolution=False)
             pylab.plot(Q,R,':g',hold=True)
-              
+
     def plot(self):
         import pylab
         pylab.subplot(211)
@@ -205,6 +208,8 @@ class Experiment(ExperimentBase):
         return self._slabs
 
     def _reflamp(self):
+        #calc_q = self.probe.calc_Q
+        #return calc_q,calc_q
         key = 'calc_r'
         if key not in self._cache:
             slabs = self._render_slabs()
@@ -266,6 +271,7 @@ class Experiment(ExperimentBase):
                 #print "irho",slabs.irho
                 #print "sigma",slabs.sigma
             Q,R = self.probe.apply_beam(calc_q, calc_R, resolution=resolution)
+            #Q,R = self.probe.Qo,self.probe.R
             self._cache[key] = Q,R
             if numpy.isnan(R).any(): print "apply_beam causes NaN"
         return self._cache[key]
@@ -399,7 +405,7 @@ class MixedExperiment(ExperimentBase):
     def __init__(self, samples=None, ratio=None, probe=None, **kw):
         self.samples = samples
         self.probe = probe
-        self.ratio = [Parameter.default(r, name="ratio %d"%i) 
+        self.ratio = [Parameter.default(r, name="ratio %d"%i)
                       for i,r in enumerate(ratio)]
         self.parts = [Experiment(s,probe,**kw) for s in samples]
         self._cache = {}  # Cache calculated profiles/reflectivities
