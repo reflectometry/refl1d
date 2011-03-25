@@ -619,7 +619,6 @@ class FitProblem(object):
         """
         Generates a random model.
         """
-        print "pars",self.parameters
         for p in self.parameters:
             p.value = p.bounds.random(1)[0]
 

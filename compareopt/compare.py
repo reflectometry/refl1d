@@ -7,27 +7,28 @@ import sys
 import subprocess
 from multiprocessing import Pool
 
-root = 'out2'
 
 problems = {
     'xray': '../examples/xray/model.py',
     'pemu': '../doc/examples/superlattice/PEMU-web.py',
     }
 
-# Aim for 1000000 fcalls
+# Aim for evals; assume problem size is 10
+root = 'out2'
+evals = 1000000
+nrepeat = 5
 fitters = {
-    'de'   : '--fit=de     --steps=10000 --pop=10',
-    'ps'   : '--fit=ps     --steps=10000 --pop=10',
-    'rl1'  : '--fit=rl     --steps=10000 --pop=10 --starts=1',
-    'rln'  : '--fit=rl     --steps=1000 --starts=100 --pop=0.5',
-    'pt'   : '--fit=pt     --steps=100000 --pop=10 --burn=0',
+    'de'   : '--fit=de     --steps=%d --pop=10'%(evals//100),
+    'ps'   : '--fit=ps     --steps=%d --pop=10'%(evals//100),
+    'rl1'  : '--fit=rl     --steps=%d --pop=10 --starts=1'%(evals//100),
+    'rln'  : '--fit=rl     --steps=%d --starts=100 --pop=0.5'%(evals//500),
+    'pt'   : '--fit=pt     --steps=%d --pop=10 --burn=0'%(evals//100),
     #'dream': '--fit=dream  --steps=2000 --pop=10 --burn=8000',
-    'bfgs' : '--fit=newton --steps=100 --starts=10000',
-    'nm'   : '--fit=amoeba --steps=1000 --starts=1000',
+    'bfgs' : '--fit=newton --steps=100 --starts=%d'%(evals//1000),
+    'nm'   : '--fit=amoeba --steps=1000 --starts=%d'%(evals//1000),
     }
 
 nthread = None # Use #cpus
-nrepeat = 20
 
 def cmd(store,model,opts):
     pat = "nice ../bin/refl1d --batch --stepmon --overwrite --random --store=%s '%s' %s"
