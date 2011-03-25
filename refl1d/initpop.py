@@ -49,7 +49,7 @@ def lhs(N, pars, include_current=False):
     nvar = len(xmin)
 
     # Initialize array ran with random numbers
-    ran = random.rand(N,nvar)
+    ran = numpy.random.rand(N,nvar)
 
     # Initialize array s with zeros
     s = empty((N,nvar))
@@ -62,14 +62,14 @@ def lhs(N, pars, include_current=False):
             # Find which bin the current value belongs in
             xidx = int(N*p.value/(xmax[j]-xmin[j]))
             # Generate random permutation of remaining bins
-            idx = random.permutation(N-1)
+            idx = numpy.random.permutation(N-1)
             idx[idx>=xidx] += 1  # exclude current value bin
             # Assign random value within each bin
             P = (idx+ran[1:,j])/N
             s[1:,j] = xmin[j] + P*(xmax[j]-xmin[j])
         else:
             # Random permutation of bins
-            idx = random.permutation(N)
+            idx = numpy.random.permutation(N)
             # Assign random value within each bin
             P = (idx+ran[:,j])/N
             s[:,j] = xmin[j] + P*(xmax[j]-xmin[j])

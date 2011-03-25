@@ -117,11 +117,15 @@ class DEFit(FitBase):
         from mystic.stop import Steps
         if monitors == None:
             monitors = [ConsoleMonitor(self.problem)]
+        if mapper is None:
+            _mapper = lambda p,x: mapper(x)
+        else:
+            _mapper = lambda p,x: map(self.problem.nllf,x)
         strategy = de.DifferentialEvolution(npop=pop)
         minimize = Minimizer(strategy=strategy, problem=self.problem,
                              monitors=monitors,
                              failure=Steps(steps))
-        x = minimize(mapper=lambda p,x: mapper(x))
+        x = minimize(mapper=_mapper)
         return x, minimize.history.value[0]
 
 
@@ -143,14 +147,17 @@ class BFGSFit(FitBase):
         return True
 
 class PSFit(FitBase):
-    def solve(self, pop=1, steps=2000, CR=0.9, **kw):
+    def solve(self, pop=1, steps=2000, CR=0.9, mapper=None, **kw):
+        if mapper is None:
+            mapper = lambda x: map(self.problem.nllf,x)
         from random_lines import particle_swarm
         self._update = MonitorRunner(problem=self.problem,
                                      monitors=kw.pop('monitors', None))
         bounds = numpy.array([p.bounds.limits
                               for p in self.problem.parameters]).T
-        cfo = dict(cost=self.problem,
+        cfo = dict(parallel_cost=mapper,
                    n = len(bounds[0]),
+                   x0 = self.problem.getp(),
                    x1 = bounds[0],
                    x2 = bounds[1],
                    f_opt = 0,
@@ -158,7 +165,7 @@ class PSFit(FitBase):
         NP = int(cfo['n']*pop)
 
         result = particle_swarm(cfo, NP, maxiter=steps)
-        satisfied_sc, n_feval, i_best, f_best, x_best = result
+        satisfied_sc, n_feval, f_best, x_best = result
 
         return x_best, f_best
 
@@ -167,14 +174,17 @@ class PSFit(FitBase):
         return True
 
 class RLFit(FitBase):
-    def solve(self, pop=1, steps=2000, CR=0.9, **kw):
+    def solve(self, pop=1, steps=2000, CR=0.9, mapper=None, **kw):
+        if mapper is None:
+            mapper = lambda x: map(self.problem.nllf,x)
         from random_lines import random_lines
         self._update = MonitorRunner(problem=self.problem,
                                      monitors=kw.pop('monitors', None))
         bounds = numpy.array([p.bounds.limits
                               for p in self.problem.parameters]).T
-        cfo = dict(cost=self.problem,
+        cfo = dict(parallel_cost=mapper,
                    n = len(bounds[0]),
+                   x0 = self.problem.getp(),
                    x1 = bounds[0],
                    x2 = bounds[1],
                    f_opt = 0,
@@ -182,7 +192,7 @@ class RLFit(FitBase):
         NP = max(int(cfo['n']*pop),3)
 
         result = random_lines(cfo, NP, maxiter=steps, CR=CR)
-        satisfied_sc, n_feval, i_best, f_best, x_best = result
+        satisfied_sc, n_feval, f_best, x_best = result
 
         return x_best, f_best
 
@@ -223,7 +233,8 @@ class AmoebaFit(FitBase):
                                      monitors=kw.pop('monitors', None))
         bounds = numpy.array([p.bounds.limits
                               for p in self.problem.parameters]).T
-        result = simplex(f=self.problem, x0=self.problem.getp(), bounds=bounds,
+        result = simplex(f=self.problem.nllf, x0=self.problem.getp(),
+                         bounds=bounds,
                          update_handler=self._monitor, maxiter=steps)
         return result.x, result.fx
     def _monitor(self, k, n, x, fx):

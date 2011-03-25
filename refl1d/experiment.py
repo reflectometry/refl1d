@@ -373,9 +373,9 @@ class Experiment(ExperimentBase):
     def plot_profile(self):
         import pylab
         z,rho,irho = self.step_profile()
-        pylab.plot(z,rho,'-g',z,irho,'-b')
+        pylab.plot(z,rho,':g',z,irho,':b')
         z,rho,irho = self.smooth_profile()
-        pylab.plot(z,rho,':g',z,irho,':b', hold=True)
+        pylab.plot(z,rho,'-g',z,irho,'-b', hold=True)
         pylab.legend(['rho','irho'])
         pylab.xlabel('depth (A)')
         pylab.ylabel('SLD (10^6 inv A**2)')

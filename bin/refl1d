@@ -58,6 +58,10 @@ matplotlib.interactive(False)
 # Note that this must be done before importing pyplot to have an effect.
 matplotlib.use('WXAgg')
 
+import signal
+def sigint(signum,frame): raise KeyboardInterrupt("from Ctrl-C")
+signal.signal(signal.SIGINT, sigint)
+
 # ========================== Start program ====================================
 # Process the command line that has been entered.
 import refl1d.cli

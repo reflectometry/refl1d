@@ -97,7 +97,7 @@ class Probe(object):
 
         *substrate* is the material which makes up the substrate
         *surface* is the material which makes up the surface
-        *view* is 'fresnel', 'log', 'linear' or 'q4'
+        *view* is 'fresnel', 'log', 'linear', 'q4', 'residual'
 
     Normally *view* is set directly in the class rather than the
     instance since it is not specific to the view.  The fresnel
