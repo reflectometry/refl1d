@@ -15,6 +15,7 @@ from .stajconvert import load_mlayer, fit_all
 from .fitter import (DEFit, AmoebaFit, SnobFit, BFGSFit,
                      PSFit, RLFit, PTFit, MultiStart)
 from .fitter import StepMonitor, ConsoleMonitor
+from .mapper import MPMapper, AMQPMapper, SerialMapper
 from . import fitter
 from . import util
 from .mystic import parameter
@@ -280,68 +281,6 @@ def run_profile(problem, steps):
     profile(map,problem.nllf,p)
     #map(problem.nllf,p)
 
-# ==== Mappers ====
-
-class SerialMapper:
-    @staticmethod
-    def start_worker(problem):
-        pass
-    @staticmethod
-    def start_mapper(problem, modelargs):
-        return lambda points: map(problem.nllf, points)
-    @staticmethod
-    def stop_mapper(mapper):
-        pass
-
-class AMQPMapper:
-
-    @staticmethod
-    def start_worker(problem):
-        #sys.stderr = open("dream-%d.log"%os.getpid(),"w")
-        #print >>sys.stderr,"worker is starting"; sys.stdout.flush()
-        from amqp_map.config import SERVICE_HOST
-        from amqp_map.core import connect, start_worker as serve
-        server = connect(SERVICE_HOST)
-        #os.system("echo 'serving' > /tmp/map.%d"%(os.getpid()))
-        #print "worker is serving"; sys.stdout.flush()
-        serve(server, "dream", problem.nllf)
-        #print >>sys.stderr,"worker ended"; sys.stdout.flush()
-
-    @staticmethod
-    def start_mapper(problem, modelargs):
-        import multiprocessing
-        from amqp_map.config import SERVICE_HOST
-        from amqp_map.core import connect, Mapper
-
-        server = connect(SERVICE_HOST)
-        mapper = Mapper(server, "dream")
-        cpus = multiprocessing.cpu_count()
-        pipes = []
-        for _ in range(cpus):
-            cmd = [sys.argv[0], "--worker"] + modelargs
-            #print "starting",sys.argv[0],"in",os.getcwd(),"with",cmd
-            pipe = subprocess.Popen(cmd, universal_newlines=True,
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            pipes.append(pipe)
-        for pipe in pipes:
-            if pipe.poll() > 0:
-                raise RuntimeError("subprocess returned %d\nout: %s\nerr: %s"
-                                   % (pipe.returncode, pipe.stdout, pipe.stderr))
-        #os.system(" ".join(cmd+["&"]))
-        import atexit
-        def exit_fun():
-            for p in pipes: p.terminate()
-        atexit.register(exit_fun)
-
-        #print "returning mapper",mapper
-        return mapper
-
-    @staticmethod
-    def stop_mapper(mapper):
-        for pipe in mapper.pipes:
-            pipe.terminate()
-
-
 # ==== option parser ====
 
 class ParseOpts:
@@ -389,7 +328,7 @@ class FitOpts(ParseOpts):
                ))
     VALUES = set(("plot", "store", "fit", "noise", "steps", "pop",
                   "CR", "burn", "Tmin", "Tmax", "starts", "seed", "init",
-                  "pars", "resynth",
+                  "pars", "resynth", "transport"
                   #"mesh","meshsteps",
                 ))
     pars=None
@@ -437,6 +376,8 @@ Options:
         if store already exists, replace it
     --parallel
         run fit using all processors
+    --transport='amqp|mp|mpi'
+        use amqp/multiprocessing/mpi for parallel evaluation
     --batch
         batch mode; don't show plots after fit
     --stepmon
@@ -490,16 +431,26 @@ Options:
     _plot = 'log'
     def _set_plot(self, value):
         if value not in set(self.PLOTTERS):
-            raise ValueError("unknown plot type %s; use %s"%(value,"|".join(self.PLOTTERS)))
+            raise ValueError("unknown plot type %s; use %s"
+                             %(value,"|".join(self.PLOTTERS)))
         self._plot = value
     plot = property(fget=lambda self: self._plot, fset=_set_plot)
     store = None
     _fitter = 'de'
     def _set_fitter(self, value):
         if value not in set(self.FITTERS):
-            raise ValueError("unknown fitter %s; use %s"%(value,"|".join(self.FITTERS)))
+            raise ValueError("unknown fitter %s; use %s"
+                             %(value,"|".join(self.FITTERS)))
         self._fitter = value
     fit = property(fget=lambda self: self._fitter, fset=_set_fitter)
+    TRANSPORTS = 'amqp','mp','mpi'
+    _transport = 'mp'
+    def _set_transport(self, value):
+        if value not in self.TRANSPORTS:
+            raise ValueError("unknown transport %s; use %s"
+                             %(value,"|".join(self.TRANSPORTS)))
+        self._transport = value
+    transport = property(fget=lambda self: self._transport, fset=_set_transport)
     meshsteps = 40
 
 def getopts():
@@ -543,7 +494,12 @@ def main():
     else:
         fitter = FitProxy(FITTERS[opts.fit], problem=problem, options=opts)
     if opts.parallel or opts.worker:
-        mapper = AMQPMapper
+        if opts.transport == 'amqp':
+            mapper = AMQPMapper
+        elif opts.transport == 'mp':
+            mapper = MPMapper
+        elif opts.transport == 'mpi':
+            raise NotImplementedError("mpi transport not implemented")
     else:
         mapper = SerialMapper
 
