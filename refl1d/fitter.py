@@ -52,9 +52,10 @@ class StepMonitor(monitor.Monitor):
     The point field should be last in the list.
     """
     FIELDS = ['step', 'time', 'value', 'point']
-    def __init__(self, fid, fields=FIELDS):
+    def __init__(self, problem, fid, fields=FIELDS):
         if any(f not in self.FIELDS for f in fields):
             raise ValueError("invalid monitor field")
+        self.dof = self.problem.dof
         self.fid = fid
         self.fields = fields
         self._pattern = "%%(%s)s\n" % (")s %(".join(fields))
@@ -65,7 +66,7 @@ class StepMonitor(monitor.Monitor):
         point = " ".join("%.15g"%v for v in history.point[0])
         time = "%g"%history.time[0]
         step = "%d"%history.step[0]
-        value = "%.15g"%history.value[0]
+        value = "%.15g"%(2*history.value[0]/self.dof)
         out = self._pattern%dict(point=point, time=time,
                                  value=value, step=step)
         self.fid.write(out)
@@ -117,7 +118,7 @@ class DEFit(FitBase):
         from mystic.stop import Steps
         if monitors == None:
             monitors = [ConsoleMonitor(self.problem)]
-        if mapper is None:
+        if mapper is not None:
             _mapper = lambda p,x: mapper(x)
         else:
             _mapper = lambda p,x: map(self.problem.nllf,x)
@@ -134,7 +135,7 @@ class BFGSFit(FitBase):
         from quasinewton import quasinewton, STATUS
         self._update = MonitorRunner(problem=self.problem,
                                      monitors=kw.pop('monitors', None))
-        result = quasinewton(self.problem,
+        result = quasinewton(self.problem.nllf,
                              x0=self.problem.getp(),
                              monitor = self._monitor,
                              itnlimit = steps,
@@ -221,7 +222,7 @@ class PTFit(FitBase):
                                     monitor=self._monitor)
         return history.best_point, history.best
     def _monitor(self, step, x, fx):
-        self._update(step=step, point=x, value=2*fx/self.problem.dof)
+        self._update(step=step, point=x, value=fx)
         return True
 
 
@@ -704,7 +705,7 @@ class FitProblem(object):
 
     def show(self):
         print parameter.format(self.model_parameters())
-        print "[chisq=%g, nllf=%g]" % (self.chisq(), self.nllf()/self.dof)
+        print "[chisq=%g, nllf=%g]" % (self.chisq(), self.nllf())
         print parameter.summarize(self.parameters)
 
     def save(self, basename):

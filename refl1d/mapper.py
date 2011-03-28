@@ -29,7 +29,7 @@ class MPMapper(object):
         return lambda points: pool.map(_MP_run_problem, points)
     @staticmethod
     def stop_mapper(mapper):
-        pass    
+        pass
 
 class AMQPMapper(object):
 

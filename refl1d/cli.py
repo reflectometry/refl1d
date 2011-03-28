@@ -539,7 +539,7 @@ def main():
         if opts.stepmon:
             fid = open(problem.output_path+'.log', 'w')
             fitter.monitors = [ConsoleMonitor(problem),
-                               StepMonitor(fid,fields=['step','value'])]
+                               StepMonitor(problem,fid,fields=['step','value'])]
 
         fitter.mapper = mapper.start_mapper(problem, opts.args)
         best, fbest = fitter.fit()
