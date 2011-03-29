@@ -854,7 +854,7 @@ class MultiFitProblem(FitProblem):
         for i, f in enumerate(self.fits):
             print "-- Model %d" % i
             f.show()
-        print "[overall chisq=%g, nllf=%g]" % (self.chisq(), self.nllf()/self.dof)
+        print "[overall chisq=%g, nllf=%g]" % (self.chisq(), self.nllf())
 
     def plot(self,fignum=1,figfile=None):
         import pylab

@@ -86,8 +86,8 @@ class DreamProxy(object):
         self.state = sampler.sample()
         self.state.title = self.dream_model.problem.name
 
-        best = self.state.best()[0]
-        self.dream_model.problem.setp(best)
+        best = self.state.best()
+        self.dream_model.problem.setp(best[0])
         return best
 
     def save(self, output_path):
@@ -188,20 +188,16 @@ def preview(problem):
     pylab.show()
 
 def remember_best(fitter, problem, best):
-    fitter.save(problem.output_path)
+    pardata = "".join("%s %.15g\n"%(p.name, p.value)
+                      for p in problem.parameters)
+    open(problem.output_path+".par",'wt').write(pardata)
 
-    #try:
-    #    problem.save(problem.output_path, best)
-    #except:
-    #    pass
+    problem.save(problem.output_path)
     with util.redirect_console(problem.output_path+".out"):
         fitter.show()
     fitter.show()
     fitter.plot(problem.output_path)
 
-    pardata = "".join("%s %.15g\n"%(p.name, p.value)
-                      for p in problem.parameters)
-    open(problem.output_path+".par",'wt').write(pardata)
 
 def recall_best(problem, path):
     data = open(path,'rt').readlines()
@@ -343,7 +339,7 @@ class FitOpts(ParseOpts):
     Tmax="10"
     seed=""
     init="lhs"
-    PLOTTERS="fresnel", "linear", "log", "q4"
+    PLOTTERS="fresnel", "linear", "log", "q4", "residuals"
     USAGE = """\
 Usage: refl1d modelfile [modelargs] [options]
 

@@ -359,6 +359,7 @@ class Experiment(ExperimentBase):
         numpy.savetxt(fid, A.T, fmt="%20.15g")
         fid.close()
 
+    def save_staj(self):
         # Save staj files
         datafile = os.path.join(os.path.dirname(basename),self.probe.filename)
         shutil.copy2(self.probe.filename, datafile)
