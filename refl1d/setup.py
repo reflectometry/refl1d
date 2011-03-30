@@ -25,7 +25,6 @@ def configuration(parent_package='', top_path=None):
     # Note that for convenience, we define subpackages of mystic here instead
     # of using separate setup.py files in the subdirectories.
     config.add_subpackage('gui')
-    config.add_data_dir(os.path.join('gui', 'images'))
     config.add_subpackage('mystic')
     config.add_subpackage('mystic.examples')
     config.add_subpackage('mystic.optimizer')

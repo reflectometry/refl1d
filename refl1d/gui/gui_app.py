@@ -29,7 +29,7 @@ From the command line, the application is run from a startup script that calls
 the main function of this module.  From the root directory of the package, you
 can run this application in GUI mode as follows:
 
-$ python bin/refl1d_gui.py [<optional parameters>]
+$ python bin/refl1d_gui [<optional parameters>]
 
 The following is a list of command line parameters for development and
 debugging purposes.  None are documented and they may change at any time.
