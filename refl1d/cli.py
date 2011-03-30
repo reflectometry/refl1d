@@ -320,11 +320,12 @@ class FitOpts(ParseOpts):
     MINARGS = 1
     FLAGS = set(("preview", "check", "profile", "random", "simulate",
                  "worker", "batch", "overwrite", "parallel", "stepmon",
-                 "cov"
+                 "cov",
+                 "multiprocessing-fork", # passed in when app is a frozen image
                ))
-    VALUES = set(("plot", "store", "fit", "noise", "steps", "pop",
-                  "CR", "burn", "Tmin", "Tmax", "starts", "seed", "init",
-                  "pars", "resynth", "transport"
+    VALUES = set(("plot", "store", "fit", "noise", "steps", "pop", "CR",
+                   "burn", "Tmin", "Tmax", "starts", "seed", "init", "pars",
+                   "resynth", "transport",
                   #"mesh","meshsteps",
                 ))
     pars=None
@@ -372,7 +373,7 @@ Options:
         if store already exists, replace it
     --parallel
         run fit using all processors
-    --transport='amqp|mp|mpi'
+    --transport=mp  {amqp|mp|mpi}
         use amqp/multiprocessing/mpi for parallel evaluation
     --batch
         batch mode; don't show plots after fit
@@ -384,7 +385,7 @@ Options:
 
     --fit=de        [%(fitter)s]
         fitting engine to use; see manual for details
-    --steps=1000    [all optimizers]
+    --steps=1000    [%(fitter)s]
         number of fit iterations after any burn-in time
     --pop=10        [dream, de, rl, pt, ps]
         population size
@@ -393,15 +394,15 @@ Options:
     --Tmin=0.1
     --Tmax=10       [pt]
         temperature range; use a higher maximum temperature and a larger
-        population if your fit is getting stuck in local minima.
+        population if your fit is getting stuck in local minima
     --CR=0.9        [de, rl, pt]
         crossover ratio for population mixing
     --starts=1      [%(fitter)s]
         number of times to run the fit from random starting points
-    --init='lhs|cov|random' [dream]
+    --init=lhs      {cov|lhs|random} for [dream]
         population initialization method, with 'lhs' for latin hypersquares,
         'cov' for covariance, and 'random' for uniform within parameter
-        distribution.
+        distribution
 
     --check
         print the model description and chisq value and exit
@@ -542,4 +543,3 @@ def main():
         remember_best(fitter, problem, best)
         if opts.cov: print cov(problem)
         if not opts.batch: pylab.show()
-

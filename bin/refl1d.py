@@ -61,5 +61,11 @@ matplotlib.use('WXAgg')
 # ========================== Start program ====================================
 # Process the command line that has been entered.
 if __name__ == "__main__":
+    # This is necessary when running the application from a frozen image and
+    # using the --parallel option.  Note that freeze_support() has no effect
+    # when running from a python script (i.e., in a non-frozen environment).
+    import multiprocessing
+    multiprocessing.freeze_support()
+
     import refl1d.cli
     refl1d.cli.main()
