@@ -7,7 +7,7 @@
 #include "reflcalc.h"
 
 
-extern "C" void 
+extern "C" void
 Cr4xa(const int &N, const double D[], const double SIGMA[],
       const double RHO[], const double IRHO[],
       const double RHOM[],  const Cplx EXPTH[],
@@ -16,18 +16,16 @@ Cr4xa(const int &N, const double D[], const double SIGMA[],
 
 {
 /*
-C This program is public domain.
-
 C Modification of C.F. Majrkzak`s progam gepore.f for calculating
 C reflectivities of four polarization states of neutron reflectivity data.
 
-c ****************************************************************      
-c      
+c ****************************************************************
+c
 c Program "gepore.f" (GEneral POlarized REflectivity) calculates the
 c spin-dependent neutron reflectivities (and transmissions) for
 c model potentials, or scattering length density profiles, assuming
 c the specular condition.
-c      
+c
 c In the present version, both nuclear and magnetic, real scattering
 c length densities can be input, whereas imaginary components of the
 c nuclear potential cannot.  Also, magnetic and nuclear incident, or
@@ -36,7 +34,7 @@ c description of the input parameters is given below:
 c
 c It must be noted that in the continuum reflectivity calculation
 c performed by this program, Maxwell`s equations apply, specifically
-c the requirement that the component of the magnetic induction, B, 
+c the requirement that the component of the magnetic induction, B,
 c normal to a boundary surface be continuous.  Neither the program
 c nor the wave equation itself automatically insure that this is so:
 c this condition must be satisfied by appropriate selection of the
@@ -59,24 +57,24 @@ C
 C 1. If Q is negative then the beam is assumed to come in from the
 C bottom of the sample, and all the layers are reversed.
 C
-C 2. The fronting and backing materials are assumed to be semi-infinite, 
+C 2. The fronting and backing materials are assumed to be semi-infinite,
 C so depth is ignored for the first and last layer.
 C
-C 3. Absorption is ignored for the fronting material, or the backing 
-C material for negative Q.  For negative Q, the beam is coming in 
-C through the side of the substrate, and you will need to multiply 
-C by a substrate absorption factor depending on the path length through 
-C the substrate.  For neutron reflectivity, this is approximately 
+C 3. Absorption is ignored for the fronting material, or the backing
+C material for negative Q.  For negative Q, the beam is coming in
+C through the side of the substrate, and you will need to multiply
+C by a substrate absorption factor depending on the path length through
+C the substrate.  For neutron reflectivity, this is approximately
 C constant for the angles we need to consider.
 C
 C 4. Magnetic scattering is ignored for the fronting and backing.
 C
-C 5. This subroutine does not deal with any component of sample moment 
-C that may lie out of the plane of the film.  Such a perpendicular 
-C component will cause a neutron presession, therefore an additional 
-C spin flip term.  If reflectivity data from a sample with an 
-C out-of-plane moment is modeled using this subroutine, one will 
-C obtain erroneous results, since all of the spin flip scattering 
+C 5. This subroutine does not deal with any component of sample moment
+C that may lie out of the plane of the film.  Such a perpendicular
+C component will cause a neutron presession, therefore an additional
+C spin flip term.  If reflectivity data from a sample with an
+C out-of-plane moment is modeled using this subroutine, one will
+C obtain erroneous results, since all of the spin flip scattering
 C will be attributed to in-plane moments perpendicular to the neutron.
 
 
@@ -98,7 +96,7 @@ C * Converted to subroutine from GEPORE.f
 
 //     paramters
       int I,L,STEP;
-        
+
 //    variables calculating S1, S3, COSH and SINH
       double KSQREL;
       double EPA, EMA, COSB, SINB, LOGH;
@@ -198,10 +196,10 @@ C later in the calculation when we divide by DETW.
         S3 = sqrt(PI4*(RHO[L]-RHOM[L])-KSQREL - CI*PI4*IRHO[L]);
 
 //    Factor out H=exp(max(abs(real([S1,S3])))*D(L)) from the matrix
-        if (abs(S1.real()) > abs(S3.real()))
-          LOGH = abs(S1.real())*D[L];
+        if (fabs(S1.real()) > fabs(S3.real()))
+          LOGH = fabs(S1.real())*D[L];
         else
-          LOGH = abs(S3.real())*D[L];
+          LOGH = fabs(S3.real())*D[L];
 LOGH=0;
 
 //    Calculate 2*COSH/H and 2*SINH/H for D*S1
@@ -250,7 +248,7 @@ LOGH=0;
         std::cout << "cr4x A3:"<<A31<<" "<<A32<<" "<<A33<<" "<<A34<<std::endl;
         std::cout << "cr4x A4:"<<A41<<" "<<A42<<" "<<A43<<" "<<A44<<std::endl;
 #endif
-        
+
 //    Matrix update B=A*B
         C1=A11*B11+A12*B21+A13*B31+A14*B41;
         C2=A21*B11+A22*B21+A23*B31+A24*B41;
@@ -260,7 +258,7 @@ LOGH=0;
         B21=C2;
         B31=C3;
         B41=C4;
-        
+
         C1=A11*B12+A12*B22+A13*B32+A14*B42;
         C2=A21*B12+A22*B22+A23*B32+A24*B42;
         C3=A31*B12+A32*B22+A33*B32+A34*B42;
@@ -269,7 +267,7 @@ LOGH=0;
         B22=C2;
         B32=C3;
         B42=C4;
-        
+
         C1=A11*B13+A12*B23+A13*B33+A14*B43;
         C2=A21*B13+A22*B23+A23*B33+A24*B43;
         C3=A31*B13+A32*B23+A33*B33+A34*B43;
@@ -278,7 +276,7 @@ LOGH=0;
         B23=C2;
         B33=C3;
         B43=C4;
-        
+
         C1=A11*B14+A12*B24+A13*B34+A14*B44;
         C2=A21*B14+A22*B24+A23*B34+A24*B44;
         C3=A31*B14+A32*B24+A33*B34+A34*B44;
@@ -324,7 +322,7 @@ LOGH=0;
         std::cout << "cr4x A3:"<<A31<<" "<<A32<<" "<<A33<<" "<<A34<<std::endl;
         std::cout << "cr4x A4:"<<A41<<" "<<A42<<" "<<A43<<" "<<A44<<std::endl;
 #endif
-      
+
 //    Use corrected versions of X,Y,ZI, and ZS to account for effect
 //    of incident and substrate media
 //    Note: this does not take into account magnetic fronting/backing
@@ -332,12 +330,12 @@ LOGH=0;
       L=L+STEP;
       ZS=CI*sqrt(KSQREL-PI4*RHO[L] + CI*PI4*IRHO[L]);
       ZI=CI*fabs(KZ);
- 
+
       X=-1.;
       Y=ZI*ZS;
-      
+
 //    W below is U and V is -V of printed versions
-      
+
       V11=ZS*A11+X*A31+Y*A13-ZI*A33;
       V12=ZS*A12+X*A32+Y*A14-ZI*A34;
       V21=ZS*A21+X*A41+Y*A23-ZI*A43;
@@ -349,13 +347,13 @@ LOGH=0;
       W22=ZS*A22+X*A42-Y*A24+ZI*A44;
 
       DETW=W22*W11-W12*W21;
-     
+
 //    Calculate reflectivity coefficients specified by POLSTAT
       YA = (V21*W12-V11*W22)/DETW;
       YB = (V11*W21-V21*W11)/DETW;
       YC = (V22*W12-V12*W22)/DETW;
       YD = (V12*W21-V22*W11)/DETW;
-      
+
 }
 
 extern "C" void

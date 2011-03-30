@@ -80,7 +80,7 @@ rebin_counts_portion(const int Nold, const double vold[], const T Iold[],
     else {
       const double overlap = std::min(from.hi,to.hi) - std::max(from.lo,to.lo);
       const double portion = overlap/(from.hi-from.lo);
-      Inew[to.bin] += Iold[from.bin]*portion*ND_portion;
+      Inew[to.bin] += T(Iold[from.bin]*portion*ND_portion);
       if (to.hi > from.hi) ++from;
       else ++to;
     }
@@ -103,7 +103,7 @@ rebin_counts(const int Nold, const double xold[], const T Iold[],
   // rather than rates.
 
   // Clear the new bins
-  for (int i=0; i < Nnew; i++) Inew[i] = 0.;
+  for (int i=0; i < Nnew; i++) Inew[i] = 0;
 
   rebin_counts_portion(Nold, xold, Iold, Nnew, xnew, Inew, 1.);
 }
@@ -130,7 +130,7 @@ rebin_intensity(const int Nold, const double xold[],
   // Note: inspired by rebin from OpenGenie, but using counts per bin rather than rates.
 
   // Clear the new bins
-  for (int i=0; i < Nnew; i++) dInew[i] = Inew[i] = 0.;
+  for (int i=0; i < Nnew; i++) dInew[i] = Inew[i] = 0;
 
   // Traverse both sets of bin edges; if there is an overlap, add the portion
   // of the overlapping old bin to the new bin.

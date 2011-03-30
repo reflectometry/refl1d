@@ -51,7 +51,7 @@ rebin_counts_2D(
 {
 
   // Clear the new bins
-  for (int i=0; i < Nxnew*Nynew; i++) Inew[i] = 0.;
+  for (int i=0; i < Nxnew*Nynew; i++) Inew[i] = 0;
 
   // Traverse both sets of bin edges; if there is an overlap, add the portion
   // of the overlapping old bin to the new bin.  Scale this by the portion
