@@ -23,15 +23,17 @@
 # Author: James Krycka
 
 """
-This script uses py2exe to create dist\refl1d.exe for Windows.
+This script uses py2exe to create dist\refl1d.exe and dist\refl1d_gui.exe for
+running the Refl1D application in either CLI or GUI mode.
 
-The resulting executable bundles the Refl1D application, the python runtime
-environment, and other required python packages into a single file.  Additional
-resource files that are needed when Refl1D is run are placed in the dist
-directory tree.  On completion, the contents of the dist directory tree can be
-used by the Inno Setup Compiler (via a separate script) to build a Windows
-installer/uninstaller for deployment of the Refl1D application.  For testing
-purposes, refl1d.exe can be run from the dist directory.
+These executables start the application and import the rest of the application
+code stored in library.zip.  The python interpreter and other required python
+packages and dlls are also placed in the zip file.  Additional resource files
+that are needed when Refl1D is run are copied to the dist directory tree.  On
+completion, the contents of the dist directory tree can be used by the Inno
+Setup Compiler (via a separate script) to build a Windows installer/uninstaller
+for deployment of the Refl1D application.  For testing purposes, refl1d.exe or
+refl1d_gui.exe can be run from the dist directory.
 """
 
 import os
@@ -155,7 +157,7 @@ data_files = []
 data_files.append( ('.', [os.path.join('.', 'LICENSE.txt')]) )
 data_files.append( ('.', [os.path.join('.', 'README.txt')]) )
 data_files.append( ('.', [os.path.join('.', 'bin', 'refl1d.ico')]) )
-data_files.append( ('.', [os.path.join('.', 'bin', 'refllaunch.bat')]) )
+data_files.append( ('.', [os.path.join('.', 'bin', 'refl1d_launch.bat')]) )
 
 # Add application specific data files from the refl1d\refl1d-data folder.
 for path in glob.glob(os.path.join('refl1d-data', '*')):
@@ -244,31 +246,31 @@ class Target():
 
 clientCLI = Target(
     name = 'refl1d',
-    description = 'Refl1D command line application',
-    script = os.path.join('bin', 'refl1d'),  # module to run on application start
+    description = 'Refl1D application',
+    script = os.path.join('bin', 'refl1d.py'),  # module to run on application start
     dest_base = 'refl1d',  # file name part of the exe file to create
     icon_resources = [(1, os.path.join('bin', 'refl1d.ico'))],  # also need to specify in data_files
     bitmap_resources = [],
     other_resources = [(24, 1, manifest)] )
 
 clientGUI = Target(
-    name = 'reflgui',
+    name = 'refl1d_gui',
     description = 'Refl1D GUI application',
-    script = os.path.join('bin', 'reflgui'),  # module to run on application start
-    dest_base = 'reflgui',  # file name part of the exe file to create
+    script = os.path.join('bin', 'refl1d_gui.py'),  # module to run on application start
+    dest_base = 'refl1d_gui',  # file name part of the exe file to create
     icon_resources = [(1, os.path.join('bin', 'refl1d.ico'))],  # also need to specify in data_files
     bitmap_resources = [],
     other_resources = [(24, 1, manifest)] )
 
-# Now do the work to create a standalone distribution using py2exe.
-# Specify either console mode or windows mode build.
+# Now we do the work to create a standalone distribution using py2exe.
 #
 # When the application is run in console mode, a console window will be created
 # to receive any logging or error messages and the application will then create
 # a separate GUI application window.
 #
 # When the application is run in windows mode, it will create a GUI application
-# window and no console window will be provided.
+# window and no console window will be provided.  Output to stderr will be
+# written to <app-image-name>.log.
 setup(
       console=[clientCLI],
       windows=[clientGUI],
@@ -281,9 +283,11 @@ setup(
                    'optimize': 0,     # no byte-code optimization
                    'dist_dir': "dist",# where to put py2exe results
                    'xref': False,     # display cross reference (as html doc)
-                   'bundle_files': 1, # bundle python25.dll in executable
+                   'bundle_files': 1, # bundle python25.dll in library.zip
                          }
               },
-      zipfile=None,                   # bundle files in exe, not in library.zip
+      # Since we are building two exe's, do not put the shared library in each
+      # of them.  Instead create a single, separate library.zip file.
+      ### zipfile=None,               # bundle library.zip in exe
       data_files=data_files           # list of files to copy to dist directory
      )

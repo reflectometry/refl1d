@@ -33,8 +33,9 @@
 #define MyGroupFolderName "DANSE"
 #define MyAppPublisher "NIST & University of Maryland"
 #define MyAppURL "http://www.reflectometry.org/danse/"
-#define MyAppFileName "refl1d.exe"
-#define MyAppGUIFileName "reflgui.exe"
+; Use a bat file to launch refl1d.exe to setup a custom environment
+#define MyAppCLIFileName "refl1d_launch.bat"
+#define MyAppGUIFileName "refl1d_gui.exe"
 #define MyIconFileName "refl1d.ico"
 #define MyReadmeFileName "README.txt"
 #define MyLicenseFileName "LICENSE.txt"
@@ -98,22 +99,31 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Icons]
-; This section does not have a flag for keeping the command window open on exit when running a program.
-; To accomplish this, a batch file is run that creates the command window and starts the Windows command
-; interpreter.  This provides the same environment as starting a command window using the run dialog box
-; from the Windows start menu and entering a command such as "cmd" or "cmd /k <file-to-execute>".
-Name: "{group}\Launch {#MyAppName} GUI"; Filename: "{app}\{#MyAppGUIFileName}"; IconFilename: "{app}\{#MyIconFileName}"; WorkingDir: "{userdocs}\{#MyAppName}"; Flags: runmaximized
-Name: "{group}\Launch {#MyAppName} CLI"; Filename: "{app}\refllaunch.bat"; IconFilename: "{app}\{#MyIconFileName}"; WorkingDir: "{userdocs}\{#MyAppName}"; Flags: runmaximized
+; This section creates shortcuts.
+; - {group} refers to shortcuts in the Start Menu.
+; - {commondesktop} refers to shortcuts on the desktop.
+; - {userappdata} refers to shortcuts in the Quick Start menu on the tool bar.
+;
+; When running the application in command line mode, we want to keep the command window open when it
+; exits so that the user can run it again from the window.  Unfortunatley, this section does not have
+; a flag for keeping the command window open on exit.  To accomplish this, a batch file is run that
+; creates the command window and starts the Windows command interpreter.  This provides the same
+; environment as starting a command window using the run dialog box from the Windows start menu and
+; entering a command such as "cmd" or "cmd /k <file-to-execute>".
+;
+; When running the application in GUI mode, we simply run the executable without a console window.
+Name: "{group}\Launch {#MyAppName} GUI"; Filename: "{app}\{#MyAppGUIFileName}"; IconFilename: "{app}\{#MyIconFileName}"; WorkingDir: "{userdocs}\{#MyAppName}"
+Name: "{group}\Launch {#MyAppName} CLI"; Filename: "{app}\{#MyAppCLIFileName}"; IconFilename: "{app}\{#MyIconFileName}"; WorkingDir: "{userdocs}\{#MyAppName}"; Flags: runmaximized
 Name: "{group}\{cm:ProgramOnTheWeb,{#MyAppName}}"; Filename: "{#MyAppURL}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{commondesktop}\{#MyAppName} GUI{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppGUIFileName}"; Tasks: desktopicon; WorkingDir: "{userdocs}\{#MyAppName}"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
-Name: "{commondesktop}\{#MyAppName} CLI{#Space}{#MyAppVersion}"; Filename: "{app}\refllaunch.bat"; Tasks: desktopicon; WorkingDir: "{userdocs}\{#MyAppName}"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName} GUI{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppGUIFileName}"; Tasks: quicklaunchicon; WorkingDir: "{userdocs}\{#MyAppName}"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName} CLI{#Space}{#MyAppVersion}"; Filename: "{app}\refllaunch.bat"; Tasks: quicklaunchicon; WorkingDir: "{userdocs}\{#MyAppName}"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
+Name: "{commondesktop}\{#MyAppName} GUI{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppGUIFileName}"; Tasks: desktopicon; WorkingDir: "{userdocs}\{#MyAppName}"; IconFilename: "{app}\{#MyIconFileName}"
+Name: "{commondesktop}\{#MyAppName} CLI{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppCLIFileName}"; Tasks: desktopicon; WorkingDir: "{userdocs}\{#MyAppName}"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
+Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName} GUI{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppGUIFileName}"; Tasks: quicklaunchicon; WorkingDir: "{userdocs}\{#MyAppName}"; IconFilename: "{app}\{#MyIconFileName}"
+Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName} CLI{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppCLIFileName}"; Tasks: quicklaunchicon; WorkingDir: "{userdocs}\{#MyAppName}"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
 
 [Run]
-Filename: "{app}\{#MyAppGUIFileName}"; Description: "{cm:LaunchProgram,{#MyAppName} GUI}"; WorkingDir: "{userdocs}\{#MyAppName}"; Flags: nowait postinstall skipifsilent runmaximized unchecked
-Filename: "{app}\refllaunch.bat"; Description: "{cm:LaunchProgram,{#MyAppName} CLI}"; WorkingDir: "{userdocs}\{#MyAppName}"; Flags: nowait postinstall skipifsilent runmaximized
+Filename: "{app}\{#MyAppGUIFileName}"; Description: "{cm:LaunchProgram,{#MyAppName} GUI}"; WorkingDir: "{userdocs}\{#MyAppName}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppCLIFileName}"; Description: "{cm:LaunchProgram,{#MyAppName} CLI}"; WorkingDir: "{userdocs}\{#MyAppName}"; Flags: nowait postinstall skipifsilent runmaximized unchecked
 Filename: "{app}\{#MyReadmeFileName}"; Description: "Read Release Notes"; Verb: "open"; Flags: shellexec skipifdoesntexist waituntilterminated postinstall skipifsilent unchecked
 ; Install the Microsoft C++ DLL redistributable package if it is provided and the DLLs are not present on the target system.
 ; Note that the redistributable package is included if the app was built using Python 2.6 or 2.7, but not with 2.5.

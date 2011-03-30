@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright (C) 2006-2011, University of Maryland
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -23,13 +21,15 @@
 # Author: James Krycka
 
 """
-This module runs the Refl1D Reflectometry Modeler application in GUI mode.
-It creates the initial wxPython frame, presents a splash screen to the user,
+This module creates the GUI for the Refl1D Reflectometry Modeler application.
+It builds the initial wxPython frame, presents a splash screen to the user,
 and then constructs the rest of the GUI.
 
-From the command line, the application can be run as follows:
+From the command line, the application is run from a startup script that calls
+the main function of this module.  From the root directory of the package, you
+can run this application in GUI mode as follows:
 
-$ python reflgui [<optional parameters>]
+$ python bin/refl1d_gui.py [<optional parameters>]
 
 The following is a list of command line parameters for development and
 debugging purposes.  None are documented and they may change at any time.
@@ -56,28 +56,10 @@ import time
 
 import wx
 
-# When this script is run interactively (i.e., from a Python command prompt),
-# sys.path needs to be updated for some imports to work, namely 'from refl1d'
-# and 'from dream'.  However, when this module is executed from a frozen image,
-# sys.path will be automatically setup to include the full path of the frozen
-# image and python will be able to perform the aforementioned imports.  Thus,
-# for the interactive case, we will augment sys.path.  Assumptions:
-#   <root> is the top-level directory of the package, it can have any name
-#   script dir -> <root>/bin
-#   'from refl1d' -> <root>/refl1d
-#   'from dream' -> <root>/dream/dream
-# Although <root> is currently named 'refl1d', it does not have an__init__.py.
-# Likewise, <root>/dream does not have an __init__.py file.
-if not hasattr(sys, 'frozen'):
-    path = os.path.realpath(__file__)
-    root = os.path.abspath(os.path.join(os.path.dirname(path), '..'))
-    sys.path.insert(0, root)
-    sys.path.insert(1, os.path.join(root, 'dream'))
-
-from refl1d.gui.about import APP_TITLE
-from refl1d.gui.app_frame import AppFrame
-from refl1d.gui.utilities import (get_appdir, get_datadir, get_rootdir,
-                                  get_rootdir_parent, log_time)
+from .about import APP_TITLE
+from .app_frame import AppFrame
+from .utilities import (get_appdir, get_datadir, get_rootdir,
+                        get_rootdir_parent, log_time)
 
 # Desired initial application frame size (if physical screen size permits).
 FRAME_WIDTH = 1200
@@ -169,8 +151,9 @@ class ReflGUIApp(wx.App):
         # application will be placed towards the left hand side of the screen.
 
         x, y, w, h = wx.Display().GetClientArea() # size excludes task bar
-        xpos, ypos = x,y
-        w,h = w-10,h-30 # make room for window decorations
+        #print "*** x, y, w, h", x, y, w, h
+        xpos, ypos = x, y
+        h -= 20  # to make room for Mac window decorations
         if len(sys.argv) > 1 and '--platform' in sys.argv[1:]:
             j, k = wx.DisplaySize()  # size includes task bar area
             print "*** Reported screen size including taskbar is %d x %d"%(j, k)
@@ -224,7 +207,7 @@ class ReflGUIApp(wx.App):
 
 #==============================================================================
 
-if __name__ == '__main__':
+def main():
     if LOGTIM: log_time("Starting Refl1D")
 
     # Instantiate the application class and give control to wxPython.

@@ -3,8 +3,8 @@
 # Authors: Paul Kienzle and James Krycka
 
 """
-This script starts the command line interface of the refl1d application to
-process the command just entered.
+This script starts the command line interface of the Refl1D Reflectometry
+Modeler application to process the command just entered.
 """
 
 import os
