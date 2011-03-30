@@ -28,8 +28,6 @@ of the frame of the GUI for the Refl1D application.
 from __future__ import division
 import os
 import sys
-import shutil
-import logging
 import copy
 
 import wx
@@ -99,7 +97,6 @@ from .summary_view import SummaryView
 from .fit_view import FitView
 from .parameter_view import ParameterView
 from .log_view import LogView
-from .other_view import OtherView
 from .fit_dialog import FitControl
 from .work_thread import Worker
 from .util import nice
@@ -481,7 +478,7 @@ class AppPanel(wx.Panel):
         self.args = [file, "T1"]
         self.problem = load_problem(self.args)
         self.redraw(self.problem)
-        
+
         # Send new model (problem) loaded message to all interested panels.
         pub.sendMessage("initial_model", self.problem)
 
@@ -511,7 +508,7 @@ class AppPanel(wx.Panel):
 
         self.problem_copy = copy.deepcopy(self.problem)
         opts = FitOpts(self.args)
-        
+
         monitors = [GUIMonitor(self.problem)]
 
         options = event.data
@@ -529,7 +526,7 @@ class AppPanel(wx.Panel):
                                options=opts)
         mapper = SerialMapper
         self.pan1.Layout()
-        
+
         # Start a new thread worker and give fit problem to the worker.
         self.worker = Worker(self, self.problem_copy, fn=self.fitter,
                                    pars=opts.args, mapper=mapper)
@@ -538,7 +535,7 @@ class AppPanel(wx.Panel):
 
     def OnFitResult(self, event):
         self.redraw(self.problem) # redraw the plot last time with fitted chsiq
-        
+
         pub.sendMessage("fit_complete")
         if event.data is None:
             # Thread aborted (using our convention of None return)
