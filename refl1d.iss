@@ -29,19 +29,20 @@
 ; with the Preprocessor add-on selected to support use of #define statements.
 #define MyAppName "Refl1D"
 #define MyAppNameLowercase "refl1d"
-#define MyAppVersion "0.0.0"
 #define MyGroupFolderName "DANSE"
 #define MyAppPublisher "NIST & University of Maryland"
 #define MyAppURL "http://www.reflectometry.org/danse/"
-; Use a bat file to launch refl1d.exe to setup a custom environment
+; Use a batch file to launch refl1d.exe to setup a custom environment.
 #define MyAppCLIFileName "refl1d_launch.bat"
 #define MyAppGUIFileName "refl1d_gui.exe"
 #define MyIconFileName "refl1d.ico"
 #define MyReadmeFileName "README.txt"
 #define MyLicenseFileName "LICENSE.txt"
 #define Space " "
-; Use updated version string if present in the include file.  It is expected that the
-; Refl1D build script will create this file using the version string from version.py.
+; Use updated version string if present in the include file.  It is expected that the Refl1D
+; build script will create this file using the application's internal version string to create
+; a define statement in the format shown below.
+#define MyAppVersion "0.0.0"
 #ifexist "refl1d.iss-include"
     #include "refl1d.iss-include"
 #endif
@@ -122,8 +123,8 @@ Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName} GUI{#
 Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName} CLI{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppCLIFileName}"; Tasks: quicklaunchicon; WorkingDir: "{userdocs}\{#MyAppName}"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
 
 [Run]
-Filename: "{app}\{#MyAppGUIFileName}"; Description: "{cm:LaunchProgram,{#MyAppName} GUI}"; WorkingDir: "{userdocs}\{#MyAppName}"; Flags: nowait postinstall skipifsilent
-Filename: "{app}\{#MyAppCLIFileName}"; Description: "{cm:LaunchProgram,{#MyAppName} CLI}"; WorkingDir: "{userdocs}\{#MyAppName}"; Flags: nowait postinstall skipifsilent runmaximized unchecked
+;;;Filename: "{app}\{#MyAppGUIFileName}"; Description: "{cm:LaunchProgram,{#MyAppName} GUI}"; WorkingDir: "{userdocs}\{#MyAppName}"; Flags: nowait postinstall skipifsilent
+;;;Filename: "{app}\{#MyAppCLIFileName}"; Description: "{cm:LaunchProgram,{#MyAppName} CLI}"; WorkingDir: "{userdocs}\{#MyAppName}"; Flags: nowait postinstall skipifsilent runmaximized unchecked
 Filename: "{app}\{#MyReadmeFileName}"; Description: "Read Release Notes"; Verb: "open"; Flags: shellexec skipifdoesntexist waituntilterminated postinstall skipifsilent unchecked
 ; Install the Microsoft C++ DLL redistributable package if it is provided and the DLLs are not present on the target system.
 ; Note that the redistributable package is included if the app was built using Python 2.6 or 2.7, but not with 2.5.
@@ -135,6 +136,13 @@ Filename: "{app}\{#MyReadmeFileName}"; Description: "Read Release Notes"; Verb: 
 Filename: "{app}\vcredist_x86.exe"; Parameters: "/qb!"; WorkingDir: "{tmp}"; StatusMsg: "Installing Microsoft Visual C++ 2008 Redistributable Package ..."; Check: InstallVC90CRT(); Flags: skipifdoesntexist waituntilterminated
 
 [UninstallDelete]
-; Delete directories and files that are dynamically created by the application.
+; Delete directories and files that are dynamically created by the application (i.e. at runtime).
 Type: filesandordirs; Name: "{app}\.matplotlib"
+Type: files; Name: "{app}\*.exe.log"
+; The following is a workaround for the case where the application is installed and uninstalled but the
+;{app} directory is not deleted because it has user files.  Then the application is installed into the
+; existing directory, user files are deleted, and the application is un-installed again.  Without the
+; directive below, {app} will not be deleted because Inno Setup did not create it during the previous
+; installation.
+Type: dirifempty; Name: "{app}"
 
