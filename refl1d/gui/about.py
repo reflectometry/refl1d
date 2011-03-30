@@ -23,7 +23,7 @@
 """
 This module contains a custom About Dialog class and associated text strings
 used for informational display purposes.  Note that the product version is
-maintained in the version.py file and thus imported here.
+maintained in the version.py file and therefore is imported here.
 """
 
 import os
@@ -44,9 +44,12 @@ PROG_ICON = "refl1d.ico"
 
 # Text strings used in About Dialog boxes and for other project identification
 # purposes.
+#
+# Note that paragraphs intended to be processed by wordwrap are formatted as
+# one string without newline characters.
 APP_NAME = "Refl1D"
 
-APP_TITLE = "Specular Reflectometry Modeler and Fitter"
+APP_TITLE = "Refl1D - Specular Reflectometry Modeler and Fitter"
 
 APP_COPYRIGHT = "(C) 2011 University of Maryland"
 
@@ -84,16 +87,22 @@ APP_CREDITS = """\
 This program was developed jointly by the University of Maryland (UMD) and \
 the National Institute of Standards and Technology (NIST) as part of the \
 Distributed Data Analysis of Neutron Scattering Experiments (DANSE) project \
-funded by the US National Science Foundation under grant DMR-0520547.
+funded by the US National Science Foundation under grant DMR-0520547. \
+Principal contributors:
 
 Paul Kienzle, NIST
-    - Application concept
-    - Application API
-    - Reflectivity and resolution calculation
+    - Application concept and design
+    - Application API and Command Line Interface development
+    - Reflectivity and resolution calculations
+    - Documentation
+
 James Krycka, UMD
-    - GUI development
+    - Graphical User Interface design and development
+    - Window's installer
+
 Nikunj Patel, UMD
-    - GUI development
+    - Graphical User Interface design and development
+
 Christopher Metting, UMD
     - Artwork
 """
@@ -104,9 +113,7 @@ APP_PROJECT_TAG = "DANSE/Reflectometry home page"
 APP_TUTORIAL_URL = "http://www.reflectometry.org/danse/packages.html"
 APP_TUTORIAL_TAG = "DANSE/Reflectometry documentation"
 APP_TUTORIAL = """\
-Note: the tutorial is not currently available.
-
-For a tutorial and other documentation on Refl1D, please visit:\
+For the Refl1D User's Guide and Reference Manual, please visit:\
 """
 
 #==============================================================================

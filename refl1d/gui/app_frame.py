@@ -146,8 +146,8 @@ class AppFrame(wx.Frame):
         _item = help_menu.Append(wx.ID_ANY, "&About",
                                             "Get description of application")
         self.Bind(wx.EVT_MENU, self.OnAbout, _item)
-        _item = help_menu.Append(wx.ID_ANY, "&Tutorial",
-                                            "Locate tutorial and documentation")
+        _item = help_menu.Append(wx.ID_ANY, "&Documentation",
+                                            "Get User's Guide and Reference Manual")
         self.Bind(wx.EVT_MENU, self.OnTutorial, _item)
         _item = help_menu.Append(wx.ID_ANY, "&License",
                                             "Read license and copyright notice")
