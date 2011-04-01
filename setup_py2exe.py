@@ -70,7 +70,7 @@ manifest_for_python25 = """
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
 <assemblyIdentity
-    version="0.64.1.0"
+    version="1.0.0.0"
     processorArchitecture="x86"
     name="%(prog)s"
     type="win32"
@@ -97,7 +97,7 @@ manifest_for_python26 = """
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
   <assemblyIdentity
-    version="0.5.0.0"
+    version="5.0.0.0"
     processorArchitecture="x86"
     name="%(prog)s"
     type="win32">
@@ -245,22 +245,22 @@ class Target():
         self.version = version
 
 clientCLI = Target(
-    name = 'refl1d',
-    description = 'Refl1D application',
+    name = 'Refl1D',
+    description = 'Refl1D CLI application',
     script = os.path.join('bin', 'refl1d'),  # module to run on application start
     dest_base = 'refl1d',  # file name part of the exe file to create
     icon_resources = [(1, os.path.join('bin', 'refl1d.ico'))],  # also need to specify in data_files
     bitmap_resources = [],
-    other_resources = [(24, 1, manifest)] )
+    other_resources = [(24, 1, manifest % dict(prog='Refl1D'))] )
 
 clientGUI = Target(
-    name = 'refl1d_gui',
+    name = 'Refl1D',
     description = 'Refl1D GUI application',
     script = os.path.join('bin', 'refl1d_gui'),  # module to run on application start
     dest_base = 'refl1d_gui',  # file name part of the exe file to create
     icon_resources = [(1, os.path.join('bin', 'refl1d.ico'))],  # also need to specify in data_files
     bitmap_resources = [],
-    other_resources = [(24, 1, manifest)] )
+    other_resources = [(24, 1, manifest % dict(prog='Refl1D'))] )
 
 # Now we do the work to create a standalone distribution using py2exe.
 #
