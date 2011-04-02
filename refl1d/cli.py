@@ -80,7 +80,7 @@ class DreamProxy(object):
             raise ValueError("Unknown population initializer '%s'"%self.pop_init)
         population = population[None,:,:]
         sampler = dream.Dream(model=self.dream_model, population=population,
-                              draws = pop_size*(self.steps+self.burn),
+                              draws = pop_size*self.steps,
                               burn = pop_size*self.burn)
 
         self.state = sampler.sample()
@@ -379,6 +379,8 @@ Options:
         batch mode; don't show plots after fit
     --stepmon
         show details for each step
+    --remote='url'
+        queue fit to run on remote server
 
     --resynth=0
         run resynthesis error analysis for n generations
