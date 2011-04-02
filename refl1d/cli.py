@@ -74,7 +74,7 @@ class DreamProxy(object):
             population = initpop.cov(N=pop_size,
                                      pars=pars, include_current=False, cov=cov)
         elif self.pop_init == 'lhs':
-            population = initpop.cov(N=pop_size,
+            population = initpop.lhs(N=pop_size,
                                      pars=pars, include_current=True)
         else:
             raise ValueError("Unknown population initializer '%s'"%self.pop_init)
