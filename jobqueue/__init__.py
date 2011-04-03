@@ -1,0 +1,1 @@
+from runjob import SERVICE

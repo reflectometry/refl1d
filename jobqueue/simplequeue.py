@@ -4,12 +4,12 @@ import Queue
 from multiprocessing import Process
 
 from . import runjob
+from .jobid import get_jobid
 
 class JobQueue(object):
     def __init__(self):
         self._lock = threading.Lock()
         self._nextjob = threading.Event()
-        self._next = 0
         self._jobs = []
         self._pending = []
         self._info = {}
@@ -53,8 +53,7 @@ class JobQueue(object):
         return result
     def submit(self, request):
         with self._lock:
-            id = self._next
-            self._next += 1
+            id = int(get_jobid())
             request['id'] = id
             self._jobs.append(id)
             self._info[id] = request

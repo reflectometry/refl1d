@@ -7,6 +7,7 @@ import os
 
 import shutil
 import subprocess
+import cPickle as pickle
 
 import numpy
 import pylab
@@ -22,6 +23,7 @@ from .mystic import parameter
 from .probe import Probe
 from . import garefl
 from . import initpop
+from . import __version__
 
 # ==== Fitters ====
 
@@ -172,12 +174,15 @@ def load_problem(args):
     elif filename.endswith('.staj'):
         options = []
         problem = FitProblem(load_mlayer(filename))
+    elif filename.endswith('.pickle'):
+        problem = pickle.load(filename)
     else:
         options = args[1:]
         problem = fitter.load_problem(filename, options=options)
 
     problem.file = filename
-    problem.title = os.path.basename(filename)
+    if not hasattr(problem,'title'):
+        problem.title = os.path.basename(filename)
     problem.name, _ = os.path.splitext(os.path.basename(filename))
     problem.options = options
     return problem
@@ -277,6 +282,28 @@ def run_profile(problem, steps):
     profile(map,problem.nllf,p)
     #map(problem.nllf,p)
 
+
+def start_remote_fit(problem, options, queue, notify):
+    """
+    Queue remote fit.
+    """
+    from jobqueue.client import connect
+
+    data = dict(package='refl1d',
+                version=__version__,
+                problem=pickle.dumps(problem),
+                options=pickle.dumps(options))
+    request = dict(service='fitter',
+                   version=__version__, # fitter service version
+                   notify=notify,
+                   description=problem.title,
+                   data=data)
+
+    server = connect(queue)
+    job = server.submit(request)
+    return job
+
+
 # ==== option parser ====
 
 class ParseOpts:
@@ -320,15 +347,17 @@ class FitOpts(ParseOpts):
     MINARGS = 1
     FLAGS = set(("preview", "check", "profile", "random", "simulate",
                  "worker", "batch", "overwrite", "parallel", "stepmon",
-                 "cov",
+                 "cov", "remote",
                  "multiprocessing-fork", # passed in when app is a frozen image
                ))
     VALUES = set(("plot", "store", "fit", "noise", "steps", "pop", "CR",
-                   "burn", "Tmin", "Tmax", "starts", "seed", "init", "pars",
-                   "resynth", "transport",
+                  "burn", "Tmin", "Tmax", "starts", "seed", "init", "pars",
+                  "resynth", "transport", "notify", "queue",
                   #"mesh","meshsteps",
                 ))
     pars=None
+    notify=""
+    queue="http://reflectometry.org:5000/"
     resynth="0"
     noise="5"
     starts="1"
@@ -377,13 +406,12 @@ Options:
         use amqp/multiprocessing/mpi for parallel evaluation
     --batch
         batch mode; don't show plots after fit
-    --stepmon
-        show details for each step
-    --remote='url'
+    --remote
         queue fit to run on remote server
-
-    --resynth=0
-        run resynthesis error analysis for n generations
+    --notify=user@email OR @twitterid
+        remote fit notification (twitter users must follow @reflfit)
+    --queue=http://reflectometry.org
+        remote job queue 
 
     --fit=de        [%(fitter)s]
         fitting engine to use; see manual for details
@@ -405,6 +433,11 @@ Options:
         population initialization method, with 'lhs' for latin hypersquares,
         'cov' for covariance, and 'random' for uniform within parameter
         distribution
+    --stepmon
+        show details for each step
+    --resynth=0
+        run resynthesis error analysis for n generations
+
 
     --check
         print the model description and chisq value and exit
@@ -528,6 +561,15 @@ def main():
             fid.write('\n')
         problem.restore_data()
         fid.close()
+
+    elif opts.remote:
+
+        # Check that problem runs before submitting it remotely
+        chisq = problem()
+        print "initial chisq:", chisq
+        job = start_remote_fit(problem, opts,
+                               queue=opts.queue, notify=opts.notify)
+        print "remote job:", job['id']
 
     else:
         make_store(problem,opts,exists_handler=store_overwrite_query)

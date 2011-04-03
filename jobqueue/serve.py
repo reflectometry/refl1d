@@ -51,7 +51,7 @@ def create_job(format='json'):
     Schedule a new job, return the job record.
     """
     id = job_server.submit(flask.request.json)
-    flash('Job %d scheduled' % id)
+    flash('Job %s scheduled' % id)
     result = job_server.info(id)
     #return redirect(url_for('show_job', id=id, format=format))
     return format_result(result, format=format, template='show_job.html')
@@ -146,9 +146,9 @@ def serve():
     import sys
 
     os.nice(10)
-    sys.path.insert(0,os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from jobqueue.simplequeue import JobQueue
     job_server = JobQueue()
+    import refl1d.fitservice # Registers 'fitter' service
 
     app.run()
 

@@ -35,7 +35,7 @@ class Connection(object):
         Raises ValueError if job not found.
         Raises IOError if communication error.
         """
-        response = self.rest.request_get('/jobs/%d.json'%id)
+        response = self.rest.request_get('/jobs/%s.json'%id)
         return _process_response(response)
 
     def output(self, id):
@@ -47,7 +47,7 @@ class Connection(object):
 
         Check result['status'] for 'COMPLETE','CANCEL','ERROR', etc.
         """
-        response = self.rest.request_get('/jobs/%d/result.json'%id)
+        response = self.rest.request_get('/jobs/%s/result.json'%id)
         return _process_response(response)
 
     def wait(self, id, pollrate=300, timeout=60*60*24):
@@ -65,9 +65,9 @@ class Connection(object):
         while True:
             result = self.output(id)
             if result['status'] == 'PENDING':
-                #print "waiting for job %d"%id
+                #print "waiting for job %s"%id
                 if time.clock() - start > timeout:
-                    raise IOError('job %d is still pending'%id)
+                    raise IOError('job %s is still pending'%id)
                 time.sleep(pollrate)
             else:
                 return result
@@ -79,7 +79,7 @@ class Connection(object):
         Raises ValueError if job not found.
         Raises IOError if communication error.
         """
-        response = self.rest.request_post('/jobs/%d?action=stop')
+        response = self.rest.request_post('/jobs/%s?action=stop'%id)
         return _process_response(response)
 
     def delete(self, id):
@@ -89,7 +89,7 @@ class Connection(object):
         Raises ValueError if job not found.
         Raises IOError if communication error.
         """
-        response = self.rest.request_delete('/jobs/%d.json'%id)
+        response = self.rest.request_delete('/jobs/%s.json'%id)
         return _process_response(response)
 
 def _process_response(response):

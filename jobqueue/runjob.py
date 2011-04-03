@@ -1,14 +1,15 @@
 import os
+import sys
 import shutil
 import json
 import traceback
 
-ROOT = '/tmp/serve/%d'
+ROOT = '/tmp/serve/%s'
 SERVICE = {}
 
 def count(request, path):
     total = 0
-    for i in range(request['count']):
+    for i in range(request['data']):
         total += 1
     return {'total': total}
 SERVICE['count'] = count
@@ -18,6 +19,8 @@ def run_one(id, request):
     path = ROOT%id
     try: os.makedirs(path)
     except: pass
+    sys.stdout = open(os.path.join(path,'stdout'),'w')
+    sys.stderr = open(os.path.join(path,'stderr'),'w')
     try:
         result = SERVICE[request['service']](request,path)
         result['status'] = 'COMPLETE'
