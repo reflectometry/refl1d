@@ -57,9 +57,14 @@ import time
 import wx
 
 from .about import APP_TITLE
-from .app_frame import AppFrame
 from .utilities import (get_appdir, get_datadir, get_rootdir,
                         get_rootdir_parent, log_time)
+
+# Defer import of AppFrame until after the splash screen has been displayed.
+# When running for the first time (where imported modules are not in cache),
+# importing AppFrame can take several seconds because it results in importing
+# matplotlib, numpy, and most application modules.
+### from .app_frame import AppFrame
 
 # Desired initial application frame size (if physical screen size permits).
 FRAME_WIDTH = 1200
@@ -78,7 +83,7 @@ LOGTIM = True if (len(sys.argv) > 1 and '--time' in sys.argv[1:]) else False
 
 #==============================================================================
 
-class ReflGUIApp(wx.App):
+class Refl1dGUIApp(wx.App):
     """
     This class builds the wxPython GUI for the Refl1D Reflectometry Modeler
     application.
@@ -112,8 +117,12 @@ class ReflGUIApp(wx.App):
         #print "frame pos and size =", pos, size
 
         # Create the application frame, but it will not be shown until the
-        # splash screen terminates.
+        # splash screen terminates.  Note that import of AppFrame is done here
+        # while the user is viewing the splash screen.
         if LOGTIM: log_time("Starting to build the GUI application")
+
+        from .app_frame import AppFrame
+
         self.frame = AppFrame(parent=None, title=APP_TITLE, pos=pos, size=size)
 
         # Declare the application frame to be the top window.
@@ -211,7 +220,7 @@ def main():
     if LOGTIM: log_time("Starting Refl1D")
 
     # Instantiate the application class and give control to wxPython.
-    app = ReflGUIApp(redirect=False, filename=None)
+    app = Refl1dGUIApp(redirect=False, filename=None)
 
     # For wx debugging, load the wxPython Widget Inspection Tool if requested.
     # It will cause a separate interactive debugger window to be displayed.
@@ -228,6 +237,6 @@ def main():
         for i, p in enumerate(sys.path):
             print "%5d  %s" %(i, p)
 
-    # Allow the user to interact with the application.
+    # Enter event loop which allows the user to interact with the application.
     if LOGTIM: log_time("Entering the event loop")
     app.MainLoop()
