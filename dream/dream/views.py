@@ -43,7 +43,8 @@ def plot_vars(state, vars=None, portion=None, selection=None, **kw):
     nw,nh = tile_axes(len(vars))
     for k,v in enumerate(vars):
         pylab.subplot(nw,nh,k+1)
-        _plot_var(points[:,k].flatten(), logp, label=state.labels[v], **kw)
+        _plot_var(points[:,k].flatten(), logp, label=state.labels[v],
+                  index=k, **kw)
 
 def tile_axes(n, size=None):
     """
@@ -76,7 +77,7 @@ def tile_axes(n, size=None):
     return nw,nh
 
 
-def _plot_var(points, logp, label="P", nbins=50, ci=0.95):
+def _plot_var(points, logp, index=None, label="P", nbins=50, ci=0.95):
     # Sort the data
     idx = numpy.argsort(points)
     points = points[idx]
@@ -118,15 +119,22 @@ def _plot_var(points, logp, label="P", nbins=50, ci=0.95):
     # Make sure numbers are formatted with the appropriate precision
     scale = 10**int(numpy.log10(rangeci[1]-rangeci[0])-2)
     def format(x): return "%g"%(numpy.round(x/scale)*scale)
-    statsbox = """\
-mean   = %s
-median = %s
-best   = %s
-68%% interval  = [%s %s]
-%g%% interval  = [%s %s]\
-"""%(format_uncertainty(mean,std), format(median), format(best),
-     format(range68[0]), format(range68[1]),
-     100*ci, format(rangeci[0]), format(rangeci[1]))
+    summary = dict(mean=format_uncertainty(mean,std),
+                   median=format(median),
+                   best=format(best),
+                   lo68=format(range68[0]),
+                   hi68=format(range68[1]),
+                   ci="%g%%"%(100*ci),
+                   loci=format(rangeci[0]),
+                   hici=format(rangeci[1]),
+                   parameter=label,
+                   index=index+1)
+
+    if index==0:
+        _var_header(ci=ci)
+    if index is not None:
+        stats_line = "%(index)2d %(parameter)20s %(mean)10s %(median)7s %(best)7s [%(lo68)7s %(hi68)7s] [%(loci)7s %(hici)7s]"%summary
+        print stats_line
 
     # Plot the histogram
     pylab.bar(bins[:-1], hist, width=bins[1]-bins[0])
@@ -144,6 +152,13 @@ best   = %s
     pylab.axvline(mean)
     pylab.axvline(best)
     if 0:
+        statsbox = """\
+mean   = %(mean)s
+median = %(median)s
+best   = %(best)s
+68%% interval  = [%(lo68)s %(hi68)s]
+%(ci)s interval  = [%(loci)s %(hici)s]\
+"""%stats
         pylab.text(0.01, 0.95, statsbox,
                    backgroundcolor=(1,1,0,0.2),
                    verticalalignment='top',
@@ -155,9 +170,15 @@ best   = %s
                    verticalalignment='top',
                    horizontalalignment='left',
                    transform=pylab.gca().transAxes)
-        print "Parameter",label
-        print statsbox
     pylab.xlabel(label)
+
+def _var_header(ci=0.95):
+    summary = dict(parameter="Parameter",
+                   mean="mean", median="median", best="best",
+                   interval68="68% interval",
+                   intervalci="%g%% interval"%(100*ci))
+    stats_line = "   %(parameter)20s %(mean)10s %(median)7s %(best)7s [%(interval68)15s] [%(intervalci)15s]"%summary
+    print stats_line
 
 
 def plot_corrmatrix(state, vars=None, portion=None, selection=None):
