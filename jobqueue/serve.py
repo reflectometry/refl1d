@@ -1,20 +1,29 @@
+import os
 import cPickle as pickle
 import flask
 from flask import redirect, url_for, flash
+from flask import send_from_directory
+from werkzeug import secure_filename
+
+from . import store
 
 app = flask.Flask(__name__)
+
 app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = 'secret'
+app.config['SCHEDULER'] = 'slurm'
+#app.config['SCHEDULER'] = 'direct'
 
 def format_result(result, format='json', template=None):
     """
     Return result as a particular format.
     """
+    #print "result",result
     if format == 'html':
         if template is None: flask.abort(400)
         return flask.render_template(template, **result)
     elif format == 'json':
-        return flask.jsonify(**result)
+        return flask.jsonify(**dict((str(k),v) for k,v in result.items()))
     elif format == 'pickle':
         return pickle.dumps(result)
     else:
@@ -28,7 +37,7 @@ def list_jobs(format='json'):
 
     Return a list of all job ids.
     """
-    result = dict(jobs=job_server.list_jobs())
+    result = dict(jobs=scheduler.jobs())
     return format_result(result, format, template='list_jobs.html')
 
 @app.route('/jobs/<any(u"pending",u"active",u"error",u"complete"):status>.<format>',
@@ -39,7 +48,7 @@ def filter_jobs(status, format='json'):
 
     Return all jobs with a particular status.
     """
-    result = dict(jobs=job_server.list_jobs(status=str(status).upper()))
+    result = dict(jobs=scheduler.jobs(status=str(status).upper()))
     return format_result(result, format, template='list_jobs.html')
 
 
@@ -50,9 +59,10 @@ def create_job(format='json'):
 
     Schedule a new job, return the job record.
     """
-    id = job_server.submit(flask.request.json)
+    id = scheduler.submit(flask.request.json)
     flash('Job %s scheduled' % id)
-    result = job_server.info(id)
+    result = scheduler.info(id)
+    result['jobid'] = id
     #return redirect(url_for('show_job', id=id, format=format))
     return format_result(result, format=format, template='show_job.html')
 
@@ -63,7 +73,8 @@ def show_job(id, format='json'):
 
     Get job record by id.
     """
-    result = job_server.info(id)
+    result = scheduler.info(id)
+    result['jobid'] = id
     return format_result(result, format=format, template='show_job.html')
 
 @app.route('/jobs/<int:id>/result.<format>', methods=['GET'])
@@ -74,12 +85,13 @@ def get_results(id, format='json'):
     Get job results by id.
 
     Returns { status: 'PENDING|ACTIVE|COMPLETE|ERROR|UNKNOWN' }
-    If status is 'ERROR', then results['trace'] is the traceback.
-    If status is 'COMPLETE', then result will contain the results
+    If status is 'ERROR', then retval['trace'] is the traceback.
+    If status is 'COMPLETE', then retval['result'] will contain the results
     of the job, which vary depending on the service requested.
     """
-    result = job_server.results(id)
-    print "returning result",result
+    result = scheduler.results(id)
+    result['jobid'] = id
+    #print "returning result",result
     return format_result(result, format=format)
 
 @app.route('/jobs/<int:id>/status.<format>', methods=['GET'])
@@ -91,7 +103,8 @@ def get_status(id, format='json'):
 
     Returns { status: 'PENDING|ACTIVE|COMPLETE|ERROR|UNKNOWN' }
     """
-    result = job_server.status(id)
+    result = { 'status': scheduler.status(id) }
+    result['jobid'] = id
     return format_result(result, format=format)
 
 
@@ -102,11 +115,51 @@ def delete_job(id, format='json'):
 
     Deletes a job, returning the list of remaining jobs as <format>
     """
-    job_server.delete(id)
+    scheduler.delete(id)
     flash('Job %s deleted' % id)
-    result = dict(jobs=job_server.list_jobs())
+    result = dict(jobs=scheduler.jobs())
     return format_result(result, format=format, template="list_jobs.html")
     #return redirect(url_for('list_jobs', id=id, format=format))
+
+@app.route('/jobs/nextjob.<format>', methods=['POST'])
+def fetch_work(format='json'):
+    preference = flask.request.json
+    request = sheduler.nextjob(preference)
+    return format_result(result, format=format)
+
+@app.route('/jobs/<int:id>/data/index.<format>')
+def listfiles(id, format):
+    try:
+        path = store.path(id)
+        files = sorted(os.listdir(path))
+        finfo = [(f,os.path.getsize(os.path.join(path,f)))
+                 for f in files if os.path.isfile(os.path.join(path,f))]
+    except:
+        finfo = []
+    result = { 'files': finfo }
+    result['jobid'] = id
+    return format_result(result, format=format, template="index.html")
+
+@app.route('/jobs/<int:id>/data/', methods=['GET','POST'])
+def putfile(id):
+    if flask.request.method=='POST':
+        print "warning: XSS attacks possible if stored file is mimetype html"
+        file = flask.request.files['file']
+        if file:
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(store.path(id), filename))
+    return redirect(url_for('getfile',id=id,filename='index.html'))
+
+@app.route('/jobs/<int:id>/data/<filename>')
+def getfile(id, filename):
+    as_attachment = filename.endswith('.htm') or filename.endswith('.html')
+    if filename.endswith('.json'):
+        mimetype = "application/json"
+    else:
+        mimetype = None
+
+    return send_from_directory(store.path(id), filename,
+                               mimetype=mimetype, as_attachment=as_attachment)
 
 #@app.route('/jobs/<int:id>.<format>', methods=['PUT'])
 #def update_job(id, format='.json'):
@@ -140,16 +193,21 @@ def delete_job(id, format='json'):
 #    return render_template('edit_book.html', book=book)
 
 
+def init_scheduler(conf):
+    if conf == 'slurm':
+        from slurm import Scheduler
+    elif conf == 'direct':
+        from simplequeue import Scheduler
+    else:
+        raise ValueError("unknown scheduler %s"%conf)
+    return Scheduler()
+
 def serve():
-    global job_server
+    global scheduler
     import os
-    import sys
 
-    os.nice(10)
-    from jobqueue.simplequeue import JobQueue
-    job_server = JobQueue()
-    import refl1d.fitservice # Registers 'fitter' service
-
+    os.nice(19)
+    scheduler = init_scheduler(app.config['SCHEDULER'])
     app.run()
 
 if __name__ == '__main__': serve()

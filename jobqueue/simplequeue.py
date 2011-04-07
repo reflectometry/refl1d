@@ -3,10 +3,9 @@ import threading
 import Queue
 from multiprocessing import Process
 
-from . import runjob
-from .jobid import get_jobid
+from . import runjob, jobid, store
 
-class JobQueue(object):
+class Scheduler(object):
     def __init__(self):
         self._lock = threading.Lock()
         self._nextjob = threading.Event()
@@ -15,11 +14,10 @@ class JobQueue(object):
         self._info = {}
         self._status = {}
         self._result = {}
-        self._jobmonitor = threading.Thread(target=self.run_queue)
+        self._jobmonitor = threading.Thread(target=self._run_queue)
         self._jobmonitor.start()
         self._current_id = None
-        self._pending_cleanup = Queue.Queue()
-    def run_queue(self):
+    def _run_queue(self):
         while True:
             self._nextjob.wait()
             with self._lock:
@@ -30,21 +28,16 @@ class JobQueue(object):
                 self._status[self._current_id] = 'ACTIVE'
                 request = self._info[self._current_id]
                 self._stopping = None
-                self._current_process = Process(target=runjob.run_one,
+                self._current_process = Process(target=runjob.run,
                                                 args=(self._current_id,request))
             self._current_process.start()
             self._current_process.join()
-            result = runjob.fetch_result(self._current_id)
+            result = runjob.results(self._current_id)
             with self._lock:
                 self._result[self._current_id] = result
                 self._status[self._current_id] = result['status']
 
-            # Process directory cleanup in the work thread
-            while not self._pending_cleanup.empty():
-                id = self._pending_cleanup.get()
-                runjob.clean_result(id)
-
-    def list_jobs(self, status=None):
+    def jobs(self, status=None):
         with self._lock:
             if status is None:
                 result = self._jobs[:]
@@ -53,7 +46,9 @@ class JobQueue(object):
         return result
     def submit(self, request):
         with self._lock:
-            id = int(get_jobid())
+            id = int(jobid.get_jobid())
+            store.create(id)
+            store.put(id,'request',request)
             request['id'] = id
             self._jobs.append(id)
             self._info[id] = request
@@ -71,7 +66,7 @@ class JobQueue(object):
     def info(self, id):
         with self._lock:
             return self._info[id]
-    def stop(self, id):
+    def cancel(self, id):
         with self._lock:
             try: self._pending.remove(id)
             except ValueError: pass
@@ -80,11 +75,11 @@ class JobQueue(object):
                 self._current_process.terminate()
             self._status[id] = 'CANCEL'
     def delete(self, id):
-        self.stop(id)
+        self.cancel(id)
         with self._lock:
             try: self._jobs.remove(id)
             except ValueError: pass
             self._info.pop(id, None)
             self._result.pop(id, None)
             self._status.pop(id, None)
-            self._pending_cleanup.put(id)
+        store.destroy(id)

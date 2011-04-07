@@ -1,47 +1,49 @@
 import os
 import sys
-import shutil
-import json
 import traceback
 
-ROOT = '/tmp/serve/%s'
+from . import store
+
 SERVICE = {}
 
 def count(request, path):
     total = 0
     for i in range(request['data']):
         total += 1
-    return {'total': total}
+    return total
 SERVICE['count'] = count
 
+def build_command(id, request):
+    path = store.path(id)
+    script = """
+import os
+from jobqueue import runjob, store
+#import sys; print "\\n".join(sys.path)
+import refl1d.fitservice # Ack! Improper service registration
+id = %s
+request = store.get(id,"request")
+runjob.run(id, request)
+"""%id
+    scriptfile = os.path.join(path,'J%s.py'%id)
+    open(scriptfile,'w').write(script)
+    return sys.executable+" "+scriptfile
 
-def run_one(id, request):
-    path = ROOT%id
-    try: os.makedirs(path)
-    except: pass
-    sys.stdout = open(os.path.join(path,'stdout'),'w')
-    sys.stderr = open(os.path.join(path,'stderr'),'w')
+def run(id, request):
+    path = store.path(id)
+    sys.stdout = open(os.path.join(path,'stdout.txt'),'w')
+    sys.stderr = open(os.path.join(path,'stderr.txt'),'w')
     try:
-        result = SERVICE[request['service']](request,path)
-        result['status'] = 'COMPLETE'
+        val = SERVICE[request['service']](request, path)
+        result = {
+            'status': 'COMPLETE',
+            'result': val,
+            }
     except:
         result = {
             'status': 'ERROR',
             'trace': traceback.format_exc(),
           }
-    open(os.path.join(path,'result'),'w').write(json.dumps(result))
+    store.put(id,'results', result)
 
-def fetch_result(id):
-    try:
-        result = json.loads(open(os.path.join(ROOT%id,'result'),'r').read())
-        # Remove top level unicode from json converter
-        result = dict((str(k),v) for k,v in result.items())
-    except:
-        result = {
-            'status': 'ERROR',
-            'trace': traceback.format_exc(),
-            }
-    return result
-
-def clean_result(id):
-    shutil.rmtree(ROOT%id)
+def results(id):
+    return store.get(id,'results')

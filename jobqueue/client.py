@@ -64,7 +64,7 @@ class Connection(object):
         start = time.clock()
         while True:
             result = self.output(id)
-            if result['status'] == 'PENDING':
+            if result['status'] in ('PENDING', 'ACTIVE'):
                 #print "waiting for job %s"%id
                 if time.clock() - start > timeout:
                     raise IOError('job %s is still pending'%id)
