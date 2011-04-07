@@ -102,6 +102,7 @@ class DreamProxy(object):
         self.state.show(figfile=output_path)
         P = self.dream_model.problem
         pylab.figure(6)
+        pylab.hold(False)
         pylab.suptitle(":".join((P.store,P.title)))
         P.plot(figfile=output_path)
 
@@ -233,7 +234,7 @@ def make_store(problem, opts, exists_handler):
     # Check if already exists
     if not opts.overwrite and os.path.exists(problem.output_path+'.out'):
         if opts.batch:
-            print >>sys.stderr, path+" already exists.  Use --overwrite to replace."
+            print >>sys.stderr, problem.store+" already exists.  Use --overwrite to replace."
             sys.exit(1)
         exists_handler(problem.output_path)
 
@@ -411,7 +412,7 @@ Options:
     --notify=user@email OR @twitterid
         remote fit notification (twitter users must follow @reflfit)
     --queue=http://reflectometry.org
-        remote job queue 
+        remote job queue
 
     --fit=de        [%(fitter)s]
         fitting engine to use; see manual for details
