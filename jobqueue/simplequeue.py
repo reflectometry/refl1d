@@ -44,7 +44,7 @@ class Scheduler(object):
             else:
                 result = [j for j in self._jobs if self._status[j] == status]
         return result
-    def submit(self, request):
+    def submit(self, request, origin):
         with self._lock:
             id = int(jobid.get_jobid())
             store.create(id)

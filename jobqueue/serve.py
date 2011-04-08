@@ -59,7 +59,8 @@ def create_job(format='json'):
 
     Schedule a new job, return the job record.
     """
-    id = scheduler.submit(flask.request.json)
+    id = scheduler.submit(flask.request.json,
+                          origin=flask.request.remote_addr)
     flash('Job %s scheduled' % id)
     result = scheduler.info(id)
     result['jobid'] = id

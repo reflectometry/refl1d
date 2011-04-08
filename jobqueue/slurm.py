@@ -51,7 +51,7 @@ class Scheduler(object):
         pass
 
     # Job specific commands
-    def submit(self, request):
+    def submit(self, request, origin):
         """
         Put a command on batch queue, returning its job id.
         """
