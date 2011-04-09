@@ -38,6 +38,16 @@ class Connection(object):
         response = self.rest.request_get('/jobs/%s.json'%id)
         return _process_response(response)
 
+    def status(self, id):
+        """
+        Return the job structure associated with id.
+
+        Raises ValueError if job not found.
+        Raises IOError if communication error.
+        """
+        response = self.rest.request_get('/jobs/%s/status.json'%id)
+        return _process_response(response)
+
     def output(self, id):
         """
         Return the result from processing the job.
@@ -91,6 +101,25 @@ class Connection(object):
         """
         response = self.rest.request_delete('/jobs/%s.json'%id)
         return _process_response(response)
+
+    def nextjob(self, queue):
+        # TODO: sign request
+        response = self.rest.request_post('/jobs/nextjob.json',
+                                          body={'queue': queue})
+        return _process_response(response)
+
+    def postjob(self, id, queue, result):
+        # TODO: sign request
+        response = self.rest.request_post('/jobs/%s/postjob'%id,
+                                          body={'queue': queue,
+                                                'result':result})
+        return _process_response(response)
+
+    def putfiles(self, id, queue, files):
+        # TODO: sign request
+        response = self.rest.request_post('/jobs/%s/postjob'%id,
+                                          body={'queue': queue},
+                                          files=files)
 
 def _process_response(response):
     #print "response",response

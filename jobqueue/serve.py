@@ -11,8 +11,9 @@ app = flask.Flask(__name__)
 
 app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = 'secret'
-app.config['SCHEDULER'] = 'slurm'
+#app.config['SCHEDULER'] = 'slurm'
 #app.config['SCHEDULER'] = 'direct'
+app.config['SCHEDULER'] = 'dispatch'
 
 def format_result(result, format='json', template=None):
     """
@@ -124,9 +125,17 @@ def delete_job(id, format='json'):
 
 @app.route('/jobs/nextjob.<format>', methods=['POST'])
 def fetch_work(format='json'):
+    # TODO: verify signature
     preference = flask.request.json
     request = sheduler.nextjob(preference)
     return format_result(result, format=format)
+
+@app.route('/jobs/<int::id>/postresult', methods=['POST'])
+def return_work(format='json'):
+    # TODO: verify signature
+    sheduler.postjob(id, flask.request.json)
+    return None
+
 
 @app.route('/jobs/<int:id>/data/index.<format>')
 def listfiles(id, format):
@@ -144,6 +153,7 @@ def listfiles(id, format):
 @app.route('/jobs/<int:id>/data/', methods=['GET','POST'])
 def putfile(id):
     if flask.request.method=='POST':
+        # TODO: verify signature
         print "warning: XSS attacks possible if stored file is mimetype html"
         file = flask.request.files['file']
         if file:
@@ -199,6 +209,8 @@ def init_scheduler(conf):
         from slurm import Scheduler
     elif conf == 'direct':
         from simplequeue import Scheduler
+    elif conf == 'dispatch':
+        from dispatchqueue import Scheduler
     else:
         raise ValueError("unknown scheduler %s"%conf)
     return Scheduler()
