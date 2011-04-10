@@ -126,9 +126,9 @@ def delete_job(id, format='json'):
 @app.route('/jobs/nextjob.<format>', methods=['POST'])
 def fetch_work(format='json'):
     # TODO: verify signature
-    preference = flask.request.json
-    request = sheduler.nextjob(preference)
-    return format_result(result, format=format)
+    request = flask.request.json
+    job = sheduler.nextjob(queue=job['queue'])
+    return format_result(job, format=format)
 
 @app.route('/jobs/<int::id>/postresult', methods=['POST'])
 def return_work(format='json'):

@@ -5,7 +5,7 @@ TWITTER_KEYS = '~/.ssh/twitter'
 EMAIL_SERVER = 'localhost'
 EMAIL_SENDER = 'reflfit@reflectometry.org'
 
-def notify(user, msg, body, level=1):
+def notify(user, msg, body="No body", level=1):
     """
     Send a notfication message to the user regarding the job status.
     """
@@ -14,8 +14,10 @@ def notify(user, msg, body, level=1):
         pass
     elif user.startswith('@'):
         tweet(user, msg)
-    else:
+    elif '@' in user:
         email(EMAIL_SENDER, [user], body, subject=msg, server=EMAIL_SERVER)
+    else:
+        print user, ":", msg
 
 twitter = None
 def tweet(user, msg):
