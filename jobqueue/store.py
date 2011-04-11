@@ -2,7 +2,7 @@ import os
 import json
 import shutil
 
-ROOT = '/tmp/serve/%s'
+ROOT = '/tmp/server/%s'
 
 def path(id):
     return ROOT%id

@@ -19,7 +19,7 @@ def connect():
     Session.configure(bind=engine)
 
 # Job status enum
-STATUS = ['PENDING','ACTIVE','CANCEL','COMPLETE','ERROR']
+STATUS = ['PENDING','ACTIVE','CANCEL','COMPLETE','ERROR','DELETE']
 
 class Job(Record):
     """

@@ -136,6 +136,13 @@ class Connection:
             else:
                 request_path.append(path)
 
-        resp, content = self.h.request(u"%s://%s%s" % (self.scheme, self.host, u'/'.join(request_path)), method.upper(), body=body, headers=headers )
+        server = u"%s://%s"%(self.scheme, self.host)
+        uri = server + u'/'.join(request_path)
+        try:
+            resp, content = self.h.request(uri, method.upper(), 
+                                           body=body, headers=headers)
+        except AttributeError:
+            #raise IOError("Could not open connection to "+str(server))
+            raise
         # TODO trust the return encoding type in the decode?
         return {u'headers':resp, u'body':content.decode('UTF-8')}

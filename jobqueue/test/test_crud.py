@@ -1,22 +1,32 @@
 import sys; sys.path.append('../..')
-
 from jobqueue.client import connect
+
+DEBUG = True
 
 server = connect('http://localhost:5000')
 
-print "list",server.joblist()
-job = server.submit({'service':'count','data':1000000})
+def checkqueue(pending=[], active=[], complete=[]):
+    qpending = server.jobs('PENDING')
+    qactive = server.jobs('ACTIVE')
+    qcomplete = server.jobs('COMPLETE')
+    if DEBUG: print "pending",qpending,"active",qactive,"complete",qcomplete
+    #assert pending == qpending
+    #assert active == qactive
+    #assert complete == qcomplete
+
+long = {'service':'count','data':1000000,
+        'name':'long count','notify':'me'}
+short = {'service':'count','data':200,
+        'name':'short count','notify':'me'}
+
+job = server.submit(long)
 print "submit",job
-print "list",server.joblist()
-print "pending",server.joblist(status='PENDING')
-print "active",server.joblist(status='ACTIVE')
-print "complete",server.joblist(status='COMPLETE')
-job2 = server.submit({'service':'count','data':200})
+checkqueue()
+job2 = server.submit(short)
 print "submit",job2
-result = server.wait(job['id'],pollrate=10)
+result = server.wait(job['id'], pollrate=10, timeout=120)
 print "result",result
-print "pending",server.joblist(status='PENDING')
-print "complete",server.joblist(status='COMPLETE')
+checkqueue()
 print "fetch",server.info(job['id'])
 print "delete",server.delete(job['id'])
-print "list",server.joblist()
+checkqueue()

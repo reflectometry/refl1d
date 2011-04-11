@@ -7,8 +7,8 @@ from sqlalchemy import and_, or_, not_, func, select, alias
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 
-from . import runjob, jobid, store, db, notify
-from db import Job, ActiveJob
+from jobqueue import runjob, jobid, store, db, notify
+from jobqueue.db import Job, ActiveJob
 
 class Scheduler(object):
     def __init__(self):
@@ -48,10 +48,14 @@ class Scheduler(object):
         return self.session.query(Job).filter(Job.id==id).first()
 
     def results(self, id):
+        job = self._getjob(id)
         try:
             return runjob.results(id)
         except KeyError:
-            return { 'status': 'UNKNOWN' }
+            if job:
+                return { 'status': job.status }
+            else:
+                return { 'status': 'UNKNOWN' }
 
     def status(self, id):
         job = self._getjob(id)
@@ -59,7 +63,6 @@ class Scheduler(object):
 
     def info(self,id):
         request = store.get(id,'request')
-        request['id'] = id
         return request
 
     def cancel(self, id):
@@ -102,7 +105,7 @@ class Scheduler(object):
                 job = self.session.query(Job).filter(Job.id==min_id).one()
                 #print job.id, job.name, job.status, job.date, job.start, job.priority
             except NoResultFound:
-                return None
+                return {'request': None}
 
             # Mark the job as active and record it in the active queue
             (self.session.query(Job)
@@ -132,16 +135,17 @@ class Scheduler(object):
             raise IOError('dispatch could not assign job %s'%job.id)
 
         request = store.get(job.id,'request')
-        request['id'] = job.id
         # No reason to include time; email or twitter does that better than
         # we can without client locale information.
         notify.notify(user=job.notify,
                       msg=job.name+" started",
                       level=1)
-        return request
+        return { 'id': job.id, 'request': request }
 
     def postjob(self, id, result):
         # TODO: redundancy check,
+        
+        # Update db
         (self.session.query(Job)
             .filter(Job.id == id)
             .update({'status': result['status'],
@@ -152,7 +156,11 @@ class Scheduler(object):
             .filter(ActiveJob.jobid == id)
             .delete())
         self.session.commit()
+        
+        # Save results
         store.put(id,'result',result)
+        
+        # Post notification
         job = self._getjob(id)
         if job.status == 'COMPLETE':
             if 'value' in result:
