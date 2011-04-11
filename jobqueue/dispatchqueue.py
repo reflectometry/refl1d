@@ -10,7 +10,6 @@ from sqlalchemy.orm.exc import NoResultFound
 from . import runjob, jobid, store, db, notify
 from db import Job, ActiveJob
 
-
 class Scheduler(object):
     def __init__(self):
         db.connect()
@@ -122,7 +121,7 @@ class Scheduler(object):
             # that is doing the transaction gets killed in the middle then
             # the database will be clever enough to roll back, otherwise
             # we will never get out of this loop.
-            try:
+            try: 
                 self.session.commit()
             except IntegrityError:
                 self.session.rollback()
@@ -134,9 +133,10 @@ class Scheduler(object):
 
         request = store.get(job.id,'request')
         request['id'] = job.id
+        # No reason to include time; email or twitter does that better than
+        # we can without client locale information.
         notify.notify(user=job.notify,
-                      msg=("Job %s started on %s at %s"
-                           % (job.name,queue,job.start)),
+                      msg=job.name+" started",
                       level=1)
         return request
 
@@ -154,7 +154,20 @@ class Scheduler(object):
         self.session.commit()
         store.put(id,'result',result)
         job = self._getjob(id)
+        if job.status == 'COMPLETE':
+            if 'value' in result:
+                status_msg = " ended with %s"%result['value']
+            else:
+                status_msg = " complete"
+        elif job.status == 'ERROR':
+            status_msg = " failed"
+        elif job.status == 'CANCEL':
+            status_msg = " cancelled"
+        else:
+            status_msg = " with status "+job.status
+        # Note: no reason to include time; twitter or email will give it
+        # Plus, doing time correctly requires knowing the locale of the
+        # receiving client.
         notify.notify(user=job.notify,
-                      msg=("Job %s status=%s at %s"
-                           % (job.name,job.status,job.stop)),
+                      msg=job.name+status_msg,
                       level=2)

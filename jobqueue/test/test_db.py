@@ -4,7 +4,7 @@ import time
 from jobqueue import dispatchqueue, db, store, notify
 
 db.DEBUG = False
-DEBUG = True
+DEBUG = False
 
 path = os.path.abspath(os.path.dirname(__file__))
 URI = "sqlite:///%s/test.db"%path
@@ -96,5 +96,5 @@ def test(uri=URI):
     checkqueue([2],[3],[1])
 
 if __name__ == "__main__": 
-    #test()
-    checkspeed()
+    test()
+    #checkspeed()

@@ -59,6 +59,15 @@ def create_job(format='json'):
     POST /jobs.<format>
 
     Schedule a new job, return the job record.
+
+    The POST data must contain::
+    
+        { 'service': '<name of service>',
+          'version': '<service version>',
+    
+        service: name of the service
+        
+    (new Date()).getTimezoneOffset()
     """
     id = scheduler.submit(flask.request.json,
                           origin=flask.request.remote_addr)

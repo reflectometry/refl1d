@@ -51,12 +51,12 @@ class Job(Record):
     id = Column(Integer, Sequence('jobid_seq'), primary_key=True)
     name = Column(String(80))
     origin = Column(String(45)) # <netinet/in.h> #define INET6_ADDRSTRLEN 46
-    date = Column(DateTime, default=datetime.utcnow)
+    date = Column(DateTime, default=datetime.utcnow, index=True)
     start = Column(DateTime)
     stop = Column(DateTime)
-    priority = Column(Float)
+    priority = Column(Float, index=True)
     notify = Column(String(254)) # RFC 3696 errata 1690: max email=254
-    status = Column(Enum(*STATUS, name="status_enum"))
+    status = Column(Enum(*STATUS, name="status_enum"), index=True)
 
     def __init__(self, name, origin, notify, priority):
         self.status = 'PENDING'
