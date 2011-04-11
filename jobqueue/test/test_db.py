@@ -1,7 +1,7 @@
 import os
 import time
 
-from jobqueue import dispatchqueue, db, store, notify
+from jobqueue import dispatcher, db, store, notify
 
 db.DEBUG = False
 DEBUG = False
@@ -17,7 +17,7 @@ def setupdb(uri):
         except:
             print "could not unlink",uri[10:]
             pass
-    queue = dispatchqueue.Scheduler()
+    queue = dispatcher.Scheduler()
     return queue
 
 def checkspeed(uri=URI):
@@ -60,7 +60,7 @@ def test(uri=URI):
     checkqueue([],[],[])
     request = queue.nextjob(queue='cue')
     if DEBUG: print "nextjob",request
-    assert request is None
+    assert request['request'] is None
 
     #jobs = queue.jobs()
     #print "initially empty job list", jobs
@@ -83,13 +83,13 @@ def test(uri=URI):
     
     request = queue.nextjob(queue='cue')
     if DEBUG: print "nextjob",request
-    assert request['name'] == test1['name']
+    assert request['request']['name'] == test1['name']
     checkqueue([2],[1],[])
     
     job2 = queue.submit(test3, origin="there")
     request = queue.nextjob(queue='cue')
     if DEBUG: print "nextjob",request
-    assert request['name'] == test3['name']
+    assert request['request']['name'] == test3['name']
     checkqueue([2],[1,3],[])
     
     queue.postjob(1, {'status': 'COMPLETE', 'result': 0})
