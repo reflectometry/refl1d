@@ -2,7 +2,6 @@ import os
 import sys
 import cPickle as pickle
 
-import jobqueue
 import matplotlib
 matplotlib.use('Agg')
 
@@ -13,7 +12,9 @@ from . import __version__
 # This should be true in cli.py as well
 from .mapper import MPMapper as mapper
 
-def fitservice(request, path):
+def fitservice(request):
+
+    path = os.getcwd()
 
     service_version = __version__
     request_version = str(request['version'])
@@ -33,6 +34,7 @@ def fitservice(request, path):
                          % (model, service_model_version, request_model_version))
     options = pickle.loads(str(data['options']))
     problem = pickle.loads(str(data['problem']))
+    problem.store = path
     problem.output_path = os.path.join(path,'model')
 
     if options.fit == 'dream':
@@ -48,7 +50,3 @@ def fitservice(request, path):
     cli.remember_best(fitter, problem, best)
     matplotlib.pyplot.show()
     return list(best), fbest
-
-
-jobqueue.SERVICE['fitter'] = fitservice
-

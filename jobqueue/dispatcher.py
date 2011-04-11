@@ -69,7 +69,7 @@ class Scheduler(object):
         (self.session.query(Job)
              .filter(Job.id==id)
              .filter(Job.status.in_('ACTIVE','PENDING'))
-             .update({ 'status': 'CANCEL' }) 
+             .update({ 'status': 'CANCEL' })
              )
         self.session.commit()
 
@@ -91,7 +91,7 @@ class Scheduler(object):
         order of submissions.
         """
 
-        # Define a query which returns the lowest job id of the pending jobs 
+        # Define a query which returns the lowest job id of the pending jobs
         # with the minimum priority
         _priority = select([func.min(Job.priority)],
                            Job.status=='PENDING')
@@ -115,7 +115,7 @@ class Scheduler(object):
                       }))
             activejob = db.ActiveJob(jobid=job.id, queue=queue)
             self.session.add(activejob)
-            
+
             # If the job was already taken, roll back and try again.  The
             # first process to record the job in the active list wins, and
             # will change the job status from PENDING to ACTIVE.  Since the
@@ -124,7 +124,7 @@ class Scheduler(object):
             # that is doing the transaction gets killed in the middle then
             # the database will be clever enough to roll back, otherwise
             # we will never get out of this loop.
-            try: 
+            try:
                 self.session.commit()
             except IntegrityError:
                 self.session.rollback()
@@ -142,13 +142,15 @@ class Scheduler(object):
                       level=1)
         return { 'id': job.id, 'request': request }
 
-    def postjob(self, id, result):
-        # TODO: redundancy check,
-        
+    def postjob(self, id, request):
+        # TODO: redundancy check, confirm queue, check sig, etc.
+
+        print "postjob recv'd",request
+        results = request['results']
         # Update db
         (self.session.query(Job)
             .filter(Job.id == id)
-            .update({'status': result['status'],
+            .update({'status': results.get('status','ERROR'),
                      'stop': datetime.utcnow(),
                      })
             )
@@ -156,15 +158,16 @@ class Scheduler(object):
             .filter(ActiveJob.jobid == id)
             .delete())
         self.session.commit()
-        
-        # Save results
-        store.put(id,'result',result)
-        
+
+        # Save results; note that they may have already been copied in
+        # the simple glob copy from the server
+        store.put(id,'results',results)
+
         # Post notification
         job = self._getjob(id)
         if job.status == 'COMPLETE':
-            if 'value' in result:
-                status_msg = " ended with %s"%result['value']
+            if 'value' in results:
+                status_msg = " ended with %s"%results['value']
             else:
                 status_msg = " complete"
         elif job.status == 'ERROR':

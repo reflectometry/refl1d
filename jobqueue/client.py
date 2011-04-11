@@ -55,9 +55,9 @@ class Connection(object):
         Raises ValueError if job not found.
         Raises IOError if communication error.
 
-        Check result['status'] for 'COMPLETE','CANCEL','ERROR', etc.
+        Check response['status'] for 'COMPLETE','CANCEL','ERROR', etc.
         """
-        response = self.rest.request_get('/jobs/%s/result.json'%id)
+        response = self.rest.request_get('/jobs/%s/results.json'%id)
         return _process_response(response)
 
     def wait(self, id, pollrate=300, timeout=60*60*24):
@@ -73,15 +73,16 @@ class Connection(object):
         """
         start = time.clock()
         while True:
-            result = self.output(id)
-            if result['status'] in ('PENDING', 'ACTIVE'):
+            results = self.output(id)
+            print "waiting: result is",results
+            if results['status'] in ('PENDING', 'ACTIVE'):
                 #print "waiting for job %s"%id
                 if time.clock() - start > timeout:
                     raise IOError('job %s is still pending'%id)
                 time.sleep(pollrate)
             else:
-                print "status for %s is"%id,result['status'],'- wait complete'
-                return result
+                #print "status for %s is"%id,results['status'],'- wait complete'
+                return results
 
     def stop(self, id):
         """
@@ -111,9 +112,9 @@ class Connection(object):
                                           body=data)
         return _process_response(response)
 
-    def postjob(self, id, queue, result):
+    def postjob(self, id, queue, results):
         # TODO: sign request
-        data = json.dumps({'queue': queue, 'result': result})
+        data = json.dumps({'queue': queue, 'results': results})
         response = self.rest.request_post('/jobs/%s/postjob'%id,
                                           headers=dict([json_content]),
                                           body=data)
@@ -122,11 +123,10 @@ class Connection(object):
     def putfiles(self, id, queue, files):
         # TODO: sign request
         data = json.dumps({'queue': queue})
-        for f in files:
-            response = self.rest.request_post('/jobs/%s/postjob'%id,
-                                              headers=dict([json_content]),
-                                              body=data,
-                                              filename=f)
+        response = self.rest.request_post('/jobs/%s/data/'%id,
+                                          headers=dict([json_content]),
+                                          body=data,
+                                          files=files)
 
 def _process_response(response):
     #print "response",response

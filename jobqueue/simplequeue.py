@@ -13,7 +13,7 @@ class Scheduler(object):
         self._pending = []
         self._info = {}
         self._status = {}
-        self._result = {}
+        self._results = {}
         self._jobmonitor = threading.Thread(target=self._run_queue)
         self._jobmonitor.start()
         self._current_id = None
@@ -32,18 +32,18 @@ class Scheduler(object):
                                                 args=(self._current_id,request))
             self._current_process.start()
             self._current_process.join()
-            result = runjob.results(self._current_id)
+            results = runjob.results(self._current_id)
             with self._lock:
-                self._result[self._current_id] = result
-                self._status[self._current_id] = result['status']
+                self._results[self._current_id] = results
+                self._status[self._current_id] = results['status']
 
     def jobs(self, status=None):
         with self._lock:
             if status is None:
-                result = self._jobs[:]
+                response = self._jobs[:]
             else:
-                result = [j for j in self._jobs if self._status[j] == status]
-        return result
+                response = [j for j in self._jobs if self._status[j] == status]
+        return response
     def submit(self, request, origin):
         with self._lock:
             id = int(jobid.get_jobid())
@@ -53,13 +53,13 @@ class Scheduler(object):
             self._jobs.append(id)
             self._info[id] = request
             self._status[id] = 'PENDING'
-            self._result[id] = {'status':'PENDING'}
+            self._results[id] = {'status':'PENDING'}
             self._pending.append(id)
             self._nextjob.set()
         return id
     def results(self, id):
         with self._lock:
-            return self._result.get(id,{'status':'UNKNOWN'})
+            return self._results.get(id,{'status':'UNKNOWN'})
     def status(self, id):
         with self._lock:
             return self._status.get(id,'UNKNOWN')
@@ -80,6 +80,6 @@ class Scheduler(object):
             try: self._jobs.remove(id)
             except ValueError: pass
             self._info.pop(id, None)
-            self._result.pop(id, None)
+            self._results.pop(id, None)
             self._status.pop(id, None)
         store.destroy(id)

@@ -16,10 +16,14 @@
     You should have received a copy of the GNU General Public License
     along with python-fedoracommons.  If not, see <http://www.gnu.org/licenses/>.
 """
+# 2011-04-11 Paul Kienzle
+#    * support multifile uploads
+#    * produce reasonable error message when socket not available in httplib2
+# TODO: replace with BSD VERSION
 
 __license__ = 'GPL http://www.gnu.org/licenses/gpl.txt'
 __author__ = "Benjamin O'Steen <bosteen@gmail.com>"
-__version__ = '0.1'
+__version__ = '0.1pak'
 
 import httplib2
 import urlparse
@@ -66,18 +70,20 @@ class Connection:
     def request_head(self, resource, args = None, headers={}):
         return self.request(resource, "head", args, headers=headers)
 
-    def request_post(self, resource, args = None, body = None, filename=None, headers={}):
-        return self.request(resource, "post", args , body = body, filename=filename, headers=headers)
+    def request_post(self, resource, args = None, body = None, files=[], headers={}):
+        return self.request(resource, "post", args , body = body,
+                            files=files, headers=headers)
 
-    def request_put(self, resource, args = None, body = None, filename=None, headers={}):
-        return self.request(resource, "put", args , body = body, filename=filename, headers=headers)
+    def request_put(self, resource, args = None, body = None, files=[], headers={}):
+        return self.request(resource, "put", args , body = body,
+                            files=files, headers=headers)
 
     def get_content_type(self, filename):
         extension = filename.split('.')[-1]
         guessed_mimetype = self.mimetypes.get(extension, mimetypes.guess_type(filename)[0])
         return guessed_mimetype or 'application/octet-stream'
 
-    def request(self, resource, method = "get", args = None, body = None, filename=None, headers={}):
+    def request(self, resource, method = "get", args = None, body = None, files=[], headers={}):
         params = None
         path = resource
         headers['User-Agent'] = 'Basic Agent'
@@ -85,25 +91,26 @@ class Connection:
         BOUNDARY = u'00hoYUXOnLD5RQ8SKGYVgLLt64jejnMwtO7q8XE1'
         CRLF = u'\r\n'
 
-        if filename and body:
+        if len(files) or (len(files) == 1 and body):
             #fn = open(filename ,'r')
             #chunks = fn.read()
             #fn.close()
 
-            # Attempt to find the Mimetype
-            content_type = self.get_content_type(filename)
             headers['Content-Type']='multipart/form-data; boundary='+BOUNDARY
             encode_string = StringIO()
-            encode_string.write(CRLF)
-            encode_string.write(u'--' + BOUNDARY + CRLF)
-            encode_string.write(u'Content-Disposition: form-data; name="file"; filename="%s"' % filename)
-            encode_string.write(CRLF)
-            encode_string.write(u'Content-Type: %s' % content_type + CRLF)
+            for filename in files:
+                # Attempt to find the Mimetype
+                content_type = self.get_content_type(filename)
+                encode_string.write(CRLF)
+                encode_string.write(u'--' + BOUNDARY + CRLF)
+                encode_string.write(u'Content-Disposition: form-data; name="file"; filename="%s"' % filename)
+                encode_string.write(CRLF)
+                encode_string.write(u'Content-Type: %s' % content_type + CRLF)
+
             encode_string.write(CRLF)
             encode_string.write(body)
             encode_string.write(CRLF)
             encode_string.write(u'--' + BOUNDARY + u'--' + CRLF)
-
             body = encode_string.getvalue()
             headers['Content-Length'] = str(len(body))
         elif body:
@@ -139,10 +146,10 @@ class Connection:
         server = u"%s://%s"%(self.scheme, self.host)
         uri = server + u'/'.join(request_path)
         try:
-            resp, content = self.h.request(uri, method.upper(), 
+            resp, content = self.h.request(uri, method.upper(),
                                            body=body, headers=headers)
         except AttributeError:
-            #raise IOError("Could not open connection to "+str(server))
+            raise IOError("Could not open connection to "+str(server))
             raise
         # TODO trust the return encoding type in the decode?
         return {u'headers':resp, u'body':content.decode('UTF-8')}

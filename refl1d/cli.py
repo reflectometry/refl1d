@@ -297,7 +297,7 @@ def start_remote_fit(problem, options, queue, notify):
     request = dict(service='fitter',
                    version=__version__, # fitter service version
                    notify=notify,
-                   description=problem.title,
+                   name=problem.title,
                    data=data)
 
     server = connect(queue)

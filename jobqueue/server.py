@@ -17,18 +17,18 @@ app.config['SCHEDULER'] = 'dispatch'
 
 scheduler = None
 
-def _format_result(result, format='json', template=None):
+def _format_response(response, format='json', template=None):
     """
-    Return result as a particular format.
+    Return response as a particular format.
     """
-    #print "result",result
+    #print "response",response
     if format == 'html':
         if template is None: flask.abort(400)
-        return flask.render_template(template, **result)
+        return flask.render_template(template, **response)
     elif format == 'json':
-        return flask.jsonify(**dict((str(k),v) for k,v in result.items()))
+        return flask.jsonify(**dict((str(k),v) for k,v in response.items()))
     elif format == 'pickle':
-        return pickle.dumps(result)
+        return pickle.dumps(response)
     else:
         flask.abort(400) # Bad request
 
@@ -40,8 +40,8 @@ def list_jobs(format='json'):
 
     Return a list of all job ids.
     """
-    result = dict(jobs=scheduler.jobs())
-    return format_result(result, format, template='list_jobs.html')
+    response = dict(jobs=scheduler.jobs())
+    return format_response(response, format, template='list_jobs.html')
 
 @app.route('/jobs/<any(u"pending",u"active",u"error",u"complete"):status>.<format>',
            methods=['GET'])
@@ -51,8 +51,8 @@ def filter_jobs(status, format='json'):
 
     Return all jobs with a particular status.
     """
-    result = dict(jobs=scheduler.jobs(status=str(status).upper()))
-    return _format_result(result, format, template='list_jobs.html')
+    response = dict(jobs=scheduler.jobs(status=str(status).upper()))
+    return _format_response(response, format, template='list_jobs.html')
 
 @app.route('/jobs.<format>', methods=['POST'])
 def create_job(format='json'):
@@ -62,8 +62,8 @@ def create_job(format='json'):
     Schedule a new job, return the job record.
 
     The POST data should contain::
-    
-        { 
+
+        {
         notify: "<user@email or @twitterid>",
         service: "<name of service>",
         version: "<service version>",
@@ -73,7 +73,7 @@ def create_job(format='json'):
         }
 
     The response contains::
-    
+
         {
         id: <job id>,
         job: <job details>
@@ -86,9 +86,9 @@ def create_job(format='json'):
     if request is None: flask.abort(415) # Unsupported media
     id = scheduler.submit(request, origin=flask.request.remote_addr)
     flash('Job %s scheduled' % id)
-    result = {'id': id, 'job': scheduler.info(id)}
+    response = {'id': id, 'job': scheduler.info(id)}
     #return redirect(url_for('show_job', id=id, format=format))
-    return _format_result(result, format=format, template='show_job.html')
+    return _format_response(response, format=format, template='show_job.html')
 
 @app.route('/jobs/<int:id>.<format>', methods=['GET'])
 def show_job(id, format='json'):
@@ -98,7 +98,7 @@ def show_job(id, format='json'):
     Get job record by id.
 
     The response contains::
-    
+
         {
         id: <job id>,
         job: <job details>
@@ -106,29 +106,29 @@ def show_job(id, format='json'):
 
     Job details is simply a copy of the original request.
     """
-    result = {'id': id, 'job': scheduler.info(id)}
-    return _format_result(result, format=format, template='show_job.html')
+    response = {'id': id, 'job': scheduler.info(id)}
+    return _format_response(response, format=format, template='show_job.html')
 
-@app.route('/jobs/<int:id>/result.<format>', methods=['GET'])
+@app.route('/jobs/<int:id>/results.<format>', methods=['GET'])
 def get_results(id, format='json'):
     """
-    GET /jobs/<id>/result.<format>
+    GET /jobs/<id>/results.<format>
 
     Get job results by id.
 
     Returns::
-    
-        { 
-        status: 'PENDING|ACTIVE|COMPLETE|ERROR|UNKNOWN',
+
+        {
         id: <job id>
+        status: 'PENDING|ACTIVE|COMPLETE|ERROR|UNKNOWN',
         result: <job value>     (absent if status != COMPLETE)
         trace: <error trace>    (absent if status != ERROR)
         }
     """
-    result = scheduler.results(id)
-    result['id'] = id
-    #print "returning result",result
-    return _format_result(result, format=format)
+    response = scheduler.results(id)
+    response['id'] = id
+    #print "returning response",response
+    return _format_response(response, format=format)
 
 @app.route('/jobs/<int:id>/status.<format>', methods=['GET'])
 def get_status(id, format='json'):
@@ -138,14 +138,15 @@ def get_status(id, format='json'):
     Get job status by id.
 
     Returns::
-    
-        { 
-        status: 'PENDING|ACTIVE|COMPLETE|ERROR|UNKNOWN' 
+
+        {
+        id: <job id>,
+        status: 'PENDING|ACTIVE|COMPLETE|ERROR|UNKNOWN'
         }
     """
-    result = { 'status': scheduler.status(id) }
-    result['jobid'] = id
-    return _format_result(result, format=format)
+    response = { 'status': scheduler.status(id) }
+    response['id'] = id
+    return _format_response(response, format=format)
 
 
 @app.route('/jobs/<int:id>.<format>', methods=['DELETE'])
@@ -157,8 +158,8 @@ def delete_job(id, format='json'):
     """
     scheduler.delete(id)
     flash('Job %s deleted' % id)
-    result = dict(jobs=scheduler.jobs())
-    return _format_result(result, format=format, template="list_jobs.html")
+    response = dict(jobs=scheduler.jobs())
+    return _format_response(response, format=format, template="list_jobs.html")
     #return redirect(url_for('list_jobs', id=id, format=format))
 
 @app.route('/jobs/nextjob.<format>', methods=['POST'])
@@ -168,15 +169,16 @@ def fetch_work(format='json'):
     request = flask.request.json
     if request is None: flask.abort(415) # Unsupported media
     job = scheduler.nextjob(queue=request['queue'])
-    return _format_result(job, format=format)
+    return _format_response(job, format=format)
 
-@app.route('/jobs/<int:id>/postresult', methods=['POST'])
-def return_work(format='json'):
+@app.route('/jobs/<int:id>/postjob', methods=['POST'])
+def return_work(id):
     # TODO: verify signature
     request = flask.request.json
     if request is None: flask.abort(415) # Unsupported media
     scheduler.postjob(id, request)
-    return None
+    # Should be signalling code 204: No content
+    return _format_response({},format="json")
 
 @app.route('/jobs/<int:id>/data/index.<format>')
 def listfiles(id, format):
@@ -187,18 +189,19 @@ def listfiles(id, format):
                  for f in files if os.path.isfile(os.path.join(path,f))]
     except:
         finfo = []
-    result = { 'files': finfo }
-    result['jobid'] = id
-    return _format_result(result, format=format, template="index.html")
+    response = { 'files': finfo }
+    response['id'] = id
+    return _format_response(response, format=format, template="index.html")
 
 @app.route('/jobs/<int:id>/data/', methods=['GET','POST'])
 def putfile(id):
     if flask.request.method=='POST':
         # TODO: verify signature
         print "warning: XSS attacks possible if stored file is mimetype html"
-        file = flask.request.files['file']
-        if file:
-            filename = secure_filename(file.filename)
+        for file in flask.request.files.getlist('file'):
+            if not file: continue
+            filename = secure_filename(os.path.split(file.filename)[1])
+            print "saving",filename
             file.save(os.path.join(store.path(id), filename))
     return redirect(url_for('getfile',id=id,filename='index.html'))
 

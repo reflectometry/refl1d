@@ -79,6 +79,8 @@ class ActiveJob(Record):
     *date* : DateTime utc
         Date the job was queued
     """
+    # TODO: split queue into its own table, and create an additional table
+    # TODO: to track how much work is done by each queue
     __tablename__ = "active_jobs"
     id = Column(Integer, Sequence('activeid_seq'), primary_key=True)
     jobid = Column(Integer, ForeignKey(Job.id), unique=True)

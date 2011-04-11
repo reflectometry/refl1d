@@ -14,7 +14,7 @@ def checkqueue(pending=[], active=[], complete=[]):
     #assert active == qactive
     #assert complete == qcomplete
 
-long = {'service':'count','data':1000000,
+long = {'service':'count','data':100000,
         'name':'long count','notify':'me'}
 short = {'service':'count','data':200,
         'name':'short count','notify':'me'}

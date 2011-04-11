@@ -10,7 +10,7 @@ from jobqueue.client import connect
 
 store.ROOT = '/tmp/worker/%s'
 DEFAULT_DISPATCHER = 'http://reflectometry.org:5000'
-POLLRATE = 60
+POLLRATE = 10
 
 def wait_for_result(remote, id, process):
     """
@@ -20,13 +20,13 @@ def wait_for_result(remote, id, process):
     next_request = { 'request': None }
     cancelling = False
     while True:
-        print "joining process"
+        #print "joining process"
         process.join(POLLRATE)
-        print "joined or timed out"
+        #print "joined or timed out"
         if not process.is_alive(): break
-        ret = remote.status(id)
-        if ret.status == 'CANCEL':
-            print "cancelling process"
+        response = remote.status(id)
+        if response['status'] == 'CANCEL':
+            #print "cancelling process"
             process.terminate()
             cancelling = True
             break
@@ -34,24 +34,27 @@ def wait_for_result(remote, id, process):
             next_request = remote.nextjob(queue=queue)
 
     try:
-        result = runjob.results(id)
+        results = runjob.results(id)
     except KeyError:
         if cancelling:
-            result = { 'status': 'CANCEL' }
+            results = { 'status': 'CANCEL' }
         else:
-            result = { 'status': 'ERROR' }
+            results = { 'status': 'ERROR' }
 
-    return result, next_request
+    print "returning results",results
+    return results, next_request
 
-def update_remote(remote, id, queue, result):
-    print "updating remote"
-    print "step"
+def update_remote(remote, id, queue, results):
+    #print "updating remote"
     path= store.path(id)
     files = [os.path.join(path,f) for f in os.listdir(path)]
-    remote.putfiles(id, files, queue)
-    print "step"
-    remote.postjob(id, result, queue)
-    print "done"
+    remote.putfiles(id=id, files=files, queue=queue)
+    #print "step"
+    remote.postjob(id=id, results=results, queue=queue)
+    #print "done"
+    # Clean up files
+    for f in files: os.unlink(f)
+    os.rmdir(path)
 
 def serve(dispatcher, queue):
     assert queue is not None
@@ -68,12 +71,13 @@ def serve(dispatcher, queue):
             jobid = next_request['id']
             assert jobid != None
             store.create(jobid)
-            process = Process(target=runjob.run, 
+            process = Process(target=runjob.run,
                               args=(jobid,next_request['request']))
             process.start()
-            result, next_request = wait_for_result(remote, jobid, process)
-            thread.start_new_thread(update_remote, 
-                                    (remote, jobid, queue, result))
+            results, next_request = wait_for_result(remote, jobid, process)
+            #thread.start_new_thread(update_remote,
+            #                        (remote, jobid, queue, results))
+            update_remote(remote, jobid, queue, results)
         else:
             time.sleep(POLLRATE)
 
