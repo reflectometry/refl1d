@@ -41,7 +41,7 @@ def wait_for_result(remote, id, process):
         else:
             results = { 'status': 'ERROR' }
 
-    print "returning results",results
+    #print "returning results",results
     return results, next_request
 
 def update_remote(remote, id, queue, results):
@@ -49,6 +49,7 @@ def update_remote(remote, id, queue, results):
     path= store.path(id)
     files = [os.path.join(path,f) for f in os.listdir(path)]
     remote.putfiles(id=id, files=files, queue=queue)
+    #print "err\n",open(os.path.join(path,'stderr.txt')).read()
     #print "step"
     remote.postjob(id=id, results=results, queue=queue)
     #print "done"

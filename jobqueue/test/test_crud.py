@@ -14,10 +14,14 @@ def checkqueue(pending=[], active=[], complete=[]):
     #assert active == qactive
     #assert complete == qcomplete
 
-long = {'service':'count','data':100000,
+long = {'service':'count','data':1000000,
         'name':'long count','notify':'me'}
 short = {'service':'count','data':200,
         'name':'short count','notify':'me'}
+fail1 = {'service':'count','data':'string',
+         'name':'short count','notify':'me'}
+fail2 = {'service':'noservice','data':'string',
+         'name':'short count','notify':'me'}
 
 job = server.submit(long)
 print "submit",job
@@ -30,3 +34,11 @@ checkqueue()
 print "fetch",server.info(job['id'])
 print "delete",server.delete(job['id'])
 checkqueue()
+job3 = server.submit(fail1)
+job4 = server.submit(fail2)
+result = server.wait(job3['id'], pollrate=1, timeout=120)
+print result['error']
+print result['trace']
+result = server.wait(job4['id'], pollrate=1, timeout=120)
+print result['error']
+print result['trace']
