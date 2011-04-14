@@ -20,7 +20,9 @@ def fitter(request):
     return fitservice(request)
 
 def count(request):
+    print "counting"
     total = 0
     for i in range(request['data']):
         total += 1
+    print "done"
     return total

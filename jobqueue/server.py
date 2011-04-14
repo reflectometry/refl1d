@@ -1,4 +1,8 @@
+# TODO: Add /jobs/<id>/data.zip to fetch all files at once in a zip file format
+# TODO: Store completed work in /path/to/store/<id>.zip
+
 import os, sys
+import json
 import cPickle as pickle
 import flask
 from flask import redirect, url_for, flash
@@ -7,7 +11,19 @@ from werkzeug import secure_filename
 
 from jobqueue import store
 
+# By uploading files into a temporary file provided by store, we
+# can then move the files directly into place on the store rather
+# than copy them.  This gives us reduced storage, reduced memory
+# and reduced cpu.
+class Request(flask.Request):
+    # Upload directly into temporary files.
+    def _get_file_stream(self, total_content_length, content_type,
+                         filename=None, content_length=None):
+        #print "returning named temporary file for",filename
+        return store.tempfile()
+
 app = flask.Flask(__name__)
+app.request_class = Request
 
 app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = 'secret'
@@ -173,10 +189,20 @@ def fetch_work(format='json'):
 
 @app.route('/jobs/<int:id>/postjob', methods=['POST'])
 def return_work(id):
-    # TODO: verify signature
-    request = flask.request.json
-    if request is None: flask.abort(415) # Unsupported media
-    scheduler.postjob(id, request)
+    # TODO: verify signature corresponds to flask.request.form['queue']
+    # TODO: verify that work not already returned by another client
+    try:
+        #print "decoding <%s>"%flask.request.form['results']
+        results = json.loads(flask.request.form['results'])
+    except:
+        import traceback; print traceback.format_exc()
+        results = {
+            'status': 'ERROR',
+            'error': 'No results returned from the server',
+            'trace': flask.request.form['results'],
+        }
+    _transfer_files()
+    scheduler.postjob(id, results)
     # Should be signalling code 204: No content
     return _format_response({},format="json")
 
@@ -193,16 +219,12 @@ def listfiles(id, format):
     response['id'] = id
     return _format_response(response, format=format, template="index.html")
 
-@app.route('/jobs/<int:id>/data/', methods=['GET','POST'])
-def putfile(id):
-    if flask.request.method=='POST':
+# TODO: don't allow putfiles without authentication
+#@app.route('/jobs/<int:id>/data/', methods=['GET','PUT'])
+def putfiles(id):
+    if flask.request.method=='PUT':
         # TODO: verify signature
-        print "warning: XSS attacks possible if stored file is mimetype html"
-        for file in flask.request.files.getlist('file'):
-            if not file: continue
-            filename = secure_filename(os.path.split(file.filename)[1])
-            print "saving",filename
-            file.save(os.path.join(store.path(id), filename))
+        _transfer_files()
     return redirect(url_for('getfile',id=id,filename='index.html'))
 
 @app.route('/jobs/<int:id>/data/<filename>')
@@ -246,6 +268,17 @@ def getfile(id, filename):
 #    """
 #    book = Book(id=id, name=u'Something crazy') # Your query
 #    return render_template('edit_book.html', book=book)
+
+def _transfer_files():
+    print "warning: XSS attacks possible if stored file is mimetype html"
+    for file in flask.request.files.getlist('file'):
+        if not file: continue
+        filename = secure_filename(os.path.split(file.filename)[1])
+        # Because we used named temporary files that aren't deleted on
+        # closing as our streaming file type, we can simply move the
+        # resulting files to the store rather than copying them.
+        file.stream.close()
+        os.rename(file.stream.name, os.path.join(store.path(id),filename))
 
 
 def init_scheduler(conf):

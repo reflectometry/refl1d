@@ -25,6 +25,7 @@ fail2 = {'service':'noservice','data':'string',
 
 job = server.submit(long)
 print "submit",job
+#import sys; sys.exit()
 checkqueue()
 job2 = server.submit(short)
 print "submit",job2
@@ -36,9 +37,11 @@ print "delete",server.delete(job['id'])
 checkqueue()
 job3 = server.submit(fail1)
 job4 = server.submit(fail2)
+print "===incorrect service options"
 result = server.wait(job3['id'], pollrate=1, timeout=120)
 print result['error']
 print result['trace']
+print "===incorrect service"
 result = server.wait(job4['id'], pollrate=1, timeout=120)
 print result['error']
 print result['trace']

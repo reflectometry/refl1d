@@ -47,12 +47,12 @@ def email(sender, receivers, message, subject='no subject', server='localhost'):
         host,port = server,25
     header="From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n"
     header %= sender,", ".join(receivers),subject
-    print "Sending the following mail message:\n"+header+message
-    print "Trying to connect to",host,port
+    #print "Sending the following mail message:\n"+header+message
+    #print "Trying to connect to",host,port
     smtp = smtplib.SMTP(host,port)
-    print "Connection established"
+    #print "Connection established"
     smtp.sendmail(sender,receivers,header+message)
-    print "Mail sent from",sender,"to",", ".join(receivers)
+    #print "Mail sent from",sender,"to",", ".join(receivers)
     smtp.quit()
 
 

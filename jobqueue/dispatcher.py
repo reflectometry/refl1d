@@ -142,11 +142,9 @@ class Scheduler(object):
                       level=1)
         return { 'id': job.id, 'request': request }
 
-    def postjob(self, id, request):
+    def postjob(self, id, results):
         # TODO: redundancy check, confirm queue, check sig, etc.
 
-        print "postjob recv'd",request
-        results = request['results']
         # Update db
         (self.session.query(Job)
             .filter(Job.id == id)
@@ -157,10 +155,12 @@ class Scheduler(object):
         (self.session.query(ActiveJob)
             .filter(ActiveJob.jobid == id)
             .delete())
-        self.session.commit()
+        try:
+            self.session.commit()
+        except:
+            self.session.rollback()
 
-        # Save results; note that they may have already been copied in
-        # the simple glob copy from the server
+        # Save results
         store.put(id,'results',results)
 
         # Post notification

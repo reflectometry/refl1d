@@ -1,10 +1,15 @@
 import os
 import json
 import shutil
+from tempfile import NamedTemporaryFile
 
 import traceback
 
 ROOT = '/tmp/server/%s'
+
+def tempfile():
+    create('temp')
+    return NamedTemporaryFile(delete=False, dir=path('temp'))
 
 def path(id):
     return ROOT%id
@@ -33,7 +38,7 @@ def get(id, key):
         value = open(datafile,'rb').read()
     except:
         raise KeyError("Could not retrieve key %s-%s"%(id,key))
-    if value == "": print "key %s-%s is empty"%(id,key)
+    #if value == "": print "key %s-%s is empty"%(id,key)
     return json.loads(value) if value != "" else None
 
 def contains(id, key):
