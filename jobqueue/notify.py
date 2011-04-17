@@ -1,5 +1,6 @@
 
 import os
+import logging
 
 TWITTER_KEYS = '~/.ssh/twitter'
 EMAIL_SERVER = 'localhost'
@@ -17,7 +18,7 @@ def notify(user, msg, body="No body", level=1):
     elif '@' in user:
         email(EMAIL_SENDER, [user], body, subject=msg, server=EMAIL_SERVER)
     else:
-        print user, ":", msg
+        logging.debug("%s : %s"%(user, msg))
 
 twitter = None
 def tweet(user, msg):
