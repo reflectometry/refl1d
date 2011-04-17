@@ -1,0 +1,26 @@
+#!/home/pkienzle/reflserve/bin/python
+
+import os
+import sys
+import logging
+from jobqueue import daemon, worker
+
+LOGDIR='/home/pkienzle'
+LOGFILE=os.path.join(LOGDIR,'.jobqueue-worker.log')
+PIDFILE=os.path.join(LOGDIR,'.jobqueue-worker.pid')
+ERRFILE=os.path.join(LOGDIR,'.jobqueue-worker.out')
+
+def startup():
+    if not os.path.exists(LOGDIR): os.makedirs(LOGDIR)
+    if len(sys.argv) > 1 and sys.argv[1] == 'debug':
+        loglevel, logfile = logging.DEBUG, None
+    else:
+        loglevel, logfile = logging.ERROR, LOGFILE
+        daemon.startstop(pidfile=PIDFILE, stdout=ERRFILE)
+    logging.basicConfig(level=loglevel,
+                        format='%(asctime)s %(levelname)-8s %(message)s',
+                        datefmt = '%y-%m-%d %H:%M:%S',
+                        filename = logfile, filemode='a')
+    worker.main()
+
+if __name__ == "__main__": startup()

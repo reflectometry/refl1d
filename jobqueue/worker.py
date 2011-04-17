@@ -10,7 +10,7 @@ from jobqueue import runjob, store
 from jobqueue.client import connect
 
 store.ROOT = '/tmp/worker/%s'
-DEFAULT_DISPATCHER = 'http://reflectometry.org:5000'
+DEFAULT_DISPATCHER = 'http://reflectometry.org/queue'
 POLLRATE = 10
 
 import sys
@@ -104,7 +104,11 @@ def serve(dispatcher, queue):
             except: logging.error(traceback.format_exc())
         if next_request['request']:
             jobid = next_request['id']
-            assert jobid != None
+            if jobid is None:
+                logging.error('request has no job id')
+                next_request = {'request': None}
+                continue
+            logging.inform('processing job %s'%jobid)
             process = Process(target=runjob.run,
                               args=(jobid,next_request['request']))
             process.start()
@@ -114,7 +118,7 @@ def serve(dispatcher, queue):
         else:
             time.sleep(POLLRATE)
 
-if __name__ == "__main__":
+def main():
     try: os.nice(19)
     except: pass
     if len(sys.argv) <= 1:
@@ -122,3 +126,6 @@ if __name__ == "__main__":
     queue = sys.argv[1]
     dispatcher = sys.argv[2] if len(sys.argv) > 2 else DEFAULT_DISPATCHER
     serve(queue=queue, dispatcher=dispatcher)
+
+if __name__ == "__main__":
+    main()
