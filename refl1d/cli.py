@@ -358,7 +358,7 @@ class FitOpts(ParseOpts):
                 ))
     pars=None
     notify=""
-    queue="http://reflectometry.org:5000/"
+    queue="http://reflectometry.org/queue"
     resynth="0"
     noise="5"
     starts="1"
