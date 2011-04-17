@@ -13,22 +13,23 @@ from jobqueue.db import Job, ActiveJob
 class Scheduler(object):
     def __init__(self):
         db.connect()
-        self.session = db.Session()
 
     def jobs(self, status=None):
+        session = db.Session()
         if status:
-            jobs = (self.session.query(Job)
+            jobs = (session.query(Job)
                 .filter(Job.status==status)
                 .order_by(Job.priority)
                 )
         else:
-            jobs = (self.session.query(Job)
+            jobs = (session.query(Job)
                 .order_by(Job.priority)
                 )
         return [j.id for j in jobs]
     def submit(self, request, origin):
+        session = db.Session()
         # Find number of jobs for the user in the last 30 days
-        n = (self.session.query(Job)
+        n = (session.query(Job)
             .filter(or_(Job.notify==request['notify'],Job.origin==origin))
             .filter(Job.date >= datetime.utcnow() - timedelta(30))
             .count()
@@ -38,14 +39,15 @@ class Scheduler(object):
                   notify=request['notify'],
                   origin=origin,
                   priority=n)
-        self.session.add(job)
-        self.session.commit()
+        session.add(job)
+        session.commit()
         store.create(job.id)
         store.put(job.id,'request',request)
         return job.id
 
     def _getjob(self, id):
-        return self.session.query(Job).filter(Job.id==id).first()
+        session = db.Session()
+        return session.query(Job).filter(Job.id==id).first()
 
     def results(self, id):
         job = self._getjob(id)
@@ -66,19 +68,21 @@ class Scheduler(object):
         return request
 
     def cancel(self, id):
-        (self.session.query(Job)
+        session = db.Session()
+        (session.query(Job)
              .filter(Job.id==id)
              .filter(Job.status.in_('ACTIVE','PENDING'))
              .update({ 'status': 'CANCEL' })
              )
-        self.session.commit()
+        session.commit()
 
     def delete(self, id):
         """
         Delete any external storage associated with the job id.  Mark the
         job as deleted.
         """
-        (self.session.query(Job)
+        session = db.Session()
+        (session.query(Job)
              .filter(Job.id == id)
              .update({'status': 'DELETE'})
              )
@@ -90,6 +94,7 @@ class Scheduler(object):
         by priority.  Priority is assigned on the basis of usage and the
         order of submissions.
         """
+        session = db.Session()
 
         # Define a query which returns the lowest job id of the pending jobs
         # with the minimum priority
@@ -102,19 +107,19 @@ class Scheduler(object):
         for i in range(10): # Repeat if conflict over next job
             # Get the next job, if there is one
             try:
-                job = self.session.query(Job).filter(Job.id==min_id).one()
+                job = session.query(Job).filter(Job.id==min_id).one()
                 #print job.id, job.name, job.status, job.date, job.start, job.priority
             except NoResultFound:
                 return {'request': None}
 
             # Mark the job as active and record it in the active queue
-            (self.session.query(Job)
+            (session.query(Job)
              .filter(Job.id == job.id)
              .update({'status': 'ACTIVE',
                       'start': datetime.utcnow(),
                       }))
             activejob = db.ActiveJob(jobid=job.id, queue=queue)
-            self.session.add(activejob)
+            session.add(activejob)
 
             # If the job was already taken, roll back and try again.  The
             # first process to record the job in the active list wins, and
@@ -125,9 +130,9 @@ class Scheduler(object):
             # the database will be clever enough to roll back, otherwise
             # we will never get out of this loop.
             try:
-                self.session.commit()
+                session.commit()
             except IntegrityError:
-                self.session.rollback()
+                session.rollback()
                 continue
             break
         else:
@@ -146,19 +151,20 @@ class Scheduler(object):
         # TODO: redundancy check, confirm queue, check sig, etc.
 
         # Update db
-        (self.session.query(Job)
+        session = db.Session()
+        (session.query(Job)
             .filter(Job.id == id)
             .update({'status': results.get('status','ERROR'),
                      'stop': datetime.utcnow(),
                      })
             )
-        (self.session.query(ActiveJob)
+        (session.query(ActiveJob)
             .filter(ActiveJob.jobid == id)
             .delete())
         try:
-            self.session.commit()
+            session.commit()
         except:
-            self.session.rollback()
+            session.rollback()
 
         # Save results
         store.put(id,'results',results)

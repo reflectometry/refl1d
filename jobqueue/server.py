@@ -26,12 +26,11 @@ app = flask.Flask(__name__)
 app.request_class = Request
 
 app.config['DEBUG'] = True
-app.config['SECRET_KEY'] = 'secret'
+app.config['SECRET_KEY'] = open(os.path.expanduser("~/.jobqueue.key")).read()
 #app.config['SCHEDULER'] = 'slurm'
 #app.config['SCHEDULER'] = 'direct'
 app.config['SCHEDULER'] = 'dispatch'
 
-scheduler = None
 
 def _format_response(response, format='json', template=None):
     """
@@ -57,7 +56,7 @@ def list_jobs(format='json'):
     Return a list of all job ids.
     """
     response = dict(jobs=scheduler.jobs())
-    return format_response(response, format, template='list_jobs.html')
+    return _format_response(response, format, template='list_jobs.html')
 
 @app.route('/jobs/<any(u"pending",u"active",u"error",u"complete"):status>.<format>',
            methods=['GET'])
@@ -295,12 +294,9 @@ def init_scheduler(conf):
     return Scheduler()
 
 def serve():
-    global scheduler
-    import os
+    app.run(host='0.0.0.0')
 
-    scheduler = init_scheduler(app.config['SCHEDULER'])
-    app.run()
-
+scheduler = init_scheduler(app.config['SCHEDULER'])
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         app.config['SCHEDULER'] = sys.argv[1]
