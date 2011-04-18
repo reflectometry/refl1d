@@ -1,8 +1,8 @@
-import sys; sys.path.append('../..')
 from jobqueue.client import connect
 
 DEBUG = True
 
+#server = connect('http://reflectometry.org/queue')
 server = connect('http://localhost:5000')
 
 def checkqueue(pending=[], active=[], complete=[]):
