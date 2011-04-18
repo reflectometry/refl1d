@@ -11,8 +11,6 @@ import refl1d
 packages = find_packages(exclude=['amqp_map','models','park'])
 packages += find_packages('dream')
 
-print packages
-
 if len(sys.argv) == 1:
     sys.argv.append('install')
 
@@ -49,7 +47,7 @@ dist = setup(
         },
         ext_modules = [reflmodule_config()],
         #data_files = periodictable.data_files(),
-        install_requires = ['numpy', 'scipy'],
+        install_requires = ['numpy', 'scipy', 'httplib2'],
 )
 
 # End of file
