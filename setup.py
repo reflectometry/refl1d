@@ -1,44 +1,56 @@
 #!/usr/bin/env python
-
-import os
 import sys
+import os
 
-from numpy.distutils.core import setup
-from numpy.distutils.misc_util import Configuration
+#from distutils.core import Extension
+from setuptools import setup, find_packages, Extension
+#import fix_setuptools_chmod
 
-def configuration(parent_package='', top_path=None):
-    config = Configuration('refl1d', parent_package, top_path)
-    config.set_options(quiet=True) # silence debug/informational messages
+import refl1d
 
-    # Add subpackages (top level name spaces) and data directories.
-    # Note that subpackages may have their own setup.py to drill down further.
-    # Note that 'dream' is not a subpackage in our setup (no __init__.py as
-    # this name may already be used), so we define our dream substructure here.
-    config.add_subpackage('amqp_map')
-    config.add_data_dir('bin')
-    config.add_data_dir(os.path.join('doc', 'examples'))
-    config.add_data_dir('examples')
-    config.add_subpackage('dream.dream')
-    config.add_data_dir(os.path.join('dream', 'examples'))
-    config.add_subpackage('models')
-    config.add_subpackage('park')
-    config.add_subpackage('refl1d')
-    config.add_data_dir('refl1d-data')
-    config.add_data_dir('tests')
+packages = find_packages(exclude=['amqp_map','models','park'])
+packages += find_packages('dream')
 
-    config.add_data_files('LICENSE.txt')
-    config.add_data_files('README.txt')
-    config.add_data_files('test.py')
+print packages
 
-    for line in open(os.path.join('refl1d', '__init__.py')).readlines():
-        if (line.startswith('__version__')):
-            exec(line.strip())
-            config.version = __version__
-            break
+if len(sys.argv) == 1:
+    sys.argv.append('install')
 
-    return config
+# reflmodule extension
+def reflmodule_config():
+    sources = [os.path.join('refl1d','lib',f)
+               for f in ("reflmodule.cc","methods.cc","reflectivity.cc",
+                         "magnetic.cc","resolution.c","contract_profile.cc")]
+    module = Extension('refl1d.reflmodule', sources=sources)
+    return module
 
+dist = setup(
+        name = 'refl1d',
+        version = refl1d.__version__,
+        author='Paul Kienzle',
+        author_email='pkienzle@nist.gov',
+        url='http://www.reflectometry.org/danse/model1d.html',
+        description='1-D reflectometry modelling',
+        long_description=open('README.txt').read(),
+        classifiers=[
+            'Development Status :: 4 - Beta',
+            'Environment :: Console',
+            'Intended Audience :: Science/Research',
+            'License :: Public Domain',
+            'Operating System :: OS Independent',
+            'Programming Language :: Python',
+            'Topic :: Scientific/Engineering :: Chemistry',
+            'Topic :: Scientific/Engineering :: Physics',
+            ],
+        package_dir = { 'dream': 'dream/dream' },
+        packages = packages,
+        package_data = { 
+            #'periodictable' : ['xsf/*.nff', 'xsf/f0_WaasKirf.dat', 'xsf/read.me'],
+        },
+        ext_modules = [reflmodule_config()],
+        #data_files = periodictable.data_files(),
+        install_requires = ['numpy', 'scipy'],
+)
 
-if __name__ == '__main__':
-    if len(sys.argv) == 1: sys.argv.append('install')
-    setup(**configuration(top_path='').todict())
+# End of file
+
