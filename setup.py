@@ -42,10 +42,10 @@ dist = setup(
             ],
         package_dir = { 'dream': 'dream/dream' },
         packages = packages,
-        package_data = { 
+        package_data = {
             #'periodictable' : ['xsf/*.nff', 'xsf/f0_WaasKirf.dat', 'xsf/read.me'],
         },
-        scripts = ['bin/reflworkerd']
+        scripts = ['bin/reflworkerd'],
         ext_modules = [reflmodule_config()],
         #data_files = periodictable.data_files(),
         install_requires = ['numpy>=1.0', 'scipy>=0.6', 'matplotlib>=1.0', 'httplib2'],
