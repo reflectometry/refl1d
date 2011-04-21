@@ -464,12 +464,13 @@ class TextCodeConverter(object):
 # the groups: ``\1 prefix, \2 code_block_marker, \3 remainder`` ::
 
         marker = self.code_block_marker
-        if marker == '::':
+        if False and marker == '::':  # PAK: force marker to be a line by itself
             # the default marker may occur at the end of a text line
             self.marker_regexp = re.compile('^( *(?!\.\.).*)(::)([ \n]*)$')
         else:
             # marker must be on a separate line
-            self.marker_regexp = re.compile('^( *)(%s)(.*\n?)$' % marker)
+            self.marker_regexp = re.compile('^( *)(%s)([ ]*)$' % marker)
+            #self.marker_regexp = re.compile('^( *)(%s)(.*\n?)$' % marker)
 
 # .. _TextCodeConverter.__iter__:
 # 

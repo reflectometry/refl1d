@@ -44,10 +44,10 @@ def plot_model(filename):
 
 def fit_model(filename):
     numpy.random.seed(SEED)
-    p =load_problem(os.path.join(example_dir(),filename))
+    p =load_problem([os.path.join(example_dir(),filename)])
     #x = RLFit(p).solve(steps=1000, burn=99)
     #x = DEFit(p).solve(steps=1000, pop=20)
-    x = PTFit(p).solve(steps=100,burn=400)
+    x,fx = PTFit(p).solve(steps=100,burn=400)
     #x = BFGSFit(p).solve(steps=200)
     chisq = p(x)
     print "chisq=",chisq

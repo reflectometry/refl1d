@@ -48,10 +48,10 @@ nickel = Material('Ni')
 # chemical composition, we can compute scattering length densities for
 # both X-ray and neutron beams from the same sample description.
 # Alternatively, we could take a more traditional approach and define
-# nickel as a specific SLD for our beam::
-#
-#   # nickel = SLD(rho=9.4)
-#
+# nickel as a specific SLD for our beam
+
+#nickel = SLD(rho=9.4)
+
 # The '#' character on the above line means that line is a comment, and
 # it won't be evaluated.
 
@@ -65,7 +65,7 @@ sample = silicon(0,5) | nickel(100,5) | air
 # Our sample definition is complete, so now we need to specify the
 # range of values we are going to view.  We will use the
 # `numpy <http://numpy.scipy.org/>`_ library, which extends python
-# with vector and matrix operations.  The ``linspace`` function below
+# with vector and matrix operations.  The `linspace` function below
 # returns values from 0 to 5 in 100 steps for incident angles
 # from 0\ |deg| to 5\ |deg|.
 
