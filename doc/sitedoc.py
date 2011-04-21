@@ -1,7 +1,8 @@
 import os
 import numpy
 import pylab
-from refl1d.fitter import load_problem, BFGSFit, DEFit, RLFit, PTFit
+from refl1d.fitter import BFGSFit, DEFit, RLFit, PTFit
+from refl1d.cli import load_problem
 
 SEED = 1
 
@@ -37,7 +38,7 @@ def example_dir():
 
 def plot_model(filename):
     numpy.random.seed(SEED)
-    p = load_problem(os.path.join(example_dir(), filename))
+    p = load_problem([os.path.join(example_dir(), filename)])
     p.plot()
     pylab.show()
 
