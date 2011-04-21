@@ -153,6 +153,12 @@ class Scheduler(object):
         self.cancel(jobid)
         store.destroy(jobid)
 
+    def nextjob(self, queue):
+        raise NotImplementedError("SLURM queues do not support work sharing")
+
+    def postjob(self, id, results):
+        raise NotImplementedError("SLURM queues do not support work sharing")
+
 def create_batchfile(script, commands):
     """
     Create the batchfile to run the job.
