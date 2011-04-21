@@ -52,11 +52,12 @@ import subprocess
 
 # Windows commands to run utilities
 SVN    = "svn"
-PYTHON = "python"
+PYTHON = sys.executable
+os.environ['PYTHON'] = PYTHON
 INNO   = r"C:\Program Files\Inno Setup 5\ISCC.exe"  # command line operation
 
 # URL of the Subversion repository where the source code lives
-SVN_REPO_URL = "svn://svn@danse.us/reflectometry/trunk/refl1d"
+SVN_REPO_URL = "svn://danse.us/reflectometry/trunk/refl1d"
 # Name of the package
 PKG_NAME = "refl1d" # temporary name
 # Name of the application we're building
@@ -226,8 +227,8 @@ def install_package():
     # WORKAROUND: copy reflmodule.pyd from the INS_DIR path to the SRC_DIR
     # path so that later py2exe will find it - py2exe finds .pyc files in
     # INS_DIR but looks for reflmodule.pyd in SRC_DIR ???
-    shutil.copy(os.path.join(INS_DIR, PKG_NAME, "refl1d", "reflmodule.pyd"),
-                os.path.join(SRC_DIR, "refl1d"))
+    #shutil.copy(os.path.join(INS_DIR, PKG_NAME, "refl1d", "reflmodule.pyd"),
+    #            os.path.join(SRC_DIR, "refl1d"))
 
 
 def build_documentation():
@@ -237,11 +238,8 @@ def build_documentation():
     os.chdir(os.path.join(SRC_DIR, "doc"))
 
     # Delete any left over files from a previous build.
-    exec_cmd("make clean")
-    # Create documentation in HTML format.
-    exec_cmd("make html")
-    # Create documentation in PDF format.
-    exec_cmd("make pdf")
+    # Create documentation in HTML and PDF format.
+    exec_cmd("make clean html pdf")
     # Copy PDF to the doc directory where the py2exe script will look for it.
     pdf = os.path.join("_build", "latex", "Refl1D.pdf")
     if os.path.isfile(pdf):
@@ -284,7 +282,8 @@ def run_tests():
     # Running from a test script allows customization of the system path.
     print SEPARATOR
     print "\nStep 7 - Running tests from test.py (using Nose) ...\n"
-    os.chdir(os.path.join(INS_DIR, PKG_NAME))
+    #os.chdir(os.path.join(INS_DIR, PKG_NAME))
+    os.chdir(SRC_DIR)
 
     exec_cmd("%s test.py" %PYTHON)
 
@@ -479,6 +478,7 @@ def exec_cmd(command):
     if os.name == 'nt': flag = False
     else:               flag = True
 
+    print "$",command
     subprocess.call(command, shell=flag)
 
 

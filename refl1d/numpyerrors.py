@@ -27,8 +27,8 @@ Example
 -------
 
     >>> import numpy
-    >>> with Errors(all='ignore'): x = 1/numpy.zeros(3)
-    >>> with Errors(all='print'): x = 1/numpy.zeros(3)  # doctest:+SKIP
+    >>> with numpy.errstate(all='ignore'): x = 1/numpy.zeros(3)
+    >>> with numpy.errstate(all='print'): x = 1/numpy.zeros(3) # doctest:+SKIP
     Warning: divide by zero encountered in divide
     >>> @ignored
     ... def f(): x = 1/numpy.zeros(3)
@@ -41,16 +41,8 @@ Example
 from __future__ import with_statement
 import functools
 import numpy
-class Errors(object):
-    def __init__(self, **kw):
-        self.desired_state = kw
-    def __enter__(self):
-        self.current_state = numpy.geterr()
-        numpy.seterr(**self.desired_state)
-    def __exit__(self, *args):
-        numpy.seterr(**self.current_state)
 def errors(**kw):
-    context = Errors(**kw)
+    context = numpy.errstate(**kw)
     def decorator(f):
         @functools.wraps(f)
         def decorated(*args, **kw):
