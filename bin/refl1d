@@ -47,16 +47,6 @@ if hasattr(sys, 'frozen'):
     if not os.path.exists(mplconfigdir):
         os.mkdir(mplconfigdir)
     os.environ['MPLCONFIGDIR'] = mplconfigdir
-import matplotlib
-
-# Disable interactive mode so that plots are only updated on show() or draw().
-# Note that the interactive function must be called before selecting a backend
-# or importing pyplot, otherwise it will have no effect.
-matplotlib.interactive(False)
-
-# Specify the backend to use for plotting and import backend dependent classes.
-# Note that this must be done before importing pyplot to have an effect.
-matplotlib.use('WXAgg')
 
 # ========================== Start program ====================================
 # Process the command line that has been entered.

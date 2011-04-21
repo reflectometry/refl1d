@@ -282,8 +282,7 @@ class Compound(Scatterer):
 
     An individual component can be a chemical formula, not just an element.
     """
-    def __init__(self, parts=None, density=None, name=None,
-                 use_incoherent=False):
+    def __init__(self, parts=None):
         # Split [M1,N1,M2,N2,...] into [M1,M2,...], [N1,N2,...]
         formula = [parts[i] for i in range(0, len(parts),2)]
         count = [parts[i] for i in range(1, len(parts),2)]
@@ -291,18 +290,8 @@ class Compound(Scatterer):
         formula = [periodictable.formula(p) for p in formula]
         count = [Par.default(w,limits=(0,inf), name=str(f)+" count")
                   for w,f in zip(count,formula)]
-        if name is None: name = "+".join(str(p) for p in formula)
-        density = Par.default(density,limits=(0,inf),name=name+" density")
-
-        self.formula = formula
+        self.parts = formula
         self.count = count
-        self.density = density
-        self.name = name
-        self.use_incoherent = use_incoherent
-
-        # Save masses so we can recompute number density of compound without
-        # having to look up things in the periodic table again.
-        self.__mass = numpy.array([f.mass for f in formula])
 
     def parameters(self):
         """
@@ -310,33 +299,10 @@ class Compound(Scatterer):
         constituent and the relative scale fraction used to tweak
         the overall density.
         """
-        return dict(count=self.count, density=self.density)
+        return dict(count=self.count)
 
-    def sld(self, probe):
-        """
-        Return the scattering length density and absorption of the mixture.
-        """
-        # Convert fractions into an array, with the final fraction
-        count = numpy.array([m.value for m in self.count])
-
-        # Lookup SLD assuming density=1, mass=atomic mass
-        slds = [probe.scattering_factors(c) for c in self.formula]
-        rho,irho,incoh = [numpy.asarray(v) for v in zip(*slds)]
-
-        # coh[i] = N[i]*b_c[i] = density[i]/mass[i] * C[i] * b_c[i]
-        # We know density[i]=1 and mass[i] was previously calculated,
-        # so we can back out most of the number density calculation,
-        # and put it the new number density.
-        # The new compound will have SLD of:
-        #    density/sum(k*mass) * k*mass[i]*coh[i]
-        # Test this by verifying Compound(('H',2,'O',1),density=1)
-        # has the sample SLD as Material('H2O',density=1) or some such.
-        rho = numpy.sum(rho*(self.__mass*count))
-        irho = numpy.sum(irho*(self.__mass*count)[:,None],axis=0)
-        if self.use_incoherent:
-            raise NotImplementedError("incoherent scattering not supported")
-        scale = self.density.value/numpy.sum(count*self.__mass)
-        return scale*rho,scale*irho
+    def formula(self):
+        return tuple( (c.value,f) for c,f in zip(self.count,self.parts))
 
     def __str__(self):
         return "<%s>"%(",".join(str(M) for M in self.formula))

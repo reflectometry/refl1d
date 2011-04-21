@@ -10,12 +10,13 @@ import subprocess
 import cPickle as pickle
 
 import numpy
-import pylab
+
 import dream
 from .stajconvert import load_mlayer, fit_all
 from .fitter import (DEFit, AmoebaFit, SnobFit, BFGSFit,
                      PSFit, RLFit, PTFit, MultiStart)
 from .fitter import StepMonitor, ConsoleMonitor
+from .fitter import FitProblem
 from .mapper import MPMapper, AMQPMapper, SerialMapper
 from . import fitter
 from . import util
@@ -24,6 +25,8 @@ from .probe import Probe
 from . import garefl
 from . import initpop
 from . import __version__
+
+from .util import pushdir
 
 # ==== Fitters ====
 
@@ -99,6 +102,7 @@ class DreamProxy(object):
         self.dream_model.problem.show()
 
     def plot(self, output_path):
+        import pylab
         self.state.show(figfile=output_path)
         P = self.dream_model.problem
         pylab.figure(6)
@@ -147,6 +151,7 @@ class FitProxy(object):
         pass
 
     def plot(self, output_path):
+        import pylab
         P = self.problem
         pylab.suptitle(": ".join((P.store,P.title)))
         P.plot(figfile=output_path)
@@ -166,29 +171,32 @@ def mesh(problem, vars=None, n=40):
 # ===== Model manipulation ====
 
 def load_problem(args):
-    filename, options = args[0], args[1:]
+    path, options = args[0], args[1:]
 
-    if (filename.endswith('.so') or filename.endswith('.dll')
-        or filename.endswith('.dyld')):
-        options = []
-        problem = garefl.load(filename)
-    elif filename.endswith('.staj'):
-        options = []
-        problem = FitProblem(load_mlayer(filename))
-    elif filename.endswith('.pickle'):
-        problem = pickle.load(filename)
-    else:
-        options = args[1:]
-        problem = fitter.load_problem(filename, options=options)
+    directory,filename = os.path.split(path)
+    with pushdir(directory):
+        if (filename.endswith('.so') or filename.endswith('.dll')
+            or filename.endswith('.dyld')):
+            options = []
+            problem = garefl.load(filename)
+        elif filename.endswith('.staj'):
+            options = []
+            problem = FitProblem(load_mlayer(filename))
+        elif filename.endswith('.pickle'):
+            problem = pickle.load(filename)
+        else:
+            options = args[1:]
+            problem = fitter.load_problem(filename, options=options)
 
-    problem.file = filename
+    problem.file = path
     if not hasattr(problem,'title'):
-        problem.title = os.path.basename(filename)
-    problem.name, _ = os.path.splitext(os.path.basename(filename))
+        problem.title = filename
+    problem.name, _ = os.path.splitext(filename)
     problem.options = options
     return problem
 
 def preview(problem):
+    import pylab
     problem.show()
     problem.plot()
     pylab.show()
@@ -507,6 +515,15 @@ def main():
         print "\nNo modelfile parameter was specified.\n"
 
     opts = getopts()
+
+    # Set up the matplotlib backend to minimize the wx dependency.
+    import matplotlib
+    if opts.batch or opts.remote:
+        matplotlib.use('Agg')
+    else:
+        matplotlib.use('WXAgg')
+    matplotlib.interactive(False)
+
     if opts.seed is not None:
         numpy.random.seed(opts.seed)
 
@@ -587,4 +604,6 @@ def main():
         best, fbest = fitter.fit()
         remember_best(fitter, problem, best)
         if opts.cov: print cov(problem)
-        if not opts.batch: pylab.show()
+        if not opts.batch:
+            import pylab
+            pylab.show()

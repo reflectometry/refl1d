@@ -17,8 +17,6 @@ from .mystic import parameter, bounds as mbounds, monitor
 from .mystic.formatnum import format_uncertainty
 from .mystic.history import History
 
-from .util import pushdir
-
 class ConsoleMonitor(monitor.TimedUpdate):
     """
     Display fit progress on the console
@@ -874,18 +872,16 @@ def load_problem(file, options=[]):
 
     Raises ValueError if the script does not define problem.
     """
-    dir,file = os.path.split(file)
-    with pushdir(dir):
-        ctx = dict(__file__=file)
-        argv = sys.argv
-        sys.argv = [file] + options
-        execfile(file, ctx) # 2.x
-        #exec(compile(open(model_file).read(), model_file, 'exec'), ctx) # 3.0
-        sys.argv = argv
-        try:
-            problem = ctx["problem"]
-        except AttributeError:
-            raise ValueError(file+" does not define 'problem=FitProblem(...)'")
+    ctx = dict(__file__=file)
+    argv = sys.argv
+    sys.argv = [file] + options
+    execfile(file, ctx) # 2.x
+    #exec(compile(open(model_file).read(), model_file, 'exec'), ctx) # 3.0
+    sys.argv = argv
+    try:
+        problem = ctx["problem"]
+    except AttributeError:
+        raise ValueError(file+" does not define 'problem=FitProblem(...)'")
 
     return problem
 
