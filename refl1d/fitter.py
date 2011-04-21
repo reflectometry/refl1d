@@ -8,7 +8,13 @@ from __future__ import division, with_statement
 import os
 import sys
 import time
-from copy import deepcopy
+
+# Use dill if it is available since it can pickle functions
+try:
+    import dill
+    def deepcopy(obj): return dill.loads(dill.dumps(obj))
+except:
+    from copy import deepcopy
 
 from numpy import inf, nan, isnan
 import numpy
@@ -491,7 +497,8 @@ class Fitness(object):
         raise NotImplementedError
     def update(self):
         """
-        Parameters have been updated; model needs to be re-evaluated.
+        Called when parameters have been updated.  Any cached values will need to
+        be cleared and the model reevaluated.
         """
         raise NotImplementedError
     def numpoints(self):
@@ -506,30 +513,37 @@ class Fitness(object):
         raise NotImplementedError
     def resynth_data(self):
         """
-        Generate fake data based on uncertainties in the real data.
+        Generate fake data based on uncertainties in the real data.  For Monte Carlo
+        resynth-refit uncertainty analysis.  Bootstrapping?
         """
         raise NotImplementedError
     def restore_data(self):
         """
-        Restore the original data in the model.
+        Restore the original data in the model (after resynth).
         """
         raise NotImplementedError
     def residiuals(self):
         """
-        Return residuals for current theory minus data.
+        Return residuals for current theory minus data.  For levenburg-marquardt.
         """
         raise NotImplementedError
     def save(self, basename):
         """
-        Save the model to a file based on basename+extension
+        Save the model to a file based on basename+extension.  This will point to
+        a path to a directory on a remote machine; don't make any assumptions about
+        information stored on the server.  Return the set of files saved so that
+        the monitor software can make a pretty web page.
         """
         pass
 
     def plot(self):
         """
-        Plot the model to the current figure.
+        Plot the model to the current figure.  You only get one figure, but you
+        can make it as complex as you want.  This will be saved as a png on
+        the server, and composed onto a results webpage.
         """
         pass
+
 
 class FitProblem(object):
     def __init__(self, fitness):
@@ -548,7 +562,9 @@ class FitProblem(object):
         be called.
         """
         all_parameters = parameter.unique(self.model_parameters())
+        print "all_parameters",all_parameters
         self.parameters = parameter.varying(all_parameters)
+        print "varying",self.parameters
         self.bounded = [p for p in all_parameters
                        if not isinstance(p.bounds, mbounds.Unbounded)]
         self.dof = self.model_points() - len(self.parameters)

@@ -7,7 +7,10 @@ import os
 
 import shutil
 import subprocess
-import cPickle as pickle
+try:
+    import dill as pickle
+except:
+    import cPickle as pickle
 
 import numpy
 

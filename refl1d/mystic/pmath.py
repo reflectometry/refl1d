@@ -6,7 +6,6 @@ __all__ = [
     'sum', 'prod'
     ]
 
-sin = function(numpy.sin)
 exp = function(numpy.exp)
 log = function(numpy.log)
 log10 = function(numpy.log10)
@@ -17,10 +16,10 @@ tan = function(numpy.tan)
 asin = function(numpy.arcsin)
 acos = function(numpy.arccos)
 atan = function(numpy.arctan)
+atan2 = function(numpy.arctan2)
 sinh = function(numpy.sinh)
 cosh = function(numpy.cosh)
 tanh = function(numpy.tanh)
-atan2 = function(numpy.arctan2)
 
 sum = function(numpy.sum)
 prod = function(numpy.prod)

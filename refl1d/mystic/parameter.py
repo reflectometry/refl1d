@@ -531,7 +531,6 @@ def varying(s):
 
     This is the set of parameters that will vary during the fit.
     """
-
     return [p for p in unique(s) if not p.fixed]
 
 def randomize(s):

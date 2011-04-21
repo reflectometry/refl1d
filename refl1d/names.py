@@ -14,6 +14,7 @@ import sys
 import numpy
 from periodictable import elements, formula
 from .mystic.parameter import Parameter
+from .mystic import pmath
 from .experiment import Experiment, plot_sample, MixedExperiment
 from .material import SLD, Material, Compound, Mixture
 from .model import Slab, Stack
