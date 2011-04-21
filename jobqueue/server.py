@@ -12,6 +12,9 @@ from werkzeug import secure_filename
 
 from jobqueue import store
 
+app = flask.Flask(__name__)
+
+# ==== File upload specialization ===
 # By uploading files into a temporary file provided by store, we
 # can then move the files directly into place on the store rather
 # than copy them.  This gives us reduced storage, reduced memory
@@ -22,17 +25,10 @@ class Request(flask.Request):
                          filename=None, content_length=None):
         #print "returning named temporary file for",filename
         return store.tempfile()
-
-app = flask.Flask(__name__)
 app.request_class = Request
 
-app.config['DEBUG'] = True
-app.config['SECRET_KEY'] = open(os.path.expanduser("~/.jobqueue.key")).read()
-#app.config['SCHEDULER'] = 'slurm'
-#app.config['SCHEDULER'] = 'direct'
-app.config['SCHEDULER'] = 'dispatch'
 
-
+# ==== Format download specialialization ===
 def _format_response(response, format='json', template=None):
     """
     Return response as a particular format.
@@ -195,7 +191,7 @@ def return_work(id):
         #print "decoding <%s>"%flask.request.form['results']
         results = json.loads(flask.request.form['results'])
     except:
-        import traceback; 
+        import traceback;
         logging.error(traceback.format_exc())
         results = {
             'status': 'ERROR',
@@ -299,8 +295,25 @@ def init_scheduler(conf):
 def serve():
     app.run(host='0.0.0.0')
 
-scheduler = init_scheduler(app.config['SCHEDULER'])
+def fullpath(p): return os.path.abspath(os.path.expanduser(path))
+def configure(jobstore=None, jobkey=None, jobdb=None, scheduler=None):
+    global scheduler, app
+
+    if jobstore:
+        jobqueue.store.ROOT = fullpath(jobstore)
+    if jobkey:
+        app.config['SECRET_KEY'] = open(fullpath(jobkey)).read()
+    if jobdb:
+        import jobqueue.db
+        jobqueue.db.DB_URI = jobdb
+
+    scheduler = init_scheduler(scheduler)
+
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        app.config['SCHEDULER'] = sys.argv[1]
+    configure(jobstore='/tmp/server/%s',
+              jobdb='sqlite:///tmp/jobqueue.db',
+              jobkey='~/.reflserve/key',
+              scheduler='dispatch',
+              )
+    app.config['DEBUG'] = True
     serve()

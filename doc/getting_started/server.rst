@@ -30,6 +30,12 @@ If you are setting up a local cluster for performing reflectometry
 fits, then you will need to read this section, otherwise you can
 continue to the next section.
 
+
+Assuming that the refl1d server is installed as user reflectometry in
+a virtualenv of ~/reflserv, MPLCONFIGDIR is set to ~/reflserve/.matplotlib,
+and reflworkd has been configured, you can start with the following profile::
+
+
 Job Controller
 ==============
 
@@ -38,6 +44,32 @@ an http API for interacting with jobs.
 
 It is implemented as a WSGI python application using
 `Flask <http://flask.pocoo.org>`_
+
+<VirtualHost *:80>
+        ServerAdmin pkienzle@nist.gov
+        ServerName www.reflectometry.org
+        ServerAlias reflectometry.org
+        ErrorLog logs/reflectometry-error_log
+        CustomLog logs/reflectometry-access_log common
+
+
+        WSGIDaemonProcess reflserve user=pkienzle group=refl threads=3
+        WSGIScriptAlias /queue /home/pkienzle/reflserve/www/jobqueue.wsgi
+
+        <Directory "/home/pkienzle/reflserve/www">
+                WSGIProcessGroup reflserve
+                WSGIApplicationGroup %{GLOBAL}
+                Order deny,allow
+                Allow from all
+        </Directory>
+
+        DocumentRoot /var/www/reflectometry
+        <Directory "/var/www/reflectometry/">
+                AllowOverride All
+        </Directory>
+
+</VirtualHost>
+
 
 There is a choice of two different queuing systems to configure.  If your
 environment supports a traditional batch queue you can use it to
@@ -53,7 +85,6 @@ cluster may be set up with its own queuing system such as slurm, only
 taking a few jobs at a time from the dispatcher so that other clusters
 can share the load.
 
-The choice of queuing system is set in jobqueue/server.py.
 
 Cluster
 =======
@@ -78,35 +109,36 @@ provide a relatively safe environment to support anonymous computing.
   the many cloud computing services.
 
 To successfully set up AppArmor, there are a few operations you need.
-Assuming that the refl1d server is installed as user reflectometry in
-a virtualenv of ~/reflserv, MPLCONFIGDIR is set appropriately in the
-environment and the reflworkerd workspace has been set, you can start
-with the following profile::
 
+Each protected application needs a profile, usually stored in
+/etc/apparmor.d/path.to.application.  With the reflenv virtural
+environment in the reflectometry user, the following profile
+would be appropriate::
+
+    -- /etc/apparmor.d/home.reflectometry.reflenv.bin.reflworkd
     #include <tunables/global>
 
-    /home/reflectometry/reflenv/bin/reflworkerd {
+    /home/reflectometry/reflenv/bin/reflworkd {
      #include <abstractions/base>
      #include <abstractions/python>
 
      /bin/dash cx,
-     /home/reflectometry/reflserv/bin/python cx,
-     /home/reflectometry/reflserv/** r,
-     /home/reflectometry/reflserv/**.{so,pyd} mr,
-     /home/reflectometry/reflserv/.matplotlib/* rw,
-     /home/reflectometry/reflserv/tmp/** rw,
+     /home/reflectometry/reflenv/bin/python cx,
+     /home/reflectometry/reflenv/** r,
+     /home/reflectometry/reflenv/**.{so,pyd} mr,
+     /home/reflectometry/.reflserve/.matplotlib/* rw,
+     /home/reflectometry/.reflserve/worker/** rw,
     }
 
-The rw access to tmp and .matplotlib is potentially problematic.  Hostile
+This gives read access/execute access to python and its C extensions,
+and read access to everything else in the virtual environment.
+
+The rw access to .reflserve is potentially problematic.  Hostile
 models can interfere with each other if they are running at the same time.
-Ideally these would be restricted to tmp/jobid/** but this author does not
+Ideally these would be restricted to worker/jobid/** but this author does not
 know how to do so while running with minimal privileges.
 
-Place this profile into::
-
-    /etc/apparmor.d/home.reflectometry.reflenv.bin.reflworkerd
-
-and restarting the apparmor.d daemon::
+Once the profile is in place, restart the apparmor.d daemon to enable it::
 
     sudo service apparmor restart
 
@@ -131,8 +163,7 @@ To reload a profile after running the trace, use::
 
      sudo apparmor_parser -r /etc/apparmor.d/path.to.application
 
-To delete a profile::
+To delete a profile that you no longer need::
 
      sudo rm /etc/apparmor.d/path.to.application
      sudo service apparmor restart
-

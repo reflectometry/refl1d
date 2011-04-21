@@ -30,14 +30,21 @@ You can now populate the virtualenv with the required packages::
     bin/pip install ...
 """
 
-
-# Use the virtualenv stored in ~/reflserve
-import sys
 import os
+
+# === Configure virtual environment ===
 import site
+PYROOT=os.path.abspath(os.path.expanduser('~/reflserve'))
 sitepackages = "lib/python%d.%d/site-packages"%sys.version_info[0:2]
-site.addsitedir(os.path.expanduser('~/reflserve/'+sitepackages))
+site.addsitedir(PYROOT+sitepackages))
 
-from jobqueue.server import app as application
+# === Configure resource locations ===
+import jobqueue.server
+jobqueue.server.configure(
+    jobstore='~/.reflserve/server/%s',
+    jobkey='~/.reflserve/key',
+    jobdb='sqlite://'+os.path.abspath(os.path.expanduser('~/.reflserve/db')),
+    scheduler='dispatch',
+    )
 
-
+application = jobqueue.server.app

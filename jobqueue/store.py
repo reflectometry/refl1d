@@ -5,7 +5,7 @@ from tempfile import NamedTemporaryFile
 
 import traceback
 
-ROOT = '/tmp/server/%s'
+ROOT = '/var/lib/jobqueue/server/%s'
 
 def tempfile():
     create('temp')
