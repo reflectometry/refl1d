@@ -36,33 +36,39 @@ def build_problem():
     else:
         # Peak centers lie on a line
         theta=Parameter(45, name="theta")
-        theta.range(30,80)
+        theta.range(0,90)
         peak1.xc.range(0.45,0.55)
         peak1.yc.range(-0.55,-0.4)
         for i,peak in enumerate(M.parts[1:-1]):
             delta=Parameter(.0045, name="delta-%d"%(i+1))
-            delta.range(0.003,0.012)
+            delta.range(0.0,0.015)
             peak.xc = peak1.xc + delta*pmath.cosd(theta)
             peak.yc = peak1.yc + delta*pmath.sind(theta)
+
+        # Initial values
         cx, cy = 0.4996-0.4957, -0.4849+0.4917
         theta.value = np.degrees(np.arctan2(cy,cx))
         delta.value = np.sqrt(cx**2+cy**2)
         peak1.xc.value,peak1.yc.value = 0.4957,-0.4917
 
-    # Peak intensity varies
+    # Initial values
     for peak in M.parts[:-1]:
         peak.A.value = signal/(len(M.parts)-1)  # Equal size peaks
-        peak.A.range(0.25*signal,1.1*signal)
-
-    # Peak shape is the same across all peaks
     dx, dy = 0.4997-0.4903, -0.4969+0.4851
     dxm, dym = 0.4951-0.4960, -0.4941+0.4879
     peak1.s1.value = np.sqrt(dx**2+dy**2)/2.35/2
     peak1.s2.value = np.sqrt(dxm**2+dym**2)/2.35/2
     peak1.theta.value = np.degrees(np.arctan2(dy,dx))
-    peak1.s1.range(0.002,0.01)
-    peak1.s2.range(0.002,0.01)
-    peak1.theta.range(-80, -40)
+
+
+    # Peak intensity varies
+    for peak in M.parts[:-1]:
+        peak.A.range(0.25*signal,1.1*signal)
+
+    # Peak shape is the same across all peaks
+    peak1.s1.range(0.002,0.02)
+    peak1.s2.range(0.002,0.02)
+    peak1.theta.range(-90, -0)
     for peak in M.parts[1:-1]:
         peak.s1 = peak1.s1
         peak.s2 = peak1.s2

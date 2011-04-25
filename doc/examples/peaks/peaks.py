@@ -19,7 +19,7 @@ def plot(X,Y,theory,data,err):
     ax=fig.add_subplot(3,1,1)
     pylab.pcolormesh(X,Y, data)
     ax=fig.add_subplot(3,1,3)
-    pylab.pcolormesh(X,Y, (data-theory))
+    pylab.pcolormesh(X,Y, (data-theory)/(err+1))
 
 class Gaussian(object):
     def __init__(self, A=1, xc=0, yc=0, s1=1, s2=1, theta=0, name=""):
@@ -85,7 +85,7 @@ class Peaks(object):
 
     def residuals(self):
         #if np.any(self.err ==0): print "zeros in err"
-        return (self.theory()-self.data)/self.err
+        return (self.theory()-self.data)/(self.err+1)
 
     def nllf(self):
         R = self.residuals()
