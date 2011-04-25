@@ -327,6 +327,11 @@ class Experiment(ExperimentBase):
                 slabs.rho[0], slabs.irho[0])
 
     def save(self, basename):
+        self.save_profile(basename)
+        self.save_staj(basename)
+        self.save_refl(basename)
+
+    def save_profile(self, basename):
         # Slabs
         A = numpy.array(self.slabs())
         fid = open(basename+"-slabs.dat","w")
@@ -349,6 +354,7 @@ class Experiment(ExperimentBase):
         numpy.savetxt(fid, A.T, fmt="%12.8f")
         fid.close()
 
+    def save_refl(self, basename):
         # Reflectivity
         theory = self.reflectivity()[1]
         A = numpy.array((self.probe.Q,self.probe.dQ,self.probe.R,self.probe.dR,
@@ -359,13 +365,16 @@ class Experiment(ExperimentBase):
         numpy.savetxt(fid, A.T, fmt="%20.15g")
         fid.close()
 
-    def save_staj(self):
-        # Save staj files
-        datafile = os.path.join(os.path.dirname(basename),self.probe.filename)
-        shutil.copy2(self.probe.filename, datafile)
+    def save_staj(self, basename):
         from .stajconvert import save_mlayer
         try:
             save_mlayer(self, basename+".staj")
+            probe = self.probe
+            datafile = os.path.join(os.path.dirname(basename),probe.filename)
+            fid = open(datafile,"w")
+            fid.write("# Q R dR\n")
+            numpy.savetxt(fid, numpy.vstack((probe.Q,probe.R,probe.dR)).T)
+            fid.close()
         except:
             print "==== could not save staj file ===="
             traceback.print_exc()

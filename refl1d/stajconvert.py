@@ -67,8 +67,8 @@ def _mlayer_to_stack(s):
     """
     Return a sample stack based on the model used in the staj file.
     """
-    i1 = s.num_top
-    i2 = s.num_top+s.num_middle
+    i1 = s.num_top+1
+    i2 = s.num_top+s.num_middle+1
 
     # Construct slabs
     slabs = []
@@ -76,7 +76,7 @@ def _mlayer_to_stack(s):
         if i == 0:
             name = 'V'
         elif i < i1:
-            name = 'T%d'%(i+1)
+            name = 'T%d'%(i)
         elif i < i2:
             name = 'M%d'%(i-i1+1)
         else:
@@ -125,6 +125,7 @@ def _mlayer_to_probe(s):
                   theta_offset=s.theta_offset,
                   background=s.background,
                   intensity=s.intensity)
+    probe.filename = s.data_file
     return probe
 
 
@@ -134,9 +135,12 @@ def model_to_mlayer(model):
 
     Raises TypeError if model cannot be stored as a staj file.
     """
-    #TODO: when back reflectivity is handled properly, need to support it here
     stack = model.sample
     probe = model.probe
+
+    if probe.back_reflectivity:
+        raise TypeError("Saving back-reflectivity data to staj not yet supported")
+
     staj = MlayerModel(roughness_steps=51)
 
     # Set up beam info

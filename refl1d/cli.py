@@ -359,7 +359,7 @@ class FitOpts(ParseOpts):
     MINARGS = 1
     FLAGS = set(("preview", "check", "profile", "random", "simulate",
                  "worker", "batch", "overwrite", "parallel", "stepmon",
-                 "cov", "remote",
+                 "cov", "remote", "staj",
                  "multiprocessing-fork", # passed in when app is a frozen image
                ))
     VALUES = set(("plot", "store", "fit", "noise", "steps", "pop", "CR",
@@ -406,6 +406,8 @@ Options:
         percent noise to add to the simulated data
     --cov
         compute the covariance matrix for the model when done
+    --staj
+        output staj file when done
 
 
     --store=path
