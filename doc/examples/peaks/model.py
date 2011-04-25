@@ -1,5 +1,5 @@
 import numpy as np
-from peaks import Fitness, Gaussian, Background
+from peaks import Peaks, Gaussian, Background
 from refl1d.names import Parameter, pmath, FitProblem
 
 def read_data():
@@ -11,51 +11,68 @@ def read_data():
     Z1 = A[26:39]
     data= Z1.T
     err=np.sqrt(data)
-    #yerr= A[39:54]
+    #err= A[39:54]
     return X, Y, data, err
 
 def build_problem():
 
-    M = Fitness([Gaussian(name="G1-"),
-                 Gaussian(name="G2-"),
-                 Gaussian(name="G3-"),
-                 Gaussian(name="G4-"),
-                 Background()],
-                *read_data())
+    M = Peaks([Gaussian(name="G1-"),
+               Gaussian(name="G2-"),
+               #Gaussian(name="G3-"),
+               #Gaussian(name="G4-"),
+               Background()],
+               *read_data())
+    background = np.min(M.data)
+    background += np.sqrt(background)
+    signal = np.sum(M.data) - M.data.size*background
+    M.parts[-1].C.value = background
     peak1 = M.parts[0]
 
-    if 1:
-        # Let peak centers and heights drift
-        for peak in M.parts[:4]:
-            peak.A.range(20,200)
+    if 0:
+        # Peak centers are independent
+        for peak in M.parts[:-1]:
             peak.xc.range(0.45,0.55)
             peak.yc.range(-0.55,-0.4)
     else:
-        # Alternatively, peak centers follow a line 
-        theta=Parameter(np.pi/4, name="theta")
-        theta.range(np.pi/6,np.pi/2)
+        # Peak centers lie on a line
+        theta=Parameter(45, name="theta")
+        theta.range(30,80)
         peak1.xc.range(0.45,0.55)
         peak1.yc.range(-0.55,-0.4)
-        for i,peak in enumerate(M.parts[1:4]):
-            delta=Parameter(.0045, name="delta-%d"%(i+2))
-            delta.range(0,0.006)
-            peak.xc = peak1.xc + delta*pmath.cos(theta)
-            peak.yc = peak1.yc + delta*pmath.sin(theta)
+        for i,peak in enumerate(M.parts[1:-1]):
+            delta=Parameter(.0045, name="delta-%d"%(i+1))
+            delta.range(0.003,0.012)
+            peak.xc = peak1.xc + delta*pmath.cosd(theta)
+            peak.yc = peak1.yc + delta*pmath.sind(theta)
+        cx, cy = 0.4996-0.4957, -0.4849+0.4917
+        theta.value = np.degrees(np.arctan2(cy,cx))
+        delta.value = np.sqrt(cx**2+cy**2)
+        peak1.xc.value,peak1.yc.value = 0.4957,-0.4917
 
-        # Let peak heights vary
-        for peak in M.parts[:4]:
-            peak.A.range(20,200)
+    # Peak intensity varies
+    for peak in M.parts[:-1]:
+        peak.A.value = signal/(len(M.parts)-1)  # Equal size peaks
+        peak.A.range(0.25*signal,1.1*signal)
 
     # Peak shape is the same across all peaks
-    peak1.s1.range(0,0.012)
-    peak1.s2.range(0,0.012)
-    peak1.theta.range(-np.pi, 0)
-    for peak in M.parts[1:4]:
+    dx, dy = 0.4997-0.4903, -0.4969+0.4851
+    dxm, dym = 0.4951-0.4960, -0.4941+0.4879
+    peak1.s1.value = np.sqrt(dx**2+dy**2)/2.35/2
+    peak1.s2.value = np.sqrt(dxm**2+dym**2)/2.35/2
+    peak1.theta.value = np.degrees(np.arctan2(dy,dx))
+    peak1.s1.range(0.002,0.01)
+    peak1.s2.range(0.002,0.01)
+    peak1.theta.range(-80, -40)
+    for peak in M.parts[1:-1]:
         peak.s1 = peak1.s1
         peak.s2 = peak1.s2
         peak.theta = peak1.theta
 
+    if 1:
+        print "shape",peak1.s1.value,peak1.s2.value,peak1.theta.value
+        print "centers theta,delta",theta.value,delta.value
+        print "centers",(peak1.xc.value,peak1.yc.value),\
+            (M.parts[1].xc.value,M.parts[1].yc.value)
     return FitProblem(M)
 
 problem = build_problem()
-
