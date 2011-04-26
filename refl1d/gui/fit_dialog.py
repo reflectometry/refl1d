@@ -27,289 +27,187 @@ for the user to control fitting options.
 """
 
 #==============================================================================
-
 import wx
 
 from util import Validator
+from wx.lib.scrolledpanel import ScrolledPanel
 from wx.lib.pubsub import Publisher as pub
+from input_list import InputListPanel
 
 class FitControl(wx.Dialog):
     """
     FitControl lets the user set fitting options from a pop-up a dialog box.
     """
-
     def __init__(self,
                  parent = None,
                  id     = wx.ID_ANY,
-                 title  = "Fit Dialog",
+                 title  = "Fit Parameters",
                  pos    = wx.DefaultPosition,
                  size   = wx.DefaultSize, # dialog box size will be calculated
                  style  = wx.DEFAULT_DIALOG_STYLE,
-                 name   = ""
+                 name   = "",
+                 plist  = None,
+                 default_algo = None,
+                 fontsize = None
                 ):
         wx.Dialog.__init__(self, parent, id, title, pos, size, style, name)
 
-        vbox = wx.BoxSizer(wx.VERTICAL)
-        
+        self.para_list = plist
+        self.vbox = wx.BoxSizer(wx.VERTICAL)
+        self.default_algo = default_algo
+
+        # Set the font for this window and all child windows (widgets) from the
+        # parent window, or from the system defaults if no parent is given.
+        # A dialog box does not inherit font info from its parent, so we will
+        # explicitly get it from the parent and apply it to the dialog box.
+        if parent is not None:
+            font = parent.GetFont()
+            self.SetFont(font)
+
+        # If the caller specifies a font size, override the default value.
+        if fontsize is not None:
+            font = self.GetFont()
+            font.SetPointSize(fontsize)
+            self.SetFont(font)
+
         # Section 1
-        
-        panel2 = wx.Panel(self, -1)
+        self.panel1 = wx.Panel(self, -1)
+        static_box1 = wx.StaticBox(self.panel1, -1, "Fit Algorithms")
 
-        static_box1 = wx.StaticBox(panel2, -1, "Fit Algorithms")
+        self.algorithm = []
 
-        self.amoeba_radio = wx.RadioButton(panel2, -1, "Amoeba")
-        self.de_radio = wx.RadioButton(panel2, -1, "DE")
-        self.de_radio.SetValue(True)
-        self.dream_radio = wx.RadioButton(panel2, -1, "Dream")
-        self.pt_radio = wx.RadioButton(panel2, -1, "Parallel Tempering")
-        self.rl_radio = wx.RadioButton(panel2, -1, "Random Lines")
+        if isinstance(self.para_list, dict) and self.para_list != {}:
+            for algo in sorted(self.para_list.keys()):
+                self.algorithm.append(algo)
 
-        # Radio button events to enable/disable other options based on the
-        # algorithm selected.
-        self.Bind(wx.EVT_RADIOBUTTON, self.OnDE, id=self.de_radio.GetId())
-        self.Bind(wx.EVT_RADIOBUTTON, self.OnAmoeba, id=self.amoeba_radio.GetId())
-        self.Bind(wx.EVT_RADIOBUTTON, self.OnDream, id=self.dream_radio.GetId())
-        self.Bind(wx.EVT_RADIOBUTTON, self.OnPT, id=self.pt_radio.GetId())
-        self.Bind(wx.EVT_RADIOBUTTON, self.OnRL, id=self.rl_radio.GetId())
+        self.radio_list = []
+        rows = int(len(self.algorithm)/2)
+
+        flexsizer = wx.FlexGridSizer(rows, 2, hgap=20, vgap=10)
+
+        for algo in self.algorithm:
+            self.radio = wx.RadioButton(self.panel1, -1, algo)
+            self.radio_list.append(self.radio)
+            self.Bind(wx.EVT_RADIOBUTTON, self.OnRadio, id=self.radio.GetId())
+            flexsizer.Add(self.radio, 0, 0)
 
         fit_hsizer = wx.StaticBoxSizer(static_box1, orient=wx.VERTICAL)
-        fit_hsizer.Add(self.amoeba_radio, 0, wx.ALL, 5)
-        fit_hsizer.Add(self.de_radio, 0, wx.ALL, 5)
-        fit_hsizer.Add(self.dream_radio, 0, wx.ALL, 5)
-        fit_hsizer.Add(self.pt_radio, 0, wx.ALL, 5)
-        fit_hsizer.Add(self.rl_radio, 0, wx.ALL, 5)
+        fit_hsizer.Add(flexsizer, 0, wx.ALL, 5)
 
-        panel2.SetSizer(fit_hsizer)
-        vbox.Add(panel2, 0, wx.ALL, 10)
+        self.panel1.SetSizer(fit_hsizer)
+        self.vbox.Add(self.panel1, 0, wx.ALL, 10)
 
         # Section 2
+        # Create list of all panels for later use in hiding and showing panels.
+        self.panel_list = []
 
-        panel3 = wx.Panel(self, -1)
-        static_box3 = wx.StaticBox(panel3, -1, "Fitting Options")
+        for idx, algo in enumerate(self.algorithm):
+            parameters = self.para_list[algo]
+            self.algo_panel = AlgorithmParameter(self, parameters, algo)
+            self.panel_list.append(self.algo_panel)
+            self.vbox.Add(self.algo_panel, 1, wx.EXPAND|wx.ALL, 10)
+            self.algo_panel.Hide()
 
-        opts_hsizer = wx.StaticBoxSizer(static_box3, orient=wx.HORIZONTAL)
-        vbox3 = wx.BoxSizer(wx.VERTICAL)
-        sizer1 = wx.BoxSizer(wx.HORIZONTAL)
-        sizer2 = wx.BoxSizer(wx.HORIZONTAL)
-        sizer3 = wx.BoxSizer(wx.HORIZONTAL)
-        sizer4 = wx.BoxSizer(wx.HORIZONTAL)
-        sizer5 = wx.BoxSizer(wx.HORIZONTAL)
-        sizer6 = wx.BoxSizer(wx.HORIZONTAL)
-
-        self.step_label = wx.StaticText(panel3, -1, "Steps:", size=(90, -1))
-        self.stepsize = wx.TextCtrl(panel3, -1, "1000", size=(100, -1),
-                           style=wx.TE_RIGHT, validator=Validator("no-alpha"))
-
-        self.pop_label = wx.StaticText(panel3, -1, "Population:", size=(90, -1))
-        self.pop = wx.TextCtrl(panel3, -1, "10", size=(100, -1),
-                      style=wx.TE_RIGHT, validator=Validator("no-alpha"))
-
-        self.cr_label = wx.StaticText(panel3, -1, "Crossover Ratio:", size=(90, -1))
-        self.crossover = wx.TextCtrl(panel3, -1, "0.9", size=(100, -1),
-                            style=wx.TE_RIGHT, validator=Validator("no-alpha"))
-
-        self.burn_label = wx.StaticText(panel3, -1, "Burn:", size=(90, -1))
-        self.burn = wx.TextCtrl(panel3, -1, "0", size=(100, -1),
-                       style=wx.TE_RIGHT, validator=Validator("no-alpha"))
-
-        self.tmin_label = wx.StaticText(panel3, -1, "T min:", size=(90, -1))
-        self.tmin = wx.TextCtrl(panel3, -1, "0.1",  size=(100, -1),
-                       style=wx.TE_RIGHT, validator=Validator("no-alpha"))
-
-        self.tmax_label = wx.StaticText(panel3, -1, "T max:", size=(90, -1))
-        self.tmax = wx.TextCtrl(panel3, -1, "10",  size=(100, -1),
-                       style=wx.TE_RIGHT, validator=Validator("no-alpha"))
-
-        self.OnDE(event=None) # Set fit options for default 'DE' algorithm
-
-        sizer1.Add(self.step_label, 0, wx.ALL, 5)
-        sizer1.Add(self.stepsize, 0, wx.ALL, 5)
-
-        sizer2.Add(self.pop_label, 0, wx.ALL, 5)
-        sizer2.Add(self.pop, 0, wx.ALL, 5)
-
-        sizer3.Add(self.cr_label, 0, wx.ALL, 5)
-        sizer3.Add(self.crossover, 0, wx.ALL, 5)
-
-        sizer4.Add(self.burn_label, 0, wx.ALL, 5)
-        sizer4.Add(self.burn, 0, wx.ALL, 5)
-
-        sizer5.Add(self.tmin_label, 0, wx.ALL, 5)
-        sizer5.Add(self.tmin, 0, wx.ALL, 5)
-
-        sizer6.Add(self.tmax_label, 0, wx.ALL, 5)
-        sizer6.Add(self.tmax, 0, wx.ALL, 5)
-
-        vbox3.Add(sizer1)
-        vbox3.Add(sizer2)
-        vbox3.Add(sizer3)
-        vbox3.Add(sizer4)
-        vbox3.Add(sizer5)
-        vbox3.Add(sizer6)
-
-        opts_hsizer.Add(vbox3, 0, wx.TOP, 5)
-
-        panel3.SetSizer(opts_hsizer)
-        vbox.Add(panel3, 0, wx.ALL, 10)
+            if algo == self.default_algo:
+                self.radio_list[idx].SetValue(True)
+                self.panel_list[idx].Show()
 
         # Section 3
+        # Create the button controls (Fit, OK, Cancel) and bind their events.
+        #fit_btn = wx.Button(self, wx.ID_ANY, "Fit")
+        ok_btn = wx.Button(self, wx.ID_OK, "OK")
+        ok_btn.SetDefault()
+        cancel_btn = wx.Button(self, wx.ID_CANCEL, "Cancel")
 
-        panel4 = wx.Panel(self, -1)
+        #self.Bind(wx.EVT_BUTTON, self.OnFit, fit_btn)
+        self.start_fit_flag = False
+        self.Bind(wx.EVT_BUTTON, self.OnOk, ok_btn)
+        self.Bind(wx.EVT_BUTTON, self.OnCancel, cancel_btn)
+
+        # Create the button sizer that will put the buttons in a row, right
+        # justified, and with a fixed amount of space between them.  This
+        # emulates the Windows convention for placing a set of buttons at the
+        # bottom right of the window.
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        btn_sizer.Add((10,20), 1)  # stretchable whitespace
+        #btn_sizer.Add(fit_btn, 0)
+        #btn_sizer.Add((10,20), 0)  # non-stretchable whitespace
+        btn_sizer.Add(ok_btn, 0)
+        btn_sizer.Add((10,20), 0)  # non-stretchable whitespace
+        btn_sizer.Add(cancel_btn, 0)
 
-        # Create the button controls (Fit and Cancel) and bind their events.
-        self.fit_btn = wx.Button(panel4, -1, "Fit")
-        self.fit_btn.SetDefault()
-        self.cancel_btn = wx.Button(panel4, -1, "Cancel")
+        # Add the button sizer to the main sizer.
+        self.vbox.Add(btn_sizer, 0, border=10,
+                      flag=wx.EXPAND|wx.TOP|wx.BOTTOM|wx.RIGHT)
 
-        self.Bind(wx.EVT_BUTTON, self.OnFit, self.fit_btn)
-        self.Bind(wx.EVT_BUTTON, self.OnCancel, self.cancel_btn)
-
-        btn_sizer.Add((10,-1), 1)  # stretchable whitespace
-        btn_sizer.Add(self.fit_btn)
-        btn_sizer.Add((10,-1), 0)  # non-stretchable whitespace
-        btn_sizer.Add(self.cancel_btn, 0)
-
-        panel4.SetSizer(btn_sizer)
-        vbox.Add(panel4, 0, wx.EXPAND|wx.ALL, 10)
-
-        self.SetSizer(vbox)
-        vbox.Fit(self)
+        # Finalize the sizer and establish the dimensions of the dialog box.
+        # The minimum width is explicitly set because the sizer is not able to
+        # take into consideration the width of the enclosing frame's title.
+        self.SetSizer(self.vbox)
+        #self.vbox.SetMinSize((size[0], -1))
+        self.vbox.Fit(self)
 
         self.Centre()
-        self.ShowModal()
 
-    def OnAmoeba(self, event):
-        self.pop_label.Enable(False)
-        self.cr_label.Enable(False)
-        self.burn_label.Enable(False)
-        self.tmin_label.Enable(False)
-        self.tmax_label.Enable(False)
-        
-        self.pop.Enable(False)
-        self.crossover.Enable(False)
-        self.burn.Enable(False)
-        self.tmin.Enable(False)
-        self.tmax.Enable(False)
+    def OnRadio(self, event):
 
-    def OnDE(self, event):
-    
-        self.burn_label.Enable(False)
-        self.tmin_label.Enable(False)
-        self.tmax_label.Enable(False)
-        self.pop_label.Enable(True)
-        self.cr_label.Enable(True)
-        
-        self.pop.Enable(True)
-        self.crossover.Enable(True)
-        self.burn.Enable(False)
-        self.tmin.Enable(False)
-        self.tmax.Enable(False)
-                
-    def OnDream(self, event):
-        self.pop_label.Enable(True)
-        self.cr_label.Enable(False)
-        self.burn_label.Enable(True)
-        self.tmin_label.Enable(False)
-        self.tmax_label.Enable(False)
-                
-        self.pop.Enable(True)
-        self.crossover.Enable(False)
-        self.burn.Enable(True)
-        self.tmin.Enable(False)
-        self.tmax.Enable(False)
+        radio = event.GetEventObject()
 
-    def OnPT(self, event):
-        self.pop_label.Enable(True)
-        self.cr_label.Enable(True)
-        self.burn_label.Enable(True)
-        self.tmin_label.Enable(True)
-        self.tmax_label.Enable(True)
-        
-        self.pop.Enable(True)
-        self.crossover.Enable(True)
-        self.burn.Enable(True)
-        self.tmin.Enable(True)
-        self.tmax.Enable(True)
+        for btn_idx, btn_instance in enumerate(self.radio_list):
+            if radio is btn_instance:
+                break
 
-    def OnRL(self, event):
-        self.pop_label.Enable(True)
-        self.cr_label.Enable(True)
-        self.burn_label.Enable(False)
-        self.tmin_label.Enable(False)
-        self.tmax_label.Enable(False)
-        
-        self.pop.Enable(True)
-        self.crossover.Enable(True)
-        self.burn.Enable(False)
-        self.tmin.Enable(False)
-        self.tmax.Enable(False)
+        for panel in self.panel_list:
+            if panel.IsShown():
+                panel.Hide()
+                self.panel_list[btn_idx].Show()
+                self.vbox.Layout()
+                break
 
     def OnFit(self, event):
-        # send fit options based on algorithm selected
-        steps = self.stepsize.GetValue()
-        pop = self.pop.GetValue()
-        cross = self.crossover.GetValue()
-        tmin = self.tmin.GetValue()
-        tmax = self.tmax.GetValue()
-        burn = self.burn.GetValue()
-        
-        if self.de_radio.GetValue():
-            # de algorithm is selected, send all fit options related to de
-            algo = 'de'
-            fit_option = dict(steps=steps, pop=pop,cross=cross, algo=algo,
-                                tmin=tmin, tmax=tmax, burn=burn)
+        self.start_fit_flag = True
+        #pub.sendMessage("start_fit")
 
-            # send fit options to main panel to start fit
-            pub.sendMessage("fit_option", fit_option)
-            self.Destroy()
-
-        if self.amoeba_radio.GetValue():
-            # ameoba algorithm is selected, send all fit options related
-            # to ameoba
-            algo = 'amoeba'
-            fit_option = dict(steps=steps, tmin=tmin, tmax=tmax, burn=burn,
-                                      pop=pop, cross=cross, algo=algo,)
-
-            # send fit options to main panel to start fit
-            pub.sendMessage("fit_option", fit_option)
-            self.Destroy()
-
-        if self.dream_radio.GetValue():
-            # dream algorithm is selected, send all fit options related to dream
-            algo = 'dream'
-            fit_option = dict(steps=steps, tmin=tmin, tmax=tmax, burn=burn,
-                                      pop=pop, cross=cross, algo=algo,)
-
-            # send fit options to main panel to start fit
-            pub.sendMessage("fit_option", fit_option)
-            self.Destroy()
-
-        if self.pt_radio.GetValue():
-            # parallel temparing algorithm is selected, send all fit options
-            # related to parallel temparing
-            algo = 'pt'
-            fit_option = dict(steps=steps, tmin=tmin, tmax=tmax, burn=burn,
-                                      pop=pop, cross=cross, algo=algo,)
-
-            # send fit options to main panel to start fit
-            pub.sendMessage("fit_option", fit_option)
-            self.Destroy()
-
-        if self.rl_radio.GetValue():
-            # random lines algorithm is selected, send all fit options related
-            # to random lines
-            algo = 'rl'
-            fit_option = dict(steps=steps, tmin=tmin, tmax=tmax, burn=burn,
-                                      pop=pop, cross=cross, algo=algo,)
-
-            # send fit options to main panel to start fit
-            pub.sendMessage("fit_option", fit_option)
-            self.Destroy()
+    def OnOk(self, event):
+        event.Skip()
 
     def OnCancel(self, event):
-        # exit the fit control dialog box
-        self.Destroy()
+        event.Skip()
+
+    def get_results(self):
+        self.fit_option={}
+        for algo_idx, algo in enumerate(self.algorithm):
+            result = self.panel_list[algo_idx].fit_param.GetResults()
+            self.fit_option[algo] = result
+            if self.radio_list[algo_idx].GetValue():
+                active_algo = algo
+
+        flag = self.start_fit_flag
+        self.start_fit_flag = False
+        return active_algo, self.fit_option, flag
+
+
+class AlgorithmParameter(wx.Panel):
+
+    def __init__(self, parent, parameters, algo):
+        wx.Panel.__init__(self, parent=parent, id=wx.ID_ANY)
+
+        fields = []
+        sbox = wx.StaticBox(self, wx.ID_ANY, algo+" Fitting Parameters")
+
+        for parameter in parameters:
+            label, default_value, curr_value, datatype = parameter
+            sub_list = [label, curr_value, datatype, 'RE', None]
+            fields.append(sub_list)
+
+        self.fit_param = InputListPanel(parent=self, itemlist=fields,
+                                        align=True, size=(-1,220))
+
+        sbox_sizer = wx.StaticBoxSizer(sbox, wx.VERTICAL)
+        sbox_sizer.Add(self.fit_param, 1, wx.EXPAND|wx.ALL, 5)
+        self.SetSizer(sbox_sizer)
+        sbox_sizer.Fit(self)
+
 
 if __name__=="__main__":
     app = wx.App()

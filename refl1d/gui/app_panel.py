@@ -92,6 +92,7 @@ from refl1d.mystic import monitor, parameter
 from refl1d.profileview.panel import ProfileView
 from refl1d.probe import Probe
 from refl1d.cli import FITTERS, FitOpts, FitProxy, SerialMapper, load_problem
+from refl1d.cli import getopts
 
 from .summary_view import SummaryView
 from .fit_view import FitView
@@ -146,6 +147,86 @@ class GUIMonitor(monitor.TimedUpdate):
 
 #==============================================================================
 
+class FitParams():
+
+    opts = getopts()
+    #opts.pop_rl = opts.pop if opts.fit == FITTER['rl'] else 0.5
+    opts.pop_rl = 0.5
+    default_fitter = opts.fit
+
+    FITTER_DESC = dict(dream="Dream", rl="Random Lines", pt="Parallel Tempering",
+                       ps="Particle Swarm", de="Differential Evolution",
+                       newton="Quasi-Newton", amoeba="Amoeba", snobfit="SnobFit")
+
+    default_fitter_desc = FITTER_DESC[default_fitter]
+
+    FITTER_PARAMS = dict(
+                  amoeba =
+                    [
+                      ("Steps:", opts.steps, opts.steps, "int"),
+                      ("Starts:", opts.starts, opts.starts, "int"),
+                    ],
+                  de =
+                    [
+                      ("Steps:", opts.steps, opts.steps, "int"),
+                      ("Population:", opts.pop, opts.pop, "float"),
+                      ("Crossover Ratio:", opts.CR, opts.CR, "float"),
+                    ],
+                  dream =
+                    [
+                      ("Steps:", opts.steps, opts.steps, "int"),
+                      ("Population:", opts.pop, opts.pop, "float"),
+                      ("Burn:", opts.burn, opts.burn, "int"),
+                    ],
+                  newton =
+                    [
+                      ("Steps:", opts.steps, opts.steps, "int"),
+                      ("Population:", opts.pop, opts.pop, "float"),
+                      ("Crossover Ratio:", opts.CR, opts.CR, "float"),
+                      ("Burn:", opts.burn, opts.burn, "int"),
+                      ("Min Temperature:", opts.Tmin, opts.Tmin, "float"),
+                      ("Max Temperature:", opts.Tmax, opts.Tmax, "float"),
+                    ],
+                  ps =
+                    [
+                      ("Steps:", opts.steps, opts.steps, "int"),
+                      ("Population:", opts.pop, opts.pop, "float"),
+                      ("Crossover Ratio:", opts.CR, opts.CR, "float"),
+                    ],
+                  pt =
+                    [
+                      ("Steps:", opts.steps, opts.steps, "int"),
+                      ("Population:", opts.pop, opts.pop, "float"),
+                      ("Crossover Ratio:", opts.CR, opts.CR, "float"),
+                      ("Burn:", opts.burn, opts.burn, "int"),
+                      ("Min Temperature:", opts.Tmin, opts.Tmin, "float"),
+                      ("Max Temperature:", opts.Tmax, opts.Tmax, "float"),
+                    ],
+                  rl =
+                    [
+                      ("Steps:", opts.steps, opts.steps, "int"),
+                      ("Starts:", 1, 1, "int"),
+                      ("Population:", opts.pop_rl, opts.pop_rl, "float"),
+                      ("Crossover Ratio:", opts.CR, opts.CR, "float"),
+                    ],
+                  snobfit =
+                    [
+                      ("Steps:", opts.steps, opts.steps, "int"),
+                      ("Population:", opts.pop, opts.pop, "float"),
+                      ("Crossover Ratio:", opts.CR, opts.CR, "float"),
+                    ],
+                 )
+
+    fitter_info = {}
+    for ftr in FITTERS:
+        fitter_info[ftr] = [
+                            FITTER_DESC[ftr],
+                            FITTERS[ftr],
+                            FITTER_PARAMS[ftr]
+                           ]
+
+#==============================================================================
+
 class AppPanel(wx.Panel):
     """
     This class builds the GUI for the application on a panel and attaches it
@@ -170,17 +251,20 @@ class AppPanel(wx.Panel):
         # Reconfigure the status bar.
         self.modify_statusbar([-34, -50, -16, -16])
 
-        # Split the panel into left and right halves.
+        # Split the panel into top and bottem halves.
         self.split_panel()
 
         # Modify the menu bar.
         self.modify_menubar()
 
+        # Create list of available fitters and their parameters.
+        self.init_fitter_info()
+
         # Create a PubSub receiver.
         pub.subscribe(self.OnUpdateDisplay, "update")
         pub.subscribe(self.OnUpdatePlot, "update_plot")
-        EVT_RESULT(self,self.OnFitResult)
-        self.view = "fresnel" # default view for the plot
+        EVT_RESULT(self, self.OnFitResult)
+        self.view = "fresnel"  # default view for the plot
         self.worker = None   #worker for fitting job
 
     def modify_menubar(self):
@@ -257,19 +341,24 @@ class AppPanel(wx.Panel):
         mb.Insert(1, view_menu, "&View")
 
         # Add 'Fitting' menu to the menu bar and define its options.
-        # Grey out items that are not currently implemented.
-        fit_menu = wx.Menu()
+        # Start and Stop items are initially greyed out, but will be enabled
+        # after a script is loaded.
+        fit_menu = self.fit_menu = wx.Menu()
 
         _item = fit_menu.Append(wx.ID_ANY,
                                 "&Start Fit",
                                 "Start fitting operation")
         frame.Bind(wx.EVT_MENU, self.OnStartFit, _item)
         fit_menu.Enable(id=_item.GetId(), enable=False)
+        self.fit_menu_start = _item
+
         _item = fit_menu.Append(wx.ID_ANY,
                                 "&Stop Fit",
                                 "Stop fitting operation")
         frame.Bind(wx.EVT_MENU, self.OnStopFit, _item)
         fit_menu.Enable(id=_item.GetId(), enable=False)
+        self.fit_menu_stop = _item
+
         _item = fit_menu.Append(wx.ID_ANY,
                                 "Fit &Options ...",
                                 "Edit fitting options")
@@ -303,7 +392,7 @@ class AppPanel(wx.Panel):
     def modify_toolbar(self):
         """Populates the tool bar."""
         frame = self.frame
-        tb = frame.GetToolBar()
+        tb = self.tb = frame.GetToolBar()
 
         script_bmp = get_bitmap("import_script.png", wx.BITMAP_TYPE_PNG)
         start_bmp = get_bitmap("start_fit.png", wx.BITMAP_TYPE_PNG)
@@ -320,10 +409,15 @@ class AppPanel(wx.Panel):
                                  "Start Fit",
                                  "Start fitting operation")
         frame.Bind(wx.EVT_TOOL, self.OnStartFit, _tool)
+        tb.EnableTool(_tool.GetId(), False)
+        self.tb_start = _tool
+
         _tool = tb.AddSimpleTool(wx.ID_ANY, stop_bmp,
                                  "Stop Fit",
                                  "Stop fitting operation")
         frame.Bind(wx.EVT_TOOL, self.OnStopFit, _tool)
+        tb.EnableTool(_tool.GetId(), False)
+        self.tb_stop = _tool
 
         tb.Realize()
         frame.SetToolBar(tb)
@@ -362,7 +456,7 @@ class AppPanel(wx.Panel):
         sizer.Fit(self)
 
         # Workaround: For some unknown reason, the sash is not placed in the
-        # middle of the enclosing panel.  As a workaround, we reset is here.
+        # middle of the enclosing panel.  As a workaround, we reset it here.
         sp.SetSashPosition(position=0, redraw=False)
 
     def init_top_panel(self):
@@ -432,6 +526,11 @@ class AppPanel(wx.Panel):
         self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.OnPageChanged)
         self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGING, self.OnPageChanging)
 
+    def init_fitter_info(self):
+        fit_params = FitParams()
+        #for k, v in sorted(fit_params.fitter_info.iteritems()):
+        #   print "key =", k, "value =", v
+
     def OnPageChanged(self, event):
         old = event.GetOldSelection()
         new = event.GetSelection()
@@ -483,7 +582,8 @@ class AppPanel(wx.Panel):
         pub.sendMessage("initial_model", self.problem)
 
         # Recieving message to start a fit operation.
-        pub.subscribe(self.OnFit, "fit_option")
+        pub.subscribe(self.OnStartFit, "start_fit")
+
         # Recieving parameter update message from parameter tab
         # This will trigger on_para_change method to update all the views of
         # model (profile tab, summary tab and the canvas will be redrawn with
@@ -491,37 +591,90 @@ class AppPanel(wx.Panel):
         pub.subscribe(self.OnUpdateModel, "update_model")
         pub.subscribe(self.OnUpdateParameters, "update_parameters")
 
+        # Enable appropriate menu items.
+        self.fit_menu.Enable(id=self.fit_menu_start.GetId(), enable=True)
+        #self.fit_menu.Enable(id=self.fit_menu_stop.GetId(), enable=True)
+
+        # Enable appropriate toolbar items.
+        self.tb.EnableTool(id=self.tb_start.GetId(), enable=True)
+        #self.tb.EnableTool(id=self.tb_stop.GetId(), enable=True)
+
     def OnResiduals(self, event):
         self.view = "residual"
         self.redraw(self.problem)
 
-    def OnStartFit(self, event):
-        print "Clicked on start fit ..." # not implemented
-
-    def OnStopFit(self, event):
-        print "Clicked on stop fit ..." # not implemented
-
     def OnFitOptions(self, event):
-        fit_dlg = FitControl(self, -1, "Fit Control")
+        plist ={}
+        for k in FITTERS:
+            value = FitParams.fitter_info[k]
+            plist[value[0]] = value[2]
+        #print "****** plist =\n", plist
 
-    def OnFit(self, event):
+        # Pass in the frame object as the parent window so that the dialog box
+        # will inherit font info from it instead of using system defaults.
+        frame = wx.FindWindowByName("AppFrame")
+        fit_dlg = FitControl(parent=frame, id=wx.ID_ANY, title="Fit Control",
+                             plist=plist,
+                             default_algo=FitParams.default_fitter_desc)
 
+        start_fit_flag = False
+        if fit_dlg.ShowModal() == wx.ID_OK:
+            curr_algo, results, start_fit_flag = fit_dlg.get_results()
+            #print 'results', curr_algo, results, start_fit_flag
+            FitParams.default_fitter_desc = curr_algo
+            for kk, vv in FitParams.FITTER_DESC.iteritems():
+                if vv == curr_algo:
+                    FitParams.default_fitter = kk
+                    break
+
+            for ret_k, ret_v in results.iteritems():
+                #print "ret_k, ret_v =", ret_k, ret_v
+                for kk, vv in FitParams.FITTER_DESC.iteritems():
+                    #print "*** kk, vv =", kk, vv
+                    if ret_k == vv:
+                        #print "Found it", ret_k, kk
+                        break
+                value = FitParams.fitter_info[kk]
+                vlist = value[2]
+                #print "++++ kk, vlist =", kk, vlist
+                for i, p in enumerate(ret_v):
+                    #print "*** i, p =", i, p
+                    param = list(vlist[i])
+                    param[2] = p
+                    vlist[i] = tuple(param)
+                value[2] = vlist
+                FitParams.fitter_info[kk] = value
+
+        fit_dlg.Destroy()
+        if start_fit_flag:
+            OnStartFit(event)
+
+    def OnStartFit(self, event):
         self.problem_copy = copy.deepcopy(self.problem)
-        opts = FitOpts(self.args)
-
         monitors = [GUIMonitor(self.problem)]
 
-        options = event.data
-        opts.steps = int(options['steps'])
-        opts.pop = float(options['pop'])
-        opts.burn = int(options['burn'])
-        opts.CR = float(options['cross'])
-        opts.Tmin = float(options['tmin'])
-        opts.Tmax= float(options['tmax'])
-        opts.starts=1
-        algorithm = options["algo"]
+        # FIXME: Temporary very ugly code ...
+        x = FitParams.fitter_info[FitParams.default_fitter]
 
-        self.fitter = FitProxy(FITTERS[algorithm],
+        opts = FitOpts(self.args)
+        opts.starts = 1
+        for p in x[2]:
+            if p[0] == "Steps:":
+                opts.steps = int(p[2])
+            elif p[0] == "Population:":
+                opts.pop = float(p[2])
+            elif p[0] == "Crossover Ratio:":
+                opts.CR = float(p[2])
+            elif p[0] == "Burn:":
+                opts.burn = int(p[2])
+            elif p[0] == "Min Temperature:":
+                opts.Tmin = float(p[2])
+            elif p[0] == "Max Temperature:":
+                opts.Tmax = float(p[2])
+            elif p[0] == "Starts:":
+                opts.starts = int(p[2])
+
+        self.fitter = FitProxy(FITTERS[FitParams.default_fitter],
                                problem=self.problem_copy, monitors=monitors,
                                options=opts)
         mapper = SerialMapper
@@ -532,6 +685,9 @@ class AppPanel(wx.Panel):
                                    pars=opts.args, mapper=mapper)
 
         self.sb.SetStatusText("Fit status: Running", 3)
+
+    def OnStopFit(self, event):
+        print "Clicked on stop fit ..." # not implemented
 
     def OnFitResult(self, event):
         self.redraw(self.problem) # redraw the plot last time with fitted chsiq
