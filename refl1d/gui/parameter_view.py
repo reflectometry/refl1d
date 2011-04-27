@@ -1,3 +1,31 @@
+# Copyright (C) 2006-2011, University of Maryland
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/ or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
+# Author: Nikunj Patel
+
+"""
+This module implements the Summary View panel.
+"""
+
+#==============================================================================
+
 import wx
 import sys
 
@@ -16,11 +44,11 @@ class ParameterView(wx.Panel):
         text_hbox = wx.BoxSizer(wx.HORIZONTAL)
 
         # flag to set True if updation of parameter happened locally (this means
-        # this view has been updated by the user). So we do not need to redraw 
+        # this view has been updated by the user). So we do not need to redraw
         # the whole tree but we need to refresh the tree with new updated values.
         # As some other values may depend upon updated values.
         self.update_local = False
-        
+
         self.tree = gizmos.TreeListCtrl(self, -1, style =
                                         wx.TR_DEFAULT_STYLE
                                         | wx.TR_HAS_BUTTONS
@@ -61,34 +89,33 @@ class ParameterView(wx.Panel):
         pub.subscribe(self.OnUpdateModel, "update_model")
         # change model parameter message
         pub.subscribe(self.OnUpdateParameters, "update_parameters")
-        
+
         self.tree.GetMainWindow().Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
         self.tree.Bind(wx.EVT_TREE_END_LABEL_EDIT, self.OnEndEdit)
         #self.tree.Bind(wx.EVT_TREE_ITEM_GETTOOLTIP,self.OnTreeTooltip)
-        wx.EVT_MOTION(self.tree, self.OnMouseMotion) 
-        
+        #wx.EVT_MOTION(self.tree, self.OnMouseMotion)
+
         vbox.Add(self.tree, 1, wx.EXPAND)
         self.SetSizer(vbox)
         self.SetAutoLayout(1)
-        
-    """
+
+    '''
     def OnTreeTooltip(self, event):
          itemtext = self.tree.GetItemText(event.GetItem())
          event.SetToolTip("This is a ToolTip for %s!" % itemtext)
-         event.Skip() 
-    """
-         
+         event.Skip()
+
     def OnMouseMotion(self, event):
         pos = event.GetPosition()
         item, flags, col = self.tree.HitTest(pos)
-        
+
         if wx.TREE_HITTEST_ONITEMLABEL:
             self.tree.SetToolTipString("tool tip")
         else:
             self.tree.SetToolTipString("")
-        
-        event.Skip() 
 
+        event.Skip()
+    '''
 
     # ============= Signal bindings =========================
 
@@ -103,8 +130,8 @@ class ParameterView(wx.Panel):
 
     def OnUpdateParameters(self, event):
         if self.model == event.data:
-            self.update_parameters()    
-        
+            self.update_parameters()
+
     # ============ Operations on the model  ===============
 
     def set_model(self, model):
@@ -119,7 +146,7 @@ class ParameterView(wx.Panel):
         self.add_tree_nodes(self.root, parameters)
         self.update_tree_nodes()
         self.tree.ExpandAll(self.root)
-        
+
     def update_parameters(self):
         if not self.update_local:
             self.tree.DeleteAllItems()
@@ -128,7 +155,6 @@ class ParameterView(wx.Panel):
             # we need to refresh the tree with only updated values
             self.update_tree_nodes()
             self.update_local = False
-        
 
     def add_tree_nodes(self, branch, nodes):
         if isinstance(nodes,dict) and nodes != {}:
@@ -143,17 +169,17 @@ class ParameterView(wx.Panel):
 
         elif isinstance(nodes, BaseParameter):
             self.tree.SetItemPyData(branch, nodes)
-        
+
     def update_tree_nodes(self):
         node = self.tree.GetRootItem()
         while node.IsOk():
             self.set_leaf(node)
             node = self.tree.GetNext(node)
-                    
+
     def set_leaf(self, branch):
         par = self.tree.GetItemPyData(branch)
         if par is None: return
-        
+
         # for checking wheather the parameters are fittable or not.
         if par.fittable == True:
             fittable = 'Yes'
@@ -167,7 +193,6 @@ class ParameterView(wx.Panel):
         self.tree.SetItemText(branch, low, 3)
         self.tree.SetItemText(branch, high, 4)
         self.tree.SetItemText(branch, fittable, 5)
-
 
     def OnRightUp(self, evt):
         pos = evt.GetPosition()
@@ -183,7 +208,7 @@ class ParameterView(wx.Panel):
         wx.CallAfter(self.get_new_value, item, 2)
         wx.CallAfter(self.get_new_min, item, 3)
         wx.CallAfter(self.get_new_max, item, 4)
-        
+
     def get_new_value(self, item, column):
         new_value = self.tree.GetItemText(item, column)
 
@@ -203,7 +228,6 @@ class ParameterView(wx.Panel):
             self.node_object.name = new_name
             self.update_local = True
             pub.sendMessage("update_parameters", self.model)
-
 
     def get_new_min(self, item, column):
         low = float(self.tree.GetItemText(item, column))
@@ -225,4 +249,3 @@ class ParameterView(wx.Panel):
             self.node_object.range(low, high)
             self.update_local = True
             pub.sendMessage("update_parameters", self.model)
-        
