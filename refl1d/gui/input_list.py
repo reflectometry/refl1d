@@ -1,4 +1,5 @@
-# Copyright (C) 2006-2010, University of Maryland
+#!/usr/bin/python
+# Copyright (C) 2006-2011, University of Maryland
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -258,7 +259,7 @@ class InputListPanel(ScrolledPanel):
                  id       = wx.ID_ANY,
                  pos      = wx.DefaultPosition,
                  size     = wx.DefaultSize,
-                 style    =(wx.RAISED_BORDER|wx.TAB_TRAVERSAL),
+                 style    = wx.TAB_TRAVERSAL,
                  name     = "",
                  itemlist = [],
                  align    = False,
@@ -266,7 +267,7 @@ class InputListPanel(ScrolledPanel):
                 ):
         ScrolledPanel.__init__(self, parent, id, pos, size, style, name)
 
-        self.SetBackgroundColour(WINDOW_BKGD_COLOUR)
+        #self.SetBackgroundColour(WINDOW_BKGD_COLOUR)
         self.align = align
         self.itemlist = itemlist
         self.item_cnt = len(self.itemlist)
