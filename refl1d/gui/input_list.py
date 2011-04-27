@@ -223,7 +223,7 @@ class InputListPanel(ScrolledPanel):
     [0] Label string prefix for the input field
     [1] Default value
     [2] Datatype for validation (see ItemListValidator docstring for details)
-    [3] flags parameter in the form of a string of characters as follows:
+    [3] Flags parameter in the form of a string of characters as follows:
         R - input is required; otherwise input is optional and can be blank
         E - field is editable by the user; otherwise it is non-editable and box
             is grayed-out; a non-editable field has its default value returned
@@ -382,8 +382,7 @@ class InputListPanel(ScrolledPanel):
                 self.headers.append(None)
 
             # Create the text label widget.
-            self.labels.append(wx.StaticText(self, wx.ID_ANY, label=text,
-                               style=wx.ALIGN_RIGHT))
+            self.labels.append(wx.StaticText(self, wx.ID_ANY, label=text))
             w, h = self.labels[x].GetSize()
             if w > self.widest: self.widest = w
 
@@ -575,7 +574,7 @@ class InputListDialog(wx.Dialog):
     [0] Label string prefix for the input field
     [1] Default value
     [2] Datatype for validation (see ItemListValidator docstring for details)
-    [3] flags parameter in the form of a string of characters as follows:
+    [3] Flags parameter in the form of a string of characters as follows:
         R - input is required; otherwise input is optional and can be blank
         E - field is editable by the user; otherwise it is non-editable and box
             is grayed-out; a non-editable field has its default value returned
@@ -768,8 +767,7 @@ class InputListDialog(wx.Dialog):
                 self.headers.append(None)
 
             # Create the text label widget.
-            self.labels.append(wx.StaticText(self, wx.ID_ANY, label=text,
-                               style=wx.ALIGN_RIGHT))
+            self.labels.append(wx.StaticText(self, wx.ID_ANY, label=text))
             w, h = self.labels[x].GetSize()
             if w > self.widest: self.widest = w
 
