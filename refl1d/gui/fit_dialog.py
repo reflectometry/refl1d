@@ -81,7 +81,7 @@ class FitControl(wx.Dialog):
                 self.algorithm.append(algo)
 
         self.radio_list = []
-        rows = int(len(self.algorithm)/2)
+        rows = (len(self.algorithm)+1)/2
 
         flexsizer = wx.FlexGridSizer(rows, 2, hgap=20, vgap=10)
 
