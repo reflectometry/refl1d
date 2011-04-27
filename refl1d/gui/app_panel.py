@@ -150,17 +150,38 @@ class GUIMonitor(monitor.TimedUpdate):
 #==============================================================================
 
 class FitParams():
+    """
+    This class maintains a data structure of fitter algorithms and their
+    parameters (storing both default and current values).
+    """
 
+    # Get values from command line options or their default values if not
+    # specified on the command line.
     opts = getopts()
-    opts.pop_rl = 0.5
-    default_fitter = opts.fit
+
+    # The default population value for the random lines algorithm is different
+    # than the default for the other algorithms but getopts() does not
+    # differentiate between them.  Therefore, a custom default value for
+    # population for random lines will be used unless the user specifies a
+    # value on the command line.
+    pop_specified = False
+    for s in sys.argv:
+        if '--pop' in s: pop_specified = True
+    if pop_specified:
+        opts.pop_rl = opts.pop
+    else:
+        opts.pop_rl = 0.5
 
     FITTER_DESC = dict(dream="Dream", rl="Random Lines", pt="Parallel Tempering",
                        ps="Particle Swarm", de="Differential Evolution",
                        newton="Quasi-Newton", amoeba="Amoeba", snobfit="SnobFit")
 
+    default_fitter = opts.fit
     default_fitter_desc = FITTER_DESC[default_fitter]
 
+    # The following is a dictionary of fit algorithms and their parameters.
+    # For each parameter the following info is stored: parameter label,
+    # program default value, current value, and data type.
     FITTER_PARAMS = dict(
                   amoeba =
                     [
@@ -218,6 +239,10 @@ class FitParams():
                     ],
                  )
 
+    # TODO: Simplify the data structures (and access to/from them) by creating
+    # a single-level dictionary (instead of dictionary of dictionaries) that
+    # directly incorporates FITTER_DESC and FITTER_PARAMS into fitter_info and
+    # then adds info from FITTERS.
     fitter_info = {}
     for ftr in FITTERS:
         fitter_info[ftr] = [
@@ -608,6 +633,9 @@ class AppPanel(wx.Panel):
         self.redraw(self.problem)
 
     def OnFitOptions(self, event):
+        # TODO: Revise the processing of fitter_info when this data structure
+        # is simplified to be a single-level dictionary.
+
         plist ={}
         for k in FITTERS:
             value = FitParams.fitter_info[k]
