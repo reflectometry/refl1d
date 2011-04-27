@@ -24,7 +24,9 @@
 This module implements the AppPanel class which creates the main panel on top
 of the frame of the GUI for the Refl1D application.
 """
+
 #==============================================================================
+
 from __future__ import division
 import os
 import sys
@@ -150,7 +152,6 @@ class GUIMonitor(monitor.TimedUpdate):
 class FitParams():
 
     opts = getopts()
-    #opts.pop_rl = opts.pop if opts.fit == FITTER['rl'] else 0.5
     opts.pop_rl = 0.5
     default_fitter = opts.fit
 
@@ -341,8 +342,8 @@ class AppPanel(wx.Panel):
         mb.Insert(1, view_menu, "&View")
 
         # Add 'Fitting' menu to the menu bar and define its options.
-        # Start and Stop items are initially greyed out, but will be enabled
-        # after a script is loaded.
+        # Items are initially greyed out, but will be enabled after a script
+        # is loaded.
         fit_menu = self.fit_menu = wx.Menu()
 
         _item = fit_menu.Append(wx.ID_ANY,
@@ -363,6 +364,8 @@ class AppPanel(wx.Panel):
                                 "Fit &Options ...",
                                 "Edit fitting options")
         frame.Bind(wx.EVT_MENU, self.OnFitOptions, _item)
+        fit_menu.Enable(id=_item.GetId(), enable=False)
+        self.fit_menu_options = _item
 
         mb.Insert(2, fit_menu, "&Fitting")
 
@@ -594,6 +597,7 @@ class AppPanel(wx.Panel):
         # Enable appropriate menu items.
         self.fit_menu.Enable(id=self.fit_menu_start.GetId(), enable=True)
         #self.fit_menu.Enable(id=self.fit_menu_stop.GetId(), enable=True)
+        self.fit_menu.Enable(id=self.fit_menu_options.GetId(), enable=True)
 
         # Enable appropriate toolbar items.
         self.tb.EnableTool(id=self.tb_start.GetId(), enable=True)
