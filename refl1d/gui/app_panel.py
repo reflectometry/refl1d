@@ -570,12 +570,12 @@ class AppPanel(wx.Panel):
                             #defaultFile="",
                             wildcard=(MODEL_FILES+"|"+ALL_FILES),
                             style=wx.OPEN|wx.CHANGE_DIR)
-        
+
         # Wait for user to close the dialog.
         status = dlg.ShowModal()
         path = dlg.GetPath()
         dlg.Destroy()
-        
+
         # Process file if user clicked okay
         if status == wx.ID_OK:
             self.load_model(path)
@@ -597,8 +597,8 @@ class AppPanel(wx.Panel):
         status = dlg.ShowModal()
         path = dlg.GetPath()
         dlg.Destroy()
-        
-        # Process file if user clicked okay
+
+        # Process file if user clicked okay.
         if status == wx.ID_OK:
             self.model.modelfile = path
             self.save_model()
@@ -616,11 +616,11 @@ class AppPanel(wx.Panel):
         status = dlg.ShowModal()
         path = dlg.GetPath()
         dlg.Destroy()
-        
-        # Process file if user clicked okay
+
+        # Process file if user clicked okay.
         if status == wx.ID_OK:
             self.import_model(path)
-        
+
     def OnFitOptions(self, event):
         # TODO: Revise the processing of fitter_info when this data structure
         # is simplified to be a single-level dictionary.
@@ -760,7 +760,7 @@ class AppPanel(wx.Panel):
         sash_pos = -self.sp.GetSashPosition()  # set sash to keep panel sizes
         self.sp.SetSashPosition(position=sash_pos, redraw=False)
         self.sp.Refresh(eraseBackground=False)
-        
+
     def OnModelNew(self, model):
         self.set_model(model)
 
@@ -790,18 +790,18 @@ class AppPanel(wx.Panel):
             publish("model.new", model=problem)
         except:
             publish("log.model", message=traceback.format_exc())
-        
+
     def set_model(self, model):
         # Inform the various tabs that the model they are viewing has changed
         self.problem = model  # This should be theory_view.set_model(model)
         self.redraw()
-        
+
         self.profile_view.set_model(model)
         self.parameter_view.set_model(model)
         self.summary_view.set_model(model)
         # TODO: Replacing the model should allow us to set the model
         # specific profile_view, theory_view, etc.
-        
+
         # Enable appropriate menu items.
         self.fit_menu.Enable(id=self.fit_menu_start.GetId(), enable=True)
         #self.fit_menu.Enable(id=self.fit_menu_stop.GetId(), enable=True)
@@ -819,7 +819,7 @@ class AppPanel(wx.Panel):
     def OnLog(self, event):
         self.view = "log"
         self.redraw()
-        
+
     def OnLinear(self, event):
         self.view = "linear"
         self.redraw()
