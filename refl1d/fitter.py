@@ -900,4 +900,3 @@ def load_problem(file, options=[]):
         raise ValueError(file+" does not define 'problem=FitProblem(...)'")
 
     return problem
-

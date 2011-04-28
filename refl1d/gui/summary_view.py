@@ -30,9 +30,9 @@ class SummaryView(scrolled.ScrolledPanel):
     # ============= Signal bindings =========================
     def OnShow(self, event):
         if self._reset_model:
-           self.update_model()
+            self.update_model()
         elif self._reset_parameters:
-           self.update_parameters()
+            self.update_parameters()
 
     def OnModelChange(self, model):
         if self.model == model:

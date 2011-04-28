@@ -241,7 +241,7 @@ class ProfileInteractor(object):
 
     def _signal(self):
         self.signal_update()
-        
+
     def delayed_signal(self):
         try: self._delayed_signal.Restart(50)
         except: self._delayed_signal = wx.FutureCall(50, self._signal)

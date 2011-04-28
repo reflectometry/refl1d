@@ -20,7 +20,7 @@ except:
     _pub = Publisher()
     _subscribers = [] # pubsub uses weak refs; need to hold on to subscribers
     def subscribe(callback, topic):
-        def unwrap_data(event): 
+        def unwrap_data(event):
             #print "recving",topic,"in",callback.__name__
             callback(**event.data)
         _subscribers.append(unwrap_data)

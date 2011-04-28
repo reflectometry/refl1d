@@ -52,4 +52,3 @@ dist = setup(
 )
 
 # End of file
-

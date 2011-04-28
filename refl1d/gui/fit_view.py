@@ -57,5 +57,3 @@ class FitView(wx.Panel):
 
     def OnFitComplete(self, event):
         self.btn_fit.SetLabel("Fit")
-
-

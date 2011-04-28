@@ -219,4 +219,3 @@ class GareflProbe(Probe):
 class GareflPolarizedProbe(PolarizedNeutronProbe):
     def __init__(self, xs):
         self.pp, self.pm, self.mp, self.mm = xs
-

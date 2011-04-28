@@ -219,7 +219,7 @@ class Refl1dGUIApp(wx.App):
 def inspect():
     import wx.lib.inspection
     wx.lib.inspection.InspectionTool().Show()
-    
+
 def main():
     if LOGTIM: log_time("Starting Refl1D")
 
@@ -229,7 +229,7 @@ def main():
     from .. import cli
     cli.FitOpts.FLAGS |= set(('inspect','syspath'))
     opts = cli.getopts()
-    
+
     # For wx debugging, load the wxPython Widget Inspection Tool if requested.
     # It will cause a separate interactive debugger window to be displayed.
     if opts.inspect:

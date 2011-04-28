@@ -62,4 +62,3 @@ if __name__ == "__main__":
     body = 'See http://reflectometry.org for details.'
     #notify('@pkienzle', msg, body)
     notify('paknist@gmail.com', msg, body)
-

@@ -113,7 +113,7 @@ To successfully set up AppArmor, there are a few operations you need.
 Each protected application needs a profile, usually stored in
 /etc/apparmor.d/path.to.application.  With the reflenv virtural
 environment in the reflectometry user, the following profile
-would be appropriate::
+would be appropriate for the worker daemon::
 
     -- /etc/apparmor.d/home.reflectometry.reflenv.bin.reflworkd
     #include <tunables/global>
@@ -135,8 +135,17 @@ and read access to everything else in the virtual environment.
 
 The rw access to .reflserve is potentially problematic.  Hostile
 models can interfere with each other if they are running at the same time.
-Ideally these would be restricted to worker/jobid/** but this author does not
-know how to do so while running with minimal privileges.
+In particular, they can inject html into the returned data set which can
+effectively steal authentication credentials from other users through
+cross site scripting attacks, and so would not be appropriate on a closed
+server.  Restricting the model to .reflserve/worker/jobid/** would reduce
+this risk, but this author does not know how to do so without elevating
+reflworkd privileges to root.
+
+
+A similar profile could be created for the job server, and indeed, any web
+service you have on your machine, but this is less critical since it is not 
+running user models.
 
 Once the profile is in place, restart the apparmor.d daemon to enable it::
 

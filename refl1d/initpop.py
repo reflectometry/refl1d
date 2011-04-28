@@ -115,4 +115,3 @@ def random(N, pars, include_current=False):
     if include_current:
         population[0] = [p.value for p in pars]
     return population
-

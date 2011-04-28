@@ -78,5 +78,3 @@ class AMQPMapper(object):
     def stop_mapper(mapper):
         for pipe in mapper.pipes:
             pipe.terminate()
-
-

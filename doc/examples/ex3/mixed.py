@@ -15,7 +15,7 @@
 #    from sitedoc import plot_model
 #    plot_model('mixed.py')
 
-# Since silicon and air are defined, the only material we need to 
+# Since silicon and air are defined, the only material we need to
 # define is nickel.
 
 from refl1d.names import *
@@ -26,7 +26,7 @@ nickel = Material('Ni')
 plateau = silicon(0,5) | nickel(1000,200) | air
 valley = silicon(0,5) | air
 
-# We need only one probe for simulation.  The reflectivity measured at 
+# We need only one probe for simulation.  The reflectivity measured at
 # the detector will be a mixture of those neutrons which reflect off
 # the plateau and those that reflect off the valley.
 
@@ -40,7 +40,7 @@ M = MixedExperiment(samples=[plateau,valley], probe=probe, ratio=[1,1])
 M.simulate_data(5)
 
 # We will assume the silicon interface is the same for the valley as the
-# plateau, which depending on the how the sample is constructed, may or 
+# plateau, which depending on the how the sample is constructed, may or
 # may not be realistic.
 
 valley[0].interface = plateau[0].interface
@@ -74,4 +74,3 @@ problem = FitProblem(M)
 # by running refl1d with --random::
 #
 #    $ refl1d mixed.py --random --store=T1
-

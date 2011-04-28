@@ -38,7 +38,7 @@ def checkspeed(uri=URI):
             queue.postjob(1, {'status': 'COMPLETE', 'result': 0})
         print 10*(i+1), time.time()-t
         t = time.time()
-    
+
 def test(uri=URI):
 
     queue = setupdb(uri)
@@ -50,8 +50,8 @@ def test(uri=URI):
         assert pending == qpending
         assert active == qactive
         assert complete == qcomplete
-    
-    
+
+
     test1 = { 'name' : 'test1', 'notify' : 'me' }
     test2 = { 'name' : 'test2', 'notify' : 'me' }
     test3 = { 'name' : 'test3', 'notify' : 'you' }
@@ -80,21 +80,21 @@ def test(uri=URI):
 
     if DEBUG: print "info(0)", queue.info(1)
     assert queue.info(1)['name'] == test1['name']
-    
+
     request = queue.nextjob(queue='cue')
     if DEBUG: print "nextjob",request
     assert request['request']['name'] == test1['name']
     checkqueue([2],[1],[])
-    
+
     job2 = queue.submit(test3, origin="there")
     request = queue.nextjob(queue='cue')
     if DEBUG: print "nextjob",request
     assert request['request']['name'] == test3['name']
     checkqueue([2],[1,3],[])
-    
+
     queue.postjob(1, {'status': 'COMPLETE', 'result': 0})
     checkqueue([2],[3],[1])
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
     test()
     #checkspeed()

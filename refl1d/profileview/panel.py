@@ -44,25 +44,25 @@ class ProfileView(AuiPanel):
         # Axes
         self.axes = self.fig.get_axes()[0]
         self.axes.set_autoscale_on(False)
-        
+
         # Show toolbar or not?
         self.toolbar = NavigationToolbar2WxAgg( self.canvas )
         self.toolbar.Show(True)
 
         # Create a figure manager to manage things
         self.figmgr = FigureManager( self.canvas, 1, self )
- 
+
         # respond to changes in model
         subscribe(self.OnModelChange, "model.change")
         subscribe(self.OnModelUpdate, "model.update")
-        
+
         self.sizer = wx.BoxSizer( wx.VERTICAL )
         self.sizer.Add( self.canvas,1, border=2, flag= wx.LEFT|wx.TOP|wx.GROW)
         self.sizer.Add(self.toolbar)
         self.SetSizer( self.sizer)
         self.Fit()
-        
-    
+
+
     # ============= Signal bindings =========================
 
     def OnModelChange(self, model):
@@ -78,14 +78,14 @@ class ProfileView(AuiPanel):
 
     def set_model(self, model):
         """Initialize model by profile."""
-        
+
         self.axes.cla()
         self.job = model
         try:
             experiment = self.job.fits[0].fitness
         except:
             experiment = self.job.fitness
-            
+
         # Turn the model into a user interface
         signal_update = lambda : publish("model.update", model=model)
         self.profile = ProfileInteractor(self.axes,
@@ -152,4 +152,3 @@ class ProfileView(AuiPanel):
         numpy.seterr(all='raise')
         ProfileInteractor._debug = True
         BaseInteractor._debug = True
-   

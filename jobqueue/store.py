@@ -53,4 +53,3 @@ def delete(id, key):
         os.unlink(datafile)
     except:
         raise KeyError("Could not delete key %s-%s"%(id,key))
-

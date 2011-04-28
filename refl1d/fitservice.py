@@ -95,4 +95,3 @@ Generation %(step)d, chisq %(cost)g
             pylab.gcf().canvas.draw()
         except:
             raise
-
