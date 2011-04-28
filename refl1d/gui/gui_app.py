@@ -216,19 +216,27 @@ class Refl1dGUIApp(wx.App):
 
 #==============================================================================
 
+def inspect():
+    import wx.lib.inspection
+    wx.lib.inspection.InspectionTool().Show()
+    
 def main():
     if LOGTIM: log_time("Starting Refl1D")
 
     # Instantiate the application class and give control to wxPython.
     app = Refl1dGUIApp(redirect=False, filename=None)
 
+    from .. import cli
+    cli.FitOpts.FLAGS |= set(('inspect','syspath'))
+    opts = cli.getopts()
+    
     # For wx debugging, load the wxPython Widget Inspection Tool if requested.
     # It will cause a separate interactive debugger window to be displayed.
-    if len(sys.argv) > 1 and '--inspect' in sys.argv[1:]:
+    if opts.inspect:
         import wx.lib.inspection
         wx.lib.inspection.InspectionTool().Show()
 
-    if len(sys.argv) > 1 and '--syspath' in sys.argv[1:]:
+    if opts.syspath:
         print "*** Application directory is:   ", get_appdir()
         print "*** Data directory is:          ", get_datadir()
         print "*** Package root directory is:  ", get_rootdir()
@@ -236,6 +244,11 @@ def main():
         print "*** Python path is:"
         for i, p in enumerate(sys.path):
             print "%5d  %s" %(i, p)
+
+    # Argument processing
+    model = cli.initial_model(opts)
+    if model:
+        app.frame.panel.set_model(model=model)
 
     # Enter event loop which allows the user to interact with the application.
     if LOGTIM: log_time("Entering the event loop")

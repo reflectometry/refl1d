@@ -31,24 +31,9 @@ from __future__ import division
 import os
 import sys
 import copy
+import traceback
 
 import wx
-import wx.lib.newevent
-
-# This is a workaround for a py2exe problem when using pubsub from wxPython ...
-# wxPython 2.8.11.0 supports both the pubsub V1 and V3 APIs (V1 is the default;
-# there is no V2), whereas 2.8.9.x and 2.8.10.1 offer only the V1 API. Since
-# we want to build with older versions of wxPython we will use the V1 API.
-# However, py2exe does not find pubsub when 2.8.11.0 is used unless there is
-# an explicit import of setupv1.  This is not a problem with older versions
-# of wxPython.  The import of setupv1 should only be done once because it
-# establishes the interface for all subsequent pubsub imports.
-try:
-    from wx.lib.pubsub import setupv1  # necessary for py2exe with 2.8.11.0
-except:
-    pass
-from wx.lib.pubsub import Publisher as pub  # when using the V1 API
-# from wx.lib.pubsub import pub  # in the future when using the V3 API
 
 # If we are running from an image built by py2exe, keep the frozen environment
 # self contained by having matplotlib use a private directory instead of using
@@ -81,9 +66,6 @@ from matplotlib.patches import Patch
 from matplotlib.figure import Figure
 from matplotlib.font_manager import FontProperties
 
-# For use in the matplotlib toolbar.
-from matplotlib.widgets import Slider, Button, RadioButtons
-
 # Wx-Pylab magic for displaying plots within an application's window.
 from matplotlib import _pylab_helpers
 from matplotlib.backend_bases import FigureManagerBase
@@ -93,7 +75,7 @@ import pylab
 from refl1d.mystic import monitor, parameter
 from refl1d.profileview.panel import ProfileView
 from refl1d.probe import Probe
-from refl1d.cli import FITTERS, FitOpts, FitProxy, SerialMapper, load_problem
+from refl1d.cli import FITTERS, FitOpts, FitProxy, MPMapper, load_problem
 from refl1d.cli import getopts
 
 from .summary_view import SummaryView
@@ -102,12 +84,13 @@ from .parameter_view import ParameterView
 from .log_view import LogView
 from .fit_dialog import FitControl
 from .work_thread import Worker
-from .util import nice
+from .util import nice, subscribe, publish
 from .utilities import (get_appdir, get_bitmap, log_time,
                         popup_error_message, popup_warning_message,
                         StatusBarInfo, ExecuteInThread, WorkInProgress)
 
 # File selection strings.
+MODEL_FILES = "Model files (*.r1d)|*.r1d"
 PYTHON_FILES = "Script files (*.py)|*.py"
 REFL_FILES = "Refl files (*.refl)|*.refl"
 DATA_FILES = "Data files (*.dat)|*.dat"
@@ -137,15 +120,15 @@ class GUIMonitor(monitor.TimedUpdate):
         self.problem = problem
 
     def show_progress(self, history):
-        temp = "  "
-        chisq_rounded = nice(history.value[0])
-        wx.CallAfter(pub.sendMessage, "update",
-            "step  " + str(history.step[0])+temp + "chisq  " + str(chisq_rounded))
+        msg = "step %5d chisq %g"%(history.step[0], nice(history.value[0]))
+        publish("log.fit", message=msg)
 
     def show_improvement(self, history):
         self.problem.setp(history.point[0])
-        out = parameter.summarize(self.problem.parameters)
-        wx.CallAfter(pub.sendMessage, "update_plot", out)
+        publish("log.fit",
+             message=parameter.summarize(self.problem.parameters)
+             )
+        wx.CallAfter(publish, "model.update", model=self.problem)
 
 #==============================================================================
 
@@ -287,8 +270,11 @@ class AppPanel(wx.Panel):
         self.init_fitter_info()
 
         # Create a PubSub receiver.
-        pub.subscribe(self.OnUpdateDisplay, "update")
-        pub.subscribe(self.OnUpdatePlot, "update_plot")
+        subscribe(self.set_model, "model.new")
+        subscribe(self.OnModelChange, "model.change")
+        subscribe(self.OnModelUpdate, "model.update")
+        subscribe(self.OnStartFit, "fit.start")
+
         EVT_RESULT(self, self.OnFitResult)
         self.view = "fresnel"  # default view for the plot
         self.worker = None   #worker for fitting job
@@ -309,30 +295,30 @@ class AppPanel(wx.Panel):
         _item = file_menu.Prepend(wx.ID_ANY,
                                   "&Import",
                                   "Import script to define model")
-        frame.Bind(wx.EVT_MENU, self.OnImportScript, _item)
+        frame.Bind(wx.EVT_MENU, self.OnFileImport, _item)
 
         file_menu.PrependSeparator()
 
         _item = file_menu.Prepend(wx.ID_SAVEAS,
                                   "Save&As",
                                   "Save model as another name")
-        frame.Bind(wx.EVT_MENU, self.OnSaveAsModel, _item)
-        file_menu.Enable(id=wx.ID_SAVEAS, enable=False)
+        frame.Bind(wx.EVT_MENU, self.OnFileSaveAs, _item)
+        #file_menu.Enable(id=wx.ID_SAVEAS, enable=False)
         _item = file_menu.Prepend(wx.ID_SAVE,
                                   "&Save",
                                   "Save model")
-        frame.Bind(wx.EVT_MENU, self.OnSaveModel, _item)
-        file_menu.Enable(id=wx.ID_SAVE, enable=False)
+        frame.Bind(wx.EVT_MENU, self.OnFileSave, _item)
+        #file_menu.Enable(id=wx.ID_SAVE, enable=False)
         _item = file_menu.Prepend(wx.ID_OPEN,
                                   "&Open",
                                   "Open existing model")
-        frame.Bind(wx.EVT_MENU, self.OnOpenModel, _item)
-        file_menu.Enable(id=wx.ID_OPEN, enable=False)
+        frame.Bind(wx.EVT_MENU, self.OnFileOpen, _item)
+        #file_menu.Enable(id=wx.ID_OPEN, enable=False)
         _item = file_menu.Prepend(wx.ID_NEW,
                                   "&New",
                                   "Create new model")
-        frame.Bind(wx.EVT_MENU, self.OnNewModel, _item)
-        file_menu.Enable(id=wx.ID_NEW, enable=False)
+        frame.Bind(wx.EVT_MENU, self.OnFileNew, _item)
+        #file_menu.Enable(id=wx.ID_NEW, enable=False)
 
         # Add 'View' menu to the menu bar and define its options.
         # Present y-axis plotting scales as radio buttons.
@@ -429,7 +415,7 @@ class AppPanel(wx.Panel):
         _tool = tb.AddSimpleTool(wx.ID_ANY, script_bmp,
                                  "Import Script",
                                  "Load model from script")
-        frame.Bind(wx.EVT_TOOL, self.OnImportScript, _tool)
+        frame.Bind(wx.EVT_TOOL, self.OnFileImport, _tool)
 
         tb.AddSeparator()
 
@@ -524,17 +510,17 @@ class AppPanel(wx.Panel):
                              style=wx.NB_TOP|wx.NB_FIXEDWIDTH|wx.NB_NOPAGETHEME)
 
         # Create page windows as children of the notebook.
-        self.page0 = ProfileView(nb)
-        self.page1 = ParameterView(nb)
-        self.page2 = SummaryView(nb)
-        self.page3 = LogView(nb)
+        self.profile_view = ProfileView(nb)
+        self.parameter_view = ParameterView(nb)
+        self.summary_view = SummaryView(nb)
+        self.log_view = LogView(nb)
         #self.page4 = OtherView(nb)
 
         # Add the pages to the notebook with a label to show on the tab.
-        nb.AddPage(self.page0, "Profile")
-        nb.AddPage(self.page1, "Parameters")
-        nb.AddPage(self.page2, "Summary")
-        nb.AddPage(self.page3, "Log")
+        nb.AddPage(self.profile_view, "Profile")
+        nb.AddPage(self.parameter_view, "Parameters")
+        nb.AddPage(self.summary_view, "Summary")
+        nb.AddPage(self.log_view, "Log")
         #nb.AddPage(self.page4, "Dummy")
 
         self.pan2.sizer = wx.BoxSizer(wx.VERTICAL)
@@ -559,79 +545,82 @@ class AppPanel(wx.Panel):
         #for k, v in sorted(fit_params.fitter_info.iteritems()):
         #   print "key =", k, "value =", v
 
+    # TODO: not doing anything...
     def OnPageChanged(self, event):
         old = event.GetOldSelection()
         new = event.GetSelection()
         sel = self.notebook.GetSelection()
         event.Skip()
 
+    # TODO: not doing anything...
     def OnPageChanging(self, event):
         old = event.GetOldSelection()
         new = event.GetSelection()
         sel = self.notebook.GetSelection()
         event.Skip()
 
-    def OnNewModel(self, event):
-        print "Clicked on new model ..." # not implemented
+    def OnFileNew(self, event):
+        self.new_model()
 
-    def OnOpenModel(self, event):
-        print "Clicked on open model ..." # not implemented
+    def OnFileOpen(self, event):
+        # Load the script which will contain model defination and data.
+        dlg = wx.FileDialog(self,
+                            message="Select File",
+                            #defaultDir=os.getcwd(),
+                            #defaultFile="",
+                            wildcard=(MODEL_FILES+"|"+ALL_FILES),
+                            style=wx.OPEN|wx.CHANGE_DIR)
+        
+        # Wait for user to close the dialog.
+        status = dlg.ShowModal()
+        path = dlg.GetPath()
+        dlg.Destroy()
+        
+        # Process file if user clicked okay
+        if sts == wx.ID_OK:
+            self.load_model(path)
 
-    def OnSaveModel(self, event):
-        print "Clicked on save model ..." # not implemented
+    def OnFileSave(self, event):
+        if self.model and hasattr(self.model,'modelfile'):
+            self.save_model()
+        else:
+            self.OnFileSaveAs(event)
 
-    def OnSaveAsModel(self, event):
-        print "Clicked on save as model ..." # not implemented
+    def OnFileSaveAs(self, event):
+        dlg = wx.FileDialog(self,
+                            message="Select File",
+                            defaultDir=os.getcwd(),
+                            defaultFile="",
+                            wildcard=(MODEL_FILES+"|"+ALL_FILES),
+                            style=wx.OPEN|wx.CHANGE_DIR)
+        # Wait for user to close the dialog.
+        status = dlg.ShowModal()
+        path = dlg.GetPath()
+        dlg.Destroy()
+        
+        # Process file if user clicked okay
+        if sts == wx.ID_OK:
+            self.model.modelfile = path
+            self.save_model()
 
-    def OnImportScript(self, event):
+    def OnFileImport(self, event):
         # Load the script which will contain model defination and data.
         dlg = wx.FileDialog(self,
                             message="Select Script File",
-                            defaultDir=os.getcwd(),
-                            defaultFile="",
+                            #defaultDir=os.getcwd(),
+                            #defaultFile="",
                             wildcard=(PYTHON_FILES+"|"+ALL_FILES),
                             style=wx.OPEN|wx.CHANGE_DIR)
 
         # Wait for user to close the dialog.
-        sts = dlg.ShowModal()
-        if sts == wx.ID_OK:
-            file_path = dlg.GetPath()
+        status = dlg.ShowModal()
+        path = dlg.GetPath()
         dlg.Destroy()
-        if sts == wx.ID_CANCEL:
-            return  # Do nothing
-
-        dir,file = os.path.split(file_path)
-        os.chdir(dir)
-        self.args = [file, "T1"]
-        self.problem = load_problem(self.args)
-        self.redraw(self.problem)
-
-        # Send new model (problem) loaded message to all interested panels.
-        pub.sendMessage("initial_model", self.problem)
-
-        # Recieving message to start a fit operation.
-        pub.subscribe(self.OnStartFit, "start_fit")
-
-        # Recieving parameter update message from parameter tab
-        # This will trigger on_para_change method to update all the views of
-        # model (profile tab, summary tab and the canvas will be redrawn with
-        # new model parameters).
-        pub.subscribe(self.OnUpdateModel, "update_model")
-        pub.subscribe(self.OnUpdateParameters, "update_parameters")
-
-        # Enable appropriate menu items.
-        self.fit_menu.Enable(id=self.fit_menu_start.GetId(), enable=True)
-        #self.fit_menu.Enable(id=self.fit_menu_stop.GetId(), enable=True)
-        self.fit_menu.Enable(id=self.fit_menu_options.GetId(), enable=True)
-
-        # Enable appropriate toolbar items.
-        self.tb.EnableTool(id=self.tb_start.GetId(), enable=True)
-        #self.tb.EnableTool(id=self.tb_stop.GetId(), enable=True)
-
-    def OnResiduals(self, event):
-        self.view = "residual"
-        self.redraw(self.problem)
-
+        
+        # Process file if user clicked okay
+        if sts == wx.ID_OK:
+            self.import_model(path)
+        
     def OnFitOptions(self, event):
         # TODO: Revise the processing of fitter_info when this data structure
         # is simplified to be a single-level dictionary.
@@ -688,7 +677,7 @@ class AppPanel(wx.Panel):
         # FIXME: Temporary very ugly code ...
         x = FitParams.fitter_info[FitParams.default_fitter]
 
-        opts = FitOpts(self.args)
+        opts = FitOpts([])
         opts.starts = 1
         for p in x[2]:
             if p[0] == "Steps:":
@@ -709,7 +698,7 @@ class AppPanel(wx.Panel):
         self.fitter = FitProxy(FITTERS[FitParams.default_fitter],
                                problem=self.problem_copy, monitors=monitors,
                                options=opts)
-        mapper = SerialMapper
+        mapper = MPMapper
         self.pan1.Layout()
 
         # Start a new thread worker and give fit problem to the worker.
@@ -724,7 +713,7 @@ class AppPanel(wx.Panel):
     def OnFitResult(self, event):
         self.redraw(self.problem) # redraw the plot last time with fitted chsiq
 
-        pub.sendMessage("fit_complete")
+        publish("fit.complete")
         if event.data is None:
             # Thread aborted (using our convention of None return)
             print "Computation failed/aborted"
@@ -744,7 +733,6 @@ class AppPanel(wx.Panel):
         sys.stdout = open(problem.output+".out", "w")
 
         self.pan1.Layout()
-        self.redraw(problem)
 
     def OnSplitHorizontal(self, event):
         # Place panels in Top-Bottom orientation.
@@ -772,53 +760,88 @@ class AppPanel(wx.Panel):
         sash_pos = -self.sp.GetSashPosition()  # set sash to keep panel sizes
         self.sp.SetSashPosition(position=sash_pos, redraw=False)
         self.sp.Refresh(eraseBackground=False)
+        
+    def OnModelNew(self, model):
+        self.set_model(model)
 
-    def OnUpdateModel(self, event):
-        # Update the profile tab and redraw the canvas with new values.
-        self.problem.fitness.update()
-        self.redraw(self.problem)
+    def OnModelChange(self, model):
+        if model == self.problem:
+            self.redraw()
 
-    def OnUpdateParameters(self, event):
-        self.redraw(self.problem)
+    def OnModelUpdate(self, model):
+        if model == self.problem:
+            self.redraw()
 
-    def OnUpdateDisplay(self, msg):
-        """
-        Receives fit update messages from the thread and redirects
-        the update messages to the log view tab for display.
-        """
-        pub.sendMessage("log", msg.data)
+    def new_model(self):
+        from ..fitplugin import new_model as gen
+        self.set_model(gen())
 
-    def OnUpdatePlot(self, d):
-        """
-        Receives data from thread and update the plot
-        get the model fittable parameter and send message all views to update
-        itself
-        """
-        pub.sendMessage("update_parameters", self.problem)
-        self.redraw(self.problem)
+    def load_model(self, path):
+        try:
+            import cPickle as serialize
+            problem = serialize.load(path)
+            publish("model.new", model=problem)
+        except:
+            publish("log.model", message=traceback.format_exc())
+
+    def import_model(self, path):
+        try:
+            problem = load_problem([file_path])
+            publish("model.new", model=problem)
+        except:
+            publish("log.model", message=traceback.format_exc())
+        
+    def set_model(self, model):
+        # Inform the various tabs that the model they are viewing has changed
+        self.problem = model  # This should be theory_view.set_model(model)
+        self.redraw()
+        
+        self.profile_view.set_model(model)
+        self.parameter_view.set_model(model)
+        self.summary_view.set_model(model)
+        # TODO: Replacing the model should allow us to set the model
+        # specific profile_view, theory_view, etc.
+        
+        # Enable appropriate menu items.
+        self.fit_menu.Enable(id=self.fit_menu_start.GetId(), enable=True)
+        #self.fit_menu.Enable(id=self.fit_menu_stop.GetId(), enable=True)
+        self.fit_menu.Enable(id=self.fit_menu_options.GetId(), enable=True)
+
+        # Enable appropriate toolbar items.
+        self.tb.EnableTool(id=self.tb_start.GetId(), enable=True)
+        #self.tb.EnableTool(id=self.tb_stop.GetId(), enable=True)
+
+    # This should be split out into a separate theory_view.py.
+    # Our app panel needs to be able to set and reset model specific menus
+
+    # ==== Views ====
+    # TODO: can probably parameterize the view selection
+    def OnLog(self, event):
+        self.view = "log"
+        self.redraw()
+        
+    def OnLinear(self, event):
+        self.view = "linear"
+        self.redraw()
 
     def OnFresnel(self, event):
         self.view = "fresnel"
-        self.redraw(self.problem)
-
-    def OnLinear(self, event):
-        self.view = "linear"
-        self.redraw(self.problem)
+        self.redraw()
 
     def OnQ4(self, event):
         self.view = "q4"
-        self.redraw(self.problem)
+        self.redraw()
 
-    def OnLog(self, event):
-        self.view = "log"
-        self.redraw(self.problem)
+    def OnResiduals(self, event):
+        self.view = "residual"
+        self.redraw()
 
-    def redraw(self, model):
+    def redraw(self):
         # Redraw the canvas.
-        pylab.clf() # clear the canvas
         self._activate_figure()
-        model.fitness.plot_reflectivity(view=self.view)
-        pylab.text(0.01, 0.01, "chisq=%g" % model.chisq(),
+        pylab.clf() # clear the canvas
+        self.problem.fitness.plot_reflectivity(view=self.view)
+        pylab.text(0.01, 0.01, "chisq=%g" % self.problem.chisq(),
                    transform=pylab.gca().transAxes)
         pylab.draw()
 

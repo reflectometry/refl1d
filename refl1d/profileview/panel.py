@@ -5,8 +5,6 @@ A base panel to draw the profile
 import os
 import wx
 
-from wx.lib.pubsub import Publisher as pub
-
 import numpy
 from matplotlib.figure import Figure
 from matplotlib.axes   import Subplot
@@ -16,9 +14,9 @@ from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 
 from .auipanel import AuiPanel
 from .util import CopyImage
+from ..gui.util import subscribe, publish
 from .profile import ProfileInteractor
 from .interactor import BaseInteractor
-from .listener import Listener
 
 # ------------------------------------------------------------------------
 class ProfileView(AuiPanel):
@@ -54,48 +52,45 @@ class ProfileView(AuiPanel):
         # Create a figure manager to manage things
         self.figmgr = FigureManager( self.canvas, 1, self )
  
-        # set new model
-        pub.subscribe(self.OnInitialModel, "initial_model")
- 
-        # change model structure message
-        pub.subscribe(self.OnUpdateModel, "update_model")
- 
-        # change model parameter message
-        pub.subscribe(self.OnUpdateParameters, "update_parameters")
+        # respond to changes in model
+        subscribe(self.OnModelChange, "model.change")
+        subscribe(self.OnModelUpdate, "model.update")
         
         self.sizer = wx.BoxSizer( wx.VERTICAL )
         self.sizer.Add( self.canvas,1, border=2, flag= wx.LEFT|wx.TOP|wx.GROW)
         self.sizer.Add(self.toolbar)
         self.SetSizer( self.sizer)
         self.Fit()
-        self.listener = Listener()
         
     
     # ============= Signal bindings =========================
 
-    def OnInitialModel(self, event):
-        self.axes.cla()
-        self.set_job(event.data)
+    def OnModelChange(self, model):
+        if self.job == model:
+            self.set_model(model)
 
-    def OnUpdateModel(self, event):
-        self.set_job(event.data)
+    def OnModelUpdate(self, model):
+        if self.job == model:
+            self.profile.redraw()
 
-    def OnUpdateParameters(self, event):
-        self.profile.redraw()
+    def signal_update(self):
+        publish("model.update", self.job)
 
-    def set_job(self, job):
+    def set_model(self, model):
         """Initialize model by profile."""
         
-        self.job = job
+        self.axes.cla()
+        self.job = model
         try:
             experiment = self.job.fits[0].fitness
         except:
             experiment = self.job.fitness
             
         # Turn the model into a user interface
+        signal_update = lambda : publish("model.update", model=model)
         self.profile = ProfileInteractor(self.axes,
                                          experiment,
-                                         self.listener, self.job)
+                                         signal_update=signal_update)
         self.profile.update_markers()
         self.profile.update_profile()
         self.profile.reset_limits()

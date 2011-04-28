@@ -5,7 +5,6 @@ Reflectometry profile interactor.
 import wx
 import numpy
 from numpy import inf
-from wx.lib.pubsub import Publisher as pub
 from .binder import BindArtist, pixel_to_data
 from .util import twinx
 from .config import rho_color, rhoI_color, rhoM_color, thetaM_color
@@ -30,13 +29,12 @@ class ProfileInteractor(object):
     Reflectometry profile editor
     """
     _debug = False
-    def __init__(self, axes, experiment, listener, job):
+    def __init__(self, axes, experiment, signal_update):
         self.axes = axes
         self.xcoords = blend_xy(axes.transData, axes.transAxes)
-        self.listener = listener
         self.experiment = experiment
         self.magnetic = experiment.sample.magnetic
-        self.job = job
+        self.signal_update = signal_update
 
         # Theta needs a separate axis, we put these two axes into a figure
         if self.magnetic:
@@ -231,7 +229,7 @@ class ProfileInteractor(object):
         """
         # We are done the manipulation; let the model send its update signal
         # to whomever is listening.
-        #self.listener.signal('update',self)
+        # self.signal_update()
         self.redraw()
         self.delayed_signal()
         #self.delayed_profile()
@@ -242,12 +240,7 @@ class ProfileInteractor(object):
                                                  self.draw_now()))
 
     def _signal(self):
-        try:
-            pub.sendMessage("update_parameters", self.job)
-        except:
-            print 'error in message sending'
-            raise
-        self.listener.signal('update',self)
+        self.signal_update()
         
     def delayed_signal(self):
         try: self._delayed_signal.Restart(50)

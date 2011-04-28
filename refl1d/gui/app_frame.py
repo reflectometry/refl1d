@@ -71,7 +71,7 @@ class AppFrame(wx.Frame):
         self.add_statusbar()
 
         # Build the application panels for the GUI on the frame.
-        AppPanel(frame=self)
+        self.panel = AppPanel(frame=self)
 
         # Note: Do not call self.Fit() as this will reduce the frame to its
         # bare minimum size; we want it to keep its default size.

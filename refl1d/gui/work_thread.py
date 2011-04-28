@@ -1,7 +1,7 @@
 import wx
 import wx.lib.newevent
 import time
-from threading import *
+from threading import Thread
 
 EVT_RESULT_ID = 1
 

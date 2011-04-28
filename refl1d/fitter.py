@@ -562,9 +562,9 @@ class FitProblem(object):
         be called.
         """
         all_parameters = parameter.unique(self.model_parameters())
-        print "all_parameters",all_parameters
+        #print "all_parameters",all_parameters
         self.parameters = parameter.varying(all_parameters)
-        print "varying",self.parameters
+        #print "varying",self.parameters
         self.bounded = [p for p in all_parameters
                        if not isinstance(p.bounds, mbounds.Unbounded)]
         self.dof = self.model_points() - len(self.parameters)

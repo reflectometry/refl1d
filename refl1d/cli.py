@@ -24,12 +24,14 @@ from .mapper import MPMapper, AMQPMapper, SerialMapper
 from . import fitter
 from . import util
 from .mystic import parameter
-from .probe import Probe
-from . import garefl
 from . import initpop
 from . import __version__
 
 from .util import pushdir
+
+# TODO: separate refl specific parameters from generic fitter parameters
+from .probe import Probe
+
 
 # ==== Fitters ====
 
@@ -180,6 +182,7 @@ def load_problem(args):
     with pushdir(directory):
         if (filename.endswith('.so') or filename.endswith('.dll')
             or filename.endswith('.dyld')):
+            from . import garefl
             options = []
             problem = garefl.load(filename)
         elif filename.endswith('.staj'):
@@ -190,6 +193,9 @@ def load_problem(args):
         else:
             options = args[1:]
             problem = fitter.load_problem(filename, options=options)
+            # Guard against the user changing parameters after defining
+            # the problem.
+            problem.model_reset()
 
     problem.file = path
     if not hasattr(problem,'title'):
@@ -514,40 +520,52 @@ def getopts():
 
 # ==== Main ====
 
+def initial_model(opts):
+    if opts.seed is not None:
+        numpy.random.seed(opts.seed)
+
+    if opts.args:
+        problem = load_problem(opts.args)
+        if opts.pars is not None:
+            recall_best(problem, opts.pars)
+        if opts.random:
+            problem.randomize()
+        if opts.simulate:
+            problem.simulate_data(noise=float(opts.noise))
+            # If fitting, then generate a random starting point different
+            # from the simulation
+            if not (opts.check or opts.preview):
+                problem.randomize()
+    else:
+        problem = None
+    return problem
+
+def resynth(problem, mapper, opts):
+    make_store(problem,opts,exists_handler=store_overwrite_query)
+    fid = open(problem.output_path+".rsy",'at')
+    fitter.mapper = mapper.start_mapper(problem, opts.args)
+    for i in range(opts.resynth):
+        problem.resynth_data()
+        best, fbest = fitter.fit()
+        print "found %g"%fbest
+        fid.write('%.15g '%fbest)
+        fid.write(' '.join('%.15g'%v for v in best))
+        fid.write('\n')
+    problem.restore_data()
+    fid.close()
+
 def main():
     if len(sys.argv) == 1:
         sys.argv.append("-?")
         print "\nNo modelfile parameter was specified.\n"
 
     opts = getopts()
+    problem = initial_problem(opts)
 
-    # Set up the matplotlib backend to minimize the wx dependency.
-    import matplotlib
-    if opts.batch or opts.remote:
-        matplotlib.use('Agg')
-    else:
-        matplotlib.use('WXAgg')
-    matplotlib.interactive(False)
-
-    if opts.seed is not None:
-        numpy.random.seed(opts.seed)
-
-    problem = load_problem(opts.args)
-    if opts.pars is not None:
-        recall_best(problem, opts.pars)
-    if opts.random:
-        problem.randomize()
-    if opts.simulate:
-        problem.simulate_data(noise=float(opts.noise))
-        # If fitting, then generate a random starting point different
-        # from the simulation
-        if not (opts.check or opts.preview):
-            problem.randomize()
-
-    if opts.fit == 'dream':
-        fitter = DreamProxy(problem=problem, opts=opts)
-    else:
-        fitter = FitProxy(FITTERS[opts.fit], problem=problem, options=opts)
+    # TODO: AMQP mapper as implemented requires workers started up with
+    # the particular problem; need to be able to transport the problem
+    # to the worker instead.  Until that happens, the GUI shouldn't use
+    # the AMQP mapper.
     if opts.parallel or opts.worker:
         if opts.transport == 'amqp':
             mapper = AMQPMapper
@@ -557,6 +575,19 @@ def main():
             raise NotImplementedError("mpi transport not implemented")
     else:
         mapper = SerialMapper
+
+    # Set up the matplotlib backend to minimize the wx dependency.
+    import matplotlib
+    if opts.batch or opts.remote:
+        matplotlib.use('Agg')
+    else:
+        matplotlib.use('WXAgg')
+    matplotlib.interactive(False)
+
+    if opts.fit == 'dream':
+        fitter = DreamProxy(problem=problem, opts=opts)
+    else:
+        fitter = FitProxy(FITTERS[opts.fit], problem=problem, options=opts)
 
     # Which format to view the plots
     Probe.view = opts.plot
@@ -572,18 +603,7 @@ def main():
         if opts.cov: print problem.cov()
         preview(problem)
     elif opts.resynth > 0:
-        make_store(problem,opts,exists_handler=store_overwrite_query)
-        fid = open(problem.output_path+".rsy",'at')
-        fitter.mapper = mapper.start_mapper(problem, opts.args)
-        for i in range(opts.resynth):
-            problem.resynth_data()
-            best, fbest = fitter.fit()
-            print "found %g"%fbest
-            fid.write('%.15g '%fbest)
-            fid.write(' '.join('%.15g'%v for v in best))
-            fid.write('\n')
-        problem.restore_data()
-        fid.close()
+        resynth(problem, mapper, opts)
 
     elif opts.remote:
 

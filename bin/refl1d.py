@@ -14,8 +14,8 @@ import sys
 # The following import of wx only appears to be necessary to support building
 # a py2exe executable using Python 2.5.  It is not necessary when using py2exe
 # on 2.6, nor is it required if running refl1d from source code on 2.5 or 2.6.
-if sys.version_info < (2, 6):
-    import wx
+#if sys.version_info < (2, 6):
+#    import wx
 
 # ========================== Path setup =======================================
 # When this script is run interactively (i.e., from a Python command prompt),
@@ -30,11 +30,11 @@ if sys.version_info < (2, 6):
 #   'from dream' -> <root>/dream/dream
 # Although <root> is currently named 'refl1d', it does not have an__init__.py.
 # Likewise, <root>/dream does not have an __init__.py file.
-if not hasattr(sys, 'frozen'):
-    path = os.path.realpath(__file__)
-    root = os.path.abspath(os.path.join(os.path.dirname(path), '..'))
-    sys.path.insert(0, root)
-    sys.path.insert(1, os.path.join(root, 'dream'))
+#if not hasattr(sys, 'frozen'):
+#    path = os.path.realpath(__file__)
+#    root = os.path.abspath(os.path.join(os.path.dirname(path), '..'))
+#    sys.path.insert(0, root)
+#    sys.path.insert(1, os.path.join(root, 'dream'))
 
 # ========================== Matplotlib setup =================================
 # If we are running from an image built by py2exe, keep the frozen environment
@@ -47,6 +47,8 @@ if hasattr(sys, 'frozen'):
     if not os.path.exists(mplconfigdir):
         os.mkdir(mplconfigdir)
     os.environ['MPLCONFIGDIR'] = mplconfigdir
+    import matplotlib
+    matplotlib.use('WXAgg')
 
 # ========================== Start program ====================================
 # Process the command line that has been entered.

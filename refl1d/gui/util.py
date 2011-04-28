@@ -1,6 +1,35 @@
 import wx
 import string
 
+# This is a workaround for a py2exe problem when using pubsub from wxPython ...
+# wxPython 2.8.11.0 supports both the pubsub V1 and V3 APIs (V1 is the default;
+# there is no V2), whereas 2.8.9.x and 2.8.10.1 offer only the V1 API. Since
+# we want to build with older versions of wxPython we will use the V3 API,
+# but provide a shim so that we can transport options using the V1 interface.
+try:
+    # Check if V3 interface is available
+    from wx.lib.pubsub import setupkwargs
+    from wx.lib.pubsub import pub
+    subscribe = pub.subscribe
+    publish = pub.sendMessage
+    #print "using V3 interface to pubsub"
+except:
+    #print "using V1 interface to pubsub"
+    # Otherwise use the V1 interface
+    from wx.lib.pubsub import Publisher
+    _pub = Publisher()
+    _subscribers = [] # pubsub uses weak refs; need to hold on to subscribers
+    def subscribe(callback, topic):
+        def unwrap_data(event): 
+            #print "recving",topic,"in",callback.__name__
+            callback(**event.data)
+        _subscribers.append(unwrap_data)
+        #print "subscribe",callback.__name__,"to",topic
+        _pub.subscribe(unwrap_data, topic)
+    def publish(topic, **kwargs):
+        #print "sending",topic
+        _pub.sendMessage(topic, kwargs)
+
 class Validator(wx.PyValidator):
     def __init__(self, flag):
         wx.PyValidator.__init__(self)

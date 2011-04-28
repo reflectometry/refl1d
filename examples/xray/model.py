@@ -54,8 +54,8 @@ from refl1d.names import *
 
 # Determine what search we are going to perform
 search = "rltest"
-if len(sys.argv) > 1:
-    search = sys.argv[1]
+#if len(sys.argv) > 1:
+#    search = sys.argv[1]
 
 # Slits computed from dT given in the staj file
 slits = 0.03

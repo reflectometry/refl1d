@@ -29,10 +29,10 @@ for the user to control fitting options.
 #==============================================================================
 import wx
 
-from util import Validator
 from wx.lib.scrolledpanel import ScrolledPanel
-from wx.lib.pubsub import Publisher as pub
-from input_list import InputListPanel
+
+from .input_list import InputListPanel
+from .util import Validator
 
 class FitControl(wx.Dialog):
     """

@@ -2,9 +2,8 @@ from __future__ import division
 import wx
 
 import  wx.lib.scrolledpanel as scrolled
-from wx.lib.pubsub import Publisher as pub
 
-from .util import nice
+from .util import nice, publish, subscribe
 
 class SummaryView(scrolled.ScrolledPanel):
     """
@@ -15,12 +14,8 @@ class SummaryView(scrolled.ScrolledPanel):
         scrolled.ScrolledPanel.__init__(self, parent, -1)
         self.parent = parent
 
-        # set new model
-        pub.subscribe(self.OnInitialModel, "initial_model")
-        # change model structure message
-        pub.subscribe(self.OnUpdateModel, "update_model")
-        # change model parameter message
-        pub.subscribe(self.OnUpdateParameters, "update_parameters")
+        subscribe(self.OnModelChange, "model.change")
+        subscribe(self.OnModelUpdate, "model.update")
 
         # event for showing notebook tab when it is clicked
         self.Bind(wx.EVT_SHOW, self.OnShow)
@@ -33,22 +28,19 @@ class SummaryView(scrolled.ScrolledPanel):
         self.SetupScrolling()
 
     # ============= Signal bindings =========================
-    def OnInitialModel(self, event):
-        self.set_model(event.data)
-
-    def OnUpdateModel(self, event):
-        if self.model == event.data:
-            self.update_model()
-
-    def OnUpdateParameters(self, event):
-        if self.model == event.data:
-            self.update_parameters()
-
     def OnShow(self, event):
         if self._reset_model:
            self.update_model()
         elif self._reset_parameters:
            self.update_parameters()
+
+    def OnModelChange(self, model):
+        if self.model == model:
+            self.update_model()
+
+    def OnModelUpdate(self, model):
+        if self.model == model:
+            self.update_parameters()
 
     # ============ Operations on the model  ===============
 
@@ -168,5 +160,5 @@ class ParameterSummary(wx.Panel):
         new_value  = self.parameter.bounds.put01(value/100)
         self.parameter.value = new_value
         self.value.SetLabel(str(nice(new_value)))
-        pub.sendMessage("update_parameters", self.model)
+        publish("model.update", model=self.model)
 

@@ -1,8 +1,7 @@
 import wx
 import sys
 
-from wx.lib.pubsub import Publisher as pub
-import wx.lib.newevent
+from .util import subscribe, publish
 
 class FitView(wx.Panel):
     def __init__(self, parent):
@@ -23,7 +22,7 @@ class FitView(wx.Panel):
         self.btn_fit.SetToolTip(wx.ToolTip("click to start fit"))
         self.Bind(wx.EVT_BUTTON, self.OnFit, self.btn_fit)
 
-        pub.subscribe(self.OnFitComplete, "fit_complete")
+        subscribe(self.OnFitComplete, "fit_complete")
 
         # Create a horizontal box sizer for the buttons.
         sizer2 = wx.BoxSizer(wx.HORIZONTAL)
@@ -48,7 +47,7 @@ class FitView(wx.Panel):
             # the panel will listen to event and start
             # the fit.
             ###########################################
-            pub.sendMessage("fit", str(self.store))
+            send("fit", store=self.store)
 
         else:
             print 'stop logic goes here'

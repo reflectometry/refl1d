@@ -44,14 +44,15 @@ import sys
 #   'from dream' -> <root>/dream/dream
 # Although <root> is currently named 'refl1d', it does not have an__init__.py.
 # Likewise, <root>/dream does not have an __init__.py file.
-if not hasattr(sys, 'frozen'):
-    path = os.path.realpath(__file__)
-    root = os.path.abspath(os.path.join(os.path.dirname(path), '..'))
-    sys.path.insert(0, root)
-    sys.path.insert(1, os.path.join(root, 'dream'))
+#if not hasattr(sys, 'frozen'):
+#    path = os.path.realpath(__file__)
+#    root = os.path.abspath(os.path.join(os.path.dirname(path), '..'))
+#    sys.path.insert(0, root)
+#    sys.path.insert(1, os.path.join(root, 'dream'))
 
 # ========================== Start program ====================================
 
 if __name__ == "__main__":
+    #from wx.lib.pubsub import setupkwargs
     import refl1d.gui.gui_app
     refl1d.gui.gui_app.main()

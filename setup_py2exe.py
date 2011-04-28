@@ -40,9 +40,6 @@ import os
 import sys
 import glob
 
-root = os.path.dirname(os.path.realpath(__file__))
-sys.path.insert(1, os.path.join(root, 'dream'))
-
 from distutils.core import setup
 
 # Augment the setup interface with the py2exe command and make sure the py2exe
@@ -52,7 +49,9 @@ import py2exe
 if len(sys.argv) == 1:
     sys.argv.append('py2exe')
 
+#import wx
 import matplotlib
+#matplotlib.use('WXAgg')
 import periodictable
 
 # Retrieve the application version string.
@@ -223,7 +222,7 @@ includes = []
 # - Since we do not support Win 9x systems, w9xpopen.dll is not needed.
 # - For some reason cygwin1.dll gets included by default, but it is not needed.
 
-excludes = ['Tkinter', 'PyQt4', '_ssl', '_tkagg']
+excludes = ['Tkinter', 'PyQt4', '_ssl', '_tkagg', 'numpy.distutils.test']
 
 dll_excludes = ['libgdk_pixbuf-2.0-0.dll',
                 'libgobject-2.0-0.dll',

@@ -30,10 +30,9 @@ import wx
 import sys
 
 import wx.gizmos as gizmos
-from wx.lib.pubsub import Publisher as pub
 
-from refl1d.mystic.parameter import BaseParameter
-from .util import nice
+from ..mystic.parameter import BaseParameter
+from .util import nice, subscribe
 
 class ParameterView(wx.Panel):
     def __init__(self, parent):
@@ -83,12 +82,8 @@ class ParameterView(wx.Panel):
         self.tree.SetColumnEditable(4, True)
         self.tree.SetColumnEditable(5, True)
 
-        # set new model
-        pub.subscribe(self.OnInitialModel, "initial_model")
-        # change model structure message
-        pub.subscribe(self.OnUpdateModel, "update_model")
-        # change model parameter message
-        pub.subscribe(self.OnUpdateParameters, "update_parameters")
+        subscribe(self.OnModelChange, "model.change")
+        subscribe(self.OnModelUpdate, "model.update")
 
         self.tree.GetMainWindow().Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
         self.tree.Bind(wx.EVT_TREE_END_LABEL_EDIT, self.OnEndEdit)
@@ -115,21 +110,19 @@ class ParameterView(wx.Panel):
             self.tree.SetToolTipString("")
 
         event.Skip()
-    '''
 
     # ============= Signal bindings =========================
 
     def OnInitialModel(self, event):
         self.set_model(event.data)
+    '''
 
-    def OnUpdateModel(self, event):
-        if self.model == event.data:
-            # Delete the prevoius tree (if any)
-            self.tree.DeleteAllItems()
+    def OnModelChange(self, model):
+        if self.model == model:
             self.update_model()
 
-    def OnUpdateParameters(self, event):
-        if self.model == event.data:
+    def OnModelUpdate(self, model):
+        if self.model == model:
             self.update_parameters()
 
     # ============ Operations on the model  ===============
@@ -139,6 +132,8 @@ class ParameterView(wx.Panel):
         self.update_model()
 
     def update_model(self):
+        # Delete the previous tree (if any)
+        self.tree.DeleteAllItems()
         parameters = self.model.model_parameters()
         # Add a root node
         self.root = self.tree.AddRoot("Model")
