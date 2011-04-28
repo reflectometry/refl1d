@@ -21,7 +21,7 @@
 # Author: Nikunj Patel
 
 """
-This module implements the Summary View panel.
+This module implements the Parameter View panel.
 """
 
 #==============================================================================
@@ -34,6 +34,7 @@ import wx.gizmos as gizmos
 from ..mystic.parameter import BaseParameter
 from .util import nice, subscribe
 
+
 class ParameterView(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
@@ -42,10 +43,10 @@ class ParameterView(wx.Panel):
         vbox = wx.BoxSizer(wx.VERTICAL)
         text_hbox = wx.BoxSizer(wx.HORIZONTAL)
 
-        # flag to set True if updation of parameter happened locally (this means
+        # Flag to set True if update of parameter happened locally (this means
         # this view has been updated by the user). So we do not need to redraw
-        # the whole tree but we need to refresh the tree with new updated values.
-        # As some other values may depend upon updated values.
+        # the whole tree but we need to refresh the tree with new updated values
+        # as some other values may depend upon updated values.
         self.update_local = False
 
         self.tree = gizmos.TreeListCtrl(self, -1, style =
@@ -58,23 +59,24 @@ class ParameterView(wx.Panel):
                                         | wx.TR_FULL_ROW_HIGHLIGHT
                                        )
 
-        # create some columns
+        # Create columns.
         self.tree.AddColumn("Model")
-        self.tree.AddColumn("Parameter Name")
-        self.tree.AddColumn("Parameter Value")
-        self.tree.AddColumn("Min Range")
-        self.tree.AddColumn("Max Range")
-        self.tree.AddColumn("Fixed")
+        self.tree.AddColumn("Parameter")
+        self.tree.AddColumn("Value")
+        self.tree.AddColumn("Minimum")
+        self.tree.AddColumn("Maximum")
+        self.tree.AddColumn("Fix ?")
 
-        # Align the textctrl box with treelistctrl
+        # Align the textctrl box with treelistctrl.
         self.tree.SetMainColumn(0) # the one with the tree in it...
-        self.tree.SetColumnWidth(0, 210)
-        self.tree.SetColumnWidth(1, 185)
-        self.tree.SetColumnWidth(2, 195)
-        self.tree.SetColumnWidth(3, 195)
-        self.tree.SetColumnWidth(4, 195)
+        self.tree.SetColumnWidth(0, 200)
+        self.tree.SetColumnWidth(1, 160)
+        self.tree.SetColumnWidth(2, 80)
+        self.tree.SetColumnWidth(3, 80)
+        self.tree.SetColumnWidth(4, 80)
+        self.tree.SetColumnWidth(5, 40)
 
-        # making all colunm editable except first column
+        # Determine which colunms are editable.
         self.tree.SetColumnEditable(0, False)
         self.tree.SetColumnEditable(1, False)
         self.tree.SetColumnEditable(2, True)
@@ -87,12 +89,24 @@ class ParameterView(wx.Panel):
 
         self.tree.GetMainWindow().Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
         self.tree.Bind(wx.EVT_TREE_END_LABEL_EDIT, self.OnEndEdit)
-        #self.tree.Bind(wx.EVT_TREE_ITEM_GETTOOLTIP,self.OnTreeTooltip)
-        #wx.EVT_MOTION(self.tree, self.OnMouseMotion)
+        '''
+        self.tree.Bind(wx.EVT_TREE_ITEM_GETTOOLTIP,self.OnTreeTooltip)
+        wx.EVT_MOTION(self.tree, self.OnMouseMotion)
+        '''
 
         vbox.Add(self.tree, 1, wx.EXPAND)
         self.SetSizer(vbox)
-        self.SetAutoLayout(1)
+        self.SetAutoLayout(True)
+
+    # ============= Signal bindings =========================
+
+    def OnModelChange(self, model):
+        if self.model == model:
+            self.update_model()
+
+    def OnModelUpdate(self, model):
+        if self.model == model:
+            self.update_parameters()
 
     '''
     def OnTreeTooltip(self, event):
@@ -110,20 +124,7 @@ class ParameterView(wx.Panel):
             self.tree.SetToolTipString("")
 
         event.Skip()
-
-    # ============= Signal bindings =========================
-
-    def OnInitialModel(self, event):
-        self.set_model(event.data)
     '''
-
-    def OnModelChange(self, model):
-        if self.model == model:
-            self.update_model()
-
-    def OnModelUpdate(self, model):
-        if self.model == model:
-            self.update_parameters()
 
     # ============ Operations on the model  ===============
 
@@ -132,12 +133,12 @@ class ParameterView(wx.Panel):
         self.update_model()
 
     def update_model(self):
-        # Delete the previous tree (if any)
+        # Delete the previous tree (if any).
         self.tree.DeleteAllItems()
         parameters = self.model.model_parameters()
-        # Add a root node
+        # Add a root node.
         self.root = self.tree.AddRoot("Model")
-        # Add nodes from our data set
+        # Add nodes from our data set .
         self.add_tree_nodes(self.root, parameters)
         self.update_tree_nodes()
         self.tree.ExpandAll(self.root)
@@ -147,7 +148,7 @@ class ParameterView(wx.Panel):
             self.tree.DeleteAllItems()
             self.update_model()
         else:
-            # we need to refresh the tree with only updated values
+            # We need to refresh the tree with only updated values.
             self.update_tree_nodes()
             self.update_local = False
 
@@ -175,7 +176,7 @@ class ParameterView(wx.Panel):
         par = self.tree.GetItemPyData(branch)
         if par is None: return
 
-        # for checking wheather the parameters are fittable or not.
+        # For checking whether the parameters are fittable or not.
         if par.fittable == True:
             fittable = 'Yes'
             low, high = (str(v) for v in par.bounds.limits)
@@ -196,9 +197,9 @@ class ParameterView(wx.Panel):
     def OnEndEdit(self, evt):
         item = self.tree.GetSelection()
         self.node_object = self.tree.GetItemPyData(evt.GetItem())
-        # Not an efficient way of updating values of Parameters
-        # but its hard to find out which column changed during edit
-        # operation. May be fixed in Future.
+        # TODO: Not an efficient way of updating values of Parameters
+        # but it is hard to find out which column changed during edit
+        # operation. This may be fixed in the future.
         wx.CallAfter(self.get_new_name, item, 1)
         wx.CallAfter(self.get_new_value, item, 2)
         wx.CallAfter(self.get_new_min, item, 3)
@@ -207,8 +208,8 @@ class ParameterView(wx.Panel):
     def get_new_value(self, item, column):
         new_value = self.tree.GetItemText(item, column)
 
-        # send update message to other tabs/panels only if parameter value
-        # is updated
+        # Send update message to other tabs/panels only if parameter value
+        # is updated .
         if new_value != str(self.node_object.value):
             self.node_object.clip_set(float(new_value))
             self.update_local = True
@@ -217,8 +218,8 @@ class ParameterView(wx.Panel):
     def get_new_name(self, item, column):
         new_name = self.tree.GetItemText(item, column)
 
-        # send update message to other tabs/panels only if parameter name
-        # is updated
+        # Send update message to other tabs/panels only if parameter name
+        # is updated.
         if new_name != str(self.node_object.name):
             self.node_object.name = new_name
             self.update_local = True
@@ -228,8 +229,8 @@ class ParameterView(wx.Panel):
         low = float(self.tree.GetItemText(item, column))
         high = self.node_object.bounds.limits[1]
 
-        # send update message to other tabs/panels only if parameter min range
-        # value is updated
+        # Send update message to other tabs/panels only if parameter min range
+        # value is updated.
         if low != self.node_object.bounds.limits[0]:
             self.node_object.range(low, high)
             self.update_local = True
@@ -238,8 +239,8 @@ class ParameterView(wx.Panel):
     def get_new_max(self, item, column):
         low = self.node_object.bounds.limits[0]
         high = float(self.tree.GetItemText(item, column))
-        # send update message to other tabs/panels only if parameter max range
-        # value is updated
+        # Send update message to other tabs/panels only if parameter max range
+        # value is updated.
         if high != self.node_object.bounds.limits[1]:
             self.node_object.range(low, high)
             self.update_local = True
