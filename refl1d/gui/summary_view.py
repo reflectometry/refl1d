@@ -2,8 +2,9 @@ from __future__ import division
 import wx
 
 import  wx.lib.scrolledpanel as scrolled
+from wx.lib.pubsub import Publisher as pub
 
-from .util import nice, publish, subscribe
+from .util import nice
 
 class SummaryView(scrolled.ScrolledPanel):
     """
@@ -14,8 +15,12 @@ class SummaryView(scrolled.ScrolledPanel):
         scrolled.ScrolledPanel.__init__(self, parent, -1)
         self.parent = parent
 
-        subscribe(self.OnModelChange, "model.change")
-        subscribe(self.OnModelUpdate, "model.update")
+        # set new model
+        pub.subscribe(self.OnInitialModel, "initial_model")
+        # change model structure message
+        pub.subscribe(self.OnUpdateModel, "update_model")
+        # change model parameter message
+        pub.subscribe(self.OnUpdateParameters, "update_parameters")
 
         # event for showing notebook tab when it is clicked
         self.Bind(wx.EVT_SHOW, self.OnShow)
@@ -28,19 +33,22 @@ class SummaryView(scrolled.ScrolledPanel):
         self.SetupScrolling()
 
     # ============= Signal bindings =========================
+    def OnInitialModel(self, event):
+        self.set_model(event.data)
+
+    def OnUpdateModel(self, event):
+        if self.model == event.data:
+            self.update_model()
+
+    def OnUpdateParameters(self, event):
+        if self.model == event.data:
+            self.update_parameters()
+
     def OnShow(self, event):
         if self._reset_model:
            self.update_model()
         elif self._reset_parameters:
            self.update_parameters()
-
-    def OnModelChange(self, model):
-        if self.model == model:
-            self.update_model()
-
-    def OnModelUpdate(self, model):
-        if self.model == model:
-            self.update_parameters()
 
     # ============ Operations on the model  ===============
 
@@ -57,43 +65,39 @@ class SummaryView(scrolled.ScrolledPanel):
 
         self._reset_model = False
         self._reset_parameters = False
-
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
         bagSizer = wx.GridBagSizer(hgap=3, vgap=5)
+                
+        self.layer_label = wx.StaticText(self, wx.ID_ANY, 'Layer Name')
+        self.slider_label = wx.StaticText(self, wx.ID_ANY, '')
+        self.value_label = wx.StaticText(self, wx.ID_ANY, 'Value')
+        self.low_label = wx.StaticText(self, wx.ID_ANY, 'Low Range')
+        self.high_label = wx.StaticText(self, wx.ID_ANY, 'High Range')
+        
+        hbox.Add(self.layer_label, 1, wx.LEFT, 1)
+        hbox.Add(self.slider_label, 1, wx.EXPAND|wx.LEFT, 112)
+        hbox.Add(self.value_label, 1, wx.EXPAND|wx.LEFT, 35)
+        hbox.Add(self.low_label, 1, wx.EXPAND|wx.LEFT, 24)
+        hbox.Add(self.high_label, 1, wx.EXPAND|wx.LEFT, 31)
 
-        # TODO: Use columns in GridBagSizer, instead of putting all row data
-        #       in the first column.
-        self.layer_label = wx.StaticText(self, wx.ID_ANY,
-            'Layer Name                                                Value                 Low Range               High Range')
-        #self.slider_label = wx.StaticText(self, wx.ID_ANY, '')
-        #self.value_label = wx.StaticText(self, wx.ID_ANY, 'Value')
-        #self.low_label = wx.StaticText(self, wx.ID_ANY, 'Low Range')
-        #self.high_label = wx.StaticText(self, wx.ID_ANY, 'High Range')
-
+        bagSizer.Add(hbox,pos=(0,0))
+        
         line = wx.StaticLine(self, -1 )
 
-        bagSizer.Add(self.layer_label, pos=(1,0),
-                     flag=wx.LEFT, border=5)
-        #bagSizer.Add(self.slider_label, pos=(1,1),
-                     #flag=wx.LEFT, border=55)
-        #bagSizer.Add(self.value_label, pos=(1,2),
-                     #flag=wx.RIGHT, border=35)
-        #bagSizer.Add(self.low_label, pos=(1,3),
-                     #flag=wx.LEFT, border=55)
-        #bagSizer.Add(self.high_label, (1,4))
-
-        bagSizer.Add(line, pos=(2,0),flag=wx.EXPAND|wx.LEFT|wx.RIGHT, border=5)
-
+        bagSizer.Add(line, pos=(1,0),flag=wx.EXPAND|wx.RIGHT, border=5)
+                
         self.output = []
 
         for p in sorted(self.model.parameters, cmp=lambda x,y: cmp(x.name,y.name)):
             self.output.append(ParameterSummary(self, p, self.model))
 
         for index, item in enumerate(self.output):
-            bagSizer.Add(item, pos = (index+3,0))
+            bagSizer.Add(item, pos = (index+2,0))
 
-        self.SetSizerAndFit(bagSizer)
-
-
+        vbox.Add(bagSizer)
+        self.SetSizerAndFit(vbox)
+        
     def update_parameters(self):
         if not self.IsShown():
             self._reset_parameters = True
@@ -118,8 +122,8 @@ class ParameterSummary(wx.Panel):
         self.layer_name = wx.StaticText(self, wx.ID_ANY,
                           str(self.parameter.name), style=wx.TE_LEFT)
         self.slider = wx.Slider(self, -1, 0, 0, 100,
-                      size=(100, 8), style=wx.SL_AUTOTICKS|wx.SL_HORIZONTAL)
-        self.slider.SetThumbLength(3)
+                      size=(100, 18), style=wx.SL_AUTOTICKS|wx.SL_HORIZONTAL)
+        #self.slider.SetThumbLength(6)
         self.value = wx.StaticText(self, wx.ID_ANY, str(self.parameter.value),
                      style=wx.TE_LEFT )
         self.min_range = wx.StaticText(self, wx.ID_ANY, str(self.low),
@@ -160,5 +164,5 @@ class ParameterSummary(wx.Panel):
         new_value  = self.parameter.bounds.put01(value/100)
         self.parameter.value = new_value
         self.value.SetLabel(str(nice(new_value)))
-        publish("model.update", model=self.model)
+        pub.sendMessage("update_parameters", self.model)
 
