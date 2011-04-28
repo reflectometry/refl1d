@@ -382,7 +382,8 @@ class InputListPanel(ScrolledPanel):
                 self.headers.append(None)
 
             # Create the text label widget.
-            self.labels.append(wx.StaticText(self, wx.ID_ANY, label=text))
+            self.labels.append(wx.StaticText(self, wx.ID_ANY, label=text,
+                               style=wx.ALIGN_LEFT))
             w, h = self.labels[x].GetSize()
             if w > self.widest: self.widest = w
 
@@ -767,7 +768,8 @@ class InputListDialog(wx.Dialog):
                 self.headers.append(None)
 
             # Create the text label widget.
-            self.labels.append(wx.StaticText(self, wx.ID_ANY, label=text))
+            self.labels.append(wx.StaticText(self, wx.ID_ANY, label=text,
+                               style=wx.ALIGN_LEFT))
             w, h = self.labels[x].GetSize()
             if w > self.widest: self.widest = w
 
@@ -1006,7 +1008,7 @@ class AppTestFrame(wx.Frame):
         # Create the scrolled window with input boxes.  Due to the intentionally
         # small size of the parent panel, both scroll bars should be displayed.
         self.scrolled = InputListPanel(parent=panel, itemlist=self.fields,
-                                       align=False)
+                                       align=True)
 
         # Create a button to request the popup dialog box.
         show_button = wx.Button(panel, wx.ID_ANY, "Show Pop-up Dialog Box")

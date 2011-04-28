@@ -1,3 +1,31 @@
+# Copyright (C) 2006-2011, University of Maryland
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/ or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
+# Author: Nikunj Patel
+
+"""
+This module implements the Summary View panel.
+"""
+
+#==============================================================================
+
 from __future__ import division
 import wx
 
@@ -5,29 +33,31 @@ import  wx.lib.scrolledpanel as scrolled
 
 from .util import nice, publish, subscribe
 
+
 class SummaryView(scrolled.ScrolledPanel):
     """
     Model view showing summary of fit (only fittable parameters).
     """
 
     def __init__(self, parent):
-        scrolled.ScrolledPanel.__init__(self, parent, -1)
+        scrolled.ScrolledPanel.__init__(self, parent, wx.ID_ANY)
         self.parent = parent
 
         subscribe(self.OnModelChange, "model.change")
         subscribe(self.OnModelUpdate, "model.update")
 
-        # event for showing notebook tab when it is clicked
+        # Event for showing notebook tab when it is clicked.
         self.Bind(wx.EVT_SHOW, self.OnShow)
 
-        # Keep track of whether the view needs to be redrawn
+        # Keep track of whether the view needs to be redrawn.
         self._reset_model = False
         self._reset_parameters = False
 
-        self.SetAutoLayout(1)
+        self.SetAutoLayout(True)
         self.SetupScrolling()
 
     # ============= Signal bindings =========================
+
     def OnShow(self, event):
         if self._reset_model:
             self.update_model()
@@ -59,33 +89,39 @@ class SummaryView(scrolled.ScrolledPanel):
         self._reset_parameters = False
         vbox = wx.BoxSizer(wx.VERTICAL)
         hbox = wx.BoxSizer(wx.HORIZONTAL)
-        bagSizer = wx.GridBagSizer(hgap=3, vgap=5)
+        bagSizer = wx.GridBagSizer(hgap=0, vgap=3)
 
-        self.layer_label = wx.StaticText(self, wx.ID_ANY, 'Layer Name')
-        self.slider_label = wx.StaticText(self, wx.ID_ANY, '')
-        self.value_label = wx.StaticText(self, wx.ID_ANY, 'Value')
-        self.low_label = wx.StaticText(self, wx.ID_ANY, 'Low Range')
-        self.high_label = wx.StaticText(self, wx.ID_ANY, 'High Range')
+        self.layer_label = wx.StaticText(self, wx.ID_ANY, 'Parameter',
+                                         size=(160,-1))
+        self.slider_label = wx.StaticText(self, wx.ID_ANY, '',
+                                         size=(100,-1))
+        self.value_label = wx.StaticText(self, wx.ID_ANY, 'Value',
+                                         size=(100,-1))
+        self.low_label = wx.StaticText(self, wx.ID_ANY, 'Minimum',
+                                         size=(100,-1))
+        self.high_label = wx.StaticText(self, wx.ID_ANY, 'Maximum',
+                                         size=(100,-1))
 
-        hbox.Add(self.layer_label, 1, wx.LEFT, 1)
-        hbox.Add(self.slider_label, 1, wx.EXPAND|wx.LEFT, 112)
-        hbox.Add(self.value_label, 1, wx.EXPAND|wx.LEFT, 35)
-        hbox.Add(self.low_label, 1, wx.EXPAND|wx.LEFT, 24)
-        hbox.Add(self.high_label, 1, wx.EXPAND|wx.LEFT, 31)
+        hbox.Add(self.layer_label, 0, wx.LEFT, 1)
+        hbox.Add(self.slider_label, 0, wx.LEFT, 1)
+        hbox.Add(self.value_label, 0, wx.LEFT, 21)
+        hbox.Add(self.low_label, 0, wx.LEFT, 1)
+        hbox.Add(self.high_label, 0, wx.LEFT, 1)
 
-        bagSizer.Add(hbox,pos=(0,0))
+        # Note that row at pos=(0,0) is not used to add a blank row.
+        bagSizer.Add(hbox, pos=(1,0))
 
-        line = wx.StaticLine(self, -1 )
-
-        bagSizer.Add(line, pos=(1,0),flag=wx.EXPAND|wx.RIGHT, border=5)
+        line = wx.StaticLine(self, wx.ID_ANY)
+        bagSizer.Add(line, pos=(2,0), flag=wx.EXPAND|wx.RIGHT, border=5)
 
         self.output = []
 
-        for p in sorted(self.model.parameters, cmp=lambda x,y: cmp(x.name,y.name)):
+        for p in sorted(self.model.parameters,
+                        cmp=lambda x,y: cmp(x.name,y.name)):
             self.output.append(ParameterSummary(self, p, self.model))
 
         for index, item in enumerate(self.output):
-            bagSizer.Add(item, pos = (index+2,0))
+            bagSizer.Add(item, pos=(index+3,0))
 
         vbox.Add(bagSizer)
         self.SetSizerAndFit(vbox)
@@ -102,6 +138,7 @@ class SummaryView(scrolled.ScrolledPanel):
 
 
 class ParameterSummary(wx.Panel):
+    """Build one parameter line for display."""
     def __init__(self, parent, parameter, model):
         wx.Panel.__init__(self, parent=parent, id=wx.ID_ANY)
 
@@ -113,23 +150,24 @@ class ParameterSummary(wx.Panel):
         text_hbox = wx.BoxSizer(wx.HORIZONTAL)
 
         self.layer_name = wx.StaticText(self, wx.ID_ANY,
-                          str(self.parameter.name), style=wx.TE_LEFT)
-        self.slider = wx.Slider(self, -1, 0, 0, 100,
-                      size=(100, 8), style=wx.SL_AUTOTICKS|wx.SL_HORIZONTAL)
-        self.slider.SetThumbLength(3)
+                                        str(self.parameter.name),
+                                        size=(160,-1), style=wx.TE_LEFT)
+        self.slider = wx.Slider(self, wx.ID_ANY,
+                                value=0, minValue=0, maxValue=100,
+                                size=(100,16), style=wx.SL_HORIZONTAL)
         self.value = wx.StaticText(self, wx.ID_ANY, str(self.parameter.value),
-                     style=wx.TE_LEFT )
+                                   size=(100,-1), style=wx.TE_LEFT)
         self.min_range = wx.StaticText(self, wx.ID_ANY, str(self.low),
-                         style=wx.TE_LEFT )
+                                       size=(100,-1), style=wx.TE_LEFT)
         self.max_range = wx.StaticText(self, wx.ID_ANY, str(self.high),
-                         style=wx.TE_LEFT )
+                                       size=(100,-1), style=wx.TE_LEFT)
 
-        # add static box and slider to sizer
-        text_hbox.Add(self.layer_name, 1, wx.LEFT, 1)
-        text_hbox.Add(self.slider, 1, wx.EXPAND|wx.LEFT, 20)
-        text_hbox.Add(self.value, 1, wx.EXPAND|wx.LEFT, 20)
-        text_hbox.Add(self.min_range, 1, wx.LEFT, 1)
-        text_hbox.Add(self.max_range, 1, wx.LEFT, 1)
+        # Add text strings and slider to sizer.
+        text_hbox.Add(self.layer_name, 0, wx.LEFT, 1)
+        text_hbox.Add(self.slider, 0, wx.LEFT, 1)
+        text_hbox.Add(self.value, 0, wx.LEFT, 21)
+        text_hbox.Add(self.min_range, 0, wx.LEFT, 1)
+        text_hbox.Add(self.max_range, 0, wx.LEFT, 1)
 
         self.SetSizer(text_hbox)
 
@@ -138,13 +176,12 @@ class ParameterSummary(wx.Panel):
 
     def update_slider(self):
         slider_pos = int(self.parameter.bounds.get01(self.parameter.value)*100)
-        # May need the following if get01 doesn't protect against values out
-        # of range
+        # Add line below if get01 doesn't protect against values out of range.
         #slider_pos = min(max(slider_pos,0),100)
         self.slider.SetValue(slider_pos)
         self.value.SetLabel(str(nice(self.parameter.value)))
 
-        # update new min and max range of values if changed
+        # Update new min and max range of values if changed.
         newlow, newhigh = (v for v in self.parameter.bounds.limits)
         if newlow != self.low:
             self.min_range.SetLabel(str(newlow))
