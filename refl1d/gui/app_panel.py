@@ -577,7 +577,7 @@ class AppPanel(wx.Panel):
         dlg.Destroy()
         
         # Process file if user clicked okay
-        if sts == wx.ID_OK:
+        if status == wx.ID_OK:
             self.load_model(path)
 
     def OnFileSave(self, event):
@@ -599,7 +599,7 @@ class AppPanel(wx.Panel):
         dlg.Destroy()
         
         # Process file if user clicked okay
-        if sts == wx.ID_OK:
+        if status == wx.ID_OK:
             self.model.modelfile = path
             self.save_model()
 
@@ -618,7 +618,7 @@ class AppPanel(wx.Panel):
         dlg.Destroy()
         
         # Process file if user clicked okay
-        if sts == wx.ID_OK:
+        if status == wx.ID_OK:
             self.import_model(path)
         
     def OnFitOptions(self, event):
@@ -786,7 +786,7 @@ class AppPanel(wx.Panel):
 
     def import_model(self, path):
         try:
-            problem = load_problem([file_path])
+            problem = load_problem([path])
             publish("model.new", model=problem)
         except:
             publish("log.model", message=traceback.format_exc())

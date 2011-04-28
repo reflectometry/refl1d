@@ -27,10 +27,15 @@ This script starts the graphical user interface of the Refl1D Reflectometry
 Modeler application.
 """
 
-#==============================================================================
-
+#============================================================================
+from __future__ import absolute_import
 import os
 import sys
+
+# ==========================================================================
+# Make sure the bin directory is not on the path
+here = os.path.abspath(os.path.dirname(__file__))
+sys.path = [p for p in sys.path if os.path.abspath(p) != here]
 
 # When this script is run interactively (i.e., from a Python command prompt),
 # sys.path needs to be updated for some imports to work, namely 'from refl1d'
@@ -53,6 +58,11 @@ import sys
 # ========================== Start program ====================================
 
 if __name__ == "__main__":
-    #from wx.lib.pubsub import setupkwargs
+    # This is necessary when running the application from a frozen image and
+    # using the --parallel option.  Note that freeze_support() has no effect
+    # when running from a python script (i.e., in a non-frozen environment).
+    import multiprocessing
+    multiprocessing.freeze_support()
+
     import refl1d.gui.gui_app
     refl1d.gui.gui_app.main()

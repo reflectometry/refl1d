@@ -632,3 +632,6 @@ def main():
         if not opts.batch:
             import pylab
             pylab.show()
+
+# Allow  "$python -m refl1d.cli args" calling pattern
+if __name__ == "__main__": main()

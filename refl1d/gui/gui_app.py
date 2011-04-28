@@ -253,3 +253,6 @@ def main():
     # Enter event loop which allows the user to interact with the application.
     if LOGTIM: log_time("Entering the event loop")
     app.MainLoop()
+
+# Allow "python -m refl1d.gui.gui_app options..."
+if __name__ == "__main__": main()

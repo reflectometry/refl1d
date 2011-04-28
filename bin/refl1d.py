@@ -6,18 +6,25 @@
 This script starts the command line interface of the Refl1D Reflectometry
 Modeler application to process the command just entered.
 """
+from __future__ import absolute_import
 
 import os
 import sys
 
-# ========================== wxPython Workaround ==============================
+# ==========================================================================
+# Make sure the bin directory is not on the path
+here = os.path.abspath(os.path.dirname(__file__))
+sys.path = [p for p in sys.path if os.path.abspath(p) != here]
+
+
+# ========================== wxPython Workaround ============================
 # The following import of wx only appears to be necessary to support building
 # a py2exe executable using Python 2.5.  It is not necessary when using py2exe
 # on 2.6, nor is it required if running refl1d from source code on 2.5 or 2.6.
 #if sys.version_info < (2, 6):
 #    import wx
 
-# ========================== Path setup =======================================
+# ========================== Path setup =====================================
 # When this script is run interactively (i.e., from a Python command prompt),
 # sys.path needs to be updated for some imports to work, namely 'from refl1d'
 # and 'from dream'.  However, when this module is executed from a frozen image,
@@ -36,7 +43,7 @@ import sys
 #    sys.path.insert(0, root)
 #    sys.path.insert(1, os.path.join(root, 'dream'))
 
-# ========================== Matplotlib setup =================================
+# ========================== Matplotlib setup ===============================
 # If we are running from an image built by py2exe, keep the frozen environment
 # self contained by having matplotlib use a private directory instead of using
 # .matplotlib under the user's home directory for storing shared data files
@@ -50,7 +57,7 @@ if hasattr(sys, 'frozen'):
     import matplotlib
     matplotlib.use('WXAgg')
 
-# ========================== Start program ====================================
+# ========================== Start program ==================================
 # Process the command line that has been entered.
 if __name__ == "__main__":
     # This is necessary when running the application from a frozen image and
