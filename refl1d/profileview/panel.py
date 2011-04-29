@@ -13,6 +13,7 @@ from matplotlib.backends.backend_wxagg import FigureManager
 from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 
 from .auipanel import AuiPanel
+from .binder import pixel_to_data
 from .util import CopyImage
 from ..gui.util import subscribe, publish
 from .profile import ProfileInteractor
@@ -62,9 +63,28 @@ class ProfileView(AuiPanel):
         self.SetSizer( self.sizer)
         self.Fit()
 
+        frame = self.GetTopLevelParent()
+        self.statusbar = frame.GetStatusBar()
+
+        self.canvas.Bind(wx.EVT_RIGHT_DOWN, self.OnContextMenu)
+
+    def OnContextMenu(self,event):
+        """
+        Forward the context menu invocation to profile, if profile exists.
+        """
+        transform = self.axes.transData
+        sx,sy = event.GetX(), event.GetY()
+        data_x,data_y = pixel_to_data(transform, sx, self.fig.bbox.height-sy)
+
+        popup = wx.Menu()
+        item = popup.Append(wx.ID_ANY,'&Grid on/off', 'Toggle grid lines')
+        wx.EVT_MENU(self, item.GetId(),
+                    lambda _: (self.axes.grid(),self.fig.canvas.draw_idle()))
+        self.PopupMenu(popup, (sx,sy))
+        return False
+
 
     # ============= Signal bindings =========================
-
     def OnModelChange(self, model):
         if self.job == model:
             self.set_model(model)
@@ -72,6 +92,9 @@ class ProfileView(AuiPanel):
     def OnModelUpdate(self, model):
         if self.job == model:
             self.profile.redraw()
+
+    def status_update(self, msg):
+        self.statusbar.SetStatusText(msg)
 
     def signal_update(self):
         publish("model.update", self.job)
@@ -90,7 +113,8 @@ class ProfileView(AuiPanel):
         signal_update = lambda : publish("model.update", model=model)
         self.profile = ProfileInteractor(self.axes,
                                          experiment,
-                                         signal_update=signal_update)
+                                         signal_update=signal_update,
+                                         status_update=self.status_update)
         self.profile.update_markers()
         self.profile.update_profile()
         self.profile.reset_limits()

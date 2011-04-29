@@ -3,6 +3,7 @@ Reflectometry profile interactor.
 """
 
 import wx
+import math
 import numpy
 from numpy import inf
 from .binder import BindArtist, pixel_to_data
@@ -29,12 +30,13 @@ class ProfileInteractor(object):
     Reflectometry profile editor
     """
     _debug = False
-    def __init__(self, axes, experiment, signal_update):
+    def __init__(self, axes, experiment, signal_update, status_update):
         self.axes = axes
         self.xcoords = blend_xy(axes.transData, axes.transAxes)
         self.experiment = experiment
         self.magnetic = experiment.sample.magnetic
         self.signal_update = signal_update
+        self.status_update = status_update
 
         # Theta needs a separate axis, we put these two axes into a figure
         if self.magnetic:
@@ -57,7 +59,7 @@ class ProfileInteractor(object):
         self.connect = BindArtist( axes.figure )
         self.connect.clearall()
         self.connect('motion', axes, self.onMotion )
-        self.connect('click', axes.figure, self.onContext)
+        self.connect('click', axes.figure, self.onClick)
 
         # Add some plots
         [self.hrho ] = axes.plot([],[],'-',color=rho_color,label=r'$\rho$')
@@ -100,11 +102,23 @@ class ProfileInteractor(object):
         self.axes_frozen = False
         self.update()
 
+    def update_cursor(self, x, y):
+        def nice(value, range):
+            place = int(math.log10(abs(range[1]-range[0]))-3)
+            #print value,range,place
+            if place<0: return "%.*f"%(-place,value)
+            else: return "%d"%int(value)
+        self.status_update("x:%s  y:%s"
+                           %( nice(x, self.axes.get_xlim()),
+                              nice(y, self.axes.get_ylim())))
+
     def onMotion(self, event):
         """Respond to motion events by changing the active layer."""
+
         # Force data coordinates for the mouse position
         transform = self.axes.transData
-        x,_ = pixel_to_data(transform, event.x, event.y)
+        x,y = pixel_to_data(transform, event.x, event.y)
+        self.update_cursor(x,y)
 
         # Check if mouse is still in the same layer
         if self.layer_num is not None:
@@ -125,8 +139,8 @@ class ProfileInteractor(object):
         return False
 
 
-    def onContext(self, ev):
-        """Context menu (eventually ...)."""
+    def onClick(self, ev):
+        # Couldn't make popups work --- moved context menu to panel
         return False
 
     # === Sample information ===
