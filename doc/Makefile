@@ -1,9 +1,8 @@
 # Makefile for Sphinx documentation
 #
 
-PYTHON ?= python
-
 # You can set these variables from the command line.
+PYTHON        ?= python
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 PAPER         =
@@ -55,7 +54,7 @@ clean:
 
 api: genmods.py
 	-rm -rf api
-	python genmods.py
+	$(PYTHON) genmods.py
 
 
 _build/html:

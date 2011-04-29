@@ -60,27 +60,29 @@ class FitThread(Thread):
         self.start() # Start it working.
 
     def run(self):
+        # TODO: we have no interlocks on changes in problem state.  What
+        # happens when the user changes the problem while a fit is being run?
+        # May want to keep a history of changes to the problem definition,
+        # along with a function to reverse them so we can handle undo.
+        
         # NOTE: Problem must be the original problem (not a copy) when used
         # inside the GUI monitor otherwise AppPanel will not be able to
         # recognize that it is the same problem when updating views.
         monitors = [GUIMonitor(self.win, self.problem)]
-        # Serial mapper needs a copy of the problem because it is running in a
-        # separate thread with shared memory.  However, the multiprocessing
-        # mapper runs in a different process context.
+
         if True: # Multiprocessing parallel
             mapper = MPMapper
-            problem = self.problem
         else:
             mapper = SerialMapper
-            problem = deepcopy(self.problem)
-
+        
+        # Be safe and keep a private copy of the problem while fitting
+        problem = deepcopy(self.problem)
         driver = FitDriver(self.fitter, problem=problem,
                            monitors=monitors, **self.options)
-
         self.fitter.mapper = mapper.start_mapper(problem, [])
 
         x,fx = driver.fit()
-        evt = FitCompleteEvent(problem=problem,
+        evt = FitCompleteEvent(problem=self.problem,
                                point=x,
                                value=fx)
         wx.PostEvent(self.win, evt)

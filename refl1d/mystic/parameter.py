@@ -1,7 +1,6 @@
 # This program is public domain
 # Author: Paul Kienzle
-r"""
-Parameter definitions for models
+r""" Parameter definitions for models
 """
 #__all__ = [ 'Parameter', 'ParameterSet']
 
