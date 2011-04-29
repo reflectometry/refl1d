@@ -32,6 +32,7 @@ import os
 import sys
 import copy
 import traceback
+from threading import current_thread
 
 import wx
 
@@ -143,7 +144,7 @@ class AppPanel(wx.Panel):
         EVT_FIT_IMPROVEMENT(self, self.OnFitImprovement)
         EVT_FIT_COMPLETE(self, self.OnFitComplete)
         self.view = "fresnel"  # default view for the plot
-        self.worker = None   #worker for fitting job
+        self.fit_thread = None
 
     def modify_menubar(self):
         """
@@ -490,9 +491,8 @@ class AppPanel(wx.Panel):
 
         # Start a new thread worker and give fit problem to the worker.
         fitopts = fitters.FIT_OPTIONS[fitters.FIT_DEFAULT]
-        self.worker = FitThread(win=self, problem=self.problem,
+        self.fit_thread = FitThread(win=self, problem=self.problem,
                                 fitter=fitopts.fitter, options=fitopts.options)
-
         self.sb.SetStatusText("Fit status: Running", 3)
 
     def OnStopFit(self, event):
@@ -512,8 +512,6 @@ class AppPanel(wx.Panel):
 
     def OnFitImprovement(self, event):
         event.problem.setp(event.point)
-        message=parameter.summarize(event.problem.parameters)
-        publish("log.fit", message=message)
         publish("model.update", model=event.problem)
 
     def remember_best(self, fitter, problem, best):

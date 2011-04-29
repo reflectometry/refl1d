@@ -10,7 +10,7 @@ from ..mapper import  MPMapper, SerialMapper
 #==============================================================================
 
 PROGRESS_DELAY = 5
-IMPROVEMENT_DELAY = 30
+IMPROVEMENT_DELAY = 5
 
 (FitProgressEvent, EVT_FIT_PROGRESS) = wx.lib.newevent.NewEvent()
 (FitImprovementEvent, EVT_FIT_IMPROVEMENT) = wx.lib.newevent.NewEvent()
@@ -43,10 +43,9 @@ class GUIMonitor(monitor.TimedUpdate):
 
 # Thread class that executes processing
 class FitThread(Thread):
-    """Worker Thread Class."""
+    """Run the fit in a separate thread from the GUI."""
     def __init__(self, win, problem=None,
                  fitter=None, options=None, mapper=None):
-        """Init Worker Thread Class."""
         # base class initialization
         #Process.__init__(self)
 
@@ -56,13 +55,10 @@ class FitThread(Thread):
         self.fitter = fitter
         self.options = options
         self.mapper = mapper
-        # This starts the thread running on creation, but you could
-        # also make the GUI thread responsible for calling this
-        self.start()
+        self.start() # Start it working.
 
     def run(self):
-        """Run Worker Thread."""
-        monitors = [GUIMonitor(self, self.problem)]
+        monitors = [GUIMonitor(self.win, self.problem)]
         if False: # Multiprocessing parallel
             mapper = MPMapper
             problem = self.problem
@@ -71,7 +67,7 @@ class FitThread(Thread):
             problem = deepcopy(self.problem)
 
         driver = FitDriver(self.fitter, problem=problem,
-                           options=self.options)
+                           options=self.options, monitors=monitors)
 
         self.fitter.mapper = mapper.start_mapper(problem, self.options)
 
