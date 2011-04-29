@@ -526,17 +526,16 @@ class Probe(object):
 
     def plot_residuals(self, theory):
         import matplotlib.pyplot as plt
-        if theory is None:
-            plt.clf() # clear the plot if any
-            return
-        Q,R = theory
-        residual = (self.R - R)/self.dR
-        plt.plot(self.Q, residual, 'g.')
+        plt.cla() # clear the plot if any
+        if theory is not None and self.R is not None:
+            Q,R = theory
+            residual = (R - self.R)/self.dR
+            plt.plot(self.Q, residual, 'g.')
         plt.axhline(1, color='black', ls='--',lw=1)
         plt.axhline(0, color='black', lw=1)
         plt.axhline(-1, color='black', ls='--',lw=1)
         plt.xlabel('Q (inv A)')
-        plt.ylabel('Residuals')
+        plt.ylabel('(theory-data)/error')
 
 
 class XrayProbe(Probe):

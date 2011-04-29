@@ -59,7 +59,7 @@ class FitThread(Thread):
 
     def run(self):
         monitors = [GUIMonitor(self.win, self.problem)]
-        if False: # Multiprocessing parallel
+        if True: # Multiprocessing parallel
             mapper = MPMapper
             problem = self.problem
         else:
@@ -67,9 +67,9 @@ class FitThread(Thread):
             problem = deepcopy(self.problem)
 
         driver = FitDriver(self.fitter, problem=problem,
-                           options=self.options, monitors=monitors)
+                           monitors=monitors, **self.options)
 
-        self.fitter.mapper = mapper.start_mapper(problem, self.options)
+        self.fitter.mapper = mapper.start_mapper(problem, [])
 
         x,fx = driver.fit()
         evt = FitCompleteEvent(problem=problem,

@@ -210,17 +210,17 @@ def OpenFitOptions():
 
     # Gather together information about option x from three sources:
     #   name and type come from the FIELDS :- name,type mapping
-    #   factory settings comes from FitOptions.factory_settings
-    #   current value comes from FitOptions.options.x
+    #   algorithm and factory settings comes from fitter.name, fitter.settings
+    #   current value comes from FitOptions.options[x]
     # The fields are displayed in the order of the factory settings
     FIELD = fitters.FitOptions.FIELDS
     plist = {}
     for fit in fitters.FIT_OPTIONS.values():
         items = [(FIELD[name][0],
-                  factory_setting,
-                  getattr(fit.options, name),
+                  setting,
+                  fit.options[name],
                   FIELD[name][1])
-                 for name,factory_setting in fit.factory_settings]
+                 for name,setting in fit.fitter.settings]
         plist[fit.fitter.name] = items
     #print "****** plist =\n", plist
 
@@ -251,8 +251,8 @@ def OpenFitOptions():
                 if record.fitter.name == algorithm:
                     break
             # Update all values in factory settings order.
-            for (field, _), value in zip(record.factory_settings, pars):
-                setattr(record.options, field, value)
+            for (field, _), value in zip(record.fitter.settings, pars):
+                record.options[field] = value
 
     fit_dlg.Destroy()
 

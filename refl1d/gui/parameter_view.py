@@ -32,7 +32,7 @@ import sys
 import wx.gizmos as gizmos
 
 from ..mystic.parameter import BaseParameter
-from .util import nice, subscribe
+from .util import nice, publish, subscribe
 
 
 class ParameterView(wx.Panel):
@@ -42,12 +42,6 @@ class ParameterView(wx.Panel):
         #sizers
         vbox = wx.BoxSizer(wx.VERTICAL)
         text_hbox = wx.BoxSizer(wx.HORIZONTAL)
-
-        # Flag to set True if update of parameter happened locally (this means
-        # this view has been updated by the user). So we do not need to redraw
-        # the whole tree but we need to refresh the tree with new updated values
-        # as some other values may depend upon updated values.
-        self.update_local = False
 
         self.tree = gizmos.TreeListCtrl(self, -1, style =
                                         wx.TR_DEFAULT_STYLE
@@ -144,13 +138,7 @@ class ParameterView(wx.Panel):
         self.tree.ExpandAll(self.root)
 
     def update_parameters(self):
-        if not self.update_local:
-            self.tree.DeleteAllItems()
-            self.update_model()
-        else:
-            # We need to refresh the tree with only updated values.
-            self.update_tree_nodes()
-            self.update_local = False
+        self.update_tree_nodes()
 
     def add_tree_nodes(self, branch, nodes):
         if isinstance(nodes,dict) and nodes != {}:
@@ -212,8 +200,7 @@ class ParameterView(wx.Panel):
         # is updated .
         if new_value != str(self.node_object.value):
             self.node_object.clip_set(float(new_value))
-            self.update_local = True
-            pub.sendMessage("update_parameters", self.model)
+            publish("model.update", model=self.model)
 
     def get_new_name(self, item, column):
         new_name = self.tree.GetItemText(item, column)
@@ -222,8 +209,7 @@ class ParameterView(wx.Panel):
         # is updated.
         if new_name != str(self.node_object.name):
             self.node_object.name = new_name
-            self.update_local = True
-            pub.sendMessage("update_parameters", self.model)
+            publish("model.update", model=self.model)
 
     def get_new_min(self, item, column):
         low = float(self.tree.GetItemText(item, column))
@@ -233,8 +219,7 @@ class ParameterView(wx.Panel):
         # value is updated.
         if low != self.node_object.bounds.limits[0]:
             self.node_object.range(low, high)
-            self.update_local = True
-            pub.sendMessage("update_parameters", self.model)
+            publish("model.update", model=self.model)
 
     def get_new_max(self, item, column):
         low = self.node_object.bounds.limits[0]
@@ -243,5 +228,4 @@ class ParameterView(wx.Panel):
         # value is updated.
         if high != self.node_object.bounds.limits[1]:
             self.node_object.range(low, high)
-            self.update_local = True
-            pub.sendMessage("update_parameters", self.model)
+            publish("model.update", model=self.model)

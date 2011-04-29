@@ -97,7 +97,7 @@ PYTHON_FILES = "Script files (*.py)|*.py"
 REFL_FILES = "Refl files (*.refl)|*.refl"
 DATA_FILES = "Data files (*.dat)|*.dat"
 TEXT_FILES = "Text files (*.txt)|*.txt"
-ALL_FILES = "All files (*.*)|*.*"
+ALL_FILES = "All files (*.*)|*"
 
 # Custom colors.
 WINDOW_BKGD_COLOUR = "#ECE9D8"
@@ -443,7 +443,7 @@ class AppPanel(wx.Panel):
             self.load_model(path)
 
     def OnFileSave(self, event):
-        if self.model and hasattr(self.model,'modelfile'):
+        if self.problem is not None and hasattr(self.problem,'modelfile'):
             self.save_model()
         else:
             self.OnFileSaveAs(event)
@@ -454,7 +454,7 @@ class AppPanel(wx.Panel):
                             defaultDir=os.getcwd(),
                             defaultFile="",
                             wildcard=(MODEL_FILES+"|"+ALL_FILES),
-                            style=wx.OPEN|wx.CHANGE_DIR)
+                            style=wx.SAVE|wx.CHANGE_DIR|wx.OVERWRITE_PROMPT)
         # Wait for user to close the dialog.
         status = dlg.ShowModal()
         path = dlg.GetPath()
@@ -462,7 +462,10 @@ class AppPanel(wx.Panel):
 
         # Process file if user clicked okay.
         if status == wx.ID_OK:
-            self.model.modelfile = path
+            ## Need to check for overwrite before adding extension
+            #if os.path.basename(path) == path:
+            #    path += ".r1d"
+            self.problem.modelfile = path
             self.save_model()
 
     def OnFileImport(self, event):
@@ -499,6 +502,8 @@ class AppPanel(wx.Panel):
         print "Clicked on stop fit ..." # not implemented
 
     def OnFitComplete(self, event):
+        chisq = nice(event.value/event.problem.dof)
+        publish("log.fit", message = "done with chisq %g"%chisq)
         publish("fit.complete")
         publish("model.update", model=event.problem)
         #self.remember_best(self.fitter, event.problem)
@@ -570,7 +575,8 @@ class AppPanel(wx.Panel):
     def load_model(self, path):
         try:
             import cPickle as serialize
-            problem = serialize.load(path)
+            problem = serialize.load(open(path, 'rb'))
+            problem.modelfile = path
             publish("model.new", model=problem)
         except:
             publish("log.model", message=traceback.format_exc())
@@ -581,6 +587,10 @@ class AppPanel(wx.Panel):
             publish("model.new", model=problem)
         except:
             publish("log.model", message=traceback.format_exc())
+
+    def save_model(self):
+        import cPickle as serialize
+        serialize.dump(self.problem, open(self.problem.modelfile,'wb'))
 
     def set_model(self, model):
         # Inform the various tabs that the model they are viewing has changed
@@ -632,8 +642,12 @@ class AppPanel(wx.Panel):
         self._activate_figure()
         pylab.clf() # clear the canvas
         self.problem.fitness.plot_reflectivity(view=self.view)
-        pylab.text(0.01, 0.01, "chisq=%g" % self.problem.chisq(),
-                   transform=pylab.gca().transAxes)
+        try:
+            # If we can't calculate chisq, then put it on the graph.
+            pylab.text(0.01, 0.01, "chisq=%g" % self.problem.chisq(),
+                       transform=pylab.gca().transAxes)
+        except:
+            pass
         pylab.draw()
 
     def _activate_figure(self):

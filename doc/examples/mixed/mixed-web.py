@@ -7,10 +7,8 @@
 # of the reflectivity on the plateau and the reflectivity on the valley floor.
 # By adjusting the weight of two reflectivities, we should be able to
 # determine the ratio of plateau width to valley width.
-
-
+#
 # .. plot::
-#    :caption: Plot of :download:`PEMU.py <PEMU.py>`
 #
 #    from sitedoc import plot_model
 #    plot_model('mixed.py')
@@ -67,13 +65,6 @@ M.ratio[1].range(0,5)
 
 problem = FitProblem(M)
 
-# The resulting model looks like:
-#
-# .. plot::
-#
-#    from sitedoc import plot_model
-#    plot_model('mixed.py')
-#
 # This complete model script is defined in
 # :download:`mixed.py <mixed.py>`:
 #

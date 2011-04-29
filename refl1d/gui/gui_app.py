@@ -226,7 +226,7 @@ def main():
     # Instantiate the application class and give control to wxPython.
     app = Refl1dGUIApp(redirect=False, filename=None)
 
-    from .. import cli
+    from .. import cli, fitplugin
     cli.Refl1dOpts.FLAGS |= set(('inspect','syspath'))
     opts = cli.getopts()
 
@@ -245,10 +245,12 @@ def main():
         for i, p in enumerate(sys.path):
             print "%5d  %s" %(i, p)
 
-    # Argument processing
+    # Put up the initial model
     model = cli.initial_model(opts)
-    if model:
-        app.frame.panel.set_model(model=model)
+    if not model:
+        model = fitplugin.new_model()
+    app.frame.panel.set_model(model=model)
+
 
     # Enter event loop which allows the user to interact with the application.
     if LOGTIM: log_time("Entering the event loop")

@@ -81,18 +81,21 @@ class FitBase(object):
     def __init__(self, problem):
         """Fit the models and show the results"""
         self.problem = problem
-    def solve(self, options, monitors=None, mapper=None):
+    def solve(self, monitors=None, mapper=None, **options):
         raise NotImplementedError
 
 class MultiStart(FitBase):
     name = "Multistart Monte Carlo"
+    settings = [('starts', 100)]
     def __init__(self, fitter):
         self.fitter = fitter
         self.problem = fitter.problem
-    def solve(self, options, monitors=None, mapper=None):
+    def solve(self, monitors=None, mapper=None, **options):
+        starts = options.pop('starts',1)
         f_best = inf
-        for _ in range(max(option.starts,1)):
-            x,fx = self.fitter.solve(options, monitors=monitors, mapper=mapper)
+        for _ in range(max(starts,1)):
+            x,fx = self.fitter.solve(monitors=monitors, mapper=mapper,
+                                     **options)
             if fx < f_best:
                 x_best, f_best = x,fx
             self.problem.randomize()
@@ -100,7 +103,9 @@ class MultiStart(FitBase):
 
 class DEFit(FitBase):
     name = "Differential Evolution"
-    def solve(self, options, monitors=None, mapper=None):
+    settings = [('steps',1000), ('pop', 10), ('CR', 0.9), ('F', 2.0) ]
+    def solve(self, monitors=None, mapper=None, **options):
+        _fill_defaults(options, self.settings)
         from mystic.optimizer import de
         from mystic.solver import Minimizer
         from mystic.stop import Steps
@@ -110,26 +115,28 @@ class DEFit(FitBase):
             _mapper = lambda p,x: mapper(x)
         else:
             _mapper = lambda p,x: map(self.problem.nllf,x)
-        strategy = de.DifferentialEvolution(npop=options.pop,
-                                            CR=options.CR,
-                                            F=options.F)
+        strategy = de.DifferentialEvolution(npop=options['pop'],
+                                            CR=options['CR'],
+                                            F=options['F'])
         minimize = Minimizer(strategy=strategy, problem=self.problem,
                              monitors=monitors,
-                             failure=Steps(options.steps))
+                             failure=Steps(options['steps']))
         x = minimize(mapper=_mapper)
         return x, minimize.history.value[0]
 
 
 class BFGSFit(FitBase):
     name = "Quasi-Newton BFGS"
-    def solve(self, options, monitors=None, mapper=None):
+    settings = [('steps',3000), ('starts',100) ]
+    def solve(self, monitors=None, mapper=None, **options):
+        _fill_defaults(options, self.settings)
         from quasinewton import quasinewton, STATUS
         self._update = MonitorRunner(problem=self.problem,
                                      monitors=monitors)
         result = quasinewton(self.problem.nllf,
                              x0=self.problem.getp(),
                              monitor = self._monitor,
-                             itnlimit = options.steps,
+                             itnlimit = options['steps'],
                              )
         code = result['status']
         print "%d: %s" % (code, STATUS[code])
@@ -140,7 +147,9 @@ class BFGSFit(FitBase):
 
 class PSFit(FitBase):
     name = "Particle Swarm"
-    def solve(self, options, monitors=None, mapper=None):
+    settings = [('steps',3000), ('pop', 1) ]
+    def solve(self, monitors=None, mapper=None, **options):
+        _fill_defaults(options, self.settings)
         if mapper is None:
             mapper = lambda x: map(self.problem.nllf,x)
         from random_lines import particle_swarm
@@ -155,9 +164,9 @@ class PSFit(FitBase):
                    x2 = bounds[1],
                    f_opt = 0,
                    monitor = self._monitor)
-        NP = int(cfo['n']*options.pop)
+        NP = int(cfo['n']*options['pop'])
 
-        result = particle_swarm(cfo, NP, maxiter=options.steps)
+        result = particle_swarm(cfo, NP, maxiter=options['steps'])
         satisfied_sc, n_feval, f_best, x_best = result
 
         return x_best, f_best
@@ -168,7 +177,9 @@ class PSFit(FitBase):
 
 class RLFit(FitBase):
     name = "Random Lines"
-    def solve(self, options, monitors=None, mapper=None):
+    settings = [('steps',3000), ('starts',20), ('pop', 0.5), ('CR', 0.9)]
+    def solve(self, monitors=None, mapper=None, **options):
+        _fill_defaults(options, self.settings)
         if mapper is None:
             mapper = lambda x: map(self.problem.nllf,x)
         from random_lines import random_lines
@@ -183,9 +194,10 @@ class RLFit(FitBase):
                    x2 = bounds[1],
                    f_opt = 0,
                    monitor = self._monitor)
-        NP = max(int(cfo['n']*options.pop),3)
+        NP = max(int(cfo['n']*options['pop']),3)
 
-        result = random_lines(cfo, NP, maxiter=options.steps, CR=options.CR)
+        result = random_lines(cfo, NP, maxiter=options['steps'],
+                              CR=options['CR'])
         satisfied_sc, n_feval, f_best, x_best = result
 
         return x_best, f_best
@@ -197,24 +209,27 @@ class RLFit(FitBase):
 
 class PTFit(FitBase):
     name = "Parallel Tempering"
-    def solve(self, options, monitors=None, mapper=None):
+    settings = [('steps',1000), ('nT', 25), ('CR', 0.9),
+                ('burn',4000),  ('Tmin', 0.1), ('Tmax', 10)]
+    def solve(self, monitors=None, mapper=None, **options):
+        _fill_defaults(options, self.settings)
         # TODO: no mapper??
         from partemp import parallel_tempering
         self._update = MonitorRunner(problem=self.problem,
                                      monitors=monitors)
         bounds = numpy.array([p.bounds.limits
                               for p in self.problem.parameters]).T
-        T = numpy.logspace(numpy.log10(options.Tmin),
-                           numpy.log10(options.Tmax),
-                           options.nT)
+        T = numpy.logspace(numpy.log10(options['Tmin']),
+                           numpy.log10(options['Tmax']),
+                           options['nT'])
         history = parallel_tempering(nllf=self.problem.nllf,
                                     p=self.problem.getp(),
                                     bounds=bounds,
                                     #logfile="partemp.dat",
                                     T=T,
-                                    CR=options.CR,
-                                    steps=options.steps,
-                                    burn=options.burn,
+                                    CR=options['CR'],
+                                    steps=options['steps'],
+                                    burn=options['burn'],
                                     monitor=self._monitor)
         return history.best_point, history.best
     def _monitor(self, step, x, fx):
@@ -223,7 +238,9 @@ class PTFit(FitBase):
 
 class AmoebaFit(FitBase):
     name = "Nelder-Mead Simplex"
-    def solve(self, options, monitors=None, mapper=None):
+    settings = [ ('steps',1000), ('starts',100) ]
+    def solve(self, monitors=None, mapper=None, **options):
+        _fill_defaults(options, self.settings)
         # TODO: no mapper??
         from simplex import simplex
         self._update = MonitorRunner(problem=self.problem,
@@ -233,14 +250,16 @@ class AmoebaFit(FitBase):
         result = simplex(f=self.problem.nllf, x0=self.problem.getp(),
                          bounds=bounds,
                          update_handler=self._monitor,
-                         maxiter=options.steps)
+                         maxiter=options['steps'])
         return result.x, result.fx
     def _monitor(self, k, n, x, fx):
         self._update(step=k, point=x, value=fx)
 
 class SnobFit(FitBase):
     name = "SNOBFIT"
-    def solve(self, options, monitors=None, mapper=None):
+    settings = [('steps',200)]
+    def solve(self, monitors=None, mapper=None, **options):
+        _fill_defaults(options, self.settings)
         # TODO: no mapper??
         from snobfit.snobfit import snobfit
         self._update = MonitorRunner(problem=self.problem,
@@ -283,38 +302,35 @@ class DreamModel(MCMCModel):
 
 class DreamFit(FitBase):
     name = "DREAM"
+    settings = [('steps',500),  ('burn', 1000), ('pop', 10), ('init', 'lhs') ]
     def __init__(self, problem):
         self.dream_model = DreamModel(problem)
 
-    def solve(self, options, monitors=None, mapper=None):
+    def solve(self, monitors=None, mapper=None, **options):
+        _fill_defaults(options, self.settings)
         import dream
 
         if mapper: self.dream_model.mapper = mapper
 
-        self.pop = opts.pop
-        self.pop_init = opts.init
-        self.steps = opts.steps
-        self.burn = opts.burn
-
         pars = self.dream_model.problem.parameters
-        pop_size = int(ceil(options.pop*len(pars)))
-        if options.init == 'random':
+        pop_size = int(ceil(options['pop']*len(pars)))
+        if options['init'] == 'random':
             population = initpop.random(N=pop_size,
                                         pars=pars, include_current=True)
-        elif options.init == 'cov':
+        elif options['init'] == 'cov':
             cov = self.dream_model.problem.cov()
             population = initpop.cov(N=pop_size,
                                      pars=pars, include_current=False, cov=cov)
-        elif options.init == 'lhs':
+        elif options['init'] == 'lhs':
             population = initpop.lhs(N=pop_size,
                                      pars=pars, include_current=True)
         else:
             raise ValueError("Unknown population initializer '%s'"
-                             %options.init)
+                             %options['init'])
         population = population[None,:,:]
         sampler = dream.Dream(model=self.dream_model, population=population,
-                              draws = pop_size*options.steps,
-                              burn = pop_size*options.burn)
+                              draws = pop_size*options['steps'],
+                              burn = pop_size*options['burn'])
 
         self.state = sampler.sample()
         self.state.title = self.dream_model.problem.name
@@ -329,7 +345,7 @@ class DreamFit(FitBase):
         self.state.show(figfile=output_path)
 
 class FitDriver(object):
-    def __init__(self, fitter, problem, options, monitors=None):
+    def __init__(self, fitter=None, problem=None, monitors=None, **options):
         self.fitter = fitter
         self.problem = problem
         self.options = options
@@ -338,13 +354,13 @@ class FitDriver(object):
 
     def fit(self):
         optimizer = self.fitter(self.problem)
-        starts = getattr(self.options, 'starts', 1)
+        starts = self.options.get('starts', 1)
         if starts > 1:
             optimizer = MultiStart(optimizer)
         t0 = time.clock()
-        x, fx = optimizer.solve(self.options,
-                                monitors=self.monitors,
-                                mapper=self.mapper)
+        x, fx = optimizer.solve(monitors=self.monitors,
+                                mapper=self.mapper,
+                                **self.options)
         self.optimizer = optimizer
         self.time = time.clock() - t0
         self.result = x, fx
@@ -367,9 +383,10 @@ class FitDriver(object):
             self.optimizer.plot(output_path)
 
 
-class Struct(object):
-    def __init__(self, **kwargs):
-        self.__dict__ = kwargs
+def _fill_defaults(options, settings):
+    for field,value in settings:
+        if field not in options:
+            options[field] = value
 
 class FitOptions(object):
     # Field labels and types for all possible fields
@@ -386,48 +403,36 @@ class FitOptions(object):
         Tmax   = ("Max Temperature", "float"),
         )
 
-    def __init__(self, fitter, factory_settings):
+    def __init__(self, fitter):
         self.fitter = fitter
-        self.factory_settings = factory_settings
-        self.options = Struct(**dict(factory_settings))
+        self.options = dict(fitter.settings)
     def set_from_cli(self, opts):
         # Convert supplied options to the correct types and save them in value
-        for field,reset_value in self.factory_settings:
+        for field,reset_value in self.fitter.settings:
             value = getattr(opts,field,None)
             dtype = FitOptions.FIELDS[field][1]
             if value is not None:
                 if dtype == 'int':
-                    setattr(self.options, field, int(value))
+                    self.options[field] = int(value)
                 elif dtype == 'float':
-                    setattr(self.options, field, float(value))
+                    self.options[field] = float(value)
                 else: # string
                     if not field in dtype:
                         raise ValueError('invalid option "%s" for %s: use '
                                          % (value, field)
                                          + '|'.join(dtype))
-                    setattr(self.options, field, value)
+                    self.options[field] = value
 
 # List of (parameter,factory value) required for each algorithm
 FIT_OPTIONS = dict(
-    amoeba = FitOptions(AmoebaFit,
-                        [('steps',1000), ('starts',100) ]),
-    de     = FitOptions(DEFit,
-                        [('steps',1000), ('pop', 10),
-                         ('CR', 0.9), ('F', 2.0) ]),
-    dream  = FitOptions(DreamFit,
-                        [('steps',500),  ('burn', 1000), ('pop', 10),
-                         ('init', 'lhs') ]),
-    newton = FitOptions(BFGSFit,
-                        [('steps',3000), ('starts',100) ]),
-    ps     = FitOptions(PSFit,
-                        [('steps',3000), ('pop', 1) ]),
-    pt     = FitOptions(PTFit,
-                        [('steps',1000), ('nT', 25), ('CR', 0.9),
-                         ('burn',4000),  ('Tmin', 0.1), ('Tmax', 10)]),
-    rl     = FitOptions(RLFit,
-                        [('steps',3000), ('starts',20), ('pop', 0.5),
-                         ('CR', 0.9)]),
-    snobfit = FitOptions(SnobFit, [('steps',200)]),
+    amoeba = FitOptions(AmoebaFit),
+    de     = FitOptions(DEFit),
+    dream  = FitOptions(DreamFit),
+    newton = FitOptions(BFGSFit),
+    ps     = FitOptions(PSFit),
+    pt     = FitOptions(PTFit),
+    rl     = FitOptions(RLFit),
+    snobfit = FitOptions(SnobFit),
     )
 
 FIT_DEFAULT = 'de'

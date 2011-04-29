@@ -441,7 +441,7 @@ def main():
     matplotlib.interactive(False)
 
     fitopts = FIT_OPTIONS[opts.fit]
-    fitter = FitDriver(fitopts.fitter, problem=problem, options=fitopts.options)
+    fitter = FitDriver(fitopts.fitter, problem=problem, **fitopts.options)
 
     # Which format to view the plots
 

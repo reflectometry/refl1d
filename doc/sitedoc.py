@@ -1,7 +1,7 @@
 import os
 import numpy
 import pylab
-from refl1d.fitter import BFGSFit, DEFit, RLFit, PTFit
+from refl1d.fitters import BFGSFit, DEFit, RLFit, PTFit
 from refl1d.cli import load_problem
 
 SEED = 1
@@ -45,10 +45,10 @@ def plot_model(filename):
 def fit_model(filename):
     numpy.random.seed(SEED)
     p =load_problem([os.path.join(example_dir(),filename)])
-    #x = RLFit(p).solve(steps=1000, burn=99)
-    #x = DEFit(p).solve(steps=1000, pop=20)
-    x,fx = PTFit(p).solve(steps=100,burn=400)
-    #x = BFGSFit(p).solve(steps=200)
+    #x.fx = RLFit(p).solve(steps=1000, burn=99)
+    x,fx = DEFit(p).solve(steps=200, pop=10)
+    #x,fx = PTFit(p).solve(steps=100,burn=400)
+    #x.fx = BFGSFit(p).solve(steps=200)
     chisq = p(x)
     print "chisq=",chisq
     if chisq>2:
