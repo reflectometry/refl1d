@@ -216,8 +216,8 @@ def OpenFitOptions():
     FIELD = fitters.FitOptions.FIELDS
     plist = {}
     for fit in fitters.FIT_OPTIONS.values():
-        items = [(FIELD[name][0], 
-                  factory_setting, 
+        items = [(FIELD[name][0],
+                  factory_setting,
                   getattr(fit.options, name),
                   FIELD[name][1])
                  for name,factory_setting in fit.factory_settings]
