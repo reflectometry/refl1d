@@ -39,7 +39,7 @@ from .util import Validator
 
 class FitControl(wx.Dialog):
     """
-    FitControl lets the user set fitting options from a pop-up a dialog box.
+    FitControl lets the user set fitting options from a pop-up dialog box.
     """
     def __init__(self,
                  parent = None,
@@ -57,7 +57,6 @@ class FitControl(wx.Dialog):
 
         self.plist = plist
         self.vbox = wx.BoxSizer(wx.VERTICAL)
-        self.default_algo = default_algo
 
         # Set the font for this window and all child windows (widgets) from the
         # parent window, or from the system defaults if no parent is given.
@@ -107,17 +106,18 @@ class FitControl(wx.Dialog):
             self.vbox.Add(self.algo_panel, 1, wx.EXPAND|wx.ALL, 10)
             self.algo_panel.Hide()
 
-            if algo == self.default_algo:
+            if algo == default_algo:
                 self.radio_list[idx].SetValue(True)
                 self.panel_list[idx].Show()
 
         # Section 3
-        # Create the button controls (Fit, OK, Cancel) and bind their events.
-        #fit_btn = wx.Button(self, wx.ID_ANY, "Fit")
+        # Create the button controls (Reset, OK, Cancel) and bind their events.
+        reset_btn = wx.Button(self, wx.ID_ANY, "Reset")
         ok_btn = wx.Button(self, wx.ID_OK, "OK")
         ok_btn.SetDefault()
         cancel_btn = wx.Button(self, wx.ID_CANCEL, "Cancel")
 
+        self.Bind(wx.EVT_BUTTON, self.OnReset, reset_btn)
         self.Bind(wx.EVT_BUTTON, self.OnOk, ok_btn)
         self.Bind(wx.EVT_BUTTON, self.OnCancel, cancel_btn)
 
@@ -126,14 +126,15 @@ class FitControl(wx.Dialog):
         # emulates the Windows convention for placing a set of buttons at the
         # bottom right of the window.
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        #btn_sizer.Add((10,20), 1)  # stretchable whitespace
+        btn_sizer.Add(reset_btn, 0)
         btn_sizer.Add((10,20), 1)  # stretchable whitespace
         btn_sizer.Add(ok_btn, 0)
         btn_sizer.Add((10,20), 0)  # non-stretchable whitespace
         btn_sizer.Add(cancel_btn, 0)
 
         # Add the button sizer to the main sizer.
-        self.vbox.Add(btn_sizer, 0, border=10,
-                      flag=wx.EXPAND|wx.TOP|wx.BOTTOM|wx.RIGHT)
+        self.vbox.Add(btn_sizer, 0, wx.EXPAND|wx.ALL, 10)
 
         # Finalize the sizer and establish the dimensions of the dialog box.
         # The minimum width is explicitly set because the sizer is not able to
@@ -159,6 +160,22 @@ class FitControl(wx.Dialog):
                 self.vbox.Layout()
                 break
 
+    def OnReset(self, event):
+        """
+        Reset parameter values for the currently selected fit algorithm to its
+        default values when the application was started.
+        """
+
+        reset_values = []
+        for idx, panel in enumerate(self.panel_list):
+            if panel.IsShown():
+                parameters = self.plist[ self.algorithms[idx] ]
+                for parameter in parameters:
+                    label, default_value, curr_value, datatype = parameter
+                    reset_values.append(default_value)
+                panel.fit_params.update_items_in_panel(reset_values)
+                break
+
     def OnOk(self, event):
         event.Skip()
 
@@ -167,10 +184,10 @@ class FitControl(wx.Dialog):
 
     def get_results(self):
         self.fit_option={}
-        for algo_idx, algo in enumerate(self.algorithms):
-            result = self.panel_list[algo_idx].fit_param.GetResults()
+        for idx, algo in enumerate(self.algorithms):
+            result = self.panel_list[idx].fit_params.GetResults()
             self.fit_option[algo] = result
-            if self.radio_list[algo_idx].GetValue():
+            if self.radio_list[idx].GetValue():
                 active_algo = algo
 
         return active_algo, self.fit_option
@@ -186,6 +203,8 @@ class AlgorithmParameter(wx.Panel):
 
         for parameter in parameters:
             label, default_value, curr_value, datatype = parameter
+            if not label.endswith(':'):
+                label += ':'
             if isinstance(datatype, tuple):
                 extra = datatype
                 datatype = 'str'
@@ -196,23 +215,25 @@ class AlgorithmParameter(wx.Panel):
             sub_list = [label, curr_value, datatype, mode, extra]
             fields.append(sub_list)
 
-        self.fit_param = InputListPanel(parent=self, itemlist=fields,
-                                        align=True, size=(-1,220))
+        # Set the same minimum height for each panel.  The y-size value should
+        # be sufficient to display at least 6 input fields without the need for
+        # a scroll bar.  Adjust the size.y value if the maximum number of
+        # number of input parameters across fitters changes.
+        self.fit_params = InputListPanel(parent=self, itemlist=fields,
+                                         align=True, size=(-1,220))
 
         sbox_sizer = wx.StaticBoxSizer(sbox, wx.VERTICAL)
-        sbox_sizer.Add(self.fit_param, 1, wx.EXPAND|wx.ALL, 5)
+        sbox_sizer.Add(self.fit_params, 1, wx.EXPAND|wx.ALL, 5)
         self.SetSizer(sbox_sizer)
         sbox_sizer.Fit(self)
 
 
 def OpenFitOptions():
-
-
     # Gather together information about option x from three sources:
-    #   name and type come from the FIELDS :- name,type mapping
+    #   name and type come from the FIELDS - name,type mapping
     #   algorithm and factory settings comes from fitter.name, fitter.settings
     #   current value comes from FitOptions.options[x]
-    # The fields are displayed in the order of the factory settings
+    # The fields are displayed in the order of the factory settings.
     FIELD = fitters.FitOptions.FIELDS
     plist = {}
     for fit in fitters.FIT_OPTIONS.values():
@@ -236,7 +257,7 @@ def OpenFitOptions():
         algorithm_name, results = fit_dlg.get_results()
         #print 'results', algorithm_name, results
 
-        # Find the new default fitter from the algorithm name
+        # Find the new default fitter from the algorithm name.
         for id, record in fitters.FIT_OPTIONS.items():
             if record.fitter.name == algorithm_name:
                 fitters.FIT_DEFAULT = id
@@ -246,7 +267,7 @@ def OpenFitOptions():
 
         # Update all algorithm values
         for algorithm_name, pars in results.items():
-            # Find algorithm record given the name of the optimizer
+            # Find algorithm record given the name of the optimizer.
             for record in fitters.FIT_OPTIONS.values():
                 if record.fitter.name == algorithm_name:
                     break
