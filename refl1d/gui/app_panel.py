@@ -138,7 +138,7 @@ class AppPanel(wx.Panel):
         subscribe(self.set_model, "model.new")
         subscribe(self.OnModelChange, "model.change")
         subscribe(self.OnModelUpdate, "model.update")
-        subscribe(self.OnStartFit, "fit.start")
+        subscribe(self.OnFitStart, "fit.start")
 
         EVT_FIT_PROGRESS(self, self.OnFitProgress)
         EVT_FIT_IMPROVEMENT(self, self.OnFitImprovement)
@@ -227,14 +227,14 @@ class AppPanel(wx.Panel):
         _item = fit_menu.Append(wx.ID_ANY,
                                 "&Start Fit",
                                 "Start fitting operation")
-        frame.Bind(wx.EVT_MENU, self.OnStartFit, _item)
+        frame.Bind(wx.EVT_MENU, self.OnFitStart, _item)
         fit_menu.Enable(id=_item.GetId(), enable=False)
         self.fit_menu_start = _item
 
         _item = fit_menu.Append(wx.ID_ANY,
                                 "&Stop Fit",
                                 "Stop fitting operation")
-        frame.Bind(wx.EVT_MENU, self.OnStopFit, _item)
+        frame.Bind(wx.EVT_MENU, self.OnFitStop, _item)
         fit_menu.Enable(id=_item.GetId(), enable=False)
         self.fit_menu_stop = _item
 
@@ -289,14 +289,14 @@ class AppPanel(wx.Panel):
         _tool = tb.AddSimpleTool(wx.ID_ANY, start_bmp,
                                  "Start Fit",
                                  "Start fitting operation")
-        frame.Bind(wx.EVT_TOOL, self.OnStartFit, _tool)
+        frame.Bind(wx.EVT_TOOL, self.OnFitStart, _tool)
         tb.EnableTool(_tool.GetId(), False)
         self.tb_start = _tool
 
         _tool = tb.AddSimpleTool(wx.ID_ANY, stop_bmp,
                                  "Stop Fit",
                                  "Stop fitting operation")
-        frame.Bind(wx.EVT_TOOL, self.OnStopFit, _tool)
+        frame.Bind(wx.EVT_TOOL, self.OnFitStop, _tool)
         tb.EnableTool(_tool.GetId(), False)
         self.tb_stop = _tool
 
@@ -425,7 +425,7 @@ class AppPanel(wx.Panel):
         self.new_model()
 
     def OnFileOpen(self, event):
-        # Load the script which will contain model defination and data.
+        # Load the script which will contain model definition and data.
         dlg = wx.FileDialog(self,
                             message="Select File",
                             #defaultDir=os.getcwd(),
@@ -438,7 +438,7 @@ class AppPanel(wx.Panel):
         path = dlg.GetPath()
         dlg.Destroy()
 
-        # Process file if user clicked okay
+        # Process file if user clicked okay.
         if status == wx.ID_OK:
             self.load_model(path)
 
@@ -489,16 +489,17 @@ class AppPanel(wx.Panel):
     def OnFitOptions(self, event):
         OpenFitOptions()
 
-    def OnStartFit(self, event):
+    def OnFitStart(self, event):
         self.pan1.Layout()
 
         # Start a new thread worker and give fit problem to the worker.
         fitopts = fitters.FIT_OPTIONS[fitters.FIT_DEFAULT]
         self.fit_thread = FitThread(win=self, problem=self.problem,
-                                fitter=fitopts.fitter, options=fitopts.options)
+                                    fitter=fitopts.fitter,
+                                    options=fitopts.options)
         self.sb.SetStatusText("Fit status: Running", 3)
 
-    def OnStopFit(self, event):
+    def OnFitStop(self, event):
         print "Clicked on stop fit ..." # not implemented
 
     def OnFitComplete(self, event):
@@ -593,7 +594,7 @@ class AppPanel(wx.Panel):
         serialize.dump(self.problem, open(self.problem.modelfile,'wb'))
 
     def set_model(self, model):
-        # Inform the various tabs that the model they are viewing has changed
+        # Inform the various tabs that the model they are viewing has changed.
         self.problem = model  # This should be theory_view.set_model(model)
         self.redraw()
 
@@ -613,10 +614,10 @@ class AppPanel(wx.Panel):
         #self.tb.EnableTool(id=self.tb_stop.GetId(), enable=True)
 
     # This should be split out into a separate theory_view.py.
-    # Our app panel needs to be able to set and reset model specific menus
+    # Our app panel needs to be able to set and reset model specific menus.
 
     # ==== Views ====
-    # TODO: can probably parameterize the view selection
+    # TODO: can probably parameterize the view selection.
     def OnLog(self, event):
         self.view = "log"
         self.redraw()

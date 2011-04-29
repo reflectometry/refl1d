@@ -227,28 +227,28 @@ def OpenFitOptions():
     # Pass in the frame object as the parent window so that the dialog box
     # will inherit font info from it instead of using system defaults.
     frame = wx.FindWindowByName("AppFrame")
-    algorithm = fitters.FIT_OPTIONS[fitters.FIT_DEFAULT].fitter.name
+    algorithm_name = fitters.FIT_OPTIONS[fitters.FIT_DEFAULT].fitter.name
     fit_dlg = FitControl(parent=frame, id=wx.ID_ANY, title="Fit Control",
                          plist=plist,
-                         default_algo=algorithm)
+                         default_algo=algorithm_name)
 
     if fit_dlg.ShowModal() == wx.ID_OK:
-        algorithm, results = fit_dlg.get_results()
+        algorithm_name, results = fit_dlg.get_results()
         #print 'results', algorithm_name, results
 
         # Find the new default fitter from the algorithm name
         for id, record in fitters.FIT_OPTIONS.items():
-            if record.fitter.name == algorithm:
+            if record.fitter.name == algorithm_name:
                 fitters.FIT_DEFAULT = id
                 break
         else:
             raise ValueError("No algorithm selected")
 
         # Update all algorithm values
-        for algorithm, pars in results.items():
+        for algorithm_name, pars in results.items():
             # Find algorithm record given the name of the optimizer
             for record in fitters.FIT_OPTIONS.values():
-                if record.fitter.name == algorithm:
+                if record.fitter.name == algorithm_name:
                     break
             # Update all values in factory settings order.
             for (field, _), value in zip(record.fitter.settings, pars):

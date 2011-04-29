@@ -276,15 +276,12 @@ Options:
     --staj
         output staj file when done
 
-
     --store=path
         output directory for plots and models
     --overwrite
         if store already exists, replace it
     --parallel
         run fit using all processors
-    --transport=mp  {amqp|mp|mpi}
-        use amqp/multiprocessing/mpi for parallel evaluation
     --batch
         batch mode; don't show plots after fit
     --remote
@@ -311,15 +308,15 @@ Options:
         crossover ratio for population mixing
     --starts=1      [%(fitter)s]
         number of times to run the fit from random starting points
-    --init=lhs      {cov|lhs|random} for [dream]
-        population initialization method, with 'lhs' for latin hypersquares,
-        'cov' for covariance, and 'random' for uniform within parameter
-        distribution
+    --init=lhs      [dream]
+        population initialization method:
+          lhs:    latin hypercube sampling
+          cov:    normally distributed according to covariance matrix
+          random: uniformly distributed within parameter ranges
     --stepmon
         show details for each step
     --resynth=0
         run resynthesis error analysis for n generations
-
 
     --check
         print the model description and chisq value and exit
@@ -329,6 +326,8 @@ Options:
      'plotter':'|'.join(PLOTTERS),
      }
 
+#    --transport=mp  {amqp|mp|mpi}
+#        use amqp/multiprocessing/mpi for parallel evaluation
 #    --mesh=var OR var+var
 #        plot chisq line or plane
 #    --meshsteps=n
