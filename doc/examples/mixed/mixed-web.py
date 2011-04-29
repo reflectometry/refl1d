@@ -51,8 +51,6 @@ plateau[0].interface.range(0,200)
 plateau[1].interface.range(0,200)
 plateau[1].thickness.range(200,1800)
 
-print "in plateau", plateau[1].thickness.fixed
-
 # The ratio between the valley and the plateau can also be fit, either
 # by fixing size of the plateau and fitting the size of the valley or
 # fixing the size of the valley and fitting the size of the plateau.  We
@@ -65,11 +63,22 @@ M.ratio[1].range(0,5)
 # 50:50 mixture of air and nickel.  In this case we would have three
 # entries in the ratio.
 
-# We wrap this as a fit problem as usual.  Note that this must
-# happen after all parameters are defined.
+# We wrap this as a fit problem as usual.
 
 problem = FitProblem(M)
 
+# The resulting model looks like:
+#
+# .. plot::
+#
+#    from sitedoc import plot_model
+#    plot_model('mixed.py')
+#
+# This complete model script is defined in
+# :download:`mixed.py <mixed.py>`:
+#
+# .. literalinclude:: mixed.py
+#
 # We can test how well the fitter can recover the original model
 # by running refl1d with --random::
 #

@@ -12,6 +12,7 @@ complex models with many constraints relatively easily.
    :maxdepth: 2
 
    /examples/ex1/readme.rst
-   /examples/ex2/readme.rst
+   /examples/polymer/readme.rst
+   /examples/mixed/readme.rst
    /examples/superlattice/readme.rst
    /examples/staj/readme.rst

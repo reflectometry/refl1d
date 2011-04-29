@@ -19,7 +19,8 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 	$(PYTHON) pylit.py $@ $(patsubst %.rst,%.py,$@) -s -t
 
 WEBFILES = superlattice/PEMU superlattice/NiTi superlattice/freeform \
-	ex1/nifilm ex1/nifilm-tof ex1/nifilm-fit ex1/nifilm-data ex2/tethered
+	ex1/nifilm ex1/nifilm-tof ex1/nifilm-fit ex1/nifilm-data \
+	polymer/tethered mixed/mixed
 
 WEBDEPS = $(patsubst %,examples/%.rst,$(WEBFILES))
 
