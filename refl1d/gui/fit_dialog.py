@@ -26,6 +26,8 @@ This module implements the FitControl class which presents a pop-up dialog box
 for the user to control fitting options.
 """
 
+# TODO: reset button sets values to factory settings for current optimizer
+
 #==============================================================================
 import wx
 
@@ -205,7 +207,6 @@ class AlgorithmParameter(wx.Panel):
 
 def OpenFitOptions():
 
-    # TODO: make the dialog non-modal and add an Apply button.
 
     # Gather together information about option x from three sources:
     #   name and type come from the FIELDS :- name,type mapping
@@ -215,8 +216,10 @@ def OpenFitOptions():
     FIELD = fitters.FitOptions.FIELDS
     plist = {}
     for fit in fitters.FIT_OPTIONS.values():
-        items = [(FIELD[name][0], getattr(fit.options, name),
-                  factory_setting, FIELD[name][1])
+        items = [(FIELD[name][0], 
+                  factory_setting, 
+                  getattr(fit.options, name),
+                  FIELD[name][1])
                  for name,factory_setting in fit.factory_settings]
         plist[fit.fitter.name] = items
     #print "****** plist =\n", plist

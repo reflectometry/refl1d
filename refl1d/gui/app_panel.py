@@ -501,12 +501,7 @@ class AppPanel(wx.Panel):
     def OnFitComplete(self, event):
         publish("fit.complete")
         publish("model.update", model=event.problem)
-        if event.data is None:
-            # Thread aborted (using our convention of None return)
-            print "Computation failed/aborted"
-        else:
-            pass
-            #self.remember_best(self.fitter, self.problem, event.data)
+        #self.remember_best(self.fitter, event.problem)
 
         self.sb.SetStatusText("Fit status: Complete", 3)
 

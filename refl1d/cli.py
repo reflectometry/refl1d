@@ -444,6 +444,7 @@ def main():
     fitter = FitDriver(fitopts.fitter, problem=problem, options=fitopts.options)
 
     # Which format to view the plots
+    
     Probe.view = opts.plot
 
     if opts.profile:
