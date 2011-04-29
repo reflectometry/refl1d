@@ -36,9 +36,9 @@ class Fresnel:
         # If Q < 0, then we are going from substrate into incident medium.
         # In that case we must negate the change in scattering length density
         # and ignore the absorption.
-        Qp_rho = 1e-6*(self.rho-self.Vrho + 1j*self.irho)
-        Qm_rho = 1e-6*(self.Vrho-self.rho + 1j*self.Virho)
-        rho = choose(Q<0, (Qm_rho,Qp_rho))
+        rho_Qp = 1e-6*(self.rho-self.Vrho + 1j*self.irho)
+        rho_Qm = 1e-6*(self.Vrho-self.rho + 1j*self.Virho)
+        rho = choose(Q<0, (rho_Qp,rho_Qm))
         kz = abs(Q)/2
         f = sqrt(kz**2 - 4*pi*rho)  # fresnel coefficient
 

@@ -415,6 +415,7 @@ class Probe(object):
         # Doesn't use ProbeCache, but this routine is not time critical
         Srho,Sirho = (0,0) if substrate is None else substrate.sld(self)[:2]
         Vrho,Virho = (0,0) if surface is None else surface.sld(self)[:2]
+        if self.back_reflectivity: Srho,Sirho = Vrho, Virho
         if Srho == Vrho: Srho = Vrho + 1
         I = numpy.ones_like(self.Q)
         calculator = fresnel.Fresnel(rho=Srho*I, irho=Sirho*I,
@@ -435,8 +436,8 @@ class Probe(object):
         elif view == 'log':
             self.plot_log(theory=theory)
         elif view == 'fresnel':
-            self.plot_fresnel(theory=theory, substrate=substrate,
-                              surface=surface)
+            self.plot_fresnel(theory=theory,
+                              substrate=substrate, surface=surface)
         elif view == 'q4':
             self.plot_Q4(theory=theory)
         elif view == 'resolution':
