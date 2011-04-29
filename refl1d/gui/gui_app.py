@@ -227,7 +227,7 @@ def main():
     app = Refl1dGUIApp(redirect=False, filename=None)
 
     from .. import cli
-    cli.FitOpts.FLAGS |= set(('inspect','syspath'))
+    cli.Refl1dOpts.FLAGS |= set(('inspect','syspath'))
     opts = cli.getopts()
 
     # For wx debugging, load the wxPython Widget Inspection Tool if requested.

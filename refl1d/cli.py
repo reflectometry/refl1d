@@ -16,12 +16,10 @@ import numpy
 
 import dream
 from .stajconvert import load_mlayer, fit_all
-from .fitter import (DEFit, AmoebaFit, SnobFit, BFGSFit,
-                     PSFit, RLFit, PTFit, MultiStart)
-from .fitter import StepMonitor, ConsoleMonitor
-from .fitter import FitProblem
+from .fitters import FitDriver, FIT_OPTIONS, FIT_DEFAULT, FitOptions, \
+    StepMonitor, ConsoleMonitor
+from .fitproblem import FitProblem, load_problem as load_script
 from .mapper import MPMapper, AMQPMapper, SerialMapper
-from . import fitter
 from . import util
 from .mystic import parameter
 from . import initpop
@@ -32,134 +30,6 @@ from .util import pushdir
 # TODO: separate refl specific parameters from generic fitter parameters
 from .probe import Probe
 
-
-# ==== Fitters ====
-
-class DreamModel(dream.MCMCModel):
-    """
-    DREAM wrapper for refl1d models.
-    """
-    def __init__(self, problem=None, mapper=None):
-        """
-        Create a sampling from the multidimensional likelihood function
-        represented by the problem set using dream.
-        """
-        self.problem = problem
-        self.bounds = zip(*[p.bounds.limits for p in problem.parameters])
-        self.labels = [p.name for p in problem.parameters]
-
-        self.mapper = mapper if mapper else lambda p: map(self.nllf,p)
-
-    def nllf(self, x):
-        """Negative log likelihood of seeing models given parameters *x*"""
-        #print "eval",x; sys.stdout.flush()
-        return self.problem.nllf(x)
-
-    def map(self, pop):
-        #print "calling mapper",self.mapper
-        return -numpy.array(self.mapper(pop))
-
-
-class DreamProxy(object):
-    def __init__(self, problem, opts):
-        self.dream_model = DreamModel(problem)
-        self.pop = opts.pop
-        self.pop_init = opts.init
-        self.steps = opts.steps
-        self.burn = opts.burn
-    def _get_mapper(self):
-        return self.dream_model.mapper
-    def _set_mapper(self, mapper):
-        self.dream_model.mapper = mapper
-    mapper = property(fget=_get_mapper, fset=_set_mapper)
-
-    def fit(self):
-        pars = self.dream_model.problem.parameters
-        pop_size = int(ceil(self.pop*len(pars)))
-        if self.pop_init == 'random':
-            population = initpop.random(N=pop_size,
-                                        pars=pars, include_current=True)
-        elif self.pop_init == 'cov':
-            cov = self.dream_model.problem.cov()
-            population = initpop.cov(N=pop_size,
-                                     pars=pars, include_current=False, cov=cov)
-        elif self.pop_init == 'lhs':
-            population = initpop.lhs(N=pop_size,
-                                     pars=pars, include_current=True)
-        else:
-            raise ValueError("Unknown population initializer '%s'"%self.pop_init)
-        population = population[None,:,:]
-        sampler = dream.Dream(model=self.dream_model, population=population,
-                              draws = pop_size*self.steps,
-                              burn = pop_size*self.burn)
-
-        self.state = sampler.sample()
-        self.state.title = self.dream_model.problem.name
-
-        best = self.state.best()
-        self.dream_model.problem.setp(best[0])
-        return best
-
-    def save(self, output_path):
-        self.state.save(output_path)
-
-    def show(self):
-        self.dream_model.problem.show()
-
-    def plot(self, output_path):
-        import pylab
-        self.state.show(figfile=output_path)
-        P = self.dream_model.problem
-        pylab.figure(6)
-        pylab.hold(False)
-        pylab.suptitle(":".join((P.store,P.title)))
-        P.plot(figfile=output_path)
-
-class FitProxy(object):
-    def __init__(self, fitter, problem, options, monitors=None):
-        self.fitter = fitter
-        self.problem = problem
-        self.options = options
-        self.monitors = monitors
-        self.mapper = lambda p: map(problem.nllf,p)
-
-    def fit(self):
-        import time
-        if self.fitter is not None:
-            t0 = time.clock()
-            optimizer = self.fitter(self.problem)
-            if self.options.starts > 1:
-                optimizer = MultiStart(optimizer)
-            x, fx = optimizer.solve(steps=self.options.steps,
-                                    burn=self.options.burn,
-                                    pop=self.options.pop,
-                                    CR=self.options.CR,
-                                    Tmin=self.options.Tmin,
-                                    Tmax=self.options.Tmax,
-                                    monitors=self.monitors,
-                                    starts=self.options.starts,
-                                    mapper=self.mapper,
-                                    )
-            print "time", time.clock() - t0
-        else:
-            x = self.problem.getp()
-            fx = inf
-
-        self.result = x
-        self.problem.setp(x)
-        return x, fx
-
-    def show(self):
-        self.problem.show()
-
-    def save(self, output_path):
-        pass
-
-    def plot(self, output_path):
-        import pylab
-        P = self.problem
-        pylab.suptitle(": ".join((P.store,P.title)))
-        P.plot(figfile=output_path)
 
 
 def mesh(problem, vars=None, n=40):
@@ -192,7 +62,7 @@ def load_problem(args):
             problem = pickle.load(filename)
         else:
             options = args[1:]
-            problem = fitter.load_problem(filename, options=options)
+            problem = load_script(filename, options=options)
             # Guard against the user changing parameters after defining
             # the problem.
             problem.model_reset()
@@ -358,35 +228,26 @@ class ParseOpts:
 
 
 
-FITTERS = dict(dream=None, rl=RLFit, pt=PTFit, ps=PSFit,
-               de=DEFit, newton=BFGSFit, amoeba=AmoebaFit,
-               snobfit=SnobFit)
-class FitOpts(ParseOpts):
+class Refl1dOpts(ParseOpts):
     MINARGS = 1
     FLAGS = set(("preview", "check", "profile", "random", "simulate",
                  "worker", "batch", "overwrite", "parallel", "stepmon",
                  "cov", "remote", "staj",
                  "multiprocessing-fork", # passed in when app is a frozen image
                ))
-    VALUES = set(("plot", "store", "fit", "noise", "steps", "pop", "CR",
-                  "burn", "Tmin", "Tmax", "starts", "seed", "init", "pars",
+    VALUES = set(("plot", "store", "fit", "noise", "seed", "pars",
                   "resynth", "transport", "notify", "queue",
                   #"mesh","meshsteps",
                 ))
+    # Add in parameters from the fitters
+    VALUES |= set(FitOptions.FIELDS.keys())
     pars=None
     notify=""
     queue="http://reflectometry.org/queue"
     resynth="0"
     noise="5"
     starts="1"
-    steps="1000"
-    pop="10"
-    CR="0.9"
-    burn="0"
-    Tmin="0.1"
-    Tmax="10"
     seed=""
-    init="lhs"
     PLOTTERS="fresnel", "linear", "log", "q4", "residuals"
     USAGE = """\
 Usage: refl1d modelfile [modelargs] [options]
@@ -437,14 +298,15 @@ Options:
         fitting engine to use; see manual for details
     --steps=1000    [%(fitter)s]
         number of fit iterations after any burn-in time
-    --pop=10        [dream, de, rl, pt, ps]
+    --pop=10        [dream, de, rl, ps]
         population size
     --burn=0        [dream, pt]
         number of burn-in iterations before accumulating stats
+    --nT=25
     --Tmin=0.1
     --Tmax=10       [pt]
-        temperature range; use a higher maximum temperature and a larger
-        population if your fit is getting stuck in local minima
+        temperatures vector; use a higher maximum temperature and a larger
+        nT if your fit is getting stuck in local minima
     --CR=0.9        [de, rl, pt]
         crossover ratio for population mixing
     --starts=1      [%(fitter)s]
@@ -463,7 +325,7 @@ Options:
         print the model description and chisq value and exit
     -?/-h/--help
         display this help
-"""%{'fitter':'|'.join(sorted(FITTERS.keys())),
+"""%{'fitter':'|'.join(sorted(FIT_OPTIONS.keys())),
      'plotter':'|'.join(PLOTTERS),
      }
 
@@ -488,11 +350,11 @@ Options:
         self._plot = value
     plot = property(fget=lambda self: self._plot, fset=_set_plot)
     store = None
-    _fitter = 'de'
+    _fitter = FIT_DEFAULT
     def _set_fitter(self, value):
-        if value not in set(self.FITTERS):
+        if value not in set(FIT_OPTIONS.keys()):
             raise ValueError("unknown fitter %s; use %s"
-                             %(value,"|".join(self.FITTERS)))
+                             %(value,"|".join(sorted(FIT_OPTIONS.keys()))))
         self._fitter = value
     fit = property(fget=lambda self: self._fitter, fset=_set_fitter)
     TRANSPORTS = 'amqp','mp','mpi'
@@ -506,16 +368,10 @@ Options:
     meshsteps = 40
 
 def getopts():
-    opts = FitOpts(sys.argv)
+    opts = Refl1dOpts(sys.argv)
     opts.resynth = int(opts.resynth)
-    opts.steps = int(opts.steps)
-    opts.pop = float(opts.pop)
-    opts.CR = float(opts.CR)
-    opts.burn = int(opts.burn)
-    opts.Tmin = float(opts.Tmin)
-    opts.Tmax = float(opts.Tmax)
-    opts.starts = int(opts.starts)
     opts.seed = int(opts.seed) if opts.seed != "" else None
+    FIT_OPTIONS[opts.fit].set_from_cli(opts)
     return opts
 
 # ==== Main ====
@@ -560,7 +416,7 @@ def main():
         print "\nNo modelfile parameter was specified.\n"
 
     opts = getopts()
-    problem = initial_problem(opts)
+    problem = initial_model(opts)
 
     # TODO: AMQP mapper as implemented requires workers started up with
     # the particular problem; need to be able to transport the problem
@@ -584,10 +440,8 @@ def main():
         matplotlib.use('WXAgg')
     matplotlib.interactive(False)
 
-    if opts.fit == 'dream':
-        fitter = DreamProxy(problem=problem, opts=opts)
-    else:
-        fitter = FitProxy(FITTERS[opts.fit], problem=problem, options=opts)
+    fitopts = FIT_OPTIONS[opts.fit]
+    fitter = FitDriver(fitopts.fitter, problem=problem, options=fitopts.options)
 
     # Which format to view the plots
     Probe.view = opts.plot

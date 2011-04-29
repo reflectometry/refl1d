@@ -23,7 +23,7 @@ from .mono import FreeLayer, FreeInterface
 from .cheby import FreeformCheby, ChebyVF, cheby_approx, cheby_points
 from .interface import Erf
 from .probe import Probe, ProbeSet, NeutronProbe, XrayProbe
-from .fitter import preview, fit, DEFit, SnobFit, mesh, FitProblem, MultiFitProblem
+from .fitproblem import preview, fit, mesh, FitProblem, MultiFitProblem
 try:
     from .sampler import draw_samples
 except Exception, exc:

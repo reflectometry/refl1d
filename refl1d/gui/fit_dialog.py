@@ -19,7 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
-# Author: Nikunj Patel and James Krycka
+# Author: Nikunj Patel, James Krycka, Paul Kienzle
 
 """
 This module implements the FitControl class which presents a pop-up dialog box
@@ -31,6 +31,7 @@ import wx
 
 from wx.lib.scrolledpanel import ScrolledPanel
 
+from .. import fitters
 from .input_list import InputListPanel
 from .util import Validator
 
@@ -52,7 +53,7 @@ class FitControl(wx.Dialog):
                 ):
         wx.Dialog.__init__(self, parent, id, title, pos, size, style, name)
 
-        self.para_list = plist
+        self.plist = plist
         self.vbox = wx.BoxSizer(wx.VERTICAL)
         self.default_algo = default_algo
 
@@ -74,18 +75,14 @@ class FitControl(wx.Dialog):
         self.panel1 = wx.Panel(self, -1)
         static_box1 = wx.StaticBox(self.panel1, -1, "Fit Algorithms")
 
-        self.algorithm = []
-
-        if isinstance(self.para_list, dict) and self.para_list != {}:
-            for algo in sorted(self.para_list.keys()):
-                self.algorithm.append(algo)
+        self.algorithms = list(sorted(self.plist.keys()))
 
         self.radio_list = []
-        rows = (len(self.algorithm)+1)/2
+        rows = (len(self.algorithms)+1)/2
 
         flexsizer = wx.FlexGridSizer(rows, 2, hgap=20, vgap=10)
 
-        for algo in self.algorithm:
+        for algo in self.algorithms:
             self.radio = wx.RadioButton(self.panel1, -1, algo)
             self.radio_list.append(self.radio)
             self.Bind(wx.EVT_RADIOBUTTON, self.OnRadio, id=self.radio.GetId())
@@ -101,8 +98,8 @@ class FitControl(wx.Dialog):
         # Create list of all panels for later use in hiding and showing panels.
         self.panel_list = []
 
-        for idx, algo in enumerate(self.algorithm):
-            parameters = self.para_list[algo]
+        for idx, algo in enumerate(self.algorithms):
+            parameters = self.plist[algo]
             self.algo_panel = AlgorithmParameter(self, parameters, algo)
             self.panel_list.append(self.algo_panel)
             self.vbox.Add(self.algo_panel, 1, wx.EXPAND|wx.ALL, 10)
@@ -119,8 +116,6 @@ class FitControl(wx.Dialog):
         ok_btn.SetDefault()
         cancel_btn = wx.Button(self, wx.ID_CANCEL, "Cancel")
 
-        #self.Bind(wx.EVT_BUTTON, self.OnFit, fit_btn)
-        self.start_fit_flag = False
         self.Bind(wx.EVT_BUTTON, self.OnOk, ok_btn)
         self.Bind(wx.EVT_BUTTON, self.OnCancel, cancel_btn)
 
@@ -130,8 +125,6 @@ class FitControl(wx.Dialog):
         # bottom right of the window.
         btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
         btn_sizer.Add((10,20), 1)  # stretchable whitespace
-        #btn_sizer.Add(fit_btn, 0)
-        #btn_sizer.Add((10,20), 0)  # non-stretchable whitespace
         btn_sizer.Add(ok_btn, 0)
         btn_sizer.Add((10,20), 0)  # non-stretchable whitespace
         btn_sizer.Add(cancel_btn, 0)
@@ -164,10 +157,6 @@ class FitControl(wx.Dialog):
                 self.vbox.Layout()
                 break
 
-    def OnFit(self, event):
-        self.start_fit_flag = True
-        #pub.sendMessage("start_fit")
-
     def OnOk(self, event):
         event.Skip()
 
@@ -176,15 +165,13 @@ class FitControl(wx.Dialog):
 
     def get_results(self):
         self.fit_option={}
-        for algo_idx, algo in enumerate(self.algorithm):
+        for algo_idx, algo in enumerate(self.algorithms):
             result = self.panel_list[algo_idx].fit_param.GetResults()
             self.fit_option[algo] = result
             if self.radio_list[algo_idx].GetValue():
                 active_algo = algo
 
-        flag = self.start_fit_flag
-        self.start_fit_flag = False
-        return active_algo, self.fit_option, flag
+        return active_algo, self.fit_option
 
 
 class AlgorithmParameter(wx.Panel):
@@ -197,7 +184,14 @@ class AlgorithmParameter(wx.Panel):
 
         for parameter in parameters:
             label, default_value, curr_value, datatype = parameter
-            sub_list = [label, curr_value, datatype, 'RE', None]
+            if isinstance(datatype, tuple):
+                extra = datatype
+                datatype = 'str'
+                mode = 'CRE'
+            else:
+                mode = 'RE'
+                extra = None
+            sub_list = [label, curr_value, datatype, mode, extra]
             fields.append(sub_list)
 
         self.fit_param = InputListPanel(parent=self, itemlist=fields,
@@ -207,6 +201,57 @@ class AlgorithmParameter(wx.Panel):
         sbox_sizer.Add(self.fit_param, 1, wx.EXPAND|wx.ALL, 5)
         self.SetSizer(sbox_sizer)
         sbox_sizer.Fit(self)
+
+
+def OpenFitOptions():
+
+    # TODO: make the dialog non-modal and add an Apply button.
+
+    # Gather together information about option x from three sources:
+    #   name and type come from the FIELDS :- name,type mapping
+    #   factory settings comes from FitOptions.factory_settings
+    #   current value comes from FitOptions.options.x
+    # The fields are displayed in the order of the factory settings
+    FIELD = fitters.FitOptions.FIELDS
+    plist = {}
+    for fit in fitters.FIT_OPTIONS.values():
+        items = [(FIELD[name][0], getattr(fit.options, name),
+                  factory_setting, FIELD[name][1])
+                 for name,factory_setting in fit.factory_settings]
+        plist[fit.fitter.name] = items
+    #print "****** plist =\n", plist
+
+    # Pass in the frame object as the parent window so that the dialog box
+    # will inherit font info from it instead of using system defaults.
+    frame = wx.FindWindowByName("AppFrame")
+    algorithm = fitters.FIT_OPTIONS[fitters.FIT_DEFAULT].fitter.name
+    fit_dlg = FitControl(parent=frame, id=wx.ID_ANY, title="Fit Control",
+                         plist=plist,
+                         default_algo=algorithm)
+
+    if fit_dlg.ShowModal() == wx.ID_OK:
+        algorithm, results = fit_dlg.get_results()
+        #print 'results', algorithm_name, results
+
+        # Find the new default fitter from the algorithm name
+        for id, record in fitters.FIT_OPTIONS.items():
+            if record.fitter.name == algorithm:
+                fitters.FIT_DEFAULT = id
+                break
+        else:
+            raise ValueError("No algorithm selected")
+
+        # Update all algorithm values
+        for algorithm, pars in results.items():
+            # Find algorithm record given the name of the optimizer
+            for record in fitters.FIT_OPTIONS.values():
+                if record.fitter.name == algorithm:
+                    break
+            # Update all values in factory settings order.
+            for (field, _), value in zip(record.factory_settings, pars):
+                setattr(record.options, field, value)
+
+    fit_dlg.Destroy()
 
 
 if __name__=="__main__":

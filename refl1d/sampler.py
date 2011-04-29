@@ -3,7 +3,7 @@ MCMC samplers for reflectometry models.
 """
 import numpy
 import dream
-from . import fitter
+from .fitproblem import _make_problem
 
 class Model(dream.MCMCModel):
     """
@@ -31,7 +31,7 @@ def draw_samples(models=None, weights=None, chains=10, **kw):
     """
     Draw random samples from the likelihood surface of the models.
     """
-    problem = fitter._make_problem(models=models, weights=weights)
+    problem = _make_problem(models=models, weights=weights)
     model = Model(model=problem)
     pop_size = chains*len(problem.parameters)
     population = random_population(problem, pop_size)

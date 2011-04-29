@@ -75,15 +75,16 @@ import pylab
 from refl1d.mystic import monitor, parameter
 from refl1d.profileview.panel import ProfileView
 from refl1d.probe import Probe
-from refl1d.cli import FITTERS, FitOpts, FitProxy, MPMapper, load_problem
-from refl1d.cli import getopts
+from refl1d.cli import load_problem
 
+from .. import fitters
 from .summary_view import SummaryView
 from .fit_view import FitView
 from .parameter_view import ParameterView
 from .log_view import LogView
-from .fit_dialog import FitControl
-from .work_thread import Worker
+from .fit_dialog import OpenFitOptions
+from .fit_thread import (FitThread, EVT_FIT_PROGRESS,
+                         EVT_FIT_IMPROVEMENT, EVT_FIT_COMPLETE)
 from .util import nice, subscribe, publish
 from .utilities import (get_appdir, get_bitmap, log_time,
                         popup_error_message, popup_warning_message,
@@ -99,140 +100,6 @@ ALL_FILES = "All files (*.*)|*.*"
 
 # Custom colors.
 WINDOW_BKGD_COLOUR = "#ECE9D8"
-
-#==============================================================================
-
-EVT_RESULT_ID = 1
-
-def EVT_RESULT(win, func):
-    """Define Result Event."""
-    win.Connect(-1, -1, EVT_RESULT_ID, func)
-
-#==============================================================================
-
-IMPROVEMENT_DELAY = 5
-
-class GUIMonitor(monitor.TimedUpdate):
-    def __init__(self, problem, progress=1, improvement=None):
-        improvement = improvement if improvement else IMPROVEMENT_DELAY
-        monitor.TimedUpdate.__init__(self, progress=progress,
-                                     improvement=improvement)
-        self.problem = problem
-
-    def show_progress(self, history):
-        msg = "step %5d chisq %g"%(history.step[0], nice(history.value[0]))
-        publish("log.fit", message=msg)
-
-    def show_improvement(self, history):
-        self.problem.setp(history.point[0])
-        publish("log.fit",
-             message=parameter.summarize(self.problem.parameters)
-             )
-        wx.CallAfter(publish, "model.update", model=self.problem)
-
-#==============================================================================
-
-class FitParams():
-    """
-    This class maintains a data structure of fitter algorithms and their
-    parameters (storing both default and current values).
-    """
-
-    # Get values from command line options or their default values if not
-    # specified on the command line.
-    opts = getopts()
-
-    # The default population value for the random lines algorithm is different
-    # than the default for the other algorithms but getopts() does not
-    # differentiate between them.  Therefore, a custom default value for
-    # population for random lines will be used unless the user specifies a
-    # value on the command line.
-    pop_specified = False
-    for s in sys.argv:
-        if '--pop' in s: pop_specified = True
-    if pop_specified:
-        opts.pop_rl = opts.pop
-    else:
-        opts.pop_rl = 0.5
-
-    FITTER_DESC = dict(dream="Dream", rl="Random Lines", pt="Parallel Tempering",
-                       ps="Particle Swarm", de="Differential Evolution",
-                       newton="Quasi-Newton", amoeba="Amoeba", snobfit="SnobFit")
-
-    default_fitter = opts.fit
-    default_fitter_desc = FITTER_DESC[default_fitter]
-
-    # The following is a dictionary of fit algorithms and their parameters.
-    # For each parameter the following info is stored: parameter label,
-    # program default value, current value, and data type.
-    FITTER_PARAMS = dict(
-                  amoeba =
-                    [
-                      ("Steps:", opts.steps, opts.steps, "int"),
-                      ("Starts:", opts.starts, opts.starts, "int"),
-                    ],
-                  de =
-                    [
-                      ("Steps:", opts.steps, opts.steps, "int"),
-                      ("Population:", opts.pop, opts.pop, "float"),
-                      ("Crossover Ratio:", opts.CR, opts.CR, "float"),
-                    ],
-                  dream =
-                    [
-                      ("Steps:", opts.steps, opts.steps, "int"),
-                      ("Population:", opts.pop, opts.pop, "float"),
-                      ("Burn:", opts.burn, opts.burn, "int"),
-                    ],
-                  newton =
-                    [
-                      ("Steps:", opts.steps, opts.steps, "int"),
-                      ("Population:", opts.pop, opts.pop, "float"),
-                      ("Crossover Ratio:", opts.CR, opts.CR, "float"),
-                      ("Burn:", opts.burn, opts.burn, "int"),
-                      ("Min Temperature:", opts.Tmin, opts.Tmin, "float"),
-                      ("Max Temperature:", opts.Tmax, opts.Tmax, "float"),
-                    ],
-                  ps =
-                    [
-                      ("Steps:", opts.steps, opts.steps, "int"),
-                      ("Population:", opts.pop, opts.pop, "float"),
-                      ("Crossover Ratio:", opts.CR, opts.CR, "float"),
-                    ],
-                  pt =
-                    [
-                      ("Steps:", opts.steps, opts.steps, "int"),
-                      ("Population:", opts.pop, opts.pop, "float"),
-                      ("Crossover Ratio:", opts.CR, opts.CR, "float"),
-                      ("Burn:", opts.burn, opts.burn, "int"),
-                      ("Min Temperature:", opts.Tmin, opts.Tmin, "float"),
-                      ("Max Temperature:", opts.Tmax, opts.Tmax, "float"),
-                    ],
-                  rl =
-                    [
-                      ("Steps:", opts.steps, opts.steps, "int"),
-                      ("Starts:", 1, 1, "int"),
-                      ("Population:", opts.pop_rl, opts.pop_rl, "float"),
-                      ("Crossover Ratio:", opts.CR, opts.CR, "float"),
-                    ],
-                  snobfit =
-                    [
-                      ("Steps:", opts.steps, opts.steps, "int"),
-                      ("Population:", opts.pop, opts.pop, "float"),
-                      ("Crossover Ratio:", opts.CR, opts.CR, "float"),
-                    ],
-                 )
-
-    # TODO: Simplify the data structures (and access to/from them) by creating
-    # a single-level dictionary (instead of dictionary of dictionaries) that
-    # directly incorporates FITTER_DESC and FITTER_PARAMS into fitter_info and
-    # then adds info from FITTERS.
-    fitter_info = {}
-    for ftr in FITTERS:
-        fitter_info[ftr] = [
-                            FITTER_DESC[ftr],
-                            FITTERS[ftr],
-                            FITTER_PARAMS[ftr]
-                           ]
 
 #==============================================================================
 
@@ -266,16 +133,15 @@ class AppPanel(wx.Panel):
         # Modify the menu bar.
         self.modify_menubar()
 
-        # Create list of available fitters and their parameters.
-        self.init_fitter_info()
-
         # Create a PubSub receiver.
         subscribe(self.set_model, "model.new")
         subscribe(self.OnModelChange, "model.change")
         subscribe(self.OnModelUpdate, "model.update")
         subscribe(self.OnStartFit, "fit.start")
 
-        EVT_RESULT(self, self.OnFitResult)
+        EVT_FIT_PROGRESS(self, self.OnFitProgress)
+        EVT_FIT_IMPROVEMENT(self, self.OnFitImprovement)
+        EVT_FIT_COMPLETE(self, self.OnFitComplete)
         self.view = "fresnel"  # default view for the plot
         self.worker = None   #worker for fitting job
 
@@ -540,11 +406,6 @@ class AppPanel(wx.Panel):
         self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.OnPageChanged)
         self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGING, self.OnPageChanging)
 
-    def init_fitter_info(self):
-        fit_params = FitParams()
-        #for k, v in sorted(fit_params.fitter_info.iteritems()):
-        #   print "key =", k, "value =", v
-
     # TODO: not doing anything...
     def OnPageChanged(self, event):
         old = event.GetOldSelection()
@@ -622,98 +483,24 @@ class AppPanel(wx.Panel):
             self.import_model(path)
 
     def OnFitOptions(self, event):
-        # TODO: Revise the processing of fitter_info when this data structure
-        # is simplified to be a single-level dictionary.
-
-        plist ={}
-        for k in FITTERS:
-            value = FitParams.fitter_info[k]
-            plist[value[0]] = value[2]
-        #print "****** plist =\n", plist
-
-        # Pass in the frame object as the parent window so that the dialog box
-        # will inherit font info from it instead of using system defaults.
-        frame = wx.FindWindowByName("AppFrame")
-        fit_dlg = FitControl(parent=frame, id=wx.ID_ANY, title="Fit Control",
-                             plist=plist,
-                             default_algo=FitParams.default_fitter_desc)
-
-        start_fit_flag = False
-        if fit_dlg.ShowModal() == wx.ID_OK:
-            curr_algo, results, start_fit_flag = fit_dlg.get_results()
-            #print 'results', curr_algo, results, start_fit_flag
-            FitParams.default_fitter_desc = curr_algo
-            for kk, vv in FitParams.FITTER_DESC.iteritems():
-                if vv == curr_algo:
-                    FitParams.default_fitter = kk
-                    break
-
-            for ret_k, ret_v in results.iteritems():
-                #print "ret_k, ret_v =", ret_k, ret_v
-                for kk, vv in FitParams.FITTER_DESC.iteritems():
-                    #print "*** kk, vv =", kk, vv
-                    if ret_k == vv:
-                        #print "Found it", ret_k, kk
-                        break
-                value = FitParams.fitter_info[kk]
-                vlist = value[2]
-                #print "++++ kk, vlist =", kk, vlist
-                for i, p in enumerate(ret_v):
-                    #print "*** i, p =", i, p
-                    param = list(vlist[i])
-                    param[2] = p
-                    vlist[i] = tuple(param)
-                value[2] = vlist
-                FitParams.fitter_info[kk] = value
-
-        fit_dlg.Destroy()
-        if start_fit_flag:
-            OnStartFit(event)
+        OpenFitOptions()
 
     def OnStartFit(self, event):
-        self.problem_copy = copy.deepcopy(self.problem)
-        monitors = [GUIMonitor(self.problem)]
-
-        # FIXME: Temporary very ugly code ...
-        x = FitParams.fitter_info[FitParams.default_fitter]
-
-        opts = FitOpts([])
-        opts.starts = 1
-        for p in x[2]:
-            if p[0] == "Steps:":
-                opts.steps = int(p[2])
-            elif p[0] == "Population:":
-                opts.pop = float(p[2])
-            elif p[0] == "Crossover Ratio:":
-                opts.CR = float(p[2])
-            elif p[0] == "Burn:":
-                opts.burn = int(p[2])
-            elif p[0] == "Min Temperature:":
-                opts.Tmin = float(p[2])
-            elif p[0] == "Max Temperature:":
-                opts.Tmax = float(p[2])
-            elif p[0] == "Starts:":
-                opts.starts = int(p[2])
-
-        self.fitter = FitProxy(FITTERS[FitParams.default_fitter],
-                               problem=self.problem_copy, monitors=monitors,
-                               options=opts)
-        mapper = MPMapper
         self.pan1.Layout()
 
         # Start a new thread worker and give fit problem to the worker.
-        self.worker = Worker(self, self.problem_copy, fn=self.fitter,
-                                   pars=opts.args, mapper=mapper)
+        fitopts = fitters.FIT_OPTIONS[fitters.FIT_DEFAULT]
+        self.worker = FitThread(win=self, problem=self.problem,
+                                fitter=fitopts.fitter, options=fitopts.options)
 
         self.sb.SetStatusText("Fit status: Running", 3)
 
     def OnStopFit(self, event):
         print "Clicked on stop fit ..." # not implemented
 
-    def OnFitResult(self, event):
-        self.redraw(self.problem) # redraw the plot last time with fitted chsiq
-
+    def OnFitComplete(self, event):
         publish("fit.complete")
+        publish("model.update", model=event.problem)
         if event.data is None:
             # Thread aborted (using our convention of None return)
             print "Computation failed/aborted"
@@ -722,6 +509,17 @@ class AppPanel(wx.Panel):
             #self.remember_best(self.fitter, self.problem, event.data)
 
         self.sb.SetStatusText("Fit status: Complete", 3)
+
+    def OnFitProgress(self, event):
+        chisq = nice(event.value/event.problem.dof)
+        message = "step %5d chisq %g"%(event.step, chisq)
+        publish("log.fit", message=message)
+
+    def OnFitImprovement(self, event):
+        event.problem.setp(event.point)
+        message=parameter.summarize(event.problem.parameters)
+        publish("log.fit", message=message)
+        publish("model.update", model=event.problem)
 
     def remember_best(self, fitter, problem, best):
         fitter.save(problem.output)

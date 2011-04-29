@@ -1,3 +1,4 @@
+from copy import deepcopy
 
 class SerialMapper(object):
     @staticmethod
