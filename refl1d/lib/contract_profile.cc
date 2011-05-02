@@ -60,7 +60,7 @@ contract_by_area(int n, double d[], double sigma[],
   double rholo, rhohi, rhoarea;
   double irholo, irhohi, irhoarea;
   int i, newi;
-  i=newi=1;
+  i=newi=0;
   while (i < n) {
 
     /* Get ready for the next layer */
@@ -77,7 +77,7 @@ contract_by_area(int n, double d[], double sigma[],
       irhoarea+=d[i]*irho[i];
 
       /* If no more slices or sigma != 0, break immediately */
-      if (++i == n || sigma[i] != 0.) break;
+      if (++i == n || sigma[i-1] != 0.) break;
 
       /* If next slice won't fit, break */
       if (rho[i] < rholo) rholo = rho[i];
@@ -93,6 +93,7 @@ contract_by_area(int n, double d[], double sigma[],
 
     /* Save the layer */
     d[newi] = dz;
+    assert(newi < n);
     if (i == n) {
       /* Last layer uses surface values */
       rho[newi] = rho[n-1];
@@ -102,7 +103,7 @@ contract_by_area(int n, double d[], double sigma[],
       /* Middle layers uses average values */
       rho[newi] = rhoarea / dz;
       irho[newi] = irhoarea / dz;
-      sigma[newi] = sigma[i];
+      sigma[newi] = sigma[i-1];
     } /* First layer uses substrate values */
     newi++;
   }
