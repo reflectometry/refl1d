@@ -45,7 +45,7 @@ class ProfileInteractor(object):
         [self.hthetaM] = self.theta_axes.plot( [], [], '-', color=thetaM_color,
                                                label = r'$\theta_M$')
 
-        
+
         # TODO: the connect mechanism needs to be owned by the canvas rather
         # than the axes --- cannot have multiple profiles on the same canvas
         # until connect is in the right place.
@@ -63,7 +63,7 @@ class ProfileInteractor(object):
         self.experiment = experiment
         self.force_recalc = force_recalc
         self.signal_update = signal_update
- 
+
         # Theta needs a separate axis, we put these two axes into a figure
         self.axes.set_xlabel( r'$\rm{z}\ (\AA)$' )
         self.theta_axes.set_ylabel(r'$\rm{Magnetic\ Angle\ (\ ^\circ)}$')
@@ -85,7 +85,7 @@ class ProfileInteractor(object):
             self.theta_axes.set_visible(True)
             self.hrhoM.set_visible(False)
             self.hthetaM.set_visible(False)
-            self.hlegend = self.axes.legend( 
+            self.hlegend = self.axes.legend(
                 (self.hrho, self.hrhoI),
                 (r'$\rho$', r'$\rho_i$'),
                 loc = (0.85,0.5)
@@ -247,9 +247,9 @@ class ProfileInteractor(object):
         self.draw_now()
 
     def delayed_signal(self):
-        try: 
+        try:
             self._delayed_signal.Restart(50)
-        except: 
+        except:
             self._delayed_signal = wx.FutureCall(50, self.signal_update)
 
     def draw_now(self):

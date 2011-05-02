@@ -95,7 +95,7 @@ def indfloat(s):
 def coordinated_colors(base=None):
     import pylab
     if base is None:
-        base = pylab.gca()._get_lines.color_cycle.next()    
+        base = pylab.gca()._get_lines.color_cycle.next()
     return dict(base=base,
                 light = dhsv(base, dv=0.3, ds=-0.2),
                 dark = dhsv(base, dv=-0.35, ds=0.35),

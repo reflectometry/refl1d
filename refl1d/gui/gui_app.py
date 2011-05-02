@@ -100,7 +100,7 @@ def config_matplotlib():
     # classes. Note that this must be done before importing pyplot to have an
     # effect.
     matplotlib.use('WXAgg')
-        
+
     # Disable interactive mode so that plots are only updated on show() or
     # draw(). Note that the interactive function must be called before
     # selecting a backend or importing pyplot, otherwise it will have no
@@ -151,7 +151,7 @@ class Refl1dGUIApp(wx.App):
 
         # Can't delay matplotlib configuration any longer
         config_matplotlib()
-        
+
         from .app_frame import AppFrame
 
         self.frame = AppFrame(parent=None, title=APP_TITLE, pos=pos, size=size)

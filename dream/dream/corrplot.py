@@ -56,7 +56,7 @@ class Corr2d:
         Plot the correlation histograms on the specified figure
         """
         import pylab
-        
+
         fig = pylab.gcf()
         if title != None:
             fig.text(0.5, 0.95, title,

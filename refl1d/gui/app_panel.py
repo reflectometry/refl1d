@@ -175,7 +175,7 @@ class AppPanel(wx.Panel):
 
         mb.Insert(2, fit_menu, "&Fitting")
 
-        
+
         # Add 'Advanced' menu to the menu bar and define its options.
         adv_menu = wx.Menu()
 
@@ -276,7 +276,7 @@ class AppPanel(wx.Panel):
         self.pan1.SetSizer(self.pan1.sizer)
         self.pan1.SetAutoLayout(True)
         self.pan1.sizer.Fit(self.pan1)
-                
+
         frame = self.frame
         mb = frame.GetMenuBar()
         mb.Insert(1, self.theory_view.menu(), "&Model")
@@ -519,4 +519,3 @@ class AppPanel(wx.Panel):
         # Enable appropriate toolbar items.
         self.tb.EnableTool(id=self.tb_start.GetId(), enable=True)
         #self.tb.EnableTool(id=self.tb_stop.GetId(), enable=True)
-

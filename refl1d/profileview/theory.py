@@ -96,7 +96,7 @@ class TheoryView(AuiPanel):
         menu.Enable(id=_item.GetId(), enable=True)
 
         return menu
-        
+
     # This should be split out into a separate theory_view.py.
     # Our app panel needs to be able to set and reset model specific menus.
 
@@ -134,7 +134,7 @@ class TheoryView(AuiPanel):
     def set_model(self, model):
         self.problem = model
         self.redraw()
-        
+
     def redraw(self):
         # Redraw the canvas.
         self._activate_figure()

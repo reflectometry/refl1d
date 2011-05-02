@@ -64,7 +64,7 @@ class FitThread(Thread):
         # happens when the user changes the problem while a fit is being run?
         # May want to keep a history of changes to the problem definition,
         # along with a function to reverse them so we can handle undo.
-        
+
         # NOTE: Problem must be the original problem (not a copy) when used
         # inside the GUI monitor otherwise AppPanel will not be able to
         # recognize that it is the same problem when updating views.
@@ -74,7 +74,7 @@ class FitThread(Thread):
             mapper = MPMapper
         else:
             mapper = SerialMapper
-        
+
         # Be safe and keep a private copy of the problem while fitting
         problem = deepcopy(self.problem)
         driver = FitDriver(self.fitter, problem=problem,

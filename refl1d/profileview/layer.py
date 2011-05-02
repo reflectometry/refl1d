@@ -48,7 +48,7 @@ class MaterialInteractor(BaseInteractor):
         rhoI = ax.plot([], [], label=material.name+" rhoI",
                       color=rhoI_color if enabled else disabled_color,
                       zorder=5, **style)[0]
-        
+
         self.markers = [rho,rhoI]
         if enabled:
             self.connect_markers(self.markers)

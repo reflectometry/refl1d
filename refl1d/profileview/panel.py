@@ -79,7 +79,7 @@ class ProfileView(AuiPanel):
         self.tbsizer.Add(self.profile_selector,
                          0, wx.ALIGN_CENTER_VERTICAL)
         self.sizer.Add(self.tbsizer)
-        
+
         self.SetSizer( self.sizer)
         self.Fit()
 
@@ -87,7 +87,7 @@ class ProfileView(AuiPanel):
         frame = self.GetTopLevelParent()
         self.statusbar = frame.GetStatusBar()
         status_update = lambda msg: self.statusbar.SetStatusText(msg)
-        
+
         # Set the profile interactor
         self.profile = ProfileInteractor(self.axes,self.theta_axes,
                                          status_update=status_update)
@@ -113,7 +113,7 @@ class ProfileView(AuiPanel):
                     lambda _: (self.profile.reset_limits(),self.profile.draw_idle()))
         self.PopupMenu(popup, (sx,sy))
         return False
-    
+
     def OnProfileSelect(self, event):
         self.set_profile(self.profiles[event.GetInt()][1])
 
@@ -133,7 +133,7 @@ class ProfileView(AuiPanel):
         """Initialize model by profile."""
 
         self.model = model
-        
+
         self.profiles = []
         def add_profiles(name, exp):
             if isinstance(exp,MixedExperiment):
@@ -148,7 +148,7 @@ class ProfileView(AuiPanel):
                 add_profiles(name, p.fitness)
         else:
             add_profiles("", model.fitness)
-            
+
         self.profile_selector.Clear()
         if len(self.profiles) > 1:
             self.profile_selector.AppendItems([k for k,v in self.profiles])
@@ -160,10 +160,10 @@ class ProfileView(AuiPanel):
             self.profile_selector.Hide()
 
         self.set_profile(self.profiles[0][1])
-        
+
         # update the figure
         self.profile.redraw(reset_limits=True)
-        
+
 
     def set_profile(self, experiment):
         # Turn the model into a user interface
@@ -171,7 +171,7 @@ class ProfileView(AuiPanel):
         # that a redraw is necessary to clear the precalculated
         # parts of the view; otherwise the theory function calculator
         # is going to be triggered twice.  This happens inside profile
-        # before the profile is calculated.  Note that the profile 
+        # before the profile is calculated.  Note that the profile
         # panel will receive its own signal, which will cause the
         # profile interactor to draw itself again.  We hope this isn't
         # too much of a problem.

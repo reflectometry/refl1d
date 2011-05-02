@@ -415,7 +415,7 @@ def main():
         print "\nNo modelfile parameter was specified.\n"
 
     opts = getopts()
-    
+
     # Set up the matplotlib backend to minimize the wx dependency.
     import matplotlib
     if opts.batch or opts.remote:
@@ -423,7 +423,7 @@ def main():
     else:
         matplotlib.use('WXAgg')
     matplotlib.interactive(False)
-    
+
     problem = initial_model(opts)
 
     # TODO: AMQP mapper as implemented requires workers started up with

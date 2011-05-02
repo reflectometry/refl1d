@@ -425,7 +425,7 @@ class MixedExperiment(ExperimentBase):
     def update(self):
         self._cache = {}
         for p in self.parts: p.update()
-        
+
     def parameters(self):
         return dict(samples = [s.parameters() for s in self.samples],
                     ratio = self.ratio,

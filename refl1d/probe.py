@@ -519,13 +519,13 @@ class Probe(object):
         isheld = pylab.ishold()
         if hasattr(self,'R') and self.R is not None:
             pylab.errorbar(self.Q, self.R*scale,
-                           yerr=self.dR*scale, xerr=self.dQ, 
+                           yerr=self.dR*scale, xerr=self.dQ,
                            fmt='.', color=c['light'],
                            label=self.name('data')+suffix)
             pylab.hold(True)
         if theory is not None:
             Q,R = theory
-            pylab.plot(Q, R*scale, color=c['dark'], 
+            pylab.plot(Q, R*scale, color=c['dark'],
                        label=self.name('theory')+suffix)
         pylab.hold(isheld)
         pylab.xlabel('Q (inv Angstroms)')
@@ -538,7 +538,7 @@ class Probe(object):
             return " ".join((prefix,gloss)) if gloss else prefix
         else:
             return gloss if gloss else None
-        
+
 
 class XrayProbe(Probe):
     """
@@ -904,7 +904,7 @@ class ProbeSet(Probe):
             p.theta_offset = theta_offset
 
     def name(self): return self.probes[0].name()
-    
+
     def stitch(self, tol=0.01):
         r"""
         Stitch together multiple datasets into a single dataset.
