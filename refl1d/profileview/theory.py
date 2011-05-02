@@ -1,3 +1,5 @@
+from __future__ import with_statement
+
 import wx
 
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
@@ -6,10 +8,6 @@ from matplotlib.backends.backend_wxagg import NavigationToolbar2Wx as Toolbar
 # The Figure object is used to create backend-independent plot representations.
 from matplotlib.figure import Figure
 
-# Wx-Pylab magic for displaying plots within an application's window.
-from matplotlib import _pylab_helpers
-from matplotlib.backend_bases import FigureManagerBase
-
 import pylab
 
 from refl1d.probe import Probe
@@ -17,6 +15,7 @@ from refl1d.fitproblem import MultiFitProblem
 
 from .auipanel import AuiPanel
 from ..gui.util import subscribe
+from ..gui.util import EmbeddedPylab
 
 # ------------------------------------------------------------------------
 class TheoryView(AuiPanel):
@@ -41,9 +40,7 @@ class TheoryView(AuiPanel):
         # This technique allows this application to execute code that uses
         # pylab stataments to generate plots and embed these plots in our
         # application window(s).  Use _activate_figure() to set.
-
-        fignum = 0
-        self.fm = FigureManagerBase(canvas, fignum)
+        self.pylab_interface = EmbeddedPylab(canvas)
 
         # Instantiate the matplotlib navigation toolbar and explicitly show it.
         mpl_toolbar = Toolbar(canvas)
@@ -134,24 +131,22 @@ class TheoryView(AuiPanel):
     def set_model(self, model):
         self.problem = model
         self.redraw()
-
+    
     def redraw(self):
         # Redraw the canvas.
-        self._activate_figure()
-        pylab.clf() # clear the canvas
-        if isinstance(self.problem,MultiFitProblem):
-            for i,p in enumerate(self.problem.models):
-                p.fitness.plot_reflectivity(view=self.view)
-                pylab.hold(True)
-        else:
-            self.problem.fitness.plot_reflectivity(view=self.view)
-        try:
-            # If we can't calculate chisq, then put it on the graph.
-            pylab.text(0.01, 0.01, "chisq=%g" % self.problem.chisq(),
-                       transform=pylab.gca().transAxes)
-        except:
-            pass
-        pylab.draw()
+        with self.pylab_interface:
+            pylab.clf() # clear the canvas
+            if isinstance(self.problem,MultiFitProblem):
+                for p in self.problem.models:
+                    p.fitness.plot_reflectivity(view=self.view)
+                    pylab.hold(True)
+            else:
+                self.problem.fitness.plot_reflectivity(view=self.view)
+            try:
+                # If we can't calculate chisq, then put it on the graph.
+                pylab.text(0.01, 0.01, "chisq=%g" % self.problem.chisq(),
+                           transform=pylab.gca().transAxes)
+            except:
+                pass
+            pylab.draw()
 
-    def _activate_figure(self):
-        _pylab_helpers.Gcf.set_active(self.fm)

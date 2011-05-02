@@ -30,6 +30,28 @@ except:
         #print "sending",topic
         _pub.sendMessage(topic, kwargs)
 
+
+# Wx-Pylab magic for displaying plots within an application's window.
+from matplotlib import _pylab_helpers
+from matplotlib.backend_bases import FigureManagerBase
+
+class EmbeddedPylab(object):
+    """
+    Define a 'with' context manager that lets you use pylab commands to
+    plot on an embedded canvas.  This is useful for wrapping existing
+    scripts in a GUI, and benefits from being more familiar than the
+    underlying object oriented interface.
+    """
+    def __init__(self, canvas):
+        self.fm = FigureManagerBase(canvas, -1)
+    def __enter__(self):
+        self.old = _pylab_helpers.Gcf.get_active()
+        _pylab_helpers.Gcf.set_active(self.fm)
+    def __exit__(self, *args, **kw):
+        if self.old:
+            _pylab_helpers.Gcf.set_active(self.old)
+        del _pylab_helpers.Gcf.figs[-1]
+
 class Validator(wx.PyValidator):
     def __init__(self, flag):
         wx.PyValidator.__init__(self)
