@@ -140,19 +140,3 @@ class ThicknessInteractor(BaseInteractor):
         # tied to the current layer thickness.
         self.profile._find_layer_boundaries()
         self.profile.x_offset -= self.profile.boundary[self._idx]-prev_offset
-
-    def drag_start(self, ev):
-        """
-        Remember the depths for this layer and the next so that we
-        can drag the boundary and restore it on Esc.
-        """
-        self.profile.freeze_axes()
-
-    def drag_cancel(self, event):
-        """
-        Restore the depths for this layer and the next.
-        """
-        self.profile.thaw_axes()
-
-    def drag_done(self, event):
-        self.profile.thaw_axes()
