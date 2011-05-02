@@ -30,9 +30,7 @@ of the frame of the GUI for the Refl1D application.
 from __future__ import division
 import os
 import sys
-import copy
 import traceback
-from threading import current_thread
 
 import wx
 
@@ -42,16 +40,13 @@ from refl1d.cli import load_problem
 
 from .. import fitters
 from .summary_view import SummaryView
-from .fit_view import FitView
 from .parameter_view import ParameterView
 from .log_view import LogView
 from .fit_dialog import OpenFitOptions
 from .fit_thread import (FitThread, EVT_FIT_PROGRESS,
                          EVT_FIT_IMPROVEMENT, EVT_FIT_COMPLETE)
 from .util import nice, subscribe, publish
-from .utilities import (get_appdir, get_bitmap, log_time,
-                        popup_error_message, popup_warning_message,
-                        StatusBarInfo, ExecuteInThread, WorkInProgress)
+from .utilities import get_bitmap
 
 # File selection strings.
 MODEL_FILES = "Model files (*.r1d)|*.r1d"
@@ -316,18 +311,18 @@ class AppPanel(wx.Panel):
         self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.OnPageChanged)
         self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGING, self.OnPageChanging)
 
-    # TODO: not doing anything...
+    # TODO: only render pages that are visible
     def OnPageChanged(self, event):
-        old = event.GetOldSelection()
-        new = event.GetSelection()
-        sel = self.notebook.GetSelection()
+        #old = event.GetOldSelection()
+        #new = event.GetSelection()
+        #sel = self.notebook.GetSelection()
         event.Skip()
 
-    # TODO: not doing anything...
+    # TODO: only render pages that are visible
     def OnPageChanging(self, event):
-        old = event.GetOldSelection()
-        new = event.GetSelection()
-        sel = self.notebook.GetSelection()
+        #old = event.GetOldSelection()
+        #new = event.GetSelection()
+        #sel = self.notebook.GetSelection()
         event.Skip()
 
     def OnFileNew(self, event):
