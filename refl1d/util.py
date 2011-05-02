@@ -95,7 +95,10 @@ def indfloat(s):
 def coordinated_colors(base=None):
     import pylab
     if base is None:
-        base = pylab.gca()._get_lines.color_cycle.next()
+        try:
+            base = pylab.gca()._get_lines.color_cycle.next()
+        except: # Cruft 1.3 and earlier
+            base = pylab.gca()._get_lines._get_next_cycle_color()
     return dict(base=base,
                 light = dhsv(base, dv=0.3, ds=-0.2),
                 dark = dhsv(base, dv=-0.35, ds=0.35),
