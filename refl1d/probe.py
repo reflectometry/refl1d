@@ -416,7 +416,9 @@ class Probe(object):
         # Doesn't use ProbeCache, but this routine is not time critical
         Srho,Sirho = (0,0) if substrate is None else substrate.sld(self)[:2]
         Vrho,Virho = (0,0) if surface is None else surface.sld(self)[:2]
-        if self.back_reflectivity: Srho,Sirho = Vrho, Virho
+        if self.back_reflectivity:
+            Srho,Vrho = Vrho,Srho
+            Sirho,Virho = Virho,Sirho
         if Srho == Vrho: Srho = Vrho + 1
         I = numpy.ones_like(self.Q)
         calculator = fresnel.Fresnel(rho=Srho*I, irho=Sirho*I,
@@ -499,7 +501,7 @@ class Probe(object):
         #Q4[Q4==0] = 1
         self._plot_pair(scale=Q4, ylabel='R (100 Q)^4', **kwargs)
 
-    def plot_residuals(self, theory=None, **kwargs):
+    def plot_residuals(self, theory=None, suffix='', **kwargs):
         import matplotlib.pyplot as plt
         plt.cla() # clear the plot if any
         if theory is not None and self.R is not None:
