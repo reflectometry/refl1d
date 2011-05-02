@@ -37,6 +37,7 @@ See `data-guide`_ for details.
 # Unstitched seems like the better bet.
 
 from __future__ import with_statement, division
+import os
 import numpy
 from numpy import radians, sin, sqrt, tan, cos, pi, inf, sign, log
 from periodictable import nsf, xsf
@@ -422,7 +423,7 @@ class Probe(object):
                                      Vrho=Vrho*I, Virho=Virho*I)
         return calculator(Q=self.Q)
 
-    def plot(self, theory=None, substrate=None, surface=None, view=None):
+    def plot(self, view=None, **kwargs):
         """
         Plot theory against data.
 
@@ -432,61 +433,46 @@ class Probe(object):
         view = view if view is not None else self.view
 
         if view == 'linear':
-            self.plot_linear(theory=theory)
+            self.plot_linear(**kwargs)
         elif view == 'log':
-            self.plot_log(theory=theory)
+            self.plot_log(**kwargs)
         elif view == 'fresnel':
-            self.plot_fresnel(theory=theory,
-                              substrate=substrate, surface=surface)
+            self.plot_fresnel(**kwargs)
         elif view == 'q4':
-            self.plot_Q4(theory=theory)
+            self.plot_Q4(**kwargs)
         elif view == 'resolution':
-            self.plot_resolution()
+            self.plot_resolution(**kwargs)
         elif view == 'residual':
-            self.plot_residuals(theory=theory)
+            self.plot_residuals(**kwargs)
         else:
             raise TypeError("incorrect reflectivity view '%s'"%view)
 
 
-    def plot_resolution(self, theory=None):
+    def plot_resolution(self, **kwargs):
         import pylab
-        pylab.plot(self.Q, self.dQ)
+        pylab.plot(self.Q, self.dQ, label=self.name())
         pylab.xlabel(r'Q ($\AA^{-1}$)')
         pylab.ylabel(r'Q resolution ($1-\sigma \AA^{-1}$)')
         pylab.title('Measurement resolution')
 
 
-    def plot_linear(self, theory=None):
+    def plot_linear(self, **kwargs):
         """
         Plot the data associated with probe.
         """
         import pylab
-        if hasattr(self, 'R') and self.R is not None:
-            pylab.errorbar(self.Q, self.R,
-                           yerr=self.dR, xerr=self.dQ, fmt='.')
-        if theory is not None:
-            Q,R = theory
-            pylab.plot(Q, R, hold=True)
+        self._plot_pair(scale=1, ylabel='Reflectivity', **kwargs)
         pylab.yscale('linear')
-        pylab.xlabel('Q (inv Angstroms)')
-        pylab.ylabel('Reflectivity')
 
-    def plot_log(self, theory=None):
+    def plot_log(self, **kwargs):
         """
         Plot the data associated with probe.
         """
         import pylab
-        if hasattr(self,'R') and self.R is not None:
-            pylab.errorbar(self.Q, self.R,
-                           yerr=self.dR, xerr=self.dQ, fmt='.')
-        if theory is not None:
-            Q,R = theory
-            pylab.plot(Q, R, hold=True)
+        self._plot_pair(scale=1, ylabel='Reflectivity', **kwargs)
         pylab.yscale('log')
-        pylab.xlabel('Q (inv Angstroms)')
-        pylab.ylabel('Reflectivity')
 
-    def plot_fresnel(self, theory=None, substrate=None, surface=None):
+    def plot_fresnel(self, substrate=None, surface=None, **kwargs):
         """
         Plot the Fresnel reflectivity associated with the probe.
         """
@@ -495,21 +481,15 @@ class Probe(object):
             raise TypeError("Fresnel reflectivity needs substrate or surface")
         F = self.fresnel(substrate=substrate,surface=surface)
         F *= self.intensity.value
-        if hasattr(self,'R') and self.R is not None:
-            pylab.errorbar(self.Q, self.R/F, self.dR/F, self.dQ, '.')
-        if theory is not None:
-            Q,R = theory
-            pylab.plot(Q, R/F, hold=True)
-        pylab.xlabel('Q (inv Angstroms)')
         if substrate is None:
             name = "air:%s"%(surface.name)
         elif surface is None or isinstance(surface,Vacuum):
             name = substrate.name
         else:
             name = "%s:%s"%(substrate.name, surface.name)
-        pylab.ylabel('R/R(%s)'%(name))
+        self._plot_pair(scale=1/F, ylabel='R/R(%s)'%(name), **kwargs)
 
-    def plot_Q4(self, theory=None):
+    def plot_Q4(self, **kwargs):
         """
         Plot the Q**4 reflectivity associated with the probe.
         """
@@ -517,27 +497,48 @@ class Probe(object):
         Q4 = 1e8*self.Q**4
         Q4 /= self.intensity.value
         #Q4[Q4==0] = 1
-        if hasattr(self,'R') and self.R is not None:
-            pylab.errorbar(self.Q, self.R*Q4, self.dR*Q4, self.dQ, '.')
-        if theory is not None:
-            Q,R = theory
-            pylab.plot(Q, R*Q4, hold=True)
-        pylab.xlabel('Q (inv Angstroms)')
-        pylab.ylabel('R (100 Q)^4')
+        self._plot_pair(scale=Q4, ylabel='R (100 Q)^4', **kwargs)
 
-    def plot_residuals(self, theory):
+    def plot_residuals(self, theory=None, **kwargs):
         import matplotlib.pyplot as plt
         plt.cla() # clear the plot if any
         if theory is not None and self.R is not None:
             Q,R = theory
             residual = (R - self.R)/self.dR
-            plt.plot(self.Q, residual, 'g.')
+            plt.plot(self.Q, residual, '.', label=self.name()+suffix)
         plt.axhline(1, color='black', ls='--',lw=1)
         plt.axhline(0, color='black', lw=1)
         plt.axhline(-1, color='black', ls='--',lw=1)
         plt.xlabel('Q (inv A)')
         plt.ylabel('(theory-data)/error')
 
+    def _plot_pair(self, theory=None, scale=1, ylabel="", suffix="", **kw):
+        import pylab
+        from .util import coordinated_colors
+        c = coordinated_colors()
+        isheld = pylab.ishold()
+        if hasattr(self,'R') and self.R is not None:
+            pylab.errorbar(self.Q, self.R*scale,
+                           yerr=self.dR*scale, xerr=self.dQ, 
+                           fmt='.', color=c['light'],
+                           label=self.name('data')+suffix)
+            pylab.hold(True)
+        if theory is not None:
+            Q,R = theory
+            pylab.plot(Q, R*scale, color=c['dark'], 
+                       label=self.name('theory')+suffix)
+        pylab.hold(isheld)
+        pylab.xlabel('Q (inv Angstroms)')
+        pylab.ylabel(ylabel)
+        pylab.legend()
+
+    def name(self, gloss="", suffix=""):
+        if hasattr(self, 'filename'):
+            prefix = os.path.splitext(os.path.basename(self.filename))[0]
+            return " ".join((prefix,gloss)) if gloss else prefix
+        else:
+            return gloss if gloss else None
+        
 
 class XrayProbe(Probe):
     """
@@ -670,7 +671,7 @@ class PolarizedNeutronProbe(object):
     def __len__(self):
         return len(self.calc_Q)
 
-    def plot(self, theory=None, substrate=None, surface=None, view=None):
+    def plot(self, view=None, **kwargs):
         """
         Plot theory against data.
 
@@ -681,56 +682,58 @@ class PolarizedNeutronProbe(object):
         if view is None: view = Probe.view  # Default to Probe.view
 
         if view == 'linear':
-            self.plot_linear(theory=theory)
+            self.plot_linear(**kwargs)
         elif view == 'log':
-            self.plot_log(theory=theory)
+            self.plot_log(**kwargs)
         elif view == 'fresnel':
-            self.plot_fresnel(theory=theory,
-                              substrate=substrate, surface=surface)
+            self.plot_fresnel(**kwargs)
         elif view == 'q4':
-            self.plot_Q4(theory=theory)
+            self.plot_Q4(**kwargs)
         elif view == 'residuals':
-            self.plot_residuals(theory=theory)
+            self.plot_residuals(**kwargs)
         elif view == 'SA':
-            self.plot_SA(theory=theory)
+            self.plot_SA(**kwargs)
         elif view == 'resolution':
-            self.plot_resolution()
+            self.plot_resolution(**kwargs)
         else:
-            raise TypeError("incorrect reflectivity view '%s'"%self.view)
+            raise TypeError("incorrect reflectivity view '%s'"%view)
 
-    def plot_resolution(self, theory=None):
-        self._xs_plot('plot_resolution', theory=theory)
-    def plot_linear(self, theory=None):
-        self._xs_plot('plot_linear', theory=theory)
-    def plot_log(self, theory=None):
-        self._xs_plot('plot_log', theory=theory)
-    def plot_fresnel(self, theory=None, substrate=None, surface=None):
-        self._xs_plot('plot_fresnel', theory=theory,
-                      substrate=substrate, surface=surface)
-    def plot_Q4(self, theory=None):
-        self._xs_plot('plot_Q4', theory=theory)
-    def plot_residuals(self, theory=None):
-        self._xs_plot('plot_residuals', theory=theory)
-    def plot_SA(self, theory):
+    def plot_resolution(self, **kwargs):
+        self._xs_plot('plot_resolution', **kwargs)
+    def plot_linear(self, **kwargs):
+        self._xs_plot('plot_linear', **kwargs)
+    def plot_log(self, **kwargs):
+        self._xs_plot('plot_log', **kwargs)
+    def plot_fresnel(self, **kwargs):
+        self._xs_plot('plot_fresnel', **kwargs)
+    def plot_Q4(self, **kwargs):
+        self._xs_plot('plot_Q4', **kwargs)
+    def plot_residuals(self, **kwargs):
+        self._xs_plot('plot_residuals', **kwargs)
+    def plot_SA(self, theory=None, **kwargs):
         import pylab
         if self.pp is None or self.mm is None:
             raise TypeError("cannot form spin asymmetry plot with ++ and --")
 
+        isheld = pylab.ishold()
         pp,mm = self.pp,self.mm
         if hasattr(pp,'R'):
             Q,SA,dSA = spin_asymmetry(pp.Q,pp.R,pp.dR,mm.Q,mm.R,mm.dR)
             if dSA is not None:
-                pylab.errorbar(Q, SA, yerr=dSA, xerr=pp.dQ, fmt='.')
+                pylab.errorbar(Q, SA, yerr=dSA, xerr=pp.dQ, fmt='.',
+                               label=pp.name('data'))
             else:
-                pylab.plot(Q,SA,'.')
+                pylab.plot(Q,SA,'.',label=pp.name('data'))
+            pylab.hold()
         if theory is not None:
             Q,pp,pm,mp,mm = theory
             Q,SA,_ = spin_asymmetry(Q,pp,None,Q,mm,None)
-            pylab.plot(Q, SA, hold=True)
+            pylab.plot(Q, SA,label=pp.name('theory'))
+        pylab.hold(isheld)
         pylab.xlabel(r'Q (\AA^{-1})')
         pylab.ylabel(r'spin asymmetry $(R^+ -\, R^-) / (R^+ +\, R^-)$')
 
-    def _xs_plot(self, plotter, theory=None, **kw):
+    def _xs_plot(self, plotter, theory=None, **kwargs):
         import pylab
         # Plot available cross sections
         isheld = pylab.ishold()
@@ -739,12 +742,16 @@ class PolarizedNeutronProbe(object):
             theory = ((Q,pp),(Q,pm),(Q,mp),(Q,pm))
         else:
             theory = (None,None,None,None)
-        for xs,xstheory in zip((self.pp, self.pm, self.mp, self.mm),theory):
+        for xs,xstheory,suffix in zip((self.pp, self.pm, self.mp, self.mm),
+                                      theory,
+                                      ('++','+-','-+','--')):
             if xs is not None:
                 fn = getattr(xs, plotter)
-                fn(theory=xstheory, **kw)
+                fn(theory=xstheory, suffix=suffix, **kwargs)
                 pylab.hold(True)
         if not isheld: pylab.hold(False)
+
+    def name(self): return self.pp.name()
 
 def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
     r"""
@@ -895,6 +902,9 @@ class ProbeSet(Probe):
             p.background = background
             p.back_absorption = back_absorption
             p.theta_offset = theta_offset
+
+    def name(self): return self.probes[0].name()
+    
     def stitch(self, tol=0.01):
         r"""
         Stitch together multiple datasets into a single dataset.

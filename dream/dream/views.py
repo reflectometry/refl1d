@@ -5,15 +5,13 @@ __all__ = ['plot_all', 'plot_corr', 'plot_corrmatrix',
 import math
 import numpy
 from numpy import arange, squeeze, reshape, linspace, meshgrid, vstack, NaN, inf
-import pylab
-from pylab import (axes, plot, MaxNLocator, setp, title, xlabel,
-                   ylabel, legend, figure, show, suptitle, savefig)
 from . import corrplot
 from .stats import credible_interval, stats
 from .formatnum import format_uncertainty
 from .util import console
 
 def plot_all(state, portion=None, figfile=None):
+    from pylab import figure, savefig, suptitle
 
     figure(1); plot_vars(state, portion=portion)
     if state.title: suptitle(state.title)
@@ -37,12 +35,14 @@ def plot_var(state, var=0, portion=None, selection=None, **kw):
     _plot_var(points.flatten(), logp, label=state.labels[var], **kw)
 
 def plot_vars(state, vars=None, portion=None, selection=None, **kw):
+    from pylab import subplot
+    
     points, logp = state.sample(portion=portion, vars=vars, selection=selection)
     if vars==None:
         vars = range(points.shape[1])
     nw,nh = tile_axes(len(vars))
     for k,v in enumerate(vars):
-        pylab.subplot(nw,nh,k+1)
+        subplot(nw,nh,k+1)
         _plot_var(points[:,k].flatten(), logp, label=state.labels[v],
                   index=k, **kw)
 
@@ -51,8 +51,9 @@ def tile_axes(n, size=None):
     Creates a tile for the axes which covers as much area of the graph as
     possible while keeping the plot shape near the golden ratio.
     """
+    from pylab import gcf
     if size == None:
-        size = pylab.gcf().get_size_inches()
+        size = gcf().get_size_inches()
     figwidth, figheight = size
     # Golden ratio phi is the preferred dimension
     #    phi = sqrt(5)/2
@@ -136,6 +137,7 @@ def _plot_var(points, logp, index=None, label="P", nbins=50, ci=0.95):
         stats_line = "%(index)2d %(parameter)20s %(mean)10s %(median)7s %(best)7s [%(lo68)7s %(hi68)7s] [%(loci)7s %(hici)7s]"%summary
         print stats_line
 
+    import pylab
     # Plot the histogram
     pylab.bar(bins[:-1], hist, width=bins[1]-bins[0])
 
@@ -204,6 +206,8 @@ class kde_2d(kde.gaussian_kde):
     __call__ = evalxy
 
 def plot_corr(state, vars=(0,1), portion=None, selection=None):
+    from pylab import axes, setp
+
     p1,p2 = vars
     labels = [state.labels[v] for v in vars]
     points, _ = state.sample(portion=portion, vars=vars, selection=selection)
@@ -241,6 +245,8 @@ def plot_corr(state, vars=(0,1), portion=None, selection=None):
     setp(axHistY.get_yticklabels(), visible=False)
 
 def plot_trace(state, var=0, portion=None):
+    from pylab import plot, title, xlabel, ylabel
+
     if portion == None:
         portion = 0.8 if state.cycle < 1 else 1
     draw, points, _ = state.chains()
@@ -252,6 +258,8 @@ def plot_trace(state, var=0, portion=None):
     ylabel('Parameter value')
 
 def plot_R(state, portion=None):
+    from pylab import plot, title, legend, xlabel, ylabel
+
     if portion == None:
         portion = 0.8 if state.cycle < 1 else 1
     draw, R = state.R_stat()
@@ -263,6 +271,8 @@ def plot_R(state, portion=None):
     ylabel('R')
 
 def plot_logp(state, portion=None):
+    from pylab import plot, title, xlabel, ylabel
+
     if portion == None:
         portion = 0.8 if state.cycle < 1 else 1
     draw, logp = state.logp()

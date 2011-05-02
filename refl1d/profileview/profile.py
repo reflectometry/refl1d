@@ -30,29 +30,22 @@ class ProfileInteractor(object):
     Reflectometry profile editor
     """
     _debug = False
-    def __init__(self, axes, experiment, signal_update, status_update):
-        self.axes = axes
-        self.xcoords = blend_xy(axes.transData, axes.transAxes)
-        self.experiment = experiment
-        self.magnetic = experiment.sample.magnetic
-        self.signal_update = signal_update
+    def __init__(self, axes, theta_axes, status_update):
         self.status_update = status_update
+        self.canvas = axes.figure.canvas
+        self.axes = axes
+        self.theta_axes = theta_axes
+        self.xcoords = blend_xy(axes.transData, axes.transAxes)
 
-        # Theta needs a separate axis, we put these two axes into a figure
-        if self.magnetic:
-            self.axes2 = twinx( self.axes )
-        else:
-            self.axes2 = None
+        # Add some plots
+        [self.hrho ] = axes.plot([],[],'-',color=rho_color,label=r'$\rho$')
+        [self.hrhoI] = axes.plot([],[],'-',color=rhoI_color,label=r'$\rho_i$')
+        [self.hrhoM  ] = self.axes.plot(  [], [], '-', color=rhoM_color,
+                                              label = r'$\rho_M$')
+        [self.hthetaM] = self.theta_axes.plot( [], [], '-', color=thetaM_color,
+                                               label = r'$\theta_M$')
 
-        self.axes.set_xlabel( r'$\rm{z}\ (\AA)$' )
-        if self.magnetic:
-            self.axes.set_ylabel( r'$\rm{Density}\ \times 10^{-6}\ \ \rho,\  \rho_i,\  \rho_M$')
-        else:
-            self.axes.set_ylabel(r'$\rm{Density}\ \times 10^{-6}\ \ \rho,\  \rho_i$')
-
-        if self.magnetic:
-            self.axes2.set_ylabel(r'$\rm{Magnetic\ Angle\ (\ ^\circ)}$')
-
+        
         # TODO: the connect mechanism needs to be owned by the canvas rather
         # than the axes --- cannot have multiple profiles on the same canvas
         # until connect is in the right place.
@@ -61,46 +54,51 @@ class ProfileInteractor(object):
         self.connect('motion', axes, self.onMotion )
         self.connect('click', axes.figure, self.onClick)
 
-        # Add some plots
-        [self.hrho ] = axes.plot([],[],'-',color=rho_color,label=r'$\rho$')
-        [self.hrhoI] = axes.plot([],[],'-',color=rhoI_color,label=r'$\rho_i$')
-        if self.magnetic:
-            [self.hrhoM  ] = self.axes.plot(  [], [], '-', color=rhoM_color,
-                                            label = r'$\rho_M$')
-            [self.hthetaM] = self.axes2.plot( [], [], '-', color=thetaM_color,
-                                            label = r'$\theta_M$')
-
-        # Show Legend ?
-        if self.magnetic:
-            self.hlegend = self.axes.legend(
-                           (self.hrho, self.hrhoI, self.hrhoM, self.hthetaM),
-                           #('SLD','Absorption','Mag. SLD','Mag. angle'),
-                           (r'$\rho$', r'$\rho_i$', r'$\rho_M$', r'$\theta_M$'),
-                           loc = (0.85,0.5)
-                           #loc='upper right'
-                           )
-        else:
-            self.hlegend = self.axes.legend( (self.hrho, self.hrhoI),
-                                           (r'$\rho$', r'$\rho_i$'),
-                                           loc = (0.85,0.5)
-                                           #loc='upper right'
-                                           )
-        self.hlegend.get_frame().set( alpha=0.2, facecolor='yellow' )
-
-
         # Set interactors
-        self.x_offset = 0
-        self._find_layer_boundaries()
-        self.layer_num = None
         self.thickness_interactor = ThicknessInteractor(self)
         self.interface_interactor = InterfaceInteractor(self)
         self.layer_interactor = BaseInteractor(self)
-        self.thickness_interactor.reset_markers()
-        self.interface_interactor.set_layer()
 
-        # update the figure
-        self.axes_frozen = False
-        self.update()
+    def set_experiment(self, experiment, force_recalc, signal_update):
+        self.experiment = experiment
+        self.force_recalc = force_recalc
+        self.signal_update = signal_update
+ 
+        # Theta needs a separate axis, we put these two axes into a figure
+        self.axes.set_xlabel( r'$\rm{z}\ (\AA)$' )
+        self.theta_axes.set_ylabel(r'$\rm{Magnetic\ Angle\ (\ ^\circ)}$')
+        self.magnetic = experiment.sample.magnetic
+        if self.magnetic:
+            self.axes.set_ylabel( r'$\rm{Density}\ \times 10^{-6}\ \ \rho,\  \rho_i,\  \rho_M$')
+            self.theta_axes.set_visible(True)
+            self.hrhoM.set_visible(True)
+            self.hthetaM.set_visible(True)
+            self.hlegend = self.axes.legend(
+                (self.hrho, self.hrhoI, self.hrhoM, self.hthetaM),
+                #('SLD','Absorption','Mag. SLD','Mag. angle'),
+                (r'$\rho$', r'$\rho_i$', r'$\rho_M$', r'$\theta_M$'),
+                loc = (0.85,0.5)
+                #loc='upper right'
+                )
+        else:
+            self.axes.set_ylabel(r'$\rm{Density}\ \times 10^{-6}\ \ \rho,\  \rho_i$')
+            self.theta_axes.set_visible(True)
+            self.hrhoM.set_visible(False)
+            self.hthetaM.set_visible(False)
+            self.hlegend = self.axes.legend( 
+                (self.hrho, self.hrhoI),
+                (r'$\rho$', r'$\rho_i$'),
+                loc = (0.85,0.5)
+                #loc='upper right'
+                )
+        self.hlegend.get_frame().set( alpha=0.2, facecolor='yellow' )
+
+        self.x_offset = 0
+        self._find_layer_boundaries()
+        self.layer_num = None
+        self.thickness_interactor.reset_markers()
+        self.set_layer(0)
+        self.redraw()
 
     def update_cursor(self, x, y):
         def nice(value, range):
@@ -189,7 +187,6 @@ class ProfileInteractor(object):
         self.layer_interactor.update_markers()
 
     def update_profile(self):
-        self.experiment.update()
         if self.magnetic:
             z,rho,rhoI,rhoM,thetaM = self.experiment.smooth_profile()
             self.hrhoM.set_data(z,rhoM)
@@ -223,18 +220,13 @@ class ProfileInteractor(object):
 
             lo, hi = thetaM.min(), thetaM.max()
             fluff = 0.05*(hi-lo)
-            self.axes2.set_ylim(lo-fluff, hi+fluff)
+            self.theta_axes.set_ylim(lo-fluff, hi+fluff)
 
         else:
             lo = min( rho.min(), rhoI.min() )
             hi = max( rho.max(), rhoI.max() )
             fluff = 0.05*(hi-lo)
             self.axes.set_ylim(lo-fluff, hi+fluff)
-
-    def redraw(self):
-        self.update_markers()
-        self.update_profile()
-        self.draw_now()
 
     def update(self):
         """
@@ -243,34 +235,27 @@ class ProfileInteractor(object):
         """
         # We are done the manipulation; let the model send its update signal
         # to whomever is listening.
-        # self.signal_update()
+        self.force_recalc()
         self.redraw()
         self.delayed_signal()
         #self.delayed_profile()
 
-    def delayed_profile(self):
-        try: self._delayed.Restart(50)
-        except: self._delayed = wx.FutureCall(50, lambda:(self.update_profile(),
-                                                 self.draw_now()))
-
-    def _signal(self):
-        self.signal_update()
+    def redraw(self, reset_limits=False):
+        self.update_markers()
+        self.update_profile()
+        if reset_limits: self.reset_limits()
+        self.draw_now()
 
     def delayed_signal(self):
-        try: self._delayed_signal.Restart(50)
-        except: self._delayed_signal = wx.FutureCall(50, self._signal)
-
-    def freeze_axes(self):
-        self.axes_frozen = True
-
-    def thaw_axes(self):
-        self.axes_frozen = False
+        try: 
+            self._delayed_signal.Restart(50)
+        except: 
+            self._delayed_signal = wx.FutureCall(50, self.signal_update)
 
     def draw_now(self):
-        #try: del self._delayed
-        #except: pass
-        self.axes.figure.canvas.draw()
+        #print "draw immediately"
+        self.canvas.draw()
     def draw_idle(self):
         """Set the limits and tell the canvas to render itself."""
         #print "draw when idle"
-        self.axes.figure.canvas.draw_idle()
+        self.canvas.draw_idle()

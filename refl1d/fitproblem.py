@@ -587,17 +587,17 @@ class MultiFitProblem(FitProblem):
     Weighted fits for multiple models.
     """
     def __init__(self, models, weights=None):
-        self.fits = [FitProblem(m) for m in models]
+        self.models = [FitProblem(m) for m in models]
         if weights is None:
             weights = [1 for m in models]
         self.weights = weights
         self.model_reset()
     def model_parameters(self):
         """Return parameters from all models"""
-        return [f.model_parameters() for f in self.fits]
+        return [f.model_parameters() for f in self.models]
     def model_points(self):
         """Return number of points in all models"""
-        return numpy.sum(f.model_points() for f in self.fits)
+        return numpy.sum(f.model_points() for f in self.models)
     def model_update(self):
         """Let all models know they need to be recalculated"""
         # TODO: consider an "on changed" signal for model updates.
@@ -607,37 +607,37 @@ class MultiFitProblem(FitProblem):
         # where the fit can quickly explore a subspace where the
         # computation is cheap before jumping to a more expensive
         # subspace.  SrFit does this.
-        for f in self.fits: f.model_update()
+        for f in self.models: f.model_update()
     def model_nllf(self):
         """Return cost function for all data sets"""
-        return numpy.sum(f.model_nllf() for f in self.fits)
+        return numpy.sum(f.model_nllf() for f in self.models)
     def simulate_data(self, noise=None):
         """Simulate data with added noise"""
-        for f in self.fits: f.simulate_data(noise=noise)
+        for f in self.models: f.simulate_data(noise=noise)
     def resynth_data(self):
         """Resynthesize data with noise from the uncertainty estimates."""
-        for f in self.fits: f.resynth_data()
+        for f in self.models: f.resynth_data()
     def restore_data(self):
         """Restore original data after resynthesis."""
-        for f in self.fits: f.restore_data()
+        for f in self.models: f.restore_data()
     def residuals(self):
         resid = numpy.hstack([w * f.residuals()
-                              for w, f in zip(self.weights, self.fits)])
+                              for w, f in zip(self.weights, self.models)])
         return resid
 
     def save(self, basename):
-        for i, f in enumerate(self.fits):
+        for i, f in enumerate(self.models):
             f.save(basename + "-%d" % (i + 1))
 
     def show(self):
-        for i, f in enumerate(self.fits):
+        for i, f in enumerate(self.models):
             print "-- Model %d" % i
             f.show()
         print "[overall chisq=%g, nllf=%g]" % (self.chisq(), self.nllf())
 
     def plot(self,fignum=1,figfile=None):
         import pylab
-        for i, f in enumerate(self.fits):
+        for i, f in enumerate(self.models):
             f.plot(fignum=i+fignum)
             pylab.suptitle('Model %d'%i)
             if figfile != None:

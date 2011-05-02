@@ -92,6 +92,14 @@ def indfloat(s):
         if s == 'nan': return nan
         raise
 
+def coordinated_colors(base=None):
+    import pylab
+    if base is None:
+        base = pylab.gca()._get_lines.color_cycle.next()    
+    return dict(base=base,
+                light = dhsv(base, dv=0.3, ds=-0.2),
+                dark = dhsv(base, dv=-0.35, ds=0.35),
+                )
 
 # Color functions
 def dhsv(color, dh=0, ds=0, dv=0, da=0):
@@ -120,10 +128,12 @@ def dhsv(color, dh=0, ds=0, dv=0, da=0):
     from colorsys import rgb_to_hsv, hsv_to_rgb
     from numpy import clip, array, fmod
     r,g,b,a = colorConverter.to_rgba(color)
+    #print "from color",r,g,b,a
     h,s,v = rgb_to_hsv(r,g,b)
     s,v,a = [clip(val,0.,1.) for val in s+ds,v+dv,a+da]
     h = fmod(h+dh,1.)
     r,g,b = hsv_to_rgb(h,s,v)
+    #print "to color",r,g,b,a
     return array((r,g,b,a))
 
 

@@ -10,7 +10,6 @@ Uses false color plots of density.
 __all__ = ['Corr2d']
 
 import numpy
-import pylab
 from numpy import inf
 
 from matplotlib import cm, colors, image
@@ -56,6 +55,8 @@ class Corr2d:
         """
         Plot the correlation histograms on the specified figure
         """
+        import pylab
+        
         fig = pylab.gcf()
         if title != None:
             fig.text(0.5, 0.95, title,
@@ -109,13 +110,13 @@ def _plot(fig, hists, labels, N):
             a.pcolorfast(y,x,data,cmap=COLORMAP,norm=norm)
             # Show labels or hide ticks
             if i == 0:
-                pylab.xlabel(labels[j])
+                a.xlabel(labels[j])
             else:
-                pylab.setp(a.get_xticklabels(),visible=False)
+                a.setp(a.get_xticklabels(),visible=False)
             if j == i+1:
-                pylab.ylabel(labels[i])
+                a.ylabel(labels[i])
             else:
-                pylab.setp(a.get_yticklabels(),visible=False)
+                a.setp(a.get_yticklabels(),visible=False)
 
             a.zoomable=True
 

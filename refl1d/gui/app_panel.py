@@ -36,46 +36,8 @@ from threading import current_thread
 
 import wx
 
-# If we are running from an image built by py2exe, keep the frozen environment
-# self contained by having matplotlib use a private directory instead of using
-# .matplotlib under the user's home directory for storing shared data files
-# such as fontList.cache.  Note that a Windows installer/uninstaller such as
-# Inno Setup should explicitly delete this private directory on uninstall.
-if hasattr(sys, 'frozen'):
-    mplconfigdir = os.path.join(sys.prefix, '.matplotlib')
-    if not os.path.exists(mplconfigdir):
-        os.mkdir(mplconfigdir)
-    os.environ['MPLCONFIGDIR'] = mplconfigdir
-import matplotlib
-
-# Disable interactive mode so that plots are only updated on show() or draw().
-# Note that the interactive function must be called before selecting a backend
-# or importing pyplot, otherwise it will have no effect.
-
-matplotlib.interactive(False)
-
-# Specify the backend to use for plotting and import backend dependent classes.
-# Note that this must be done before importing pyplot to have an effect.
-matplotlib.use('WXAgg')
-
-from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-from matplotlib.backends.backend_wxagg import NavigationToolbar2Wx as Toolbar
-
-from matplotlib.patches import Patch
-
-# The Figure object is used to create backend-independent plot representations.
-from matplotlib.figure import Figure
-from matplotlib.font_manager import FontProperties
-
-# Wx-Pylab magic for displaying plots within an application's window.
-from matplotlib import _pylab_helpers
-from matplotlib.backend_bases import FigureManagerBase
-
-import pylab
-
-from refl1d.mystic import monitor, parameter
 from refl1d.profileview.panel import ProfileView
-from refl1d.probe import Probe
+from refl1d.profileview.theory import TheoryView
 from refl1d.cli import load_problem
 
 from .. import fitters
@@ -136,14 +98,11 @@ class AppPanel(wx.Panel):
 
         # Create a PubSub receiver.
         subscribe(self.set_model, "model.new")
-        subscribe(self.OnModelChange, "model.change")
-        subscribe(self.OnModelUpdate, "model.update")
         subscribe(self.OnFitStart, "fit.start")
 
         EVT_FIT_PROGRESS(self, self.OnFitProgress)
         EVT_FIT_IMPROVEMENT(self, self.OnFitImprovement)
         EVT_FIT_COMPLETE(self, self.OnFitComplete)
-        self.view = "fresnel"  # default view for the plot
         self.fit_thread = None
 
     def modify_menubar(self):
@@ -187,37 +146,6 @@ class AppPanel(wx.Panel):
         frame.Bind(wx.EVT_MENU, self.OnFileNew, _item)
         #file_menu.Enable(id=wx.ID_NEW, enable=False)
 
-        # Add 'View' menu to the menu bar and define its options.
-        # Present y-axis plotting scales as radio buttons.
-        # Grey out items that are not currently implemented.
-        view_menu = wx.Menu()
-        _item = view_menu.AppendRadioItem(wx.ID_ANY,
-                                          "&Fresnel",
-                                          "Plot y-axis in Fresnel scale")
-        frame.Bind(wx.EVT_MENU, self.OnFresnel, _item)
-        _item.Check(True)
-        _item = view_menu.AppendRadioItem(wx.ID_ANY,
-                                          "Li&near",
-                                          "Plot y-axis in linear scale")
-        frame.Bind(wx.EVT_MENU, self.OnLinear, _item)
-        _item = view_menu.AppendRadioItem(wx.ID_ANY,
-                                          "&Log",
-                                          "Plot y-axis in log scale")
-        frame.Bind(wx.EVT_MENU, self.OnLog, _item)
-        _item = view_menu.AppendRadioItem(wx.ID_ANY,
-                                          "&Q4",
-                                          "Plot y-axis in Q4 scale")
-        frame.Bind(wx.EVT_MENU, self.OnQ4, _item)
-
-        view_menu.AppendSeparator()
-
-        _item = view_menu.Append(wx.ID_ANY,
-                                 "&Residuals",
-                                 "Show residuals on plot panel")
-        frame.Bind(wx.EVT_MENU, self.OnResiduals, _item)
-        view_menu.Enable(id=_item.GetId(), enable=True)
-
-        mb.Insert(1, view_menu, "&View")
 
         # Add 'Fitting' menu to the menu bar and define its options.
         # Items are initially greyed out, but will be enabled after a script
@@ -247,6 +175,7 @@ class AppPanel(wx.Panel):
 
         mb.Insert(2, fit_menu, "&Fitting")
 
+        
         # Add 'Advanced' menu to the menu bar and define its options.
         adv_menu = wx.Menu()
 
@@ -341,36 +270,16 @@ class AppPanel(wx.Panel):
         sp.SetSashPosition(position=0, redraw=False)
 
     def init_top_panel(self):
-        # Instantiate a figure object that will contain our plots.
-        figure = Figure(figsize=(1,1), dpi=72)
-
-        # Initialize the figure canvas, mapping the figure object to the plot
-        # engine backend.
-        canvas = FigureCanvas(self.pan1, wx.ID_ANY, figure)
-
-        # Wx-Pylab magic ...
-        # Make our canvas the active figure manager for pylab so that when
-        # pylab plotting statements are executed they will operate on our
-        # canvas and not create a new frame and canvas for display purposes.
-        # This technique allows this application to execute code that uses
-        # pylab stataments to generate plots and embed these plots in our
-        # application window(s).
-
-        self.fignum = 0
-        self.fm = FigureManagerBase(canvas, self.fignum)
-
-        # Instantiate the matplotlib navigation toolbar and explicitly show it.
-        mpl_toolbar = Toolbar(canvas)
-        mpl_toolbar.Realize()
-
-        # Create a vertical box sizer to manage the widgets in the main panel.
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(canvas, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, border=0)
-        sizer.Add(mpl_toolbar, 0, wx.EXPAND|wx.ALL, border=0)
-
-        # Associate the sizer with its container.
-        self.pan1.SetSizer(sizer)
-        sizer.Fit(self.pan1)
+        self.theory_view = TheoryView(self.pan1)
+        self.pan1.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.pan1.sizer.Add(self.theory_view, 1, wx.EXPAND)
+        self.pan1.SetSizer(self.pan1.sizer)
+        self.pan1.SetAutoLayout(True)
+        self.pan1.sizer.Fit(self.pan1)
+                
+        frame = self.frame
+        mb = frame.GetMenuBar()
+        mb.Insert(1, self.theory_view.menu(), "&Model")
 
     def init_bottom_panel(self):
         nb = self.notebook = wx.Notebook(self.pan2, wx.ID_ANY,
@@ -490,7 +399,9 @@ class AppPanel(wx.Panel):
         OpenFitOptions()
 
     def OnFitStart(self, event):
-        self.pan1.Layout()
+        if self.fit_thread:
+            self.sb.SetStatusText("Error: Fit already running")
+            return
 
         # Start a new thread worker and give fit problem to the worker.
         fitopts = fitters.FIT_OPTIONS[fitters.FIT_DEFAULT]
@@ -503,21 +414,25 @@ class AppPanel(wx.Panel):
         print "Clicked on stop fit ..." # not implemented
 
     def OnFitComplete(self, event):
-        chisq = nice(event.value/event.problem.dof)
+        self.fit_thread = None
+        chisq = nice(2*event.value/event.problem.dof)
         publish("log.fit", message = "done with chisq %g"%chisq)
         publish("fit.complete")
+        event.problem.setp(event.point)
+        event.problem.model_update()
         publish("model.update", model=event.problem)
         #self.remember_best(self.fitter, event.problem)
 
         self.sb.SetStatusText("Fit status: Complete", 3)
 
     def OnFitProgress(self, event):
-        chisq = nice(event.value/event.problem.dof)
+        chisq = nice(2*event.value/event.problem.dof)
         message = "step %5d chisq %g"%(event.step, chisq)
         publish("log.fit", message=message)
 
     def OnFitImprovement(self, event):
         event.problem.setp(event.point)
+        event.problem.model_update()
         publish("model.update", model=event.problem)
 
     def remember_best(self, fitter, problem, best):
@@ -561,14 +476,6 @@ class AppPanel(wx.Panel):
     def OnModelNew(self, model):
         self.set_model(model)
 
-    def OnModelChange(self, model):
-        if model == self.problem:
-            self.redraw()
-
-    def OnModelUpdate(self, model):
-        if model == self.problem:
-            self.redraw()
-
     def new_model(self):
         from ..fitplugin import new_model as gen
         self.set_model(gen())
@@ -596,8 +503,8 @@ class AppPanel(wx.Panel):
     def set_model(self, model):
         # Inform the various tabs that the model they are viewing has changed.
         self.problem = model  # This should be theory_view.set_model(model)
-        self.redraw()
 
+        self.theory_view.set_model(model)
         self.profile_view.set_model(model)
         self.parameter_view.set_model(model)
         self.summary_view.set_model(model)
@@ -613,43 +520,3 @@ class AppPanel(wx.Panel):
         self.tb.EnableTool(id=self.tb_start.GetId(), enable=True)
         #self.tb.EnableTool(id=self.tb_stop.GetId(), enable=True)
 
-    # This should be split out into a separate theory_view.py.
-    # Our app panel needs to be able to set and reset model specific menus.
-
-    # ==== Views ====
-    # TODO: can probably parameterize the view selection.
-    def OnLog(self, event):
-        self.view = "log"
-        self.redraw()
-
-    def OnLinear(self, event):
-        self.view = "linear"
-        self.redraw()
-
-    def OnFresnel(self, event):
-        self.view = "fresnel"
-        self.redraw()
-
-    def OnQ4(self, event):
-        self.view = "q4"
-        self.redraw()
-
-    def OnResiduals(self, event):
-        self.view = "residual"
-        self.redraw()
-
-    def redraw(self):
-        # Redraw the canvas.
-        self._activate_figure()
-        pylab.clf() # clear the canvas
-        self.problem.fitness.plot_reflectivity(view=self.view)
-        try:
-            # If we can't calculate chisq, then put it on the graph.
-            pylab.text(0.01, 0.01, "chisq=%g" % self.problem.chisq(),
-                       transform=pylab.gca().transAxes)
-        except:
-            pass
-        pylab.draw()
-
-    def _activate_figure(self):
-        _pylab_helpers.Gcf.set_active(self.fm)

@@ -19,6 +19,9 @@ from ..gui.util import subscribe, publish
 from .profile import ProfileInteractor
 from .interactor import BaseInteractor
 
+from ..experiment import MixedExperiment
+from ..fitproblem import MultiFitProblem
+
 # ------------------------------------------------------------------------
 class ProfileView(AuiPanel):
 
@@ -40,11 +43,12 @@ class ProfileView(AuiPanel):
         # Canvas
         self.canvas = FigureCanvas(self, -1, self.fig)
         self.fig.set_canvas(self.canvas)
-        self.fig.add_axes( Subplot(self.fig, 111) )
 
         # Axes
-        self.axes = self.fig.get_axes()[0]
+        self.axes = self.fig.add_axes( Subplot(self.fig, 111))
         self.axes.set_autoscale_on(False)
+        self.theta_axes = self.axes.twinx()
+        self.theta_axes.set_autoscale_on(False)
 
         # Show toolbar or not?
         self.toolbar = NavigationToolbar2WxAgg( self.canvas )
@@ -57,16 +61,40 @@ class ProfileView(AuiPanel):
         subscribe(self.OnModelChange, "model.change")
         subscribe(self.OnModelUpdate, "model.update")
 
+        # Panel layout
+        self.profile_selector_label = wx.StaticText(self, label="Sample")
+        self.profile_selector = wx.Choice(self)
+        self.profile_selector.Hide()
+        self.profile_selector_label.Hide()
+        self.Bind(wx.EVT_CHOICE, self.OnProfileSelect)
+
         self.sizer = wx.BoxSizer( wx.VERTICAL )
         self.sizer.Add( self.canvas,1, border=2, flag= wx.LEFT|wx.TOP|wx.GROW)
-        self.sizer.Add(self.toolbar)
+        self.tbsizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.tbsizer.Add(self.toolbar,0,wx.ALIGN_CENTER_VERTICAL)
+        self.tbsizer.AddSpacer(20)
+        self.tbsizer.Add(self.profile_selector_label,
+                         0, wx.ALIGN_CENTER_VERTICAL)
+        self.tbsizer.AddSpacer(5)
+        self.tbsizer.Add(self.profile_selector,
+                         0, wx.ALIGN_CENTER_VERTICAL)
+        self.sizer.Add(self.tbsizer)
+        
         self.SetSizer( self.sizer)
         self.Fit()
 
+        # Status bar
         frame = self.GetTopLevelParent()
         self.statusbar = frame.GetStatusBar()
+        status_update = lambda msg: self.statusbar.SetStatusText(msg)
+        
+        # Set the profile interactor
+        self.profile = ProfileInteractor(self.axes,self.theta_axes,
+                                         status_update=status_update)
 
+        # Add context menu and keyboard support to canvas
         self.canvas.Bind(wx.EVT_RIGHT_DOWN, self.OnContextMenu)
+        #self.canvas.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.canvas.SetFocus())
 
     def OnContextMenu(self,event):
         """
@@ -80,45 +108,81 @@ class ProfileView(AuiPanel):
         item = popup.Append(wx.ID_ANY,'&Grid on/off', 'Toggle grid lines')
         wx.EVT_MENU(self, item.GetId(),
                     lambda _: (self.axes.grid(),self.fig.canvas.draw_idle()))
+        item = popup.Append(wx.ID_ANY,'&Rescale', 'Show entire profile')
+        wx.EVT_MENU(self, item.GetId(),
+                    lambda _: (self.profile.reset_limits(),self.profile.draw_idle()))
         self.PopupMenu(popup, (sx,sy))
         return False
-
+    
+    def OnProfileSelect(self, event):
+        self.set_profile(self.profiles[event.GetInt()][1])
 
     # ============= Signal bindings =========================
     def OnModelChange(self, model):
-        if self.job == model:
+        if self.model == model:
             self.set_model(model)
 
     def OnModelUpdate(self, model):
-        if self.job == model:
+        if self.model == model:
             self.profile.redraw()
 
-    def status_update(self, msg):
-        self.statusbar.SetStatusText(msg)
-
     def signal_update(self):
-        publish("model.update", self.job)
+        publish("model.update", self.model)
 
     def set_model(self, model):
         """Initialize model by profile."""
 
-        self.axes.cla()
-        self.job = model
-        try:
-            experiment = self.job.fits[0].fitness
-        except:
-            experiment = self.job.fitness
+        self.model = model
+        
+        self.profiles = []
+        def add_profiles(name, exp):
+            if isinstance(exp,MixedExperiment):
+                for i,p in enumerate(exp.parts):
+                    self.profiles.append( (name+chr(ord("a")+i), p) )
+            else:
+                self.profiles.append( (name, exp) )
+        if isinstance(model,MultiFitProblem):
+            for i,p in enumerate(model.models):
+                name = p.fitness.probe.name()
+                if not name: name = "M%d"%(i+1)
+                add_profiles(name, p.fitness)
+        else:
+            add_profiles("", model.fitness)
+            
+        self.profile_selector.Clear()
+        if len(self.profiles) > 1:
+            self.profile_selector.AppendItems([k for k,v in self.profiles])
+            self.profile_selector_label.Show()
+            self.profile_selector.Show()
+            self.profile_selector.SetSelection(0)
+        else:
+            self.profile_selector_label.Hide()
+            self.profile_selector.Hide()
 
+        self.set_profile(self.profiles[0][1])
+        
+        # update the figure
+        self.profile.redraw(reset_limits=True)
+        
+
+    def set_profile(self, experiment):
         # Turn the model into a user interface
-        signal_update = lambda : publish("model.update", model=model)
-        self.profile = ProfileInteractor(self.axes,
-                                         experiment,
-                                         signal_update=signal_update,
-                                         status_update=self.status_update)
-        self.profile.update_markers()
-        self.profile.update_profile()
-        self.profile.reset_limits()
-        self.profile.draw_idle()
+        # It is the responsibility of the party that is indicating
+        # that a redraw is necessary to clear the precalculated
+        # parts of the view; otherwise the theory function calculator
+        # is going to be triggered twice.  This happens inside profile
+        # before the profile is calculated.  Note that the profile 
+        # panel will receive its own signal, which will cause the
+        # profile interactor to draw itself again.  We hope this isn't
+        # too much of a problem.
+        def signal_update():
+            """Notify other views that the model has changed"""
+            publish("model.update", model=self.model)
+        def force_recalc():
+            self.model.model_update()
+        self.profile.set_experiment(experiment,
+                                    force_recalc=force_recalc,
+                                    signal_update=signal_update)
 
     def onPrinterSetup(self,event=None):
         self.canvas.Printer_Setup(event=event)

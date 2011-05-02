@@ -40,6 +40,7 @@ class InterfaceInteractor(BaseInteractor):
                     for label in 'interface line L','interface line R']
 
         self.connect_markers(self.markers)
+        self._left = self._right = None
 
 
     def set_layer(self):

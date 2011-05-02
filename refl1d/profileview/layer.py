@@ -40,22 +40,23 @@ class MaterialInteractor(BaseInteractor):
         style = dict(linestyle='--',
                      linewidth  = 2,
                      pickradius = pick_radius,
-                     zorder = 5,
                      )
-        colors = rho_color,rhoI_color
-        labels = "rho","rhoI"
         ax = profile.axes
-        self.markers = [ax.plot([], [],
-                                label=material.name+" "+label,
-                                color=color if enabled else disabled_color,
-                                **style)[0]
-                        for color,label in zip(colors,labels)]
+        rho = ax.plot([], [], label=material.name+" rho",
+                      color=rho_color if enabled else disabled_color,
+                      zorder=6, **style)[0]
+        rhoI = ax.plot([], [], label=material.name+" rhoI",
+                      color=rhoI_color if enabled else disabled_color,
+                      zorder=5, **style)[0]
+        
+        self.markers = [rho,rhoI]
         if enabled:
             self.connect_markers(self.markers)
 
     def update_markers(self):
         z = self.profile.boundary[1:-1]
         n = self.profile.layer_num
+        #if n is None: return
         if n == 0:
             left,right = -20,0
         elif n >= len(z):

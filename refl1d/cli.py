@@ -14,10 +14,9 @@ except:
 
 import numpy
 
-import dream
 from .stajconvert import load_mlayer, fit_all
-from .fitters import FitDriver, FIT_OPTIONS, FIT_DEFAULT, FitOptions, \
-    StepMonitor, ConsoleMonitor
+from . import fitters
+from .fitters import FIT_OPTIONS, FitDriver, StepMonitor, ConsoleMonitor
 from .fitproblem import FitProblem, load_problem as load_script
 from .mapper import MPMapper, AMQPMapper, SerialMapper
 from . import util
@@ -240,7 +239,7 @@ class Refl1dOpts(ParseOpts):
                   #"mesh","meshsteps",
                 ))
     # Add in parameters from the fitters
-    VALUES |= set(FitOptions.FIELDS.keys())
+    VALUES |= set(fitters.FitOptions.FIELDS.keys())
     pars=None
     notify=""
     queue="http://reflectometry.org/queue"
@@ -349,7 +348,7 @@ Options:
         self._plot = value
     plot = property(fget=lambda self: self._plot, fset=_set_plot)
     store = None
-    _fitter = FIT_DEFAULT
+    _fitter = fitters.FIT_DEFAULT
     def _set_fitter(self, value):
         if value not in set(FIT_OPTIONS.keys()):
             raise ValueError("unknown fitter %s; use %s"
@@ -370,6 +369,7 @@ def getopts():
     opts = Refl1dOpts(sys.argv)
     opts.resynth = int(opts.resynth)
     opts.seed = int(opts.seed) if opts.seed != "" else None
+    fitters.FIT_DEFAULT = opts.fit
     FIT_OPTIONS[opts.fit].set_from_cli(opts)
     return opts
 
@@ -415,6 +415,15 @@ def main():
         print "\nNo modelfile parameter was specified.\n"
 
     opts = getopts()
+    
+    # Set up the matplotlib backend to minimize the wx dependency.
+    import matplotlib
+    if opts.batch or opts.remote:
+        matplotlib.use('Agg')
+    else:
+        matplotlib.use('WXAgg')
+    matplotlib.interactive(False)
+    
     problem = initial_model(opts)
 
     # TODO: AMQP mapper as implemented requires workers started up with
@@ -430,14 +439,6 @@ def main():
             raise NotImplementedError("mpi transport not implemented")
     else:
         mapper = SerialMapper
-
-    # Set up the matplotlib backend to minimize the wx dependency.
-    import matplotlib
-    if opts.batch or opts.remote:
-        matplotlib.use('Agg')
-    else:
-        matplotlib.use('WXAgg')
-    matplotlib.interactive(False)
 
     fitopts = FIT_OPTIONS[opts.fit]
     fitter = FitDriver(fitopts.fitter, problem=problem, **fitopts.options)

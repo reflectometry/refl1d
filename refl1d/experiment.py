@@ -418,10 +418,14 @@ class MixedExperiment(ExperimentBase):
         self.ratio = [Parameter.default(r, name="ratio %d"%i)
                       for i,r in enumerate(ratio)]
         self.parts = [Experiment(s,probe,**kw) for s in samples]
-        self._cache = {}  # Cache calculated profiles/reflectivities
         self._substrate=self.samples[0][0].material
         self._surface=self.samples[0][-1].material
+        self._cache = {}
 
+    def update(self):
+        self._cache = {}
+        for p in self.parts: p.update()
+        
     def parameters(self):
         return dict(samples = [s.parameters() for s in self.samples],
                     ratio = self.ratio,
