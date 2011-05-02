@@ -44,8 +44,9 @@ from periodictable import nsf, xsf
 from .reflectivity import convolve
 from . import fresnel
 from material import Vacuum
-from mystic.parameter import Parameter
+from mystic.parameter import Parameter, Constant
 from .resolution import TL2Q, dTdL2dQ
+from .stitch import stitch
 
 PROBE_KW = ('T', 'dT', 'L', 'dL', 'data',
             'intensity', 'background', 'back_absorption',
@@ -603,6 +604,12 @@ class PolarizedNeutronProbe(object):
             = measurement_union(xs)
         self._set_calc(self.T, self.L)
 
+        back_refls = [f.back_reflectivity for f in xs if f is not None]
+        if all(back_refls) or not any(back_refls):
+            self.back_reflectivity = back_refls[0]
+        else:
+            raise ValueError("Cannot mix front and back reflectivity measurements")
+
     def shared_beam(self, intensity=1, background=0,
                     back_absorption=1, theta_offset=0):
         """
@@ -807,7 +814,14 @@ class ProbeSet(Probe):
         self.probes = list(probes)
         self.R = numpy.hstack(p.R for p in self.probes)
         self.dR = numpy.hstack(p.dR for p in self.probes)
+        self.dQ = numpy.hstack(p.dQ for p in self.probes)
         self._len = sum([len(p) for p in self.probes])
+
+        back_refls = [f.back_reflectivity for f in self.probes]
+        if all(back_refls) or not any(back_refls):
+            self.back_reflectivity = back_refls[0]
+        else:
+            raise ValueError("Cannot mix front and back reflectivity measurements")
 
     def parameters(self):
         return [p.parameters() for p in self.probes]
@@ -907,11 +921,9 @@ class ProbeSet(Probe):
 
     def name(self): return self.probes[0].name()
 
-    def stitch(self, tol=0.01):
+    def stitch(self, same_Q=0.001, same_dQ=0.001):
         r"""
         Stitch together multiple datasets into a single dataset.
-
-        *Not implemented*
 
         Points within *tol* of each other and with the same resolution
         are combined by interpolating them to a common $Q$ value then averaged
@@ -947,4 +959,42 @@ class ProbeSet(Probe):
             \hat \sigma_R &= \sqrt{\sum \hat \sigma_{R_k}^2}/n
 
         """
-        raise NotImplementedError
+        Q,dQ,R,dR = stitch(self.probes)
+        Po = self.probes[0]
+        return QProbe(Q,dQ,data=(R,dR),
+                      intensity=Po.intensity,
+                      background=Po.background,
+                      back_absorption=Po.back_absorption,
+                      back_reflectivity=Po.back_reflectivity)
+
+class QProbe(Probe):
+    """
+    A pure Q,R probe
+
+    This probe with no possibility of tricks such as looking up the
+    scattering length density based on wavelength, or adjusting for
+    alignment errors.
+    """
+    def __init__(self, Q, dQ, data=None,
+                 intensity=1, background=0, back_absorption=1,
+                 back_reflectivity=False):
+        self.intensity = Parameter.default(intensity,name="intensity")
+        self.background = Parameter.default(background,name="background",
+                                            limits=[0,inf])
+        self.back_absorption = Parameter.default(back_absorption,
+                                                 name="back_absorption",
+                                                 limits=[0,1])
+        self.theta_offset = Constant(0,name="theta_offset")
+
+        self.back_reflectivity = back_reflectivity
+
+
+        self.Qo, self.dQ = Q, dQ
+        if data is not None:
+            R,dR = data
+        else:
+            R,dR = None,None
+
+        self.Qo, self.dQ = Q,dQ
+        self.Ro = self.R = R
+        self.dR = R

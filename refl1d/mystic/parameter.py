@@ -135,6 +135,18 @@ class BaseParameter(object):
     def __repr__(self):
         return "Parameter(%s)"%self
 
+class Constant(BaseParameter):
+    """
+    An unmodifiable value.
+    """
+    fittable = False
+    fixed = True
+    @property
+    def value(self):
+        return self._value
+    def __init__(self, value, name=None):
+        self._value = value
+        self.name = name
 
 class Parameter(BaseParameter):
     """

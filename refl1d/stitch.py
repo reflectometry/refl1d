@@ -6,13 +6,13 @@ Join together datasets yielding unique sorted Q.
 
 from numpy import hstack, vstack, argsort, sum, sqrt
 
-def stitch(probes, same_Q = 0.001, same_dQ = None):
+def stitch(probes, same_Q = 0.001, same_dQ = 0.001):
     """
     Stitch together multiple measurements into one.
 
     *probes* a list of datasets with Q,dQ,R,dR attributes
-    *same_Q* minimum point separation.
-    *same_dQ* minimum change in resolution that may be averaged.
+    *same_Q* minimum point separation (default is 0.001).
+    *same_dQ* minimum change in resolution that may be averaged (default is 0.001).
 
     Wavelength and angle are not preserved since different points with the
     same Q,dQ may have different wavelength/angle inputs, particularly for
@@ -59,16 +59,25 @@ def stitch(probes, same_Q = 0.001, same_dQ = None):
     keep = []
     n, last, next = len(Q), 0, 1
     while next < n:
-        while next < n and abs(Q[next]-Q[last]) < same_Q:
+        while next < n and abs(Q[next]-Q[last]) <= same_Q:
             next += 1
-        if next - last > 1:
+        if next - last == 1:
+            # Only one point, so no averaging necessary
+            keep.append(last)
+        else:
             # Pick the Q in [last:next] with the best resolution and average
-            # them using Poisson averages.
-            best_dQ = min(dQ[last:next])
-            idx = (dQ[last:next]-best_dQ < same_dQ)
-            best = poisson_average(data[:,last:next][:,idx])
-            data[:,last] = best
-        keep.append(last)
+            # them using Poisson averages.  Repeat until all points are used
+            remainder = data[:,last:next]
+            avg = []
+            while remainder.shape[1] > 0:
+                best_dQ = min(remainder[1,:])
+                idx = (remainder[1,:]-best_dQ <= same_dQ)
+                avg.append(poisson_average(remainder[:,idx]))
+                remainder = remainder[:,~idx]
+            # Store the result in worst to best resolution order.
+            for i,d in enumerate(reversed(avg)):
+                data[:,last+i] = d
+                keep.append(last+i)
         last = next
 
     return data[:4,keep]
