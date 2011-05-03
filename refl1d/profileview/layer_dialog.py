@@ -48,8 +48,9 @@ from refl1d.names import Slab, FreeLayer, FreeInterface, PolymerBrush, \
 #
 # Parameters may be copied directly from other fields with the same units,
 # presumably using a combobox to select the parameter.
-
-LAYERS = []
+#
+# Some of these operations will require more information than just the
+# current stack.
 
 # These belong with the layer definition, so that users can add their own
 # layer types more easily.  I will use monkey patching until the details
@@ -60,9 +61,9 @@ Slab.fields = (
     ('name','string','slab name (defaults to material name)'),
     ('material','material','slab material'),
     ('thickness','parameter','slab thickness','A',(0,inf)),
-    ('interface','parameter','1-sigma roughness between this slab and the next','A',(0,inf)),
+    ('interface','parameter',
+     'rms roughness between this slab and the next','A',(0,inf)),
     )
-LAYERS.append(Slab)
 
 PolymerBrush.name = 'brush'
 PolymerBrush.description = 'polymer brush in a solvent'
@@ -71,14 +72,15 @@ PolymerBrush.fields = (
     ('polymer','material','polymer composition'),
     ('solvent','material','solvent composition'),
     ('thickness','parameter','brush+solvent thickness','A',(0,inf)),
-    ('interface','parameter','rms roughness between the solvent and the next layer','A',(0,inf)),
-    ('base_vf','parameter','volume fraction of the polymer brush at the base','%',(0,100)),
+    ('interface','parameter',
+     'rms roughness between the solvent and the next layer','A',(0,inf)),
+    ('base_vf','parameter',
+     'volume fraction of the polymer brush at the base','%',(0,100)),
     ('base','parameter','thickness of the base region','A',(0,inf)),
     ('length','parameter','thickness of the thinning region','A',(0,inf)),
     ('power','parameter','rate of brush thinning','',(-inf,inf)),
     ('sigma','parameter','rms roughness within the brush','A',(0,inf)),
     )
-LAYERS.append(PolymerBrush)
 
 FreeLayer.name = 'freeform'
 FreeLayer.description = 'freeform layer using monotonic splines for good control'
@@ -93,23 +95,30 @@ FreeLayer.fields = (
     # have to update
     ('below','material','material below the layer')
     ('above','material','material above the layer')
+    # Need to indicate that these are three coordinated vectors
     ('z','[parameter]','control point location','A',(0,1)),
-    ('rho','[parameter]','scattering length density','1e-6 inv A^2',(-inf,inf)),
-    ('irho','[parameter]','complex scattering length density','1e-6 inv A^2',(0,inf)),
+    ('rho','[parameter]',
+     'scattering length density','1e-6 inv A^2',(-inf,inf)),
+    ('irho','[parameter]',
+     'complex scattering length density','1e-6 inv A^2',(0,inf)),
     )
-LAYERS.append(FreeLayer)
 
 FreeInterface.name = 'blend'
 FreeInterface.description = 'blend between two materials using a monotonic spline'
 FreeInterface.fields = (
     ('name','string','layer name'),
-    ('thickness','string','total layer thickness','A',(0,inf)),
     ('below','material','material below the layer')
     ('above','material','material above the layer')
+    ('thickness','parameter','total layer thickness','A',(0,inf)),
+    ('interface','parameter',
+     'rms roughness between "above" and the next layer', 'A', (0,inf)),
+    # Need to indicate that these are two coordinated vectors
     ('dz','[parameter]','relative segment size','',(0,inf)),
     ('dp','[parameter]','relative step height','',(0,inf)),
     )
-LAYERS.append(FreeInterface)
+
+LAYERS = (Slab, FreeInterface, FreeLayer, PolymerBrush)
+
 
 
 class LayerEditorDialog(wx.Dialog):
