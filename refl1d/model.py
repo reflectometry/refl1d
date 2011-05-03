@@ -170,7 +170,7 @@ class Stack(Layer):
         if isinstance(other,Stack):
             self._layers.extend(other._layers)
         elif isinstance(other,Repeat):
-            self._layers.extend([other])
+            self._layers.append(other)
         else:
             try:
                 L = iter(other)
@@ -268,7 +268,27 @@ class Stack(Layer):
         else:
             self._layers[idx] = _check_layer(other)
     def __delitem__(self, idx):
+        # works the same for slices and individual indices
         del self._layers[idx]
+
+    def insert(self, idx, other):
+        """
+        Insert structure into a stack.  If the inserted element is
+        another stack, the stack will be expanded to accommodate.  You
+        cannot make nested stacks.
+        """
+        if isinstance(other,Stack):
+            for i,L in enumerate(other._layers):
+                self._layers.insert(idx+i,L)
+        elif isinstance(other,Repeat):
+            self._layers.insert(idx, other)
+        else:
+            try:
+                other = iter(other)
+            except:
+                other = [other]
+            for i,L in enumerate(other):
+                self._layers.insert(idx+i,_check_layer(L))
 
     # Define a little algebra for composing samples
     # Stacks can be repeated or extended
@@ -303,6 +323,8 @@ class Repeat(Layer):
     If an interface parameter is provide, the roughness between the
     multilayers may be different from the roughness between the repeated
     stack and the following layer.
+
+    Note: Repeat is not a type of Stack, but it does have a stack inside.
     """
     def __init__(self, stack, repeat=1, interface=None, name=None):
         if name is None: name = "multilayer"
