@@ -190,13 +190,18 @@ def create_archive(version=None):
     except:
         print "*** Failed to create source archive ***"
     else:
-        # Copy the archives and its manifest to the top-level directory.
+        # Copy the archives and its source listing to the top-level directory.
+        # The location of the file that contains the source listing and the
+        # name of the file varies depending on what package is used to import
+        # setup, so its copy is made optional while we are making setup changes.
         shutil.move(os.path.join("dist", PKG_NAME+"-"+str(version)+".zip"),
                     os.path.join(TOP_DIR, APP_NAME+"-"+str(version)+"-source.zip"))
         shutil.move(os.path.join("dist", PKG_NAME+"-"+str(version)+".tar.gz"),
                     os.path.join(TOP_DIR, APP_NAME+"-"+str(version)+"-source.tar.gz"))
-        shutil.copy(os.path.join(SRC_DIR, "MANIFEST"),
-                    os.path.join(TOP_DIR, APP_NAME+"-"+str(version)+"-source-manifest.txt"))
+        listing = os.path.join(SRC_DIR, "refl1d.egg-info", "SOURCES.txt")
+        if os.path.isfile(listing):
+            shutil.copy(listing,
+                os.path.join(TOP_DIR, APP_NAME+"-"+str(version)+"-source-list.txt"))
 
 
 def install_package():
@@ -228,12 +233,6 @@ def install_package():
     if not os.path.exists(INS_DIR):
         os.makedirs(INS_DIR)
     exec_cmd("%s setup.py -q install --install-lib=%s" %(PYTHON, INS_DIR))
-
-    # WORKAROUND: copy reflmodule.pyd from the INS_DIR path to the SRC_DIR
-    # path so that later py2exe will find it - py2exe finds .pyc files in
-    # INS_DIR but looks for reflmodule.pyd in SRC_DIR ???
-    #shutil.copy(os.path.join(INS_DIR, PKG_NAME, "refl1d", "reflmodule.pyd"),
-    #            os.path.join(SRC_DIR, "refl1d"))
 
 
 def build_documentation():
