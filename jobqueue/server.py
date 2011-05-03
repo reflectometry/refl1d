@@ -52,7 +52,7 @@ def list_jobs(format='json'):
 
     Return a list of all job ids.
     """
-    response = dict(jobs=scheduler.jobs())
+    response = dict(jobs=SCHEDULER.jobs())
     return _format_response(response, format, template='list_jobs.html')
 
 @app.route('/jobs/<any(u"pending",u"active",u"error",u"complete"):status>.<format>',
@@ -63,7 +63,7 @@ def filter_jobs(status, format='json'):
 
     Return all jobs with a particular status.
     """
-    response = dict(jobs=scheduler.jobs(status=str(status).upper()))
+    response = dict(jobs=SCHEDULER.jobs(status=str(status).upper()))
     return _format_response(response, format, template='list_jobs.html')
 
 @app.route('/jobs.<format>', methods=['POST'])
@@ -96,9 +96,9 @@ def create_job(format='json'):
     """
     request = flask.request.json
     if request is None: flask.abort(415) # Unsupported media
-    id = scheduler.submit(request, origin=flask.request.remote_addr)
+    id = SCHEDULER.submit(request, origin=flask.request.remote_addr)
     flash('Job %s scheduled' % id)
-    response = {'id': id, 'job': scheduler.info(id)}
+    response = {'id': id, 'job': SCHEDULER.info(id)}
     #return redirect(url_for('show_job', id=id, format=format))
     return _format_response(response, format=format, template='show_job.html')
 
@@ -118,7 +118,7 @@ def show_job(id, format='json'):
 
     Job details is simply a copy of the original request.
     """
-    response = {'id': id, 'job': scheduler.info(id)}
+    response = {'id': id, 'job': SCHEDULER.info(id)}
     return _format_response(response, format=format, template='show_job.html')
 
 @app.route('/jobs/<int:id>/results.<format>', methods=['GET'])
@@ -137,7 +137,7 @@ def get_results(id, format='json'):
         trace: <error trace>    (absent if status != ERROR)
         }
     """
-    response = scheduler.results(id)
+    response = SCHEDULER.results(id)
     response['id'] = id
     #print "returning response",response
     return _format_response(response, format=format)
@@ -156,7 +156,7 @@ def get_status(id, format='json'):
         status: 'PENDING|ACTIVE|COMPLETE|ERROR|UNKNOWN'
         }
     """
-    response = { 'status': scheduler.status(id) }
+    response = { 'status': SCHEDULER.status(id) }
     response['id'] = id
     return _format_response(response, format=format)
 
@@ -168,19 +168,18 @@ def delete_job(id, format='json'):
 
     Deletes a job, returning the list of remaining jobs as <format>
     """
-    scheduler.delete(id)
+    SCHEDULER.delete(id)
     flash('Job %s deleted' % id)
-    response = dict(jobs=scheduler.jobs())
+    response = dict(jobs=SCHEDULER.jobs())
     return _format_response(response, format=format, template="list_jobs.html")
     #return redirect(url_for('list_jobs', id=id, format=format))
 
 @app.route('/jobs/nextjob.<format>', methods=['POST'])
 def fetch_work(format='json'):
-    import json
     # TODO: verify signature
     request = flask.request.json
     if request is None: flask.abort(415) # Unsupported media
-    job = scheduler.nextjob(queue=request['queue'])
+    job = SCHEDULER.nextjob(queue=request['queue'])
     return _format_response(job, format=format)
 
 @app.route('/jobs/<int:id>/postjob', methods=['POST'])
@@ -199,7 +198,7 @@ def return_work(id):
             'trace': flask.request.form['results'],
         }
     _transfer_files(id)
-    scheduler.postjob(id, results)
+    SCHEDULER.postjob(id, results)
     # Should be signalling code 204: No content
     return _format_response({},format="json")
 
@@ -284,7 +283,8 @@ def init_scheduler(conf):
         from slurm import Scheduler
     elif conf == 'direct':
         logging.warn("direct scheduler is not a good choice!")
-        os.nice(19)
+        try: os.nice(19)
+        except: pass
         from simplequeue import Scheduler
     elif conf == 'dispatch':
         from dispatcher import Scheduler
@@ -295,19 +295,19 @@ def init_scheduler(conf):
 def serve():
     app.run(host='0.0.0.0')
 
-def fullpath(p): return os.path.abspath(os.path.expanduser(path))
+def fullpath(p): return os.path.abspath(os.path.expanduser(p))
 def configure(jobstore=None, jobkey=None, jobdb=None, scheduler=None):
-    global scheduler, app
+    global SCHEDULER, app
 
     if jobstore:
-        jobqueue.store.ROOT = fullpath(jobstore)
+        store.ROOT = fullpath(jobstore)
     if jobkey:
         app.config['SECRET_KEY'] = open(fullpath(jobkey)).read()
     if jobdb:
         import jobqueue.db
         jobqueue.db.DB_URI = jobdb
 
-    scheduler = init_scheduler(scheduler)
+    SCHEDULER = init_scheduler(scheduler)
 
 if __name__ == '__main__':
     configure(jobstore='/tmp/server/%s',
