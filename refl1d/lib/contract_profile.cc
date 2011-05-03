@@ -60,13 +60,14 @@ contract_by_area(int n, double d[], double sigma[],
   double rholo, rhohi, rhoarea;
   double irholo, irhohi, irhoarea;
   int i, newi;
-  i=newi=0;
+  i=newi=1; /* Skip the substrate */
   while (i < n) {
 
     /* Get ready for the next layer */
-    dz=0.;
-    rholo=rhohi=rho[i]; rhoarea=0.;
-    irholo=irhohi=irho[i]; irhoarea=0.;
+    /* Accumulation of the first row happens in the inner loop */
+    dz = rhoarea = irhoarea = 0.;
+    rholo=rhohi=rho[i];
+    irholo=irhohi=irho[i];
 
     /* Accumulate slices into layer */
     for (;;) {
@@ -92,8 +93,8 @@ contract_by_area(int n, double d[], double sigma[],
     if (dz == 0) continue;
 
     /* Save the layer */
-    d[newi] = dz;
     assert(newi < n);
+    d[newi] = dz;
     if (i == n) {
       /* Last layer uses surface values */
       rho[newi] = rho[n-1];
@@ -163,7 +164,7 @@ find_breaks(int n, double d[], double rho[], double irho[], double dA,
       }
 
       /* cost is monotonically increasing.
-       * Proof: 
+       * Proof:
        *   Rho chosen as average of all current slices.
        *   Any other rho increases cost of current slices.
        *   If next slice changes rho, cost for current slices
