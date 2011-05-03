@@ -104,7 +104,7 @@ from numpy.linalg import cholesky, inv
 from . import util
 from . import exppow
 
-class MCMCModel:
+class MCMCModel(object):
     """
     MCMCM model abstract base class.
 

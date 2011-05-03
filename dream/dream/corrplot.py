@@ -12,7 +12,7 @@ __all__ = ['Corr2d']
 import numpy
 from numpy import inf
 
-from matplotlib import cm, colors, image
+from matplotlib import cm, colors, image, artist
 from matplotlib.font_manager import FontProperties
 from matplotlib.ticker import MaxNLocator
 
@@ -110,13 +110,13 @@ def _plot(fig, hists, labels, N):
             a.pcolorfast(y,x,data,cmap=COLORMAP,norm=norm)
             # Show labels or hide ticks
             if i == 0:
-                a.xlabel(labels[j])
+                a.set_xlabel(labels[j])
             else:
-                a.setp(a.get_xticklabels(),visible=False)
+                artist.setp(a.get_xticklabels(),visible=False)
             if j == i+1:
-                a.ylabel(labels[i])
+                a.set_ylabel(labels[i])
             else:
-                a.setp(a.get_yticklabels(),visible=False)
+                artist.setp(a.get_yticklabels(),visible=False)
 
             a.zoomable=True
 
