@@ -51,9 +51,12 @@ import shutil
 import subprocess
 
 # Windows commands to run utilities
+# Make sure python is on the path, and PYTHON points to the right interpreter
 SVN    = "svn"
 PYTHON = sys.executable
-os.environ['PYTHON'] = PYTHON
+os.environ['PATH'] = ";".join((os.path.dirname(os.path.abspath(PYTHON)),
+                               os.environ['PATH']))
+os.environ['PYTHON'] = "/".join(PYTHON.split("\\"))
 INNO   = r"C:\Program Files\Inno Setup 5\ISCC.exe"  # command line operation
 
 # URL of the Subversion repository where the source code lives
@@ -221,8 +224,10 @@ def install_package():
     # Perform the installation to a private directory tree and create the
     # PYTHONPATH environment variable to pass this info to the py2exe build
     # script later on.
-    exec_cmd("%s setup.py -q install --install-lib=%s" %(PYTHON, INS_DIR))
     os.environ["PYTHONPATH"] = INS_DIR
+    if not os.path.exists(INS_DIR):
+        os.makedirs(INS_DIR)
+    exec_cmd("%s setup.py -q install --install-lib=%s" %(PYTHON, INS_DIR))
 
     # WORKAROUND: copy reflmodule.pyd from the INS_DIR path to the SRC_DIR
     # path so that later py2exe will find it - py2exe finds .pyc files in

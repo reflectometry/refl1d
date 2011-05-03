@@ -49,6 +49,6 @@ dist = setup(
         ext_modules = [reflmodule_config()],
         #data_files = refl1d.data_files(),
         install_requires = ['numpy>=1.0', 'scipy>=0.6', 'matplotlib>=1.0', 'httplib2'],
-)
+        )
 
 # End of file

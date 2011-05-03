@@ -38,9 +38,18 @@ refl1d_gui.exe can be run from the dist directory.
 
 import os
 import sys
+
+# Force build before continuing
+os.system('"%s" setup.py build'%sys.executable)
+
+# Remove the current directory from the python path
+here = os.path.abspath(os.path.dirname(__file__))
+sys.path = [p for p in sys.path if os.path.abspath(p) != here]
+
 import glob
 
 from distutils.core import setup
+from distutils.util import get_platform
 
 # Augment the setup interface with the py2exe command and make sure the py2exe
 # option is passed to setup.
@@ -49,9 +58,19 @@ import py2exe
 if len(sys.argv) == 1:
     sys.argv.append('py2exe')
 
-#import wx
+# Put the build lib on the start of the path.
+# For packages with binary extensions, need platform.  If it is a pure
+# script library, use an empty platform string.
+platform = '.%s-%s'%(get_platform(),sys.version[:3])
+#platform = ''
+build_lib = os.path.abspath('build/lib'+platform)
+sys.path.insert(0, build_lib)
+
+#print "\n".join(sys.path)
+
+import wx
 import matplotlib
-#matplotlib.use('WXAgg')
+matplotlib.use('WXAgg')
 import periodictable
 
 # Retrieve the application version string.
@@ -206,7 +225,10 @@ if sys.version_info >= (2, 6):
 
 # Specify required packages to bundle in the executable image.
 packages = ['numpy', 'scipy', 'matplotlib', 'pytz', 'pyparsing',
-            'wx', 'wx.lib.pubsub', 'periodictable', 'refl1d.names']
+            'wx', 'wx.lib.pubsub', 'wx.lib.pubsub.core',
+            'wx.lib.pubsub.core.kwargs',
+            'periodictable', 'refl1d.names', 'dream'
+            ]
 
 # Specify files to include in the executable image.
 includes = []
@@ -246,7 +268,7 @@ class Target():
 clientCLI = Target(
     name = 'Refl1D',
     description = 'Refl1D CLI application',
-    script = os.path.join('bin', 'refl1d'),  # module to run on application start
+    script = os.path.join('bin', 'refl1d_cli.py'),  # module to run on application start
     dest_base = 'refl1d',  # file name part of the exe file to create
     icon_resources = [(1, os.path.join('bin', 'refl1d.ico'))],  # also need to specify in data_files
     bitmap_resources = [],
@@ -255,7 +277,7 @@ clientCLI = Target(
 clientGUI = Target(
     name = 'Refl1D',
     description = 'Refl1D GUI application',
-    script = os.path.join('bin', 'refl1d_gui'),  # module to run on application start
+    script = os.path.join('bin', 'refl1d_gui.py'),  # module to run on application start
     dest_base = 'refl1d_gui',  # file name part of the exe file to create
     icon_resources = [(1, os.path.join('bin', 'refl1d.ico'))],  # also need to specify in data_files
     bitmap_resources = [],

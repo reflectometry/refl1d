@@ -27,16 +27,7 @@ This script starts the graphical user interface of the Refl1D Reflectometry
 Modeler application.
 """
 
-#============================================================================
-from __future__ import absolute_import
-import os
-import sys
-
 # ==========================================================================
-# Make sure the bin directory is not on the path
-here = os.path.abspath(os.path.dirname(__file__))
-sys.path = [p for p in sys.path if os.path.abspath(p) != here]
-
 # When this script is run interactively (i.e., from a Python command prompt),
 # sys.path needs to be updated for some imports to work, namely 'from refl1d'
 # and 'from dream'.  However, when this module is executed from a frozen image,
@@ -49,6 +40,7 @@ sys.path = [p for p in sys.path if os.path.abspath(p) != here]
 #   'from dream' -> <root>/dream/dream
 # Although <root> is currently named 'refl1d', it does not have an__init__.py.
 # Likewise, <root>/dream does not have an __init__.py file.
+#import os, sys
 #if not hasattr(sys, 'frozen'):
 #    path = os.path.realpath(__file__)
 #    root = os.path.abspath(os.path.join(os.path.dirname(path), '..'))

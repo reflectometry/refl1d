@@ -39,6 +39,8 @@ buildpath = glob.glob('../../build/lib*')[0]
 sys.path.insert(0, os.path.abspath(buildpath))
 #sys.path.insert(0, os.path.abspath('../..'))
 """
+#print "== path =="
+#print "\n".join(sys.path)
 
 # -- General configuration -----------------------------------------------------
 

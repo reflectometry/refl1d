@@ -6,23 +6,6 @@
 This script starts the command line interface of the Refl1D Reflectometry
 Modeler application to process the command just entered.
 """
-from __future__ import absolute_import
-
-import os
-import sys
-
-# ==========================================================================
-# Make sure the bin directory is not on the path
-here = os.path.abspath(os.path.dirname(__file__))
-sys.path = [p for p in sys.path if os.path.abspath(p) != here]
-
-
-# ========================== wxPython Workaround ============================
-# The following import of wx only appears to be necessary to support building
-# a py2exe executable using Python 2.5.  It is not necessary when using py2exe
-# on 2.6, nor is it required if running refl1d from source code on 2.5 or 2.6.
-#if sys.version_info < (2, 6):
-#    import wx
 
 # ========================== Path setup =====================================
 # When this script is run interactively (i.e., from a Python command prompt),
@@ -37,25 +20,12 @@ sys.path = [p for p in sys.path if os.path.abspath(p) != here]
 #   'from dream' -> <root>/dream/dream
 # Although <root> is currently named 'refl1d', it does not have an__init__.py.
 # Likewise, <root>/dream does not have an __init__.py file.
+#import os, sys
 #if not hasattr(sys, 'frozen'):
 #    path = os.path.realpath(__file__)
 #    root = os.path.abspath(os.path.join(os.path.dirname(path), '..'))
 #    sys.path.insert(0, root)
 #    sys.path.insert(1, os.path.join(root, 'dream'))
-
-# ========================== Matplotlib setup ===============================
-# If we are running from an image built by py2exe, keep the frozen environment
-# self contained by having matplotlib use a private directory instead of using
-# .matplotlib under the user's home directory for storing shared data files
-# such as fontList.cache.  Note that a Windows installer/uninstaller such as
-# Inno Setup should explicitly delete this private directory on uninstall.
-if hasattr(sys, 'frozen'):
-    mplconfigdir = os.path.join(sys.prefix, '.matplotlib')
-    if not os.path.exists(mplconfigdir):
-        os.mkdir(mplconfigdir)
-    os.environ['MPLCONFIGDIR'] = mplconfigdir
-    import matplotlib
-    matplotlib.use('WXAgg')
 
 # ========================== Start program ==================================
 # Process the command line that has been entered.

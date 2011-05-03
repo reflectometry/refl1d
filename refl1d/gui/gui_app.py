@@ -81,34 +81,6 @@ SPLASH_HEIGHT = 540
 # Diagnostic timing information.
 LOGTIM = True if (len(sys.argv) > 1 and '--time' in sys.argv[1:]) else False
 
-def config_matplotlib():
-    # If we are running from an image built by py2exe, keep the frozen
-    # environment self contained by having matplotlib use a private directory
-    # instead of using .matplotlib under the user's home directory for storing
-    # shared data files such as fontList.cache.  Note that a Windows
-    # installer/uninstaller such as Inno Setup should explicitly delete this
-    # private directory on uninstall.
-    if hasattr(sys, 'frozen'):
-        mplconfigdir = os.path.join(sys.prefix, '.matplotlib')
-        if not os.path.exists(mplconfigdir):
-            os.mkdir(mplconfigdir)
-        os.environ['MPLCONFIGDIR'] = mplconfigdir
-
-    import matplotlib
-
-    # Specify the backend to use for plotting and import backend dependent
-    # classes. Note that this must be done before importing pyplot to have an
-    # effect.
-    matplotlib.use('WXAgg')
-
-    # Disable interactive mode so that plots are only updated on show() or
-    # draw(). Note that the interactive function must be called before
-    # selecting a backend or importing pyplot, otherwise it will have no
-    # effect.
-
-    matplotlib.interactive(False)
-
-
 #==============================================================================
 
 class Refl1dGUIApp(wx.App):
@@ -150,7 +122,8 @@ class Refl1dGUIApp(wx.App):
         if LOGTIM: log_time("Starting to build the GUI application")
 
         # Can't delay matplotlib configuration any longer
-        config_matplotlib()
+        from refl1d.cli import config_matplotlib
+        config_matplotlib('WXAgg')
 
         from .app_frame import AppFrame
 

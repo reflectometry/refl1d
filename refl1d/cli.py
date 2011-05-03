@@ -409,6 +409,44 @@ def resynth(problem, mapper, opts):
     problem.restore_data()
     fid.close()
 
+def config_matplotlib(backend):
+    """
+    Setup matplotlib.
+    
+    The backend should be WXAgg for interactive use, or 'Agg' for batch.
+    
+    This must be called before any imports to pylab.  We've done this by
+    making sure that pylab is never (rarely?) imported at the top level
+    of a module, and only in the functions that call it: if you are 
+    concerned about speed, then you shouldn't be using pylab :-)
+    """
+    # If we are running from an image built by py2exe, keep the frozen
+    # environment self contained by having matplotlib use a private directory
+    # instead of using .matplotlib under the user's home directory for storing
+    # shared data files such as fontList.cache.  Note that a Windows
+    # installer/uninstaller such as Inno Setup should explicitly delete this
+    # private directory on uninstall.
+    if hasattr(sys, 'frozen'):
+        mplconfigdir = os.path.join(sys.prefix, '.matplotlib')
+        if not os.path.exists(mplconfigdir):
+            os.mkdir(mplconfigdir)
+        os.environ['MPLCONFIGDIR'] = mplconfigdir
+
+    import matplotlib
+
+    # Specify the backend to use for plotting and import backend dependent
+    # classes. Note that this must be done before importing pyplot to have an
+    # effect.
+    matplotlib.use(backend)
+
+    # Disable interactive mode so that plots are only updated on show() or
+    # draw(). Note that the interactive function must be called before
+    # selecting a backend or importing pyplot, otherwise it will have no
+    # effect.
+
+    matplotlib.interactive(False)
+
+
 def main():
     if len(sys.argv) == 1:
         sys.argv.append("-?")
@@ -417,12 +455,7 @@ def main():
     opts = getopts()
 
     # Set up the matplotlib backend to minimize the wx dependency.
-    import matplotlib
-    if opts.batch or opts.remote:
-        matplotlib.use('Agg')
-    else:
-        matplotlib.use('WXAgg')
-    matplotlib.interactive(False)
+    config_matplotlib('Agg' if opts.batch or opts.remote else 'WXAgg')
 
     problem = initial_model(opts)
 
