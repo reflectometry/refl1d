@@ -4,8 +4,8 @@ from numpy import inf
 
 from ..gui.input_list import ItemListValidator, InputListPanel
 
-from refl1d.names import Slab, FreeLayer, FreeInterface, PolymerBrush, \
-        VolumeProfile
+from refl1d.names import (Slab, FreeLayer, FreeInterface, PolymerBrush,
+                          VolumeProfile)
 
 # name, type, description, *args
 # type: 'string'
@@ -13,16 +13,16 @@ from refl1d.names import Slab, FreeLayer, FreeInterface, PolymerBrush, \
 # type: 'parameter' with units and limits (see below)
 # type: '[parameter]' is a vector of parameters with common properties
 
-# 'material' is a scatter, which is one of:
+# 'material' is a scatterer, which is one of:
 #
 #   SLD, with scattering length density rho + irho
-#   Material, with compound and natural density, which can be
-#      fit by density, natural density, relative density or cell volume
+#   Material, with compound and natural density, which can be fit
+#      by density, natural density, relative density or cell volume.
 #      The compound may be a chemical formula, or it may be multiple
 #      formulas, with a count for each.
 #   Mixture, which is a set of scatterers with a base making up the
 #      bulk and % making up the rest.  The % is by mass or by volume.
-#      If by mass, each material needs a density.   The scatterers can
+#      If by mass, each material needs a density.  The scatterers can
 #      be SLDs, materials or other mixtures.
 #
 # The material name defaults to the chemical formula, if available.
@@ -63,7 +63,7 @@ Slab.fields = (
     ('thickness','parameter','slab thickness','A',(0,inf)),
     ('interface','parameter',
      'rms roughness between this slab and the next','A',(0,inf)),
-    )
+)
 
 PolymerBrush.name = 'brush'
 PolymerBrush.description = 'polymer brush in a solvent'
@@ -80,7 +80,7 @@ PolymerBrush.fields = (
     ('length','parameter','thickness of the thinning region','A',(0,inf)),
     ('power','parameter','rate of brush thinning','',(-inf,inf)),
     ('sigma','parameter','rms roughness within the brush','A',(0,inf)),
-    )
+)
 
 FreeLayer.name = 'freeform'
 FreeLayer.description = 'freeform layer using monotonic splines for good control'
@@ -93,32 +93,31 @@ FreeLayer.fields = (
     # layer types which act as scatterers to make this happen, but for now
     # just assume it is attached to a slab.  Insert/Delete are going to
     # have to update
-    ('below','material','material below the layer')
-    ('above','material','material above the layer')
+    ('below','material','material below the layer'),
+    ('above','material','material above the layer'),
     # Need to indicate that these are three coordinated vectors
     ('z','[parameter]','control point location','A',(0,1)),
     ('rho','[parameter]',
      'scattering length density','1e-6 inv A^2',(-inf,inf)),
     ('irho','[parameter]',
      'complex scattering length density','1e-6 inv A^2',(0,inf)),
-    )
+)
 
 FreeInterface.name = 'blend'
 FreeInterface.description = 'blend between two materials using a monotonic spline'
 FreeInterface.fields = (
     ('name','string','layer name'),
-    ('below','material','material below the layer')
-    ('above','material','material above the layer')
+    ('below','material','material below the layer'),
+    ('above','material','material above the layer'),
     ('thickness','parameter','total layer thickness','A',(0,inf)),
     ('interface','parameter',
      'rms roughness between "above" and the next layer', 'A', (0,inf)),
     # Need to indicate that these are two coordinated vectors
     ('dz','[parameter]','relative segment size','',(0,inf)),
     ('dp','[parameter]','relative step height','',(0,inf)),
-    )
+)
 
 LAYERS = (Slab, FreeInterface, FreeLayer, PolymerBrush)
-
 
 
 class LayerEditorDialog(wx.Dialog):
@@ -159,20 +158,18 @@ class LayerEditorDialog(wx.Dialog):
         # Layout
         outer = wx.BoxSizer(wx.VERTICAL)
 
-        bbox = wx.GridSizer(1,4)
-        bbox.Add(self.next_button,1,wx.EXPAND)
-        bbox.Add(self.prev_button,1,wx.EXPAND)
-        bbox.Add(self.ins_button,1,wx.EXPAND)
-        bbox.Add(self.del_button,1,wx.EXPAND)
-        outer.Add(bbox, 0, wx.ALIGN_LEFT|wx.LEFT|wx.RIGHT|wx.TOP,
-                  border=10)
+        bbox = wx.GridSizer(rows=1, cols=4, vgap=0, hgap=5)
+        bbox.Add(self.next_button, 1, wx.EXPAND)
+        bbox.Add(self.prev_button, 1, wx.EXPAND)
+        bbox.Add(self.ins_button, 1, wx.EXPAND)
+        bbox.Add(self.del_button, 1, wx.EXPAND)
+        outer.Add(bbox, 0, wx.ALIGN_LEFT|wx.LEFT|wx.RIGHT|wx.TOP, border=10)
 
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         hbox.Add(self.layer_id, 0,
-                 wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL|wx.RIGHT,
-                 border=5)
+                 wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL|wx.RIGHT, border=5)
         hbox.Add(self.selector,0, wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL)
-        hbox.Add((0,0),1)
+        hbox.Add((0,0), 1)
         outer.Add(hbox, 0, wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, border=10)
         outer.Add(self.fields, 1, wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, border=10)
         outer.Add((-1,10))
@@ -255,11 +252,12 @@ class LayerEditorDialog(wx.Dialog):
 def main(stack):
     class App(wx.App):
         def OnInit(self):
-            dia = LayerEditorDialog(None, -1, "simpledialog.py")
+            dia = LayerEditorDialog(None, -1, "Mock-up")
             dia.set_stack(stack)
             dia.ShowModal()
             dia.Destroy()
             return True
+
     app = App(0)
     app.MainLoop()
 
