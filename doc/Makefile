@@ -156,3 +156,8 @@ doctest: generated
 	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
+
+install:
+	ssh reflectometry.org rm -rf web/danse/docs/refl1d
+	scp -r _build/html reflectometry.org:web/danse/docs/refl1d
+	scp _build/html/*.pdf reflectometry.org:web/danse/download
