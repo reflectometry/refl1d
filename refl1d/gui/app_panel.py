@@ -397,7 +397,16 @@ class AppPanel(wx.Panel):
         if self.fit_thread:
             self.sb.SetStatusText("Error: Fit already running")
             return
-
+        try:
+            if len(self.problem.parameters) == 0:
+                raise ValueError ("Problem has no fittable parameters")
+        except ValueError:
+            import traceback
+            error_txt=traceback.format_exc()
+            self.sb.SetStatusText("Error: No fittable parameters", 3)
+            publish('log.fit', message = error_txt)
+            return
+        
         # Start a new thread worker and give fit problem to the worker.
         fitopts = fitters.FIT_OPTIONS[fitters.FIT_DEFAULT]
         self.fit_thread = FitThread(win=self, problem=self.problem,
