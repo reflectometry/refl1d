@@ -81,14 +81,16 @@ class Microslabs(object):
     new set of slabs from different fitting parameters.
 
     """
-    def __init__(self, nprobe, dz=None):
+    def __init__(self, nprobe, dz=1):
         self._num_slabs = 0
-        # _slabs contains the 1D objects w, sigma, rho_M, theta_M of len n
-        # _slabsQ contains the 2D objects rho, irho
+        # _slabs contains the 1D objects w, sigma of len n
+        # _slabs_rho contains 2D objects rho, irho, with one for each wavelength
+        # _slabs_mag contains 1D objects w, sigma, rho, theta of length nmag
         self._slabs = numpy.empty(shape=(0,2))
-        self._slabsQ = numpy.empty(shape=(0,nprobe,2))
-        self._slabsM = []
+        self._slabs_rho = numpy.empty(shape=(0,nprobe,2))
         self.dz = dz
+        self._magnetic_sections = []
+        self._slab_mag = None
 
     def microslabs(self, thickness=0):
         """
@@ -110,6 +112,8 @@ class Microslabs(object):
             *centers*: vector | A
                 Microslab centers
         """
+        # TODO: force dz onto a common boundary to avoid remeshing
+        # in the smooth profile function
         edges = numpy.arange(0,thickness+self.dz,self.dz, dtype='d')
         edges[-1] = thickness
         centers = (edges[1:] + edges[:-1])/2
@@ -121,6 +125,8 @@ class Microslabs(object):
         Reset the slab model so that none are present.
         """
         self._num_slabs = 0
+        self._magnetic_sections = []
+        self._slab_mag = None
 
     def __len__(self):
         return self._num_slabs
@@ -143,24 +149,24 @@ class Microslabs(object):
         toidx = slice(end,end+repeats*length)
         self._reserve(repeats*length)
         self._slabs[toidx] = numpy.tile(self._slabs[fromidx],[repeats,1])
-        self._slabsQ[toidx] = numpy.tile(self._slabsQ[fromidx],[repeats,1,1])
+        self._slabs_rho[toidx] = numpy.tile(self._slabs_rho[fromidx],[repeats,1,1])
         self._num_slabs += repeats*length
 
         # Replace interface on the top
         self._slabs[self._num_slabs-1,1] = interface
 
-        # TODO: any magnetic sections within the repeat need to be
-        # repeated as well
+        if self._magnetic_sections:
+            raise NotImplementedError("Repeated magnetic layers not implemented")
 
     def _reserve(self, nadd):
         """
         Reserve space for at least *nadd* slabs.
         """
-        ns,nl,_ = self._slabsQ.shape
+        ns,nl,_ = self._slabs_rho.shape
         if ns < self._num_slabs + nadd:
             new_ns = self._num_slabs + nadd + 50
             self._slabs.resize((new_ns, 4))
-            self._slabsQ.resize((new_ns, nl, 2))
+            self._slabs_rho.resize((new_ns, nl, 2))
 
     def extend(self, w=0, sigma=0, rho=0, irho=0):
         """
@@ -172,8 +178,8 @@ class Microslabs(object):
         self._num_slabs += nadd
         self._slabs[idx,0] = w
         self._slabs[idx,1] = sigma
-        self._slabsQ[idx,:,0] = numpy.asarray(rho).T
-        self._slabsQ[idx,:,1] = numpy.asarray(irho).T
+        self._slabs_rho[idx,:,0] = numpy.asarray(rho).T
+        self._slabs_rho[idx,:,1] = numpy.asarray(irho).T
 
     def append(self, w=0, sigma=0, rho=0, irho=0):
         """
@@ -184,17 +190,18 @@ class Microslabs(object):
         self._reserve(1)
         self._slabs[self._num_slabs,0] = w
         self._slabs[self._num_slabs,1] = sigma
-        self._slabsQ[self._num_slabs,:,0] = rho
-        self._slabsQ[self._num_slabs,:,1] = irho
+        self._slabs_rho[self._num_slabs,:,0] = rho
+        self._slabs_rho[self._num_slabs,:,1] = irho
         self._num_slabs += 1
 
-
-
-    def magnetic(self, anchor, w, rhoM=0, thetaM=0):
+    def add_magnetism(self, anchor, w, rho=0, theta=270., sigma=0):
         """
         Add magnetic layers.
         """
-        self._slabsM.append(anchor,w,rhoM,thetaM)
+        # Keep the magnetic sections until the end
+        w = numpy.asarray(w,'d')
+        self._magnetic_sections.append((numpy.vstack((w,rho,theta)),
+                                        anchor, sigma))
 
     def thickness(self):
         """
@@ -212,32 +219,29 @@ class Microslabs(object):
         # TODO: check that Nevot-Croce works between microslab sections
         self.extend(w = 0, sigma=I, rho = self.rho[-1], irho = self.irho[-1])
 
-    def _w(self):
+    @property
+    def w(self):
+        "Thickness (A)"
         return self._slabs[:self._num_slabs,0]
 
-    def _sigma(self):
+    @property
+    def sigma(self):
+        "rms roughness (A)"
         return self._slabs[:self._num_slabs-1,1]
 
-    def _rho(self):
-        return self._slabsQ[:self._num_slabs,:,0].T
+    @property
+    def rho(self):
+        "Scattering length density (10^-6 number density)"
+        return self._slabs_rho[:self._num_slabs,:,0].T
 
-    def _irho(self):
-        return self._slabsQ[:self._num_slabs,:,1].T
+    @property
+    def irho(self):
+        "Absorption (10^-6 number density)"
+        return self._slabs_rho[:self._num_slabs,:,1].T
 
-    def _rhoM(self):
-        raise NotImplementedError
-        #return self._slabs[:self._num_slabs,2].T
-
-    def _thetaM(self):
-        raise NotImplementedError
-        #return self._slabs[:self._num_slabs,3].T
-
-    w = property(_w, doc="Thickness (A)")
-    sigma = property(_sigma, doc="1-sigma Gaussian roughness (A)")
-    rho = property(_rho, doc="Scattering length density (10^-6 number density)")
-    irho = property(_irho, doc="Absorption (10^-6 number density)")
-    rhoM = property(_rhoM, doc="Magnetic scattering")
-    thetaM = property(_thetaM, doc="Magnetic scattering angle")
+    @property
+    def ismagnetic(self):
+        return self._magnetic_sections != []
 
     def contract_profile(self, dA):
         # TODO: do we want to use common boundaries for all lambda?
@@ -245,6 +249,7 @@ class Microslabs(object):
                           for v in self.w,self.sigma,self.rho[0],self.irho[0]]
         n = _contract_by_area(w,sigma,rho,irho,dA)
         self._num_slabs = n
+        # TODO: don't throw away other wavelengths
         self.rho[0][:] = rho[:n]
         self.irho[0][:] = irho[:n]
         self.sigma[:] = sigma[:n-1]
@@ -258,14 +263,6 @@ class Microslabs(object):
         idx = numpy.nonzero(sigma[1:]==0)[0]+1
         fix = step[idx] < 3*dA
         sigma[idx[fix]] = w[idx[fix]]/4
-
-    def freeze(self, step=False):
-        """
-        Generate a consistent set of slabs, expanding interfaces where
-        necessary and reconciling differences between the nuclear and
-        the magnetic steps.
-        """
-        raise NotImplementedError
 
     def limited_sigma(self, limit=0):
         """
@@ -288,18 +285,7 @@ class Microslabs(object):
         determined by profile step size dz.  Below this value artifacts
         can occur when roughness is large.
         """
-        # Limit roughness to the depths of the surrounding layers.  Roughness
-        # of the first and last layers interfaces is limited only by the
-        # depth of the first and last layers.  We must check explicitly for
-        # a pure substrate system since that has no limits on roughness.
-        roughness = self.sigma
-        thickness = self.w
-        if limit > 0 and len(thickness)>2:
-            s = numpy.min((thickness[:-1],thickness[1:]),axis=0)/limit
-            s[ 0] = thickness[ 1]/limit
-            s[-1] = thickness[-2]/limit
-            roughness = numpy.where(roughness<s,roughness,s)
-        return roughness
+        return compute_limited_sigma(self.w, self.sigma, limit)
 
     def step_profile(self):
         """
@@ -317,7 +303,25 @@ class Microslabs(object):
             z = numpy.array([-10,0,0,10])
         return z,rho,irho
 
-    def smooth_profile(self, dz=1, roughness_limit=0):
+    def step_magnetic(self):
+        """
+        Return a step profile representation of the microslab structure.
+
+        Roughness is not represented.
+        """
+        self._join_magnetic_sections()
+        w,rho,theta = self._slabs_mag
+        rho = numpy.vstack([rho]*2).T.flatten()
+        theta = numpy.vstack([theta]*2).T.flatten()
+        if len(w) > 2:
+            ws = numpy.cumsum(w[1:-1])
+            z = numpy.vstack([numpy.hstack([-10,0,ws]),
+                               numpy.hstack([0,ws,ws[-1]+10])]).T.flatten()
+        else:
+            z = numpy.array([-10,0,0,10])
+        return z,rho,theta
+
+    def smooth_profile(self, dz=1, sigma_limit=0):
         """
         Return a smooth profile representation of the microslab structure
 
@@ -330,14 +334,118 @@ class Microslabs(object):
         *roughness_limit* is the minimum number of roughness widths that must
         lie within each profile.
         """
-        w = numpy.sum(self.w[1:-1])
-        left = -self.sigma[0]*3
-        right = w+self.sigma[-1]*3
+        dz = self.dz
+        sigma = self.limited_sigma(limit=sigma_limit)
+        thickness = numpy.sum(self.w[1:-1])
+        left  = 0 - sigma[0]*3
+        right = thickness + sigma[-1]*3
         z = numpy.arange(left,right+dz,dz)
-        roughness = self.limited_sigma(limit=roughness_limit)
-        rho = build_profile(z, self.w, roughness, self.rho[0])
-        irho = build_profile(z, self.w, roughness, self.irho[0])
+        # Only show the first wavelength
+        rho  = build_profile(z, self.w, sigma, self.rho[0])
+        irho = build_profile(z, self.w, sigma, self.irho[0])
         return z,rho,irho
+
+
+    def smooth_magnetic(self, sigma_limit=0):
+        self._join_magnetic_sections()
+
+        dz = self.dz
+        left = 0 - sigmaM[0]
+        right = thickness + sigmaM[-1]*3
+
+        z = numpy.arange(left,right+dz,dz)
+        rhoM = build_profile(z, wM, sigmaM, rhoM)
+        thetaM = build_profile(z, wM, sigmaM, thetaM)
+
+        return z,rhoM,thetaM
+
+    def magnetic_slabs(self, sigma_limit=0, dA=None):
+        """
+        Return magnetic slabs for calculating polarized reflectivity.
+        """
+        self._join_magnetic_sections()
+
+        sigma = self.limited_sigma(limit=sigma_limit)
+        left = 0-sigma[0]*3
+        right = thickness + sigma[-1]*3
+        z = numpy.arange(left,right+dz,dz)
+        w = dz * ones(len(z))
+        # TODO: what about other wavelengths?
+        rho = build_profile(z, self.w, sigma, self.rho[0])
+        irho = build_profile(z, self.w, sigma, self.irho[0])
+
+        wM, rhoM, thetaM = self._slab_mag
+        rhoM = build_mag_profile(z, wM, rhoM, self._slab_mag_blends)
+        thetaM = build_mag_profile(z, wM, thetaM, self._slab_mag_blends)
+
+
+        return w,rho,irho,rhoM,thetaM
+
+    def _join_magnetic_sections(self):
+        """
+        Convert anchored magnetic sections into coarse magnetic slabs.
+        """
+        if self._slabs_mag is not None: return
+
+        thickness = numpy.sum(self.w[1:-1])
+        if not self._magnetic_sections:
+            self._slabs_mag = numpy.array([[0, thickness, 0],
+                                           [0]*3, [270,]*3])
+            return
+
+        # Find the magnetic blocks
+        blocks, offsets, sigmas = zip(*self._magnetic_sections)
+
+        # Splice the blocks together with rhoM == 0
+        splices = []
+        blends = []
+        pos = 0
+        for i,B in enumerate(blocks):
+            w = offsets[i] - pos
+            if w > dz*1e-3: # Need splice
+                # Target average theta between blocks.
+                if i == 0:
+                    theta = B[0,3]
+                else:
+                    theta = (B[0,3] + blocks[i-1][-1,3])/2.
+                splices.append([[w],[0],[theta]])
+            #Ignore layers that are too thick.
+            #elif w < -1e-3:
+            #    raise ValueError("Magnetic layer too thick")
+            splices.append(B)
+            width = numpy.sum(B[0,:])
+            pos = offsets[i] + width
+            try: left,right = sigmas[i]
+            except: left=right=sigmas[i]
+            blends.append((left,offsets[i],right,pos))
+
+        # Add the final splice
+        w = thickness - pos
+        theta = blocks[-1][-1,3]
+        splices.append([[w],[0],[theta]])
+
+        self._slab_mag = numpy.vstack(splices).T
+        self._slab_mag_blends = blends
+
+def compute_limited_sigma(thickness, roughness, limit):
+    # Limit roughness to the depths of the surrounding layers.  Roughness
+    # of the first and last layers interfaces is limited only by the
+    # depth of the first and last layers.  We must check explicitly for
+    # a pure substrate system since that has no limits on roughness.
+    if limit > 0 and len(thickness)>2:
+        s = numpy.min((thickness[:-1],thickness[1:]),axis=0)/limit
+        s[ 0] = thickness[ 1]/limit
+        s[-1] = thickness[-2]/limit
+        roughness = numpy.where(roughness<s,roughness,s)
+    return roughness
+
+
+def build_mag_profile(z, d, v, blends):
+
+    # TODO this could be faster since we don't need to blend initially.
+    s = 0*z
+    v = build_profile(z, d, s, v)
+
 
 def build_profile(z, thickness, roughness, value):
     """

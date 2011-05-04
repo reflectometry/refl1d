@@ -1,10 +1,12 @@
 import time
+import math
 from copy import deepcopy
 
 import numpy
 
 from .mystic import monitor, parameter
 from .mystic.history import History
+from . import initpop
 
 class ConsoleMonitor(monitor.TimedUpdate):
     """
@@ -293,6 +295,9 @@ class DreamModel(MCMCModel):
 
         self.mapper = mapper if mapper else lambda p: map(self.nllf,p)
 
+    def log_density(self, x):
+        return -self.nllf(x)
+
     def nllf(self, x):
         """Negative log likelihood of seeing models given parameters *x*"""
         #print "eval",x; sys.stdout.flush()
@@ -315,7 +320,7 @@ class DreamFit(FitBase):
         if mapper: self.dream_model.mapper = mapper
 
         pars = self.dream_model.problem.parameters
-        pop_size = int(ceil(options['pop']*len(pars)))
+        pop_size = int(math.ceil(options['pop']*len(pars)))
         if options['init'] == 'random':
             population = initpop.random(N=pop_size,
                                         pars=pars, include_current=True)
@@ -419,7 +424,7 @@ class FitOptions(object):
                 elif dtype == 'float':
                     self.options[field] = float(value)
                 else: # string
-                    if not field in dtype:
+                    if not value in dtype:
                         raise ValueError('invalid option "%s" for %s: use '
                                          % (value, field)
                                          + '|'.join(dtype))

@@ -140,7 +140,6 @@ class Refl1dGUIApp(wx.App):
         # initialization is complete, simulate an increase in startup time
         # by taking a nap.
         #time.sleep(6)
-
         return True
 
 

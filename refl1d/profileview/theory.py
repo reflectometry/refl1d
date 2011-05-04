@@ -131,7 +131,7 @@ class TheoryView(AuiPanel):
     def set_model(self, model):
         self.problem = model
         self.redraw()
-    
+
     def redraw(self):
         # Redraw the canvas.
         with self.pylab_interface:
@@ -149,4 +149,3 @@ class TheoryView(AuiPanel):
             except:
                 pass
             pylab.draw()
-

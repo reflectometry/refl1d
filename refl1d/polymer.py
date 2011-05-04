@@ -34,11 +34,11 @@ class PolymerBrush(Layer):
         *interface* the roughness of the solvent surface
         *polymer* the polymer material
         *solvent* the solvent material or vacuum
-        *base_vf* volume fraction of the polymer brush at the interface
-        *base* the thickness of the brush interface
-        *length* the length of the brush above the interface
+        *base_vf* volume fraction (%) of the polymer brush at the interface
+        *base* the thickness of the brush interface (A)
+        *length* the length of the brush above the interface (A)
         *power* the rate of brush thinning
-        *sigma* brush roughness (rms)
+        *sigma* rms brush roughness (A)
 
     The materials can either use the scattering length density directly,
     such as PDMS = SLD(0.063, 0.00006) or they can use chemical composition

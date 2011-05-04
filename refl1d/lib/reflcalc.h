@@ -3,7 +3,7 @@
 #ifndef _REFLCALC_H
 #define _REFLCALC_H
 
-/* 
+/*
 
 
 Reflectivity calculations on rectangular slabs.
@@ -18,7 +18,7 @@ Reflectivity calculations on rectangular slabs.
    - exptheta[2*M]: cos(theta),sin(theta) pairs for magnetic scattering angle
    - Aguide  polarization angle relative to the guide (usually -90)
    - N:      Number of Q points
-   - Q[N]:   Q points; negative for back reflectivity, which is implemented 
+   - Q[N]:   Q points; negative for back reflectivity, which is implemented
              by reversing the order of the layers
    - R[N]:   returned reflectivity = |r|^2
    - r[N]:   returned complex reflectivity amplitude
@@ -145,6 +145,10 @@ contract_by_step(int n, double d[], double sigma[],
 int
 contract_by_area(int n, double d[], double sigma[],
                  double rho[], double irho[], double dA);
+
+int
+contract_mag(int n, double d[], double rho[], double irho[],
+             double rhoM[], double thetaM[], double dA);
 
 #ifdef __cplusplus
 }

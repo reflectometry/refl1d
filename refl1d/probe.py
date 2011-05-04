@@ -504,11 +504,14 @@ class Probe(object):
 
     def plot_residuals(self, theory=None, suffix='', **kwargs):
         import matplotlib.pyplot as plt
-        plt.cla() # clear the plot if any
         if theory is not None and self.R is not None:
+            from .util import coordinated_colors
+            c = coordinated_colors()
             Q,R = theory
             residual = (R - self.R)/self.dR
-            plt.plot(self.Q, residual, '.', label=self.name()+suffix)
+            plt.plot(self.Q, residual,
+                     '.', color=c['light'],
+                     label=self.name()+suffix)
         plt.axhline(1, color='black', ls='--',lw=1)
         plt.axhline(0, color='black', lw=1)
         plt.axhline(-1, color='black', ls='--',lw=1)
@@ -587,6 +590,17 @@ def measurement_union(xs):
     idx = numpy.argsort(Q)
     return T[idx],dT[idx],L[idx],dL[idx],Q[idx],dQ[idx]
 
+def Qmeasurement_union(xs):
+    Qset = set()
+    for x in xs:
+        if x is not None:
+            Qset = Qset | set(zip(x.Q,x.dQ))
+    Q,dQ = [numpy.array(sorted(v))
+            for v in zip(*[w for w in Qset])]
+    idx = numpy.argsort(Q)
+    return Q[idx],dQ[idx]
+
+
 class PolarizedNeutronProbe(object):
     """
     Polarized neutron probe
@@ -603,8 +617,12 @@ class PolarizedNeutronProbe(object):
         self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
             = measurement_union(xs)
         self._set_calc(self.T, self.L)
+        self._check()
 
-        back_refls = [f.back_reflectivity for f in xs if f is not None]
+    def _check(self):
+        back_refls = [f.back_reflectivity
+                      for f in (self.pp, self.pm, self.mp, self.mm)
+                      if f is not None]
         if all(back_refls) or not any(back_refls):
             self.back_reflectivity = back_refls[0]
         else:
@@ -645,12 +663,12 @@ class PolarizedNeutronProbe(object):
         self._set_calc(T,L)
     oversample.__doc__ = Probe.oversample.__doc__
 
-    def _calc_Q(self):
+    @property
+    def calc_Q(self):
         for x in self.pp, self.pm, self.mp, self.mm:
             if x is not None:
                 return x.calc_Q
         raise RuntimeError("No polarization cross sections")
-    calc_Q = property(_calc_Q)
 
     def _set_calc(self, T, L):
         """
@@ -665,9 +683,9 @@ class PolarizedNeutronProbe(object):
         Apply factors such as beam intensity, background, backabsorption,
         and footprint to the data.
         """
-        for xs in self.pp, self.pm, self.mp, self.mm:
+        for Ri,xs in zip(R,(self.pp, self.pm, self.mp, self.mm)):
             if xs is not None:
-                xs.apply_beam(R, resolution)
+                xs.apply_beam(Ri, resolution)
 
     def scattering_factors(self, material):
         # doc string is inherited from parent (see below)
@@ -998,3 +1016,9 @@ class QProbe(Probe):
         self.Qo, self.dQ = Q,dQ
         self.Ro = self.R = R
         self.dR = R
+
+class QPolarizedNeutronProbe(PolarizedNeutronProbe):
+    def __init__(self, xs=None):
+        self.pp, self.pm, self.mp, self.mm = xs
+        self.Q, self.dQ = Qmeasurement_union(xs)
+        self._check()

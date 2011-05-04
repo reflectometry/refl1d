@@ -29,3 +29,4 @@ PyObject* Pmagnetic_amplitude(PyObject* obj, PyObject* args);
 PyObject* Pconvolve(PyObject*obj,PyObject*args);
 PyObject* Pcontract_by_step(PyObject*obj,PyObject*args);
 PyObject* Pcontract_by_area(PyObject*obj,PyObject*args);
+PyObject* Pcontract_mag(PyObject*obj,PyObject*args);

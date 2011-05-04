@@ -21,8 +21,8 @@ PyObject* Pconvolve(PyObject *obj, PyObject *args)
   const double *Qi, *Ri, *Q, *dQ;
   double *R;
   Py_ssize_t nQi, nRi, nQ, ndQ, nR;
-  
-  if (!PyArg_ParseTuple(args, "OOOOO:resolution", 
+
+  if (!PyArg_ParseTuple(args, "OOOOO:resolution",
 			&Qi_obj,&Ri_obj,&Q_obj,&dQ_obj,&R_obj)) return NULL;
   INVECTOR(Qi_obj,Qi,nQi);
   INVECTOR(Ri_obj,Ri,nRi);
@@ -176,6 +176,32 @@ PyObject* Pcontract_by_area(PyObject*obj,PyObject*args)
   return Py_BuildValue("i",newlen);
 }
 
+PyObject* Pcontract_mag(PyObject*obj,PyObject*args)
+{
+  PyObject *d_obj,*rho_obj,*irho_obj,*rhoM_obj,*thetaM_obj;
+  Py_ssize_t nd, nrho, nirho, nrhoM, nthetaM;
+  double *d, *rho, *irho, *rhoM, *thetaM;
+  double dA;
+
+  if (!PyArg_ParseTuple(args, "OOOOd:reflectivity",
+      &d_obj,&rho_obj,&irho_obj,&rhoM_obj,&thetaM_obj,&dA))
+    return NULL;
+  INVECTOR(d_obj,d,nd);
+  INVECTOR(rho_obj,rho,nrho);
+  INVECTOR(irho_obj,irho,nirho);
+  INVECTOR(rhoM_obj,rhoM,nrhoM);
+  INVECTOR(thetaM_obj,thetaM,nthetaM);
+  // interfaces should be one shorter than layers
+  if (nd != nrho || nd != nirho || nd != nrhoM || nd != nthetaM) {
+#ifndef BROKEN_EXCEPTIONS
+    PyErr_SetString(PyExc_ValueError, "d,rho,irho,rhoM,thetaM have different lengths");
+#endif
+    return NULL;
+  }
+  int newlen = contract_mag(nd, d, rho, irho, rhoM, thetaM, dA);
+  return Py_BuildValue("i",newlen);
+}
+
 
 PyObject* Pcontract_by_step(PyObject*obj,PyObject*args)
 {
@@ -211,8 +237,8 @@ PyObject* Perf(PyObject*obj,PyObject*args)
   int i;
   Py_ssize_t ndata, nresult;
 
-  if (!PyArg_ParseTuple(args, "OO:erf", 
-			&data_obj, &result_obj)) 
+  if (!PyArg_ParseTuple(args, "OO:erf",
+			&data_obj, &result_obj))
     return NULL;
   INVECTOR(data_obj,data, ndata);
   OUTVECTOR(result_obj, result, nresult);

@@ -329,6 +329,7 @@ class Operator%(name)s(BaseParameter):
         if isinstance(a,BaseParameter): pars += a.parameters()
         if isinstance(b,BaseParameter): pars += b.parameters()
         self._parameters = pars
+        self.name = str(self)
     def parameters(self):
         return self._parameters
     def _value(self):

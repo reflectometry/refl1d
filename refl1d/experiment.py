@@ -299,7 +299,7 @@ class Experiment(ExperimentBase):
         if key not in self._cache:
             slabs = self._render_slabs()
             prof = slabs.smooth_profile(dz=dz,
-                                        roughness_limit=self.roughness_limit)
+                                        sigma_limit=self.roughness_limit)
             self._cache[key] = prof
         return self._cache[key]
 

@@ -5,29 +5,31 @@ __all__ = ["load"]
 
 import os
 from ctypes import CDLL, c_int, c_void_p, c_char_p, c_double, byref
+from threading import current_thread
+from os import getpid
 
 from numpy import empty, zeros, array
 
-from .mystic.parameter import Parameter
-from .probe import Probe, PolarizedNeutronProbe
+from .mystic.parameter import Parameter, Constant
+from .probe import QProbe, QPolarizedNeutronProbe
 from .experiment import Experiment
 from .model import Stack
 from .profile import Microslabs
-from .fitter import FitProblem, MultiFitProblem
+from .fitproblem import FitProblem, MultiFitProblem
 from .material import SLD, Vacuum
 
 def trace(fn):
     """simple function trace function"""
     return fn  # Comment this to turn on tracing
     def wrapper(*args, **kw):
-        print "entering",fn.func_name
+        print "entering",fn.func_name,"from",current_thread(),getpid()
         ret = fn(*args, **kw)
-        print "leaving",fn.func_name
+        print "leaving",fn.func_name,"from",current_thread(),getpid()
         return ret
     return wrapper
 
-def load(filename):
-    setup = GareflModel(filename)
+def load(modelfile):
+    setup = GareflModel(modelfile)
     M = [GareflExperiment(setup, k)
          for k in range(setup.num_models)]
     names = setup.par_names()
@@ -107,14 +109,14 @@ class GareflExperiment(Experiment):
 
 
 class GareflModel(object):
-    def __init__(self, filename):
-        self.filename = filename
+    def __init__(self, modelfile):
+        self.modelfile = modelfile
         self._load_dll()
         self._setup_model()
 
     @trace
     def _load_dll(self):
-        dll = CDLL(os.path.abspath(self.filename))
+        dll = CDLL(os.path.abspath(self.modelfile))
         dll.ex_get_data.restype = c_char_p
         dll.setup_models.restype = c_void_p
         dll.ex_par_name.restype = c_char_p
@@ -132,9 +134,9 @@ class GareflModel(object):
     # Pickle protocol doesn't support ctypes linkage; reload the
     # module on the other side.
     def __getstate__(self):
-        return self.filename
-    def __setstate__(self, filename):
-        self.filename = filename
+        return self.modelfile
+    def __setstate__(self, modelfile):
+        self.modelfile = modelfile
         self._load_dll()
         self._setup_model()
 
@@ -158,7 +160,7 @@ class GareflModel(object):
         """
         data = [self._getdata(k, xs) for xs in range(4)]
         if any(d!=None for d in data[1:]):
-            probe = GareflPolarizedProbe(xs=data)
+            probe = QPolarizedNeutronProbe(xs=data)
         else:
             probe = data[0]
         return probe
@@ -171,7 +173,10 @@ class GareflModel(object):
         if n == 0: return None
         data = empty((n,4),'d')
         filename = self.dll.ex_get_data(self.models, k, xs, data.ctypes.data)
-        return GareflProbe(data=data.T,name=filename)
+        Q,dQ,R,dR = data.T
+        probe = QProbe(Q,dQ,data=(R,dR))
+        probe.filename = filename
+        return probe
 
     @trace
     def get_profile(self, k):
@@ -208,14 +213,3 @@ class GareflModel(object):
         p = empty(n,'d')
         self.dll.ex_par_values(self.models, p.ctypes.data)
         return p
-
-class GareflProbe(Probe):
-    def __init__(self, data, name):
-        self.name = name
-        self.theta_offset = Parameter(0)
-        self.intensity = Parameter(1)
-        self.Qo,self.dQ,self.R,self.dR = data
-
-class GareflPolarizedProbe(PolarizedNeutronProbe):
-    def __init__(self, xs):
-        self.pp, self.pm, self.mp, self.mm = xs

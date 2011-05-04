@@ -111,6 +111,88 @@ contract_by_area(int n, double d[], double sigma[],
 
   return newi;
 }
+
+extern "C"
+int
+contract_mag(int n, double d[],
+             double rho[], double irho[],
+             double rhoM[], double thetaM[],
+             double dA)
+{
+  double dz, weighted_dz, weight;
+  double rholo, rhohi, rhoarea;
+  double irholo, irhohi, irhoarea;
+  double maglo, maghi, mag, rhoMarea, thetaMarea;
+  int i, newi;
+  i=newi=1; /* Skip the substrate */
+  while (i < n) {
+
+    /* Get ready for the next layer */
+    /* Accumulation of the first row happens in the inner loop */
+    dz = weighted_dz = 0;
+    rhoarea = irhoarea = rhoMarea = thetaMarea = 0.;
+    rholo=rhohi=rho[i];
+    irholo=irhohi=irho[i];
+    maglo=maghi=rhoM[i]*cos(thetaM[i]*M_PI/180.);
+
+    /* Accumulate slices into layer */
+    for (;;) {
+      assert(i < n);
+      /* Accumulate next slice */
+      dz += d[i];
+      rhoarea+=d[i]*rho[i];
+      irhoarea+=d[i]*irho[i];
+
+      /* Weight the magnetic signal by the in-plane contribution
+       * when accumulating rhoM and thetaM. */
+      weight = cos(thetaM[i]*M_PI/180.);
+      mag = rhoM[i]*weight;
+      rhoMarea += d[i]*rhoM[i]*weight;
+      thetaMarea += d[i]*thetaM[i]*weight;
+      weighted_dz += d[i]*weight;
+
+      /* If no more slices break immediately */
+      if (++i == n) break;
+
+      /* If next slice exceeds limit then break */
+      if (rho[i] < rholo) rholo = rho[i];
+      if (rho[i] > rhohi) rhohi = rho[i];
+      if ((rhohi-rholo)*(dz+d[i]) > dA) break;
+
+      if (irho[i] < irholo) irholo = irho[i];
+      if (irho[i] > irhohi) irhohi = irho[i];
+      if ((irhohi-irholo)*(dz+d[i]) > dA) break;
+
+      if (mag < maglo) maglo = mag;
+      if (mag > maghi) maghi = mag;
+      if ((maghi-maglo)*(dz+d[i]) > dA) break;
+    }
+
+    if (dz == 0) continue;
+
+    /* Save the layer */
+    assert(newi < n);
+    d[newi] = dz;
+    if (i == n) {
+      /* Last layer uses surface values */
+      rho[newi] = rho[n-1];
+      irho[newi] = irho[n-1];
+      rhoM[newi] = rhoM[n-1];
+      thetaM[newi] = thetaM[n-1];
+      /* No interface for final layer */
+    } else {
+      /* Middle layers uses average values */
+      rho[newi] = rhoarea / dz;
+      irho[newi] = irhoarea / dz;
+      rhoM[newi] = rhoMarea / weighted_dz;
+      thetaM[newi] = thetaMarea / weighted_dz;
+    } /* First layer uses substrate values */
+    newi++;
+  }
+
+  return newi;
+}
+
 #else
 #error "dynamic programming solution not yet implemented"
 // A correct solution will have to incorporate forced breaks at sigma != 0,

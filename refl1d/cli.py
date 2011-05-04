@@ -1,7 +1,5 @@
 from __future__ import with_statement
 
-from math import ceil
-
 import sys
 import os
 
@@ -231,7 +229,7 @@ class Refl1dOpts(ParseOpts):
     MINARGS = 1
     FLAGS = set(("preview", "check", "profile", "random", "simulate",
                  "worker", "batch", "overwrite", "parallel", "stepmon",
-                 "cov", "remote", "staj",
+                 "cov", "remote", "staj", "edit",
                  "multiprocessing-fork", # passed in when app is a frozen image
                ))
     VALUES = set(("plot", "store", "fit", "noise", "seed", "pars",
@@ -274,6 +272,8 @@ Options:
         compute the covariance matrix for the model when done
     --staj
         output staj file when done
+    --edit
+        start the gui
 
     --store=path
         output directory for plots and models
@@ -412,12 +412,12 @@ def resynth(problem, mapper, opts):
 def config_matplotlib(backend):
     """
     Setup matplotlib.
-    
+
     The backend should be WXAgg for interactive use, or 'Agg' for batch.
-    
+
     This must be called before any imports to pylab.  We've done this by
     making sure that pylab is never (rarely?) imported at the top level
-    of a module, and only in the functions that call it: if you are 
+    of a module, and only in the functions that call it: if you are
     concerned about speed, then you shouldn't be using pylab :-)
     """
     # If we are running from an image built by py2exe, keep the frozen
@@ -453,6 +453,11 @@ def main():
         print "\nNo modelfile parameter was specified.\n"
 
     opts = getopts()
+
+    if opts.edit:
+        from .gui.gui_app import main as gui
+        gui()
+        return
 
     # Set up the matplotlib backend to minimize the wx dependency.
     config_matplotlib('Agg' if opts.batch or opts.remote else 'WXAgg')
