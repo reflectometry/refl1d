@@ -58,6 +58,7 @@ def load_problem(args):
         elif filename.endswith('.pickle'):
             problem = pickle.load(filename)
         else:
+            #print "loading",filename,"from",directory
             options = args[1:]
             problem = load_script(filename, options=options)
             # Guard against the user changing parameters after defining

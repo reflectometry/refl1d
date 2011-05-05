@@ -194,5 +194,15 @@ class ParameterSummary(wx.Panel):
         new_value  = self.parameter.bounds.put01(value/100)
         self.parameter.value = new_value
         self.value.SetLabel(str(nice(new_value)))
+        self.delayed_signal()
+
+    # TODO: this code belongs in a common location! it is copied from profile.py
+    def delayed_signal(self):
+        try:
+            self._delayed_signal.Restart(50)
+        except:
+            self._delayed_signal = wx.FutureCall(50, self.signal_update)
+
+    def signal_update(self):
         self.model.model_update()  # force recalc when value changes
         publish("model.update", model=self.model)

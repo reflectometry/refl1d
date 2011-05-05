@@ -77,6 +77,7 @@ class GareflExperiment(Experiment):
 
             self._slabs.clear()
             w,rho,irho,rhoM,thetaM = self.model.get_profile(self.index)
+            rho,irho,rhoM = 1e6*rho,1e6*irho,1e6*rhoM # remove zeros
             self._slabs.extend(w=w,rho=rho[None,:],irho=irho[None,:])
             # TODO: What about rhoM, thetaM
 

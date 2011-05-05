@@ -1015,7 +1015,7 @@ class QProbe(Probe):
 
         self.Qo, self.dQ = Q,dQ
         self.Ro = self.R = R
-        self.dR = R
+        self.dR = dR
 
 class QPolarizedNeutronProbe(PolarizedNeutronProbe):
     def __init__(self, xs=None):
