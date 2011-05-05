@@ -200,6 +200,7 @@ class ParameterView(wx.Panel):
         # is updated .
         if new_value != str(self.node_object.value):
             self.node_object.clip_set(float(new_value))
+            self.model.model_update()  # force recalc when value changes
             publish("model.update", model=self.model)
 
     def get_new_name(self, item, column):

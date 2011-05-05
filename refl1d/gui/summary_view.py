@@ -194,4 +194,5 @@ class ParameterSummary(wx.Panel):
         new_value  = self.parameter.bounds.put01(value/100)
         self.parameter.value = new_value
         self.value.SetLabel(str(nice(new_value)))
+        self.model.model_update()  # force recalc when value changes
         publish("model.update", model=self.model)
