@@ -1,6 +1,9 @@
 # This program is public domain
 # Author: Paul Kienzle
 """
+Number formatting
+=================
+
 Format values and uncertainties nicely for printing.
 
 :func:`format_uncertainty_pm` produces the expanded format v +/- err.

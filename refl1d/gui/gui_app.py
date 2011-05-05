@@ -57,8 +57,7 @@ import time
 import wx
 
 from .about import APP_TITLE
-from .utilities import (get_appdir, get_datadir, get_rootdir,
-                        get_rootdir_parent, log_time)
+from .utilities import resource_dir, resource, log_time
 
 # Defer import of AppFrame until after the splash screen has been displayed.
 # When running for the first time (where imported modules are not in cache),
@@ -108,7 +107,7 @@ class Refl1dGUIApp(wx.App):
         # executes app.MainLoop() AND either the splash screen timeout expires
         # or the user left clicks over the splash screen.
         if LOGTIM: log_time("Starting to display the splash screen")
-        pic = os.path.join(get_datadir(), SPLASH_FILE)
+        pic = resource(SPLASH_FILE)
         self.display_splash_screen(img_name=pic, pos=pos, size=size)
 
         # Determine the position and size of the application frame based on the
@@ -241,10 +240,7 @@ def main():
         wx.lib.inspection.InspectionTool().Show()
 
     if opts.syspath:
-        print "*** Application directory is:   ", get_appdir()
-        print "*** Data directory is:          ", get_datadir()
-        print "*** Package root directory is:  ", get_rootdir()
-        print "*** Parent of root directory is:", get_rootdir_parent()
+        print "*** Resource directory:  ", resource_dir()
         print "*** Python path is:"
         for i, p in enumerate(sys.path):
             print "%5d  %s" %(i, p)

@@ -121,65 +121,80 @@ def display_fontsize(fontname=None, benchmark_text=BENCHMARK_TEXT,
 
     frame.Destroy()
 
-
-def get_appdir():
+def data_files():
     """
-    Returns the path of the directory that contains the application being run
-    (i.e., the directory path of the executing python script or frozen image).
-    Note that this path may be different than the current working directory.
-    """
+    Return the data files associated with the package.
 
+    The format is a list of (directory, [files...]) pairs which can be
+    used directly in the py2exe setup script as::
+
+        setup(...,
+              data_files=data_files(),
+              ...)
+    """
+    import os, glob
+    from .utilities import resource_dir
+    def _finddata(*patterns):
+        path = resource_dir()
+        for p in patterns:
+            files += glob.glob(os.path.join(path,p))
+        return files
+    data_files = [('refl1d-data', _finddata('*.png','*.ico','*.jpg'))]
+    return data_files
+
+def package_data():
+    """
+    Return the data files associated with the package.
+
+    The format is a dictionary of {'fully.qualified.module', [files...]}
+    used directly in the setup script as::
+
+        setup(...,
+              package_data=package_data(),
+              ...)
+    """
+    return { 'refl1d.gui':
+            ['resources/*.png','resources/*.ico','resources/*.jpg'] }
+
+_RESOURCE_DIR = None
+def resource_dir():
+    """
+    Return the path to the application data.
+
+    This is either in the environment variable REFL1D_DATA, in the
+    source tree in gui/resources, or beside the executable in
+    refl1d-data.
+    """
+    # If we already found it, then we are done
+    global _RESOURCE_DIR
+    if _RESOURCE_DIR is not None: return _RESOURCE_DIR
+
+    # Check for data path in the environment
+    key = 'REFL1D_DATA'
+    if os.environ.has_key(key):
+        path = os.path.join(os.environ[key],data)
+        if not os.path.isdir(path):
+            raise RuntimeError('Path in environment %s not a directory'%key)
+        _RESOURCE_DIR = path
+        return _RESOURCE_DIR
+
+    # Check for data path in the package
+    path = os.path.join(os.path.dirname(__file__), 'resources')
+    if os.path.isdir(path):
+        _RESOURCE_DIR = path
+        return _RESOURCE_DIR
+
+    # Check for data path next to exe/zip file.
     if hasattr(sys, "frozen"):  # check for py2exe image
-        path = sys.executable
-    else:
-        path = sys.argv[0]
-    return os.path.dirname(os.path.realpath(path))
+        path = os.path.join(os.path.dirname(sys.executable),'refl1d-data')
+        if os.path.isdir(path):
+            _RESOURCE_DIR = path
+            return _RESOURCE_DIR
 
+    raise RuntimeError('Could not find the Refl1D data files')
 
-def get_rootdir(subdirlevel=1):
-    """
-    Returns the path of the root directory of the package from which the
-    application is running (i.e., the path of the top-level directory of the
-    python package or the directory containing the frozen image being run).
-
-    The path returned is relative to where the application was started.
-    If subdirlevel = 0 then the script being run is assumed to be located
-    in the top-level directory of the package, otherwise n levels down.
-    For example, if the script is in <package>/bin, subdirlevel should be 1.
-    """
-
-    path = get_appdir()
-    if hasattr(sys, "frozen"):  # check for py2exe image
-        return path
-    if subdirlevel > 0:
-        for x in range(subdirlevel):
-            path = os.path.abspath(os.path.join(path, '..'))
-    return path
-
-
-def get_rootdir_parent(subdirlevel=1):
-    """
-    Returns the path of the parent directory of the package from which the
-    application is running (i.e., the path one level above the top-level
-    directory of the package or returns None if a frozen image is being run).
-
-    See description of get_rootdir for definition of the subdirlevel parameter.
-    """
-
-    if hasattr(sys, "frozen"):  # check for py2exe image
-        return None
-    return os.path.abspath(os.path.join(get_rootdir(subdirlevel), '..'))
-
-
-def get_datadir(subdirlevel=1):
-    """
-    Returns the path of the data directory of the package.
-
-    See description of get_rootdir for definition of the subdirlevel parameter.
-    """
-
-    return os.path.abspath(os.path.join(get_rootdir(subdirlevel), 'refl1d-data'))
-
+def resource(filename):
+    return os.path.join(resource_dir(),filename)
 
 def get_bitmap(filename, type=wx.BITMAP_TYPE_PNG, scale_factor=16):
     """
@@ -187,9 +202,9 @@ def get_bitmap(filename, type=wx.BITMAP_TYPE_PNG, scale_factor=16):
     the data directory of the package.
     """
 
-    fullname = os.path.join(get_datadir(), filename)
+    path = resource(filename)
 
-    return wx.BitmapFromImage(wx.Image(name=fullname, type=type)
+    return wx.BitmapFromImage(wx.Image(name=path, type=type)
                                       .Scale(scale_factor, scale_factor))
 
 
@@ -401,19 +416,8 @@ if __name__ == '__main__':
     print "    Calculated font size =", choose_fontsize(fontname="Arial")
     app.Destroy()
 
-    # Test the get_*dir*() functions.
-    # For this test, pretent where running this script from the bin directory
-    # to simulate running the real application."
     print ""
-    save = sys.argv
-    sys.argv[0] = os.path.abspath(os.path.join(get_appdir(), '..', '..',
-                                               'bin', 'script.py'))
-    print "Assume the application is running from ...refl1d/refl1d/bin, then:"
-    print "*** Application directory is:   ", get_appdir()
-    print "*** Data directory is:          ", get_datadir(subdirlevel=1)
-    print "*** Package root directory is:  ", get_rootdir(1)
-    print "*** Parent of root directory is:", get_rootdir_parent()
-    restore = save
+    print "*** Data directory is:          ", resource_dir()
 
     # Test the TimeStamp class and the convenience function.
     print ""

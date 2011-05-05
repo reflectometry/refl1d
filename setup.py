@@ -22,6 +22,10 @@ def reflmodule_config():
     module = Extension('refl1d.reflmodule', sources=sources)
     return module
 
+#TODO: write a proper dependency checker for packages which cannot be
+# installed by easy_install
+#dependency_check('numpy>=1.0', 'scipy>=0.6', 'matplotlib>=1.0', 'wx>=2.8.9')
+
 dist = setup(
         name = 'refl1d',
         version = refl1d.__version__,
@@ -42,13 +46,10 @@ dist = setup(
             ],
         package_dir = { 'dream': 'dream/dream' },
         packages = packages,
-        package_data = {
-            #'periodictable' : ['xsf/*.nff', 'xsf/f0_WaasKirf.dat', 'xsf/read.me'],
-        },
+        package_data = refl1d.package_data(),
         scripts = ['bin/reflworkerd'],
         ext_modules = [reflmodule_config()],
-        #data_files = refl1d.data_files(),
-        install_requires = ['numpy>=1.0', 'scipy>=0.6', 'matplotlib>=1.0', 'httplib2'],
+        install_requires = ['httplib2'],
         )
 
 # End of file

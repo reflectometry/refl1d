@@ -1,6 +1,15 @@
 # This program is public domain
 # Author: Paul Kienzle
-r""" Parameter definitions for models
+"""
+Model parameters
+================
+
+Parameters are a big part of the interface between the model and the fitting
+engine.  By saving and retrieving values and ranges from the parameter, the
+fitting engine does not need to be aware of the structure of the model.
+
+Users can also perform calculations with parameters, tying together different
+parts of the model, or different models.
 """
 #__all__ = [ 'Parameter', 'ParameterSet']
 
@@ -26,6 +35,9 @@ from .formatnum import format_uncertainty
 
 
 class BaseParameter(object):
+    """
+    Root of the parameter class, defining arithmetic on parameters
+    """
 
     # Parameters are fixed unless told otherwise
     fixed = True
@@ -123,9 +135,15 @@ class BaseParameter(object):
         return self.bounds.residual(self.value)
 
     def valid(self):
+        """
+        Return true if the parameter is within the valid range.
+        """
         return not numpy.isinf(self.nllf())
 
     def format(self):
+        """
+        Format the parameter, value and range as a string.
+        """
         return "%s=%g in %s"%(self,self.value,self.bounds)
 
     def __str__(self):

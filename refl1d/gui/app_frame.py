@@ -36,7 +36,7 @@ import wx
 from .about import (AboutDialog, APP_TITLE, APP_DESCRIPTION, APP_LICENSE,
                     APP_CREDITS, APP_TUTORIAL)
 from .app_panel import AppPanel
-from .utilities import get_appdir, choose_fontsize, display_fontsize
+from .utilities import resource, choose_fontsize, display_fontsize
 
 # Resource files.
 PROG_ICON = "refl1d.ico"
@@ -54,8 +54,7 @@ class AppFrame(wx.Frame):
         wx.Frame.__init__(self, parent, id, title, pos, size, name=name)
 
         # Display the application's icon in the title bar.
-        icon = wx.Icon(os.path.join(get_appdir(), PROG_ICON),
-                       wx.BITMAP_TYPE_ICO)
+        icon = wx.Icon(resource(PROG_ICON), wx.BITMAP_TYPE_ICO)
         self.SetIcon(icon)
 
         # Set the default font family and font size for the application.

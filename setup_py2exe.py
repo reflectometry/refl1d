@@ -174,12 +174,10 @@ data_files = []
 # Add resource files that need to reside in the same directory as the image.
 data_files.append( ('.', [os.path.join('.', 'LICENSE.txt')]) )
 data_files.append( ('.', [os.path.join('.', 'README.txt')]) )
-data_files.append( ('.', [os.path.join('.', 'bin', 'refl1d.ico')]) )
 data_files.append( ('.', [os.path.join('.', 'bin', 'refl1d_launch.bat')]) )
 
 # Add application specific data files from the refl1d\refl1d-data folder.
-for path in glob.glob(os.path.join('refl1d-data', '*')):
-    data_files.append( ('refl1d-data', [path]) )
+data_files += refl1d.data_files()
 
 # Add data files from the matplotlib\mpl-data folder and its subfolders.
 # For matploblib prior to version 0.99 see the examples at the end of the file.

@@ -37,7 +37,7 @@ except ImportError: # if it's not there, try the older location.
 from wx.lib.wordwrap import wordwrap
 
 from .. import __version__ as APP_VERSION
-from .utilities import get_appdir
+from .utilities import resource
 
 # Resource files.
 PROG_ICON = "refl1d.ico"
@@ -139,8 +139,7 @@ class AboutDialog(wx.Dialog):
         wx.Dialog.__init__(self, parent, id, title, pos, size, style)
 
         # Display the application's icon in the title bar.
-        icon = wx.Icon(os.path.join(get_appdir(), PROG_ICON),
-                       wx.BITMAP_TYPE_ICO)
+        icon = wx.Icon(resource(PROG_ICON), wx.BITMAP_TYPE_ICO)
         self.SetIcon(icon)
 
         # Set the font for this window and all child windows (widgets) from the
