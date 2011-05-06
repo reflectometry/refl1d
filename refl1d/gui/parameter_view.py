@@ -59,7 +59,7 @@ class ParameterView(wx.Panel):
         self.tree.AddColumn("Value")
         self.tree.AddColumn("Minimum")
         self.tree.AddColumn("Maximum")
-        self.tree.AddColumn("Fix ?")
+        self.tree.AddColumn("Fit?")
 
         # Align the textctrl box with treelistctrl.
         self.tree.SetMainColumn(0) # the one with the tree in it...
@@ -68,7 +68,7 @@ class ParameterView(wx.Panel):
         self.tree.SetColumnWidth(2, 80)
         self.tree.SetColumnWidth(3, 80)
         self.tree.SetColumnWidth(4, 80)
-        self.tree.SetColumnWidth(5, 40)
+        self.tree.SetColumnWidth(5, 50)
 
         # Determine which colunms are editable.
         self.tree.SetColumnEditable(0, False)
@@ -76,7 +76,7 @@ class ParameterView(wx.Panel):
         self.tree.SetColumnEditable(2, True)
         self.tree.SetColumnEditable(3, True)
         self.tree.SetColumnEditable(4, True)
-        self.tree.SetColumnEditable(5, True)
+        self.tree.SetColumnEditable(5, False)
 
         subscribe(self.OnModelChange, "model.change")
         subscribe(self.OnModelUpdate, "model.update")
@@ -164,23 +164,47 @@ class ParameterView(wx.Panel):
         par = self.tree.GetItemPyData(branch)
         if par is None: return
 
-        # For checking whether the parameters are fittable or not.
-        if par.fittable == True:
-            fittable = 'Yes'
-            low, high = (str(v) for v in par.bounds.limits)
+        if par.fittable:
+            if par.fixed:
+                fitting_parameter = 'No'
+                low, high = '', ''
+            else:
+                fitting_parameter = 'Yes'
+                low, high = (str(v) for v in par.bounds.limits)
         else:
-            fittable = 'No'
+            fitting_parameter = ''
             low, high = '', ''
 
-        self.tree.SetItemText(branch, str(nice(par.value)), 2)
         self.tree.SetItemText(branch, str(par.name), 1)
+        self.tree.SetItemText(branch, str(nice(par.value)), 2)
         self.tree.SetItemText(branch, low, 3)
         self.tree.SetItemText(branch, high, 4)
-        self.tree.SetItemText(branch, fittable, 5)
+        self.tree.SetItemText(branch, fitting_parameter, 5)
 
     def OnRightUp(self, evt):
         pos = evt.GetPosition()
-        item, flags, col = self.tree.HitTest(pos)
+        branch, flags, column = self.tree.HitTest(pos)
+        if column == 5:
+            par = self.tree.GetItemPyData(branch)
+            if par is None: return
+
+            if par.fittable:
+                fitting_parameter = self.tree.GetItemText(branch, column)
+                if fitting_parameter == 'No':
+                    par.fixed = False
+                    fitting_parameter = 'Yes'
+                    low, high = (str(v) for v in par.bounds.limits)
+                elif fitting_parameter == 'Yes':
+                    par.fixed = True
+                    fitting_parameter = 'No'
+                    low, high = '', ''
+
+                self.tree.SetItemText(branch, low, 3)
+                self.tree.SetItemText(branch, high, 4)
+                self.tree.SetItemText(branch, fitting_parameter, 5)
+
+                self.model.model_reset()  # force recalc on constraint change
+                publish("model.change", model=self.model)
 
     def OnEndEdit(self, evt):
         item = self.tree.GetSelection()
@@ -213,7 +237,9 @@ class ParameterView(wx.Panel):
             publish("model.update", model=self.model)
 
     def get_new_min(self, item, column):
-        low = float(self.tree.GetItemText(item, column))
+        low = self.tree.GetItemText(item, column)
+        if low == '': return
+        low = float(low)
         high = self.node_object.bounds.limits[1]
 
         # Send update message to other tabs/panels only if parameter min range
@@ -223,8 +249,10 @@ class ParameterView(wx.Panel):
             publish("model.update", model=self.model)
 
     def get_new_max(self, item, column):
+        high = self.tree.GetItemText(item, column)
+        if high == '': return
         low = self.node_object.bounds.limits[0]
-        high = float(self.tree.GetItemText(item, column))
+        high = float(high)
         # Send update message to other tabs/panels only if parameter max range
         # value is updated.
         if high != self.node_object.bounds.limits[1]:

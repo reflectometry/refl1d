@@ -43,6 +43,15 @@ class SummaryView(scrolled.ScrolledPanel):
         scrolled.ScrolledPanel.__init__(self, parent, wx.ID_ANY)
         self.parent = parent
 
+        self.display_list = []
+
+        self.sizer = wx.GridBagSizer(hgap=0, vgap=3)
+        self.SetSizer(self.sizer)
+        self.sizer.Fit(self)
+
+        self.SetAutoLayout(True)
+        self.SetupScrolling()
+
         subscribe(self.OnModelChange, "model.change")
         subscribe(self.OnModelUpdate, "model.update")
 
@@ -52,9 +61,6 @@ class SummaryView(scrolled.ScrolledPanel):
         # Keep track of whether the view needs to be redrawn.
         self._reset_model = False
         self._reset_parameters = False
-
-        self.SetAutoLayout(True)
-        self.SetupScrolling()
 
     # ============= Signal bindings =========================
 
@@ -84,14 +90,13 @@ class SummaryView(scrolled.ScrolledPanel):
         #    print "parameter tab is hidden"
         #    self._reset_model = True
         #    return
-
         self._reset_model = False
         self._reset_parameters = False
-        vbox = wx.BoxSizer(wx.VERTICAL)
-        hbox = wx.BoxSizer(wx.HORIZONTAL)
-        bagSizer = wx.GridBagSizer(hgap=0, vgap=3)
 
-        self.layer_label = wx.StaticText(self, wx.ID_ANY, 'Parameter',
+        self.sizer.Clear(deleteWindows=True)
+        self.display_list = []
+
+        self.layer_label = wx.StaticText(self, wx.ID_ANY, 'Fit Parameter',
                                          size=(160,-1))
         self.slider_label = wx.StaticText(self, wx.ID_ANY, '',
                                          size=(100,-1))
@@ -102,6 +107,7 @@ class SummaryView(scrolled.ScrolledPanel):
         self.high_label = wx.StaticText(self, wx.ID_ANY, 'Maximum',
                                          size=(100,-1))
 
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
         hbox.Add(self.layer_label, 0, wx.LEFT, 1)
         hbox.Add(self.slider_label, 0, wx.LEFT, 1)
         hbox.Add(self.value_label, 0, wx.LEFT, 21)
@@ -109,23 +115,19 @@ class SummaryView(scrolled.ScrolledPanel):
         hbox.Add(self.high_label, 0, wx.LEFT, 1)
 
         # Note that row at pos=(0,0) is not used to add a blank row.
-        bagSizer.Add(hbox, pos=(1,0))
+        self.sizer.Add(hbox, pos=(1,0))
 
         line = wx.StaticLine(self, wx.ID_ANY)
-        bagSizer.Add(line, pos=(2,0), flag=wx.EXPAND|wx.RIGHT, border=5)
-
-        self.output = []
+        self.sizer.Add(line, pos=(2,0), flag=wx.EXPAND|wx.RIGHT, border=5)
 
         for p in sorted(self.model.parameters,
                         cmp=lambda x,y: cmp(x.name,y.name)):
-            self.output.append(ParameterSummary(self, p, self.model))
+            self.display_list.append(ParameterSummary(self, p, self.model))
 
-        for index, item in enumerate(self.output):
-            bagSizer.Add(item, pos=(index+3,0))
+        for index, item in enumerate(self.display_list):
+            self.sizer.Add(item, pos=(index+3,0))
 
-        vbox.Add(bagSizer)
-        self.SetSizerAndFit(vbox)
-
+        self.Layout()
 
     def update_parameters(self):
         if not self.IsShown():
@@ -133,7 +135,7 @@ class SummaryView(scrolled.ScrolledPanel):
             return
         self._reset_parameters = False
 
-        for p in self.output:
+        for p in self.display_list:
             p.update_slider()
 
 
