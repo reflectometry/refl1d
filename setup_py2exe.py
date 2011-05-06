@@ -269,7 +269,7 @@ clientCLI = Target(
     description = 'Refl1D CLI application',
     script = os.path.join('bin', 'refl1d_cli.py'),  # module to run on application start
     dest_base = 'refl1d',  # file name part of the exe file to create
-    icon_resources = [(1, os.path.join('bin', 'refl1d.ico'))],  # also need to specify in data_files
+    icon_resources = [(1, os.path.join('refl1d', 'gui', 'resources', 'refl1d.ico'))],  # also need to specify in data_files
     bitmap_resources = [],
     other_resources = [(24, 1, manifest % dict(prog='Refl1D'))] )
 
@@ -278,7 +278,7 @@ clientGUI = Target(
     description = 'Refl1D GUI application',
     script = os.path.join('bin', 'refl1d_gui.py'),  # module to run on application start
     dest_base = 'refl1d_gui',  # file name part of the exe file to create
-    icon_resources = [(1, os.path.join('bin', 'refl1d.ico'))],  # also need to specify in data_files
+    icon_resources = [(1, os.path.join('refl1d', 'gui', 'resources', 'refl1d.ico'))],  # also need to specify in data_files
     bitmap_resources = [],
     other_resources = [(24, 1, manifest % dict(prog='Refl1D'))] )
 
