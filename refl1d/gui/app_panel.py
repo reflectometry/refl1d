@@ -80,16 +80,15 @@ class AppPanel(wx.Panel):
         self.frame = frame
 
         # Modify the tool bar.
-        self.modify_toolbar()
+        self.init_toolbar()
+        self.init_menubar()
 
         # Reconfigure the status bar.
-        self.modify_statusbar([-34, -50, -16, -16])
+        self.init_statusbar([-34, -50, -16, -16])
 
         # Split the panel into top and bottem halves.
         self.split_panel()
 
-        # Modify the menu bar.
-        self.modify_menubar()
 
         # Create a PubSub receiver.
         subscribe(self.set_model, "model.new")
@@ -100,7 +99,7 @@ class AppPanel(wx.Panel):
         EVT_FIT_COMPLETE(self, self.OnFitComplete)
         self.fit_thread = None
 
-    def modify_menubar(self):
+    def init_menubar(self):
         """
         Adds items to the menu bar, menus, and menu options.
         The menu bar should already have a simple File menu and a Help menu.
@@ -108,9 +107,12 @@ class AppPanel(wx.Panel):
         frame = self.frame
         mb = frame.GetMenuBar()
 
+        file_menu_id = mb.FindMenu("File")
+        file_menu = mb.GetMenu(file_menu_id)
+        help_menu = mb.GetMenu(mb.FindMenu("Help"))
+
         # Add items to the "File" menu (prepending them in reverse order).
         # Grey out items that are not currently implemented.
-        file_menu = mb.GetMenu(0)
         file_menu.PrependSeparator()
 
         _item = file_menu.Prepend(wx.ID_ANY,
@@ -168,8 +170,6 @@ class AppPanel(wx.Panel):
         fit_menu.Enable(id=_item.GetId(), enable=False)
         self.fit_menu_options = _item
 
-        mb.Insert(2, fit_menu, "&Fitting")
-
 
         # Add 'Advanced' menu to the menu bar and define its options.
         adv_menu = wx.Menu()
@@ -192,9 +192,13 @@ class AppPanel(wx.Panel):
                                 "Switch positions of plot and view panels")
         frame.Bind(wx.EVT_MENU, self.OnSwapPanels, _item)
 
-        mb.Insert(3, adv_menu, "&Advanced")
 
-    def modify_toolbar(self):
+
+        mb.Append(fit_menu, "&Fitting")
+        mb.Append(adv_menu, "&Advanced")
+
+
+    def init_toolbar(self):
         """Populates the tool bar."""
         frame = self.frame
         tb = self.tb = frame.GetToolBar()
@@ -227,7 +231,7 @@ class AppPanel(wx.Panel):
         tb.Realize()
         frame.SetToolBar(tb)
 
-    def modify_statusbar(self, subbars):
+    def init_statusbar(self, subbars):
         """Divides the status bar into multiple segments."""
 
         self.sb = self.frame.GetStatusBar()
@@ -265,30 +269,31 @@ class AppPanel(wx.Panel):
         sp.SetSashPosition(position=0, redraw=False)
 
     def init_top_panel(self):
-        self.theory_view = TheoryView(self.pan1)
+
+        self.data_view = TheoryView(self.pan1)
         self.pan1.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.pan1.sizer.Add(self.theory_view, 1, wx.EXPAND)
+        self.pan1.sizer.Add(self.data_view, 1, wx.EXPAND)
         self.pan1.SetSizer(self.pan1.sizer)
         self.pan1.SetAutoLayout(True)
         self.pan1.sizer.Fit(self.pan1)
 
         frame = self.frame
         mb = frame.GetMenuBar()
-        mb.Insert(1, self.theory_view.menu(), "&Model")
+        mb.Append(self.data_view.menu(), "&Reflectometry")
 
     def init_bottom_panel(self):
         nb = self.notebook = wx.Notebook(self.pan2, wx.ID_ANY,
                              style=wx.NB_TOP|wx.NB_FIXEDWIDTH|wx.NB_NOPAGETHEME)
 
         # Create page windows as children of the notebook.
-        self.profile_view = ProfileView(nb)
+        self.model_view = ProfileView(nb)
         self.parameter_view = ParameterView(nb)
         self.summary_view = SummaryView(nb)
         self.log_view = LogView(nb)
         #self.page4 = OtherView(nb)
 
         # Add the pages to the notebook with a label to show on the tab.
-        nb.AddPage(self.profile_view, "Profile")
+        nb.AddPage(self.model_view, "Model")
         nb.AddPage(self.parameter_view, "Parameters")
         nb.AddPage(self.summary_view, "Summary")
         nb.AddPage(self.log_view, "Log")
@@ -310,6 +315,10 @@ class AppPanel(wx.Panel):
         nb.SendPageChangedEvent(0, 0)
         self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.OnPageChanged)
         self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGING, self.OnPageChanging)
+
+    def show_log(self):
+        self.notebook.ChangeSelection(3)
+        self.notebook.SendPageChangedEvent(self.notebook.GetSelection(),3)
 
     # TODO: only render pages that are visible
     def OnPageChanged(self, event):
@@ -504,16 +513,47 @@ class AppPanel(wx.Panel):
         import cPickle as serialize
         serialize.dump(self.problem, open(self.problem.modelfile,'wb'))
 
+    def _add_measurement_type(self, type):
+        """
+        Add the panels needed to view a measurement of the given type.
+
+        *type* is fitness.__class__, where fitness is the measurement cost function.
+        """
+        raise NotImplementedError
+        name = type.__name__
+        if type not in self.data_tabs:
+            constructor = getattr(p, 'data_panel', PlotPanel)
+            tab = self.data_notebook.add_tab(type, name+" Data")
+            constructor(tab)
+        if type not in self.model_notebook:
+            constructor = getattr(p, 'model_panel', PlotPanel)
+            tab = self.model_notebook.add_tab(type, name+" Model")
+            constructor(tab)
+
+    def _view_problem(self, problem):
+        """
+        Set the model and data views to those necessary to display the problem.
+        """
+        raise NotImplementedError
+        # What types of measurements do we have?
+        types = set(p.fitness.__class__ for p in problem)
+        for p in types: _add_measurement_type(p)
+
+        # Show only the relevant views
+        for p,tab in self.data_notebook.tabs():
+            tab.Show(p in types)
+        for p,tab in self.model_notebook.tabs():
+            tab.Show(p in types)
+
     def set_model(self, model):
         # Inform the various tabs that the model they are viewing has changed.
-        self.problem = model  # This should be theory_view.set_model(model)
-
-        self.theory_view.set_model(model)
-        self.profile_view.set_model(model)
+        self.problem = model
+        
+        self.data_view.set_model(model)
+        self.model_view.set_model(model)
         self.parameter_view.set_model(model)
         self.summary_view.set_model(model)
-        # TODO: Replacing the model should allow us to set the model
-        # specific profile_view, theory_view, etc.
+        self.console['model'] = model
 
         # Enable appropriate menu items.
         self.fit_menu.Enable(id=self.fit_menu_start.GetId(), enable=True)

@@ -14,6 +14,9 @@ try:
     publish = pub.sendMessage
     #print "using V3 interface to pubsub"
 except:
+    print "--- pubsub kwargs error ---"
+    import traceback; traceback.print_exc()
+    print "--- pubsub kwargs error ---"
     #print "using V1 interface to pubsub"
     # Otherwise use the V1 interface
     from wx.lib.pubsub import Publisher
@@ -32,7 +35,7 @@ except:
 
 
 # Wx-Pylab magic for displaying plots within an application's window.
-from matplotlib import _pylab_helpers
+from matplotlib._pylab_helpers import Gcf
 from matplotlib.backend_bases import FigureManagerBase
 
 class EmbeddedPylab(object):
@@ -45,12 +48,11 @@ class EmbeddedPylab(object):
     def __init__(self, canvas):
         self.fm = FigureManagerBase(canvas, -1)
     def __enter__(self):
-        self.old = _pylab_helpers.Gcf.get_active()
-        _pylab_helpers.Gcf.set_active(self.fm)
+        Gcf.set_active(self.fm)
     def __exit__(self, *args, **kw):
-        if self.old:
-            _pylab_helpers.Gcf.set_active(self.old)
-        del _pylab_helpers.Gcf.figs[-1]
+        Gcf._activeQue = [f for f in Gcf._activeQue if f is not self.fm]
+        try: del Gcf.figs[-1]
+        except: pass
 
 class Validator(wx.PyValidator):
     def __init__(self, flag):

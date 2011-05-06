@@ -125,7 +125,6 @@ class Refl1dGUIApp(wx.App):
         config_matplotlib('WXAgg')
 
         from .app_frame import AppFrame
-
         self.frame = AppFrame(parent=None, title=APP_TITLE, pos=pos, size=size)
 
         # Declare the application frame to be the top window.
@@ -223,7 +222,15 @@ def inspect():
     import wx.lib.inspection
     wx.lib.inspection.InspectionTool().Show()
 
-def main():
+def _user_error(message):
+    import traceback
+    from refl1d.gui.util import publish
+    error = traceback.format_exc()
+    indented = "   "+"\n   ".join(error.split("\n"))
+    publish('log',message=message+":\n"+indented)
+    wx.GetApp().frame.panel.show_log()
+
+def _protected_main():
     if LOGTIM: log_time("Starting Refl1D")
 
     # Instantiate the application class and give control to wxPython.
@@ -231,7 +238,10 @@ def main():
 
     from .. import cli, fitplugin
     cli.Refl1dOpts.FLAGS |= set(('inspect','syspath'))
-    opts = cli.getopts()
+    try:
+        opts = cli.getopts()
+    except:
+        _user_error("Error processing options")
 
     # For wx debugging, load the wxPython Widget Inspection Tool if requested.
     # It will cause a separate interactive debugger window to be displayed.
@@ -245,8 +255,13 @@ def main():
         for i, p in enumerate(sys.path):
             print "%5d  %s" %(i, p)
 
-    # Put up the initial model
-    model = cli.initial_model(opts)
+    model = None
+    try:
+        # Put up the initial model
+        model = cli.initial_model(opts)
+    except:
+        _user_error("Error loading model")
+
     # Ick: refl specific options
     if not model:
         model = fitplugin.new_model()
@@ -258,6 +273,14 @@ def main():
     # Enter event loop which allows the user to interact with the application.
     if LOGTIM: log_time("Entering the event loop")
     app.MainLoop()
+
+def main():
+    try: 
+        _protected_main()
+    except:
+        import traceback
+        traceback.print_exc()
+        sys.exit()
 
 # Allow "python -m refl1d.gui.gui_app options..."
 if __name__ == "__main__": main()

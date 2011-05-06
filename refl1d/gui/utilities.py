@@ -133,9 +133,9 @@ def data_files():
               ...)
     """
     import os, glob
-    from .utilities import resource_dir
     def _finddata(*patterns):
         path = resource_dir()
+        files = []
         for p in patterns:
             files += glob.glob(os.path.join(path,p))
         return files
@@ -180,16 +180,26 @@ def resource_dir():
 
     # Check for data path in the package
     path = os.path.join(os.path.dirname(__file__), 'resources')
+    #print >>sys.stderr, "checking for refl1d resource in",path
     if os.path.isdir(path):
         _RESOURCE_DIR = path
         return _RESOURCE_DIR
 
     # Check for data path next to exe/zip file.
-    if hasattr(sys, "frozen"):  # check for py2exe image
-        path = os.path.join(os.path.dirname(sys.executable),'refl1d-data')
-        if os.path.isdir(path):
-            _RESOURCE_DIR = path
-            return _RESOURCE_DIR
+    exepath = os.path.dirname(sys.executable)
+    path = os.path.join(exepath,'refl1d-data')
+    #print >>sys.stderr, "checking for refl1d resource in",path
+    if os.path.isdir(path):
+        _RESOURCE_DIR = path
+        return _RESOURCE_DIR
+
+    # py2app puts the data in Contents/Resources, but the executable
+    # is in Contents/MacOS.
+    path = os.path.join(exepath,'..','Resources','refl1d-data')
+    #print >>sys.stderr, "checking for refl1d resource in",path
+    if os.path.isdir(path):
+        _RESOURCE_DIR = path
+        return _RESOURCE_DIR
 
     raise RuntimeError('Could not find the Refl1D data files')
 

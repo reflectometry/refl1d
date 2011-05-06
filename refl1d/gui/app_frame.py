@@ -36,12 +36,18 @@ import wx
 from .about import (AboutDialog, APP_TITLE, APP_DESCRIPTION, APP_LICENSE,
                     APP_CREDITS, APP_TUTORIAL)
 from .app_panel import AppPanel
+from .console import NumpyConsole
 from .utilities import resource, choose_fontsize, display_fontsize
 
 # Resource files.
 PROG_ICON = "refl1d.ico"
 
 #==============================================================================
+class ModelConsole(NumpyConsole):
+    def OnChanged(self, added=[], changed=[], removed=[]):
+        pass
+    def OnClose(self, event):
+        self.Show(False)
 
 class AppFrame(wx.Frame):
     """
@@ -71,6 +77,8 @@ class AppFrame(wx.Frame):
 
         # Build the application panels for the GUI on the frame.
         self.panel = AppPanel(frame=self)
+        self.panel.console = ModelConsole(self)
+        self.panel.console['app'] = self
 
         # Note: Do not call self.Fit() as this will reduce the frame to its
         # bare minimum size; we want it to keep its default size.
@@ -130,6 +138,7 @@ class AppFrame(wx.Frame):
 
         # Create the menu bar.
         mb = wx.MenuBar()
+        wx.MenuBar.SetAutoWindowMenu(False)
 
         # Add a 'File' menu to the menu bar and define its options.
         file_menu = wx.Menu()
@@ -148,12 +157,17 @@ class AppFrame(wx.Frame):
         _item = help_menu.Append(wx.ID_ANY, "&Documentation",
                                             "Get User's Guide and Reference Manual")
         self.Bind(wx.EVT_MENU, self.OnTutorial, _item)
-        _item = help_menu.Append(wx.ID_ANY, "&License",
+        _item = help_menu.Append(wx.ID_ANY, "License",
                                             "Read license and copyright notice")
         self.Bind(wx.EVT_MENU, self.OnLicense, _item)
-        _item = help_menu.Append(wx.ID_ANY, "&Credits",
+        _item = help_menu.Append(wx.ID_ANY, "Credits",
                                             "Get list of authors and sponsors")
         self.Bind(wx.EVT_MENU, self.OnCredits, _item)
+
+        help_menu.AppendSeparator()
+        _item = help_menu.Append(wx.ID_ANY, "&Console",
+                                            "Interactive Python shell")
+        self.Bind(wx.EVT_MENU, self.OnConsole, _item)
 
         mb.Append(help_menu, "&Help")
 
@@ -220,3 +234,7 @@ class AppFrame(wx.Frame):
                           show_link_docs=True)
         dlg.ShowModal()
         dlg.Destroy()
+
+    def OnConsole(self, event):
+        """Raise python console."""
+        self.panel.console.Show(True)
