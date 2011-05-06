@@ -4,7 +4,7 @@ from numpy.linalg import norm
 from numpy.random import randn
 import os
 
-from refl1d import *
+from refl1d.names import *
 Probe.view = 'log' # log, linear, fresnel, or Q**4
 
 def gendata(sample, filename, T, slits=None, dLoL=0.03, counts=None):

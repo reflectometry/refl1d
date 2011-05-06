@@ -55,7 +55,7 @@ def fitservice(request):
     matplotlib.pyplot.show()
     return list(best), fbest
 
-class ServiceMonitor(monitor.TimedUpdate):
+class ServiceMonitor(TimedUpdate):
     """
     Display fit progress on the console
     """

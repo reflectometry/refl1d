@@ -4,7 +4,7 @@ from numpy.linalg import norm
 from numpy.random import randn
 import os
 
-from refl1d import *
+from refl1d.names import *
 Probe.view = 'log' # log, linear, fresnel, or Q**4
 
 # Measurement parameters
@@ -14,15 +14,14 @@ dLoL=0.05
 
 # Simulate a sample
 SiO2 = Material('SiO2',density=2.634)
-sample = silicon%1 + SiO2/200%2 + air
+sample = silicon(0,1) | SiO2(200,2) | air
 
 
 # Compute reflectivity with resolution and added noise
-instrument = snsdata.Liquids()
-probe = instrument.simulate(T=T,slits=slits,dLoL=dLoL)
-M = Experiment(probe=probe, sample=sample)
+instrument = SNS.Liquids()
+M = instrument.simulate(sample, T=T,slits=slits,dLoL=dLoL)
 Q, R = M.reflectivity()
-I = snsdata.feather(probe.L,counts=1e6)
+I = SNS.feather(probe.L,counts=1e6)
 dR = sqrt(R/I)
 R += randn(len(Q))*dR
 probe.R, probe.dR = R, dR
@@ -50,7 +49,7 @@ outfile.write("""\
 numpy.savetxt(outfile, data.T)
 outfile.close()
 
-probe2 = snsdata.load(filename,slits=slits)
+probe2 = SNS.load(filename,slits=slits)
 assert norm(probe2.Q-probe.Q) < 2e-14
 assert norm(probe2.R-probe.R) < 2e-14
 assert norm(probe2.L-probe.L) < 2e-14

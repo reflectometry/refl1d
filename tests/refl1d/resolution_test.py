@@ -37,7 +37,7 @@ def test():
     sTlo,sbelow,sabove = 0.2,0.4,3
     Ts = numpy.array([Tlo/2,Tlo,(Tlo+Thi)/2,Thi,Thi*2])
     slits = (sbelow,sTlo,sTlo*(Tlo+Thi)/2/Tlo,sTlo*Thi/Tlo,sabove)
-    assert norm(res.opening_slits(T=Ts,slits_at_Tlo=sTlo,Tlo=Tlo,Thi=Thi,
+    assert norm(res.slit_widths(T=Ts,slits_at_Tlo=sTlo,Tlo=Tlo,Thi=Thi,
                 slits_below=sbelow,slits_above=sabove)[0]-slits) < 1e-14
 
     # FWHM angular divergence is average slit opening / slit separation
@@ -45,6 +45,7 @@ def test():
     d1,d2 = 3000,1000
     s1,s2 = 0.1,0.3
     d,savg = d1-d2,(s1+s2)/2
+    print res.divergence(T=T,slits=(s1,s2),distance=(d1,d2)), savg/d
     assert norm(res.divergence(T=T,slits=(s1,s2),distance=(d1,d2)) - savg/d) < 1e-14
     assert norm(res.divergence(T=T,slits=(s1,s2),distance=(d1,d2)) - savg/d) < 1e-14
     assert norm(res.divergence(T=T,slits=(s1,s2),distance=(d1,d2),

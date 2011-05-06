@@ -74,7 +74,8 @@ matplotlib.use('WXAgg')
 import periodictable
 
 # Retrieve the application version string.
-from refl1d import __version__ as version
+import refl1d
+version = refl1d.__version__
 
 # A manifest is required to be included in a py2exe image (or accessible as a
 # file in the image directory) when wxPython is included so that the Windows XP
