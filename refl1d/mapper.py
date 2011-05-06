@@ -27,7 +27,8 @@ class MPMapper(object):
         if cpus is None:
             cpus = multiprocessing.cpu_count()
         pool = multiprocessing.Pool(cpus,_MP_set_problem,(problem,))
-        return lambda points: pool.map(_MP_run_problem, points)
+        mapper = lambda points: pool.map(_MP_run_problem, points)
+        return mapper
     @staticmethod
     def stop_mapper(mapper):
         pass

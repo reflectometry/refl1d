@@ -47,6 +47,7 @@ from material import Vacuum
 from mystic.parameter import Parameter, Constant
 from .resolution import TL2Q, dTdL2dQ
 from .stitch import stitch
+from .util import coordinated_colors
 
 PROBE_KW = ('T', 'dT', 'L', 'dL', 'data',
             'intensity', 'background', 'back_absorption',
@@ -421,10 +422,11 @@ class Probe(object):
             Srho,Vrho = Vrho,Srho
             Sirho,Virho = Virho,Sirho
         if Srho == Vrho: Srho = Vrho + 1
-        I = numpy.ones_like(self.Q)
+        #I = numpy.ones_like(self.Q)
+        I = 1
         calculator = fresnel.Fresnel(rho=Srho*I, irho=Sirho*I,
                                      Vrho=Vrho*I, Virho=Virho*I)
-        return calculator(Q=self.Q)
+        return calculator
 
     def plot(self, view=None, **kwargs):
         """
@@ -447,13 +449,15 @@ class Probe(object):
             self.plot_resolution(**kwargs)
         elif view == 'residual':
             self.plot_residuals(**kwargs)
+        elif view == 'SA':
+            self.plot(view=None, **kwargs)
         else:
             raise TypeError("incorrect reflectivity view '%s'"%view)
 
 
-    def plot_resolution(self, **kwargs):
+    def plot_resolution(self, suffix='', **kwargs):
         import pylab
-        pylab.plot(self.Q, self.dQ, label=self.name())
+        pylab.plot(self.Q, self.dQ, label=self.name(suffix=suffix))
         pylab.xlabel(r'Q ($\AA^{-1}$)')
         pylab.ylabel(r'Q resolution ($1-\sigma \AA^{-1}$)')
         pylab.title('Measurement resolution')
@@ -464,7 +468,7 @@ class Probe(object):
         Plot the data associated with probe.
         """
         import pylab
-        self._plot_pair(scale=1, ylabel='Reflectivity', **kwargs)
+        self._plot_pair(ylabel='Reflectivity', **kwargs)
         pylab.yscale('linear')
 
     def plot_log(self, **kwargs):
@@ -472,7 +476,7 @@ class Probe(object):
         Plot the data associated with probe.
         """
         import pylab
-        self._plot_pair(scale=1, ylabel='Reflectivity', **kwargs)
+        self._plot_pair(ylabel='Reflectivity', **kwargs)
         pylab.yscale('log')
 
     def plot_fresnel(self, substrate=None, surface=None, **kwargs):
@@ -483,56 +487,55 @@ class Probe(object):
         if substrate is None and surface is None:
             raise TypeError("Fresnel reflectivity needs substrate or surface")
         F = self.fresnel(substrate=substrate,surface=surface)
-        F *= self.intensity.value
+        scale = lambda Q: 1./F(Q)/self.intensity.value
         if substrate is None:
             name = "air:%s"%(surface.name)
         elif surface is None or isinstance(surface,Vacuum):
             name = substrate.name
         else:
             name = "%s:%s"%(substrate.name, surface.name)
-        self._plot_pair(scale=1/F, ylabel='R/R(%s)'%(name), **kwargs)
+        self._plot_pair(scale=scale, ylabel='R/R(%s)'%(name), **kwargs)
 
     def plot_Q4(self, **kwargs):
         """
         Plot the Q**4 reflectivity associated with the probe.
         """
         import pylab
-        Q4 = 1e8*self.Q**4
-        Q4 /= self.intensity.value
+        scale = lambda Q: 1e8*Q**4/self.intensity.value
         #Q4[Q4==0] = 1
-        self._plot_pair(scale=Q4, ylabel='R (100 Q)^4', **kwargs)
+        self._plot_pair(scale=scale, ylabel='R (100 Q)^4', **kwargs)
 
     def plot_residuals(self, theory=None, suffix='', **kwargs):
         import matplotlib.pyplot as plt
         if theory is not None and self.R is not None:
-            from .util import coordinated_colors
             c = coordinated_colors()
             Q,R = theory
             residual = (R - self.R)/self.dR
             plt.plot(self.Q, residual,
                      '.', color=c['light'],
-                     label=self.name()+suffix)
+                     label=self.name(suffix=suffix))
         plt.axhline(1, color='black', ls='--',lw=1)
         plt.axhline(0, color='black', lw=1)
         plt.axhline(-1, color='black', ls='--',lw=1)
         plt.xlabel('Q (inv A)')
         plt.ylabel('(theory-data)/error')
+        plt.legend()
 
-    def _plot_pair(self, theory=None, scale=1, ylabel="", suffix="", **kw):
+    def _plot_pair(self, theory=None, scale=lambda Q: 1,
+                   ylabel="", suffix="", **kw):
         import pylab
-        from .util import coordinated_colors
         c = coordinated_colors()
         isheld = pylab.ishold()
         if hasattr(self,'R') and self.R is not None:
-            pylab.errorbar(self.Q, self.R*scale,
-                           yerr=self.dR*scale, xerr=self.dQ,
+            pylab.errorbar(self.Q, self.R*scale(self.Q),
+                           yerr=self.dR*scale(self.Q), xerr=self.dQ,
                            fmt='.', color=c['light'],
-                           label=self.name('data')+suffix)
+                           label=self.name('data',suffix))
             pylab.hold(True)
         if theory is not None:
             Q,R = theory
-            pylab.plot(Q, R*scale, color=c['dark'],
-                       label=self.name('theory')+suffix)
+            pylab.plot(Q, R*scale(Q), color=c['dark'],
+                       label=self.name('theory',suffix))
         pylab.hold(isheld)
         pylab.xlabel('Q (inv Angstroms)')
         pylab.ylabel(ylabel)
@@ -541,9 +544,9 @@ class Probe(object):
     def name(self, gloss="", suffix=""):
         if hasattr(self, 'filename'):
             prefix = os.path.splitext(os.path.basename(self.filename))[0]
-            return " ".join((prefix,gloss)) if gloss else prefix
+            return " ".join((prefix+suffix,gloss)) if gloss else prefix
         else:
-            return gloss if gloss else None
+            return suffix+" "+gloss if gloss else None
 
 
 class XrayProbe(Probe):
@@ -576,254 +579,6 @@ class NeutronProbe(Probe):
         return rho, irho[0], rho_incoh
         return rho, irho[self._sf_idx], rho_incoh
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
-
-
-def measurement_union(xs):
-    TL = set()
-    for x in xs:
-        if x is not None:
-            TL = TL | set(zip(x.T,x.dT,x.L,x.dL))
-    T,dT,L,dL = [numpy.array(sorted(v))
-                 for v in zip(*[w for w in TL])]
-    Q = TL2Q(T,L)
-    dQ = dTdL2dQ(T,dT,L,dL)
-    idx = numpy.argsort(Q)
-    return T[idx],dT[idx],L[idx],dL[idx],Q[idx],dQ[idx]
-
-def Qmeasurement_union(xs):
-    Qset = set()
-    for x in xs:
-        if x is not None:
-            Qset = Qset | set(zip(x.Q,x.dQ))
-    Q,dQ = [numpy.array(sorted(v))
-            for v in zip(*[w for w in Qset])]
-    idx = numpy.argsort(Q)
-    return Q[idx],dQ[idx]
-
-
-class PolarizedNeutronProbe(object):
-    """
-    Polarized neutron probe
-
-    *xs* (4 x NeutronProbe) is a sequence pp, pm, mp and mm.
-    *Tguide* (degrees) is the angle of the guide field
-    """
-    view = None  # Default to Probe.view so only need to change in one place
-    substrate = surface = None
-    polarized = True
-    def __init__(self, xs=None, Tguide=270):
-        self.pp, self.pm, self.mp, self.mm = xs
-
-        self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
-            = measurement_union(xs)
-        self._set_calc(self.T, self.L)
-        self._check()
-
-    def _check(self):
-        back_refls = [f.back_reflectivity
-                      for f in (self.pp, self.pm, self.mp, self.mm)
-                      if f is not None]
-        if all(back_refls) or not any(back_refls):
-            self.back_reflectivity = back_refls[0]
-        else:
-            raise ValueError("Cannot mix front and back reflectivity measurements")
-
-    def shared_beam(self, intensity=1, background=0,
-                    back_absorption=1, theta_offset=0):
-        """
-        Share beam parameters across all four cross sections.
-
-        New parameters are created for *intensity*, *background*,
-        *theta_offset* and *back_absorption* and assigned to the all
-        cross sections.  These can be replaced in an individual
-        cross section if for some reason one of the parameters is
-        independent.
-        """
-        intensity = Parameter.default(intensity,name="intensity")
-        background = Parameter.default(background,name="background",
-                                       limits=[0,inf])
-        back_absorption = Parameter.default(back_absorption,
-                                            name="back_absorption",
-                                            limits=[0,1])
-        theta_offset = Parameter.default(theta_offset,name="theta_offset")
-        for x in self.pp, self.pm, self.mp, self.mm:
-            if x is not None:
-                x.intensity = intensity
-                x.background = background
-                x.back_absorption = back_absorption
-                x.theta_offset = theta_offset
-
-    def oversample(self, n=6, seed=1):
-        # doc string is inherited from parent (see below)
-        rng = numpy.random.RandomState(seed=seed)
-        T = rng.normal(self.T[:,None],self.dT[:,None],size=(len(self.dT),n))
-        L = rng.normal(self.L[:,None],self.dL[:,None],size=(len(self.dL),n))
-        T = T.flatten()
-        L = L.flatten()
-        self._set_calc(T,L)
-    oversample.__doc__ = Probe.oversample.__doc__
-
-    @property
-    def calc_Q(self):
-        for x in self.pp, self.pm, self.mp, self.mm:
-            if x is not None:
-                return x.calc_Q
-        raise RuntimeError("No polarization cross sections")
-
-    def _set_calc(self, T, L):
-        """
-        Propagate setting of calc_Q to the individual cross sections.
-        """
-        for x in self.pp, self.pm, self.mp, self.mm:
-            if x is not None:
-                x._set_calc(T,L)
-
-    def apply_beam(self, R, resolution=True):
-        """
-        Apply factors such as beam intensity, background, backabsorption,
-        and footprint to the data.
-        """
-        for Ri,xs in zip(R,(self.pp, self.pm, self.mp, self.mm)):
-            if xs is not None:
-                xs.apply_beam(Ri, resolution)
-
-    def scattering_factors(self, material):
-        # doc string is inherited from parent (see below)
-        rho, irho, rho_incoh = nsf.neutron_sld(material,
-                                               wavelength=self._sf_L,
-                                               density=1)
-        return rho, irho[self._sf_idx], rho_incoh
-    scattering_factors.__doc__ = Probe.scattering_factors.__doc__
-
-    def __len__(self):
-        return len(self.calc_Q)
-
-    def plot(self, view=None, **kwargs):
-        """
-        Plot theory against data.
-
-        Need substrate/surface for Fresnel reflectivity
-        """
-        view = view if view is not None else self.view
-
-        if view is None: view = Probe.view  # Default to Probe.view
-
-        if view == 'linear':
-            self.plot_linear(**kwargs)
-        elif view == 'log':
-            self.plot_log(**kwargs)
-        elif view == 'fresnel':
-            self.plot_fresnel(**kwargs)
-        elif view == 'q4':
-            self.plot_Q4(**kwargs)
-        elif view == 'residuals':
-            self.plot_residuals(**kwargs)
-        elif view == 'SA':
-            self.plot_SA(**kwargs)
-        elif view == 'resolution':
-            self.plot_resolution(**kwargs)
-        else:
-            raise TypeError("incorrect reflectivity view '%s'"%view)
-
-    def plot_resolution(self, **kwargs):
-        self._xs_plot('plot_resolution', **kwargs)
-    def plot_linear(self, **kwargs):
-        self._xs_plot('plot_linear', **kwargs)
-    def plot_log(self, **kwargs):
-        self._xs_plot('plot_log', **kwargs)
-    def plot_fresnel(self, **kwargs):
-        self._xs_plot('plot_fresnel', **kwargs)
-    def plot_Q4(self, **kwargs):
-        self._xs_plot('plot_Q4', **kwargs)
-    def plot_residuals(self, **kwargs):
-        self._xs_plot('plot_residuals', **kwargs)
-    def plot_SA(self, theory=None, **kwargs):
-        import pylab
-        if self.pp is None or self.mm is None:
-            raise TypeError("cannot form spin asymmetry plot with ++ and --")
-
-        isheld = pylab.ishold()
-        pp,mm = self.pp,self.mm
-        if hasattr(pp,'R'):
-            Q,SA,dSA = spin_asymmetry(pp.Q,pp.R,pp.dR,mm.Q,mm.R,mm.dR)
-            if dSA is not None:
-                pylab.errorbar(Q, SA, yerr=dSA, xerr=pp.dQ, fmt='.',
-                               label=pp.name('data'))
-            else:
-                pylab.plot(Q,SA,'.',label=pp.name('data'))
-            pylab.hold()
-        if theory is not None:
-            Q,pp,pm,mp,mm = theory
-            Q,SA,_ = spin_asymmetry(Q,pp,None,Q,mm,None)
-            pylab.plot(Q, SA,label=pp.name('theory'))
-        pylab.hold(isheld)
-        pylab.xlabel(r'Q (\AA^{-1})')
-        pylab.ylabel(r'spin asymmetry $(R^+ -\, R^-) / (R^+ +\, R^-)$')
-
-    def _xs_plot(self, plotter, theory=None, **kwargs):
-        import pylab
-        # Plot available cross sections
-        isheld = pylab.ishold()
-        if theory is not None:
-            Q,pp,pm,mp,mm = theory
-            theory = ((Q,pp),(Q,pm),(Q,mp),(Q,pm))
-        else:
-            theory = (None,None,None,None)
-        for xs,xstheory,suffix in zip((self.pp, self.pm, self.mp, self.mm),
-                                      theory,
-                                      ('++','+-','-+','--')):
-            if xs is not None:
-                fn = getattr(xs, plotter)
-                fn(theory=xstheory, suffix=suffix, **kwargs)
-                pylab.hold(True)
-        if not isheld: pylab.hold(False)
-
-    def name(self): return self.pp.name()
-
-def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
-    r"""
-    Compute spin asymmetry for R++, R--.
-
-    **Parameters:**
-
-    *Qp*, *Rp*, *dRp* : vector
-        Measured ++ cross section and uncertainty.
-    *Qm*, *Rm*, *dRm* : vector
-        Measured -- cross section and uncertainty.
-
-    If *dRp*, *dRm* are None then the returned uncertainty will also be None.
-
-    **Returns:**
-
-    *Q*, *SA*, *dSA* : vector
-        Computed spin asymmetry and uncertainty.
-
-    **Algorithm:**
-
-    Spin asymmetry, $S_A$, is:
-
-    .. math::
-
-        S_A = \frac{R_{++} - R_{--}}{R_{++} + R_{--}}
-
-    Uncertainty $\Delta S_A$ follows from propagation of error:
-
-    .. math::
-
-        \Delta S_A^2 = \frac{4(R_{++}^2\Delta R_{--}^2-R_{--}^2\Delta R_{++})}
-                            {(R_{++} + R_{--})^4}
-
-    """
-    Rm = numpy.interp(Qp,Qm,Rm)
-    v = (Rp-Rm)/(Rp+Rm)
-    if dRp is not None:
-        dRm = numpy.interp(Qp,Qm,dRm)
-        dvsq = 4 * ((Rp*dRm)**2 - (Rm*dRp)**2) / (Rp+Rm)**4
-        dvsq[dvsq<0] = 0
-        return Qp, v, sqrt(dvsq)
-    else:
-        return Qp, v, None
-
 
 
 
@@ -1017,8 +772,299 @@ class QProbe(Probe):
         self.Ro = self.R = R
         self.dR = dR
 
+
+def measurement_union(xs):
+    """
+    Determine the unique (T,dT,L,dL) across all datasets.
+    """
+
+    # First gather a set of unique tuples in angle and wavelength
+    TL = set()
+    for x in xs:
+        if x is not None:
+            TL = TL | set(zip(x.T,x.dT,x.L,x.dL))
+
+    # Convert to Q,dQ
+    Q = TL2Q(T,L)
+    dQ = dTdL2dQ(T,dT,L,dL)
+
+    # Sort by Q
+    idx = numpy.argsort(Q)
+    T,dT,L,dL,Q,dQ = T[idx],dT[idx],L[idx],dL[idx],Q[idx],dQ[idx]
+    Q,dQ = Q[idx],dQ[idx]
+    if abs(Q[1:] - Q[:-1]).any() < 1e-14:
+        raise ValueError("Q is not unique")
+    return T, dT, L, dL, Q, dQ
+
+def Qmeasurement_union(xs):
+    """
+    Determine the unique (T,dT,L,dL) across all datasets.
+    """
+    Qset = set()
+    for x in xs:
+        if x is not None:
+            Qset = Qset | set(zip(x.Q,x.dQ))
+    Q,dQ = [numpy.array(sorted(v))
+            for v in zip(*[w for w in Qset])]
+    idx = numpy.argsort(Q)
+    Q,dQ = Q[idx],dQ[idx]
+    if abs(Q[1:] - Q[:-1]).any() < 1e-14:
+        raise ValueError("Q is not unique")
+    return Q, dQ
+
+class PolarizedNeutronProbe(object):
+    """
+    Polarized neutron probe
+
+    *xs* (4 x NeutronProbe) is a sequence pp, pm, mp and mm.
+    *Tguide* (degrees) is the angle of the guide field
+    """
+    view = None  # Default to Probe.view so only need to change in one place
+    substrate = surface = None
+    polarized = True
+    def __init__(self, xs=None, Tguide=270):
+        self.xs = xs
+
+        self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
+            = measurement_union(xs)
+        self._set_calc(self.T, self.L)
+        self._check()
+
+    @property
+    def pp(self): return self.xs[0]
+    @property
+    def pm(self): return self.xs[1]
+    @property
+    def mp(self): return self.xs[2]
+    @property
+    def mm(self): return self.xs[3]
+
+    def _check(self):
+        back_refls = [f.back_reflectivity for f in self.xs if f is not None]
+        if all(back_refls) or not any(back_refls):
+            self.back_reflectivity = back_refls[0]
+        else:
+            raise ValueError("Cannot mix front and back reflectivity measurements")
+
+    def shared_beam(self, intensity=1, background=0,
+                    back_absorption=1, theta_offset=0):
+        """
+        Share beam parameters across all four cross sections.
+
+        New parameters are created for *intensity*, *background*,
+        *theta_offset* and *back_absorption* and assigned to the all
+        cross sections.  These can be replaced in an individual
+        cross section if for some reason one of the parameters is
+        independent.
+        """
+        intensity = Parameter.default(intensity,name="intensity")
+        background = Parameter.default(background,name="background",
+                                       limits=[0,inf])
+        back_absorption = Parameter.default(back_absorption,
+                                            name="back_absorption",
+                                            limits=[0,1])
+        theta_offset = Parameter.default(theta_offset,name="theta_offset")
+        for x in self.xs:
+            if x is not None:
+                x.intensity = intensity
+                x.background = background
+                x.back_absorption = back_absorption
+                x.theta_offset = theta_offset
+
+    def oversample(self, n=6, seed=1):
+        # doc string is inherited from parent (see below)
+        rng = numpy.random.RandomState(seed=seed)
+        T = rng.normal(self.T[:,None],self.dT[:,None],size=(len(self.dT),n))
+        L = rng.normal(self.L[:,None],self.dL[:,None],size=(len(self.dL),n))
+        T = T.flatten()
+        L = L.flatten()
+        self._set_calc(T,L)
+    oversample.__doc__ = Probe.oversample.__doc__
+
+    @property
+    def calc_Q(self):
+        for x in self.xs:
+            if x is not None:
+                return x.calc_Q
+        raise RuntimeError("No polarization cross sections")
+
+    def _set_calc(self, T, L):
+        """
+        Propagate setting of calc_Q to the individual cross sections.
+        """
+        for x in self.xs:
+            if x is not None:
+                x._set_calc(T,L)
+
+    def apply_beam(self, R, resolution=True):
+        """
+        Apply factors such as beam intensity, background, backabsorption,
+        and footprint to the data.
+        """
+        for Ri,xs in zip(R,self.xs):
+            if xs is not None:
+                xs.apply_beam(Ri, resolution)
+
+    def scattering_factors(self, material):
+        # doc string is inherited from parent (see below)
+        rho, irho, rho_incoh = nsf.neutron_sld(material,
+                                               wavelength=self._sf_L,
+                                               density=1)
+        return rho, irho[self._sf_idx], rho_incoh
+    scattering_factors.__doc__ = Probe.scattering_factors.__doc__
+
+    def select_corresponding(self, theory):
+        """
+        Select theory points corresponding to the measured data.
+
+        Since we have evaluated theory at every Q, it is safe to interpolate
+        measured Q into theory, since it will land on a node,
+        not in an interval.
+        """
+
+        Qth,Rth = theory
+        return [None if x_data is None
+                else (x_data.Q, numpy.interp(x_data.Q,Qth,x_th))
+                for x_data,x_th in zip(self.xs,Rth)]
+
+
+    def __len__(self):
+        return len(self.calc_Q)
+
+    def plot(self, view=None, **kwargs):
+        """
+        Plot theory against data.
+
+        Need substrate/surface for Fresnel reflectivity
+        """
+        view = view if view is not None else self.view
+
+        if view is None: view = Probe.view  # Default to Probe.view
+
+        if view == 'linear':
+            self.plot_linear(**kwargs)
+        elif view == 'log':
+            self.plot_log(**kwargs)
+        elif view == 'fresnel':
+            self.plot_fresnel(**kwargs)
+        elif view == 'q4':
+            self.plot_Q4(**kwargs)
+        elif view == 'residual':
+            self.plot_residuals(**kwargs)
+        elif view == 'SA':
+            self.plot_SA(**kwargs)
+        elif view == 'resolution':
+            self.plot_resolution(**kwargs)
+        else:
+            raise TypeError("incorrect reflectivity view '%s'"%view)
+
+    def plot_resolution(self, **kwargs):
+        self._xs_plot('plot_resolution', **kwargs)
+    def plot_linear(self, **kwargs):
+        self._xs_plot('plot_linear', **kwargs)
+    def plot_log(self, **kwargs):
+        self._xs_plot('plot_log', **kwargs)
+    def plot_fresnel(self, **kwargs):
+        self._xs_plot('plot_fresnel', **kwargs)
+    def plot_Q4(self, **kwargs):
+        self._xs_plot('plot_Q4', **kwargs)
+    def plot_residuals(self, **kwargs):
+        self._xs_plot('plot_residuals', **kwargs)
+    def plot_SA(self, theory=None, **kwargs):
+        import pylab
+        if self.pp is None or self.mm is None:
+            raise TypeError("cannot form spin asymmetry plot without ++ and --")
+
+        isheld = pylab.ishold()
+        pp,mm = self.pp,self.mm
+        c = coordinated_colors()
+        if hasattr(pp,'R'):
+            Q,SA,dSA = spin_asymmetry(pp.Q,pp.R,pp.dR,mm.Q,mm.R,mm.dR)
+            if dSA is not None:
+                pylab.errorbar(Q, SA, yerr=dSA, xerr=pp.dQ, fmt='.',
+                               label=pp.name('data'), color=c['light'])
+            else:
+                pylab.plot(Q,SA,'.',label=pp.name('data'),color=c['light'])
+            pylab.hold(True)
+        if theory is not None:
+            Q,(Rpp,Rpm,Rmp,Rmm) = theory
+            Q,SA,_ = spin_asymmetry(Q,Rpp,None,Q,Rmm,None)
+            pylab.plot(Q, SA,label=pp.name('theory'),color=c['dark'])
+        pylab.hold(isheld)
+        pylab.xlabel(r'Q (\AA^{-1})')
+        pylab.ylabel(r'spin asymmetry $(R^{++} -\, R^{--}) / (R^{++} +\, R^{--})$')
+        pylab.legend()
+
+    def _xs_plot(self, plotter, theory=None, **kwargs):
+        import pylab
+        # Plot available cross sections
+        isheld = pylab.ishold()
+        if theory is not None:
+            if plotter == "plot_residuals":
+                theory = self.select_corresponding(theory)
+            else:
+                Q,(pp,pm,mp,mm) = theory
+                theory = (Q,pp),(Q,pm),(Q,mp),(Q,mm)
+        else:
+            theory = (None,None,None,None)
+        for x_data,x_th,suffix in zip(self.xs, theory,
+                                      ('$^{++}$','$^{+-}$','$^{-+}$','$^{--}$')):
+            if x_data is not None:
+                fn = getattr(x_data, plotter)
+                fn(theory=x_th, suffix=suffix, **kwargs)
+                pylab.hold(True)
+        if not isheld: pylab.hold(False)
+
+    def name(self): return self.pp.name()
+
+def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
+    r"""
+    Compute spin asymmetry for R++, R--.
+
+    **Parameters:**
+
+    *Qp*, *Rp*, *dRp* : vector
+        Measured ++ cross section and uncertainty.
+    *Qm*, *Rm*, *dRm* : vector
+        Measured -- cross section and uncertainty.
+
+    If *dRp*, *dRm* are None then the returned uncertainty will also be None.
+
+    **Returns:**
+
+    *Q*, *SA*, *dSA* : vector
+        Computed spin asymmetry and uncertainty.
+
+    **Algorithm:**
+
+    Spin asymmetry, $S_A$, is:
+
+    .. math::
+
+        S_A = \frac{R_{++} - R_{--}}{R_{++} + R_{--}}
+
+    Uncertainty $\Delta S_A$ follows from propagation of error:
+
+    .. math::
+
+        \Delta S_A^2 = \frac{4(R_{++}^2\Delta R_{--}^2-R_{--}^2\Delta R_{++})}
+                            {(R_{++} + R_{--})^4}
+
+    """
+    Rm = numpy.interp(Qp,Qm,Rm)
+    v = (Rp-Rm)/(Rp+Rm)
+    if dRp is not None:
+        dRm = numpy.interp(Qp,Qm,dRm)
+        dvsq = 4 * ((Rp*dRm)**2 - (Rm*dRp)**2) / (Rp+Rm)**4
+        dvsq[dvsq<0] = 0
+        return Qp, v, sqrt(dvsq)
+    else:
+        return Qp, v, None
+
+
 class QPolarizedNeutronProbe(PolarizedNeutronProbe):
+    polarized = True
     def __init__(self, xs=None):
-        self.pp, self.pm, self.mp, self.mm = xs
+        self.xs = xs
         self.Q, self.dQ = Qmeasurement_union(xs)
         self._check()

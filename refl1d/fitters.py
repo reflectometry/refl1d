@@ -352,12 +352,13 @@ class DreamFit(FitBase):
         self.state.show(figfile=output_path)
 
 class FitDriver(object):
-    def __init__(self, fitter=None, problem=None, monitors=None, **options):
+    def __init__(self, fitter=None, problem=None, monitors=None,
+                 mapper=None, **options):
         self.fitter = fitter
         self.problem = problem
         self.options = options
         self.monitors = monitors
-        self.mapper = lambda p: map(problem.nllf,p)
+        self.mapper = mapper if mapper else lambda p: map(problem.nllf,p)
 
     def fit(self):
         optimizer = self.fitter(self.problem)

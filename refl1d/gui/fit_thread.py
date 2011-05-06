@@ -54,7 +54,7 @@ class FitThread(Thread):
         Thread.__init__(self)
         self.win = win
         self.problem = problem
-        self.fitter = fitter
+        self.fitter = deepcopy(fitter)
         self.options = options
         self.mapper = mapper
         self.start() # Start it working.
@@ -69,7 +69,6 @@ class FitThread(Thread):
         # inside the GUI monitor otherwise AppPanel will not be able to
         # recognize that it is the same problem when updating views.
         monitors = [GUIMonitor(self.win, self.problem)]
-
         if True: # Multiprocessing parallel
             mapper = MPMapper
         else:
@@ -78,8 +77,9 @@ class FitThread(Thread):
         # Be safe and keep a private copy of the problem while fitting
         problem = deepcopy(self.problem)
         driver = FitDriver(self.fitter, problem=problem,
-                           monitors=monitors, **self.options)
-        self.fitter.mapper = mapper.start_mapper(problem, [])
+                           monitors=monitors,
+                           mapper = mapper.start_mapper(problem, []),
+                           **self.options)
 
         x,fx = driver.fit()
         evt = FitCompleteEvent(problem=self.problem,

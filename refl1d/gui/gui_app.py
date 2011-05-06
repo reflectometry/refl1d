@@ -118,14 +118,13 @@ class Refl1dGUIApp(wx.App):
         # Create the application frame, but it will not be shown until the
         # splash screen terminates.  Note that import of AppFrame is done here
         # while the user is viewing the splash screen.
-        if LOGTIM: log_time("Starting to build the GUI application")
-
-        # Can't delay matplotlib configuration any longer
+        if LOGTIM: log_time("Starting to build the GUI application")        # Can't delay matplotlib configuration any longer
         from refl1d.cli import config_matplotlib
         config_matplotlib('WXAgg')
 
         from .app_frame import AppFrame
-        self.frame = AppFrame(parent=None, title=APP_TITLE, pos=pos, size=size)
+        self.frame = AppFrame(parent=None, title=APP_TITLE,
+                              pos=pos, size=size)
 
         # Declare the application frame to be the top window.
         self.SetTopWindow(self.frame)

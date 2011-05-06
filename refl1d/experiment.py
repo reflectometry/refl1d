@@ -64,11 +64,17 @@ class ExperimentBase(object):
         self._cache = {}
 
     def residuals(self):
-        if self.probe.R is None:
+        if (self.probe.polarized and all(x.R is None for x in self.probe.xs)) \
+            or (not self.probe.polarized and self.probe.R is None):
             raise ValueError("No data from which to calculate residuals")
         if 'residuals' not in self._cache:
-            _,R = self.reflectivity()
-            resid = (self.probe.R - R)/self.probe.dR
+            Q,R = self.reflectivity()
+            if self.probe.polarized:
+                _,Rth = zip(*self.probe.select_corresponding((Q,R)))
+                resid = numpy.hstack([(x.R - xth)/x.dR
+                                      for x,xth in zip(self.probe.xs, Rth)])
+            else:
+                resid = (self.probe.R - R)/self.probe.dR
             self._cache['residuals'] = resid
 
         return self._cache['residuals']

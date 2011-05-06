@@ -100,8 +100,8 @@ def coordinated_colors(base=None):
         except: # Cruft 1.3 and earlier
             base = pylab.gca()._get_lines._get_next_cycle_color()
     return dict(base=base,
-                light = dhsv(base, dv=0.3, ds=-0.2),
-                dark = dhsv(base, dv=-0.35, ds=0.35),
+                light = dhsv(base, dv=+0.3, ds=-0.2),
+                dark = dhsv(base, dv=-0.25, ds=+0.35),
                 )
 
 # Color functions

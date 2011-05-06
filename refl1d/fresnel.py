@@ -38,6 +38,8 @@ class Fresnel:
         # and ignore the absorption.
         rho_Qp = 1e-6*(self.rho-self.Vrho + 1j*self.irho)
         rho_Qm = 1e-6*(self.Vrho-self.rho + 1j*self.Virho)
+        #print "fresnel",rho_Qp.shape,rho_Qm.shape,Q.shape
+
         rho = choose(Q<0, (rho_Qp,rho_Qm))
         kz = abs(Q)/2
         f = sqrt(kz**2 - 4*pi*rho)  # fresnel coefficient

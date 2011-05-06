@@ -83,6 +83,10 @@ class TheoryView(AuiPanel):
                                           "&Q4",
                                           "Plot y-axis in Q4 scale")
         frame.Bind(wx.EVT_MENU, self.OnQ4, _item)
+        _item = menu.AppendRadioItem(wx.ID_ANY,
+                                          "&SA",
+                                          "Spin Asymmetry")
+        frame.Bind(wx.EVT_MENU, self.OnSA, _item)
 
         menu.AppendSeparator()
 
@@ -122,6 +126,10 @@ class TheoryView(AuiPanel):
 
     def OnQ4(self, event):
         self.view = "q4"
+        self.redraw()
+
+    def OnSA(self, event):
+        self.view = "SA"
         self.redraw()
 
     def OnResiduals(self, event):

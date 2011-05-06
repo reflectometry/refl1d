@@ -89,7 +89,6 @@ class GareflExperiment(Experiment):
             self._cache[key] = True
         return self._slabs
 
-
     def amplitude(self, resolution=True):
         """
         Calculate reflectivity amplitude at the probe points.
@@ -103,9 +102,15 @@ class GareflExperiment(Experiment):
         key = 'reflectivity'
         if key not in self._cache:
             slabs = self._render_slabs()
-            # TODO: need to do more work for magnetic measurements
-            Q,R = self.model.get_reflectivity(self.index, 0)
-            self._cache[key] = Q,R
+            if self.probe.polarized:
+                Q,Rmm = self.model.get_reflectivity(self.index, 0)
+                Q,Rmp = self.model.get_reflectivity(self.index, 1)
+                Q,Rpm = self.model.get_reflectivity(self.index, 2)
+                Q,Rpp = self.model.get_reflectivity(self.index, 3)
+                self._cache[key] = Q,(Rmm,Rmp,Rpm,Rpp)
+            else:
+                Q,R = self.model.get_reflectivity(self.index, 0)
+                self._cache[key] = Q,R
         return self._cache[key]
 
 

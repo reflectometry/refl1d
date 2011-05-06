@@ -14,9 +14,9 @@ try:
     publish = pub.sendMessage
     #print "using V3 interface to pubsub"
 except:
-    print "--- pubsub kwargs error ---"
-    import traceback; traceback.print_exc()
-    print "--- pubsub kwargs error ---"
+    #print "--- pubsub kwargs error ---"
+    #import traceback; traceback.print_exc()
+    #print "--- pubsub kwargs error ---"
     #print "using V1 interface to pubsub"
     # Otherwise use the V1 interface
     from wx.lib.pubsub import Publisher
