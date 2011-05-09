@@ -127,6 +127,7 @@ class SummaryView(scrolled.ScrolledPanel):
         for index, item in enumerate(self.display_list):
             self.sizer.Add(item, pos=(index+3,0))
 
+        self.SetupScrolling()
         self.Layout()
 
     def update_parameters(self):
