@@ -224,8 +224,6 @@ if sys.version_info >= (2, 6):
 
 # Specify required packages to bundle in the executable image.
 packages = ['numpy', 'scipy', 'matplotlib', 'pytz', 'pyparsing',
-            'wx', 'wx.lib.pubsub', 'wx.lib.pubsub.core',
-            'wx.lib.pubsub.core.kwargs',
             'periodictable', 'refl1d.names', 'dream'
             ]
 
