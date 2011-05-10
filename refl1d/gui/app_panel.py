@@ -238,8 +238,9 @@ class AppPanel(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.aui, 1, wx.EXPAND)
         self.SetSizer(sizer)
+        # Move this to gui_app.after_show since the sizing doesn't work
+        # right until the frame is rendered.
         #self.aui.Split(0, wx.TOP)
-        #wx.CallLater(1000, self.aui.Split, 0, wx.TOP)
 
     def OnViewTabClose(self, evt):
         win = self.aui.GetPage(evt.selection)

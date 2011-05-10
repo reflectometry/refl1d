@@ -3,6 +3,9 @@ import sys
 
 import wx.lib.scrolledpanel as scrolled
 
+
+IS_MAC = (wx.Platform == '__WXMAC__')
+
 # Global log info
 # We have this separate from the view because (a) it is a good idea to
 # separate model and view, and (b) because our method for 'reparenting'
@@ -43,7 +46,7 @@ class LogView(scrolled.ScrolledPanel):
         self._redraw()
 
     def _redraw(self):
-        if not self.IsShown():
+        if not IS_MAC and not self.IsShown():
             self._need_redraw = True
         else:
             self._need_redraw = False

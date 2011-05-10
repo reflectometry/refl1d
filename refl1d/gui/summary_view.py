@@ -34,6 +34,8 @@ import  wx.lib.scrolledpanel as scrolled
 from .util import nice
 from . import signal
 
+IS_MAC = (wx.Platform == '__WXMAC__')
+
 
 class SummaryView(scrolled.ScrolledPanel):
     """
@@ -57,6 +59,7 @@ class SummaryView(scrolled.ScrolledPanel):
         self.Bind(wx.EVT_SHOW, self.OnShow)
 
     def OnShow(self, event):
+        #print "show event"
         if not event.Show: return
         #print "showing summary"
         if self._need_update_model:
@@ -65,6 +68,7 @@ class SummaryView(scrolled.ScrolledPanel):
         elif self._need_update_parameters:
             #print "-update_parameters"
             self.update_parameters(self.model)
+        event.Skip()
 
     # ============ Operations on the model  ===============
 
@@ -75,21 +79,26 @@ class SummaryView(scrolled.ScrolledPanel):
     def update_model(self, model):
         if self.model != model: return
 
-        if not self.IsShown():
+        if not IS_MAC and not self.IsShown():
+            #print "summary not shown config"
             self._need_update_model = True
         else:
+            #print "summary shown config"
             self._update_model()
             self._need_update_parameters = self._need_update_model = False
 
     def update_parameters(self, model):
         if self.model != model: return
-        if not self.IsShown():
+        if not IS_MAC and not self.IsShown():
+            #print "summary not shown update"
             self._need_update_parameters = True
         else:
+            #print "summary shown upate"
             self._need_update_parameters = False
             self._update_parameters()
 
     def _update_model(self):
+        #print "drawing"
         self.sizer.Clear(deleteWindows=True)
         self.display_list = []
 
@@ -128,6 +137,7 @@ class SummaryView(scrolled.ScrolledPanel):
         self.Layout()
 
     def _update_parameters(self):
+        #print "updating"
         for p in self.display_list:
             p.update_slider()
 

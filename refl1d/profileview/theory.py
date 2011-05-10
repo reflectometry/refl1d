@@ -2,6 +2,9 @@ from __future__ import with_statement
 
 import wx
 
+# Can't seem to detect when notebook should be drawn on Mac
+IS_MAC = (wx.Platform == '__WXMAC__')
+
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wxagg import NavigationToolbar2Wx as Toolbar
 
@@ -123,6 +126,7 @@ class TheoryView(wx.Panel):
 
     # ==== Model view interface ===
     def OnShow(self, event):
+        #print "theory show"
         if not event.Show: return
         #print "showing theory"
         if self._need_redraw:
@@ -144,9 +148,10 @@ class TheoryView(wx.Panel):
 
     def redraw(self):
         # Hold off drawing until the tab is visible
-        if not self.IsShown():
+        if not IS_MAC and not self.IsShown():
             self._need_redraw = True
             return
+        #print "drawing theory"
 
         if self._calculating:
             # That means that I've entered the thread through a

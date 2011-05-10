@@ -36,6 +36,8 @@ from .util import nice
 from . import signal
 
 
+IS_MAC = (wx.Platform == '__WXMAC__')
+
 class ParameterView(wx.Panel):
     title = 'Parameters'
     default_size = (640,500)
@@ -118,7 +120,7 @@ class ParameterView(wx.Panel):
     def OnShow(self, event):
         if not event.Show: return
         #print "showing parameter"
-        if self._need_update_model:
+        if elf._need_update_model:
             #print "-model update"
             self.update_model(self.model)
         elif self._need_update_parameters:
@@ -135,7 +137,7 @@ class ParameterView(wx.Panel):
     def update_model(self, model):
         if self.model != model: return
 
-        if not self.IsShown():
+        if not IS_MAC and not self.IsShown():
             self._need_update_model = True
         else:
             self._need_update_model = self._need_update_parameters = False
@@ -143,7 +145,7 @@ class ParameterView(wx.Panel):
 
     def update_parameters(self, model):
         if self.model != model: return
-        if not self.IsShown():
+        if not IS_MAC and not self.IsShown():
             self._need_update_parameters = True
         else:
             self._need_update_parameters = False

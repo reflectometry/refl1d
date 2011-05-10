@@ -5,6 +5,8 @@ A base panel to draw the profile
 import os
 import wx
 
+IS_MAC = (wx.Platform == '__WXMAC__')
+
 import numpy
 from matplotlib.figure import Figure
 from matplotlib.axes   import Subplot
@@ -71,7 +73,7 @@ class ProfileView(wx.Panel):
         self.sizer.Add(self.tbsizer)
 
         self.SetSizer( self.sizer)
-        self.Fit()
+        self.sizer.Fit(self)
 
         # Status bar
         frame = self.GetTopLevelParent()
@@ -136,7 +138,7 @@ class ProfileView(wx.Panel):
         #print "profile update model"
         if self.model != model: return
 
-        if not self.IsShown():
+        if not IS_MAC and not self.IsShown():
             self._need_set_model = True
         else:
             self._need_set_model = self._need_redraw = False
@@ -146,7 +148,7 @@ class ProfileView(wx.Panel):
         #print "profile update parameters"
         if self.model != model: return
 
-        if not self.IsShown():
+        if not IS_MAC and not self.IsShown():
             self._need_redraw = True
         else:
             self._need_redraw = False

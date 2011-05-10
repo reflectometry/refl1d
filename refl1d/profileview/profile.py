@@ -193,6 +193,8 @@ class ProfileInteractor(object):
             self.hthetaM.set_data(z,thetaM)
         else:
             z,rho,rhoI = self.experiment.smooth_profile()
+        #print "z",z
+        #print "offset",self.x_offset
         self.hrho.set_data(z+self.x_offset,rho)
         self.hrhoI.set_data(z+self.x_offset,rhoI)
 
