@@ -51,12 +51,7 @@ import shutil
 import subprocess
 
 # Windows commands to run utilities
-# Make sure python is on the path, and PYTHON points to the right interpreter
 SVN    = "svn"
-PYTHON = sys.executable
-os.environ['PATH'] = ";".join((os.path.dirname(os.path.abspath(PYTHON)),
-                               os.environ['PATH']))
-os.environ['PYTHON'] = "/".join(PYTHON.split("\\"))
 INNO   = r"C:\Program Files\Inno Setup 5\ISCC.exe"  # command line operation
 
 # URL of the Subversion repository where the source code lives
@@ -65,9 +60,7 @@ SVN_REPO_URL = "svn://danse.us/reflectometry/trunk/refl1d"
 PKG_NAME = "refl1d" # temporary name
 # Name of the application we're building
 APP_NAME = "refl1d" # temporary name
-# Relative path for local install under our build tree; this is used in place
-# of the default installation path on Windows of C:\PythonNN\Lib\site-packages
-LOCAL_INSTALL = "local-site-packages"
+
 
 # Required versions of Python packages and utilities to build the application.
 MIN_PYTHON = "2.5"
@@ -96,6 +89,10 @@ MIN_INNO = "5.3.10"
 # Create a line separator string for printing
 SEPARATOR = "\n" + "/"*79
 
+# Relative path for local install under our build tree; this is used in place
+# of the default installation path on Windows of C:\PythonNN\Lib\site-packages
+LOCAL_INSTALL = "local-site-packages"
+
 # Determine the full directory paths of the top-level, source, and installation
 # directories based on the directory where the script is running.  Here the
 # top-level directory refers to the parent directory of the package.
@@ -108,6 +105,31 @@ else:
 SRC_DIR = os.path.join(TOP_DIR, PKG_NAME)
 INS_DIR = os.path.join(TOP_DIR, LOCAL_INSTALL)
 
+def get_version():
+    # Get the version string of the application for use later.
+    # This has to be done after we have checked out the repository.
+    for line in open(os.path.join(SRC_DIR, PKG_NAME, '__init__.py')).readlines():
+        if (line.startswith('__version__')):
+            exec(line.strip())
+            break
+    return __version__
+PKG_VERSION = get_version()
+EGG_NAME = "%s-%s-py%d.%d-%s.egg"%(PKG_NAME,PKG_VERSION,
+                                   sys.version_info[0],
+                                   sys.version_info[1],
+                                   sys.platform)
+PKG_DIR = os.path.join(INS_DIR, EGG_NAME)
+
+# Put PYTHON in the environment and add the python directory and its
+# corresponding script directory (for nose, sphinx, pip, etc) to the path.
+# Add the local site packages to the python path
+PYTHON = sys.executable
+PYTHONDIR = os.path.dirname(os.path.abspath(PYTHON))
+SCRIPTDIR = os.path.join(PYTHONDIR,'Scripts')
+os.environ['PATH'] = ";".join((PYTHONDIR,SCRIPTDIR,os.environ['PATH']))
+os.environ['PYTHON'] = "/".join(PYTHON.split("\\"))
+os.environ['PYTHONPATH'] = PKG_DIR
+
 #==============================================================================
 
 def build_it():
@@ -119,16 +141,9 @@ def build_it():
     if not (len(sys.argv) > 1 and '-u' in sys.argv[1:]):
         checkout_code()
 
-    # Get the version string of the application for use later.
-    # This has to be done after we have checked out the repository.
-    for line in open(os.path.join(SRC_DIR, 'refl1d', '__init__.py')).readlines():
-        if (line.startswith('__version__')):
-            exec(line.strip())
-            break
-
     # Create an archive of the source code.
     if not (len(sys.argv) > 1 and '-a' in sys.argv[1:]):
-        create_archive(__version__)
+        create_archive(PKG_VERSION)
 
     # Install the application in a local directory tree.
     install_package()
@@ -147,7 +162,7 @@ def build_it():
     # Create a Windows installer/uninstaller exe using the Inno Setup Compiler.
     if not (len(sys.argv) > 1 and '-w' in sys.argv[1:]):
         if os.name == 'nt':
-            create_windows_installer(__version__)
+            create_windows_installer(PKG_VERSION)
 
     # Run unittests and doctests using a test script.
     if not (len(sys.argv) > 1 and '-t' in sys.argv[1:]):

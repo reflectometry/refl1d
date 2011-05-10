@@ -120,7 +120,7 @@ class ParameterView(wx.Panel):
     def OnShow(self, event):
         if not event.Show: return
         #print "showing parameter"
-        if elf._need_update_model:
+        if self._need_update_model:
             #print "-model update"
             self.update_model(self.model)
         elif self._need_update_parameters:
