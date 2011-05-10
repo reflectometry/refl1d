@@ -13,11 +13,12 @@ IS_MAC = (wx.Platform == '__WXMAC__')
 # so no information can be stored within the view.
 LOG_INFO = []
 
-class LogView(scrolled.ScrolledPanel):
+class LogView(wx.Panel): #scrolled.ScrolledPanel):
     title = 'Log'
-    default_size = (600,400)
+    default_size = (600,200)
     def __init__(self, *args, **kw):
-        scrolled.ScrolledPanel.__init__(self, *args, **kw)
+        #scrolled.ScrolledPanel.__init__(self, *args, **kw)
+        wx.Panel.__init__(self, *args, **kw)
 
         vsizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -27,8 +28,9 @@ class LogView(scrolled.ScrolledPanel):
         vsizer.Add(self.progress, 1, wx.EXPAND)
 
         self.SetSizer(vsizer)
-        self.SetAutoLayout(1)
-        self.SetupScrolling()
+        vsizer.Fit(self)
+        self.SetAutoLayout(True)
+        #self.SetupScrolling()
 
         self.Bind(wx.EVT_SHOW, self.OnShow)
 
