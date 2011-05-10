@@ -55,6 +55,7 @@ class TheoryView(wx.Panel):
 
         self._need_redraw = False
         self.Bind(wx.EVT_SHOW, self.OnShow)
+        self._calculating = False
 
     def menu(self):
         # Add 'View' menu to the menu bar and define its options.
@@ -133,10 +134,12 @@ class TheoryView(wx.Panel):
         self.redraw()
 
     def update_model(self, model):
-        if self.problem == model: self.redraw()
+        if self.problem == model:
+            self.redraw()
 
     def update_parameters(self, model):
-        if self.problem == model: self.redraw()
+        if self.problem == model:
+            self.redraw()
     # =============================
 
     def redraw(self):
@@ -144,21 +147,70 @@ class TheoryView(wx.Panel):
         if not self.IsShown():
             self._need_redraw = True
             return
-        self._need_redraw = False
 
-        # Redraw the canvas.
-        with self.pylab_interface:
-            pylab.clf() # clear the canvas
+        if self._calculating:
+            # That means that I've entered the thread through a
+            # wx.Yield for the currently executing redraw.  I need
+            # to cancel the running thread and force it to start
+            # the calculation over.
+            self._cancel_calculate = True
+            #print "canceling calculation"
+            return
+
+        self._need_redraw = False
+        self._calculating = True
+
+        # Calculate reflectivity
+        #print "calling again"
+        while True:
+            #print "restarting"
+            # We are restarting the calculation, so clear the reset flag
+            self._cancel_calculate = False
+
+            # Preform the calculation
             if isinstance(self.problem,MultiFitProblem):
+                #print "n=",len(self.problem.models)
                 for p in self.problem.models:
-                    p.fitness.plot_reflectivity(view=self.view)
-                    pylab.hold(True)
+                    self._precalc(p.fitness)
+                    #print "cancel",self._cancel_calculate,"reset",p.fitness.is_reset()
+                    if self._cancel_calculate \
+                        or p.fitness.is_reset(): break
+                if self._cancel_calculate \
+                    or self.problem.models[0].fitness.is_reset(): continue
             else:
-                self.problem.fitness.plot_reflectivity(view=self.view)
-            try:
-                # If we can't calculate chisq, then put it on the graph.
-                pylab.text(0.01, 0.01, "chisq=%g" % self.problem.chisq(),
-                           transform=pylab.gca().transAxes)
-            except:
-                pass
-            pylab.draw()
+                self._precalc(self.problem.fitness)
+                if self._cancel_calculate \
+                    or self.problem.fitness.is_reset(): continue
+            break
+
+        # Redraw the canvas with newly calculated reflectivity
+        with self.pylab_interface:
+                pylab.clf() # clear the canvas
+                if isinstance(self.problem,MultiFitProblem):
+                    for p in self.problem.models:
+                        p.fitness.plot_reflectivity(view=self.view)
+                        pylab.hold(True)
+                else:
+                    self.problem.fitness.plot_reflectivity(view=self.view)
+
+                try:
+                    # If we can calculate chisq, then put it on the graph.
+                    pylab.text(0.01, 0.01, "chisq=%g" % self.problem.chisq(),
+                               transform=pylab.gca().transAxes)
+                except:
+                    pass
+                pylab.draw()
+
+        self._calculating = False
+
+    def _precalc(self, fitness):
+        # First calculate reflectivity
+        fitness.reflectivity(resolution=False)
+        #print "yield 1"
+        wx.Yield()
+        if self._cancel_calculate or fitness.is_reset(): return
+        # Then calculate resolution
+        fitness.reflectivity()
+        #print "yield 2"
+        wx.Yield()
+        if self._cancel_calculate or fitness.is_reset(): return

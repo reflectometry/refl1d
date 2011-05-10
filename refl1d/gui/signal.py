@@ -16,13 +16,13 @@ def update_parameters(model, delay=50):
     is changing rapidly, then the signal will be delayed for a time.
     """
     # signaller is responsible for marking the model as needing recalculation
+    model.model_update()
     try:
         _DELAYED_SIGNAL[model].Restart(delay)
     except:
         def _send_signal():
             #print "sending update parameters",model
             del _DELAYED_SIGNAL[model]
-            model.model_update()
             send('model.update_parameters',model=model)
         _DELAYED_SIGNAL[model] = wx.FutureCall(delay, _send_signal)
 

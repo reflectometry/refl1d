@@ -95,7 +95,7 @@ class GareflExperiment(Experiment):
         """
         raise NotImplementedError("amplitude not available from garefl")
 
-    def reflectivity(self):
+    def reflectivity(self, resolution=True):
         """
         Calculate predicted reflectivity.
         """

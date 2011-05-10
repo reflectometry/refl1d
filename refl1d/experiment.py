@@ -51,6 +51,12 @@ class ExperimentBase(object):
         self._probe_cache.reset()
         self.update()
 
+    def is_reset(self):
+        """
+        Returns True if a model reset was triggered.
+        """
+        return self._cache == {}
+
     def update(self):
         """
         Called when any parameter in the model is changed.
@@ -61,6 +67,7 @@ class ExperimentBase(object):
         # the optical matrices and only adjust those that have changed
         # as the result of a parameter changing.   More trouble than it
         # is worth, methinks.
+        #print "reseting calculation"
         self._cache = {}
 
     def residuals(self):
