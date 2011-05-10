@@ -1,6 +1,6 @@
 # This program is in the public domain.
 """
-Setup file for constructing OS X applications.  
+Setup file for constructing OS X applications.
 
 Run using::
 

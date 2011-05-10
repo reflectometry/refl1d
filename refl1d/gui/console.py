@@ -69,7 +69,7 @@ plot(x,y)
             #print "calling draw_if_interactive with",Gcf.get_active()
             self._dirty.add(Gcf.get_active())
         pyplot.draw_if_interactive = draw_if_interactive
-        
+
         # add vars command to the interpreter
         self.shell.interp.locals['vars'] = self._print_vars
 
@@ -78,7 +78,7 @@ plot(x,y)
         self._existing = {} # No new variables recorded yet
 
         # remember which variables are current so we can detect changes
-        wx.py.dispatcher.connect(receiver=self._onPush, 
+        wx.py.dispatcher.connect(receiver=self._onPush,
                                  signal='Interpreter.push')
 
     def filter(self,key,value):
@@ -173,7 +173,7 @@ plot(x,y)
             #print "dirty",self._dirty
             for fig in self._dirty:
                 #print fig, Gcf.figs.values(),fig in Gcf.figs.values()
-                if fig and fig in Gcf.figs.values(): 
+                if fig and fig in Gcf.figs.values():
                     #print "drawing"
                     fig.canvas.draw()
             pylab.show()
@@ -186,7 +186,7 @@ plot(x,y)
         removed = oldkeys - newkeys
         changed = set(k for k in (oldkeys&newkeys)
                       if items[k] is not self._existing[k])
-        if added or changed or removed: 
+        if added or changed or removed:
             self.OnChanged(added=added,changed=changed,removed=removed)
         self._existing = items
 
@@ -198,6 +198,5 @@ def demo():
     console.update({ 'x': numpy.array([[42,15],[-10,12]]), 'z': 42. })
     console.Show(True)
     app.MainLoop()
-    
-if __name__ == "__main__": demo()
 
+if __name__ == "__main__": demo()
