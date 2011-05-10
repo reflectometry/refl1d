@@ -399,12 +399,19 @@ class Probe(object):
         # For back reflectivity, reverse the sign of Q after computing
         if self.back_reflectivity:
             calc_Q = -calc_Q
+        if calc_Q[-1] < calc_Q[0]:
+            calc_Q, calc_R = [v[::-1] for v in calc_Q, calc_R]
         if resolution:
-            if calc_Q[-1] < calc_Q[0]:
-                calc_Q, calc_R = [v[::-1] for v in calc_Q, calc_R]
             Q,R = self._apply_resolution(calc_Q, calc_R)
         else:
-            Q,R = calc_Q, calc_R
+            # Given that the target Q points should be in the set of
+            # calculated Q values, interp will give us the
+            # values of Q at the appropriate R, even if there are
+            # guard values, or otherwise some mixture of calculated
+            # Q values.  The cost of doing so is going to be n log n
+            # in the size of Q, which is a bit pricey, but let's see
+            # if it is a problem before optimizing.
+            Q,R = self.Q, numpy.interp(self.Q, calc_Q, calc_R)
         R = self.intensity.value*R + self.background.value
         return Q,R
 
@@ -627,8 +634,6 @@ class ProbeSet(Probe):
         return [numpy.hstack(v) for v in zip(*result)]
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
     def apply_beam(self, calc_Q, calc_R, resolution=True, **kw):
-        if not resolution:
-            raise UnimplementedError("apply_beam without resolution not supported on ProbeSet; use dQ=0 instead")
         result = [p.apply_beam(calc_Q, calc_R, **kw) for p in self.probes]
         Q,R = [numpy.hstack(v) for v in zip(*result)]
         return Q,R

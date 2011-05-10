@@ -181,17 +181,24 @@ class TheoryView(wx.Panel):
                 self._precalc(self.problem.fitness)
                 if self._cancel_calculate \
                     or self.problem.fitness.is_reset(): continue
-            break
 
-        # Redraw the canvas with newly calculated reflectivity
-        with self.pylab_interface:
+            # Redraw the canvas with newly calculated reflectivity
+            # TODO: drawing is 10x too slow!
+            with self.pylab_interface:
+                #print "composing"
                 pylab.clf() # clear the canvas
                 if isinstance(self.problem,MultiFitProblem):
                     for p in self.problem.models:
                         p.fitness.plot_reflectivity(view=self.view)
                         pylab.hold(True)
+                        if self._cancel_calculate \
+                            or p.fitness.is_reset(): break
+                    if self._cancel_calculate \
+                        or self.problem.models[0].fitness.is_reset(): continue
                 else:
                     self.problem.fitness.plot_reflectivity(view=self.view)
+                    if self._cancel_calculate \
+                        or self.problem.fitness.is_reset(): continue
 
                 try:
                     # If we can calculate chisq, then put it on the graph.
@@ -199,7 +206,10 @@ class TheoryView(wx.Panel):
                                transform=pylab.gca().transAxes)
                 except:
                     pass
+                #print "drawing"
                 pylab.draw()
+                #print "done drawing"
+                break
 
         self._calculating = False
 
