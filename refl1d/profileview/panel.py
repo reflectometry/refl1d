@@ -14,7 +14,7 @@ from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 
 from .binder import pixel_to_data
 from .util import CopyImage
-from ..gui.util import publish
+from ..gui import signal
 from .profile import ProfileInteractor
 from .interactor import BaseInteractor
 
@@ -153,9 +153,6 @@ class ProfileView(wx.Panel):
             self.profile.redraw()
     # =============================================
 
-    def signal_update(self):
-        publish("model.update", self.model)
-
     def _set_model(self):
         """Initialize model by profile."""
 
@@ -202,7 +199,7 @@ class ProfileView(wx.Panel):
         # too much of a problem.
         def signal_update():
             """Notify other views that the model has changed"""
-            publish("model.update", model=self.model)
+            signal.update_parameters(model=self.model)
         def force_recalc():
             self.model.model_update()
         self.profile.set_experiment(experiment,

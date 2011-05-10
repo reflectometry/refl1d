@@ -237,20 +237,13 @@ class ProfileInteractor(object):
         # to whomever is listening.
         self.force_recalc()
         self.redraw()
-        self.delayed_signal()
-        #self.delayed_profile()
+        self.signal_update()
 
     def redraw(self, reset_limits=False):
         self.update_markers()
         self.update_profile()
         if reset_limits: self.reset_limits()
         self.draw_now()
-
-    def delayed_signal(self):
-        try:
-            self._delayed_signal.Restart(50)
-        except:
-            self._delayed_signal = wx.FutureCall(50, self.signal_update)
 
     def draw_now(self):
         #print "draw immediately"

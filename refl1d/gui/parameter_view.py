@@ -32,7 +32,8 @@ import sys
 import wx.gizmos as gizmos
 
 from ..mystic.parameter import BaseParameter
-from .util import nice, publish
+from .util import nice
+from . import signal
 
 
 class ParameterView(wx.Panel):
@@ -221,9 +222,7 @@ class ParameterView(wx.Panel):
                 self.tree.SetItemText(branch, low, 3)
                 self.tree.SetItemText(branch, high, 4)
                 self.tree.SetItemText(branch, fitting_parameter, 5)
-
-                self.model.model_reset()  # force recalc on constraint change
-                publish("model.change", model=self.model)
+                signal.update_model(model=self.model, dirty=False)
 
     def OnEndEdit(self, evt):
         item = self.tree.GetSelection()
@@ -243,8 +242,7 @@ class ParameterView(wx.Panel):
         # is updated .
         if new_value != str(self.node_object.value):
             self.node_object.clip_set(float(new_value))
-            self.model.model_update()  # force recalc when value changes
-            publish("model.update", model=self.model)
+            signal.update_parameters(model=self.model)
 
     def get_new_name(self, item, column):
         new_name = self.tree.GetItemText(item, column)
@@ -253,7 +251,7 @@ class ParameterView(wx.Panel):
         # is updated.
         if new_name != str(self.node_object.name):
             self.node_object.name = new_name
-            publish("model.update", model=self.model)
+            signal.update_model(model=self.model, dirty=False)
 
     def get_new_min(self, item, column):
         low = self.tree.GetItemText(item, column)
@@ -265,7 +263,7 @@ class ParameterView(wx.Panel):
         # value is updated.
         if low != self.node_object.bounds.limits[0]:
             self.node_object.range(low, high)
-            publish("model.update", model=self.model)
+            signal.update_model(model=self.model, dirty=False)
 
     def get_new_max(self, item, column):
         high = self.tree.GetItemText(item, column)
@@ -276,4 +274,4 @@ class ParameterView(wx.Panel):
         # value is updated.
         if high != self.node_object.bounds.limits[1]:
             self.node_object.range(low, high)
-            publish("model.update", model=self.model)
+            signal.update_model(model=self.model, dirty=False)

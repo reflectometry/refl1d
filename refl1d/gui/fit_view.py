@@ -1,8 +1,6 @@
 import wx
 import sys
 
-from .util import subscribe
-
 class FitView(wx.Panel):
     def __init__(self, parent):
 
@@ -21,8 +19,6 @@ class FitView(wx.Panel):
         self.btn_fit = wx.Button(self, wx.ID_ANY, "Fit")
         self.btn_fit.SetToolTip(wx.ToolTip("click to start fit"))
         self.Bind(wx.EVT_BUTTON, self.OnFit, self.btn_fit)
-
-        subscribe(self.OnFitComplete, "fit_complete")
 
         # Create a horizontal box sizer for the buttons.
         sizer2 = wx.BoxSizer(wx.HORIZONTAL)

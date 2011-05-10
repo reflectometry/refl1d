@@ -225,10 +225,10 @@ def inspect():
 
 def _user_error(message):
     import traceback
-    from refl1d.gui.util import publish
+    from . import signal
     error = traceback.format_exc()
     indented = "   "+"\n   ".join(error.split("\n"))
-    publish('log',message=message+":\n"+indented)
+    signal.log_message(message=message+":\n"+indented)
     wx.GetApp().frame.panel.show_log()
 
 def _protected_main():

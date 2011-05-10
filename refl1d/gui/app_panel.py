@@ -46,7 +46,8 @@ from .log_view import LogView
 from .fit_dialog import OpenFitOptions
 from .fit_thread import (FitThread, EVT_FIT_PROGRESS,
                          EVT_FIT_IMPROVEMENT, EVT_FIT_COMPLETE)
-from .util import nice, subscribe, publish
+from .util import nice
+from . import signal
 from .utilities import get_bitmap
 
 # File selection strings.
@@ -95,11 +96,10 @@ class AppPanel(wx.Panel):
             mb.Append(data_view.menu(), data_view.title)
 
         # Create a PubSub receiver.
-        subscribe(self.OnFitStart, "fit.start")
-        subscribe(self.OnLogMessage, "log")
-        subscribe(self.OnModelNew, "model.new")
-        subscribe(self.OnModelUpdate, "model.update")
-        subscribe(self.OnModelChange, "model.change")
+        signal.connect(self.OnLogMessage, "log")
+        signal.connect(self.OnModelNew, "model.new")
+        signal.connect(self.OnModelChange, "model.update_structure")
+        signal.connect(self.OnModelSetpar, "model.update_parameters")
 
         EVT_FIT_PROGRESS(self, self.OnFitProgress)
         EVT_FIT_IMPROVEMENT(self, self.OnFitImprovement)
@@ -281,7 +281,7 @@ class AppPanel(wx.Panel):
             self.view[tag].set_model(self.model)
         evt.Skip()
 
-    # Publish/subscribe interface
+    # model viewer interface
     def OnLogMessage(self, message):
         for v in self.view.values():
             if hasattr(v, 'log_message'):
@@ -295,7 +295,7 @@ class AppPanel(wx.Panel):
             if hasattr(v, 'update_model'):
                 v.update_model(model)
 
-    def OnModelUpdate(self, model):
+    def OnModelSetpar(self, model):
         for k,v in self.view.items():
             if hasattr(v, 'update_parameters'):
                 #print "updating",k
@@ -380,7 +380,7 @@ class AppPanel(wx.Panel):
             import traceback
             error_txt=traceback.format_exc()
             self.sb.SetStatusText("Error: No fittable parameters", 3)
-            publish('log.fit', message = error_txt)
+            signal.log_message(message=error_txt)
             return
 
         # Start a new thread worker and give fit problem to the worker.
@@ -396,11 +396,9 @@ class AppPanel(wx.Panel):
     def OnFitComplete(self, event):
         self.fit_thread = None
         chisq = nice(2*event.value/event.problem.dof)
-        publish("log.fit", message = "done with chisq %g"%chisq)
-        publish("fit.complete")
+        signal.log_message(message="done with chisq %g"%chisq)
         event.problem.setp(event.point)
-        event.problem.model_update()
-        publish("model.update", model=event.problem)
+        signal.update_parameters(model=event.problem)
         #self.remember_best(self.fitter, event.problem)
 
         self.sb.SetStatusText("Fit status: Complete", 3)
@@ -408,12 +406,12 @@ class AppPanel(wx.Panel):
     def OnFitProgress(self, event):
         chisq = nice(2*event.value/event.problem.dof)
         message = "step %5d chisq %g"%(event.step, chisq)
-        publish("log.fit", message=message)
+        signal.log_message(message=message)
 
     def OnFitImprovement(self, event):
         event.problem.setp(event.point)
         event.problem.model_update()
-        publish("model.update", model=event.problem)
+        signal.update_parameters(model=event.problem)
 
     def remember_best(self, fitter, problem, best):
         fitter.save(problem.output)
@@ -435,16 +433,16 @@ class AppPanel(wx.Panel):
             import cPickle as serialize
             problem = serialize.load(open(path, 'rb'))
             problem.modelfile = path
-            publish("model.new", model=problem)
+            signal.model_new(model=problem)
         except:
-            publish("log.model", message=traceback.format_exc())
+            signal.log_message(message=traceback.format_exc())
 
     def import_model(self, path):
         try:
             problem = load_problem([path])
-            publish("model.new", model=problem)
+            signal.model_new(model=problem)
         except:
-            publish("log.model", message=traceback.format_exc())
+            signal.log_message(message=traceback.format_exc())
 
     def save_model(self):
         import cPickle as serialize
