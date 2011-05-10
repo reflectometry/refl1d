@@ -441,6 +441,9 @@ def compute_limited_sigma(thickness, roughness, limit):
 
 
 def build_mag_profile(z, d, v, blends):
+    """
+    Convert magnetic segments to a smooth profile.
+    """
 
     # TODO this could be faster since we don't need to blend initially.
     s = 0*z

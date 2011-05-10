@@ -1,7 +1,7 @@
 import wx
 import sys
 
-from .util import subscribe, publish
+from .util import subscribe
 
 class FitView(wx.Panel):
     def __init__(self, parent):

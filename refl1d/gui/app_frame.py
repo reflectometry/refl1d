@@ -76,7 +76,7 @@ class AppFrame(wx.Frame):
         self.add_statusbar()
 
         # Build the application panels for the GUI on the frame.
-        self.panel = AppPanel(frame=self)
+        self.panel = AppPanel(self)
         self.panel.console = ModelConsole(self)
         self.panel.console['app'] = self
 

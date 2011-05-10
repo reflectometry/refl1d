@@ -12,10 +12,9 @@ from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wxagg import FigureManager
 from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 
-from .auipanel import AuiPanel
 from .binder import pixel_to_data
 from .util import CopyImage
-from ..gui.util import subscribe, publish
+from ..gui.util import publish
 from .profile import ProfileInteractor
 from .interactor import BaseInteractor
 
@@ -23,16 +22,11 @@ from ..experiment import MixedExperiment
 from ..fitproblem import MultiFitProblem
 
 # ------------------------------------------------------------------------
-class ProfileView(AuiPanel):
-
-    def __init__( self,
-                  parent,
-                  size=wx.DefaultSize
-                  ):
-        super(ProfileView, self).__init__(parent, id=-1, size=size )
-
-        # This make sure we can communicate between different panels.
-        self.parent = parent
+class ProfileView(wx.Panel):
+    title = 'Profile'
+    default_size = (600,400)
+    def __init__( self, *args, **kw):
+        wx.Panel.__init__(self, *args, **kw)
 
         # Fig
         self.fig = Figure( figsize   = (1,1),
@@ -56,10 +50,6 @@ class ProfileView(AuiPanel):
 
         # Create a figure manager to manage things
         self.figmgr = FigureManager( self.canvas, 1, self )
-
-        # respond to changes in model
-        subscribe(self.OnModelChange, "model.change")
-        subscribe(self.OnModelUpdate, "model.update")
 
         # Panel layout
         self.profile_selector_label = wx.StaticText(self, label="Sample")
@@ -86,6 +76,8 @@ class ProfileView(AuiPanel):
         # Status bar
         frame = self.GetTopLevelParent()
         self.statusbar = frame.GetStatusBar()
+        if self.statusbar == None:
+            self.statusbar = frame.CreateStatusBar()
         status_update = lambda msg: self.statusbar.SetStatusText(msg)
 
         # Set the profile interactor
@@ -95,6 +87,9 @@ class ProfileView(AuiPanel):
         # Add context menu and keyboard support to canvas
         self.canvas.Bind(wx.EVT_RIGHT_DOWN, self.OnContextMenu)
         #self.canvas.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.canvas.SetFocus())
+
+        self._need_set_model = self._need_redraw = False
+        self.Bind(wx.EVT_SHOW, self.OnShow)
 
     def OnContextMenu(self,event):
         """
@@ -117,22 +112,52 @@ class ProfileView(AuiPanel):
     def OnProfileSelect(self, event):
         self.set_profile(self.profiles[event.GetInt()][1])
 
-    # ============= Signal bindings =========================
-    def OnModelChange(self, model):
-        if self.model == model:
-            self.set_model(model)
-
-    def OnModelUpdate(self, model):
-        if self.model == model:
+    # ==== Model view interface ===
+    def OnShow(self, event):
+        if not event.Show: return
+        #print "showing profile"
+        if self._need_set_model:
+            #print "-set model"
+            self.set_model(self.model)
+        elif self._need_redraw:
+            #print "-redraw"
             self.profile.redraw()
+        event.Skip()
+
+    def set_model(self, model):
+        self.model = model
+        if not self.IsShown():
+            self._need_set_model = True
+        else:
+            self._need_set_model = self._need_redraw = False
+            self._set_model()
+
+    def update_model(self, model):
+        #print "profile update model"
+        if self.model != model: return
+
+        if not self.IsShown():
+            self._need_set_model = True
+        else:
+            self._need_set_model = self._need_redraw = False
+            self._set_model()
+
+    def update_parameters(self, model):
+        #print "profile update parameters"
+        if self.model != model: return
+
+        if not self.IsShown():
+            self._need_redraw = True
+        else:
+            self._need_redraw = False
+            self.profile.redraw()
+    # =============================================
 
     def signal_update(self):
         publish("model.update", self.model)
 
-    def set_model(self, model):
+    def _set_model(self):
         """Initialize model by profile."""
-
-        self.model = model
 
         self.profiles = []
         def add_profiles(name, exp):
@@ -141,13 +166,13 @@ class ProfileView(AuiPanel):
                     self.profiles.append( (name+chr(ord("a")+i), p) )
             else:
                 self.profiles.append( (name, exp) )
-        if isinstance(model,MultiFitProblem):
-            for i,p in enumerate(model.models):
+        if isinstance(self.model,MultiFitProblem):
+            for i,p in enumerate(self.model.models):
                 name = p.fitness.probe.name()
                 if not name: name = "M%d"%(i+1)
                 add_profiles(name, p.fitness)
         else:
-            add_profiles("", model.fitness)
+            add_profiles("", self.model.fitness)
 
         self.profile_selector.Clear()
         if len(self.profiles) > 1:

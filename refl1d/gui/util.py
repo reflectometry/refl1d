@@ -11,6 +11,7 @@ try:
     from wx.lib.pubsub import setupkwargs
     from wx.lib.pubsub import pub
     subscribe = pub.subscribe
+    unsubscribe = pub.unsubscribe
     publish = pub.sendMessage
     #print "using V3 interface to pubsub"
 except:
@@ -21,17 +22,21 @@ except:
     # Otherwise use the V1 interface
     from wx.lib.pubsub import Publisher
     _pub = Publisher()
-    _subscribers = [] # pubsub uses weak refs; need to hold on to subscribers
+    _subscribers = {} # pubsub uses weak refs; need to hold on to subscribers
     def subscribe(callback, topic):
         def unwrap_data(event):
             #print "recving",topic,"in",callback.__name__
             callback(**event.data)
-        _subscribers.append(unwrap_data)
+        _subscribers[callback] = unwrap_data
         #print "subscribe",callback.__name__,"to",topic
         _pub.subscribe(unwrap_data, topic)
     def publish(topic, **kwargs):
         #print "sending",topic
         _pub.sendMessage(topic, kwargs)
+    def unsubscribe(callback, topic):
+        #print "unsubscribe",topic
+        _pub.unsubscribe(_subscribers[callback])
+        del _subscribers[callback]
 
 
 # Wx-Pylab magic for displaying plots within an application's window.

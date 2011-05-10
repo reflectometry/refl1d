@@ -213,6 +213,8 @@ class Refl1dGUIApp(wx.App):
         # To show the frame earlier, uncomment Show() code in OnInit.
         if LOGTIM: log_time("Terminating the splash screen and showing the GUI")
         self.frame.Show(True)
+        self.after_show()
+        #wx.CallAfter(self.after_show)
         event.Skip()
 
 #==============================================================================
@@ -244,9 +246,7 @@ def _protected_main():
 
     # For wx debugging, load the wxPython Widget Inspection Tool if requested.
     # It will cause a separate interactive debugger window to be displayed.
-    if opts.inspect:
-        import wx.lib.inspection
-        wx.lib.inspection.InspectionTool().Show()
+    if opts.inspect: inspect()
 
     if opts.syspath:
         print "*** Resource directory:  ", resource_dir()
@@ -262,19 +262,23 @@ def _protected_main():
         _user_error("Error loading model")
 
     # Ick: refl specific options
-    if not model:
-        model = fitplugin.new_model()
     from refl1d.probe import Probe
     Probe.view = opts.plot
-    app.frame.panel.set_model(model=model)
+    if not model:
+        model = fitplugin.new_model()
 
+    def after_show():
+        # TODO: only way I could find to set initial split
+        app.frame.panel.aui.Split(0, wx.TOP)
+        app.frame.panel.set_model(model=model)
+    app.after_show = after_show
 
     # Enter event loop which allows the user to interact with the application.
     if LOGTIM: log_time("Entering the event loop")
     app.MainLoop()
 
 def main():
-    try: 
+    try:
         _protected_main()
     except:
         import traceback

@@ -33,6 +33,7 @@ import sys
 import traceback
 
 import wx
+import wx.aui
 
 from refl1d.profileview.panel import ProfileView
 from refl1d.profileview.theory import TheoryView
@@ -67,44 +68,49 @@ class AppPanel(wx.Panel):
     to the frame.
     """
 
-    def __init__(self, frame, id=wx.ID_ANY, style=wx.RAISED_BORDER,
-                 name="AppPanel"
-                ):
+    def __init__(self, *args, **kw):
         # Create a panel on the frame.  This will be the only child panel of
         # the frame and it inherits its size from the frame which is useful
         # during resize operations (as it provides a minimal size to sizers).
 
-        wx.Panel.__init__(self, parent=frame, id=id, style=style, name=name)
+        wx.Panel.__init__(self, *args, **kw)
 
         self.SetBackgroundColour("WHITE")
-        self.frame = frame
 
         # Modify the tool bar.
-        self.init_toolbar()
-        self.init_menubar()
+        frame = self.GetTopLevelParent()
+        self.init_toolbar(frame)
+        self.init_menubar(frame)
 
         # Reconfigure the status bar.
-        self.init_statusbar([-34, -50, -16, -16])
+        self.init_statusbar(frame, [-34, -50, -16, -16])
 
-        # Split the panel into top and bottem halves.
-        self.split_panel()
+        # Create the model views
+        self.init_views()
 
+        # Add data menu
+        mb = frame.GetMenuBar()
+        data_view = self.view['data']
+        if hasattr(data_view, 'menu'):
+            mb.Append(data_view.menu(), data_view.title)
 
         # Create a PubSub receiver.
-        subscribe(self.set_model, "model.new")
         subscribe(self.OnFitStart, "fit.start")
+        subscribe(self.OnLogMessage, "log")
+        subscribe(self.OnModelNew, "model.new")
+        subscribe(self.OnModelUpdate, "model.update")
+        subscribe(self.OnModelChange, "model.change")
 
         EVT_FIT_PROGRESS(self, self.OnFitProgress)
         EVT_FIT_IMPROVEMENT(self, self.OnFitImprovement)
         EVT_FIT_COMPLETE(self, self.OnFitComplete)
         self.fit_thread = None
 
-    def init_menubar(self):
+    def init_menubar(self, frame):
         """
         Adds items to the menu bar, menus, and menu options.
         The menu bar should already have a simple File menu and a Help menu.
         """
-        frame = self.frame
         mb = frame.GetMenuBar()
 
         file_menu_id = mb.FindMenu("File")
@@ -170,37 +176,11 @@ class AppPanel(wx.Panel):
         fit_menu.Enable(id=_item.GetId(), enable=False)
         self.fit_menu_options = _item
 
-
-        # Add 'Advanced' menu to the menu bar and define its options.
-        adv_menu = wx.Menu()
-
-        _item = adv_menu.AppendRadioItem(wx.ID_ANY,
-                               "&Top-Bottom",
-                               "Display plot and view panels top to bottom")
-        frame.Bind(wx.EVT_MENU, self.OnSplitHorizontal, _item)
-        _item.Check(True)
-        _item = adv_menu.AppendRadioItem(wx.ID_ANY,
-                               "&Left-Right",
-                               "Display plot and view panels left to right")
-        frame.Bind(wx.EVT_MENU, self.OnSplitVertical, _item)
-        self.vert_sash_pos = 0  # set sash to center on first vertical split
-
-        adv_menu.AppendSeparator()
-
-        _item = adv_menu.Append(wx.ID_ANY,
-                                "&Swap Panels",
-                                "Switch positions of plot and view panels")
-        frame.Bind(wx.EVT_MENU, self.OnSwapPanels, _item)
-
-
-
         mb.Append(fit_menu, "&Fitting")
-        mb.Append(adv_menu, "&Advanced")
 
 
-    def init_toolbar(self):
+    def init_toolbar(self, frame):
         """Populates the tool bar."""
-        frame = self.frame
         tb = self.tb = frame.GetToolBar()
 
         script_bmp = get_bitmap("import_script.png", wx.BITMAP_TYPE_PNG)
@@ -231,108 +211,95 @@ class AppPanel(wx.Panel):
         tb.Realize()
         frame.SetToolBar(tb)
 
-    def init_statusbar(self, subbars):
+    def init_statusbar(self, frame, subbars):
         """Divides the status bar into multiple segments."""
 
-        self.sb = self.frame.GetStatusBar()
+        self.sb = frame.GetStatusBar()
         self.sb.SetFieldsCount(len(subbars))
         self.sb.SetStatusWidths(subbars)
 
-    def split_panel(self):
-        """Splits panel into a top panel and a bottom panel."""
-
-        # Split the panel into two pieces.
-        self.sp = sp = wx.SplitterWindow(self, style=wx.SP_3D|wx.SP_LIVE_UPDATE)
-        sp.SetMinimumPaneSize(100)
-
-        self.pan1 = wx.Panel(sp, wx.ID_ANY, style=wx.SUNKEN_BORDER)
-        self.pan1.SetBackgroundColour("WHITE")
-
-        self.pan2 = wx.Panel(sp, wx.ID_ANY, style=wx.SUNKEN_BORDER)
-        self.pan2.SetBackgroundColour("WHITE")
-
-        sp.SplitHorizontally(self.pan1, self.pan2, sashPosition=0)
-        sp.SetSashGravity(0.5)  # on resize expand/contract panels equally
-
-        # Initialize the panels.
-        self.init_top_panel()
-        self.init_bottom_panel()
-
-        # Put the splitter in a sizer attached to the main panel of the page.
+    def init_views(self):
+        # initial view
+        self.aui = wx.aui.AuiNotebook(self)
+        self.aui.Bind(wx.aui.EVT_AUINOTEBOOK_PAGE_CLOSE, self.OnViewTabClose)
+        self.view_constructor = {
+            'data': TheoryView,
+            'model': ProfileView,
+            'parameter': ParameterView,
+            'summary': SummaryView,
+            'log': LogView,
+            }
+        self.view_list = ['data','model','parameter','summary','log']
+        self.view = {}
+        for v in self.view_list:
+            self.view[v] = self.view_constructor[v](self.aui,
+                                                    size=(600,600))
+            self.aui.AddPage(self.view[v],self.view_constructor[v].title)
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(sp, 1, wx.EXPAND)
+        sizer.Add(self.aui, 1, wx.EXPAND)
         self.SetSizer(sizer)
-        sizer.Fit(self)
+        #self.aui.Split(0, wx.TOP)
+        #wx.CallLater(1000, self.aui.Split, 0, wx.TOP)
 
-        # Workaround: For some unknown reason, the sash is not placed in the
-        # middle of the enclosing panel.  As a workaround, we reset it here.
-        sp.SetSashPosition(position=0, redraw=False)
+    def OnViewTabClose(self, evt):
+        win = self.aui.GetPage(evt.selection)
+        #print "Closing tab",win.GetId()
+        for k,w in self.view.items():
+            if w == win:
+                tag = k
+                break
+        else:
+            raise RuntimeError("Lost track of view")
+        #print "creating external frame"
+        constructor = self.view_constructor[tag]
+        frame = wx.Frame(self, title=constructor.title,
+                         size=constructor.default_size)
+        panel = constructor(frame)
+        self.view[tag] = panel
+        if hasattr(constructor, 'set_model'):
+            panel.set_model(self.model)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(panel, 1, wx.EXPAND)
+        frame.SetSizer(sizer)
+        frame.Bind(wx.EVT_CLOSE, self.OnViewFrameClose)
+        frame.Show()
 
-    def init_top_panel(self):
 
-        self.data_view = TheoryView(self.pan1)
-        self.pan1.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.pan1.sizer.Add(self.data_view, 1, wx.EXPAND)
-        self.pan1.SetSizer(self.pan1.sizer)
-        self.pan1.SetAutoLayout(True)
-        self.pan1.sizer.Fit(self.pan1)
+    def OnViewFrameClose(self, evt):
+        win = evt.GetEventObject()
+        #print "Closing frame",win.GetId()
+        for k,w in self.view.items():
+            if w.GetParent() == win:
+                tag = k
+                break
+        else:
+            raise RuntimeError("Lost track of view!")
+        constructor = self.view_constructor[tag]
+        self.view[tag] = constructor(self.aui)
+        self.aui.AddPage(self.view[tag],constructor.title)
+        if hasattr(constructor, 'set_model'):
+            self.view[tag].set_model(self.model)
+        evt.Skip()
 
-        frame = self.frame
-        mb = frame.GetMenuBar()
-        mb.Append(self.data_view.menu(), "&Reflectometry")
+    # Publish/subscribe interface
+    def OnLogMessage(self, message):
+        for v in self.view.values():
+            if hasattr(v, 'log_message'):
+                v.log_message(message)
 
-    def init_bottom_panel(self):
-        nb = self.notebook = wx.Notebook(self.pan2, wx.ID_ANY,
-                             style=wx.NB_TOP|wx.NB_FIXEDWIDTH|wx.NB_NOPAGETHEME)
+    def OnModelNew(self, model):
+        self.set_model(model)
 
-        # Create page windows as children of the notebook.
-        self.model_view = ProfileView(nb)
-        self.parameter_view = ParameterView(nb)
-        self.summary_view = SummaryView(nb)
-        self.log_view = LogView(nb)
-        #self.page4 = OtherView(nb)
+    def OnModelChange(self, model):
+        for v in self.view.values():
+            if hasattr(v, 'update_model'):
+                v.update_model(model)
 
-        # Add the pages to the notebook with a label to show on the tab.
-        nb.AddPage(self.model_view, "Model")
-        nb.AddPage(self.parameter_view, "Parameters")
-        nb.AddPage(self.summary_view, "Summary")
-        nb.AddPage(self.log_view, "Log")
-        #nb.AddPage(self.page4, "Dummy")
-
-        self.pan2.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.pan2.sizer.Add(nb, 1, wx.EXPAND)
-        self.pan2.SetSizer(self.pan2.sizer)
-        self.pan2.SetAutoLayout(True)
-        self.pan2.sizer.Fit(self.pan2)
-
-        # Make sure the first page is the active one.
-        # Note that SetSelection generates a page change event only if the
-        # page changes and ChangeSelection does not generate an event.  Thus
-        # we force a page change event so that the status bar is properly set
-        # on startup.
-
-        nb.ChangeSelection(0)
-        nb.SendPageChangedEvent(0, 0)
-        self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.OnPageChanged)
-        self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGING, self.OnPageChanging)
-
-    def show_log(self):
-        self.notebook.ChangeSelection(3)
-        self.notebook.SendPageChangedEvent(self.notebook.GetSelection(),3)
-
-    # TODO: only render pages that are visible
-    def OnPageChanged(self, event):
-        #old = event.GetOldSelection()
-        #new = event.GetSelection()
-        #sel = self.notebook.GetSelection()
-        event.Skip()
-
-    # TODO: only render pages that are visible
-    def OnPageChanging(self, event):
-        #old = event.GetOldSelection()
-        #new = event.GetSelection()
-        #sel = self.notebook.GetSelection()
-        event.Skip()
+    def OnModelUpdate(self, model):
+        for k,v in self.view.items():
+            if hasattr(v, 'update_parameters'):
+                #print "updating",k
+                v.update_parameters(model)
 
     def OnFileNew(self, event):
         self.new_model()
@@ -356,7 +323,7 @@ class AppPanel(wx.Panel):
             self.load_model(path)
 
     def OnFileSave(self, event):
-        if self.problem is not None and hasattr(self.problem,'modelfile'):
+        if self.model is not None and hasattr(self.model,'modelfile'):
             self.save_model()
         else:
             self.OnFileSaveAs(event)
@@ -378,7 +345,7 @@ class AppPanel(wx.Panel):
             ## Need to check for overwrite before adding extension
             #if os.path.basename(path) == path:
             #    path += ".r1d"
-            self.problem.modelfile = path
+            self.model.modelfile = path
             self.save_model()
 
     def OnFileImport(self, event):
@@ -407,7 +374,7 @@ class AppPanel(wx.Panel):
             self.sb.SetStatusText("Error: Fit already running")
             return
         try:
-            if len(self.problem.parameters) == 0:
+            if len(self.model.parameters) == 0:
                 raise ValueError ("Problem has no fittable parameters")
         except ValueError:
             import traceback
@@ -415,10 +382,10 @@ class AppPanel(wx.Panel):
             self.sb.SetStatusText("Error: No fittable parameters", 3)
             publish('log.fit', message = error_txt)
             return
-        
+
         # Start a new thread worker and give fit problem to the worker.
         fitopts = fitters.FIT_OPTIONS[fitters.FIT_DEFAULT]
-        self.fit_thread = FitThread(win=self, problem=self.problem,
+        self.fit_thread = FitThread(win=self, problem=self.model,
                                     fitter=fitopts.fitter,
                                     options=fitopts.options)
         self.sb.SetStatusText("Fit status: Running", 3)
@@ -459,36 +426,6 @@ class AppPanel(wx.Panel):
 
         self.pan1.Layout()
 
-    def OnSplitHorizontal(self, event):
-        # Place panels in Top-Bottom orientation.
-        # Note that this event does not occur if user chooses same orientation.
-        self.vert_sash_pos = self.sp.GetSashPosition()
-        self.sp.SetSplitMode(wx.SPLIT_HORIZONTAL)
-        self.sp.SetSashPosition(position=self.horz_sash_pos, redraw=False)
-        self.sp.SizeWindows()
-        self.sp.Refresh(eraseBackground=False)
-
-    def OnSplitVertical(self, event):
-        # Place panels in Left-Right orientation.
-        # Note that this event does not occur if user chooses same orientation.
-        self.horz_sash_pos = self.sp.GetSashPosition()
-        self.sp.SetSplitMode(wx.SPLIT_VERTICAL)
-        self.sp.SetSashPosition(position=self.vert_sash_pos, redraw=False)
-        self.sp.SizeWindows()
-        self.sp.Refresh(eraseBackground=False)
-
-    def OnSwapPanels(self, event):
-        win1 = self.sp.GetWindow1()
-        win2 = self.sp.GetWindow2()
-        self.sp.ReplaceWindow(winOld=win1, winNew=win2)
-        self.sp.ReplaceWindow(winOld=win2, winNew=win1)
-        sash_pos = -self.sp.GetSashPosition()  # set sash to keep panel sizes
-        self.sp.SetSashPosition(position=sash_pos, redraw=False)
-        self.sp.Refresh(eraseBackground=False)
-
-    def OnModelNew(self, model):
-        self.set_model(model)
-
     def new_model(self):
         from ..fitplugin import new_model as gen
         self.set_model(gen())
@@ -511,7 +448,7 @@ class AppPanel(wx.Panel):
 
     def save_model(self):
         import cPickle as serialize
-        serialize.dump(self.problem, open(self.problem.modelfile,'wb'))
+        serialize.dump(self.model, open(self.model.modelfile,'wb'))
 
     def _add_measurement_type(self, type):
         """
@@ -547,12 +484,12 @@ class AppPanel(wx.Panel):
 
     def set_model(self, model):
         # Inform the various tabs that the model they are viewing has changed.
-        self.problem = model
-        
-        self.data_view.set_model(model)
-        self.model_view.set_model(model)
-        self.parameter_view.set_model(model)
-        self.summary_view.set_model(model)
+        self.model = model
+
+        # Point all of our views at the new model
+        for v in self.view.values():
+            if hasattr(v,'set_model'):
+                v.set_model(model)
         self.console['model'] = model
 
         # Enable appropriate menu items.

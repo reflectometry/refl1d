@@ -32,12 +32,14 @@ import sys
 import wx.gizmos as gizmos
 
 from ..mystic.parameter import BaseParameter
-from .util import nice, publish, subscribe
+from .util import nice, publish
 
 
 class ParameterView(wx.Panel):
-    def __init__(self, parent):
-        wx.Panel.__init__(self, parent, -1)
+    title = 'Parameters'
+    default_size = (640,500)
+    def __init__(self, *args, **kw):
+        wx.Panel.__init__(self, *args, **kw)
 
         #sizers
         vbox = wx.BoxSizer(wx.VERTICAL)
@@ -63,12 +65,12 @@ class ParameterView(wx.Panel):
 
         # Align the textctrl box with treelistctrl.
         self.tree.SetMainColumn(0) # the one with the tree in it...
-        self.tree.SetColumnWidth(0, 200)
-        self.tree.SetColumnWidth(1, 160)
-        self.tree.SetColumnWidth(2, 80)
-        self.tree.SetColumnWidth(3, 80)
-        self.tree.SetColumnWidth(4, 80)
-        self.tree.SetColumnWidth(5, 50)
+        self.tree.SetColumnWidth(0, 180)
+        self.tree.SetColumnWidth(1, 150)
+        self.tree.SetColumnWidth(2, 73)
+        self.tree.SetColumnWidth(3, 73)
+        self.tree.SetColumnWidth(4, 73)
+        self.tree.SetColumnWidth(5, 40)
 
         # Determine which colunms are editable.
         self.tree.SetColumnEditable(0, False)
@@ -77,9 +79,6 @@ class ParameterView(wx.Panel):
         self.tree.SetColumnEditable(3, True)
         self.tree.SetColumnEditable(4, True)
         self.tree.SetColumnEditable(5, False)
-
-        subscribe(self.OnModelChange, "model.change")
-        subscribe(self.OnModelUpdate, "model.update")
 
         self.tree.GetMainWindow().Bind(wx.EVT_RIGHT_UP, self.OnRightUp)
         self.tree.Bind(wx.EVT_TREE_END_LABEL_EDIT, self.OnEndEdit)
@@ -92,15 +91,10 @@ class ParameterView(wx.Panel):
         self.SetSizer(vbox)
         self.SetAutoLayout(True)
 
+        self._need_update_parameters = self._need_update_model = False
+        self.Bind(wx.EVT_SHOW, self.OnShow)
+
     # ============= Signal bindings =========================
-
-    def OnModelChange(self, model):
-        if self.model == model:
-            self.update_model()
-
-    def OnModelUpdate(self, model):
-        if self.model == model:
-            self.update_parameters()
 
     '''
     def OnTreeTooltip(self, event):
@@ -120,47 +114,72 @@ class ParameterView(wx.Panel):
         event.Skip()
     '''
 
+    def OnShow(self, event):
+        if not event.Show: return
+        #print "showing parameter"
+        if self._need_update_model:
+            #print "-model update"
+            self.update_model(self.model)
+        elif self._need_update_parameters:
+            #print "-parameter update"
+            self.update_parameters(self.model)
+        event.Skip()
+
     # ============ Operations on the model  ===============
 
     def set_model(self, model):
         self.model = model
-        self.update_model()
+        self.update_model(model)
 
-    def update_model(self):
+    def update_model(self, model):
+        if self.model != model: return
+
+        if not self.IsShown():
+            self._need_update_model = True
+        else:
+            self._need_update_model = self._need_update_parameters = False
+            self._update_model()
+
+    def update_parameters(self, model):
+        if self.model != model: return
+        if not self.IsShown():
+            self._need_update_parameters = True
+        else:
+            self._need_update_parameters = False
+            self._update_tree_nodes()
+
+    def _update_model(self):
         # Delete the previous tree (if any).
         self.tree.DeleteAllItems()
         parameters = self.model.model_parameters()
         # Add a root node.
         self.root = self.tree.AddRoot("Model")
         # Add nodes from our data set .
-        self.add_tree_nodes(self.root, parameters)
-        self.update_tree_nodes()
+        self._add_tree_nodes(self.root, parameters)
+        self._update_tree_nodes()
         self.tree.ExpandAll(self.root)
 
-    def update_parameters(self):
-        self.update_tree_nodes()
-
-    def add_tree_nodes(self, branch, nodes):
+    def _add_tree_nodes(self, branch, nodes):
         if isinstance(nodes,dict) and nodes != {}:
             for k in sorted(nodes.keys()):
                 child = self.tree.AppendItem(branch, k)
-                self.add_tree_nodes(child,nodes[k])
+                self._add_tree_nodes(child,nodes[k])
         elif ( ( isinstance(nodes, tuple) and nodes != () ) or
               ( isinstance(nodes, list) and nodes != [] ) ):
             for i,v in enumerate(nodes):
                 child = self.tree.AppendItem(branch, '[%d]'%i)
-                self.add_tree_nodes(child,v)
+                self._add_tree_nodes(child,v)
 
         elif isinstance(nodes, BaseParameter):
             self.tree.SetItemPyData(branch, nodes)
 
-    def update_tree_nodes(self):
+    def _update_tree_nodes(self):
         node = self.tree.GetRootItem()
         while node.IsOk():
-            self.set_leaf(node)
+            self._set_leaf(node)
             node = self.tree.GetNext(node)
 
-    def set_leaf(self, branch):
+    def _set_leaf(self, branch):
         par = self.tree.GetItemPyData(branch)
         if par is None: return
 

@@ -13,18 +13,14 @@ import pylab
 from refl1d.probe import Probe
 from refl1d.fitproblem import MultiFitProblem
 
-from .auipanel import AuiPanel
-from ..gui.util import subscribe
 from ..gui.util import EmbeddedPylab
 
 # ------------------------------------------------------------------------
-class TheoryView(AuiPanel):
-
-    def __init__( self,
-                  parent,
-                  size=wx.DefaultSize
-                  ):
-        super(TheoryView, self).__init__(parent, id=-1, size=size )
+class TheoryView(wx.Panel):
+    title = 'Reflectivity'
+    default_size = (600,400)
+    def __init__(self, *args, **kw):
+        wx.Panel.__init__(self, *args, **kw)
 
         # Instantiate a figure object that will contain our plots.
         figure = Figure(figsize=(1,1), dpi=72)
@@ -55,10 +51,10 @@ class TheoryView(AuiPanel):
         self.SetSizer(sizer)
         sizer.Fit(self)
 
-        subscribe(self.OnModelChange, "model.change")
-        subscribe(self.OnModelUpdate, "model.update")
-
         self.view = Probe.view
+
+        self._need_redraw = False
+        self.Bind(wx.EVT_SHOW, self.OnShow)
 
     def menu(self):
         # Add 'View' menu to the menu bar and define its options.
@@ -98,18 +94,6 @@ class TheoryView(AuiPanel):
 
         return menu
 
-    # This should be split out into a separate theory_view.py.
-    # Our app panel needs to be able to set and reset model specific menus.
-
-    def OnModelChange(self, model):
-        if model == self.problem:
-            self.redraw()
-
-    def OnModelUpdate(self, model):
-        if model == self.problem:
-            self.redraw()
-
-
     # ==== Views ====
     # TODO: can probably parameterize the view selection.
     def OnLog(self, event):
@@ -136,11 +120,32 @@ class TheoryView(AuiPanel):
         self.view = "residual"
         self.redraw()
 
+    # ==== Model view interface ===
+    def OnShow(self, event):
+        if not event.Show: return
+        #print "showing theory"
+        if self._need_redraw:
+            #print "-redraw"
+            self.redraw()
+
     def set_model(self, model):
         self.problem = model
         self.redraw()
 
+    def update_model(self, model):
+        if self.problem == model: self.redraw()
+
+    def update_parameters(self, model):
+        if self.problem == model: self.redraw()
+    # =============================
+
     def redraw(self):
+        # Hold off drawing until the tab is visible
+        if not self.IsShown():
+            self._need_redraw = True
+            return
+        self._need_redraw = False
+
         # Redraw the canvas.
         with self.pylab_interface:
             pylab.clf() # clear the canvas

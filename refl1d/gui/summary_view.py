@@ -31,17 +31,17 @@ import wx
 
 import  wx.lib.scrolledpanel as scrolled
 
-from .util import nice, publish, subscribe
+from .util import nice, publish
 
 
 class SummaryView(scrolled.ScrolledPanel):
     """
     Model view showing summary of fit (only fittable parameters).
     """
-
-    def __init__(self, parent):
-        scrolled.ScrolledPanel.__init__(self, parent, wx.ID_ANY)
-        self.parent = parent
+    title = 'Summary'
+    default_size = (600,500)
+    def __init__(self, *args, **kw):
+        scrolled.ScrolledPanel.__init__(self, *args, **kw)
 
         self.display_list = []
 
@@ -52,47 +52,43 @@ class SummaryView(scrolled.ScrolledPanel):
         self.SetAutoLayout(True)
         self.SetupScrolling()
 
-        subscribe(self.OnModelChange, "model.change")
-        subscribe(self.OnModelUpdate, "model.update")
-
-        # Event for showing notebook tab when it is clicked.
+        self._need_update_parameters = self._need_update_model = False
         self.Bind(wx.EVT_SHOW, self.OnShow)
 
-        # Keep track of whether the view needs to be redrawn.
-        self._reset_model = False
-        self._reset_parameters = False
-
-    # ============= Signal bindings =========================
-
     def OnShow(self, event):
-        if self._reset_model:
-            self.update_model()
-        elif self._reset_parameters:
-            self.update_parameters()
-
-    def OnModelChange(self, model):
-        if self.model == model:
-            self.update_model()
-
-    def OnModelUpdate(self, model):
-        if self.model == model:
-            self.update_parameters()
+        if not event.Show: return
+        #print "showing summary"
+        if self._need_update_model:
+            #print "-update_model"
+            self.update_model(self.model)
+        elif self._need_update_parameters:
+            #print "-update_parameters"
+            self.update_parameters(self.model)
 
     # ============ Operations on the model  ===============
 
     def set_model(self, model):
         self.model = model
-        self.update_model()
+        self.update_model(model)
 
-    def update_model(self):
-        # TODO: Need to figure how to hide/show notebook tab.
-        #if not self.IsShown():
-        #    print "parameter tab is hidden"
-        #    self._reset_model = True
-        #    return
-        self._reset_model = False
-        self._reset_parameters = False
+    def update_model(self, model):
+        if self.model != model: return
 
+        if not self.IsShown():
+            self._need_update_model = True
+        else:
+            self._update_model()
+            self._need_update_parameters = self._need_update_model = False
+
+    def update_parameters(self, model):
+        if self.model != model: return
+        if not self.IsShown():
+            self._need_update_parameters = True
+        else:
+            self._need_update_parameters = False
+            self._update_parameters()
+
+    def _update_model(self):
         self.sizer.Clear(deleteWindows=True)
         self.display_list = []
 
@@ -130,12 +126,7 @@ class SummaryView(scrolled.ScrolledPanel):
         self.SetupScrolling()
         self.Layout()
 
-    def update_parameters(self):
-        if not self.IsShown():
-            self._reset_parameters = True
-            return
-        self._reset_parameters = False
-
+    def _update_parameters(self):
         for p in self.display_list:
             p.update_slider()
 
