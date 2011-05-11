@@ -238,14 +238,14 @@ def OpenFitOptions():
                   setting,
                   fit.options[name],
                   FIELD[name][1])
-                 for name,setting in fit.fitter.settings]
-        plist[fit.fitter.name] = items
+                 for name,setting in fit.fitclass.settings]
+        plist[fit.fitclass.name] = items
     #print "****** plist =\n", plist
 
     # Pass in the frame object as the parent window so that the dialog box
     # will inherit font info from it instead of using system defaults.
     frame = wx.FindWindowByName("AppFrame")
-    algorithm_name = fitters.FIT_OPTIONS[fitters.FIT_DEFAULT].fitter.name
+    algorithm_name = fitters.FIT_OPTIONS[fitters.FIT_DEFAULT].fitclass.name
     fit_dlg = FitControl(parent=frame, id=wx.ID_ANY, title="Fit Control",
                          plist=plist,
                          default_algo=algorithm_name)
@@ -256,7 +256,7 @@ def OpenFitOptions():
 
         # Find the new default fitter from the algorithm name.
         for id, record in fitters.FIT_OPTIONS.items():
-            if record.fitter.name == algorithm_name:
+            if record.fitclass.name == algorithm_name:
                 fitters.FIT_DEFAULT = id
                 break
         else:
@@ -266,10 +266,10 @@ def OpenFitOptions():
         for algorithm_name, pars in results.items():
             # Find algorithm record given the name of the optimizer.
             for record in fitters.FIT_OPTIONS.values():
-                if record.fitter.name == algorithm_name:
+                if record.fitclass.name == algorithm_name:
                     break
             # Update all values in factory settings order.
-            for (field, _), value in zip(record.fitter.settings, pars):
+            for (field, _), value in zip(record.fitclass.settings, pars):
                 record.options[field] = value
 
     fit_dlg.Destroy()

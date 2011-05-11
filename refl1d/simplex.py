@@ -118,9 +118,8 @@ def simplex(f, x0=None, bounds=None, radius=0.05,
         update_handler : callable
             Called after each iteration, as callback(k,n,xk,fxk),
             where k is the current iteration, n is the maximum
-            iteration, xk is the best parameter vector and fxk is
-            the best function value.  The update handler should
-            return True if the fit is to continue.
+            iteration, xk is the simplex and fxk is the value of
+            the simplex vertices.  xk[0],fxk[0] is the current best.
 
     *Notes*
 
@@ -259,7 +258,7 @@ def simplex(f, x0=None, bounds=None, radius=0.05,
         sim = numpy.take(sim,ind,0)
         fsim = numpy.take(fsim,ind,0)
         if update_handler is not None:
-            update_handler(iterations, maxiter, sim[0], fsim[0])
+            update_handler(iterations, maxiter, sim, fsim)
         iterations += 1
         if abort_test(): break
 

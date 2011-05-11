@@ -6,9 +6,9 @@ from numpy.random import rand, random_integers
 from copy import deepcopy
 from itertools import count, izip
 
-def print_every_five(step, x, fx):
+def print_every_five(step, x, fx, k):
     if step%5 == 0:
-        print step,":",fx,x
+        print step,":",fx[k],x[k]
 
 def random_lines(cfo, NP, CR = 0.9, epsilon = 1e-10, maxiter = 1000):
     if 'parallel_cost' in cfo:
@@ -117,7 +117,7 @@ def random_lines(cfo, NP, CR = 0.9, epsilon = 1e-10, maxiter = 1000):
             x_best = X[:,i_best]
             return satisfied_sc, n_feval, f_best, x_best
 
-        monitor(L,X[:,i_best],f_best)
+        monitor(L,X, f, i_best)
 
     return 1, n_feval, f_best, X[:,i_best]
 
@@ -181,7 +181,7 @@ def particle_swarm(cfo, NP, epsilon = 1e-10, maxiter = 1000):
             x_best = X[:,i_best]
             return satisfied_sc, n_feval, f_best, x_best
 
-        monitor(L,X[:,i_best],f_best)
+        monitor(L,X, f, i_best)
 
     return 1, n_feval, f_best, X[:,i_best]
 

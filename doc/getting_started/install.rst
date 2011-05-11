@@ -9,6 +9,7 @@ Installing the application
 Refl1D |version| is provided as a Windows installer or as source:
 
 	- Windows installer: :slink:`%(winexe)s`
+	- Apple installer: :slink:`%(macapp)s`
 	- Source: :slink:`%(srczip)s`
 
 Th Windows installer walks through the steps of setting the program up

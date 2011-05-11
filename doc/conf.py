@@ -263,6 +263,7 @@ def download(name):
 slink_vars=dict(version=version, htmlroot=htmlroot,
                 srczip=download("refl1d-%(version)s.zip"),
                 winexe=download("refl1d-%(version)s-win32.exe"),
+                macapp=download("Refl1D %(version)s.dmg"),
                 vcredist=download("vcredist_x86.exe"),
                 )
 

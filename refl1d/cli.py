@@ -480,7 +480,7 @@ def main():
         mapper = SerialMapper
 
     fitopts = FIT_OPTIONS[opts.fit]
-    fitter = FitDriver(fitopts.fitter, problem=problem, **fitopts.options)
+    fitter = FitDriver(fitopts.fitclass, problem=problem, **fitopts.options)
 
     # Which format to view the plots
 

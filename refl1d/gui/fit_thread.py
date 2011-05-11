@@ -1,6 +1,7 @@
+import time
+import threading
 import wx
 import wx.lib.newevent
-import time
 
 from copy import deepcopy
 from threading import Thread
@@ -8,53 +9,123 @@ from ..mystic import monitor
 from ..fitters import FitDriver
 from ..mapper import  MPMapper, SerialMapper
 
+from .convergence_view import ConvergenceMonitor
 #==============================================================================
 
 PROGRESS_DELAY = 5
 IMPROVEMENT_DELAY = 5
 
 (FitProgressEvent, EVT_FIT_PROGRESS) = wx.lib.newevent.NewEvent()
-(FitImprovementEvent, EVT_FIT_IMPROVEMENT) = wx.lib.newevent.NewEvent()
 (FitCompleteEvent, EVT_FIT_COMPLETE) = wx.lib.newevent.NewEvent()
 
-# NOTE: GUIMonitor is running in a separate thread.  It should not touch the
-# problem internals.
-class GUIMonitor(monitor.TimedUpdate):
+# NOTE: GUI monitors are running in a separate thread.  They should not
+# touch the problem internals.
+class GUIProgressMonitor(monitor.TimedUpdate):
     def __init__(self, win, problem, progress=None, improvement=None):
-        improvement = improvement if improvement else IMPROVEMENT_DELAY
-        progress = progress if progress else PROGRESS_DELAY
-        monitor.TimedUpdate.__init__(self, progress=progress,
-                                     improvement=improvement)
+        monitor.TimedUpdate.__init__(self, progress=progress or PROGRESS_DELAY,
+                                     improvement=improvement or IMPROVEMENT_DELAY)
         self.win = win
         self.problem = problem
 
     def show_progress(self, history):
         evt = FitProgressEvent(problem=self.problem,
+                               message="progress",
                                step=history.step[0],
                                value=history.value[0],
-                               point=history.point[0])
+                               point=history.point[0]+0) # avoid race
         wx.PostEvent(self.win, evt)
 
     def show_improvement(self, history):
-        evt = FitImprovementEvent(problem=self.problem,
-                                  step=history.step[0],
-                                  value=history.value[0],
-                                  point=history.point[0])
+        evt = FitProgressEvent(problem=self.problem,
+                               message="improvement",
+                               step=history.step[0],
+                               value=history.value[0],
+                               point=history.point[0]+0) # avoid race
         wx.PostEvent(self.win, evt)
+
+
+class GUIMonitor(monitor.Monitor):
+    """
+    Generic GUI monitor.
+
+    Sends a fit progress event messge, **monitor.progress() every n seconds.
+    """
+    def __init__(self, win, problem, message, monitor, rate=None):
+        self.time = 0
+        self.rate = rate or 10
+        self.win = win
+        self.problem = problem
+        self.message = message
+        self.monitor = monitor
+    def config_history(self, history):
+        self.monitor.config_history(history)
+        history.requires(time=1)
+    def __call__(self, history):
+        self.monitor(history)
+        if history.time[0] >= self.time+self.rate:
+            evt = FitProgressEvent(problem=self.problem,
+                                   message=self.message,
+                                   **self.monitor.progress())
+            wx.PostEvent(self.win, evt)
+            self.time = history.time[0]
+    def final(self):
+        """
+        Close out the monitor
+        """
+        evt = FitProgressEvent(problem=self.problem,
+                               message=self.message,
+                               **self.monitor.progress())
+        wx.PostEvent(self.win, evt)
+
+# Horrible hack: we put the DREAM state in the fitter object the first time
+# back from the DREAM monitor; if our fitter object contains dream_state,
+# then we will send the dream_update notifiction periodically.
+class DreamMonitor(monitor.Monitor):
+    def __init__(self, win, problem, message, fitter, rate=None):
+        self.time = 0
+        self.rate = rate or 60
+        self.win = win
+        self.problem = problem
+        self.fitter = fitter
+        self.message = message
+        self.state = None
+    def config_history(self, history):
+        history.requires(time=1)
+    def __call__(self, history):
+        self.state = history.uncertainty_state
+        if history.time[0] >= self.time+self.rate \
+            and hasattr(history, 'uncertainty_state'):
+            # Gack! holding on to state for final
+            evt = FitProgressEvent(problem=self.problem,
+                                   message="uncertainty_update",
+                                   state = deepcopy(self.state))
+            wx.PostEvent(self.win, evt)
+            self.time = history.time[0]
+    def final(self):
+        """
+        Close out the monitor
+        """
+        if self.state:
+            evt = FitProgressEvent(problem=self.problem,
+                                   message="uncertainty_update",
+                                   state = deepcopy(self.state))
+            wx.PostEvent(self.win, evt)
+
+
 
 #==============================================================================
 
 class FitThread(Thread):
     """Run the fit in a separate thread from the GUI thread."""
     def __init__(self, win, problem=None,
-                 fitter=None, options=None, mapper=None):
+                 fitclass=None, options=None, mapper=None):
         # base class initialization
         #Process.__init__(self)
 
         Thread.__init__(self)
         self.win = win
         self.problem = problem
-        self.fitter = deepcopy(fitter)
+        self.fitclass = fitclass
         self.options = options
         self.mapper = mapper
         self.start() # Start it working.
@@ -68,20 +139,34 @@ class FitThread(Thread):
         # NOTE: Problem must be the original problem (not a copy) when used
         # inside the GUI monitor otherwise AppPanel will not be able to
         # recognize that it is the same problem when updating views.
-        monitors = [GUIMonitor(self.win, self.problem)]
+        monitors = [GUIProgressMonitor(self.win, self.problem),
+                    GUIMonitor(self.win, self.problem,
+                               message="convergence_update",
+                               monitor=ConvergenceMonitor(),
+                               rate=5),
+                    DreamMonitor(self.win, self.problem,
+                                 fitter = self.fitclass,
+                                 message="uncertainty_update",
+                                 rate=15),
+                    ]
         if True: # Multiprocessing parallel
             mapper = MPMapper
         else:
             mapper = SerialMapper
 
         # Be safe and keep a private copy of the problem while fitting
+        #print "fitclass",self.fitclass
         problem = deepcopy(self.problem)
-        driver = FitDriver(self.fitter, problem=problem,
+        #print "fitclass id",id(self.fitclass),self.fitclass,threading.current_thread()
+        driver = FitDriver(self.fitclass, problem=problem,
                            monitors=monitors,
                            mapper = mapper.start_mapper(problem, []),
                            **self.options)
 
         x,fx = driver.fit()
+        # Give final state message from monitors
+        for M in monitors:
+            if hasattr(M, 'final'): M.final()
         evt = FitCompleteEvent(problem=self.problem,
                                point=x,
                                value=fx)

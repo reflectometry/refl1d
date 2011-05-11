@@ -43,9 +43,10 @@ from .. import fitters
 from .summary_view import SummaryView
 from .parameter_view import ParameterView
 from .log_view import LogView
+from .convergence_view import ConvergenceView
+from .dreamview import CorrelationView, UncertaintyView, TraceView
 from .fit_dialog import OpenFitOptions
-from .fit_thread import (FitThread, EVT_FIT_PROGRESS,
-                         EVT_FIT_IMPROVEMENT, EVT_FIT_COMPLETE)
+from .fit_thread import (FitThread, EVT_FIT_PROGRESS, EVT_FIT_COMPLETE)
 from .util import nice
 from . import signal
 from .utilities import get_bitmap
@@ -102,7 +103,6 @@ class AppPanel(wx.Panel):
         signal.connect(self.OnModelSetpar, "model.update_parameters")
 
         EVT_FIT_PROGRESS(self, self.OnFitProgress)
-        EVT_FIT_IMPROVEMENT(self, self.OnFitImprovement)
         EVT_FIT_COMPLETE(self, self.OnFitComplete)
         self.fit_thread = None
 
@@ -228,8 +228,14 @@ class AppPanel(wx.Panel):
             'parameter': ParameterView,
             'summary': SummaryView,
             'log': LogView,
+            'convergence': ConvergenceView,
+            'uncertainty': UncertaintyView,
+            'correlation': CorrelationView,
+            'trace': TraceView,
             }
-        self.view_list = ['data','model','parameter','summary','log']
+        self.view_list = ['data','model','parameter',
+                          'summary','log','convergence',
+                          'uncertainty','correlation','trace']
         self.view = {}
         for v in self.view_list:
             self.view[v] = self.view_constructor[v](self.aui,
@@ -387,7 +393,7 @@ class AppPanel(wx.Panel):
         # Start a new thread worker and give fit problem to the worker.
         fitopts = fitters.FIT_OPTIONS[fitters.FIT_DEFAULT]
         self.fit_thread = FitThread(win=self, problem=self.model,
-                                    fitter=fitopts.fitter,
+                                    fitclass=fitopts.fitclass,
                                     options=fitopts.options)
         self.sb.SetStatusText("Fit status: Running", 3)
 
@@ -405,14 +411,22 @@ class AppPanel(wx.Panel):
         self.sb.SetStatusText("Fit status: Complete", 3)
 
     def OnFitProgress(self, event):
-        chisq = nice(2*event.value/event.problem.dof)
-        message = "step %5d chisq %g"%(event.step, chisq)
-        signal.log_message(message=message)
-
-    def OnFitImprovement(self, event):
-        event.problem.setp(event.point)
-        event.problem.model_update()
-        signal.update_parameters(model=event.problem)
+        if event.message == 'progress':
+            chisq = nice(2*event.value/event.problem.dof)
+            message = "step %5d chisq %g"%(event.step, chisq)
+            signal.log_message(message=message)
+        elif event.message == 'improvement':
+            event.problem.setp(event.point)
+            event.problem.model_update()
+            signal.update_parameters(model=event.problem)
+        elif event.message == 'convergence_update':
+            self.view['convergence'].OnFitProgress(event)
+        elif event.message == 'uncertainty_update':
+            self.view['uncertainty'].OnFitProgress(event)
+            self.view['correlation'].OnFitProgress(event)
+            self.view['trace'].OnFitProgress(event)
+        else:
+            raise ValueError("Unknown fit progress message "+event.message)
 
     def remember_best(self, fitter, problem, best):
         fitter.save(problem.output)

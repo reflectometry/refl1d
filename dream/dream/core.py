@@ -112,6 +112,22 @@ from .crossover import AdaptiveCrossover
 from .diffev import de_step
 from .bounds import make_bounds_handler
 
+# Everything should be available in state, but lets be lazy for now
+LAST_TIME = 0
+def console_monitor(state, pop, logp):
+    global LAST_TIME
+    if state.generation == 1:
+        print "#gen", "logp(x)", " ".join("<%s>"%par
+                                          for par in state.labels)
+        LAST_TIME = time.time()
+
+    current_time = time.time()
+    if current_time >= LAST_TIME + 10:
+        LAST_TIME = current_time
+        print state.generation, state._best_logp, \
+            " ".join("%.15g"%v for v in state._best_x)
+        sys.stdout.flush()
+
 
 class Dream(object):
     """
@@ -135,6 +151,7 @@ class Dream(object):
     # Delay rejection parameters
     use_delayed_rejection = False
     DR_scale = 1 # 1-sigma step size using cov of population
+    monitor = console_monitor
 
 
     def __init__(self, **kw):
@@ -188,11 +205,11 @@ def run_dream(dream):
         state._generation(new_draws=Nchain, x=x,
                           logp=logp, accept=Nchain,
                           force_keep=True)
+        dream.monitor(state, x, logp)
+
 
     # Skip R_stat and pCR until we have some data data to analyze
     state._update(R_stat=-2, CR_weight=dream.CR.weight)
-    last_time = time.time()
-    print "#gen", "R", "logp(x)", " ".join("<%s>"%par for par in state.labels)
 
     # Now start drawing samples
     while state.draws < dream.draws + dream.burn:
@@ -253,6 +270,7 @@ def run_dream(dream):
             # Update Sequences with the new population.
             state._generation(draws, x, logp, accept)
 # ********************** NOTIFY **************************
+            dream.monitor(state, x, logp)
             #print state.generation, ":", state._best_logp
 
             # Keep track of which CR ratios were successful
@@ -275,13 +293,6 @@ def run_dream(dream):
         # Save update information
         state._update(R_stat=R_stat, CR_weight=dream.CR.weight)
 
-# ********************** NOTIFY **************************
-        current_time = time.time()
-        if current_time >= last_time + 10:
-            last_time = current_time
-            print state.generation, max(R_stat), state._best_logp, \
-                " ".join("%.15g"%v for v in state._best_x)
-            sys.stdout.flush()
 
 
 def allocate_state(dream):

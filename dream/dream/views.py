@@ -41,10 +41,12 @@ def plot_vars(state, vars=None, portion=None, selection=None, **kw):
     if vars==None:
         vars = range(points.shape[1])
     nw,nh = tile_axes(len(vars))
+    vstats = []
     for k,v in enumerate(vars):
         subplot(nw,nh,k+1)
-        _plot_var(points[:,k].flatten(), logp, label=state.labels[v],
-                  index=k, **kw)
+        vstats.append(_plot_var(points[:,k].flatten(), logp,
+                                  label=state.labels[v], index=k, **kw))
+    return vstats
 
 def tile_axes(n, size=None):
     """
@@ -101,6 +103,11 @@ def _plot_var(points, logp, index=None, label="P", nbins=50, ci=0.95):
     median = points[int(len(points)/2)]
     mean, std = stats(x=points, weights=weights)
 
+    vstats = dict(label=label, index=index, rangeci=rangeci, range68=range68,
+                  median=median, mean=mean, std=std, best=best)
+
+
+
     # Produce a histogram
     hist, bins = numpy.histogram(points, bins=nbins, range=rangeci,
                                  #new=True,
@@ -117,25 +124,6 @@ def _plot_var(points, logp, index=None, label="P", nbins=50, ci=0.95):
     histbest = numpy.exp(histbest-maxlogp)
     histbest *= numpy.max(hist)
 
-    # Make sure numbers are formatted with the appropriate precision
-    scale = 10**int(numpy.log10(rangeci[1]-rangeci[0])-2)
-    def format(x): return "%g"%(numpy.round(x/scale)*scale)
-    summary = dict(mean=format_uncertainty(mean,std),
-                   median=format(median),
-                   best=format(best),
-                   lo68=format(range68[0]),
-                   hi68=format(range68[1]),
-                   ci="%g%%"%(100*ci),
-                   loci=format(rangeci[0]),
-                   hici=format(rangeci[1]),
-                   parameter=label,
-                   index=index+1)
-
-    if index==0:
-        _var_header(ci=ci)
-    if index is not None:
-        stats_line = "%(index)2d %(parameter)20s %(mean)10s %(median)7s %(best)7s [%(lo68)7s %(hi68)7s] [%(loci)7s %(hici)7s]"%summary
-        print stats_line
 
     import pylab
     # Plot the histogram
@@ -173,14 +161,37 @@ best   = %(best)s
                    horizontalalignment='left',
                    transform=pylab.gca().transAxes)
     pylab.xlabel(label)
+    pylab.setp([pylab.gca().get_yticklabels()],visible=False)
 
-def _var_header(ci=0.95):
-    summary = dict(parameter="Parameter",
-                   mean="mean", median="median", best="best",
-                   interval68="68% interval",
-                   intervalci="%g%% interval"%(100*ci))
-    stats_line = "   %(parameter)20s %(mean)10s %(median)7s %(best)7s [%(interval68)15s] [%(intervalci)15s]"%summary
-    print stats_line
+    return vstats
+
+def format_vars(varstats, ci=0.95):
+    v = dict(parameter="Parameter",
+             mean="mean", median="median", best="best",
+             interval68="68% interval",
+             intervalci="%g%% interval"%(100*ci))
+    s = ["   %(parameter)20s %(mean)10s %(median)7s %(best)7s [%(interval68)15s] [%(intervalci)15s]"%v]
+    for v in varstats:
+        label,index = v['label'],v['index']
+        rangeci,range68 = v['rangeci'],v['range68']
+        median, mean, std, best = v['median'],v['mean'],v['std'],v['best']
+        # Make sure numbers are formatted with the appropriate precision
+        scale = 10**int(numpy.log10(rangeci[1]-rangeci[0])-2)
+        def format(x): return "%g"%(numpy.round(x/scale)*scale)
+        summary = dict(mean=format_uncertainty(mean,std),
+                       median=format(median),
+                       best=format(best),
+                       lo68=format(range68[0]),
+                       hi68=format(range68[1]),
+                       ci="%g%%"%(100*ci),
+                       loci=format(rangeci[0]),
+                       hici=format(rangeci[1]),
+                       parameter=label,
+                       index=index+1)
+        s.append("%(index)2d %(parameter)20s %(mean)10s %(median)7s %(best)7s [%(lo68)7s %(hi68)7s] [%(loci)7s %(hici)7s]"%summary)
+
+    return "\n".join(s)
+
 
 
 def plot_corrmatrix(state, vars=None, portion=None, selection=None):
@@ -206,7 +217,7 @@ class kde_2d(kde.gaussian_kde):
     __call__ = evalxy
 
 def plot_corr(state, vars=(0,1), portion=None, selection=None):
-    from pylab import axes, setp
+    from pylab import axes, setp, MaxNLocator
 
     p1,p2 = vars
     labels = [state.labels[v] for v in vars]

@@ -31,6 +31,7 @@ class ConsoleMonitor(monitor.TimedUpdate):
         except:
             raise
 
+
 class StepMonitor(monitor.Monitor):
     """
     Collect information at every step of the fit and save it to a file.
@@ -69,13 +70,17 @@ class MonitorRunner(object):
         if monitors == None:
             monitors = [ConsoleMonitor(problem)]
         self.monitors = monitors
-        self.history = History(time=1,step=1,point=1,value=1)
+        self.history = History(time=1,step=1,point=1,value=1,
+                               population_points=1, population_values=1)
         for M in self.monitors:
             M.config_history(self.history)
         self._start = time.time()
-    def __call__(self, step, point, value):
+    def __call__(self, step, point, value,
+                 population_points=None, population_values=None):
         self.history.update(time=time.time()-self._start,
-                            step=step, point=point, value=value)
+                            step=step, point=point, value=value,
+                            population_points=population_points,
+                            population_values=population_values)
         for M in self.monitors:
             M(self.history)
 
@@ -146,7 +151,9 @@ class BFGSFit(FitBase):
         print "%d: %s" % (code, STATUS[code])
         return result['x'], result['fx']
     def _monitor(self, step, x, fx):
-        self._update(step=step, point=x, value=fx)
+        self._update(step=step, point=x, value=fx,
+                     population_points=[x],
+                     population_values=[fx])
         return True
 
 class PSFit(FitBase):
@@ -175,8 +182,9 @@ class PSFit(FitBase):
 
         return x_best, f_best
 
-    def _monitor(self, step, x, fx):
-        self._update(step=step, point=x, value=fx)
+    def _monitor(self, step, x, fx, k):
+        self._update(step=step, point=x[k], value=fx[k],
+                     population_points=x, population_values=fx)
         return True
 
 class RLFit(FitBase):
@@ -206,8 +214,9 @@ class RLFit(FitBase):
 
         return x_best, f_best
 
-    def _monitor(self, step, x, fx):
-        self._update(step=step, point=x, value=fx)
+    def _monitor(self, step, x, fx, k):
+        self._update(step=step, point=x[k], value=fx[k],
+                     population_points=x, population_values=fx)
         return True
 
 
@@ -236,8 +245,9 @@ class PTFit(FitBase):
                                     burn=options['burn'],
                                     monitor=self._monitor)
         return history.best_point, history.best
-    def _monitor(self, step, x, fx):
-        self._update(step=step, point=x, value=fx)
+    def _monitor(self, step, x, fx, P, E):
+        self._update(step=step, point=x, value=fx,
+                     population_points=P, population_values=E)
         return True
 
 class AmoebaFit(FitBase):
@@ -257,7 +267,9 @@ class AmoebaFit(FitBase):
                          maxiter=options['steps'])
         return result.x, result.fx
     def _monitor(self, k, n, x, fx):
-        self._update(step=k, point=x, value=fx)
+        self._update(step=k, point=x[0], value=fx[0],
+                     population_points=x, population_values=fx)
+        return True
 
 class SnobFit(FitBase):
     name = "SNOBFIT"
@@ -274,7 +286,9 @@ class SnobFit(FitBase):
                           fglob=0, callback=self._monitor)
         return x, fx
     def _monitor(self, k, x, fx, improved):
-        self._update(step=k, point=x, value=fx)
+        # TODO: snobfit does have a population...
+        self._update(step=k, point=x, value=fx,
+                     population_points=[x], population_values=[fx])
 
 try:
     from dream import MCMCModel
@@ -318,9 +332,12 @@ class DreamFit(FitBase):
         import dream
 
         if mapper: self.dream_model.mapper = mapper
+        self._update = MonitorRunner(problem=self.dream_model.problem,
+                                     monitors=monitors)
 
         pars = self.dream_model.problem.parameters
         pop_size = int(math.ceil(options['pop']*len(pars)))
+        # TODO: really need a continue option
         if options['init'] == 'random':
             population = initpop.random(N=pop_size,
                                         pars=pars, include_current=True)
@@ -337,13 +354,22 @@ class DreamFit(FitBase):
         population = population[None,:,:]
         sampler = dream.Dream(model=self.dream_model, population=population,
                               draws = pop_size*options['steps'],
-                              burn = pop_size*options['burn'])
+                              burn = pop_size*options['burn'],
+                              monitor = self._monitor)
 
         self.state = sampler.sample()
         self.state.title = self.dream_model.problem.name
 
-        best = self.state.best()
-        return best
+        x,fx = self.state.best()
+        return x,-fx
+
+    def _monitor(self, state, pop, logp):
+        self._update.history.uncertainty_state = state # Get an early copy of the state
+        step = state.generation
+        x,fx = state.best()
+        self._update(step=step, point=x, value=-fx,
+                     population_points=pop, population_values=-logp)
+        return True
 
     def save(self, output_path):
         self.state.save(output_path)
@@ -352,24 +378,24 @@ class DreamFit(FitBase):
         self.state.show(figfile=output_path)
 
 class FitDriver(object):
-    def __init__(self, fitter=None, problem=None, monitors=None,
+    def __init__(self, fitclass=None, problem=None, monitors=None,
                  mapper=None, **options):
-        self.fitter = fitter
+        self.fitclass = fitclass
         self.problem = problem
         self.options = options
         self.monitors = monitors
         self.mapper = mapper if mapper else lambda p: map(problem.nllf,p)
 
     def fit(self):
-        optimizer = self.fitter(self.problem)
+        fitter = self.fitclass(self.problem)
         starts = self.options.get('starts', 1)
         if starts > 1:
-            optimizer = MultiStart(optimizer)
+            fitter = MultiStart(fitter)
         t0 = time.clock()
-        x, fx = optimizer.solve(monitors=self.monitors,
+        x, fx = fitter.solve(monitors=self.monitors,
                                 mapper=self.mapper,
                                 **self.options)
-        self.optimizer = optimizer
+        self.fitter = fitter
         self.time = time.clock() - t0
         self.result = x, fx
         self.problem.setp(x)
@@ -411,12 +437,12 @@ class FitOptions(object):
         Tmax   = ("Max Temperature", "float"),
         )
 
-    def __init__(self, fitter):
-        self.fitter = fitter
-        self.options = dict(fitter.settings)
+    def __init__(self, fitclass):
+        self.fitclass = fitclass
+        self.options = dict(fitclass.settings)
     def set_from_cli(self, opts):
         # Convert supplied options to the correct types and save them in value
-        for field,reset_value in self.fitter.settings:
+        for field,reset_value in self.fitclass.settings:
             value = getattr(opts,field,None)
             dtype = FitOptions.FIELDS[field][1]
             if value is not None:

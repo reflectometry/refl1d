@@ -15,8 +15,8 @@ from numpy import asarray, zeros, ones, exp, diff, std, inf, \
 from numpy.linalg import norm
 from numpy.random import rand,randn, randint, permutation
 
-def every_ten(step,x,fx):
-    if step%10: print step, fx, x
+def every_ten(step,x,fx,P,E):
+    if step%10: print step, fx[k], x[k]
 
 def parallel_tempering(nllf, p, bounds, T=None, steps=1000,
                        CR=0.9, burn=1000,
@@ -81,8 +81,8 @@ def parallel_tempering(nllf, p, bounds, T=None, steps=1000,
     #stepper = RandStepper(bounds, tol=0.2/T[-1])
     stepper = Stepper(bounds, history)
     dT = diff(1./asarray(T))
-    P = asarray([p]*N)
-    E = ones(N)*nllf(p)
+    P = asarray([p]*N)   # Points
+    E = ones(N)*nllf(p)  # Values
     history.save(step=0, temperature=T, energy=E, point=P)
     total_accept = zeros(N)
     total_swap = zeros(N-1)
@@ -134,7 +134,7 @@ def parallel_tempering(nllf, p, bounds, T=None, steps=1000,
         #assert nllf(P[0]) == E[0]
 
         # Monitoring
-        monitor(step, history.best_point, history.best)
+        monitor(step, history.best_point, history.best, P, E)
         interval = 100
         if 0 and step%interval == 0:
             print "max r",max(["%.1f"%numpy.linalg.norm(p-P[0]) for p in  P[1:]])
