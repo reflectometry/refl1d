@@ -129,6 +129,10 @@ class ParameterView(wx.Panel):
         event.Skip()
 
     # ============ Operations on the model  ===============
+    def get_state(self):
+        return self.model
+    def set_state(self, state):
+        self.set_model(state)
 
     def set_model(self, model):
         self.model = model

@@ -66,10 +66,10 @@ class ProfileInteractor(object):
 
         # Theta needs a separate axis, we put these two axes into a figure
         self.axes.set_xlabel( r'$\rm{z}\ (\AA)$' )
-        self.theta_axes.set_ylabel(r'$\rm{Magnetic\ Angle\ (\ ^\circ)}$')
         self.magnetic = experiment.sample.magnetic
         if self.magnetic:
             self.axes.set_ylabel( r'$\rm{Density}\ \times 10^{-6}\ \ \rho,\  \rho_i,\  \rho_M$')
+            self.theta_axes.set_ylabel(r'$\rm{Magnetic\ Angle\ (\ ^\circ)}$')
             self.theta_axes.set_visible(True)
             self.hrhoM.set_visible(True)
             self.hthetaM.set_visible(True)
@@ -82,7 +82,8 @@ class ProfileInteractor(object):
                 )
         else:
             self.axes.set_ylabel(r'$\rm{Density}\ \times 10^{-6}\ \ \rho,\  \rho_i$')
-            self.theta_axes.set_visible(True)
+            self.theta_axes.set_ylabel('')
+            self.theta_axes.set_visible(False)
             self.hrhoM.set_visible(False)
             self.hthetaM.set_visible(False)
             self.hlegend = self.axes.legend(

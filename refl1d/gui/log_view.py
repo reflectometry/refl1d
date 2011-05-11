@@ -6,13 +6,6 @@ import wx.lib.scrolledpanel as scrolled
 
 IS_MAC = (wx.Platform == '__WXMAC__')
 
-# Global log info
-# We have this separate from the view because (a) it is a good idea to
-# separate model and view, and (b) because our method for 'reparenting'
-# a view to a top-level window involves recreating the view from scratch,
-# so no information can be stored within the view.
-LOG_INFO = []
-
 class LogView(wx.Panel): #scrolled.ScrolledPanel):
     title = 'Log'
     default_size = (600,200)
@@ -20,6 +13,7 @@ class LogView(wx.Panel): #scrolled.ScrolledPanel):
         #scrolled.ScrolledPanel.__init__(self, *args, **kw)
         wx.Panel.__init__(self, *args, **kw)
 
+        self.log_info = []
         vsizer = wx.BoxSizer(wx.VERTICAL)
 
         self.progress = wx.TextCtrl(self,-1,style=wx.TE_MULTILINE|wx.HSCROLL)
@@ -41,10 +35,16 @@ class LogView(wx.Panel): #scrolled.ScrolledPanel):
             #print "-redraw"
             self._redraw()
 
+    def get_state(self):
+        return self.log_info
+    def set_state(self, state):
+        self.log_info = state
+        self._redraw()
+
     def log_message(self, message):
-        if len(LOG_INFO) > 1000:
-            del LOG_INFO[:-1000]
-        LOG_INFO.append(message)
+        if len(self.log_info) > 1000:
+            del self.log_info[:-1000]
+        self.log_info.append(message)
         self._redraw()
 
     def _redraw(self):
@@ -53,4 +53,4 @@ class LogView(wx.Panel): #scrolled.ScrolledPanel):
         else:
             self._need_redraw = False
             self.progress.Clear()
-            self.progress.AppendText("\n".join(LOG_INFO))
+            self.progress.AppendText("\n".join(self.log_info))

@@ -183,8 +183,8 @@ class PSFit(FitBase):
         return x_best, f_best
 
     def _monitor(self, step, x, fx, k):
-        self._update(step=step, point=x[k], value=fx[k],
-                     population_points=x, population_values=fx)
+        self._update(step=step, point=x[:,k], value=fx[k],
+                     population_points=x.T, population_values=fx)
         return True
 
 class RLFit(FitBase):
@@ -215,8 +215,9 @@ class RLFit(FitBase):
         return x_best, f_best
 
     def _monitor(self, step, x, fx, k):
-        self._update(step=step, point=x[k], value=fx[k],
-                     population_points=x, population_values=fx)
+        #print "rl best",k, x.shape,fx.shape
+        self._update(step=step, point=x[:,k], value=fx[k],
+                     population_points=x.T, population_values=fx)
         return True
 
 
@@ -246,7 +247,7 @@ class PTFit(FitBase):
                                     monitor=self._monitor)
         return history.best_point, history.best
     def _monitor(self, step, x, fx, P, E):
-        self._update(step=step, point=x, value=fx,
+        self._update(step=step, point=x[k], value=fx,
                      population_points=P, population_values=E)
         return True
 

@@ -92,15 +92,19 @@ class DreamMonitor(monitor.Monitor):
     def config_history(self, history):
         history.requires(time=1)
     def __call__(self, history):
-        self.state = history.uncertainty_state
-        if history.time[0] >= self.time+self.rate \
-            and hasattr(history, 'uncertainty_state'):
-            # Gack! holding on to state for final
-            evt = FitProgressEvent(problem=self.problem,
-                                   message="uncertainty_update",
-                                   state = deepcopy(self.state))
-            wx.PostEvent(self.win, evt)
-            self.time = history.time[0]
+        try:
+            self.state = history.uncertainty_state
+            if history.time[0] >= self.time+self.rate:
+                # Gack! holding on to state for final
+                evt = FitProgressEvent(problem=self.problem,
+                                       message="uncertainty_update",
+                                       state = deepcopy(self.state))
+                wx.PostEvent(self.win, evt)
+                self.time = history.time[0]
+        except AttributeError:
+            self.state = None
+            pass
+
     def final(self):
         """
         Close out the monitor

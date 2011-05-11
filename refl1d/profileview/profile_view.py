@@ -17,7 +17,7 @@ from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 from .binder import pixel_to_data
 from .util import CopyImage
 from ..gui import signal
-from .profile import ProfileInteractor
+from .profilei import ProfileInteractor
 from .interactor import BaseInteractor
 
 from ..experiment import MixedExperiment
@@ -90,6 +90,7 @@ class ProfileView(wx.Panel):
         self.canvas.Bind(wx.EVT_RIGHT_DOWN, self.OnContextMenu)
         #self.canvas.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.canvas.SetFocus())
 
+        self.model = None
         self._need_set_model = self._need_redraw = False
         self.Bind(wx.EVT_SHOW, self.OnShow)
 
@@ -125,6 +126,10 @@ class ProfileView(wx.Panel):
             #print "-redraw"
             self.profile.redraw()
         event.Skip()
+    def get_state(self):
+        return self.model
+    def set_state(self, state):
+        self.set_model(state)
 
     def set_model(self, model):
         self.model = model
@@ -157,7 +162,6 @@ class ProfileView(wx.Panel):
 
     def _set_model(self):
         """Initialize model by profile."""
-
         self.profiles = []
         def add_profiles(name, exp):
             if isinstance(exp,MixedExperiment):

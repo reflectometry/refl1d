@@ -35,8 +35,8 @@ import traceback
 import wx
 import wx.aui
 
-from refl1d.profileview.panel import ProfileView
-from refl1d.profileview.theory import TheoryView
+from refl1d.profileview.profile_view import ProfileView
+from refl1d.profileview.data_view import TheoryView
 from refl1d.cli import load_problem
 
 from .. import fitters
@@ -44,7 +44,7 @@ from .summary_view import SummaryView
 from .parameter_view import ParameterView
 from .log_view import LogView
 from .convergence_view import ConvergenceView
-from .dreamview import CorrelationView, UncertaintyView, TraceView
+from .uncertainty_view import CorrelationView, UncertaintyView, TraceView
 from .fit_dialog import OpenFitOptions
 from .fit_thread import (FitThread, EVT_FIT_PROGRESS, EVT_FIT_COMPLETE)
 from .util import nice
@@ -258,18 +258,19 @@ class AppPanel(wx.Panel):
         else:
             raise RuntimeError("Lost track of view")
         #print "creating external frame"
+        state = self.view[tag].get_state()
         constructor = self.view_constructor[tag]
         frame = wx.Frame(self, title=constructor.title,
                          size=constructor.default_size)
         panel = constructor(frame)
         self.view[tag] = panel
-        if hasattr(constructor, 'set_model'):
-            panel.set_model(self.model)
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(panel, 1, wx.EXPAND)
         frame.SetSizer(sizer)
         frame.Bind(wx.EVT_CLOSE, self.OnViewFrameClose)
         frame.Show()
+        panel.set_state(state)
+        evt.Skip()
 
 
     def OnViewFrameClose(self, evt):
@@ -281,11 +282,12 @@ class AppPanel(wx.Panel):
                 break
         else:
             raise RuntimeError("Lost track of view!")
+        state = self.view[tag].get_state()
         constructor = self.view_constructor[tag]
-        self.view[tag] = constructor(self.aui)
-        self.aui.AddPage(self.view[tag],constructor.title)
-        if hasattr(constructor, 'set_model'):
-            self.view[tag].set_model(self.model)
+        panel = constructor(self.aui)
+        self.view[tag] = panel
+        self.aui.AddPage(panel,constructor.title)
+        panel.set_state(state)
         evt.Skip()
 
     # model viewer interface

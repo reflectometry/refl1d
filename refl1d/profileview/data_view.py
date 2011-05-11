@@ -132,6 +132,10 @@ class TheoryView(wx.Panel):
         if self._need_redraw:
             #print "-redraw"
             self.redraw()
+    def get_state(self):
+        return self.problem
+    def set_state(self, state):
+        self.set_model(state)
 
     def set_model(self, model):
         self.problem = model
