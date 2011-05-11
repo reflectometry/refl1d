@@ -5,7 +5,7 @@ import numpy
 import dream.views
 from ..mystic import monitor
 from ..util import coordinated_colors
-from .plotview import PlotView
+from .plot_view import PlotView
 from .signal import log_message
 
 class UncertaintyView(PlotView):

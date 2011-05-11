@@ -3,7 +3,7 @@ from __future__ import with_statement
 import numpy
 
 from ..mystic import monitor
-from .plotview import PlotView
+from .plot_view import PlotView
 from ..util import coordinated_colors
 
 
