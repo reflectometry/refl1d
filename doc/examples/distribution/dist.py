@@ -1,4 +1,5 @@
-
+import numpy
+from refl1d.mystic.parameter import Parameter
 from refl1d.experiment import ExperimentBase
 
 class Weights:

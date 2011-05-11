@@ -95,8 +95,8 @@ class ProfileInteractor(object):
         self.hlegend.get_frame().set( alpha=0.2, facecolor='yellow' )
 
         self.x_offset = 0
-        self._find_layer_boundaries()
         self.layer_num = None
+        self._find_layer_boundaries()
         self.thickness_interactor.reset_markers()
         self.set_layer(0)
         self.redraw()
@@ -149,10 +149,11 @@ class ProfileInteractor(object):
     def _find_layer_boundaries(self):
         offset = self.x_offset
         boundary = [-inf, offset]
-        for L in self.experiment.sample[1:-1]:
-            dx = L.thickness.value
-            offset += dx
-            boundary.append(offset)
+        if hasattr(self.experiment,'sample'):
+            for L in self.experiment.sample[1:-1]:
+                dx = L.thickness.value
+                offset += dx
+                boundary.append(offset)
         boundary.append(inf)
         self.boundary = numpy.asarray(boundary)
 
