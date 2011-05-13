@@ -6,6 +6,8 @@ import numpy as np
 from peaks import Peaks, Gaussian, Background
 from refl1d.names import Parameter, pmath, FitProblem
 
+
+
 def read_data():
 #    data= Z1.T
     X = np.linspace(0.4840, 0.5080,13)

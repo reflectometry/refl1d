@@ -5,7 +5,7 @@ from math import degrees, radians, sin, cos
 
 import numpy as np
 
-from refl1d.mystic.parameter import Parameter
+from refl1d.mystic.parameter import Parameter, varying
 
 def plot(X,Y,theory,data,err):
     import pylab
@@ -13,12 +13,11 @@ def plot(X,Y,theory,data,err):
     #print "theory",theory[1:6,1:6]
     #print "data",data[1:6,1:6]
     #print "delta",(data-theory)[1:6,1:6]
-    fig=pylab.gcf()
-    ax=fig.add_subplot(3,1,2)
-    pylab.pcolormesh(X,Y, theory)
-    ax=fig.add_subplot(3,1,1)
+    pylab.subplot(3,1,1)
     pylab.pcolormesh(X,Y, data)
-    ax=fig.add_subplot(3,1,3)
+    pylab.subplot(3,1,2)
+    pylab.pcolormesh(X,Y, theory)
+    pylab.subplot(3,1,3)
     pylab.pcolormesh(X,Y, (data-theory)/(err+1))
 
 class Gaussian(object):
@@ -99,7 +98,15 @@ class Peaks(object):
         plot(self.X, self.Y, self.theory(), self.data, self.err)
 
     def save(self, basename):
-        pass
+        import json
+        pars = [(p.name,p.value) for p in varying(self.parameters())]
+        out = json.dumps(dict(theory=self.theory().tolist(),
+                              data=self.data.tolist(),
+                              err=self.err.tolist(),
+                              X = self.X.tolist(),
+                              Y = self.Y.tolist(),
+                              pars = pars))
+        open(basename+".json","w").write(out)
 
     def update(self):
         pass
