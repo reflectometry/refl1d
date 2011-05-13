@@ -406,17 +406,16 @@ class FitDriver(object):
         self.problem.show()
 
     def save(self, output_path):
-        if hasattr(self.optimizer, 'save'):
-            self.optimizer.save(output_path)
+        if hasattr(self.problem, 'save'):
+            self.problem.save(output_path)
 
     def plot(self, output_path):
         import pylab
         P = self.problem
         pylab.suptitle(": ".join((P.store,P.title)))
         P.plot(figfile=output_path)
-        if hasattr(self.optimizer, 'plot'):
-            self.optimizer.plot(output_path)
-
+        if hasattr(self.problem, 'plot'):
+            self.problem.plot(figfile=output_path)
 
 def _fill_defaults(options, settings):
     for field,value in settings:
