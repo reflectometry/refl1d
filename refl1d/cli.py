@@ -55,14 +55,17 @@ def load_problem(args):
         elif filename.endswith('.staj'):
             options = []
             problem = FitProblem(load_mlayer(filename))
-        elif filename.endswith('.pickle'):
-            problem = pickle.load(filename)
         else:
             #print "loading",filename,"from",directory
-            options = args[1:]
-            problem = load_script(filename, options=options)
-            # Guard against the user changing parameters after defining
-            # the problem.
+            try:
+                # First see if it is a pickle
+                problem = pickle.load(open(filename, 'rb'))
+            except:
+                # Then see if it is a model
+                options = args[1:]
+                problem = load_script(filename, options=options)
+                # Guard against the user changing parameters after defining
+                # the problem.
             problem.model_reset()
 
     problem.file = path

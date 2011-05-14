@@ -122,11 +122,9 @@ class AppPanel(wx.Panel):
         file_menu.PrependSeparator()
 
         _item = file_menu.Prepend(wx.ID_ANY,
-                                  "&Import",
-                                  "Import script to define model")
-        frame.Bind(wx.EVT_MENU, self.OnFileImport, _item)
-
-        file_menu.PrependSeparator()
+                                  "&Reload",
+                                  "Reload the existing model")
+        frame.Bind(wx.EVT_MENU, self.OnFileReload, _item)
 
         _item = file_menu.Prepend(wx.ID_SAVEAS,
                                   "Save&As",
@@ -184,13 +182,19 @@ class AppPanel(wx.Panel):
         tb = self.tb = frame.GetToolBar()
 
         script_bmp = get_bitmap("import_script.png", wx.BITMAP_TYPE_PNG)
+        reload_bmp = get_bitmap("reload.png", wx.BITMAP_TYPE_PNG)
         start_bmp = get_bitmap("start_fit.png", wx.BITMAP_TYPE_PNG)
         stop_bmp = get_bitmap("stop_fit.png", wx.BITMAP_TYPE_PNG)
 
         _tool = tb.AddSimpleTool(wx.ID_ANY, script_bmp,
-                                 "Import Script",
+                                 "Open model",
                                  "Load model from script")
-        frame.Bind(wx.EVT_TOOL, self.OnFileImport, _tool)
+        frame.Bind(wx.EVT_TOOL, self.OnFileOpen, _tool)
+        _tool = tb.AddSimpleTool(wx.ID_ANY, reload_bmp,
+                                 "Reload model",
+                                 "Reload model from script")
+        frame.Bind(wx.EVT_TOOL, self.OnFileReload, _tool)
+        # TODO: add reload
 
         tb.AddSeparator()
 
@@ -247,6 +251,13 @@ class AppPanel(wx.Panel):
         # Move this to gui_app.after_show since the sizing doesn't work
         # right until the frame is rendered.
         #self.aui.Split(0, wx.TOP)
+
+    def show_view(self, tag):
+        if self.view[tag].Parent == self.aui:
+            self.aui.SetSelection(self.aui.GetPageIndex(self.view[tag]))
+        else:
+            self.view[tag].Raise()
+            self.view[tag].SetFocus()
 
     def OnViewTabClose(self, evt):
         win = self.aui.GetPage(evt.selection)
@@ -319,7 +330,7 @@ class AppPanel(wx.Panel):
                             message="Select File",
                             #defaultDir=os.getcwd(),
                             #defaultFile="",
-                            wildcard=(MODEL_FILES+"|"+ALL_FILES),
+                            wildcard=(ALL_FILES),
                             style=wx.OPEN|wx.CHANGE_DIR)
 
         # Wait for user to close the dialog.
@@ -330,6 +341,9 @@ class AppPanel(wx.Panel):
         # Process file if user clicked okay.
         if status == wx.ID_OK:
             self.load_model(path)
+
+    def OnFileReload(self, event):
+        self.load_model(self.model.file)
 
     def OnFileSave(self, event):
         if self.model is not None and hasattr(self.model,'modelfile'):
@@ -357,24 +371,6 @@ class AppPanel(wx.Panel):
             self.model.modelfile = path
             self.save_model()
 
-    def OnFileImport(self, event):
-        # Load the script which will contain model defination and data.
-        dlg = wx.FileDialog(self,
-                            message="Select Script File",
-                            #defaultDir=os.getcwd(),
-                            #defaultFile="",
-                            wildcard=(PYTHON_FILES+"|"+ALL_FILES),
-                            style=wx.OPEN|wx.CHANGE_DIR)
-
-        # Wait for user to close the dialog.
-        status = dlg.ShowModal()
-        path = dlg.GetPath()
-        dlg.Destroy()
-
-        # Process file if user clicked okay.
-        if status == wx.ID_OK:
-            self.import_model(path)
-
     def OnFitOptions(self, event):
         OpenFitOptions()
 
@@ -382,15 +378,8 @@ class AppPanel(wx.Panel):
         if self.fit_thread:
             self.sb.SetStatusText("Error: Fit already running")
             return
-        try:
-            if len(self.model.parameters) == 0:
-                raise ValueError ("Problem has no fittable parameters")
-        except ValueError:
-            import traceback
-            error_txt=traceback.format_exc()
-            self.sb.SetStatusText("Error: No fittable parameters", 3)
-            signal.log_message(message=error_txt)
-            return
+        if len(self.model.parameters) == 0:
+            raise ValueError ("Problem has no fittable parameters")
 
         # Start a new thread worker and give fit problem to the worker.
         fitopts = fitters.FIT_OPTIONS[fitters.FIT_DEFAULT]
@@ -430,36 +419,14 @@ class AppPanel(wx.Panel):
         else:
             raise ValueError("Unknown fit progress message "+event.message)
 
-    def remember_best(self, fitter, problem, best):
-        fitter.save(problem.output)
-
-        try:
-            problem.save(problem.output, best)
-        except:
-            pass
-        sys.stdout = open(problem.output+".out", "w")
-
-        self.pan1.Layout()
-
     def new_model(self):
         from ..fitplugin import new_model as gen
         self.set_model(gen())
 
     def load_model(self, path):
-        try:
-            import cPickle as serialize
-            problem = serialize.load(open(path, 'rb'))
-            problem.modelfile = path
-            signal.model_new(model=problem)
-        except:
-            signal.log_message(message=traceback.format_exc())
-
-    def import_model(self, path):
-        try:
-            problem = load_problem([path])
-            signal.model_new(model=problem)
-        except:
-            signal.log_message(message=traceback.format_exc())
+        problem = load_problem([path])
+        problem.modelfile = path
+        signal.model_new(model=problem)
 
     def save_model(self):
         import cPickle as serialize
@@ -471,25 +438,23 @@ class AppPanel(wx.Panel):
 
         *type* is fitness.__class__, where fitness is the measurement cost function.
         """
-        raise NotImplementedError
         name = type.__name__
         if type not in self.data_tabs:
-            constructor = getattr(p, 'data_panel', PlotPanel)
             tab = self.data_notebook.add_tab(type, name+" Data")
+            constructor = getattr(type, 'data_panel', PlotView)
             constructor(tab)
-        if type not in self.model_notebook:
-            constructor = getattr(p, 'model_panel', PlotPanel)
+        if type not in self.model_notebook and hasattr(type, 'model_panel'):
             tab = self.model_notebook.add_tab(type, name+" Model")
-            constructor(tab)
+            type.model_panel(tab)
 
     def _view_problem(self, problem):
         """
         Set the model and data views to those necessary to display the problem.
         """
-        raise NotImplementedError
         # What types of measurements do we have?
-        types = set(p.fitness.__class__ for p in problem)
-        for p in types: _add_measurement_type(p)
+        models = problem.models if hasattr(problem,'models') else [problem]
+        types = set(p.fitness.__class__ for p in models)
+        for p in types: self._add_measurement_type(p)
 
         # Show only the relevant views
         for p,tab in self.data_notebook.tabs():

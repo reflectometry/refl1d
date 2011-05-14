@@ -217,61 +217,62 @@ class Refl1dGUIApp(wx.App):
         #wx.CallAfter(self.after_show)
         event.Skip()
 
+    def after_show(self):
+        from .. import cli, fitplugin
+        sys.excepthook = excepthook
+        
+        # TODO: only way I could find to set initial split
+        panel = self.frame.panel
+        panel.aui.Split(0, wx.TOP)
+        #wx.GetApp().frame.panel.show_view('log')
+
+        # Process options
+        cli.Refl1dOpts.FLAGS |= set(('inspect','syspath'))
+        opts = cli.getopts()
+
+        # For wx debugging, load the wxPython Widget Inspection Tool if requested.
+        # It will cause a separate interactive debugger window to be displayed.
+        if opts.inspect: inspect()
+
+        if opts.syspath:
+            print "*** Resource directory:  ", resource_dir()
+            print "*** Python path is:"
+            for i, p in enumerate(sys.path):
+                print "%5d  %s" %(i, p)
+
+        # Ick: refl specific options
+        from refl1d.probe import Probe
+        Probe.view = opts.plot
+
+        # Put up the initial model
+        model = cli.initial_model(opts)    
+        if not model:
+            model = fitplugin.new_model()
+        panel.set_model(model=model)
+
+
+
 #==============================================================================
 
 def inspect():
     import wx.lib.inspection
     wx.lib.inspection.InspectionTool().Show()
 
-def _user_error(message):
+
+def excepthook(type, value, tb):
     import traceback
     from . import signal
-    error = traceback.format_exc()
-    indented = "   "+"\n   ".join(error.split("\n"))
-    signal.log_message(message=message+":\n"+indented)
-    wx.GetApp().frame.panel.show_log()
+    error = traceback.format_exception(type, value, tb)
+    indented = "   "+"\n   ".join(error)
+    signal.log_message(message="Error:\n"+indented)
+    wx.GetApp().frame.panel.show_view('log')
+
 
 def _protected_main():
     if LOGTIM: log_time("Starting Refl1D")
 
     # Instantiate the application class and give control to wxPython.
-    app = Refl1dGUIApp(redirect=False, filename=None)
-
-    from .. import cli, fitplugin
-    cli.Refl1dOpts.FLAGS |= set(('inspect','syspath'))
-    try:
-        opts = cli.getopts()
-    except:
-        _user_error("Error processing options")
-
-    # For wx debugging, load the wxPython Widget Inspection Tool if requested.
-    # It will cause a separate interactive debugger window to be displayed.
-    if opts.inspect: inspect()
-
-    if opts.syspath:
-        print "*** Resource directory:  ", resource_dir()
-        print "*** Python path is:"
-        for i, p in enumerate(sys.path):
-            print "%5d  %s" %(i, p)
-
-    model = None
-    try:
-        # Put up the initial model
-        model = cli.initial_model(opts)
-    except:
-        _user_error("Error loading model")
-
-    # Ick: refl specific options
-    from refl1d.probe import Probe
-    Probe.view = opts.plot
-    if not model:
-        model = fitplugin.new_model()
-
-    def after_show():
-        # TODO: only way I could find to set initial split
-        app.frame.panel.aui.Split(0, wx.TOP)
-        app.frame.panel.set_model(model=model)
-    app.after_show = after_show
+    app = Refl1dGUIApp(redirect=0)
 
     # Enter event loop which allows the user to interact with the application.
     if LOGTIM: log_time("Entering the event loop")

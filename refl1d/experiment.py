@@ -112,7 +112,8 @@ class ExperimentBase(object):
         Q,R = self.reflectivity()
         self.probe.plot(theory=(Q,R),
                         substrate=self._substrate, surface=self._surface,
-                        view=view)
+                        view=view,
+                        label=self.name)
 
         if show_resolution:
             import pylab
@@ -187,7 +188,7 @@ class Experiment(ExperimentBase):
     than *dA*.  A *dA* of 10 gives coarse slabs.  If *dA* is not provided
     then each profile step forms its own slab.
     """
-    def __init__(self, sample=None, probe=None,
+    def __init__(self, sample=None, probe=None, name=None,
                  roughness_limit=2.5, dz=None, dA=None):
         self.sample = sample
         self._substrate=self.sample[0].material
@@ -201,6 +202,13 @@ class Experiment(ExperimentBase):
         self._slabs = profile.Microslabs(len(probe), dz=dz)
         self._probe_cache = material.ProbeCache(probe)
         self._cache = {}  # Cache calculated profiles/reflectivities
+        self._name = name
+
+    def _set_name(self, name):
+        self._name = name
+    def _get_name(self):
+        return self._name if self._name else self.probe.name
+    name = property(_get_name, _set_name)
 
     def parameters(self):
         return dict(sample=self.sample.parameters(),

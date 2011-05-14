@@ -462,9 +462,10 @@ class Probe(object):
             raise TypeError("incorrect reflectivity view '%s'"%view)
 
 
-    def plot_resolution(self, suffix='', **kwargs):
+    def plot_resolution(self, suffix='', label=None, **kwargs):
         import pylab
-        pylab.plot(self.Q, self.dQ, label=self.name(suffix=suffix))
+        pylab.plot(self.Q, self.dQ, 
+                   label=self.label(prefix=label,suffix=suffix))
         pylab.xlabel(r'Q ($\AA^{-1}$)')
         pylab.ylabel(r'Q resolution ($1-\sigma \AA^{-1}$)')
         pylab.title('Measurement resolution')
@@ -512,7 +513,7 @@ class Probe(object):
         #Q4[Q4==0] = 1
         self._plot_pair(scale=scale, ylabel='R (100 Q)^4', **kwargs)
 
-    def plot_residuals(self, theory=None, suffix='', **kwargs):
+    def plot_residuals(self, theory=None, suffix='', label=None,**kwargs):
         import matplotlib.pyplot as plt
         if theory is not None and self.R is not None:
             c = coordinated_colors()
@@ -520,7 +521,7 @@ class Probe(object):
             residual = (R - self.R)/self.dR
             plt.plot(self.Q, residual,
                      '.', color=c['light'],
-                     label=self.name(suffix=suffix))
+                     label=self.label(prefix=label, suffix=suffix))
         plt.axhline(1, color='black', ls='--',lw=1)
         plt.axhline(0, color='black', lw=1)
         plt.axhline(-1, color='black', ls='--',lw=1)
@@ -529,7 +530,7 @@ class Probe(object):
         plt.legend()
 
     def _plot_pair(self, theory=None, scale=lambda Q: 1,
-                   ylabel="", suffix="", **kw):
+                   ylabel="", suffix="", label=None, **kw):
         import pylab
         c = coordinated_colors()
         isheld = pylab.ishold()
@@ -537,24 +538,35 @@ class Probe(object):
             pylab.errorbar(self.Q, self.R*scale(self.Q),
                            yerr=self.dR*scale(self.Q), xerr=self.dQ,
                            fmt='.', color=c['light'],
-                           label=self.name('data',suffix))
+                           label=self.label(prefix=label,
+                                            gloss='data',
+                                            suffix=suffix))
             pylab.hold(True)
         if theory is not None:
             Q,R = theory
             pylab.plot(Q, R*scale(Q), color=c['dark'],
-                       label=self.name('theory',suffix))
+                       label=self.label(prefix=label, 
+                                        gloss='theory',
+                                        suffix=suffix))
         pylab.hold(isheld)
         pylab.xlabel('Q (inv Angstroms)')
         pylab.ylabel(ylabel)
         pylab.legend()
 
-    def name(self, gloss="", suffix=""):
-        if hasattr(self, 'filename'):
-            prefix = os.path.splitext(os.path.basename(self.filename))[0]
+    def label(self, prefix=None, gloss="", suffix=""):
+        if not prefix: 
+            prefix = self.name
+        if prefix:
             return " ".join((prefix+suffix,gloss)) if gloss else prefix
         else:
             return suffix+" "+gloss if gloss else None
 
+    @property
+    def name(self):
+        if hasattr(self, 'filename'):
+            return os.path.splitext(os.path.basename(self.filename))[0]
+        else:
+            return None
 
 class XrayProbe(Probe):
     """
@@ -697,7 +709,8 @@ class ProbeSet(Probe):
             p.back_absorption = back_absorption
             p.theta_offset = theta_offset
 
-    def name(self): return self.probes[0].name()
+    @property
+    def name(self): return self.probes[0].name
 
     def stitch(self, same_Q=0.001, same_dQ=0.001):
         r"""
@@ -975,7 +988,7 @@ class PolarizedNeutronProbe(object):
         self._xs_plot('plot_Q4', **kwargs)
     def plot_residuals(self, **kwargs):
         self._xs_plot('plot_residuals', **kwargs)
-    def plot_SA(self, theory=None, **kwargs):
+    def plot_SA(self, theory=None, label=None, **kwargs):
         import pylab
         if self.pp is None or self.mm is None:
             raise TypeError("cannot form spin asymmetry plot without ++ and --")
@@ -987,14 +1000,19 @@ class PolarizedNeutronProbe(object):
             Q,SA,dSA = spin_asymmetry(pp.Q,pp.R,pp.dR,mm.Q,mm.R,mm.dR)
             if dSA is not None:
                 pylab.errorbar(Q, SA, yerr=dSA, xerr=pp.dQ, fmt='.',
-                               label=pp.name('data'), color=c['light'])
+                               label=pp.label(prefix=label, gloss='data'), 
+                               color=c['light'])
             else:
-                pylab.plot(Q,SA,'.',label=pp.name('data'),color=c['light'])
+                pylab.plot(Q,SA,'.',
+                           label=pp.label(prefix=label,gloss='data'),
+                           color=c['light'])
             pylab.hold(True)
         if theory is not None:
             Q,(Rpp,Rpm,Rmp,Rmm) = theory
             Q,SA,_ = spin_asymmetry(Q,Rpp,None,Q,Rmm,None)
-            pylab.plot(Q, SA,label=pp.name('theory'),color=c['dark'])
+            pylab.plot(Q, SA,
+                       label=pp.label(prefix=label,gloss='theory'),
+                       color=c['dark'])
         pylab.hold(isheld)
         pylab.xlabel(r'Q (\AA^{-1})')
         pylab.ylabel(r'spin asymmetry $(R^{++} -\, R^{--}) / (R^{++} +\, R^{--})$')
@@ -1020,7 +1038,8 @@ class PolarizedNeutronProbe(object):
                 pylab.hold(True)
         if not isheld: pylab.hold(False)
 
-    def name(self): return self.pp.name()
+    @property
+    def name(self): return self.pp.name
 
 def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
     r"""

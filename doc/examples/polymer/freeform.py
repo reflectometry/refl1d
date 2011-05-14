@@ -14,8 +14,7 @@
 # layer is deuterated or hydrogenated toluene.
 import sys
 from periodictable import formula
-from refl1d import *
-from refl1d.fitter import MultiFitProblem
+from refl1d.names import *
 from copy import copy
 import numpy
 from numpy import cos, log, exp, arange, pi, inf

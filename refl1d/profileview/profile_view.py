@@ -171,7 +171,7 @@ class ProfileView(wx.Panel):
                 self.profiles.append( (name, exp) )
         if isinstance(self.model,MultiFitProblem):
             for i,p in enumerate(self.model.models):
-                name = p.fitness.probe.name()
+                name = p.fitness.name
                 if not name: name = "M%d"%(i+1)
                 add_profiles(name, p.fitness)
         else:
