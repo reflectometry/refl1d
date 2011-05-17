@@ -241,7 +241,7 @@ class Experiment(ExperimentBase):
             calc_q = self.probe.calc_Q
             calc_r = reflamp(-calc_q/2, depth=w, rho=rho, irho=irho,
                              sigma=sigma)
-            if numpy.isnan(calc_r).any():
+            if False and numpy.isnan(calc_r).any():
                 print "w",w
                 print "rho",rho
                 print "irho",irho
@@ -254,8 +254,8 @@ class Experiment(ExperimentBase):
                 print parameter.summarize(fitted)
                 print "==="
             self._cache[key] = calc_q,calc_r
-            if numpy.isnan(calc_q).any(): print "calc_Q contains NaN"
-            if numpy.isnan(calc_r).any(): print "calc_r contains NaN"
+            #if numpy.isnan(calc_q).any(): print "calc_Q contains NaN"
+            #if numpy.isnan(calc_r).any(): print "calc_r contains NaN"
         return self._cache[key]
 
     def amplitude(self, resolution=True):

@@ -92,13 +92,14 @@ def build_app():
 def build_dmg():
     """DMG builder; should include docs"""
     PRODUCT = NAME+" "+VERSION
+    PRODUCTDASH = NAME+"-"+VERSION
     APP="dist/%s.app"%PRODUCT
-    DMG="dist/%s.dmg"%PRODUCT
+    DMG="dist/%s.dmg"%PRODUCTDASH
     # Remove previous build if it is still sitting there
     if os.path.exists(APP): shutil.rmtree(APP)
     if os.path.exists(DMG): os.unlink(DMG)
     os.rename("dist/%s.app"%NAME, APP)
-    os.system('cd dist && ../extra/dmgpack.sh "%s" "%s.app" ../doc/_build/html ../doc/examples'%(PRODUCT,PRODUCT))
+    os.system('cd dist && ../extra/dmgpack.sh "%s" "%s.app" ../doc/_build/html ../doc/examples'%(PRODUCTDASH,PRODUCT))
 
 if __name__ == "__main__":
     build_app()

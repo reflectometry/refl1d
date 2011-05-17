@@ -466,8 +466,8 @@ class FitProblem(object):
             return inf
         if isnan(cost):
             #TODO: make sure errors get back to the user
-            print "point evaluates to NaN"
-            print parameter.summarize(self.parameters)
+            #print "point evaluates to NaN"
+            #print parameter.summarize(self.parameters)
             return inf
         return cost
 
