@@ -9,6 +9,7 @@ Run using::
 
 import os
 import sys
+import shutil
 
 # Force build before continuing
 os.system('"%s" setup.py build'%sys.executable)
@@ -80,9 +81,25 @@ py2app_opt = dict(argv_emulation=True,
                   optimize=2)
 options = dict(py2app=py2app_opt,)
 
-setup(
-  data_files = DATA_FILES,
-  package_data = PACKAGE_DATA,
-  app = [app_data],
-  options = options,
-)
+def build_app():
+    setup(
+          data_files = DATA_FILES,
+          package_data = PACKAGE_DATA,
+          app = [app_data],
+          options = options,
+          )
+
+def build_dmg():
+    """DMG builder; should include docs"""
+    PRODUCT = NAME+" "+VERSION
+    APP="dist/%s.app"%PRODUCT
+    DMG="dist/%s.dmg"%PRODUCT
+    # Remove previous build if it is still sitting there
+    if os.path.exists(APP): shutil.rmtree(APP)
+    if os.path.exists(DMG): os.unlink(DMG)
+    os.rename("dist/%s.app"%NAME, APP)
+    os.system('cd dist && ../extra/dmgpack.sh "%s" "%s.app" ../doc/_build/html ../doc/examples'%(PRODUCT,PRODUCT))
+
+if __name__ == "__main__":
+    build_app()
+    build_dmg()
