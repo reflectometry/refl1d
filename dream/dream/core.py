@@ -106,7 +106,6 @@ import time
 
 from .state import MCMCDraw
 from .metropolis import metropolis, metropolis_dr, dr_step
-from .outliers import remove_outliers
 from .gelman import gelman
 from .crossover import AdaptiveCrossover
 from .diffev import de_step
@@ -122,7 +121,7 @@ def console_monitor(state, pop, logp):
         LAST_TIME = time.time()
 
     current_time = time.time()
-    if current_time >= LAST_TIME + 10:
+    if current_time >= LAST_TIME + 1:
         LAST_TIME = current_time
         print state.generation, state._best_logp, \
             " ".join("%.15g"%v for v in state._best_x)
@@ -151,10 +150,10 @@ class Dream(object):
     # Delay rejection parameters
     use_delayed_rejection = False
     DR_scale = 1 # 1-sigma step size using cov of population
-    monitor = console_monitor
 
 
     def __init__(self, **kw):
+        self.monitor = console_monitor
         for k,v in kw.items():
             if hasattr(self, k):
                 setattr(self, k, v)
@@ -280,7 +279,7 @@ def run_dream(dream):
         # ---------------------------------------------------------------------
 
         # Calculate Gelman and Rubin convergence diagnostic
-        _, points, _ = state.chains(unroll=True)
+        _, points, _ = state.chains()
         R_stat = gelman(points, portion=0.5)
 
         if state.draws <= 0.1 * dream.draws:

@@ -1,4 +1,5 @@
-from numpy import exp, sqrt, minimum, where, cov, eye, array, dot
+from __future__ import with_statement
+from numpy import exp, sqrt, minimum, where, cov, eye, array, dot, errstate
 from numpy.linalg import norm, cholesky, inv
 from . import util
 
@@ -7,7 +8,7 @@ def paccept(logp_old, logp_try):
     Returns the probability of taking a metropolis step given two
     log density values.
     """
-    return minimum(exp(logp_try - logp_old), 1)
+    return exp(minimum(logp_try-logp_old, 0))
 
 def metropolis(xtry, logp_try, xold, logp_old, step_alpha):
     """
@@ -22,8 +23,9 @@ def metropolis(xtry, logp_try, xold, logp_old, step_alpha):
 
     Returns x_new, logp_new, alpha, accept
     """
-    alpha = paccept(logp_try=logp_try, logp_old=logp_old)
-    alpha *= step_alpha
+    with errstate(under='ignore'):
+        alpha = paccept(logp_try=logp_try, logp_old=logp_old)
+        alpha *= step_alpha
     accept = alpha > util.RNG.rand(*alpha.shape)
     logp_new = where(accept, logp_try, logp_old)
     ## The following only works for vectors:

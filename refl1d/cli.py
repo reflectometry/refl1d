@@ -82,6 +82,7 @@ def preview(problem):
     pylab.show()
 
 def remember_best(fitter, problem, best):
+    #print "remembering best"
     pardata = "".join("%s %.15g\n"%(p.name, p.value)
                       for p in problem.parameters)
     open(problem.output_path+".par",'wt').write(pardata)
@@ -90,6 +91,7 @@ def remember_best(fitter, problem, best):
     with util.redirect_console(problem.output_path+".out"):
         fitter.show()
     fitter.show()
+    #print "plotting"
     fitter.plot(problem.output_path)
 
 

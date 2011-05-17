@@ -181,7 +181,7 @@ class Simulation(MCMCModel):
     def nllf(self, x):
         err = self.f(x) - self.data
         log_p = self._offset - sum(self._cB * abs(err/self.sigma)**self._pow)
-        return -log_p
+        return log_p
     def plot(self, x):
         import pylab
         v = pylab.arange(len(self.data))
@@ -224,5 +224,5 @@ class Mixture(MCMCModel):
         self.weight = sum(w for w in weights)
 
     def nllf(self, x):
-        p = [w*exp(-M.nllf(x)) for M,w in self.pairs]
+        p = [w*exp(M.nllf(x)) for M,w in self.pairs]
         return -log( sum(p)/self.weight )

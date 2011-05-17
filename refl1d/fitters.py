@@ -359,6 +359,7 @@ class DreamFit(FitBase):
                               monitor = self._monitor)
 
         self.state = sampler.sample()
+        self.state.mark_outliers()
         self.state.title = self.dream_model.problem.name
 
         x,fx = self.state.best()
@@ -394,8 +395,8 @@ class FitDriver(object):
             fitter = MultiStart(fitter)
         t0 = time.clock()
         x, fx = fitter.solve(monitors=self.monitors,
-                                mapper=self.mapper,
-                                **self.options)
+                             mapper=self.mapper,
+                             **self.options)
         self.fitter = fitter
         self.time = time.clock() - t0
         self.result = x, fx
@@ -406,16 +407,18 @@ class FitDriver(object):
         self.problem.show()
 
     def save(self, output_path):
+        #print "calling fitter.save"
         if hasattr(self.problem, 'save'):
             self.problem.save(output_path)
+        if hasattr(self.fitter, 'save'):
+            self.fitter.save(output_path)
 
     def plot(self, output_path):
-        import pylab
-        P = self.problem
-        pylab.suptitle(": ".join((P.store,P.title)))
-        P.plot(figfile=output_path)
+        #print "calling fitter.plot"
         if hasattr(self.problem, 'plot'):
             self.problem.plot(figfile=output_path)
+        if hasattr(self.fitter, 'plot'):
+            self.fitter.plot(output_path=output_path)
 
 def _fill_defaults(options, settings):
     for field,value in settings:

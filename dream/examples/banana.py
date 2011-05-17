@@ -5,10 +5,12 @@ The Rosenbrock banana function
 """
 from dream import *
 from pylab import *
+import numpy
+#numpy.seterr(all='raise')
 
 def rosen(x):
     x = asarray(x)
-    return -sum(100.0*(x[1:]-x[:-1]**2)**2 + (1-x[:-1])**2)
+    return sum(100.0*(x[1:]-x[:-1]**2)**2 + (1-x[:-1])**2)
 
 n=6
 sampler = Dream(model=LogDensity(rosen),
@@ -21,6 +23,8 @@ sampler = Dream(model=LogDensity(rosen),
                 )
 
 state = sampler.sample()
+state.mark_outliers()
 state.title = "Banana function example"
 #plot_corr(state); show()
 plot_all(state)
+show()

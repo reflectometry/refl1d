@@ -48,3 +48,4 @@ print "x+y from MCMC",mean(points[:,2]), std(points[:,2],ddof=1)
 
 # Plot the samples
 plot_all(mc, portion=0.5)
+show()

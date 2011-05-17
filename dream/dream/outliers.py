@@ -12,36 +12,6 @@ from mahal import mahalanobis
 from acr import ACR
 from . import util
 
-def remove_outliers(state, x, logp, test='IQR', portion=0.5):
-    """
-    Replace outlier chains with clones of good ones.
-
-    *state* contains the chains, with log likelihood for each point
-    *x*, *logp* is the current population and the corresponding log likelihoods
-    *test* is the name of the test to use (one of IQR, Grubbs, Mahal or none).
-    *portion* in (0,1] is the amount of the chain to use
-
-    Updates *state*, *x* and *logp* to reflect the changes.
-
-    See :module:`outliers` for details.
-    """
-    # Grab the last part of the chain histories
-    _, chains = state.logp()
-    chain_len, Nchains = chains.shape
-    outliers = identify_outliers(test, chains[-chain_len:], x)
-
-    # Loop over each outlier chain, replacing each with another
-    for old in outliers:
-        # Draw another chain at random, with replacement
-        while True:
-            new = util.RNG.randint(Nchains)
-            if new not in outliers: break
-        # Update the saved state and current population
-        state._replace_outlier(old=old,new=new)
-        x[old,:] = x[new,:]
-        logp[old] = logp[new]
-
-
 def identify_outliers(test, chains, x):
     """
     Determine which chains have converged on a local maximum much lower than

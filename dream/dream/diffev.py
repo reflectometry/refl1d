@@ -71,8 +71,14 @@ def de_step(Nchain,pop,CR,max_pairs=2,eps=0.05,snooker_rate=0.1):
 
             # Find the step direction and scale it to the length of the
             # projection of R1-R2 onto the step direction.
+            # TODO: population sometimes not unique!
             step = xi - z
-            scale = sum( (R1-R2)*step ) / sum( step**2 )
+            denom = sum(step**2)
+            if denom == 0:
+                step = 1e-6*RNG.randn(*step.shape)
+                denom = sum(step**2)
+            scale = sum( (R1-R2)*step ) / denom
+
 
             # Step using gamma of 2.38/sqrt(2) + U(-0.5,0.5)
             gamma = 1.2 + RNG.rand()

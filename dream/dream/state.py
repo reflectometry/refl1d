@@ -5,7 +5,7 @@ MCMC keeps track of a number of things during sampling.
 
 The results may be queried as follows::
 
-    generation, cycle, thinning
+    draws, generation, thinning, burnin
     sample(condition) returns draws, points, logp
     logp()            returns draws, logp
     acceptance_rate() returns draws, AR
@@ -19,11 +19,13 @@ The results may be queried as follows::
 Data is stored in circular arrays, which keeps the last N generations and
 throws the rest away.
 
-*generation* is the total number of generations drawn by the sampler.
+draws is the total number of draws from the sampler.
 
-*cycle* is the number of times around the circular array.
+generation is the total number of generations.
 
-*thinning* is the number of generations to user per stored sample.
+thinning is the number of generations per stored sample.
+
+burnin is the number of generations of burnin before recording starts.
 
 draws[i] is the number of draws including those required to produce the
 information in the corresponding return vector.  Note that draw numbers
@@ -78,7 +80,8 @@ import gzip
 import numpy
 from numpy import empty, sum, asarray, inf, argmax, hstack, dstack
 from numpy import savetxt,loadtxt, reshape
-from .util import draw
+from .outliers import identify_outliers
+from .util import draw, RNG
 
 #EXT = ".mc.gz"
 #CREATE = gzip.open
@@ -214,7 +217,7 @@ class MCMCDraw(object):
     def __init__(self, Ngen, Nthin, Nupdate, Nvar, Npop, Ncr, thinning):
         # Total number of draws so far
         self.draws = 0
-        self.cycle = 0
+        self.burnin = 0
 
         # Maximum observed likelihood
         self._best_x = None
@@ -226,6 +229,12 @@ class MCMCDraw(object):
         self._gen_draws = empty(Ngen, 'i')
         self._gen_logp = empty( (Ngen,Npop) )
         self._gen_acceptance_rate = empty(Ngen)
+
+        # If we are thinning, we need to keep the current generation
+        # separately. [Note: don't remember why we need both the _gen_*
+        # and _thin_*]  [Note: the caller x vector is assigned to
+        # _gen_current; this may lead to unexpected behaviour if x is
+        # changed by the caller.
         self._gen_current = None
 
         # Per thinned generation iteration
@@ -245,6 +254,11 @@ class MCMCDraw(object):
         self._update_CR_weight = empty( (Nupdate, Ncr) )
 
         self._outliers = []
+        
+        # Query functions will not return outlier chains; initially, all
+        # chains are marked as good.  Call mark_outliers to remove
+        # outlier chains from the set.
+        self._good_chains = slice(None,None)
 
     def save(self, filename):
         save_state(self,filename)
@@ -263,6 +277,8 @@ class MCMCDraw(object):
         # draws taken so far, including the current draw.
         self.draws += new_draws
         self.generation += 1
+        if self._gen_index < self.generation:
+            self.burnin += 1
 
         # Record if this is the best so far
         maxid = argmax(logp)
@@ -279,7 +295,6 @@ class MCMCDraw(object):
         i = i+1
         if i == len(self._gen_draws):
             i = 0
-            self.cycle += 1
         self._gen_index = i
 
         # Keep every nth iteration
@@ -296,7 +311,7 @@ class MCMCDraw(object):
             self._thin_index = i
             self._gen_current = None
         else:
-            self._gen_current = x
+            self._gen_current = x+0 # force a copy
 
 
     def _update(self, R_stat, CR_weight):
@@ -380,7 +395,94 @@ class MCMCDraw(object):
 
         return pop
 
+    def _unroll(self):
+        """
+        Unroll the circular queue so that data access can be done inplace.
 
+        Call this when done stepping, and before plotting.  Calls to
+        logp, sample, etc. assume the data is already unrolled.
+        """
+        if self.generation > self._gen_index > 0:
+            self._gen_draws[:] = numpy.roll(self._gen_draws, 
+                                            -self._gen_index, axis=0)
+            self._gen_logp[:] = numpy.roll(self._gen_logp,
+                                           -self._gen_index, axis=0)
+            self._gen_acceptance_rate[:] = numpy.roll(self._gen_acceptance_rate, 
+                                                      -self._gen_index, axis=0)
+            self._gen_index = 0
+
+        if self._thin_count > self._thin_index > 0:
+            self._thin_draws[:] = numpy.roll(self._thin_draws,
+                                             -self._thin_index, axis=0)
+            self._thin_point[:] = numpy.roll(self._thin_point,
+                                             -self._thin_index, axis=0)
+            self._thin_logp[:] = numpy.roll(self._thin_logp,
+                                            -self._thin_index, axis=0)
+            self._thin_index = 0
+
+        if self._update_count > self._update_index > 0:
+            self._update_draws[:] = numpy.roll(self._update_draws,
+                                               -self._update_index, axis=0)
+            self._update_R_stat[:] = numpy.roll(self._update_R_stat,
+                                                -self._update_index, axis=0)
+            self._update_CR_weight[:] = numpy.roll(self._update_CR_weight,
+                                                   -self._update_index, axis=0)
+            self._update_index = 0
+
+    def remove_outliers(self, x, logp, test='IQR', portion=0.5):
+        """
+        Replace outlier chains with clones of good ones.  This should happen
+        early in the sampling processes so the clones have an opportunity
+        to evolve their own identity.
+
+        *state* contains the chains, with log likelihood for each point
+        *x*, *logp* is the current population and the corresponding log likelihoods
+        *test* is the name of the test to use (one of IQR, Grubbs, Mahal or none).
+        *portion* in (0,1] is the amount of the chain to use
+
+        Updates *state*, *x* and *logp* to reflect the changes.
+
+        See :module:`outliers` for details.
+        """
+        # Grab the last part of the chain histories
+        _, chains = self.logp()
+        chain_len, Nchains = chains.shape
+        outliers = identify_outliers(test, chains[-chain_len:], x)
+
+        # Loop over each outlier chain, replacing each with another
+        for old in outliers:
+            # Draw another chain at random, with replacement
+            while True:
+                new = RNG.randint(Nchains)
+                if new not in outliers: break
+            # Update the saved state and current population
+            self._replace_outlier(old=old,new=new)
+            x[old,:] = x[new,:]
+            logp[old] = logp[new]
+
+    def mark_outliers(self, test='IQR', portion=None):
+        """
+        Mark some chains as outliers but don't remove them.  This can happen
+        after drawing is complete to remove any outstanding chains that
+        did not converge.
+        
+        *test* is 'IQR', 'Mahol' or 'none'.
+        
+        *portion* is 0.5 if burnin=0, otherwise it should be 1.0
+        """
+        _, chains, logp = self.chains()
+        if test=='none':
+            self._good_chains = slice(None,None)
+        else:
+            Ngen = chains.shape[0]
+            if portion is None:
+                start = Ngen//2 if self.burnin==0 else 0
+            else:
+                start = int(Ngen*portion)
+            outliers = identify_outliers(test, logp[start:], chains[-1])
+            self._good_chains = numpy.array([i for i in range(logp.shape[1]) 
+                                             if i not in outliers])
+    
 
     def logp(self):
         """
@@ -395,14 +497,11 @@ class MCMCDraw(object):
         Note that draw[i] represents the total number of samples taken,
         including those for the samples in logp[i].
         """
-        vectors = self._gen_draws, self._gen_logp
-        N,idx = self.generation, self._gen_index
-        if N == idx:
-            return [v[:idx] for v in vectors]
-        elif idx > 0:
-            return [numpy.roll(v,-idx,axis=0) for v in vectors]
-        else:
-            return vectors
+        self._unroll()
+        retval = self._gen_draws, self._gen_logp
+        if self.generation == self._gen_index:
+            retval = [v[:self.generation] for v in retval]
+        return [v[:,self._good_chains] for v in retval]
 
     def acceptance_rate(self):
         """
@@ -414,16 +513,14 @@ class MCMCDraw(object):
             plot(draw, AR)
 
         """
-        vectors = self._gen_draws, self._gen_acceptance_rate
-        N,idx = self.generation, self._gen_index
-        if N == idx:
-            return [v[:idx] for v in vectors]
-        elif idx > 0:
-            return [numpy.roll(v,-idx,axis=0) for v in vectors]
-        else:
-            return vectors
+        self._unroll()
+        retval = self._gen_draws, self._gen_acceptance_rate
+        if self.generation == self._gen_index:
+            retval = [v[:self.generation] for v in retval]
+        return [v[:,self._good_chains] for v in retval]
+        #return retval
 
-    def chains(self, unroll=False):
+    def chains(self):
         """
         Returns the observed Markov chains and the corresponding likelihoods.
 
@@ -439,20 +536,12 @@ class MCMCDraw(object):
         *logp* is a two dimensional array of generation X population giving
         the log likelihood of observing the set of variable values given in
         chains.
-
-        NOTE: Unless called with mc.chains(unroll=True), the chains are
-        returned as a circular array with the starting index somewhere in
-        the middle.
         """
-        vectors = self._thin_draws,self._thin_point,self._thin_logp
-        N,idx = self._thin_count, self._thin_index
-        if N == idx:
-            return [v[:idx] for v in vectors]
-        elif unroll and idx > 0:
-            return [numpy.roll(v,-idx,axis=0) for v in vectors]
-        else:
-            return vectors
-
+        self._unroll()
+        retval = self._thin_draws, self._thin_point, self._thin_logp
+        if self._thin_count == self._thin_index:
+            retval = [v[:self._thin_count] for v in retval]
+        return retval
 
     def R_stat(self):
         """
@@ -465,14 +554,13 @@ class MCMCDraw(object):
 
         See :module:`dream.gelman` and references detailed therein.
         """
-        vectors = self._update_draws,self._update_R_stat
-        N,idx = self._update_count, self._update_index
-        if N == idx:
-            return [v[:idx] for v in vectors]
-        elif idx > 0:
-            return [numpy.roll(v,-idx,axis=0) for v in vectors]
-        else:
-            return vectors
+        self._unroll()
+        retval = self._update_draws, self._update_R_stat
+        if self._update_count == self._update_index:
+            retval = [v[:self._update_count] for v in retval]
+        #return [v[:,self._good_chains] for v in retval]
+        return retval
+
 
     def CR_weight(self):
         """
@@ -485,14 +573,12 @@ class MCMCDraw(object):
 
         See :module:`dream.crossover` for details.
         """
-        vectors = self._update_draws,self._update_CR_weight
-        N,idx = self._update_count, self._update_index
-        if N == idx:
-            return [v[:idx] for v in vectors]
-        elif idx > 0:
-            return [numpy.roll(v,-idx,axis=0) for v in vectors]
-        else:
-            return vectors
+        self._unroll()
+        retval = self._update_draws, self._update_CR_weight
+        if self._update_count == self._update_index:
+            retval = [v[:self._update_count] for v in retval]
+        return [v[:,self._good_chains] for v in retval]
+        #return retval
 
     def outliers(self):
         """
@@ -587,17 +673,19 @@ class MCMCDraw(object):
             pass
 
 
-
 def _sample(state, portion, vars, selection):
     """
     Return a sample from a set of chains.
     """
     if portion == None:
-        portion = 0.8 if state.cycle < 1 else 0.95
+        portion = 0.8 if state.burnin == 0 else 1.0
     draw, chains, logp = state.chains()
     start = int((1-portion)*len(draw))
-    chains = chains[start:]
-    logp = logp[start:]
+    
+    # Collect the subset we are interested in
+    chains = chains[start:,state._good_chains,:]
+    logp = logp[start:,state._good_chains]
+    
     Ngen,Npop,Nvar = chains.shape
     points = reshape(chains,(Ngen*Npop,Nvar))
     logp = reshape(logp,(Ngen*Npop))

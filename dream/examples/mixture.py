@@ -12,6 +12,7 @@ get lost.
 """
 from pylab import *
 from dream import *
+#import numpy; numpy.seterr(all='raise')
 
 n = 4
 pop = 10
@@ -31,6 +32,5 @@ sampler = Dream(model=model, population=randn(pop,n,n),
 state = sampler.sample()
 save_state(filename='mixture',state=state)
 state = load_state('mixture')
-#plot_all(state, portion=1)
-vars = plot_vars(state,portion=1); show()
-print format_vars()
+plot_all(state, portion=1)
+show()

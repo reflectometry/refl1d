@@ -1,7 +1,7 @@
 from __future__ import division
 __all__ = ['plot_all', 'plot_corr', 'plot_corrmatrix',
            'plot_trace', 'plot_vars', 'plot_var',
-           'plot_R','plot_logp']
+           'plot_R','plot_logp', 'format_vars']
 import math
 import numpy
 from numpy import arange, squeeze, reshape, linspace, meshgrid, vstack, NaN, inf
@@ -13,19 +13,19 @@ from .util import console
 def plot_all(state, portion=None, figfile=None):
     from pylab import figure, savefig, suptitle
 
-    figure(1); plot_vars(state, portion=portion)
+    figure(); plot_vars(state, portion=portion)
     if state.title: suptitle(state.title)
     if figfile != None: savefig(figfile+"-vars")
-    figure(2); plot_trace(state, portion=portion)
+    figure(); plot_trace(state, portion=portion)
     if state.title: suptitle(state.title)
     if figfile != None: savefig(figfile+"-trace")
-    figure(3); plot_R(state, portion=portion)
+    figure(); plot_R(state, portion=portion)
     if state.title: suptitle(state.title)
     if figfile != None: savefig(figfile+"-R")
-    figure(4); plot_logp(state, portion=portion)
+    figure(); plot_logp(state, portion=portion)
     if state.title: suptitle(state.title)
     if figfile != None: savefig(figfile+"-logp")
-    figure(5); plot_corrmatrix(state, portion=portion)
+    figure(); plot_corrmatrix(state, portion=portion)
     if state.title: suptitle(state.title)
     if figfile != None: savefig(figfile+"-corr")
 
@@ -37,7 +37,8 @@ def plot_var(state, var=0, portion=None, selection=None, **kw):
 def plot_vars(state, vars=None, portion=None, selection=None, **kw):
     from pylab import subplot
 
-    points, logp = state.sample(portion=portion, vars=vars, selection=selection)
+    points, logp = state.sample(portion=portion, vars=vars, 
+                                selection=selection)
     if vars==None:
         vars = range(points.shape[1])
     nw,nh = tile_axes(len(vars))
@@ -259,11 +260,11 @@ def plot_trace(state, var=0, portion=None):
     from pylab import plot, title, xlabel, ylabel
 
     if portion == None:
-        portion = 0.8 if state.cycle < 1 else 1
+        portion = 0.8 if state.burnin == 0 else 1
     draw, points, _ = state.chains()
     start = int((1-portion)*len(draw))
     plot(arange(start,len(points))*state.thinning,
-         squeeze(points[start:,:,var]))
+         squeeze(points[start:,state._good_chains,var]))
     title('Parameter history for variable %d'%(var+1))
     xlabel('Generation number')
     ylabel('Parameter value')
@@ -272,7 +273,7 @@ def plot_R(state, portion=None):
     from pylab import plot, title, legend, xlabel, ylabel
 
     if portion == None:
-        portion = 0.8 if state.cycle < 1 else 1
+        portion = 0.8 if state.burnin == 0 else 1
     draw, R = state.R_stat()
     start = int((1-portion)*len(draw))
     plot(arange(start,len(R)), R[start:])
@@ -285,7 +286,7 @@ def plot_logp(state, portion=None):
     from pylab import plot, title, xlabel, ylabel
 
     if portion == None:
-        portion = 0.8 if state.cycle < 1 else 1
+        portion = 0.8 if state.burnin == 0 else 1
     draw, logp = state.logp()
     start = int((1-portion)*len(draw))
     plot(arange(start,len(logp)), logp[start:], '.', markersize=1)
