@@ -23,14 +23,6 @@ class ConsoleMonitor(monitor.TimedUpdate):
         #print "step",history.step[0],"chisq",history.value[0]
         self.problem.setp(history.point[0])
         print parameter.summarize(self.problem.parameters)
-        try:
-            import pylab
-            pylab.hold(False)
-            self.problem.plot()
-            pylab.gcf().canvas.draw()
-        except:
-            raise
-
 
 class StepMonitor(monitor.Monitor):
     """

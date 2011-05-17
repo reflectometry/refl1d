@@ -70,6 +70,5 @@ class ConvergenceView(PlotView):
         dof = event.problem.dof
         pop = 2*event.pop/dof
         best = 2*event.best/dof
-        print "initializing state"
         self.plot_state = pop,best
         self.plot()

@@ -464,7 +464,7 @@ class Probe(object):
 
     def plot_resolution(self, suffix='', label=None, **kwargs):
         import pylab
-        pylab.plot(self.Q, self.dQ, 
+        pylab.plot(self.Q, self.dQ,
                    label=self.label(prefix=label,suffix=suffix))
         pylab.xlabel(r'Q ($\AA^{-1}$)')
         pylab.ylabel(r'Q resolution ($1-\sigma \AA^{-1}$)')
@@ -545,7 +545,7 @@ class Probe(object):
         if theory is not None:
             Q,R = theory
             pylab.plot(Q, R*scale(Q), color=c['dark'],
-                       label=self.label(prefix=label, 
+                       label=self.label(prefix=label,
                                         gloss='theory',
                                         suffix=suffix))
         pylab.hold(isheld)
@@ -554,7 +554,7 @@ class Probe(object):
         pylab.legend()
 
     def label(self, prefix=None, gloss="", suffix=""):
-        if not prefix: 
+        if not prefix:
             prefix = self.name
         if prefix:
             return " ".join((prefix+suffix,gloss)) if gloss else prefix
@@ -651,10 +651,11 @@ class ProbeSet(Probe):
         return Q,R
     def plot(self, theory=None, **kw):
         import pylab
-        pylab.clf()
-        pylab.hold(True)
-        for p,th in self._plotparts(theory): p.plot(theory=th, **kw)
-        pylab.hold(False)
+        ishold = pylab.ishold()
+        for p,th in self._plotparts(theory):
+            p.plot(theory=th, **kw)
+            pylab.hold(True)
+        pylab.hold(ishold)
     plot.__doc__ = Probe.plot.__doc__
     def plot_resolution(self, **kw):
         for p in self.probes: p.plot_resolution(**kw)
@@ -1000,7 +1001,7 @@ class PolarizedNeutronProbe(object):
             Q,SA,dSA = spin_asymmetry(pp.Q,pp.R,pp.dR,mm.Q,mm.R,mm.dR)
             if dSA is not None:
                 pylab.errorbar(Q, SA, yerr=dSA, xerr=pp.dQ, fmt='.',
-                               label=pp.label(prefix=label, gloss='data'), 
+                               label=pp.label(prefix=label, gloss='data'),
                                color=c['light'])
             else:
                 pylab.plot(Q,SA,'.',

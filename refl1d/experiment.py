@@ -123,9 +123,9 @@ class ExperimentBase(object):
     def plot(self):
         import pylab
         pylab.subplot(211)
-        self.plot_profile()
-        pylab.subplot(212)
         self.plot_reflectivity()
+        pylab.subplot(212)
+        self.plot_profile()
 
 
     def resynth_data(self):

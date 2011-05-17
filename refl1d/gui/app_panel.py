@@ -40,6 +40,7 @@ from refl1d.profileview.data_view import TheoryView
 from refl1d.cli import load_problem
 
 from .. import fitters
+from ..util import redirect_console
 from .summary_view import SummaryView
 from .parameter_view import ParameterView
 from .log_view import LogView
@@ -122,12 +123,17 @@ class AppPanel(wx.Panel):
         file_menu.PrependSeparator()
 
         _item = file_menu.Prepend(wx.ID_ANY,
+                                  "E&xport Results ...",
+                                  "Save theory, data and parameters")
+        frame.Bind(wx.EVT_MENU, self.OnFileSaveResults, _item)
+
+        _item = file_menu.Prepend(wx.ID_ANY,
                                   "&Reload",
                                   "Reload the existing model")
         frame.Bind(wx.EVT_MENU, self.OnFileReload, _item)
 
         _item = file_menu.Prepend(wx.ID_SAVEAS,
-                                  "Save&As",
+                                  "Save &As",
                                   "Save model as another name")
         frame.Bind(wx.EVT_MENU, self.OnFileSaveAs, _item)
         #file_menu.Enable(id=wx.ID_SAVEAS, enable=False)
@@ -154,24 +160,30 @@ class AppPanel(wx.Panel):
         fit_menu = self.fit_menu = wx.Menu()
 
         _item = fit_menu.Append(wx.ID_ANY,
-                                "&Start Fit",
+                                "Start",
                                 "Start fitting operation")
         frame.Bind(wx.EVT_MENU, self.OnFitStart, _item)
         fit_menu.Enable(id=_item.GetId(), enable=False)
         self.fit_menu_start = _item
 
         _item = fit_menu.Append(wx.ID_ANY,
-                                "&Stop Fit",
+                                "Stop",
                                 "Stop fitting operation")
         frame.Bind(wx.EVT_MENU, self.OnFitStop, _item)
         fit_menu.Enable(id=_item.GetId(), enable=False)
         self.fit_menu_stop = _item
 
         _item = fit_menu.Append(wx.ID_ANY,
-                                "Fit &Options ...",
+                                "&Options ...",
                                 "Edit fitting options")
         frame.Bind(wx.EVT_MENU, self.OnFitOptions, _item)
-        fit_menu.Enable(id=_item.GetId(), enable=False)
+        self.fit_menu_options = _item
+
+        #_item = fit_menu.Append(wx.ID_ANY,
+        #                        "&Save ...",
+        #                        "Save fit results")
+        #frame.Bind(wx.EVT_MENU, self.OnFitSave, _item)
+        #fit_menu.Enable(id=_item.GetId(), enable=False)
         self.fit_menu_options = _item
 
         mb.Append(fit_menu, "&Fitting")
@@ -347,7 +359,7 @@ class AppPanel(wx.Panel):
 
     def OnFileSave(self, event):
         if self.model is not None and hasattr(self.model,'modelfile'):
-            self.save_model()
+            self.save_model(self.model.modelfile)
         else:
             self.OnFileSaveAs(event)
 
@@ -369,7 +381,22 @@ class AppPanel(wx.Panel):
             #if os.path.basename(path) == path:
             #    path += ".r1d"
             self.model.modelfile = path
-            self.save_model()
+            self.save_model(self.model.modelfile)
+
+
+    def OnFileSaveResults(self, event):
+        dlg = wx.DirDialog(self,
+                           message="Save results",
+                           defaultPath=os.getcwd(),
+                           style=wx.DD_DEFAULT_STYLE)
+        # Wait for user to close the dialog.
+        status = dlg.ShowModal()
+        path = dlg.GetPath()
+        dlg.Destroy()
+
+        # Process file if user clicked okay.
+        if status == wx.ID_OK:
+            self.save_results(path)
 
     def OnFitOptions(self, event):
         OpenFitOptions()
@@ -397,9 +424,26 @@ class AppPanel(wx.Panel):
         signal.log_message(message="done with chisq %g"%chisq)
         event.problem.setp(event.point)
         signal.update_parameters(model=event.problem)
-        #self.remember_best(self.fitter, event.problem)
 
         self.sb.SetStatusText("Fit status: Complete", 3)
+
+    def OnFitSave(self, event):
+        raise NotImplementedError()
+        dlg = wx.FileDialog(self,
+                            message="Fit results",
+                            defaultDir=os.getcwd(),
+                            defaultFile="",
+                            wildcard=(MODEL_FILES+"|"+ALL_FILES),
+                            style=wx.SAVE|wx.CHANGE_DIR|wx.OVERWRITE_PROMPT)
+        # Wait for user to close the dialog.
+        status = dlg.ShowModal()
+        path = dlg.GetPath()
+        dlg.Destroy()
+
+        # Process file if user clicked okay.
+        if status == wx.ID_OK:
+            self.save_fit(path)
+
 
     def OnFitProgress(self, event):
         if event.message == 'progress':
@@ -428,9 +472,33 @@ class AppPanel(wx.Panel):
         problem.modelfile = path
         signal.model_new(model=problem)
 
-    def save_model(self):
+    def save_model(self, path):
         import cPickle as serialize
-        serialize.dump(self.model, open(self.model.modelfile,'wb'))
+        serialize.dump(self.model, open(path,'wb'))
+
+    def save_results(self, path):
+        output_path = os.path.join(path, self.model.name)
+
+        # Storage directory
+        try: os.mkdir(path)
+        except: pass
+
+        # Ask model to save its information
+        self.model.save(output_path)
+
+        # Save a pickle of the model that can be reloaded
+        self.save_model(output_path+".pickle")
+
+        # Save the current state of the parameters
+        with redirect_console(output_path+".out"):
+            self.model.show()
+        pardata = "".join("%s %.15g\n"%(p.name, p.value)
+                          for p in self.model.parameters)
+        open(output_path+".par",'wt').write(pardata)
+
+        # Produce model plots
+        self.model.plot(figfile=output_path)
+
 
     def _add_measurement_type(self, type):
         """
