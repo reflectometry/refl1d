@@ -14,6 +14,9 @@ Usage:
 
 import os, sys, subprocess
 import nose
+import matplotlib
+matplotlib.use('Agg')
+print matplotlib.__file__
 
 sys.stderr = sys.stdout # Doctest doesn't see sys.stderr
 #import numpy; numpy.seterr(all='raise')
@@ -68,7 +71,7 @@ else:
     PYTHONPATH = path
 os.putenv('PYTHONPATH', PYTHONPATH)
 
-# Run the command line version of Refl1D which should display help text.
-for p in ['refl1d']:
-    ret = os.system(" ".join( (sys.executable, os.path.join('bin', '%s'%p)) ))
-    if ret != 0: sys.exit()
+## Run the command line version of Refl1D which should display help text.
+#for p in ['refl1d_cli.py']:
+#    ret = os.system(" ".join( (sys.executable, os.path.join('bin', '%s'%p)) ))
+#    if ret != 0: sys.exit()

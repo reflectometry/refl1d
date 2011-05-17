@@ -17,6 +17,7 @@ def QL2T(Q=None,L=None):
 
     Returns $\theta$\ |deg|.
     """
+    Q,L = asarray(Q,'d'), asarray(L,'d')
     return degrees(asin(abs(Q) * L / (4*pi)))
 
 def TL2Q(T=None,L=None):
@@ -29,7 +30,8 @@ def TL2Q(T=None,L=None):
 
     Returns $Q$ |1/Ang|
     """
-    return 4 * pi * sin(radians(T)) / L
+    T,L = radians(asarray(T,'d')), asarray(L,'d')
+    return 4 * pi * sin(T) / L
 
 _FWHM_scale = sqrt(log(256))
 def FWHM2sigma(s):
@@ -49,7 +51,8 @@ def dTdL2dQ(T=None, dT=None, L=None, dL=None):
     """
 
     # Compute dQ from wavelength dispersion (dL) and angular divergence (dT)
-    T,dT = radians(T), radians(dT)
+    T,dT = radians(asarray(T,'d')), radians(asarray(dT,'d'))
+    L,dL = asarray(L,'d'),asarray(dL,'d')
     #print T, dT, L, dL
     dQ = (4*pi/L) * sqrt( (sin(T)*dL/L)**2 + (cos(T)*dT)**2 )
 
@@ -66,7 +69,9 @@ def dQdT2dLoL(Q, dQ, T, dT):
 
     Returns FWHM $\Delta\lambda/\lambda$
     """
-    return sqrt( (sigma2FWHM(dQ)/Q)**2 - (radians(dT)/tan(radians(T)))**2 )
+    T,dT = radians(asarray(T,'d')), radians(asarray(dT,'d'))
+    Q,dQ = asarray(Q,'d'),asarray(dQ,'d')
+    return sqrt( (sigma2FWHM(dQ)/Q)**2 - (dT/tan(T))**2 )
 
 
 
@@ -80,6 +85,8 @@ def dQdL2dT(Q, dQ, L, dL):
 
     Returns FWHM $\theta, \Delta\theta$
     """
+    L,dL = asarray(L,'d'),asarray(dL,'d')
+    Q,dQ = asarray(Q,'d'),asarray(dQ,'d')
     T = QL2T(Q,L)
     dT = degrees( sqrt( (sigma2FWHM(dQ)/Q)**2 - (dL/L)**2) * tan(radians(T)) )
     return T,dT

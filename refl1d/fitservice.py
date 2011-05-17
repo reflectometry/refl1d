@@ -4,7 +4,6 @@ import json
 import cPickle as pickle
 
 import matplotlib
-matplotlib.use('Agg')
 
 from . import cli
 from . import __version__
@@ -14,9 +13,8 @@ from . import __version__
 from .mapper import MPMapper as mapper
 from .mystic.monitor import TimedUpdate
 
-
-
 def fitservice(request):
+    matplotlib.use('Agg')
 
     path = os.getcwd()
 

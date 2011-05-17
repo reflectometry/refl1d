@@ -26,7 +26,7 @@ Magnetic data has multiple cross sections and often has fixed slits:
     >>> datafile = sample_data('lha03_255G.refl')
     >>> instrument = NCNR.NG1(slits_at_Tlo=1)
     >>> probe = instrument.load_magnetic(datafile)
-    >>> probe.plot(view='SA') # Spin asymmetry view
+    >>> probe.plot(view='SA', substrate=silicon) # Spin asymmetry view
 
 For simulation, you need a probe and a sample:
 

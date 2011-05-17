@@ -802,6 +802,8 @@ def measurement_union(xs):
     for x in xs:
         if x is not None:
             TL = TL | set(zip(x.T,x.dT,x.L,x.dL))
+    T,dT,L,dL = zip(*[item for item in TL])
+    T,dT,L,dL = [numpy.asarray(v) for v in T,dT,L,dL]
 
     # Convert to Q,dQ
     Q = TL2Q(T,L)
