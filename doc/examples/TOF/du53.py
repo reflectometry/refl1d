@@ -21,8 +21,10 @@ for L in sample[1:-1]:
     L.thickness.pmp(50)
     L.interface.range(0,20)
 for p in probes:
-    p.theta_offset.pm(0.05)
     p.intensity.pmp(5)
+probes[0].theta_offset.pm(0.05)
+for p in probes[1:]:
+    p.theta_offset = probes[0].theta_offset
 
 
 M = Experiment(sample=sample, probe=probe, name="DU 53")
