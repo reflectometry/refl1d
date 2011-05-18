@@ -11,6 +11,10 @@ def parse_file(file):
     Data lines look like float float float
     Comment lines look like # float float float
     Data may contain inf or nan values.
+
+    Special hack for TOF data: if the first column contains bin edges, then
+    the last row will only have the bin edge.  To make the array square,
+    we extend the last row with NaN.
     """
     if hasattr(file, 'readline'):
         fh = file
@@ -33,8 +37,13 @@ def parse_file(file):
             else:
                 header[key] = value
     if fh is not file: fh.close()
-    #print [len(d) for d in data]
+    #print data
     #print "\n".join(k+":"+v for k,v in header.items())
+    if len(data[-1]) == 1:
+        # For TOF data, the first column is the bin edge, which has one
+        # more row than the remaining columns; fill those columns with
+        # NaN so we get a square array.
+        data[-1] = data[-1]+[numpy.nan]*(len(data[0])-1)
     return header, numpy.array(data).T
 
 def string_like(s):

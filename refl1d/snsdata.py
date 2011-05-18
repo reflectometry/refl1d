@@ -46,23 +46,70 @@ LIQUIDS_FEATHER = numpy.array([
 
 def load(filename, instrument=None, **kw):
     """
-    Return a probe for NCNR data.
+    Return a probe for SNS data.
     """
-    if instrument is None: instrument=Monochromatic()
+    if instrument is None: instrument=Pulsed()
     header,data = parse_file(filename)
     header.update(**kw) # calling parameters override what's in the file.
-    Q,dQ,R,dR,L = data
-    dL = resolution.binwidths(L)
-    if 'angle' in kw and 'slits_at_Tlo' in w:
-        T = kw.pop('angle',resolution)
-        probe = instrument.probe(L=L, dL=dL, T=T, data=(R,dR), **header)
+    #print "\n".join(k+":"+str(v) for k,v in header.items())
+    # Guess what kind of data we have
+    if has_columns(header, ('Q','dQ','R','dR','L')):
+        probe = QRL_to_data(instrument, header, data)
+    elif has_columns(header, ('time_of_flight','data','Sigma')):
+        probe = TOF_to_data(instrument, header, data)
     else:
-        T,dT = resolution.dQdL2dT(Q[0],dQ[0],L[0],dL[0])
-        probe = make_probe(T=T,dT=dT,L=L,dL=dL,radiation='neutron',
-                           data=(R,dR), **kw)
+        raise IOError("Unknown columns: "+", ".join(header['columns']))
     probe.title = header['title']
     probe.date = header['date']
     probe.instrument = header['instrument']
+    return probe
+
+def has_columns(header, v):
+    return (len(header['columns'])==len(v)
+            and all(ci==si for ci,si in zip(header['columns'],v)))
+
+def QRL_to_data(instrument, header, data):
+    """
+    Convert data to T,L,R
+    """
+    Q,dQ,R,dR,L = data
+    dL = resolution.binwidths(L)
+    if 'angle' in header and 'slits_at_Tlo' in header:
+        T = kw.pop('angle',kw.pop('T',None))
+        probe = instrument.probe(L=L, dL=dL, T=T, data=(R,dR),
+                                 **header)
+    else:
+        T,dT = resolution.dQdL2dT(Q[0],dQ[0],L[0],dL[0])
+        probe = make_probe(T=T,dT=dT,L=L,dL=dL, data=(R,dR),
+                           radiation='neutron',**header)
+    return probe
+
+def TOF_to_data(instrument, header, data):
+    """
+    Convert TOF data to neutron probe.
+
+    Wavelength is set from the average of the times at the edges of the
+    bins, not the average of the wavelengths.  Wavelength resolution is
+    set assuming the wavelength at the edges of the bins defines the
+    full width at half maximum.
+
+    The correct answer is to look at the wavelength distribution within
+    the bin including effects of pulse width and intensity as a function
+    wavelength and use that distribution, or a gaussian approximation
+    thereof, when computing the resolution effects.
+    """
+    TOF, R, dR = data
+    Ledge = resolution.TOF2L(instrument.d_moderator, TOF)
+    L = resolution.TOF2L(instrument.d_moderator, (TOF[:-1]+TOF[1:])/2)
+    dL = (Ledge[1:]-Ledge[:-1])/2.35   # FWHM is 2.35 sigma
+    R = R[:-1]
+    dR = dR[:-1]
+    min_time,max_time = header.get('TOF_range',instrument.TOF_range)
+    keep = numpy.isfinite(R)&numpy.isfinite(dR)&(TOF[:-1]>=min_time)&(TOF[1:]<=max_time)
+    L,dL,R,dR = [v[keep] for v in L,dL,R,dR]
+    T = numpy.array([header.get('angle',header.get('T',None))],'d')
+    T,dT,L,dL = instrument.resolution(L=L, dL=dL, T=T, **header)
+    probe = make_probe(T=T,dT=dT,L=L,dL=dL, data=(R,dR),**header)
     return probe
 
 def parse_file(filename):
@@ -181,6 +228,7 @@ class Liquids(SNSData, Pulsed):
     d_s1 = 230.0 + 1856.0
     d_s2 = 230.0
     d_moderator = 14.850 # moderator to detector distance
+    TOF_range = (6000,60000)
 
 class Magnetic(SNSData, Pulsed):
     """

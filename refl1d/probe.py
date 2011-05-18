@@ -495,7 +495,7 @@ class Probe(object):
         if substrate is None and surface is None:
             raise TypeError("Fresnel reflectivity needs substrate or surface")
         F = self.fresnel(substrate=substrate,surface=surface)
-        scale = lambda Q: 1./F(Q)/self.intensity.value
+        scale = lambda Q: 1./F(Q)
         if substrate is None:
             name = "air:%s"%(surface.name)
         elif surface is None or isinstance(surface,Vacuum):
@@ -509,7 +509,7 @@ class Probe(object):
         Plot the Q**4 reflectivity associated with the probe.
         """
         import pylab
-        scale = lambda Q: 1e8*Q**4/self.intensity.value
+        scale = lambda Q: 1e8*Q**4
         #Q4[Q4==0] = 1
         self._plot_pair(scale=scale, ylabel='R (100 Q)^4', **kwargs)
 
@@ -535,8 +535,9 @@ class Probe(object):
         c = coordinated_colors()
         isheld = pylab.ishold()
         if hasattr(self,'R') and self.R is not None:
-            pylab.errorbar(self.Q, self.R*scale(self.Q),
-                           yerr=self.dR*scale(self.Q), xerr=self.dQ,
+            pylab.errorbar(self.Q, self.R*scale(self.Q)/self.intensity.value,
+                           yerr=self.dR*scale(self.Q)/self.intensity.value,
+                           xerr=self.dQ,
                            fmt='.', color=c['light'],
                            label=self.label(prefix=label,
                                             gloss='data',
@@ -544,7 +545,8 @@ class Probe(object):
             pylab.hold(True)
         if theory is not None:
             Q,R = theory
-            pylab.plot(Q, R*scale(Q), color=c['dark'],
+            pylab.plot(Q, R*scale(Q)/self.intensity.value,
+                       color=c['dark'],
                        label=self.label(prefix=label,
                                         gloss='theory',
                                         suffix=suffix))

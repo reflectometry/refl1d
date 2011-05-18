@@ -420,10 +420,10 @@ class Pulsed(object):
             name of the instrument
         *radiation* : string | xray, neutron
             source radiation type
+        *TOF_range* : (float, float)
+            usabe range of times for TOF data
         *T* : float | |deg|
             sample angle
-        *slits* : float OR (float,float) | mm
-            slit 1 and slit 2 openings
         *d_s1*, *d_s2* : float | mm
             distance from sample to pre-sample slits 1 and 2; post-sample
             slits are ignored
@@ -432,6 +432,18 @@ class Pulsed(object):
         *dLoL* : float
             constant relative wavelength dispersion; wavelength range and
             dispersion together determine the bins
+        *slits* : float OR (float,float) | mm
+            fixed slits
+        *slits_at_Tlo* : float OR (float,float) | mm
+            slit 1 and slit 2 openings at Tlo; this can be a scalar if both
+            slits are open by the same amount, otherwise it is a pair (s1,s2).
+        *Tlo*, *Thi* : float | |deg|
+            range of opening slits, or inf if slits are fixed.
+        *slits_below*, *slits_above* : float OR (float,float) | mm
+            slit 1 and slit 2 openings below Tlo and above Thi; again, these
+            can be scalar if slit 1 and slit 2 are the same, otherwise they
+            are each a pair (s1,s2).  Below and above default to the values of
+            the slits at Tlo and Thi respectively.
         *sample_width* : float | mm
             width of sample; at low angle with tiny samples, stray neutrons
             miss the sample and are not reflected onto the detector, so the
@@ -453,8 +465,16 @@ class Pulsed(object):
     wavelength = None
     dLoL = None # usually 0.02 for 2% FWHM
     # Optional attributes
-    sample_width = 1e10
+    TOF_range = (0, numpy.inf)
+    Tlo= 90  # Use 90 for fixed slits; this is effectively inf
+    Thi= 90
+    fixed_slits = None
+    slits_at_Tlo = None    # Slit openings at Tlo, and default for slits_below
+    slits_below = None     # Slit openings below Tlo, or fixed slits if Tlo=90
+    slits_above = None
+    sample_width = 1e10    # Large but finite value
     sample_broadening = 0
+
 
     def __init__(self, **kw):
         for k,v in kw.items():
@@ -614,12 +634,52 @@ class Pulsed(object):
         specified as keywords.
         """
         T = kw.pop('T', self.T)
-        slits = kw.pop('slits', self.slits)
-        dT = self.calc_dT(T,slits,**kw)
+        if 'slits' not in kw:
+            kw['slits'] = self.calc_slits(T=T,**kw)
+        dT = self.calc_dT(T,**kw)
 
         # Compute the FWHM angular divergence in radians
         # Return the resolution
         return T,dT,L,dL
+
+    def calc_slits(self, **kw):
+        """
+        Determines slit openings from measurement pattern.
+
+        If slits are fixed simply return the same slits for every angle,
+        otherwise use an opening range [Tlo,Thi] and the value of the
+        slits at the start of the opening to define the slits.  Slits
+        below Tlo and above Thi can be specified separately.
+
+        *T*              incident angle
+        *Tlo*, *Thi*     angle range over which slits are opening
+        *slits_at_Tlo*   openings at the start of the range, or fixed opening
+        *slits_below*, *slits_above*   openings below and above the range
+
+        Use fixed_slits is available, otherwise use opening slits.
+        """
+        if 'T' not in kw:
+            raise TypeError("calc_slits requires angle T=...")
+        T = kw['T']
+        Tlo = kw.get('Tlo',self.Tlo)
+        Thi = kw.get('Thi',self.Thi)
+        fixed_slits = kw.get('fixed_slits',self.fixed_slits)
+        if fixed_slits is not None:
+            slits_at_Tlo = slits_below = slits_above = fixed_slits
+            Tlo = 90
+        else:
+            slits_at_Tlo = kw.get('slits_at_Tlo',self.slits_at_Tlo)
+            slits_below = kw.get('slits_below',self.slits_below)
+            slits_above = kw.get('slits_above',self.slits_above)
+
+        # Otherwise we are using opening slits
+        if Tlo is None or slits_at_Tlo is None:
+            raise TypeError("Resolution calculation requires Tlo and slits_at_Tlo")
+        slits = slit_widths(T=T, slits_at_Tlo=slits_at_Tlo,
+                            Tlo=Tlo, Thi=Thi,
+                            slits_below=slits_below,
+                            slits_above=slits_above)
+        return slits
 
     def calc_dT(self, T, slits, **kw):
         d_s1 = kw.get('d_s1',self.d_s1)
