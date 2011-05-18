@@ -1,6 +1,6 @@
 import wx
 
-from .panel import ProfileView
+from .profile_view import ProfileView
 
 import numpy
 import png

@@ -47,7 +47,7 @@ dist = setup(
         package_dir = { 'dream': 'dream/dream' },
         packages = packages,
         package_data = refl1d.package_data(),
-        scripts = ['bin/reflworkerd'],
+        scripts = ['bin/reflworkerd','bin/refl1d_cli.py','bin/refl1d_gui.py'],
         ext_modules = [reflmodule_config()],
         install_requires = ['httplib2'],
         )

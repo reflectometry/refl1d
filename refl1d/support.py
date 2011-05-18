@@ -23,13 +23,13 @@ def get_data_path():
     # Check for data next to the package.
     try:
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        return os.path.join(root,'examples')
+        return os.path.join(root,'doc/examples')
     except:
         raise RuntimeError("Could not find sample data")
 
 
 _REGISTRY = {
-    'exp123.dat': ['xray','e1085009.log'],
+    'spin_valve01.refl': ['spinvalve','spin_valve01.refl'],
     'chale207.refl': ['polymer','10ndt001.refl'],
     '10ndt001.refl': ['polymer','10ndt001.refl'],
     'lha03_255G.refl': ['spinvalve','n101Gc1.refl'],
