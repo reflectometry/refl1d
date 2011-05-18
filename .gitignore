@@ -1,0 +1,12 @@
+.settings
+.coverage
+.mplconfig
+.project
+.pydevproject
+*.pyc
+*.swp
+*.so
+*.bak
+build/
+dist/
+refl1d.egg-info/
