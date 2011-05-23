@@ -51,11 +51,12 @@ import shutil
 import subprocess
 
 # Windows commands to run utilities
-SVN    = "svn"
+GIT = r"C:\Program Files\Git\bin\git.exe"
+REPO_NEW = '"%s" clone git@github.com:reflectometry/refl1d.git'%GIT
+REPO_UPDATE = '"%s" pull origin master'%GIT
+
 INNO   = r"C:\Program Files\Inno Setup 5\ISCC.exe"  # command line operation
 
-# URL of the Subversion repository where the source code lives
-SVN_REPO_URL = "svn://danse.us/reflectometry/trunk/refl1d"
 # Name of the package
 PKG_NAME = "refl1d" # temporary name
 # Name of the application we're building
@@ -186,10 +187,10 @@ def checkout_code():
 
     if RUN_DIR == TOP_DIR:
         os.chdir(TOP_DIR)
-        exec_cmd("%s checkout %s %s" %(SVN, SVN_REPO_URL, PKG_NAME))
+        exec_cmd(REPO_NEW)
     else:
         os.chdir(SRC_DIR)
-        exec_cmd("%s update" %SVN)
+        exec_cmd(REPO_UPDATE)
 
 
 def create_archive(version=None):
