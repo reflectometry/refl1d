@@ -60,6 +60,7 @@ class GareflExperiment(Experiment):
         self.roughness_limit = 3
         self._substrate = SLD(name='substrate',rho=0)
         self._surface = SLD(name='surface',rho=0)
+        self._name = None
 
     def parameters(self):
         return self._pars
