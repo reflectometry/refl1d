@@ -149,6 +149,12 @@ class ExperimentBase(object):
         _,R = self.reflectivity(resolution=True)
         dR = 0.01*noise*R
         self.probe.simulate_data(R,dR)
+    def _set_name(self, name):
+        self._name = name
+    def _get_name(self):
+        return self._name if self._name else self.probe.name
+    name = property(_get_name, _set_name)
+
 
 class Experiment(ExperimentBase):
     """
@@ -169,11 +175,11 @@ class Experiment(ExperimentBase):
         *roughness_limit* limit the roughness based on layer thickness
         *dz* minimum step size for computed profile steps in Angstroms
         *dA* discretization condition for computed profiles
-        *smoothness* thickness of 
+        *smoothness* thickness of
 
-    If *step_interfaces* is True then use the Nevot-Croce analytic 
-    expression for the interface between slabs.  If False, then approximate 
-    the interface using micro-slabs with step size *dz*, coalesced into 
+    If *step_interfaces* is True then use the Nevot-Croce analytic
+    expression for the interface between slabs.  If False, then approximate
+    the interface using micro-slabs with step size *dz*, coalesced into
     larger slabs according to the *dA* condition.
 
     The *roughness_limit* value should be reasonably large (e.g., 2.5 or above)
@@ -199,14 +205,14 @@ class Experiment(ExperimentBase):
     The *smoothness* parameter controls the amount of smoothing between
     slabs in the contracted profile when *dA* is non-zero.  The smoothing
     is performed by setting the interface width to smoothness * slab width.
-    A smoothness value of 0 means no smoothing. Smoothness values of 0.3 
-    or less are considered safe.  Beyond that value, blending spans multiple 
+    A smoothness value of 0 means no smoothing. Smoothness values of 0.3
+    or less are considered safe.  Beyond that value, blending spans multiple
     layers in the profile, and the profile we display is no longer an
     accurate representation of the underlying density profile.
 
-    Note that it would be better to use an analytic representation of a 
-    trapezoidal scattering density profile for these layers rather than 
-    analytic gaussian interfaces between layers, but this has not been 
+    Note that it would be better to use an analytic representation of a
+    trapezoidal scattering density profile for these layers rather than
+    analytic gaussian interfaces between layers, but this has not been
     implemented.
     """
     def __init__(self, sample=None, probe=None, name=None,
@@ -223,18 +229,12 @@ class Experiment(ExperimentBase):
         self.dA = dA
         self.step_interfaces = step_interfaces
         self.smoothness = smoothness
-        if step_interfaces: 
+        if step_interfaces:
             raise NotImplementedError('step interfaces not yet supported')
         self._slabs = profile.Microslabs(len(probe), dz=dz)
         self._probe_cache = material.ProbeCache(probe)
         self._cache = {}  # Cache calculated profiles/reflectivities
         self._name = name
-
-    def _set_name(self, name):
-        self._name = name
-    def _get_name(self):
-        return self._name if self._name else self.probe.name
-    name = property(_get_name, _set_name)
 
     def parameters(self):
         return dict(sample=self.sample.parameters(),
@@ -254,7 +254,7 @@ class Experiment(ExperimentBase):
             if self.dA is not None:
                 self._slabs.contract_profile(self.dA)
                 if not self.step_interfaces:
-                    self._slabs.smooth_interfaces(self.dA, self.smoothness) 
+                    self._slabs.smooth_interfaces(self.dA, self.smoothness)
             self._cache[key] = True
         return self._slabs
 
@@ -463,7 +463,7 @@ class MixedExperiment(ExperimentBase):
     profiles can be accessed from the underlying experiments
     using composite.parts[i] for the various samples.
     """
-    def __init__(self, samples=None, ratio=None, probe=None, **kw):
+    def __init__(self, samples=None, ratio=None, probe=None, name=None, **kw):
         self.samples = samples
         self.probe = probe
         self.ratio = [Parameter.default(r, name="ratio %d"%i)
@@ -472,6 +472,7 @@ class MixedExperiment(ExperimentBase):
         self._substrate=self.samples[0][0].material
         self._surface=self.samples[0][-1].material
         self._cache = {}
+        self._name = name
 
     def update(self):
         self._cache = {}

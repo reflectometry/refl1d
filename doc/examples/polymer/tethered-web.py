@@ -163,7 +163,7 @@ H_probe = instrument.load('10nht001.refl', back_reflectivity=True)
 #
 # Finally, we define the fitting problem from the probes and samples.
 # The dz parameter controls the size of the profiles steps when generating
-# the tethered polymer interface.  The dA parameter allows these microslabs 
+# the tethered polymer interface.  The dA parameter allows these microslabs
 # to be joined together into larger slabs, with each slab having
 # $(\rho_{\text max} - \rho_{\text min}) w < \Delta A$.  The interfaces
 # between the slabs are set such that $\sigma <= w s$, for width $w$

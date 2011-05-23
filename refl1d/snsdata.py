@@ -81,7 +81,7 @@ def QRL_to_data(instrument, header, data):
     else:
         T,dT = resolution.dQdL2dT(Q[0],dQ[0],L[0],dL[0])
         probe = make_probe(T=T,dT=dT,L=L,dL=dL, data=(R,dR),
-                           radiation='neutron',**header)
+                           **header)
     return probe
 
 def TOF_to_data(instrument, header, data):

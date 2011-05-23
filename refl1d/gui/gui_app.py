@@ -222,7 +222,7 @@ class Refl1dGUIApp(wx.App):
     def after_show(self):
         from .. import cli, fitplugin
         sys.excepthook = excepthook
-        
+
         # TODO: only way I could find to set initial split
         panel = self.frame.panel
         panel.aui.Split(0, wx.TOP)
@@ -247,7 +247,7 @@ class Refl1dGUIApp(wx.App):
         Probe.view = opts.plot
 
         # Put up the initial model
-        model = cli.initial_model(opts)    
+        model = cli.initial_model(opts)
         if not model:
             model = fitplugin.new_model()
         panel.set_model(model=model)

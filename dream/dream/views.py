@@ -37,7 +37,7 @@ def plot_var(state, var=0, portion=None, selection=None, **kw):
 def plot_vars(state, vars=None, portion=None, selection=None, **kw):
     from pylab import subplot
 
-    points, logp = state.sample(portion=portion, vars=vars, 
+    points, logp = state.sample(portion=portion, vars=vars,
                                 selection=selection)
     if vars==None:
         vars = range(points.shape[1])

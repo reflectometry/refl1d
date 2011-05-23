@@ -47,7 +47,7 @@ class ProfileInteractor(object):
 
         # Ick! trying to do motion event before profile has been set
         self.experiment = None
-        
+
         # TODO: the connect mechanism needs to be owned by the canvas rather
         # than the axes --- cannot have multiple profiles on the same canvas
         # until connect is in the right place.

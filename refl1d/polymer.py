@@ -142,7 +142,7 @@ class PolymerBrush(Layer):
         else: # increasing
             left = numpy.searchsorted(Pr, Pr[0]+delta)
             right = numpy.searchsorted(Pr, Pr[-1]-delta)
-        if left > right: 
+        if left > right:
             print "polymer broken profile search",Pr[0],Pr[-1],left,right
             left,right = 0,1
             #raise RuntimeError("broken profile search")

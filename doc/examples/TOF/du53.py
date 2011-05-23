@@ -29,4 +29,3 @@ for p in probes[1:]:
 
 M = Experiment(sample=sample, probe=probe, name="DU 53")
 problem = FitProblem(M)
-

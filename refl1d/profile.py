@@ -206,7 +206,7 @@ class Microslabs(object):
     def finalize(self):
         """
         Rendering complete.
-        
+
         Call this method after the microslab model has been constructed,
         so any post-rendering processes can be completed.
         """
@@ -215,9 +215,9 @@ class Microslabs(object):
     def thickness(self):
         """
         Total thickness of the profile.
-        
-        Note that thickness includes the thickness of the substrate and 
-        surface layers.  Normally these will be zero, but the contract 
+
+        Note that thickness includes the thickness of the substrate and
+        surface layers.  Normally these will be zero, but the contract
         profile operation may result in large values for either.
         """
         return numpy.sum(self._slabs[:self._num_slabs,0])
@@ -274,7 +274,7 @@ class Microslabs(object):
         """
         Set a guassian interface for layers which have been coalesced using
         the contract_profile function.
-        
+
         Note that we guess which interfaces this applies to after the fact
         using criteria similar to those used to coalesce the microslabs
         into layers, and so it may apply to layers which are close in
@@ -293,7 +293,7 @@ class Microslabs(object):
         idx = numpy.nonzero(sigma==0)[0]
         fix = step[idx] < 3*dA
         sigma[idx[fix]] = w[idx[fix]]*smoothness
-        
+
     def limited_sigma(self, limit=0):
         """
         Return the roughness limited by layer thickness.

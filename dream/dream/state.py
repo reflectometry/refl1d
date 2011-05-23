@@ -254,7 +254,7 @@ class MCMCDraw(object):
         self._update_CR_weight = empty( (Nupdate, Ncr) )
 
         self._outliers = []
-        
+
         # Query functions will not return outlier chains; initially, all
         # chains are marked as good.  Call mark_outliers to remove
         # outlier chains from the set.
@@ -403,11 +403,11 @@ class MCMCDraw(object):
         logp, sample, etc. assume the data is already unrolled.
         """
         if self.generation > self._gen_index > 0:
-            self._gen_draws[:] = numpy.roll(self._gen_draws, 
+            self._gen_draws[:] = numpy.roll(self._gen_draws,
                                             -self._gen_index, axis=0)
             self._gen_logp[:] = numpy.roll(self._gen_logp,
                                            -self._gen_index, axis=0)
-            self._gen_acceptance_rate[:] = numpy.roll(self._gen_acceptance_rate, 
+            self._gen_acceptance_rate[:] = numpy.roll(self._gen_acceptance_rate,
                                                       -self._gen_index, axis=0)
             self._gen_index = 0
 
@@ -465,9 +465,9 @@ class MCMCDraw(object):
         Mark some chains as outliers but don't remove them.  This can happen
         after drawing is complete to remove any outstanding chains that
         did not converge.
-        
+
         *test* is 'IQR', 'Mahol' or 'none'.
-        
+
         *portion* is 0.5 if burnin=0, otherwise it should be 1.0
         """
         _, chains, logp = self.chains()
@@ -480,9 +480,9 @@ class MCMCDraw(object):
             else:
                 start = int(Ngen*portion)
             outliers = identify_outliers(test, logp[start:], chains[-1])
-            self._good_chains = numpy.array([i for i in range(logp.shape[1]) 
+            self._good_chains = numpy.array([i for i in range(logp.shape[1])
                                              if i not in outliers])
-    
+
 
     def logp(self):
         """
@@ -681,11 +681,11 @@ def _sample(state, portion, vars, selection):
         portion = 0.8 if state.burnin == 0 else 1.0
     draw, chains, logp = state.chains()
     start = int((1-portion)*len(draw))
-    
+
     # Collect the subset we are interested in
     chains = chains[start:,state._good_chains,:]
     logp = logp[start:,state._good_chains]
-    
+
     Ngen,Npop,Nvar = chains.shape
     points = reshape(chains,(Ngen*Npop,Nvar))
     logp = reshape(logp,(Ngen*Npop))

@@ -21,7 +21,7 @@ def load_results(filename):
     """
     data = json.load(open(filename))
     # Convert array info back into numpy arrays
-    data.update( (k,np.array(data[k])) 
+    data.update( (k,np.array(data[k]))
                  for k in ('X', 'Y', 'data', 'err', 'theory') )
     return data
 
