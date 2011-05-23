@@ -45,7 +45,9 @@ class ProfileInteractor(object):
         [self.hthetaM] = self.theta_axes.plot( [], [], '-', color=thetaM_color,
                                                label = r'$\theta_M$')
 
-
+        # Ick! trying to do motion event before profile has been set
+        self.experiment = None
+        
         # TODO: the connect mechanism needs to be owned by the canvas rather
         # than the axes --- cannot have multiple profiles on the same canvas
         # until connect is in the right place.
@@ -113,6 +115,7 @@ class ProfileInteractor(object):
 
     def onMotion(self, event):
         """Respond to motion events by changing the active layer."""
+        if self.experiment is None: return False
 
         # Force data coordinates for the mouse position
         transform = self.axes.transData

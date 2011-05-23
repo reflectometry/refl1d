@@ -38,7 +38,7 @@ class FreeInterfaceInteractor(BaseInteractor):
                      markersize = 5,
                      visible=True,
                      )
-        self.markers = [ax.plot([],[], **style)[0] for _ in layer.dp[:-1]]
+        self.markers = [ax.plot([],[], **style)[0] for _ in layer.dz[:-1]]
         self.connect_markers(self.markers)
 
     def update_markers(self):
@@ -57,8 +57,8 @@ class FreeInterfaceInteractor(BaseInteractor):
         self.hprofile.set_xdata(z+left)
         self.hprofile.set_ydata(vf*vf_scale)
 
-        z = numpy.cumsum([v.value for v in layer.dz])
-        p = numpy.cumsum([v.value for v in layer.dp])
+        z = numpy.cumsum(numpy.array([v.value for v in layer.dz],'d'))
+        p = numpy.cumsum(numpy.array([v.value for v in layer.dp],'d'))
         self._zscale = layer.thickness.value/z[-1]
         if p[-1] == 0: p[-1] = 1
         p *= vf_scale/p[-1]
@@ -81,14 +81,13 @@ class FreeInterfaceInteractor(BaseInteractor):
         """
         n = self.profile.layer_num
         left,right = self.profile.boundary[n:n+2]
-        dz = self.layer.dz
 
         idx = self.markers.index(evt.artist)
-        a = self.markers[idx-1].get_xdata()[0] if idx>0 else left
-        c = self.markers[idx+1].get_xdata()[0] if idx<len(self.markers)-1 else right
-        b = clip(evt.xdata, a+1e-3, c-1e-3)
-        setpar(dz[idx], (b-a)/self._zscale)
-        setpar(dz[idx+1], (c-b)/self._zscale)
+        z = [h.get_xdata()[0] for h in self.markers]
+        z[idx] = evt.xdata
+        dz = numpy.diff(numpy.sort(numpy.clip(z+[left,right], left, right)))
+        dz /= numpy.max(dz)
+        for p,v in zip(self.layer.dz,dz): setpar(p, v)
 
 
     def save(self, evt):

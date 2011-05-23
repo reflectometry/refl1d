@@ -98,4 +98,6 @@ class NoInteractor(BaseInteractor):
     """
     Null Interactor for undefined layers.
     """
+    def __init__(self, profile, layer):
+        super(NoInteractor,self).__init__(profile)
     # TODO: turn layer.parameters() into sliders

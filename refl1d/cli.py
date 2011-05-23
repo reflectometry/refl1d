@@ -68,7 +68,7 @@ def load_problem(args):
                 # the problem.
             problem.model_reset()
 
-    problem.file = path
+    problem.path = os.path.abspath(path)
     if not hasattr(problem,'title'):
         problem.title = filename
     problem.name, _ = os.path.splitext(filename)
@@ -131,7 +131,7 @@ def make_store(problem, opts, exists_handler):
     # Create it and copy model
     try: os.mkdir(problem.store)
     except: pass
-    shutil.copy2(problem.file, problem.store)
+    shutil.copy2(problem.path, problem.store)
 
     # Redirect sys.stdout to capture progress
     if opts.batch:

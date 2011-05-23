@@ -165,9 +165,16 @@ class Experiment(ExperimentBase):
     Sample properties:
 
         *sample* is the model sample
-        *roughness_limit* limits the roughness based on layer thickness
-        *dz* minimum step size for computed profile steps in Angstroms.
-        *dA* discretization condition for computed profiles.
+        *step_interfaces* use slabs to approximate gaussian interfaces
+        *roughness_limit* limit the roughness based on layer thickness
+        *dz* minimum step size for computed profile steps in Angstroms
+        *dA* discretization condition for computed profiles
+        *smoothness* thickness of 
+
+    If *step_interfaces* is True then use the Nevot-Croce analytic 
+    expression for the interface between slabs.  If False, then approximate 
+    the interface using micro-slabs with step size *dz*, coalesced into 
+    larger slabs according to the *dA* condition.
 
     The *roughness_limit* value should be reasonably large (e.g., 2.5 or above)
     to make sure that the Nevot-Croce reflectivity calculation matches the
@@ -186,10 +193,25 @@ class Experiment(ExperimentBase):
     Specifically, the area of the box containing the minimum and the
     maximum of the non-uniform profile within the slab will be smaller
     than *dA*.  A *dA* of 10 gives coarse slabs.  If *dA* is not provided
-    then each profile step forms its own slab.
+    then each profile step forms its own slab.  The *dA* condition will
+    also apply to the slab approximation to the interfaces.
+
+    The *smoothness* parameter controls the amount of smoothing between
+    slabs in the contracted profile when *dA* is non-zero.  The smoothing
+    is performed by setting the interface width to smoothness * slab width.
+    A smoothness value of 0 means no smoothing. Smoothness values of 0.3 
+    or less are considered safe.  Beyond that value, blending spans multiple 
+    layers in the profile, and the profile we display is no longer an
+    accurate representation of the underlying density profile.
+
+    Note that it would be better to use an analytic representation of a 
+    trapezoidal scattering density profile for these layers rather than 
+    analytic gaussian interfaces between layers, but this has not been 
+    implemented.
     """
     def __init__(self, sample=None, probe=None, name=None,
-                 roughness_limit=2.5, dz=None, dA=None):
+                 roughness_limit=2.5, dz=None, dA=None,
+                 smoothness=0.3, step_interfaces=False):
         self.sample = sample
         self._substrate=self.sample[0].material
         self._surface=self.sample[-1].material
@@ -199,6 +221,10 @@ class Experiment(ExperimentBase):
             dz = nice((2*pi/probe.Q.max())/20)
             if dz > 5: dz = 5
         self.dA = dA
+        self.step_interfaces = step_interfaces
+        self.smoothness = smoothness
+        if step_interfaces: 
+            raise NotImplementedError('step interfaces not yet supported')
         self._slabs = profile.Microslabs(len(probe), dz=dz)
         self._probe_cache = material.ProbeCache(probe)
         self._cache = {}  # Cache calculated profiles/reflectivities
@@ -222,9 +248,13 @@ class Experiment(ExperimentBase):
         if key not in self._cache:
             self._slabs.clear()
             self.sample.render(self._probe_cache, self._slabs)
+            self._slabs.finalize()
+            #if self.step_interfaces:
+            #    self._slabs.build_step_interfaces()
             if self.dA is not None:
                 self._slabs.contract_profile(self.dA)
-                self._slabs.smooth_interfaces(self.dA)
+                if not self.step_interfaces:
+                    self._slabs.smooth_interfaces(self.dA, self.smoothness) 
             self._cache[key] = True
         return self._slabs
 
@@ -314,7 +344,7 @@ class Experiment(ExperimentBase):
         """
         Compute a density profile for the material.
 
-        If *dz* is not given, use *dz* = 1 A.
+        If *dz* is not given, use *dz* = 0.1 A.
         """
         key = 'smooth_profile', dz
         if key not in self._cache:

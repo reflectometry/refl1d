@@ -453,6 +453,7 @@ def linesearch(cost_func, n, xc, fc, g, p, Sx, maxstep, steptol):
             break                                                    # return from here
         elif lambdaM < minlambda:
             # step length is too small, therefore a satisfactory xp cannot be found
+            #print "step",lambdaM,minlambda,steptol,rellength
             retcode = 3
             xp,fp = xc,fc
             break

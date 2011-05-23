@@ -96,6 +96,8 @@ class Refl1dGUIApp(wx.App):
     the wx event loop, can the splash screen terminate (via timeout or a mouse
     click on the splash screen) which causes the frame to be made visible.
     """
+    def __init__(self, *args, **kw):
+        wx.App.__init__(self, *args, **kw)
 
     def OnInit(self):
         # Determine the position and size of the splash screen based on the
@@ -213,8 +215,8 @@ class Refl1dGUIApp(wx.App):
         # To show the frame earlier, uncomment Show() code in OnInit.
         if LOGTIM: log_time("Terminating the splash screen and showing the GUI")
         self.frame.Show(True)
-        self.after_show()
-        #wx.CallAfter(self.after_show)
+        #self.after_show()
+        wx.CallAfter(self.after_show)
         event.Skip()
 
     def after_show(self):

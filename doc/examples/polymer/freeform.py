@@ -43,21 +43,19 @@ D_initiator = SLD(name="D-initiator",rho=1.5)
 H_toluene = SLD(name="H-toluene",rho=0.94)
 H_initiator = SLD(name="H-initiator",rho=0)
 
-n = 10
-x = cos(pi*(arange(n)+0.5)/n)
-fx = (x+1)/2   # line from 0 to 1
-D_polymer_layer = ChebyVF(material=D_polystyrene, solvent=D_toluene,
-                          vf=fx, method="interp")
+n=5
+D_polymer_layer = FreeInterface(below=D_polystyrene,above=D_toluene,
+                                dz=[1]*n,dp=[1]*n)
 
 # Stack materials into samples
 # Note: only need D_toluene to compute Fresnel reflectivity --- should fix
 # this later so that we can use a pure freeform layer on top.
-D = silicon%5 + SiOx/100%5 + D_initiator/100%20 + D_polymer_layer/1000%0 + D_toluene
+D = silicon(0,5) | SiOx(100,5) | D_initiator(100,20) | D_polymer_layer(1000,0) | D_toluene
 
 ### Undeuterated toluene solvent system
 H_polymer_layer = copy(D_polymer_layer)  # Share tethered polymer parameters...
-H_polymer_layer.solvent = H_toluene      # ... but use different solvent
-H = silicon + SiOx + H_initiator + H_polymer_layer + H_toluene
+H_polymer_layer.above = H_toluene      # ... but use different solvent
+H = silicon | SiOx | H_initiator | H_polymer_layer | H_toluene
 for i,_ in enumerate(D):
     H[i].thickness = D[i].thickness
     H[i].interface = D[i].interface
@@ -74,7 +72,7 @@ SiOx.rho.range(2.07,4.16) # Si - SiO2
 #SiOx.rho.pmp(10) # SiOx +/- 10%
 D_toluene.rho.pmp(5)
 D_initiator.rho.range(0,1.5)
-for p in D_polymer_layer.vf:
+for p in D_polymer_layer.dz[1:]:
     p.range(0,1)
 
 ## Undeuterated system adds two extra parameters
@@ -84,44 +82,9 @@ H_initiator.rho.range(-0.5,0.5)
 
 
 # ================= Data files ===========================
-instrument = ncnrdata.NG7(Qlo=0.005, slits_at_Qlo=0.075)
+instrument = NCNR.NG7(Qlo=0.005, slits_at_Qlo=0.075)
 D_probe = instrument.load('10ndt001.refl', back_reflectivity=True)
 H_probe = instrument.load('10nht001.refl', back_reflectivity=True)
-
-
-# ================== Model variations ====================
-dream_opts = dict(chains=20,draws=300000,burn=1000000)
-store = "F0"
-if len(sys.argv) > 1: store=sys.argv[1]
-modelnum = "all"
-if len(sys.argv) > 2: modelnum=sys.argv[2]
-if len(sys.argv) > 1: store=sys.argv[1]
-if store == "F1":
-    dream_opts = dict(chains=20,draws=10000,burn=300000)
-    title = "First try"
-elif store == "F2":
-    title = "longer run"
-elif store == "F3":
-    title = "direct coeff"
-    H_polymer_layer.method = D_polymer_layer.method = "direct"
-### number of control points changed to 30
-elif store == "F4":
-    title = "direct coeff, but not bounded in [0-1], n=30"
-    H_polymer_layer.method = D_polymer_layer.method = "direct"
-    for p in D_polymer_layer.vf:
-        p.range(-inf,inf)
-elif store == "F5":
-    title = "longer run, n=30"
-elif store == "F6":
-    title = "direct coeff, n=10"
-    H_polymer_layer.method = D_polymer_layer.method = "direct"
-    for p in D_polymer_layer.vf:
-        p.range(-inf,inf)
-elif store == "F7":
-    title = "longer run, n=10"
-else:
-    raise RuntimeError("store %s not defined"%store)
-
 
 
 # Join models and data
@@ -129,17 +92,4 @@ D_model = Experiment(sample=D, probe=D_probe)
 H_model = Experiment(sample=H, probe=H_probe)
 models = D_model, H_model
 
-# Needed by dream fitter
-if modelnum == "all":
-    problem = MultiFitProblem(models=models)
-    problem.name = "tethered"
-elif modelnum == "M0":
-    problem = FitProblem(D_model)
-    problem.name = "Dtoluene"
-elif modelnum == "M1":
-    problem = FitProblem(H_model)
-    problem.name = "Htoluene"
-problem.dream_opts = dream_opts
-problem.title = title
-problem.store = store
-#Probe.view = 'log'
+problem = MultiFitProblem(models=models)

@@ -203,9 +203,22 @@ class Microslabs(object):
         self._magnetic_sections.append((numpy.vstack((w,rho,theta)),
                                         anchor, sigma))
 
+    def finalize(self):
+        """
+        Rendering complete.
+        
+        Call this method after the microslab model has been constructed,
+        so any post-rendering processes can be completed.
+        """
+        self.w[0] = self.w[-1] = 0
+
     def thickness(self):
         """
         Total thickness of the profile.
+        
+        Note that thickness includes the thickness of the substrate and 
+        surface layers.  Normally these will be zero, but the contract 
+        profile operation may result in large values for either.
         """
         return numpy.sum(self._slabs[:self._num_slabs,0])
 
@@ -245,25 +258,42 @@ class Microslabs(object):
 
     def contract_profile(self, dA):
         # TODO: do we want to use common boundaries for all lambda?
+        # TODO: don't throw away other wavelengths
         w,sigma,rho,irho=[numpy.ascontiguousarray(v,'d')
                           for v in self.w,self.sigma,self.rho[0],self.irho[0]]
+        #print "final sld before contract",rho[-1]
         n = _contract_by_area(w,sigma,rho,irho,dA)
         self._num_slabs = n
-        # TODO: don't throw away other wavelengths
         self.rho[0][:] = rho[:n]
         self.irho[0][:] = irho[:n]
         self.sigma[:] = sigma[:n-1]
         self.w[:] = w[:n]
+        #print "final sld after contract",rho[n-1],self.rho[0][n-1],n
 
-    def smooth_interfaces(self, dA):
-        #TODO: refine this so that it can look back as well as forward
+    def smooth_interfaces(self, dA, smoothness=0.3):
+        """
+        Set a guassian interface for layers which have been coalesced using
+        the contract_profile function.
+        
+        Note that we guess which interfaces this applies to after the fact
+        using criteria similar to those used to coalesce the microslabs
+        into layers, and so it may apply to layers which are close in
+        scattering length density and have zero sigma, but which were
+        distinct in the original model.  The displayed profile will show
+        the profile used to calculate the reflectivity, so even though
+        this behaviour is different from what the user intended, the
+        result will not be misleading.
+        """
+        if smoothness == 0: return
+        #TODO: refine this so that it can look forward as well as back
         #TODO: also need to avoid changing explicit sigma=0...
         w,sigma,rho,irho = self.w,self.sigma,self.rho[0],self.irho[0]
-        step = w[:-1] * (abs(numpy.diff(rho)) + abs(numpy.diff(irho)))
-        idx = numpy.nonzero(sigma[1:]==0)[0]+1
+        step = (abs(numpy.diff(rho)) + abs(numpy.diff(irho)))
+        step[:-1] *= w[1:-1]  # compute dA of step; substrate uses w=1
+        idx = numpy.nonzero(sigma==0)[0]
         fix = step[idx] < 3*dA
-        sigma[idx[fix]] = w[idx[fix]]/4
-
+        sigma[idx[fix]] = w[idx[fix]]*smoothness
+        
     def limited_sigma(self, limit=0):
         """
         Return the roughness limited by layer thickness.
@@ -334,11 +364,10 @@ class Microslabs(object):
         *roughness_limit* is the minimum number of roughness widths that must
         lie within each profile.
         """
-        dz = self.dz
         sigma = self.limited_sigma(limit=sigma_limit)
-        thickness = numpy.sum(self.w[1:-1])
-        left  = 0 - sigma[0]*3
-        right = thickness + sigma[-1]*3
+        thickness = self.thickness()
+        left  = 0 - max(10,sigma[0]*3)
+        right = thickness + max(10,sigma[-1]*3)
         z = numpy.arange(left,right+dz,dz)
         # Only show the first wavelength
         rho  = build_profile(z, self.w, sigma, self.rho[0])
