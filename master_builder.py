@@ -134,50 +134,44 @@ os.environ['PYTHONPATH'] = PKG_DIR
 #==============================================================================
 
 def build_it():
+    # If no arguments, start at the first step
+    start_with = sys.argv[1] if len(sys.argv)>1 else 'deps'
+    started = False
+
     # Check the system for all required dependent packages.
-    if not (len(sys.argv) > 1 and '-s' in sys.argv[1:]):
-        check_dependencies()
+    started = started or start_with == 'deps'
+    if started: check_dependencies()
 
     # Checkout code from repository.
-    if not (len(sys.argv) > 1 and '-u' in sys.argv[1:]):
-        checkout_code()
-
-    # Create an archive of the source code.
-    if not (len(sys.argv) > 1 and '-a' in sys.argv[1:]):
-        create_archive(PKG_VERSION)
+    started = started or start_with in ('co', 'checkout', 'update')
+    if started: checkout_code()
 
     # Install the application in a local directory tree.
-    install_package()
+    started = started or start_with == 'build'
+    if started: install_package()
+
+    # Run unittests and doctests using a test script.
+    started = started or start_with == 'test'
+    if started: run_tests()
 
     # Build HTML and PDF documentaton using sphinx.
     # This step is done before building the Windows installer so that PDF
     # documentation can be included in the installable product.
-    if not (len(sys.argv) > 1 and '-d' in sys.argv[1:]):
-        build_documentation()
+    started = started or start_with == 'docs'
+    if started: build_documentation()
+
+    # Create an archive of the source code.
+    started = started or start_with == 'zip'
+    if started: create_archive(PKG_VERSION)
 
     # Create a Windows executable file using py2exe.
-    if not (len(sys.argv) > 1 and '-w' in sys.argv[1:]):
-        if os.name == 'nt':
-            create_windows_exe()
+    started = started or start_with == 'exe'
+    if started and os.name == 'nt': create_windows_exe()
 
     # Create a Windows installer/uninstaller exe using the Inno Setup Compiler.
-    if not (len(sys.argv) > 1 and '-w' in sys.argv[1:]):
-        if os.name == 'nt':
-            create_windows_installer(PKG_VERSION)
+    started = started or start_with == 'installer'
+    if started and os.name == 'nt': create_windows_installer(PKG_VERSION)
 
-    # Run unittests and doctests using a test script.
-    if not (len(sys.argv) > 1 and '-t' in sys.argv[1:]):
-        run_tests()
-
-'''
-    # Run unittests using Nose.
-    if not (len(sys.argv) > 1 and '-t' in sys.argv[1:]):
-        run_unittests()
-
-    # Run doctests using Nose.
-    if not (len(sys.argv) > 1 and '-t' in sys.argv[1:]):
-        run_doctests()
-'''
 
 def checkout_code():
     # Checkout the application code from the repository into a directory tree
@@ -306,26 +300,6 @@ def run_tests():
     os.chdir(SRC_DIR)
 
     exec_cmd("%s test.py" %PYTHON)
-
-
-'''
-def run_unittests():
-    # Run Nose unittests.
-    print SEPARATOR
-    print "\nStep 7 - Running Nose unittests ...\n"
-    os.chdir(INS_DIR)
-
-    exec_cmd("nosetests -v %s" %PKG_NAME)
-
-
-def run_doctests():
-    # Run Nose doctests.
-    print SEPARATOR
-    print "\nStep 8 - Running Nose doctests ...\n"
-    os.chdir(INS_DIR)
-
-    exec_cmd("nosetests -v --with-doctest %s" %PKG_NAME)
-'''
 
 def check_dependencies():
     """
@@ -503,18 +477,22 @@ def exec_cmd(command):
 
 
 if __name__ == "__main__":
+    START_POINTS = ('deps', 'co', 'checkout', 'update', 'build', 'test',
+                    'docs', 'zip', 'exe', 'installer')
+
     if len(sys.argv)>1:
         # Display help if requested.
-        if len(sys.argv) > 1 and '-h' in sys.argv[1:]:
-            print "\nUsage: python master_builder.py [options]\n"
-            print "Options:"
-            print "  -a  Skip build of source archive"
-            print "  -d  Skip build of documentation"
-            print "  -h  Show this help text"
-            print "  -s  Skip software dependency checks"
-            print "  -t  Skip all tests (unittests and doctests)"
-            print "  -w  Skip build of Windows executable and installer"
-            print "  -u  Skip checkout or update from repository"
+        if len(sys.argv) > 1 and sys.argv[1] not in START_POINTS:
+            print "\nUsage: python master_builder.py [start]\n"
+            print "Build start points:"
+            print "  deps       check dependencies"
+            print "  update     update archive"
+            print "  build      build package"
+            print "  test       test package"
+            print "  docs       build docs"
+            print "  zip        build source archive"
+            print "  exe        build executable"
+            print "  installer  build installer"
             sys.exit()
 
     print "\nBuilding the %s application from the %s repository ...\n" \

@@ -36,6 +36,7 @@
 #define MyAppCLIFileName "refl1d_launch.bat"
 #define MyAppGUIFileName "refl1d_gui.exe"
 #define MyIconFileName "refl1d.ico"
+#define MyIconPath = "refl1d-data\refl1d.ico"
 #define MyReadmeFileName "README.txt"
 #define MyLicenseFileName "LICENSE.txt"
 #define Space " "
@@ -84,8 +85,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 ; This script assumes that the output from the previously run py2exe packaging process is in .\dist\...
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 Source: "dist\*"; Excludes: "examples,doc"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "dist\examples\*"; DestDir: "{userdocs}\{#MyAppName}\examples"; Flags: ignoreversion recursesubdirs createallsubdirs
-;Source: "dist\doc\*"; DestDir: "{userdocs}\{#MyAppName}\doc"; Flags: ignoreversion recursesubdirs createallsubdirs
+;Source: "dist\examples\*"; DestDir: "{userdocs}\{#MyAppName}\examples"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\doc\examples"; DestDir: "{userdocs}\{#MyAppName}\examples"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; The following Pascal function checks for the presence of the VC++ 2008 DLL folder on the target system
 ; to determine if the VC++ 2008 Redistributable kit needs to be installed.
@@ -113,14 +114,14 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 ; entering a command such as "cmd" or "cmd /k <file-to-execute>".
 ;
 ; When running the application in GUI mode, we simply run the executable without a console window.
-Name: "{group}\Launch {#MyAppName} GUI"; Filename: "{app}\{#MyAppGUIFileName}"; IconFilename: "{app}\{#MyIconFileName}"; WorkingDir: "{userdocs}\{#MyAppName}"
-Name: "{group}\Launch {#MyAppName} CLI"; Filename: "{app}\{#MyAppCLIFileName}"; IconFilename: "{app}\{#MyIconFileName}"; WorkingDir: "{userdocs}\{#MyAppName}"; Flags: runmaximized
+Name: "{group}\Launch {#MyAppName} GUI"; Filename: "{app}\{#MyAppGUIFileName}"; IconFilename: "{app}\{#MyIconPath}"; WorkingDir: "{userdocs}\{#MyAppName}"
+Name: "{group}\Launch {#MyAppName} CLI"; Filename: "{app}\{#MyAppCLIFileName}"; IconFilename: "{app}\{#MyIconPath}"; WorkingDir: "{userdocs}\{#MyAppName}"; Flags: runmaximized
 Name: "{group}\{cm:ProgramOnTheWeb,{#MyAppName}}"; Filename: "{#MyAppURL}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{commondesktop}\{#MyAppName} GUI{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppGUIFileName}"; Tasks: desktopicon; WorkingDir: "{userdocs}\{#MyAppName}"; IconFilename: "{app}\{#MyIconFileName}"
-Name: "{commondesktop}\{#MyAppName} CLI{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppCLIFileName}"; Tasks: desktopicon; WorkingDir: "{userdocs}\{#MyAppName}"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName} GUI{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppGUIFileName}"; Tasks: quicklaunchicon; WorkingDir: "{userdocs}\{#MyAppName}"; IconFilename: "{app}\{#MyIconFileName}"
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName} CLI{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppCLIFileName}"; Tasks: quicklaunchicon; WorkingDir: "{userdocs}\{#MyAppName}"; IconFilename: "{app}\{#MyIconFileName}"; Flags: runmaximized
+Name: "{commondesktop}\{#MyAppName} GUI{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppGUIFileName}"; Tasks: desktopicon; WorkingDir: "{userdocs}\{#MyAppName}"; IconFilename: "{app}\{#MyIconPath}"
+Name: "{commondesktop}\{#MyAppName} CLI{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppCLIFileName}"; Tasks: desktopicon; WorkingDir: "{userdocs}\{#MyAppName}"; IconFilename: "{app}\{#MyIconPath}"; Flags: runmaximized
+Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName} GUI{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppGUIFileName}"; Tasks: quicklaunchicon; WorkingDir: "{userdocs}\{#MyAppName}"; IconFilename: "{app}\{#MyIconPath}"
+Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName} CLI{#Space}{#MyAppVersion}"; Filename: "{app}\{#MyAppCLIFileName}"; Tasks: quicklaunchicon; WorkingDir: "{userdocs}\{#MyAppName}"; IconFilename: "{app}\{#MyIconPath}"; Flags: runmaximized
 
 [Run]
 ;;;Filename: "{app}\{#MyAppGUIFileName}"; Description: "{cm:LaunchProgram,{#MyAppName} GUI}"; WorkingDir: "{userdocs}\{#MyAppName}"; Flags: nowait postinstall skipifsilent
@@ -145,4 +146,3 @@ Type: files; Name: "{app}\*.exe.log"
 ; directive below, {app} will not be deleted because Inno Setup did not create it during the previous
 ; installation.
 Type: dirifempty; Name: "{app}"
-
