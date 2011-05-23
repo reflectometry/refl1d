@@ -37,7 +37,7 @@ class StepMonitor(monitor.Monitor):
     def __init__(self, problem, fid, fields=FIELDS):
         if any(f not in self.FIELDS for f in fields):
             raise ValueError("invalid monitor field")
-        self.dof = self.problem.dof
+        self.dof = problem.dof
         self.fid = fid
         self.fields = fields
         self._pattern = "%%(%s)s\n" % (")s %(".join(fields))
@@ -239,7 +239,7 @@ class PTFit(FitBase):
                                     monitor=self._monitor)
         return history.best_point, history.best
     def _monitor(self, step, x, fx, P, E):
-        self._update(step=step, point=x[k], value=fx,
+        self._update(step=step, point=x, value=fx,
                      population_points=P, population_values=E)
         return True
 

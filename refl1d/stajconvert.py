@@ -169,7 +169,7 @@ def model_to_mlayer(model):
         elif isinstance(l, Repeat):
             sections.append(section)
             sections.append(l[:])
-            repeats = l.repeats
+            repeats = l.repeat
             section = []
         else:
             raise TypeError("Only slabs supported")
