@@ -547,5 +547,9 @@ class AppPanel(wx.Panel):
         # Enable appropriate toolbar items.
         self.tb.EnableTool(id=self.tb_start.GetId(), enable=True)
         #self.tb.EnableTool(id=self.tb_stop.GetId(), enable=True)
-        signal.log_message(message="loaded "+model.path)
-        self.GetTopLevelParent().SetTitle("Refl1D: %s"%model.name)
+        if hasattr(model, 'path'):
+            signal.log_message(message="loaded "+model.path)
+            self.GetTopLevelParent().SetTitle("Refl1D: %s"%model.name)
+        else:
+            signal.log_message(message="new model")
+            self.GetTopLevelParent().SetTitle("Refl1D")
