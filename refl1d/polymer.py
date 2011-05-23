@@ -113,7 +113,12 @@ class PolymerBrush(Layer):
     def render(self, probe, slabs):
         thickness,interface = self.thickness.value,self.interface.value
         Pw,Pz = slabs.microslabs(thickness)
-        vf = self.profile(Pz)
+        # Skip layer if it falls to zero thickness.  This may lead to
+        # problems in the fitter, since R(thickness) is non-differentiable
+        # at thickness = 0.  "Clip to boundary" range handling will at
+        # least allow this point to be found.
+        # TODO: consider using this behaviour on all layer types.
+        if len(Pw) == 0: return
 
         Mr,Mi = self.polymer.sld(probe)
         Sr,Si = self.solvent.sld(probe)
@@ -122,6 +127,7 @@ class PolymerBrush(Layer):
         try: M,S = M[0],S[0]  # Temporary hack
         except: pass
 
+        vf = self.profile(Pz)
         P = M*vf + S*(1-vf)
         Pr, Pi = real(P), imag(P)
 
@@ -129,27 +135,28 @@ class PolymerBrush(Layer):
         # Rely on the fact that the profile is monotonic
         delta = 0.001
         if abs(Pr[0]-Pr[-1]) <= delta:
-            left, right = 0, 0
+            left,right = 0,1
         elif Pr[0] > Pr[-1]: # decreasing
             left = len(Pr) - numpy.searchsorted(Pr[::-1],Pr[0]-delta)
             right = len(Pr) - numpy.searchsorted(Pr[::-1],Pr[-1]+delta)
         else: # increasing
             left = numpy.searchsorted(Pr, Pr[0]+delta)
             right = numpy.searchsorted(Pr, Pr[-1]-delta)
-        if left > right: raise RuntimeError("broken profile search")
+        if left > right: 
+            print "polymer broken profile search",Pr[0],Pr[-1],left,right
+            left,right = 0,1
+            #raise RuntimeError("broken profile search")
 
         if left > 0:
             slabs.append(rho=Pr[0:1], irho=Pi[0:1],
                          w=numpy.sum(Pw[:left]))
-        if left < right:
+        if left < right-1:
             slabs.extend(rho=[Pr[left:right]], irho=[Pi[left:right]],
                          w=Pw[left:right])
         if right < len(P):
             slabs.append(rho=Pr[-1:], irho=Pi[-1:],
-                         w=numpy.sum(Pw[:right]),
+                         w=numpy.sum(Pw[right:]),
                          sigma = interface)
-
-
 
 def layer_thickness(z):
     """
@@ -249,6 +256,7 @@ class VolumeProfile(Layer):
         S = Sr + 1j*Si
         #M,S = M[0],S[0]  # Temporary hack
         Pw,Pz = slabs.microslabs(self.thickness.value)
+        if len(Pw)== 0: return
         kw = dict((k,getattr(self,k).value) for k in self._parameters)
         #print kw
         phi = self.profile(Pz,**kw)
@@ -278,6 +286,7 @@ def smear(z, P, sigma):
         *Ps* | vector
             smeared sample values
     """
+    if len(z) < 3: return P
     dz = z[1]-z[0]
     if 3*sigma < dz: return P
     w = int(3*sigma/dz)

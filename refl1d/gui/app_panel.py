@@ -53,7 +53,8 @@ from . import signal
 from .utilities import get_bitmap
 
 # File selection strings.
-MODEL_FILES = "Model files (*.r1d)|*.r1d"
+MODEL_EXT = ".pickle"
+MODEL_FILES = "Model files (*%s)|*%s"%(MODEL_EXT,MODEL_EXT)
 PYTHON_FILES = "Script files (*.py)|*.py"
 REFL_FILES = "Refl files (*.refl)|*.refl"
 DATA_FILES = "Data files (*.dat)|*.dat"
@@ -355,11 +356,13 @@ class AppPanel(wx.Panel):
             self.load_model(path)
 
     def OnFileReload(self, event):
-        self.load_model(self.model.file)
+        self.load_model(self.model.path)
 
     def OnFileSave(self, event):
-        if self.model is not None and hasattr(self.model,'modelfile'):
-            self.save_model(self.model.modelfile)
+        if self.model is not None:
+            # Force the result to be a pickle
+            self.model.path = os.path.splitext(self.model.path)[0]+MODEL_EXT
+            self.save_model(self.model.path)
         else:
             self.OnFileSaveAs(event)
 
@@ -377,11 +380,8 @@ class AppPanel(wx.Panel):
 
         # Process file if user clicked okay.
         if status == wx.ID_OK:
-            ## Need to check for overwrite before adding extension
-            #if os.path.basename(path) == path:
-            #    path += ".r1d"
-            self.model.modelfile = path
-            self.save_model(self.model.modelfile)
+            self.model.path = os.path.splitext(path)[0]+MODEL_EXT
+            self.save_model(self.model.path)
 
 
     def OnFileSaveResults(self, event):
@@ -468,13 +468,12 @@ class AppPanel(wx.Panel):
         self.set_model(gen())
 
     def load_model(self, path):
-        problem = load_problem([path])
-        problem.modelfile = path
-        signal.model_new(model=problem)
+        model = load_problem([path])
+        signal.model_new(model=model)
 
     def save_model(self, path):
         import cPickle as serialize
-        serialize.dump(self.model, open(path,'wb'))
+        serialize.dump(self.model, open(self.model.path,'wb'))
 
     def save_results(self, path):
         output_path = os.path.join(path, self.model.name)
@@ -487,7 +486,7 @@ class AppPanel(wx.Panel):
         self.model.save(output_path)
 
         # Save a pickle of the model that can be reloaded
-        self.save_model(output_path+".pickle")
+        self.save_model(output_path+MODEL_EXT)
 
         # Save the current state of the parameters
         with redirect_console(output_path+".out"):
@@ -548,3 +547,5 @@ class AppPanel(wx.Panel):
         # Enable appropriate toolbar items.
         self.tb.EnableTool(id=self.tb_start.GetId(), enable=True)
         #self.tb.EnableTool(id=self.tb_stop.GetId(), enable=True)
+        signal.log_message(message="loaded "+model.path)
+        self.GetTopLevelParent().SetTitle("Refl1D: %s"%model.name)

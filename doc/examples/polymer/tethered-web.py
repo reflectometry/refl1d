@@ -161,13 +161,22 @@ H_probe = instrument.load('10nht001.refl', back_reflectivity=True)
 # ``back_absorption`` when you load the file.  Like ``intensity`` you can
 # set a range on the value and adjust it during refinement.
 #
-# Finally, we define the fitting problem from the probes and samples:
-
+# Finally, we define the fitting problem from the probes and samples.
+# The dz parameter controls the size of the profiles steps when generating
+# the tethered polymer interface.  The dA parameter allows these microslabs 
+# to be joined together into larger slabs, with each slab having
+# $(\rho_{\text max} - \rho_{\text min}) w < \Delta A$.  The interfaces
+# between the slabs are set such that $\sigma <= w s$, for width $w$
+# and smoothness $s$.  Smoothness in this case is set to 0.3, or about
+# 1/3 of the layer thickness.  Beyond this value the analytic expression
+# for the gaussian interface (Nevot-Croce) starts to smear across multiple
+# layer boundaries, an effect not captured by our graphical representation
+# of the smoothed profile.  To use a step profile, set smoothness to 0.
 
 # === Problem definition ===
-D_model = Experiment(sample=D, probe=D_probe, dz=0.5, dA=1)
-H_model = Experiment(sample=H, probe=H_probe, dz=0.5, dA=1)
-models = D_model, H_model
+D_model = Experiment(sample=D, probe=D_probe, dz=0.5, dA=1, smoothness=0.3)
+H_model = Experiment(sample=H, probe=H_probe, dz=0.5, dA=1, smoothness=0.3)
+models = H_model, D_model
 
 # This is a multifit problem where both models contribute to the goodness
 # of fit measure $\chi^2$.  Since no weight vector was defined the fits

@@ -20,7 +20,7 @@ class ConvergenceMonitor(monitor.Monitor):
     def __call__(self, history):
         self.best.append(history.value[0])
         try: pop = history.population_values[0]
-        except: pop = []
+        except: pop = [history.value[0]]
         n = len(pop)
         p = numpy.sort(pop)
         if n > 5:
@@ -29,8 +29,11 @@ class ConvergenceMonitor(monitor.Monitor):
         else:
             self.pop.append(p)
     def progress(self):
-        return dict(best=numpy.array(self.best),
-                    pop=numpy.array(self.pop))
+        if not self.best:
+            return dict(best=numpy.empty(0), pop=numpy.empty((0,1)))
+        else:
+            return dict(best=numpy.array(self.best),
+                        pop=numpy.array(self.pop))
 
 
 class ConvergenceView(PlotView):
@@ -66,7 +69,6 @@ class ConvergenceView(PlotView):
             pylab.draw()
     def OnFitProgress(self, event):
         if event.problem != self.model: return
-
         dof = event.problem.dof
         pop = 2*event.pop/dof
         best = 2*event.best/dof

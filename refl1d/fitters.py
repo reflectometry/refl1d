@@ -134,7 +134,7 @@ class BFGSFit(FitBase):
         from quasinewton import quasinewton, STATUS
         self._update = MonitorRunner(problem=self.problem,
                                      monitors=monitors)
-        result = quasinewton(self.problem.nllf,
+        result = quasinewton(fn=self.problem.nllf,
                              x0=self.problem.getp(),
                              monitor = self._monitor,
                              itnlimit = options['steps'],

@@ -79,7 +79,9 @@ class PolymerBrushInteractor(BaseInteractor):
         left,right = self.profile.boundary[n:n+2]
         layer = self.layer
 
-        z = numpy.linspace(0,layer.thickness.value,200)
+        # TODO: want to use smae step size for profile as we do for
+        # smooth profiles  Don't know how to access that value nicely.
+        z = numpy.arange(0,layer.thickness.value,0.1)
         vf = layer.profile(z)
         self.hprofile.set_data(z+left, vf*vf_scale)
 
@@ -107,19 +109,23 @@ class PolymerBrushInteractor(BaseInteractor):
         par = map[ev.artist]
         n = self.profile.layer_num
         left = self.profile.boundary[n]
+        right = self.profile.boundary[n+1]
+        # TODO: Keeping individual interactors within the layer does not
+        # necessarily keep the whole interactor in the layer.
+        z = max(left,min(right,ev.xdata))
         if ev.artist == self.hphi:
             #print ev.ydata, self.profile.xcoords.inverted().transform([(ev.x,ev.y)])[0][1]
             setpar(par, ev.ydata*100/vf_scale)
             #print "phi",par.value,ev.ydata*100/vf_scale
         elif ev.artist == self.hbase:
             offset = left
-            setpar(par, ev.xdata-offset)
+            setpar(par, z-offset)
         elif ev.artist == self.hlength:
             offset = left + self.layer.base.value
-            setpar(par, ev.xdata-offset)
+            setpar(par, z-offset)
         elif ev.artist == self.hsigma:
             offset = left + self.layer.base.value + self.layer.length.value
-            setpar(par, ev.xdata-offset)
+            setpar(par, z-offset)
         elif ev.artist == self.hpower:
             phi = self.layer.base_vf.value*vf_scale/100
             phi_power = log(ev.ydata/phi)/log(0.75) if ev.ydata > 0 else 100

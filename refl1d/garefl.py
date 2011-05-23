@@ -60,6 +60,7 @@ class GareflExperiment(Experiment):
         self.roughness_limit = 3
         self._substrate = SLD(name='substrate',rho=0)
         self._surface = SLD(name='surface',rho=0)
+        self._name = None
 
     def parameters(self):
         return self._pars
@@ -115,14 +116,14 @@ class GareflExperiment(Experiment):
 
 
 class GareflModel(object):
-    def __init__(self, modelfile):
-        self.modelfile = modelfile
+    def __init__(self, path):
+        self._dll_path = os.path.abspath(path)
         self._load_dll()
         self._setup_model()
 
     @trace
     def _load_dll(self):
-        dll = CDLL(os.path.abspath(self.modelfile))
+        dll = CDLL(self._dll_path)
         dll.ex_get_data.restype = c_char_p
         dll.setup_models.restype = c_void_p
         dll.ex_par_name.restype = c_char_p
@@ -140,9 +141,9 @@ class GareflModel(object):
     # Pickle protocol doesn't support ctypes linkage; reload the
     # module on the other side.
     def __getstate__(self):
-        return self.modelfile
-    def __setstate__(self, modelfile):
-        self.modelfile = modelfile
+        return self._dll_path
+    def __setstate__(self, state):
+        self._dll_path = state
         self._load_dll()
         self._setup_model()
 

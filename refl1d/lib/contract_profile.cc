@@ -90,12 +90,17 @@ contract_by_area(int n, double d[], double sigma[],
       if ((irhohi-irholo)*(dz+d[i]) > dA) break;
     }
 
-    if (dz == 0) continue;
+    /* dz is only going to be zero if there is a forced break due to
+     * sigma, or if we are accumulating a substrate.  In either case,
+     * we want to accumulate the zero length layer
+     */
+    /* if (dz == 0) continue; */
 
     /* Save the layer */
     assert(newi < n);
     d[newi] = dz;
     if (i == n) {
+      /* printf("contract: adding final sld at %d\n",newi); */
       /* Last layer uses surface values */
       rho[newi] = rho[n-1];
       irho[newi] = irho[n-1];
@@ -167,8 +172,6 @@ contract_mag(int n, double d[],
       if (mag > maghi) maghi = mag;
       if ((maghi-maglo)*(dz+d[i]) > dA) break;
     }
-
-    if (dz == 0) continue;
 
     /* Save the layer */
     assert(newi < n);
