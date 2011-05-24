@@ -81,6 +81,7 @@ from numpy import inf, real, imag, exp, pi, cos, hstack, arange, asarray
 from numpy.fft import fft
 from mystic import Parameter as Par, IntegerParameter as IntPar
 from .model import Layer
+from . import util
 
 #TODO: add left_sld,right_sld to all layers so that fresnel works
 #TODO: access left_sld,right_sld so freeform doesn't need left,right
@@ -188,6 +189,7 @@ class ChebyVF(Layer):
         t = Pz/thickness
         vf = _profile([p.value for p in self.vf], t, self.method)
         vf = numpy.clip(vf,0,1)
+        Pw,vf = util.merge_ends(Pw, vf, tol=1e-3)
         P = M*vf + S*(1-vf)
         Pr, Pi = real(P), imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)

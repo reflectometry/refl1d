@@ -3,7 +3,6 @@ import wx
 from .profile_view import ProfileView
 
 import numpy
-import png
 
 def make_frame(experiment):
     frame = wx.Frame(None, -1, "profile interactor")

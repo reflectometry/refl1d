@@ -22,6 +22,7 @@ import numpy
 from numpy import real, imag, exp
 from mystic import Parameter
 from .model import Layer
+from . import util
 
 
 class PolymerBrush(Layer):
@@ -128,35 +129,10 @@ class PolymerBrush(Layer):
         except: pass
 
         vf = self.profile(Pz)
+        Pw,vf = util.merge_ends(Pw, vf, tol=1e-3)
         P = M*vf + S*(1-vf)
         Pr, Pi = real(P), imag(P)
-
-        # Optimization: find portion of the profile that is varying
-        # Rely on the fact that the profile is monotonic
-        delta = 0.001
-        if abs(Pr[0]-Pr[-1]) <= delta:
-            left,right = 0,1
-        elif Pr[0] > Pr[-1]: # decreasing
-            left = len(Pr) - numpy.searchsorted(Pr[::-1],Pr[0]-delta)
-            right = len(Pr) - numpy.searchsorted(Pr[::-1],Pr[-1]+delta)
-        else: # increasing
-            left = numpy.searchsorted(Pr, Pr[0]+delta)
-            right = numpy.searchsorted(Pr, Pr[-1]-delta)
-        if left > right:
-            print "polymer broken profile search",Pr[0],Pr[-1],left,right
-            left,right = 0,1
-            #raise RuntimeError("broken profile search")
-
-        if left > 0:
-            slabs.append(rho=Pr[0:1], irho=Pi[0:1],
-                         w=numpy.sum(Pw[:left]))
-        if left < right-1:
-            slabs.extend(rho=[Pr[left:right]], irho=[Pi[left:right]],
-                         w=Pw[left:right])
-        if right < len(P):
-            slabs.append(rho=Pr[-1:], irho=Pi[-1:],
-                         w=numpy.sum(Pw[right:]),
-                         sigma = interface)
+        slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
 
 def layer_thickness(z):
     """
@@ -265,7 +241,7 @@ class VolumeProfile(Layer):
         except:
             raise TypeError("profile function '%s' did not return array phi(z)"
                             %self.profile.__name__)
-
+        Pw,phi = util.merge_ends(Pw, phi, tol=1e-3)
         P = M*phi + S*(1-phi)
         slabs.extend(rho = [real(P)], irho = [imag(P)], w = Pw)
         #slabs.interface(self.interface.value)

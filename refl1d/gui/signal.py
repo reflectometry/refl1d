@@ -18,7 +18,7 @@ def update_model(model, dirty=True):
     Inform all views that the model structure has changed.  This calls
     model.model_reset() to reset the fit parameters and constraints.
     """
-    self.model.model_reset()  #
+    model.model_reset()  #
     if dirty: model.model_update()
     wx.CallAfter(send,'model.update_structure',model=model)
 

@@ -8,6 +8,7 @@ from numpy import (diff, hstack, sqrt, searchsorted, asarray, cumsum,
                    inf, nonzero, linspace, sort, isnan, clip)
 from mystic.parameter import Parameter as Par, Function as ParFunction
 from . import numpyerrors
+from . import util
 from .model import Layer
 
 #TODO: add left_sld,right_sld to all layers so that fresnel works
@@ -152,19 +153,13 @@ class FreeInterface(Layer):
         interface = self.interface.value
         below_rho,below_irho = self.below.sld(probe)
         above_rho,above_irho = self.above.sld(probe)
+        # Pz is the center, Pw is the width
         Pw,Pz = slabs.microslabs(thickness)
         profile = self.profile(Pz)
-        lidx,ridx = searchsorted(profile,[0.001,0.999])
-        ridx = min( (ridx, len(profile)-1) )
+        Pw,profile = util.merge_ends(Pw, profile, tol=1e-3)
         Prho  = (1-profile)*below_rho  + profile*above_rho
         Pirho = (1-profile)*below_irho + profile*above_irho
-        slabs.append(rho=below_rho, irho=below_irho, w=Pz[lidx])
-        slabs.extend(rho=[Prho[lidx:ridx]],
-                     irho=[Pirho[lidx:ridx]],
-                     w=Pw[lidx:ridx])
-        slabs.append(rho=above_rho,irho=above_irho,
-                     sigma=interface,
-                     w=thickness-Pz[ridx])
+        slabs.extend(rho=[Prho], irho=[Pirho], w=Pw)
 
 @numpyerrors.ignored
 def count_inflections(x,y):
@@ -312,14 +307,7 @@ class _FreeInterfaceW(Layer):
         p /= p[-1]
         Pw,Pz = slabs.microslabs(z[-1])
         profile = monospline(z, p, Pz)
-        lidx,ridx = searchsorted(profile,[0.01,0.99])
-        ridx = min( (ridx, len(profile)-1) )
+        Pw,profile = util.merge_ends(Pw, profile, tol=1e-3)
         Prho  = (1-profile)*below_rho  + profile*above_rho
         Pirho = (1-profile)*below_irho + profile*above_irho
-        slabs.append(rho=below_rho, irho=below_irho, w=Pz[lidx])
-        slabs.extend(rho=[Prho[lidx:ridx]],
-                     irho=[Pirho[lidx:ridx]],
-                     w=Pw[lidx:ridx])
-        slabs.append(rho=above_rho,irho=above_irho,
-                     sigma=interface,
-                     w=thickness-Pz[ridx])
+        slabs.extend(rho=[Prho], irho=[Pirho], w=Pw)

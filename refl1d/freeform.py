@@ -7,6 +7,7 @@ from numpy import inf, argmin, argmax
 from mystic import Parameter as Par, IntegerParameter as IntPar
 from .model import Layer
 from .bspline import pbs, bspline
+from . import util
 
 #TODO: add left_sld,right_sld to all layers so that fresnel works
 #TODO: access left_sld,right_sld so freeform doesn't need left,right
@@ -108,16 +109,10 @@ class FreeformInterface01(Layer):
         Pw,Pz = slabs.microslabs(thickness)
         t = Pz/thickness
         offset,profile = pbs(z, vf, t, parametric=False, clamp=True)
-        lidx,ridx = numpy.searchsorted(profile,[0.01,0.99])
+        Pw,profile = util.merge_ends(Pw, profile, tol=1e-3)
         Prho  = (1-profile)*left_rho  + profile*right_rho
         Pirho = (1-profile)*left_irho + profile*right_irho
-        slabs.append(rho=left_rho, irho=left_irho, w=Pz[lidx])
-        slabs.extend(rho=[Prho[lidx:ridx]],
-                     irho=[Pirho[lidx:ridx]],
-                     w=Pw[lidx:ridx])
-        slabs.append(rho=right_rho,irho=right_irho,
-                     sigma=interface,
-                     w=thickness-Pz[ridx])
+        slabs.extend(rho=[Prho], irho=[Pirho], w=Pw)
 
 class FreeInterface(Layer):
     """
@@ -175,18 +170,10 @@ class FreeInterface(Layer):
         Pw,Pz = slabs.microslabs(z[-1])
         _,profile = pbs(z, p, Pz, parametric=False, clamp=True)
         profile = clip(profile, 0, 1)
-        lidx,ridx = numpy.searchsorted(profile,[0.01,0.99])
-        ridx = min( (ridx, len(profile)-1) )
+        Pw,profile = util.merge_ends(Pw, profile, tol=1e-3)
         Prho  = (1-profile)*left_rho  + profile*right_rho
         Pirho = (1-profile)*left_irho + profile*right_irho
-        slabs.append(rho=left_rho, irho=left_irho, w=Pz[lidx])
-        slabs.extend(rho=[Prho[lidx:ridx]],
-                     irho=[Pirho[lidx:ridx]],
-                     w=Pw[lidx:ridx])
-        slabs.append(rho=right_rho,irho=right_irho,
-                     sigma=interface,
-                     w=thickness-Pz[ridx])
-
+        slabs.extend(rho=[Prho], irho=[Pirho], w=Pw)
 
 def _profile(left,right,control,z,t):
     cy = numpy.hstack((left,[p.value for p in control],right))
