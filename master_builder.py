@@ -106,6 +106,14 @@ else:
 SRC_DIR = os.path.join(TOP_DIR, PKG_NAME)
 INS_DIR = os.path.join(TOP_DIR, LOCAL_INSTALL)
 
+# Put PYTHON in the environment and add the python directory and its
+# corresponding script directory (for nose, sphinx, pip, etc) to the path.
+PYTHON = sys.executable
+PYTHONDIR = os.path.dirname(os.path.abspath(PYTHON))
+SCRIPTDIR = os.path.join(PYTHONDIR,'Scripts')
+os.environ['PATH'] = ";".join((PYTHONDIR,SCRIPTDIR,os.environ['PATH']))
+os.environ['PYTHON'] = "/".join(PYTHON.split("\\"))
+
 def get_version():
     # Get the version string of the application for use later.
     # This has to be done after we have checked out the repository.
@@ -113,23 +121,18 @@ def get_version():
         if (line.startswith('__version__')):
             exec(line.strip())
             break
-    return __version__
-PKG_VERSION = get_version()
-EGG_NAME = "%s-%s-py%d.%d-%s.egg"%(PKG_NAME,PKG_VERSION,
-                                   sys.version_info[0],
-                                   sys.version_info[1],
-                                   sys.platform)
-PKG_DIR = os.path.join(INS_DIR, EGG_NAME)
+    else:
+        raise RuntimeError("Could not find package version")
 
-# Put PYTHON in the environment and add the python directory and its
-# corresponding script directory (for nose, sphinx, pip, etc) to the path.
-# Add the local site packages to the python path
-PYTHON = sys.executable
-PYTHONDIR = os.path.dirname(os.path.abspath(PYTHON))
-SCRIPTDIR = os.path.join(PYTHONDIR,'Scripts')
-os.environ['PATH'] = ";".join((PYTHONDIR,SCRIPTDIR,os.environ['PATH']))
-os.environ['PYTHON'] = "/".join(PYTHON.split("\\"))
-os.environ['PYTHONPATH'] = PKG_DIR
+    global PKG_VERSION, EGG_NAME, PKG_DIR
+    PKG_VERSION = __version__
+    EGG_NAME = "%s-%s-py%d.%d-%s.egg"%(PKG_NAME,PKG_VERSION,
+                                       sys.version_info[0],
+                                       sys.version_info[1],
+                                       sys.platform)
+    PKG_DIR = os.path.join(INS_DIR, EGG_NAME)
+    # Add the local site packages to the python path
+    os.environ['PYTHONPATH'] = PKG_DIR
 
 #==============================================================================
 
@@ -137,40 +140,52 @@ def build_it():
     # If no arguments, start at the first step
     start_with = sys.argv[1] if len(sys.argv)>1 else 'deps'
     started = False
+    only = len(sys.argv)>2 and sys.argv[2] == "only"
 
     # Check the system for all required dependent packages.
     started = started or start_with == 'deps'
     if started: check_dependencies()
+    if started and only: return
 
     # Checkout code from repository.
     started = started or start_with in ('co', 'checkout', 'update')
     if started: checkout_code()
+    if started and only: return
+
+    # Version may have been updated on another repository
+    get_version()
 
     # Install the application in a local directory tree.
     started = started or start_with == 'build'
     if started: install_package()
+    if started and only: return
 
     # Run unittests and doctests using a test script.
     started = started or start_with == 'test'
     if started: run_tests()
+    if started and only: return
 
     # Build HTML and PDF documentaton using sphinx.
     # This step is done before building the Windows installer so that PDF
     # documentation can be included in the installable product.
     started = started or start_with == 'docs'
     if started: build_documentation()
+    if started and only: return
 
     # Create an archive of the source code.
     started = started or start_with == 'zip'
     if started: create_archive(PKG_VERSION)
+    if started and only: return
 
     # Create a Windows executable file using py2exe.
     started = started or start_with == 'exe'
     if started and os.name == 'nt': create_windows_exe()
+    if started and only: return
 
     # Create a Windows installer/uninstaller exe using the Inno Setup Compiler.
     started = started or start_with == 'installer'
     if started and os.name == 'nt': create_windows_installer(PKG_VERSION)
+    if started and only: return
 
 
 def checkout_code():
@@ -279,9 +294,8 @@ def create_windows_installer(version=None):
     os.chdir(SRC_DIR)
 
     # First create an include file to convey the application's version
-    # information to the Inno Setup compiler.  If the include file exists, then
-    # append the directive at the end.
-    f = open("%s.iss-include" %APP_NAME, "a")
+    # information to the Inno Setup compiler. 
+    f = open("%s.iss-include" %APP_NAME, "w")
     f.write('#define MyAppVersion "%s"\n' %version)  # version must be quoted
     f.close()
 
@@ -483,7 +497,7 @@ if __name__ == "__main__":
     if len(sys.argv)>1:
         # Display help if requested.
         if len(sys.argv) > 1 and sys.argv[1] not in START_POINTS:
-            print "\nUsage: python master_builder.py [start]\n"
+            print "\nUsage: python master_builder.py [<start>] [only]\n"
             print "Build start points:"
             print "  deps       check dependencies"
             print "  update     update archive"
@@ -493,6 +507,7 @@ if __name__ == "__main__":
             print "  zip        build source archive"
             print "  exe        build executable"
             print "  installer  build installer"
+            print "Add 'only' to the command to only perform a single step"
             sys.exit()
 
     print "\nBuilding the %s application from the %s repository ...\n" \
