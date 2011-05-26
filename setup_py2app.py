@@ -100,6 +100,7 @@ def build_dmg():
     if os.path.exists(DMG): os.unlink(DMG)
     os.rename("dist/%s.app"%NAME, APP)
     os.system('cd dist && ../extra/dmgpack.sh "%s" "%s.app" ../doc/_build/html ../doc/examples'%(PRODUCTDASH,PRODUCT))
+    os.system('chmod a+r "%s"'%DMG)
 
 if __name__ == "__main__":
     build_app()

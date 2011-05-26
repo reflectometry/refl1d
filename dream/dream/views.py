@@ -200,7 +200,7 @@ def plot_corrmatrix(state, vars=None, portion=None, selection=None):
     labels = state.labels if vars==None else [state.labels[v] for v in vars]
     c = corrplot.Corr2d(points.T, bins=50, labels=labels)
     c.plot()
-    print "Correlation matrix\n",c.R()
+    #print "Correlation matrix\n",c.R()
 
 
 from scipy.stats import kde
