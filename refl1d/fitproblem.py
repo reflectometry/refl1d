@@ -552,9 +552,13 @@ class FitProblem(object):
         return numpy.vstack(r).T
 
 
-    def cov(self, pvec=None, step=None):
+    def cov(self, pvec=None, step=None, tol=1e-8):
         """
         Return the covariance matrix inv(J'J) at point p.
+
+        We provide some protection against singular matrices by setting
+        singular values smaller than tolerance *tol* to the tolerance
+        value.
         """
 
         # Find cov of f at p
@@ -569,6 +573,7 @@ class FitProblem(object):
         #              = V inv (S S) V'
         J = self.jacobian(pvec, step=step)
         u,s,vh = numpy.linalg.svd(J,0)
+        s[s<=tol] = tol
         JTJinv = numpy.dot(vh.T.conj()/s**2,vh)
         return JTJinv
 

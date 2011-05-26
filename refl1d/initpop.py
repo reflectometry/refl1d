@@ -101,6 +101,8 @@ def cov(N, pars, include_current=False, cov=None, dx=None):
     population = numpy.random.multivariate_normal(mean=x, cov=cov, size=N)
     if include_current:
         population[0] = [p.value for p in pars]
+    # Make sure values are in bounds.
+    population = numpy.clip(population, *zip(*[p.bounds.limits for p in pars]))
     return population
 
 def random(N, pars, include_current=False):
