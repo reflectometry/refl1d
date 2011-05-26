@@ -356,7 +356,9 @@ class AppPanel(wx.Panel):
             self.load_model(path)
 
     def OnFileReload(self, event):
-        self.load_model(self.model.path)
+        try:    path = self._reload_path
+        except: path = self.model.path
+        self.load_model(path)
 
     def OnFileSave(self, event):
         if self.model is not None:
@@ -468,6 +470,7 @@ class AppPanel(wx.Panel):
         self.set_model(gen())
 
     def load_model(self, path):
+        self._reload_path = path
         model = load_problem([path])
         signal.model_new(model=model)
 
