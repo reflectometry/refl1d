@@ -13,6 +13,8 @@ for L in M.sample[1:-1]:
 
 # Let the substrate SLD vary by 2%
 M.sample[0].material.rho.pmp(2)
+M.sample[0].interface.range(0,20)
+M.sample[1].interface.range(0,20)
 
 problem = FitProblem(M)
 problem.name = "Desorption 2"
