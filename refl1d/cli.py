@@ -87,7 +87,7 @@ def remember_best(fitter, problem, best):
                       for p in problem.parameters)
     open(problem.output_path+".par",'wt').write(pardata)
 
-    problem.save(problem.output_path)
+    fitter.save(problem.output_path)
     with util.redirect_console(problem.output_path+".out"):
         fitter.show()
     fitter.show()
@@ -235,7 +235,7 @@ class Refl1dOpts(ParseOpts):
     MINARGS = 1
     FLAGS = set(("preview", "check", "profile", "random", "simulate",
                  "worker", "batch", "overwrite", "parallel", "stepmon",
-                 "cov", "remote", "staj", "edit",
+                 "cov", "remote", "staj", "edit", "errorplot",
                  "multiprocessing-fork", # passed in when app is a frozen image
                ))
     VALUES = set(("plot", "store", "fit", "noise", "seed", "pars",
@@ -322,6 +322,8 @@ Options:
         show details for each step
     --resynth=0
         run resynthesis error analysis for n generations
+    --errorplot
+        after dream, overplot a sample of the profiles and residuals
 
     --check
         print the model description and chisq value and exit

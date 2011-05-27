@@ -206,7 +206,6 @@ def load_state(filename, skip=0):
     state._best_logp = point[bestidx,0]
     state._best_x = point[bestidx,1:]
 
-
     return state
 
 class MCMCDraw(object):
@@ -480,8 +479,11 @@ class MCMCDraw(object):
             else:
                 start = int(Ngen*portion)
             outliers = identify_outliers(test, logp[start:], chains[-1])
+            #print "outliers",outliers
+            #print logp.shape, chains.shape
             self._good_chains = numpy.array([i for i in range(logp.shape[1])
                                              if i not in outliers])
+            #print self._good_chains
 
 
     def logp(self):
@@ -501,7 +503,8 @@ class MCMCDraw(object):
         retval = self._gen_draws, self._gen_logp
         if self.generation == self._gen_index:
             retval = [v[:self.generation] for v in retval]
-        return [v[:,self._good_chains] for v in retval]
+        draws,logp = retval
+        return draws,logp[:,self._good_chains]
 
     def acceptance_rate(self):
         """
@@ -517,8 +520,7 @@ class MCMCDraw(object):
         retval = self._gen_draws, self._gen_acceptance_rate
         if self.generation == self._gen_index:
             retval = [v[:self.generation] for v in retval]
-        return [v[:,self._good_chains] for v in retval]
-        #return retval
+        return retval
 
     def chains(self):
         """
@@ -558,7 +560,6 @@ class MCMCDraw(object):
         retval = self._update_draws, self._update_R_stat
         if self._update_count == self._update_index:
             retval = [v[:self._update_count] for v in retval]
-        #return [v[:,self._good_chains] for v in retval]
         return retval
 
 
@@ -577,8 +578,7 @@ class MCMCDraw(object):
         retval = self._update_draws, self._update_CR_weight
         if self._update_count == self._update_index:
             retval = [v[:self._update_count] for v in retval]
-        return [v[:,self._good_chains] for v in retval]
-        #return retval
+        return retval
 
     def outliers(self):
         """

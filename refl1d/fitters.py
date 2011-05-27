@@ -316,7 +316,7 @@ class DreamModel(MCMCModel):
 
 class DreamFit(FitBase):
     name = "DREAM"
-    settings = [('steps',500),  ('burn', 1000), ('pop', 10), ('init', 'lhs') ]
+    settings = [('steps',500),  ('burn', 1000), ('pop', 10), ('init', 'lhs')]
     def __init__(self, problem):
         self.dream_model = DreamModel(problem)
 
@@ -328,22 +328,8 @@ class DreamFit(FitBase):
         self._update = MonitorRunner(problem=self.dream_model.problem,
                                      monitors=monitors)
 
-        pars = self.dream_model.problem.parameters
-        pop_size = int(math.ceil(options['pop']*len(pars)))
-        # TODO: really need a continue option
-        if options['init'] == 'random':
-            population = initpop.random(N=pop_size,
-                                        pars=pars, include_current=True)
-        elif options['init'] == 'cov':
-            cov = self.dream_model.problem.cov()
-            population = initpop.cov(N=pop_size,
-                                     pars=pars, include_current=False, cov=cov)
-        elif options['init'] == 'lhs':
-            population = initpop.lhs(N=pop_size,
-                                     pars=pars, include_current=True)
-        else:
-            raise ValueError("Unknown population initializer '%s'"
-                             %options['init'])
+        population = initpop.generate(self.dream_model.problem, **options)
+        pop_size = population.shape[0]
         population = population[None,:,:]
         sampler = dream.Dream(model=self.dream_model, population=population,
                               draws = pop_size*options['steps'],
@@ -370,6 +356,66 @@ class DreamFit(FitBase):
 
     def plot(self, output_path):
         self.state.show(figfile=output_path)
+        self.error_plot(figfile=output_path)
+
+    def show(self):
+        pass
+
+    def error_plot(self, figfile):
+        # Produce error plot
+        import errors, pylab
+        # TODO: shouldn't mix calc and display!
+        res = errors.calc_distribution_from_state(self.dream_model.problem,
+                                                      self.state)
+        if res is not None:
+            pylab.figure()
+            errors.show_distribution(*res)
+            pylab.savefig(figfile+"-errors.png", format='png')
+
+class Resampler(FitBase):
+    def __init__(self, fitter):
+        self.fitter = fitter
+        self.problem = fitter.problem
+    def solve(self, **options):
+        starts = options.pop('starts',1)
+        restart = options.pop('restart',False)
+        x,fx = self.fitter.solve(**options)
+        points = _resampler(fitter, x, samples=starts,
+                            restart=restart, **options)
+        return x,fx
+
+def _resampler(fitter, x, samples=100, restart=False, **options):
+    """
+    Refit the result multiple times with resynthesized data, building
+    up an array in Result.samples which contains the best fit to the
+    resynthesized data.  *samples* is the number of samples to generate.
+    *fitter* is the (local) optimizer to use. **kw are the parameters
+    for the optimizer.
+    """
+    opt = fitter(self.problem)
+    points = []
+    try: # TODO: some solvers already catch KeyboardInterrupt
+        for i in range(samples):
+            #print "== resynth %d of %d" % (i, samples)
+            self.problem.resynth_data()
+            if restart:
+                parameter.randomize(self.problem.parameters)
+            else:
+                self.problem.setp(self.solution)
+            x = fitter.solve(**options)
+            nllf = self.problem.nllf(x) # TODO: don't recalculate!
+            points.append(numpy.hstack((nllf,x)))
+            #print parameter.summarize(self.problem.parameters)
+            #print "[chisq=%g]" % (nllf*2/self.problem.dof)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        # Restore the state of the problem
+        problem.restore_data()
+        problem.setp(x)
+        problem.model_update()
+    points = numpy.vstack([self.points] + points)
+
 
 class FitDriver(object):
     def __init__(self, fitclass=None, problem=None, monitors=None,
@@ -396,10 +442,13 @@ class FitDriver(object):
         return x, fx
 
     def show(self):
-        self.problem.show()
+        if hasattr(self.problem, 'show'):
+            self.problem.show()
+        if hasattr(self.fitter, 'show'):
+            self.fitter.show()
 
     def save(self, output_path):
-        #print "calling fitter.save"
+        #print "calling driver save"
         if hasattr(self.problem, 'save'):
             self.problem.save(output_path)
         if hasattr(self.fitter, 'save'):
@@ -411,6 +460,7 @@ class FitDriver(object):
             self.problem.plot(figfile=output_path)
         if hasattr(self.fitter, 'plot'):
             self.fitter.plot(output_path=output_path)
+
 
 def _fill_defaults(options, settings):
     for field,value in settings:

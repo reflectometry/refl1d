@@ -45,7 +45,7 @@ from .summary_view import SummaryView
 from .parameter_view import ParameterView
 from .log_view import LogView
 from .convergence_view import ConvergenceView
-from .uncertainty_view import CorrelationView, UncertaintyView, TraceView
+from .uncertainty_view import CorrelationView, UncertaintyView, TraceView, ErrorView
 from .fit_dialog import OpenFitOptions
 from .fit_thread import (FitThread, EVT_FIT_PROGRESS, EVT_FIT_COMPLETE)
 from .util import nice
@@ -249,10 +249,11 @@ class AppPanel(wx.Panel):
             'uncertainty': UncertaintyView,
             'correlation': CorrelationView,
             'trace': TraceView,
+            'error': ErrorView,
             }
         self.view_list = ['data','model','parameter',
                           'summary','log','convergence',
-                          'uncertainty','correlation','trace']
+                          'uncertainty','correlation','trace','error']
         self.view = {}
         for v in self.view_list:
             self.view[v] = self.view_constructor[v](self.aui,
@@ -404,6 +405,7 @@ class AppPanel(wx.Panel):
         OpenFitOptions()
 
     def OnFitStart(self, event):
+        self.uncertainty_state = False
         if self.fit_thread:
             self.sb.SetStatusText("Error: Fit already running")
             return
@@ -458,10 +460,13 @@ class AppPanel(wx.Panel):
             signal.update_parameters(model=event.problem)
         elif event.message == 'convergence_update':
             self.view['convergence'].OnFitProgress(event)
-        elif event.message == 'uncertainty_update':
+        elif event.message in ('uncertainty_update', 'uncertainty_final'):
+            self.uncertainty_state = event.uncertainty_state
             self.view['uncertainty'].OnFitProgress(event)
             self.view['correlation'].OnFitProgress(event)
             self.view['trace'].OnFitProgress(event)
+            if event.message == 'uncertainty_final':
+                self.view['error'].OnFitProgress(event)
         else:
             raise ValueError("Unknown fit progress message "+event.message)
 
@@ -500,6 +505,12 @@ class AppPanel(wx.Panel):
 
         # Produce model plots
         self.model.plot(figfile=output_path)
+
+        # Produce uncertainty plots
+        if hasattr(self, 'uncertainty_state') and self.uncertainty_state:
+            with redirect_console(output_path+".err"):
+                self.uncertainty_state.show(figfile=output_path)
+            self.uncertainty_state.save(output_path)
 
 
     def _add_measurement_type(self, type):

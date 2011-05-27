@@ -13,8 +13,9 @@ from .util import console
 def plot_all(state, portion=None, figfile=None):
     from pylab import figure, savefig, suptitle
 
-    figure(); plot_vars(state, portion=portion)
+    figure(); vstats = plot_vars(state, portion=portion)
     if state.title: suptitle(state.title)
+    print format_vars(vstats)
     if figfile != None: savefig(figfile+"-vars")
     figure(); plot_trace(state, portion=portion)
     if state.title: suptitle(state.title)
@@ -34,6 +35,7 @@ def plot_var(state, var=0, portion=None, selection=None, **kw):
                                 selection=selection)
     _plot_var(points.flatten(), logp, label=state.labels[var], **kw)
 
+# TODO: separate var stats calculation from plotting and printing
 def plot_vars(state, vars=None, portion=None, selection=None, **kw):
     from pylab import subplot
 

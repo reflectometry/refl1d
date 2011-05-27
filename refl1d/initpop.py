@@ -26,10 +26,31 @@ from __future__ import division
 
 __all__ = ['lhs_init', 'cov_init', 'random_init']
 
+import math
 import numpy
 from numpy import eye, diag, asarray, array, empty
 
-def lhs(N, pars, include_current=False):
+def generate(problem, **options):
+    """
+    Population initializer.  Takes a problem and a set of initialization
+    options.
+    """
+    pars = problem.parameters
+    pop_size = int(math.ceil(options['pop']*len(pars)))
+    # TODO: really need a continue option
+    if options['init'] == 'random':
+        population = random_init(N=pop_size, pars=pars, include_current=True)
+    elif options['init'] == 'cov':
+        cov = problem.cov()
+        population = cov_init(N=pop_size, pars=pars, include_current=False, cov=cov)
+    elif options['init'] == 'lhs':
+        population = lhs_init(N=pop_size, pars=pars, include_current=True)
+    else:
+        raise ValueError("Unknown population initializer '%s'"
+                         %options['init'])
+    return population
+
+def lhs_init(N, pars, include_current=False):
     """
     Latin Hypercube Sampling
 
@@ -76,7 +97,7 @@ def lhs(N, pars, include_current=False):
 
     return s
 
-def cov(N, pars, include_current=False, cov=None, dx=None):
+def cov_init(N, pars, include_current=False, cov=None, dx=None):
     """
     Initialize *N* sets of random variables from a gaussian model.
 
@@ -105,7 +126,7 @@ def cov(N, pars, include_current=False, cov=None, dx=None):
     population = numpy.clip(population, *zip(*[p.bounds.limits for p in pars]))
     return population
 
-def random(N, pars, include_current=False):
+def random_init(N, pars, include_current=False):
     """
     Generate a random population from the problem parameters.
 

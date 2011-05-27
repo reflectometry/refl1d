@@ -77,7 +77,7 @@ def _hists(data, ranges=None, **kw):
                 for i in range(0,N)
                 for j in range(i+1,N))
 
-def _plot(fig, hists, labels, N):
+def _plot(fig, hists, labels, N, show_ticks=False):
     """
     Plot pair-wise correlation histograms
     """
@@ -109,14 +109,20 @@ def _plot(fig, hists, labels, N):
             data = numpy.clip(data,vmin,vmax)
             a.pcolorfast(y,x,data,cmap=COLORMAP,norm=norm)
             # Show labels or hide ticks
-            if i == 0:
-                a.set_xlabel(labels[j])
-            else:
+            if i != 0:
                 artist.setp(a.get_xticklabels(),visible=False)
+            if i == N-2 and j == N-1:
+                a.set_xlabel(labels[j])
+                #a.xaxis.set_label_position("top")
+                #a.xaxis.set_offset_position("top")
+            if not show_ticks:
+                a.xaxis.set_ticks([])
             if j == i+1:
                 a.set_ylabel(labels[i])
             else:
                 artist.setp(a.get_yticklabels(),visible=False)
+            if not show_ticks:
+                a.yaxis.set_ticks([])
 
             a.zoomable=True
 

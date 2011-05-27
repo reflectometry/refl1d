@@ -126,13 +126,16 @@ def indfloat(s):
         if s == 'nan': return nan
         raise
 
-def coordinated_colors(base=None):
+def next_color():
     import pylab
-    if base is None:
-        try:
-            base = pylab.gca()._get_lines.color_cycle.next()
-        except: # Cruft 1.3 and earlier
-            base = pylab.gca()._get_lines._get_next_cycle_color()
+    try:
+        base = pylab.gca()._get_lines.color_cycle.next()
+    except: # Cruft 1.3 and earlier
+        base = pylab.gca()._get_lines._get_next_cycle_color()
+    return base
+
+def coordinated_colors(base=None):
+    if base is None: base = next_color()
     return dict(base=base,
                 light = dhsv(base, dv=+0.3, ds=-0.2),
                 dark = dhsv(base, dv=-0.25, ds=+0.35),

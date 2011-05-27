@@ -79,7 +79,7 @@ class GUIMonitor(monitor.Monitor):
 
 # Horrible hack: we put the DREAM state in the fitter object the first time
 # back from the DREAM monitor; if our fitter object contains dream_state,
-# then we will send the dream_update notifiction periodically.
+# then we will send the dream_update notifications periodically.
 class DreamMonitor(monitor.Monitor):
     def __init__(self, win, problem, message, fitter, rate=None):
         self.time = 0
@@ -88,34 +88,32 @@ class DreamMonitor(monitor.Monitor):
         self.problem = problem
         self.fitter = fitter
         self.message = message
-        self.state = None
+        self.uncertainty_state = None
     def config_history(self, history):
         history.requires(time=1)
     def __call__(self, history):
         try:
-            self.state = history.uncertainty_state
+            self.uncertainty_state = history.uncertainty_state
             if history.time[0] >= self.time+self.rate:
                 # Gack! holding on to state for final
                 evt = FitProgressEvent(problem=self.problem,
                                        message="uncertainty_update",
-                                       state = deepcopy(self.state))
+                                       uncertainty_state = deepcopy(self.uncertainty_state))
                 wx.PostEvent(self.win, evt)
                 self.time = history.time[0]
         except AttributeError:
-            self.state = None
+            self.uncertainty_state = None
             pass
 
     def final(self):
         """
         Close out the monitor
         """
-        if self.state:
+        if self.uncertainty_state:
             evt = FitProgressEvent(problem=self.problem,
-                                   message="uncertainty_update",
-                                   state = deepcopy(self.state))
+                                   message="uncertainty_final",
+                                   uncertainty_state = deepcopy(self.uncertainty_state))
             wx.PostEvent(self.win, evt)
-
-
 
 #==============================================================================
 
@@ -151,7 +149,7 @@ class FitThread(Thread):
                     DreamMonitor(self.win, self.problem,
                                  fitter = self.fitclass,
                                  message="uncertainty_update",
-                                 rate=15),
+                                 rate=30),
                     ]
         if True: # Multiprocessing parallel
             mapper = MPMapper
