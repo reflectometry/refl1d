@@ -233,7 +233,7 @@ class ParseOpts:
 
 class Refl1dOpts(ParseOpts):
     MINARGS = 1
-    FLAGS = set(("preview", "check", "profile", "random", "simulate",
+    FLAGS = set(("preview", "chisq", "profile", "random", "simulate",
                  "worker", "batch", "overwrite", "parallel", "stepmon",
                  "cov", "remote", "staj", "edit",
                  "multiprocessing-fork", # passed in when app is a frozen image
@@ -323,7 +323,7 @@ Options:
     --resynth=0
         run resynthesis error analysis for n generations
 
-    --check
+    --chisq
         print the model description and chisq value and exit
     -?/-h/--help
         display this help
@@ -395,7 +395,7 @@ def initial_model(opts):
             problem.simulate_data(noise=float(opts.noise))
             # If fitting, then generate a random starting point different
             # from the simulation
-            if not (opts.check or opts.preview):
+            if not (opts.chisq or opts.preview):
                 problem.randomize()
     else:
         problem = None
@@ -495,7 +495,7 @@ def main():
         run_profile(problem, steps=opts.steps)
     elif opts.worker:
         mapper.start_worker(problem)
-    elif opts.check:
+    elif opts.chisq:
         if opts.cov: print problem.cov()
         print "chisq",problem()
     elif opts.preview:

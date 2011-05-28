@@ -121,6 +121,8 @@ class BaseParameter(object):
     def __pos__(self): return self
     def __float__(self): return float(self.value)
 
+    __truediv__ = __div__
+    __rtruediv__ = __rdiv__
 
     def nllf(self):
         """
