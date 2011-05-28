@@ -8,7 +8,7 @@ from refl1d.names import *
 Probe.view = 'log' # log, linear, fresnel, or Q**4
 
 # Measurement parameters
-T=1.0
+T=[1.0]
 slits=(0.2,0.2)
 dLoL=0.05
 
@@ -20,8 +20,9 @@ sample = silicon(0,1) | SiO2(200,2) | air
 # Compute reflectivity with resolution and added noise
 instrument = SNS.Liquids()
 M = instrument.simulate(sample, T=T,slits=slits,dLoL=dLoL)
+probe = M.probe.probes[0]
 Q, R = M.reflectivity()
-I = SNS.feather(probe.L,counts=1e6)
+I = SNS.boltzmann_feather(probe.L,counts=1e6)
 dR = sqrt(R/I)
 R += randn(len(Q))*dR
 probe.R, probe.dR = R, dR

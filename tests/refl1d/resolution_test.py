@@ -1,7 +1,7 @@
 from math import *
 import numpy
 from numpy.linalg import norm
-from refl1d import resolution as res, ncnrdata, snsdata
+from refl1d import resolution as res, ncnrdata, snsdata, instrument as inst
 
 def test():
     # Test constants
@@ -45,22 +45,21 @@ def test():
     d1,d2 = 3000,1000
     s1,s2 = 0.1,0.3
     d,savg = d1-d2,(s1+s2)/2
-    print res.divergence(T=T,slits=(s1,s2),distance=(d1,d2)), savg/d
-    assert norm(res.divergence(T=T,slits=(s1,s2),distance=(d1,d2)) - savg/d) < 1e-14
-    assert norm(res.divergence(T=T,slits=(s1,s2),distance=(d1,d2)) - savg/d) < 1e-14
+    expected = degrees(savg/d)
+    assert norm(res.divergence(T=T,slits=(s1,s2),distance=(d1,d2)) - expected) < 1e-14
     assert norm(res.divergence(T=T,slits=(s1,s2),distance=(d1,d2),
-                               sample_broadening=0.01) - (savg/d+0.01)) < 1e-14
+                               sample_broadening=0.01) - (expected+0.01)) < 1e-14
     assert norm(res.divergence(T=T,slits=(s1,s2),distance=(d1,d2),
-                               sample_width=1) - (s1+sin(Trad))/(2*d1)) < 1e-14
+                               sample_width=1) - degrees((s1+sin(Trad))/(2*d1))) < 1e-14
 
     # Simulate an scanning reflectometer
-    mono = res.Monochromatic(d_s1=d1, d_s2=d2, wavelength=L, dLoL=dL/L,
+    mono = inst.Monochromatic(d_s1=d1, d_s2=d2, wavelength=L, dLoL=dL/L,
                              slits_at_Tlo=sTlo, Tlo=Tlo, Thi=Thi,
                              slits_below=sbelow, slits_above=sabove)
-    sim = mono.simulate(T=Ts, sample_broadening=0.01, sample_width=10)
+    sim = mono.probe(T=Ts, sample_broadening=0.01, sample_width=10)
     # Check the result
     def mono_dTdQ():
-        slits = res.opening_slits(T=Ts, slits_at_Tlo=sTlo, Tlo=Tlo, Thi=Thi,
+        slits = res.slit_widths(T=Ts, slits_at_Tlo=sTlo, Tlo=Tlo, Thi=Thi,
                                   slits_below=sbelow, slits_above=sabove)
         dT = res.divergence(T=Ts, slits=slits, distance=(d1,d2),
                             sample_broadening=0.01, sample_width=10)
@@ -77,7 +76,7 @@ def test():
     assert isinstance(ncnrdata.NG1.defaults(),type(""))
 
     # Check the subclassing interface
-    class Mono(res.Monochromatic):
+    class Mono(inst.Monochromatic):
         instrument="mono"
         d_s1,d_s2 = d1,d2
         wavelength=L
@@ -85,13 +84,13 @@ def test():
     # Set some default parameters
     mono2 = Mono(slits_at_Tlo=sTlo, Tlo=Tlo, Thi=Thi,
                 slits_below=sbelow, slits_above=sabove)
-    sim = mono2.simulate(T=Ts, sample_broadening=0.01, sample_width=10)
+    sim = mono2.probe(T=Ts, sample_broadening=0.01, sample_width=10)
     assert norm(sim.dQ - e_dQ) < 1e-14
 
     # Simulate an TOF reflectometer
-    poly = res.Polychromatic(d_s1=d1, d_s2=d2, wavelength=(1,2), dLoL=0.2)
-    sim = poly.simulate(T=T, slits=(s1,s2),
-                        sample_broadening=0.01, sample_width=10)
+    poly = inst.Pulsed(d_s1=d1, d_s2=d2, wavelength=(1,2), dLoL=0.2)
+    sim = poly.probe(T=T, slits=(s1,s2),
+                     sample_broadening=0.01, sample_width=10)
     # Check the result
     def poly_dTdQ():
         low,high = poly.wavelength
