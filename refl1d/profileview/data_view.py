@@ -1,9 +1,10 @@
 from __future__ import with_statement
 
 import wx
-
 # Can't seem to detect when notebook should be drawn on Mac
 IS_MAC = (wx.Platform == '__WXMAC__')
+
+from numpy import inf
 
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wxagg import NavigationToolbar2Wx as Toolbar
@@ -59,6 +60,7 @@ class TheoryView(wx.Panel):
         self._need_redraw = False
         self.Bind(wx.EVT_SHOW, self.OnShow)
         self._calculating = False
+        self.toolbar = mpl_toolbar
 
     def menu(self):
         # Add 'View' menu to the menu bar and define its options.
@@ -139,7 +141,7 @@ class TheoryView(wx.Panel):
 
     def set_model(self, model):
         self.problem = model
-        self.redraw()
+        self.redraw(reset=True)
 
     def update_model(self, model):
         if self.problem == model:
@@ -150,7 +152,7 @@ class TheoryView(wx.Panel):
             self.redraw()
     # =============================
 
-    def redraw(self):
+    def redraw(self, reset=False):
         # Hold off drawing until the tab is visible
         if not IS_MAC and not self.IsShown():
             self._need_redraw = True
@@ -194,6 +196,10 @@ class TheoryView(wx.Panel):
             # Redraw the canvas with newly calculated reflectivity
             # TODO: drawing is 10x too slow!
             with self.pylab_interface:
+                ax = pylab.gca()
+                #print "reset",reset, ax.get_autoscalex_on(), ax.get_xlim()
+                reset = reset or ax.get_autoscalex_on()
+                xrange = ax.get_xlim()
                 #print "composing"
                 pylab.clf() # clear the canvas
                 if isinstance(self.problem,MultiFitProblem):
@@ -216,6 +222,10 @@ class TheoryView(wx.Panel):
                 except:
                     pass
                 #print "drawing"
+                if not reset: 
+                    self.toolbar.push_current()
+                    set_xrange(pylab.gca(), xrange)
+                    self.toolbar.push_current()
                 pylab.draw()
                 #print "done drawing"
                 break
@@ -233,3 +243,20 @@ class TheoryView(wx.Panel):
         #print "yield 2"
         wx.Yield()
         if self._cancel_calculate or fitness.is_reset(): return
+
+def set_xrange(ax, xrange):
+    miny,maxy = inf,-inf
+    for L in ax.get_lines():
+        x,y = L.get_data()
+        idx = (x>xrange[0]) & (x<xrange[1])
+        if idx.any():
+            miny = min(miny,min(y[idx]))
+            maxy = max(maxy,max(y[idx]))
+    if miny < maxy:
+        if ax.get_yscale() == 'linear':
+            padding = 0.05*(maxy-miny)
+            miny,maxy = miny-padding, maxy+padding
+        else:
+            miny,maxy = miny*0.95, maxy*1.05
+    ax.set_xlim(xrange)
+    ax.set_ylim(miny,maxy)

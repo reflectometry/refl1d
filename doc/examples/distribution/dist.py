@@ -2,7 +2,7 @@ import numpy
 from refl1d.mystic.parameter import Parameter
 from refl1d.experiment import ExperimentBase
 
-class Weights:
+class Weights(object):
     """
     Parameterized distribution for use in DistributionExperiment.
 
@@ -90,6 +90,7 @@ class DistributionExperiment(ExperimentBase):
         self._substrate=self.experiment.sample[0].material
         self._surface=self.experiment.sample[-1].material
         self._cache = {}  # Cache calculated profiles/reflectivities
+        self._name = None
     def parameters(self):
         return dict(distribution=self.distribution.parameters(),
                     experiment=self.experiment.parameters())

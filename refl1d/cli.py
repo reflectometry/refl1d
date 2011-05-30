@@ -251,7 +251,7 @@ class Refl1dOpts(ParseOpts):
     noise="5"
     starts="1"
     seed=""
-    PLOTTERS="fresnel", "linear", "log", "q4", "residuals"
+    PLOTTERS="fresnel", "linear", "log", "q4", "residuals", 'SA'
     USAGE = """\
 Usage: refl1d modelfile [modelargs] [options]
 

@@ -456,7 +456,9 @@ class Probe(object):
             self.plot_resolution(**kwargs)
         elif view == 'residual':
             self.plot_residuals(**kwargs)
-        elif view == 'SA':
+        elif view == 'fft':
+            self.plot_fft(**kwargs)
+        elif view == 'SA': # SA uses default plot
             self.plot(view=None, **kwargs)
         else:
             raise TypeError("incorrect reflectivity view '%s'"%view)
@@ -513,22 +515,6 @@ class Probe(object):
         #Q4[Q4==0] = 1
         self._plot_pair(scale=scale, ylabel='R (100 Q)^4', **kwargs)
 
-    def plot_residuals(self, theory=None, suffix='', label=None,**kwargs):
-        import matplotlib.pyplot as plt
-        if theory is not None and self.R is not None:
-            c = coordinated_colors()
-            Q,R = theory
-            residual = (R - self.R)/self.dR
-            plt.plot(self.Q, residual,
-                     '.', color=c['light'],
-                     label=self.label(prefix=label, suffix=suffix))
-        plt.axhline(1, color='black', ls='--',lw=1)
-        plt.axhline(0, color='black', lw=1)
-        plt.axhline(-1, color='black', ls='--',lw=1)
-        plt.xlabel('Q (inv A)')
-        plt.ylabel('(theory-data)/error')
-        plt.legend()
-
     def _plot_pair(self, theory=None, scale=lambda Q: 1,
                    ylabel="", suffix="", label=None, **kw):
         import pylab
@@ -554,6 +540,67 @@ class Probe(object):
         pylab.xlabel('Q (inv Angstroms)')
         pylab.ylabel(ylabel)
         pylab.legend()
+
+    def plot_residuals(self, theory=None, suffix='', label=None,**kwargs):
+        import pylab
+        if theory is not None and self.R is not None:
+            c = coordinated_colors()
+            Q,R = theory
+            residual = (R - self.R)/self.dR
+            pylab.plot(self.Q, residual,
+                       '.', color=c['light'],
+                       label=self.label(prefix=label, suffix=suffix))
+        pylab.axhline(1, color='black', ls='--',lw=1)
+        pylab.axhline(0, color='black', lw=1)
+        pylab.axhline(-1, color='black', ls='--',lw=1)
+        pylab.xlabel('Q (inv A)')
+        pylab.ylabel('(theory-data)/error')
+        pylab.legend()
+
+    def plot_fft(self, theory=None, suffix='', label=None,
+                 substrate=None, surface=None, **kwargs):
+        """
+        FFT analysis of reflectivity signal.
+        """
+        raise NotImplementedError
+        import pylab
+        c = coordinated_colors()
+        isheld = pylab.ishold()
+        if substrate is None and surface is None:
+            raise TypeError("FFT reflectivity needs substrate or surface")
+        F = self.fresnel(substrate=substrate,surface=surface)
+        #Qc = sqrt(16*pi*substrate)
+        Qc = 0
+        Qmax = max(self.Q)
+        T = numpy.linspace(Qc,Qmax,len(self.Q))
+        z = numpy.linspace(0,2*pi/Qmax, len(self.Q)//2)
+        if hasattr(self,'R'):
+            signal = numpy.interp(T, self.Q, self.R/F(self.Q))
+            A = abs(numpy.fft.fft(signal - numpy.average(signal)))
+            A = A[:len(A)//2]
+            pylab.plot(z, A, '.-', color=c['light'],
+                       label=self.label(prefix=label,
+                                        gloss='data',
+                                        suffix=suffix))
+            pylab.hold(True)
+        if theory is not None:
+            Q,R = theory
+            signal = numpy.interp(T, Q, R/F(Q))
+            A = abs(numpy.fft.fft(signal-numpy.average(signal)))
+            A = A[:len(A)//2]
+            pylab.plot(z, A, '-', color=c['dark'],
+                       label=self.label(prefix=label,
+                                        gloss='theory',
+                                        suffix=suffix))
+        pylab.hold(isheld)
+        pylab.xlabel('w (A)')
+        if substrate is None:
+            name = "air:%s"%(surface.name)
+        elif surface is None or isinstance(surface,Vacuum):
+            name = substrate.name
+        else:
+            name = "%s:%s"%(substrate.name, surface.name)
+        pylab.ylabel('|FFT(R/R(%s))|'%(name))
 
     def label(self, prefix=None, gloss="", suffix=""):
         if not prefix:

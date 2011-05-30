@@ -45,46 +45,47 @@ def _calc_distribution(problem, points):
     #        probes.append(p)
 
     # Find Q
-    Q = [m.probe.Q for m in experiments]
+    Q = dict((m, m.probe.Q) 
+             for m in experiments)
 
     # Put best at slot 0
     profiles = dict((m,[[v+0 for v in m.smooth_profile()]])
                     for m in experiments)
-    residuals = [m.residuals()+0]
+    residuals = dict((m,[m.residuals()+0])
+                     for m in experiments)
     for p in points[::-1]:
         problem.setp(p)
         chisq = problem.chisq()
         for m in experiments:
             D = m.residuals()
-            residuals.append(D+0)
+            residuals[m].append(D+0)
             z,rho,irho = m.smooth_profile()
             profiles[m].append((z+0,rho+0,irho+0))
 
     # Align profiles
     _align_profiles(profiles)
 
-    residuals = numpy.array(residuals).T
+    residuals = dict((m,numpy.array(residuals[m]).T)
+                     for m in experiments)
     return profiles, Q, residuals
 
 def show_distribution(profiles, Q, residuals):
     import pylab
     pylab.subplot(211)
-    for experiment,profiles in profiles.items():
+    for m,p in profiles.items():
         color = next_color()
-        for z,rho,irho in profiles[1:]:
+        for z,rho,irho in p[1:]:
             pylab.plot(z,rho,'-',hold=True,color=color,alpha=0.4)
-        z,rho,irho = profiles[0]
-        pylab.plot(z,rho,'-r',hold=True) # best
+        z,rho,irho = p[0]
+        pylab.plot(z,rho,'-k',hold=True) # best
 
     pylab.subplot(212)
-    n1 = 0
-    for i,Qi in enumerate(Q):
+    shift = 0
+    for m,r in residuals.items():
         color = next_color()
-        n2 = n1+len(Qi)
-        #print n1,n2,Qi.shape,residuals[n1:n2,1:].shape, residuals[n1:n2,0].shape
-        pylab.plot(Qi, 5*i+residuals[n1:n2,1:],'.',color=color, alpha=0.4)
-        pylab.plot(Qi, 5*i+residuals[n1:n2,0],'.r', hold=True) # best
-        n1 = n2
+        pylab.plot(Q[m], shift+residuals[m][:,1:],'.',color=color, alpha=0.4)
+        pylab.plot(Q[m], shift+residuals[m][:,0],'.k', hold=True) # best
+        shift += 5
 
 def _align_profiles(profiles):
     """
