@@ -28,7 +28,7 @@ __all__ = ['lhs_init', 'cov_init', 'random_init']
 
 import math
 import numpy
-from numpy import eye, diag, asarray, array, empty
+from numpy import eye, diag, asarray, array, empty, isinf, clip
 
 def generate(problem, **options):
     """
@@ -42,9 +42,11 @@ def generate(problem, **options):
         population = random_init(N=pop_size, pars=pars, include_current=True)
     elif options['init'] == 'cov':
         cov = problem.cov()
-        population = cov_init(N=pop_size, pars=pars, include_current=False, cov=cov)
+        population = cov_init(N=pop_size, pars=pars, include_current=True, cov=cov)
     elif options['init'] == 'lhs':
         population = lhs_init(N=pop_size, pars=pars, include_current=True)
+    elif options['init'] == 'eps':
+        population = eps_init(N=pop_size, pars=pars, include_current=True, eps=1e-6)
     else:
         raise ValueError("Unknown population initializer '%s'"
                          %options['init'])
@@ -54,8 +56,14 @@ def lhs_init(N, pars, include_current=False):
     """
     Latin Hypercube Sampling
 
-    Returns an array whose columns each have *N* samples from equally spaced
-    bins between *bounds*=(xmin, xmax) for the column.
+    Returns an array whose columns and rows each have *N* samples from 
+    equally spaced bins between *bounds*=(xmin, xmax) for the column.
+    Unlike random, this method guarantees a certain amount of coverage
+    of the parameter space.  Consider, though that the diagonal matrix
+    satisfies the LHS condition, and you can see that the guarantees are
+    not very strong.  A better methods, similar to sudoku puzzles, would
+    guarantee coverage in each block of the matrix, but this is not
+    yet implmeneted.
 
     If include_current is True, then the current value of the parameters
     is returned as the first point in the population, preserving the the
@@ -130,6 +138,10 @@ def random_init(N, pars, include_current=False):
     """
     Generate a random population from the problem parameters.
 
+    Values are selected at random from the bounds of the problem using a
+    uniform distribution.  A certain amount of clustering is expected
+    using this method.
+
     If include_current is True, then the current value of the parameters
     is returned as the first point in the population.
     """
@@ -137,4 +149,30 @@ def random_init(N, pars, include_current=False):
     population = array(population).T
     if include_current:
         population[0] = [p.value for p in pars]
+    return population
+
+def eps_init(N, pars, include_current=False, eps=1e-6):
+    """
+    Generate a random population using an epsilon ball around the current
+    value.
+    
+    Since the initial population is contained in a small volume, this
+    method is useful for exploring a local minimum around a point.  Over
+    time the ball will expand to fill the minimum, and perhaps tunnel
+    through barriers to nearby minima given enough burn-in time.
+
+    eps is in proportion to the bounds on the parameter, or absolute if
+    the parameter is unbounded.
+    
+    If include_current is True, then the current value of the parameters
+    is returned as the first point in the population.
+    """
+    x = array([p.value for p in pars],'d')
+    xmin,xmax = [array(v,'d') for v in zip(*[p.bounds.limits for p in pars])]
+    dx = (xmax-xmin)*eps
+    dx[isinf(dx)] = eps
+    population = x+eps*(numpy.random.rand(N,len(xmin))-0.5)
+    population = clip(population,xmin,xmax)
+    if include_current:
+        population[0] = x
     return population

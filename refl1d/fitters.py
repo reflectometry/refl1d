@@ -474,7 +474,7 @@ class FitOptions(object):
         steps  = ("Steps",           "int"),
         burn   = ("Burn-in Steps",   "int"),
         pop    = ("Population",      "float"),
-        init   = ("Initializer",     ("lhs","cov","random")),
+        init   = ("Initializer",     ("lhs","cov","random","eps")),
         CR     = ("Crossover Ratio", "float"),
         F      = ("Scale",           "float"),
         nT     = ("# Temperatures",  "int"),
