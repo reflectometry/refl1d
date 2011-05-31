@@ -40,54 +40,81 @@ and anchoring them to the structure.
 from .model import Layer
 from .mystic.parameter import Parameter, Constant
 
-class MagneticSlab(Layer):
+class MagneticLayer(Layer):
+    magnetic = True
+    def __init__(self, stack=None,
+                 dead_below=0, dead_above=0, 
+                 interface_below=None, interface_above=None, 
+                 name="magnetic"):
+        self.stack = Stack(stack)
+        self.interface = interface
+        self.thickness = thickness
+        self.dead_below = Parameter.default(dead_below, limits=(0,inf),
+                                            name=name+" dead below")
+        self.dead_above = Parameter.default(dead_above, limits=(0,inf),
+                                            name=name+" dead above")
+        #if interface_below == None:
+        #    interface_below = ...
+        #if interface_above == None:
+        #    interface_above = stack[-1].interface
+    def parameters(self):
+        return dict(stack=self.stack.parameters(),
+                    dead_below=self.dead_below,
+                    dead_above=self.dead_above,
+                    interface_below=self.interface_below,
+                    interface_above=self.interface_above)
+    @property
+    def thickness(self):
+        """Thickness of the magnetic region"""
+        return self.stack.thickness
+
+    def anchor(self, slabs):
+        return slabs.thickness() + self.dead_below.value
+    
+    @property
+    def thicknessM(self):
+        self.stack.thickness - (self.dead_below.value+self.dead_above.value)
+
+class MagneticSlab(MagneticLayer):
     """
     Region of constant magnetism.
     """
-    magnetic = True
-    def __init__(self, ofset=0, width=0, sigma=0, rhoM=0, thetaM=270,
-                 name="magnetic"):
-        self.thickness = Constant(0)
-        self.interface = Constant(0)
-        self.width = Parameter.default(width, limits=(0,inf),
-                                       name=name+" width")
-        self.offset = Parameter.default(offset, limits=(0,inf),
-                                        name=name+" offset")
-        self.sigma = Parameter.default(sigma,
-                                       limits=(0,inf),
-                                       name=name+" sigma")
+    def __init__(self, rhoM=0, thetaM=270, **kw):
+        MagneticLayer.__init__(self, **kw)
         self.rhoM = Parameter.default(rhoM, name=name+" SLD")
         self.thetaM = Parameter.default(thetaM, limits=(0,360),
                                         name=name+" angle")
 
     def parameters(self):
-        return dict(width=self.width,
-                    offset=self.offset,
-                    sigma=self.sigma,
-                    rhoM=self.rhoM,
-                    thetaM=self.thetaM,
-                    )
+        parameters = MagneticLayer.parameters()
+        parameters.update(rhoM=self.rhoM,
+                          thetaM=self.thetaM)
+        return parameters
 
     def render(self, probe, slabs):
-        anchor = slabs.thickness() + self.offset.value
-        slabs.add_magnetism(anchor,
-                            w=[self.width.value],
+        slabs.add_magnetism(anchor=self.anchor(slabs),
+                            w=[self.thicknessM],
                             rho=[self.rhoM.value],
                             theta=[self.thetaM.value],
                             sigma=[self.sigma.value])
     def __str__(self):
-        return "magnetic(%g)"%self.rho.value
+        return "magnetic(%g)"%self.rhoM.value
     def __repr__(self):
-        return "Magnetic(rhoM=%g,thetaM=%g)"%(self.rhoM.value,self.thetaM.value)
+        return ("Magnetic(rhoM=%g,thetaM=%g)"
+                %(self.rhoM.value,self.thetaM.value))
 
 class MagneticTwist(Layer):
     """
     Linear change in magnetism throughout layer.
     """
     magnetic = True
-    def __init__(self, ofset=0, width=0, sigma=0,
+    def __init__(self,
                  rhoM=[0,0], thetaM=[270,270],
-                 name="twist"):
+                 name="twist", **kw):
+        MagneticLayer.__init__(self, **kw)
+        self.rhoM = Parameter.default(rhoM, name=name+" SLD")
+        self.thetaM = Parameter.default(thetaM, limits=(0,360),
+                                        name=name+" angle")
         self.thickness = Constant(0)
         self.interface = Constant(0)
         self.width = Parameter.default(width, limits=(0,inf),
@@ -103,17 +130,17 @@ class MagneticTwist(Layer):
                        for i,v in enumerate(thetaM)]
 
     def parameters(self):
-        return dict(width=self.width,
-                    offset=self.offset,
-                    sigma=self.sigma,
-                    rhoM=self.rhoM,
-                    thetaM=self.thetaM)
+        parameters = MagneticLayer.parameters()
+        parameters.update(rhoM=self.rhoM,
+                          thetaM=self.thetaM)
+        return parameters
 
     def render(self, probe, slabs):
-        w,z = slabs.microslabs(self.width.value)
+        w,z = slabs.microslabs(self.thicknessM)
         rhoM = numpy.linspace(self.rhoM[0].value,self.rhoM[1].value,len(z))
         thetaM = numpy.linspace(self.thetaM[0].value,self.thetaM[1].value,len(z))
-        slabs.add_magnetism(w=w,rhoM=rhoM,thetaM=thetaM,
+        slabs.add_magnetism(anchor=self.anchor(slabs),
+                            w=w,rhoM=rhoM,thetaM=thetaM,
                             sigma=self.sigma.value)
 
     def __str__(self):

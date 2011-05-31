@@ -88,11 +88,11 @@ def remember_best(fitter, problem, best):
     open(problem.output_path+".par",'wt').write(pardata)
 
     fitter.save(problem.output_path)
-    with util.redirect_console(problem.output_path+".out"):
+    with util.redirect_console(problem.output_path+".err"):
         fitter.show()
+        fitter.plot(problem.output_path)
     fitter.show()
     #print "plotting"
-    fitter.plot(problem.output_path)
 
 
 def recall_best(problem, path):
