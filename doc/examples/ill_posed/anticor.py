@@ -22,9 +22,9 @@ nickel = Material('Ni')
 
 numpy.random.seed(5)
 
-# We need one model with two layers, which together should sum to 200 A.  
-# Because of the interface does not extend beyond one layer, we cannot 
-# shrink either layer down to zero and preserve chisq, so the parameter 
+# We need one model with two layers, which together should sum to 200 A.
+# Because of the interface does not extend beyond one layer, we cannot
+# shrink either layer down to zero and preserve chisq, so the parameter
 # values will not dip much below the roughness at the ends of the layer.
 
 sample = silicon(0,5) | nickel(100,10) | nickel(100,10) | air
@@ -40,7 +40,7 @@ sample[2].thickness.range(0,400)
 T = numpy.linspace(0, 2, 200)
 probe = NeutronProbe(T=T, dT=0.01, L=4.75, dL=0.0475)
 M = Experiment(sample=sample, probe=probe)
-M.simulate_data(noise=5) 
+M.simulate_data(noise=5)
 
 # We wrap this as a fit problem as usual.
 

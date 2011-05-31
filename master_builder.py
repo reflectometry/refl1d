@@ -294,7 +294,7 @@ def create_windows_installer(version=None):
     os.chdir(SRC_DIR)
 
     # First create an include file to convey the application's version
-    # information to the Inno Setup compiler. 
+    # information to the Inno Setup compiler.
     f = open("%s.iss-include" %APP_NAME, "w")
     f.write('#define MyAppVersion "%s"\n' %version)  # version must be quoted
     f.close()

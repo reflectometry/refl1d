@@ -222,7 +222,7 @@ class TheoryView(wx.Panel):
                 except:
                     pass
                 #print "drawing"
-                if not reset: 
+                if not reset:
                     self.toolbar.push_current()
                     set_xrange(pylab.gca(), xrange)
                     self.toolbar.push_current()

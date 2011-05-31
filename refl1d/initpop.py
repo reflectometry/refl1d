@@ -56,7 +56,7 @@ def lhs_init(N, pars, include_current=False):
     """
     Latin Hypercube Sampling
 
-    Returns an array whose columns and rows each have *N* samples from 
+    Returns an array whose columns and rows each have *N* samples from
     equally spaced bins between *bounds*=(xmin, xmax) for the column.
     Unlike random, this method guarantees a certain amount of coverage
     of the parameter space.  Consider, though that the diagonal matrix
@@ -155,7 +155,7 @@ def eps_init(N, pars, include_current=False, eps=1e-6):
     """
     Generate a random population using an epsilon ball around the current
     value.
-    
+
     Since the initial population is contained in a small volume, this
     method is useful for exploring a local minimum around a point.  Over
     time the ball will expand to fill the minimum, and perhaps tunnel
@@ -163,7 +163,7 @@ def eps_init(N, pars, include_current=False, eps=1e-6):
 
     eps is in proportion to the bounds on the parameter, or absolute if
     the parameter is unbounded.
-    
+
     If include_current is True, then the current value of the parameters
     is returned as the first point in the population.
     """

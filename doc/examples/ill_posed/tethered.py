@@ -46,7 +46,7 @@ D_brush.sigma.range(0,20)
 T = numpy.linspace(0, 5, 200)
 probe = NeutronProbe(T=T, dT=0.01, L=4.75, dL=0.0475)
 M = Experiment(sample=D, probe=probe)
-M.simulate_data(noise=5) 
+M.simulate_data(noise=5)
 
 # Wrap the result in a fit problem.
 

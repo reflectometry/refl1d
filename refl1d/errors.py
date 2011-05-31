@@ -45,7 +45,7 @@ def _calc_distribution(problem, points):
     #        probes.append(p)
 
     # Find Q
-    Q = dict((m, m.probe.Q) 
+    Q = dict((m, m.probe.Q)
              for m in experiments)
 
     # Put best at slot 0

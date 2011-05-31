@@ -43,8 +43,8 @@ from .mystic.parameter import Parameter, Constant
 class MagneticLayer(Layer):
     magnetic = True
     def __init__(self, stack=None,
-                 dead_below=0, dead_above=0, 
-                 interface_below=None, interface_above=None, 
+                 dead_below=0, dead_above=0,
+                 interface_below=None, interface_above=None,
                  name="magnetic"):
         self.stack = Stack(stack)
         self.interface = interface
@@ -70,7 +70,7 @@ class MagneticLayer(Layer):
 
     def anchor(self, slabs):
         return slabs.thickness() + self.dead_below.value
-    
+
     @property
     def thicknessM(self):
         self.stack.thickness - (self.dead_below.value+self.dead_above.value)
