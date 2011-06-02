@@ -70,19 +70,19 @@ class MagneticLayer(Layer):
     def render_stack(self, probe, slabs):
         """
         Render the nuclear sld structure.
-        
+
         If either the interface below or the interface above is left
         unspecified, the corresponding nuclear interface is used.
-        
-        Returns the anchor point in the nuclear structure and interface 
+
+        Returns the anchor point in the nuclear structure and interface
         widths at either end of the magnetic slab.
         """
         anchor = slabs.thickness() + self.dead_below.value
-    
-        s_below = (self.interface_below.value 
+
+        s_below = (self.interface_below.value
                    if self.interface_below else slabs.sigma[-1])
         self.stack.render(probe, slabs)
-        s_above = (self.interface_above.value 
+        s_above = (self.interface_above.value
                    if self.interface_above else slabs.sigma[-1])
         return anchor, (s_below, s_above)
 
