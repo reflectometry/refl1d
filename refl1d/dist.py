@@ -80,13 +80,18 @@ class DistributionExperiment(ExperimentBase):
     parameter, but the remaining experiment parameters can be fitted,
     as can the parameters of the distribution.
 
+    If *coherent* is true, then the reflectivity of the mixture is computed
+    from the coherent sum rather than the incoherent sum.
+
     See :class:`Weights` for a description of how to set up the distribution.
     """
-    def __init__(self, experiment=None, P=None, distribution=None):
+    def __init__(self, experiment=None, P=None, distribution=None,
+                 coherent=False):
         self.P = P
         self.distribution = distribution
         self.experiment = experiment
         self.probe = self.experiment.probe
+        self.coherent = coherent
         self._substrate=self.experiment.sample[0].material
         self._surface=self.experiment.sample[-1].material
         self._cache = {}  # Cache calculated profiles/reflectivities
@@ -94,18 +99,26 @@ class DistributionExperiment(ExperimentBase):
     def parameters(self):
         return dict(distribution=self.distribution.parameters(),
                     experiment=self.experiment.parameters())
-    def reflectivity(self, **kw):
-        Q = self.experiment.probe.Q
-        R = 0*Q
-        for x,w in self.distribution:
-            if w>0:
-                self.P.value = x
-                self.experiment.update()
-                Q,Rx = self.experiment.reflectivity(**kw)
-                R += w*Rx
-        return Q,R
+    def reflectivity(self, resolution=True):
+        key = "reflectivity",resolution
+        if key not in self._cache:
+            calc_R = 0
+            for x,w in self.distribution:
+                if w>0:
+                    self.P.value = x
+                    self.experiment.update()
+                    Qx, Rx = self.experiment._reflamp()
+                    if self.coherent:
+                        calc_R += w*Rx
+                    else:
+                        calc_R += w*abs(Rx)**2
+            if self.coherent:
+                calc_R = abs(calc_R)**2
+            Q,R = self.probe.apply_beam(Qx, calc_R, resolution=resolution)
+            self._cache[key] = Q,R
+        return self._cache[key]
 
-    def _best_P(self):
+    def _max_P(self):
         x,w = zip(*self.distribution)
         idx = numpy.argmax(w)
         return x[idx]
@@ -114,21 +127,27 @@ class DistributionExperiment(ExperimentBase):
         """
         Compute a density profile for the material
         """
-        P = self._best_P()
-        if self.P.value != P:
-            self.P.value = P
-            self.experiment.update()
-        return self.experiment.smooth_profile(dz=dz)
+        key = 'smooth_profile', dz
+        if key not in self._cache:
+            P = self._max_P()
+            if self.P.value != P:
+                self.P.value = P
+                self.experiment.update()
+            self._cache[key] = self.experiment.smooth_profile(dz=dz)
+        return self._cache[key]
 
     def step_profile(self):
         """
         Compute a scattering length density profile
         """
-        P = self._best_P()
-        if self.P.value != P:
-            self.P.value = P
-            self.experiment.update()
-        return self.experiment.step_profile()
+        key = 'step_profile', dz
+        if key not in self._cache:
+            P = self._max_P()
+            if self.P.value != P:
+                self.P.value = P
+                self.experiment.update()
+            self._cache[key] = self.experiment.step_profile()
+        return self._cache[key]
 
     def plot_profile(self):
         import pylab

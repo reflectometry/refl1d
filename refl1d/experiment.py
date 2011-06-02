@@ -288,7 +288,7 @@ class Experiment(ExperimentBase):
             #if numpy.isnan(calc_r).any(): print "calc_r contains NaN"
         return self._cache[key]
 
-    def amplitude(self, resolution=True):
+    def amplitude(self, resolution=False):
         """
         Calculate reflectivity amplitude at the probe points.
         """
@@ -459,16 +459,22 @@ class MixedExperiment(ExperimentBase):
     *ratio* a list of parameters, such as [3,1] for a 3:1 ratio
     *probe* the measurement to be fitted or simulated
 
+    *coherent* is True if the length scale of the domains
+    is less than the coherence length of the neutron, or false
+    otherwise.
+
     Statistics such as the cost functions for the individual
     profiles can be accessed from the underlying experiments
     using composite.parts[i] for the various samples.
     """
-    def __init__(self, samples=None, ratio=None, probe=None, name=None, **kw):
+    def __init__(self, samples=None, ratio=None, probe=None,
+                 name=None, coherent=False, **kw):
         self.samples = samples
         self.probe = probe
         self.ratio = [Parameter.default(r, name="ratio %d"%i)
                       for i,r in enumerate(ratio)]
         self.parts = [Experiment(s,probe,**kw) for s in samples]
+        self.coherent = coherent
         self._substrate=self.samples[0][0].material
         self._surface=self.samples[0][-1].material
         self._cache = {}
@@ -484,20 +490,49 @@ class MixedExperiment(ExperimentBase):
                     probe = self.probe.parameters(),
                     )
 
-    def reflectivity(self, resolution=True, beam=True):
+    def _reflamp(self):
+        f = numpy.array([r.value for r in self.ratio],'d')
+        f /= numpy.sum(f)
+        Qs,Rs = zip(*[p._reflamp() for p in self.parts])
+        return Qs[0], f*numpy.array(Rs).T
+
+    def amplitude(self, resolution=False):
+        """
+        """
+        if self.coherent == False:
+            raise TypeError("Cannot compute amplitude of system which is mixed incoherently")
+        key = ('amplitude',resolution)
+        if key not in self._cache:
+            calc_Q, calc_R = self._reflamp()
+            calc_R = numpy.sum(calc_R, axis=1)
+            r_real = self.probe.apply_beam(calc_q, calc_r.real, resolution=resolution)
+            r_imag = self.probe.apply_beam(calc_q, calc_r.imag, resolution=resolution)
+            r = r_real + 1j*r_imag
+            self._cache[key] = self.probe.Q, r
+        return self._cache[key]
+
+
+    def reflectivity(self, resolution=True):
         """
         Calculate predicted reflectivity.
 
-        If *resolution* is true include resolution effects.
+        This will be the weigthed sum of the reflectivity from the
+        individual systems.  If coherent is set, then the coherent
+        sum will be used, otherwise the incoherent sum will be used.
 
-        If *beam* is true, include absorption and intensity effects.
+        If *resolution* is true include resolution effects.
         """
-        f = numpy.array([r.value for r in self.ratio],'d')
-        f /= numpy.sum(f)
-        Qs,Rs = zip(*[p.reflectivity() for p in self.parts])
-        Q = Qs[0]
-        R = f*numpy.array(Rs).T
-        return Q, numpy.sum(R,axis=1)
+        key = ('reflectivity',resolution)
+        if key not in self._cache:
+            calc_Q, calc_R = self._reflamp()
+            if self.coherent:
+                calc_R = abs(numpy.sum(calc_R, axis=1))**2
+            else:
+                calc_R = numpy.sum(abs(calc_R)**2, axis=1)
+            Q,R = self.probe.apply_beam(calc_Q, calc_R, resolution=resolution)
+            #Q,R = self.probe.Qo,self.probe.R
+            self._cache[key] = Q,R
+        return self._cache[key]
 
     def plot_profile(self):
         import pylab

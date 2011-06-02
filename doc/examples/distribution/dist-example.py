@@ -1,6 +1,6 @@
 import sys, os; sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
 from refl1d.names import *
-from dist import Weights, DistributionExperiment
+from refl1d.dist import Weights, DistributionExperiment
 
 # Materials
 nickel = Material('Ni', fitby='relative_density')
