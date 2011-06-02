@@ -12,7 +12,6 @@ except:
 
 import numpy
 
-from .stajconvert import load_mlayer, fit_all
 from . import fitters
 from .fitters import FIT_OPTIONS, FitDriver, StepMonitor, ConsoleMonitor
 from .fitproblem import FitProblem, load_problem as load_script
@@ -23,11 +22,6 @@ from . import initpop
 from . import __version__
 
 from .util import pushdir
-
-# TODO: separate refl specific parameters from generic fitter parameters
-from .probe import Probe
-
-
 
 def mesh(problem, vars=None, n=40):
     x,y = [numpy.linspace(p.bounds.limits[0],p.bounds.limits[1],n) for p in vars]
@@ -53,8 +47,10 @@ def load_problem(args):
             options = []
             problem = garefl.load(filename)
         elif filename.endswith('.staj'):
+            from .stajconvert import load_mlayer, fit_all
             options = []
             problem = FitProblem(load_mlayer(filename))
+            #fit_all(problem.fitness, pmp=20)
         else:
             #print "loading",filename,"from",directory
             try:
@@ -488,8 +484,12 @@ def main():
     fitter = FitDriver(fitopts.fitclass, problem=problem, **fitopts.options)
 
     # Which format to view the plots
-
-    Probe.view = opts.plot
+    try:
+        # TODO: separate refl specific parameters from generic fitter parameters
+        from .probe import Probe
+        Probe.view = opts.plot
+    except:
+        pass
 
     if opts.profile:
         run_profile(problem, steps=opts.steps)

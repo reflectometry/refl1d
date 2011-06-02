@@ -3,8 +3,8 @@ from .util import next_color
 
 # TODO: we should just keep a certain number of evaluations as a matter
 # of course during sampling rather than recomputing them after the fact.
-# Still need this for the standard cov error expression though.
-
+# TODO: want similar code for covariance matrix based forward analysis
+# TODO: need to delegate accumulation of models and plotting to Fitness
 
 def calc_distribution_from_state(problem, state, nshown=50):
     points, logp = state.sample()
@@ -15,6 +15,9 @@ def calc_distribution(problem, points):
     original = problem.getp()
     try:
         ret = _calc_distribution(problem, points)
+    except:
+        print "error calculating distribution on model"
+        ret = None
     finally:
         problem.setp(original)
     return ret

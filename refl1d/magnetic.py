@@ -53,10 +53,9 @@ class MagneticLayer(Layer):
                                             name=name+" dead below")
         self.dead_above = Parameter.default(dead_above, limits=(0,inf),
                                             name=name+" dead above")
-        #if interface_below == None:
-        #    interface_below = ...
-        #if interface_above == None:
-        #    interface_above = stack[-1].interface
+        self.interface_below = interface_below
+        self.interface_above = interface_above
+        self.name = name
     def parameters(self):
         return dict(stack=self.stack.parameters(),
                     dead_below=self.dead_below,
@@ -68,8 +67,24 @@ class MagneticLayer(Layer):
         """Thickness of the magnetic region"""
         return self.stack.thickness
 
-    def anchor(self, slabs):
-        return slabs.thickness() + self.dead_below.value
+    def render_stack(self, probe, slabs):
+        """
+        Render the nuclear sld structure.
+        
+        If either the interface below or the interface above is left
+        unspecified, the corresponding nuclear interface is used.
+        
+        Returns the anchor point in the nuclear structure and interface 
+        widths at either end of the magnetic slab.
+        """
+        anchor = slabs.thickness() + self.dead_below.value
+    
+        s_below = (self.interface_below.value 
+                   if self.interface_below else slabs.sigma[-1])
+        self.stack.render(probe, slabs)
+        s_above = (self.interface_above.value 
+                   if self.interface_above else slabs.sigma[-1])
+        return anchor, (s_below, s_above)
 
     @property
     def thicknessM(self):
@@ -92,11 +107,12 @@ class MagneticSlab(MagneticLayer):
         return parameters
 
     def render(self, probe, slabs):
-        slabs.add_magnetism(anchor=self.anchor(slabs),
+        anchor, sigma = self.render_stack(probe, slabs)
+        slabs.add_magnetism(anchor=anchor,
                             w=[self.thicknessM],
                             rho=[self.rhoM.value],
                             theta=[self.thetaM.value],
-                            sigma=[self.sigma.value])
+                            sigma=sigma)
     def __str__(self):
         return "magnetic(%g)"%self.rhoM.value
     def __repr__(self):
@@ -136,14 +152,83 @@ class MagneticTwist(Layer):
         return parameters
 
     def render(self, probe, slabs):
+        anchor, sigma = self.render_stack(probe, slabs)
         w,z = slabs.microslabs(self.thicknessM)
-        rhoM = numpy.linspace(self.rhoM[0].value,self.rhoM[1].value,len(z))
-        thetaM = numpy.linspace(self.thetaM[0].value,self.thetaM[1].value,len(z))
-        slabs.add_magnetism(anchor=self.anchor(slabs),
+        rhoM = numpy.linspace(self.rhoM[0].value,
+                              self.rhoM[1].value,len(z))
+        thetaM = numpy.linspace(self.thetaM[0].value,
+                                self.thetaM[1].value,len(z))
+        slabs.add_magnetism(anchor=anchor,
                             w=w,rhoM=rhoM,thetaM=thetaM,
-                            sigma=self.sigma.value)
+                            sigma=sigma)
 
     def __str__(self):
         return "twist(%g->%g)"%(self.rhoM[0].value,self.rhoM[1].value)
     def __repr__(self):
         return "MagneticTwist"
+
+
+class FreeMagnetic(Layer):
+    """
+    Linear change in magnetism throughout layer.
+    """
+    magnetic = True
+    def __init__(self, z = [], rhoM = [], thetaM = [],
+                 name="freemag", **kw):
+        MagneticLayer.__init__(self, **kw)
+        def parvec(vector,name,limits):
+            return [Parameter.default(p,name=name+"[%d]"%i,limits=limits)
+                    for i,p in enumerate(vector)]
+        self.rhoM, self.thetaM, self.dz \
+            = [parvec(v,name+" "+part,limits)
+               for v,part,limits in zip((rhoM, thetaM, z),
+                                        ('rhoM', 'angle', 'z'),
+                                        ((0,inf),(0,360),(0,1))
+                                        )]
+        if len(self.z) != len(self.rhoM):
+            raise ValueError("must have number of intervals dz one less than rhoM")
+        if len(self.irho) > 0 and len(self.rhoM) != len(self.thetaM):
+            raise ValueError("must have one thetaM for each rhoM")
+
+    def parameters(self):
+        parameters = MagneticLayer.parameters()
+        parameters.update(rhoM=self.rhoM,
+                          thetaM=self.thetaM,
+                          z=self.z)
+        return parameters
+
+    def profile(self, Pz):
+        thickness = self.thickness.value
+        mbelow,tbelow = 0,self.thetaM[0].value
+        mabove,tabove = 0,self.thetaM[-1].value
+        z = sort([0]+[p.value for p in self.z]+[1])*thickness
+
+        rhoM = hstack((mbelow, [p.value for p in self.rhoM], mabove))
+        PrhoM = monospline(z, rhoM, Pz)
+
+        import numpy
+        if numpy.any(numpy.isnan(PrhoM)):
+            print "in mono"
+            print "z",z
+            print "p",[p.value for p in self.z]
+
+
+        if len(self.thetaM)>0:
+            thetaM = hstack((tbelow, [p.value for p in self.thetaM], tabove))
+            PthetaM = monospline(z, thetaM, Pz)
+        else:
+            PthetaM = 270*ones_like(PrhoM)
+        return PrhoM,PthetaM
+
+    def render(self, probe, slabs):
+        anchor, sigma = self.render_stack(probe, slabs)
+        Pw,Pz = slabs.microslabs(self.thickness.value)
+        rhoM,thetaM = self.profile(Pz)
+        slabs.add_magnetism(anchor=anchor,
+                            w=w,rhoM=rhoM,thetaM=thetaM,
+                            sigma=sigma)
+
+    def __str__(self):
+        return "freemag(%d)"%(len(self.rhoM))
+    def __repr__(self):
+        return "FreeMagnetic"
