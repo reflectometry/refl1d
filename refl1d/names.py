@@ -24,12 +24,6 @@ from .cheby import FreeformCheby, ChebyVF, cheby_approx, cheby_points
 from .interface import Erf
 from .probe import Probe, ProbeSet, NeutronProbe, XrayProbe
 from .fitproblem import preview, fit, mesh, FitProblem, MultiFitProblem
-try:
-    from .sampler import draw_samples
-except Exception, exc:
-    import traceback
-    print traceback.print_exc()
-    print "==== exception ignored"
 from .stajconvert import load_mlayer, save_mlayer
 from . import ncnrdata as NCNR, snsdata as SNS
 from .instrument import Monochromatic, Pulsed
@@ -41,3 +35,4 @@ from .instrument import Monochromatic, Pulsed
 # Python doesn't allow "from .module import *"
 from refl1d.materialdb import *
 from .support import sample_data
+from .magnetic import MagneticSlab, MagneticTwist, FreeMagnetic
