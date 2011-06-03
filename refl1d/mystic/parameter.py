@@ -457,7 +457,7 @@ def flatten(s):
     elif s is None:
         return []
     else:
-        raise TypeError("don't understand type "+str(type(s)))
+        raise TypeError("don't understand type %s for %s"%(type(s), s))
 
 def format(p, indent=0):
     """

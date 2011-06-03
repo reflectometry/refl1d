@@ -909,6 +909,11 @@ class PolarizedNeutronProbe(object):
     @property
     def mm(self): return self.xs[3]
 
+    def parameters(self):
+        return dict(pp=self.xs[0].parameters,
+                    pm=self.xs[1].parameters,
+                    mp=self.xs[2].parameters,
+                    mm=self.xs[3].parameters)
     def _check(self):
         back_refls = [f.back_reflectivity for f in self.xs if f is not None]
         if all(back_refls) or not any(back_refls):
