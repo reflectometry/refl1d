@@ -18,7 +18,6 @@ from .reflectivity import reflectivity_amplitude as reflamp
 #print "Using pure python reflectivity calculator"
 #from .abeles import refl as reflamp
 from . import material, profile
-from .fresnel import Fresnel
 from .mystic.parameter import Parameter
 
 
@@ -154,6 +153,47 @@ class ExperimentBase(object):
     def _get_name(self):
         return self._name if self._name else self.probe.name
     name = property(_get_name, _set_name)
+
+    def save(self, basename):
+        self.save_profile(basename)
+        self.save_staj(basename)
+        self.save_refl(basename)
+
+    def save_profile(self, basename):
+        # Slabs
+        A = numpy.array(self.slabs())
+        fid = open(basename+"-slabs.dat","w")
+        fid.write("# %17s %20s %20s %20s\n"%("thickness","roughness",
+                                              "rho (1e-6/A2)","irho (1e-6/A2)"))
+        numpy.savetxt(fid, A.T, fmt="%20.15g")
+        fid.close()
+
+        # Step profile
+        A = numpy.array(self.step_profile())
+        fid = open(basename+"-steps.dat","w")
+        fid.write("# %10s %12s %12s\n"%("z","rho (1e-6/A2)","irho (1e-6/A2)"))
+        numpy.savetxt(fid, A.T, fmt="%12.8f")
+        fid.close()
+
+        # Smooth profile
+        A = numpy.array(self.smooth_profile())
+        fid = open(basename+"-profile.dat","w")
+        fid.write("# %10s %12s %12s\n"%("z","rho (1e-6/A2)","irho (1e-6/A2)"))
+        numpy.savetxt(fid, A.T, fmt="%12.8f")
+        fid.close()
+
+    def save_refl(self, basename):
+        # Reflectivity
+        theory = self.reflectivity()[1]
+        fresnel = self.probe.fresnel(self._substrate, self._surface)
+        A = numpy.array((self.probe.Q,self.probe.dQ,self.probe.R,self.probe.dR,
+                         theory, fresnel(self.probe.Q)))
+        fid = open(basename+"-refl.dat","w")
+        fid.write("# %17s %20s %20s %20s %20s %20s\n"
+                  %("Q (1/A)","dQ (1/A)", "R", "dR", "theory", "fresnel"))
+        numpy.savetxt(fid, A.T, fmt="%20.15g")
+        fid.close()
+
 
 
 class Experiment(ExperimentBase):
@@ -327,19 +367,6 @@ class Experiment(ExperimentBase):
             if numpy.isnan(R).any(): print "apply_beam causes NaN"
         return self._cache[key]
 
-    def fresnel(self):
-        """
-        Calculate the fresnel reflectivity for the model.
-        """
-        slabs = self._render_slabs()
-        rho,irho = slabs.rho, slabs.irho
-        #sigma = slabs.limited_sigma(limit=self.roughness_limit)
-        #sigma = slabs.sigma
-        sigma = [0] # Don't do roughness
-        f = Fresnel(rho=rho[0,0], irho=irho[0,0], sigma=sigma[0],
-                    Vrho=rho[0,-1], Virho=irho[0,-1])
-        return f(self.probe.Q)
-
     def smooth_profile(self,dz=0.1):
         """
         Compute a density profile for the material.
@@ -376,45 +403,6 @@ class Experiment(ExperimentBase):
         slabs = self._render_slabs()
         return (slabs.w, numpy.hstack((0,slabs.sigma)),
                 slabs.rho[0], slabs.irho[0])
-
-    def save(self, basename):
-        self.save_profile(basename)
-        self.save_staj(basename)
-        self.save_refl(basename)
-
-    def save_profile(self, basename):
-        # Slabs
-        A = numpy.array(self.slabs())
-        fid = open(basename+"-slabs.dat","w")
-        fid.write("# %17s %20s %20s %20s\n"%("thickness","roughness",
-                                              "rho (1e-6/A2)","irho (1e-6/A2)"))
-        numpy.savetxt(fid, A.T, fmt="%20.15g")
-        fid.close()
-
-        # Step profile
-        A = numpy.array(self.step_profile())
-        fid = open(basename+"-steps.dat","w")
-        fid.write("# %10s %12s %12s\n"%("z","rho (1e-6/A2)","irho (1e-6/A2)"))
-        numpy.savetxt(fid, A.T, fmt="%12.8f")
-        fid.close()
-
-        # Smooth profile
-        A = numpy.array(self.smooth_profile())
-        fid = open(basename+"-profile.dat","w")
-        fid.write("# %10s %12s %12s\n"%("z","rho (1e-6/A2)","irho (1e-6/A2)"))
-        numpy.savetxt(fid, A.T, fmt="%12.8f")
-        fid.close()
-
-    def save_refl(self, basename):
-        # Reflectivity
-        theory = self.reflectivity()[1]
-        A = numpy.array((self.probe.Q,self.probe.dQ,self.probe.R,self.probe.dR,
-                         theory))
-        fid = open(basename+"-refl.dat","w")
-        fid.write("# %17s %20s %20s %20s %20s\n"%("Q (1/A)","dQ (1/A)",
-                                                   "R", "dR", "theory"))
-        numpy.savetxt(fid, A.T, fmt="%20.15g")
-        fid.close()
 
     def save_staj(self, basename):
         from .stajconvert import save_mlayer
@@ -543,6 +531,14 @@ class MixedExperiment(ExperimentBase):
             p.plot_profile()
             pylab.hold(True)
         pylab.hold(held)
+
+    def save_profile(self, basename):
+        for i,p in enumerate(self.parts):
+            p.save_profile("%s-%d"%(basename,i))
+
+    def save_staj(self, basename):
+        for i,p in enumerate(self.parts):
+            p.save_staj("%s-%d"%(basename,i))
 
 
 def nice(v, digits = 2):
