@@ -70,17 +70,19 @@ class ExperimentBase(object):
         self._cache = {}
 
     def residuals(self):
-        if (self.probe.polarized and all(x.R is None for x in self.probe.xs)) \
-            or (not self.probe.polarized and self.probe.R is None):
-            raise ValueError("No data from which to calculate residuals")
         if 'residuals' not in self._cache:
-            Q,R = self.reflectivity()
-            if self.probe.polarized:
-                _,Rth = zip(*self.probe.select_corresponding((Q,R)))
-                resid = numpy.hstack([(x.R - xth)/x.dR
-                                      for x,xth in zip(self.probe.xs, Rth)])
+            if ((self.probe.polarized
+                 and all(x.R is None for x in self.probe.xs))
+                or (not self.probe.polarized and self.probe.R is None)):
+                resid = numpy.zeros(0)
             else:
-                resid = (self.probe.R - R)/self.probe.dR
+                Q,R = self.reflectivity()
+                if self.probe.polarized:
+                    _,Rth = zip(*self.probe.select_corresponding((Q,R)))
+                    resid = numpy.hstack([(x.R - xth)/x.dR
+                                          for x,xth in zip(self.probe.xs, Rth)])
+                else:
+                    resid = (self.probe.R - R)/self.probe.dR
             self._cache['residuals'] = resid
 
         return self._cache['residuals']
@@ -217,10 +219,11 @@ class Experiment(ExperimentBase):
         *dA* discretization condition for computed profiles
         *smoothness* thickness of
 
-    If *step_interfaces* is True then use the Nevot-Croce analytic
-    expression for the interface between slabs.  If False, then approximate
-    the interface using micro-slabs with step size *dz*, coalesced into
-    larger slabs according to the *dA* condition.
+    If *step_interfaces* is True, then approximate the interface using
+    microslabs with step size *dz*.  The microslabs extend throughout
+    the whole profile, both the interfaces and the bulk; a value
+    for *dA* should be specified to save computation time.  If False, then
+    use the Nevot-Croce analytic expression for the interface between slabs.
 
     The *roughness_limit* value should be reasonably large (e.g., 2.5 or above)
     to make sure that the Nevot-Croce reflectivity calculation matches the
@@ -247,7 +250,7 @@ class Experiment(ExperimentBase):
     is performed by setting the interface width to smoothness * slab width.
     A smoothness value of 0 means no smoothing. Smoothness values of 0.3
     or less are considered safe.  Beyond that value, blending spans multiple
-    layers in the profile, and the profile we display is no longer an
+    layers in the profile, and the profile we display may no longer be an
     accurate representation of the underlying density profile.
 
     Note that it would be better to use an analytic representation of a
@@ -264,13 +267,12 @@ class Experiment(ExperimentBase):
         self.probe = probe
         self.roughness_limit = roughness_limit
         if dz is None:
-            dz = nice((2*pi/probe.Q.max())/20)
+            dz = nice((2*pi/probe.Q.max())/10)
             if dz > 5: dz = 5
+        self.dz = dz
         self.dA = dA
         self.step_interfaces = step_interfaces
         self.smoothness = smoothness
-        if step_interfaces:
-            raise NotImplementedError('step interfaces not yet supported')
         self._slabs = profile.Microslabs(len(probe), dz=dz)
         self._probe_cache = material.ProbeCache(probe)
         self._cache = {}  # Cache calculated profiles/reflectivities
@@ -289,8 +291,8 @@ class Experiment(ExperimentBase):
             self._slabs.clear()
             self.sample.render(self._probe_cache, self._slabs)
             self._slabs.finalize()
-            #if self.step_interfaces:
-            #    self._slabs.build_step_interfaces()
+            if self.step_interfaces:
+                self._slabs.step_interfaces(self.dz)
             if self.dA is not None:
                 self._slabs.contract_profile(self.dA)
                 if not self.step_interfaces:
@@ -373,6 +375,8 @@ class Experiment(ExperimentBase):
 
         If *dz* is not given, use *dz* = 0.1 A.
         """
+        if self.step_interfaces:
+            return self.step_profile()
         key = 'smooth_profile', dz
         if key not in self._cache:
             slabs = self._render_slabs()

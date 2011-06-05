@@ -347,7 +347,7 @@ class Probe(object):
         raise NotImplementedError
         # TODO: implement resolution guard.
 
-    def oversample(self, n=6, seed=1):
+    def oversample(self, n=20, seed=1):
         """
         Generate an over-sampling of Q to avoid aliasing effects.
 
@@ -368,8 +368,13 @@ class Probe(object):
         both angle and energy according to the resolution function.  This
         will yield more points near the measurement and fewer farther away.
         The measurement point itself will not be used to avoid accidental
-        bias from uniform Q steps.
+        bias from uniform Q steps.  Depending on the problem, a value of
+        *n* between 20 and 100 should lead to stable values for the convolved
+        reflectivity.
         """
+        if n<=5:
+            raise ValueError("Oversampling with n<=5 is not useful")
+
         rng = numpy.random.RandomState(seed=seed)
         T = rng.normal(self.T[:,None],self.dT[:,None],size=(len(self.dT),n))
         L = rng.normal(self.L[:,None],self.dL[:,None],size=(len(self.dL),n))

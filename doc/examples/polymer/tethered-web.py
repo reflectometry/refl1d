@@ -171,7 +171,9 @@ H_probe = instrument.load('10nht001.refl', back_reflectivity=True)
 # 1/3 of the layer thickness.  Beyond this value the analytic expression
 # for the gaussian interface (Nevot-Croce) starts to smear across multiple
 # layer boundaries, an effect not captured by our graphical representation
-# of the smoothed profile.  To use a step profile, set smoothness to 0.
+# of the smoothed profile.  To use a step profile for the tethered polymer,
+# set smoothness to 0.  If step_interfaces is true, then smoothness will
+# be ignored.
 
 # === Problem definition ===
 D_model = Experiment(sample=D, probe=D_probe, dz=0.5, dA=1, smoothness=0.3)

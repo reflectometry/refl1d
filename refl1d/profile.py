@@ -89,6 +89,7 @@ class Microslabs(object):
         self._slabs = numpy.empty(shape=(0,2))
         self._slabs_rho = numpy.empty(shape=(0,nprobe,2))
         self.dz = dz
+        self._z_offset = 0
         self._magnetic_sections = []
         self._slab_mag = None
 
@@ -272,6 +273,29 @@ class Microslabs(object):
         self.w[:] = w[:n]
         #print "final sld after contract",rho[n-1],self.rho[0][n-1],n
 
+    def step_interfaces(self, dz=1):
+        """
+        Convert all interfaces into step interfaces by sampling the
+        analytic version of the smoothed profile at intervals of dz.
+
+        The interface effects are limited to the surrounding layers.
+
+        Use of contract_profile afterward is strongly recommended, as
+        most models will have large portions with constant interfaces.
+        """
+        z, rho, irho = self._build_smooth_profile(dz=dz, sigma_limit=0)
+        n = len(z)
+        w = dz*numpy.ones(n)
+        self._reserve(n - self._num_slabs)
+        self._num_slabs = n
+        # TODO: doesn't handle multple wavelength
+        self.rho[0][:] = rho
+        self.irho[0][:] = irho
+        self.sigma[:] = 0
+        self.w[:] = w
+        self._z_offset = z[0]
+        #print "z_offset", self._z_offset
+
     def smooth_interfaces(self, dA, smoothness=0.3):
         """
         Set a guassian interface for layers which have been coalesced using
@@ -333,7 +357,7 @@ class Microslabs(object):
                               numpy.hstack([0,ws,ws[-1]+10])]).T.flatten()
         else:
             z = numpy.array([-10,0,0,10])
-        return z,rho,irho
+        return z+self._z_offset,rho,irho
 
     def step_magnetic(self):
         """
@@ -366,16 +390,8 @@ class Microslabs(object):
         *roughness_limit* is the minimum number of roughness widths that must
         lie within each profile.
         """
-        sigma = self.limited_sigma(limit=sigma_limit)
-        thickness = self.thickness()
-        left  = 0 - max(10,sigma[0]*3)
-        right = thickness + max(10,sigma[-1]*3)
-        z = numpy.arange(left,right+dz,dz)
-        # Only show the first wavelength
-        rho  = build_profile(z, self.w, sigma, self.rho[0])
-        irho = build_profile(z, self.w, sigma, self.irho[0])
-        return z,rho,irho
-
+        z,rho,irho = self._build_smooth_profile(dz=dz, sigma_limit=sigma_limit)
+        return z+self._z_offset,rho,irho
 
     def smooth_magnetic(self, sigma_limit=0):
         self._join_magnetic_sections()
@@ -457,6 +473,18 @@ class Microslabs(object):
 
         self._slab_mag = numpy.vstack(splices).T
         self._slab_mag_blends = blends
+
+    def _build_smooth_profile(self, dz, sigma_limit):
+        sigma = self.limited_sigma(limit=sigma_limit)
+        thickness = self.thickness()
+        left  = 0 - max(10,sigma[0]*3)
+        right = thickness + max(10,sigma[-1]*3)
+        z = numpy.arange(left,right+dz,dz)
+        # Only show the first wavelength
+        rho  = build_profile(z, self.w, sigma, self.rho[0])
+        irho = build_profile(z, self.w, sigma, self.irho[0])
+        return z,rho,irho
+
 
 def compute_limited_sigma(thickness, roughness, limit):
     # Limit roughness to the depths of the surrounding layers.  Roughness
