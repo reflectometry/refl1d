@@ -545,7 +545,9 @@ class Probe(object):
         pylab.hold(isheld)
         pylab.xlabel('Q (inv Angstroms)')
         pylab.ylabel(ylabel)
-        pylab.legend()
+        #pylab.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        h = pylab.legend(fancybox=True)
+        h.get_frame().set_alpha(0.5)
 
     def plot_residuals(self, theory=None, suffix='', label=None,**kwargs):
         import pylab
@@ -1075,7 +1077,7 @@ class PolarizedNeutronProbe(object):
             pp,pm,mp,mm = theory
             Q,SA,_ = spin_asymmetry(pp[0],pp[1],None,mm[0],mm[1],None)
             pylab.plot(Q, SA,
-                       label=pp.label(prefix=label,gloss='theory'),
+                       label=self.pp.label(prefix=label,gloss='theory'),
                        color=c['dark'])
         pylab.hold(isheld)
         pylab.xlabel(r'Q (\AA^{-1})')

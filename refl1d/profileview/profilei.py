@@ -227,6 +227,8 @@ class ProfileInteractor(object):
 
             lo, hi = thetaM.min(), thetaM.max()
             fluff = 0.05*(hi-lo)
+            if fluff <= 1e-3:
+                lo,hi,fluff=0,360,0
             self.theta_axes.set_ylim(lo-fluff, hi+fluff)
 
         else:

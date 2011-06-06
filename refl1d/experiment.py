@@ -455,9 +455,10 @@ class Experiment(ExperimentBase):
             pylab.xlabel('depth (A)')
             pylab.ylabel('SLD (10^6 / A**2)')
             pylab.legend(['rho','irho','rhoM'])
-            ax = pylab.twinx()
-            pylab.plot(z,thetaM,':k',hold=True,axes=ax)
-            pylab.ylabel('magnetic angle (degrees)')
+            if (abs(thetaM-thetaM[0])>1e-3).any():
+                ax = pylab.twinx()
+                pylab.plot(z,thetaM,':k',hold=True,axes=ax)
+                pylab.ylabel('magnetic angle (degrees)')
         else:
             z,rho,irho = self.step_profile()
             pylab.plot(z,rho,':g',z,irho,':b')

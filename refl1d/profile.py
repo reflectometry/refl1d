@@ -213,7 +213,7 @@ class Microslabs(object):
         surface layers.  Normally these will be zero, but the contract
         profile operation may result in large values for either.
         """
-        return numpy.sum(self._slabs[:self._num_slabs,0])
+        return numpy.sum(self._slabs[1:self._num_slabs,0])
 
     def interface(self, I):
         """

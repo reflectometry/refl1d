@@ -38,8 +38,9 @@ and anchoring them to the structure.
 """
 import numpy
 from numpy import inf
-from .model import Layer, Stack
 from .mystic.parameter import Parameter, Constant
+from .model import Layer, Stack
+from .mono import monospline
 
 class MagneticLayer(Layer):
     magnetic = True
@@ -167,7 +168,7 @@ class FreeMagnetic(MagneticLayer):
         def parvec(vector,name,limits):
             return [Parameter.default(p,name=name+"[%d]"%i,limits=limits)
                     for i,p in enumerate(vector)]
-        self.rhoM, self.thetaM, self.dz \
+        self.rhoM, self.thetaM, self.z \
             = [parvec(v,name+" "+part,limits)
                for v,part,limits in zip((rhoM, thetaM, z),
                                         ('rhoM', 'angle', 'z'),
@@ -175,7 +176,7 @@ class FreeMagnetic(MagneticLayer):
                                         )]
         if len(self.z) != len(self.rhoM):
             raise ValueError("must have number of intervals dz one less than rhoM")
-        if len(self.irho) > 0 and len(self.rhoM) != len(self.thetaM):
+        if len(self.thetaM) > 0 and len(self.rhoM) != len(self.thetaM):
             raise ValueError("must have one thetaM for each rhoM")
 
     def parameters(self):
@@ -187,14 +188,13 @@ class FreeMagnetic(MagneticLayer):
 
     def profile(self, Pz):
         thickness = self.thickness.value
-        mbelow,tbelow = 0,self.thetaM[0].value
-        mabove,tabove = 0,self.thetaM[-1].value
-        z = sort([0]+[p.value for p in self.z]+[1])*thickness
+        mbelow,tbelow = 0,(self.thetaM[0].value if self.thetaM else 270)
+        mabove,tabove = 0,(self.thetaM[-1].value if self.thetaM else 270)
+        z = numpy.sort([0]+[p.value for p in self.z]+[1])*thickness
 
-        rhoM = hstack((mbelow, [p.value for p in self.rhoM], mabove))
+        rhoM = numpy.hstack((mbelow, [p.value for p in self.rhoM], mabove))
         PrhoM = monospline(z, rhoM, Pz)
 
-        import numpy
         if numpy.any(numpy.isnan(PrhoM)):
             print "in mono"
             print "z",z
@@ -202,10 +202,10 @@ class FreeMagnetic(MagneticLayer):
 
 
         if len(self.thetaM)>0:
-            thetaM = hstack((tbelow, [p.value for p in self.thetaM], tabove))
+            thetaM = numpy.hstack((tbelow, [p.value for p in self.thetaM], tabove))
             PthetaM = monospline(z, thetaM, Pz)
         else:
-            PthetaM = 270*ones_like(PrhoM)
+            PthetaM = 270*numpy.ones_like(PrhoM)
         return PrhoM,PthetaM
 
     def render(self, probe, slabs):
@@ -213,7 +213,7 @@ class FreeMagnetic(MagneticLayer):
         Pw,Pz = slabs.microslabs(self.thicknessM)
         rhoM,thetaM = self.profile(Pz)
         slabs.add_magnetism(anchor=anchor,
-                            w=w,rhoM=rhoM,thetaM=thetaM,
+                            w=Pw,rhoM=rhoM,thetaM=thetaM,
                             sigma=sigma)
 
     def __str__(self):
