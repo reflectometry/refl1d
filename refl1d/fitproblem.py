@@ -326,6 +326,7 @@ class FitProblem(object):
         If the set of fit parameters changes, then model_reset must
         be called.
         """
+        #print self.model_parameters()
         all_parameters = parameter.unique(self.model_parameters())
         #print "all_parameters",all_parameters
         self.parameters = parameter.varying(all_parameters)

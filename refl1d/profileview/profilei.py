@@ -193,7 +193,7 @@ class ProfileInteractor(object):
 
     def update_profile(self):
         if self.magnetic:
-            z,rho,rhoI,rhoM,thetaM = self.experiment.smooth_profile()
+            z,rho,rhoI,rhoM,thetaM = self.experiment.magnetic_profile()
             self.hrhoM.set_data(z,rhoM)
             self.hthetaM.set_data(z,thetaM)
         else:

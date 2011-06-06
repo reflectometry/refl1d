@@ -129,7 +129,7 @@ def magnetic_reflectivity(*args,**kw):
 
     The parameters are as follows:
 
-    Q (|1/Ang|)
+    kz (|1/Ang|)
         points at which to evaluate the reflectivity
     depth (|Ang|)
         thickness of the individual layers (incident and substrate
@@ -164,40 +164,43 @@ def unpolarized_magnetic(*args,**kw):
     """
     return reduce(numpy.add, magnetic_reflectivity(*args,**kw))/2.
 
-def magnetic_amplitude(Q,
+def magnetic_amplitude(kz,
                        depth,
                        rho,
-                       mu=0,
-                       wavelength=1,
-                       rho_m=0,
-                       theta_m=0,
-                       Aguide=-90.0
+                       irho=0,
+                       rhoM=0,
+                       thetaM=0,
+                       sigma=0,
+                       Aguide=-90.0,
+                       rho_index=None,
                        ):
     """
     Returns the complex magnetic reflectivity waveform.
 
     See :class:`magnetic_reflectivity <refl1d.reflectivity.magnetic_reflectivity>` for details.
     """
-    Q = _dense(Q,'d')
+    kz = _dense(kz,'d')
+    if rho_index == None:
+        rho_index = numpy.zeros(kz.shape,'i')
+    else:
+        rho_index = _dense(rho_index, 'i')
     n = len(depth)
-    if numpy.isscalar(wavelength):
-        wavelength=wavelength*numpy.ones(Q.shape, 'd')
-    if numpy.isscalar(mu):
-        mu = mu*numpy.ones(n, 'd')
-    if numpy.isscalar(rho_m):
-        rho_m = rho_m*numpy.ones(n, 'd')
-    if numpy.isscalar(theta_m):
-        theta_m = theta_m*numpy.ones(n, 'd')
+    if numpy.isscalar(irho):
+        irho = irho*numpy.ones(n, 'd')
+    if numpy.isscalar(rhoM):
+        rhoM = rhoM*numpy.ones(n, 'd')
+    if numpy.isscalar(thetaM):
+        thetaM = thetaM*numpy.ones(n, 'd')
+    if numpy.isscalar(sigma):
+        sigma = sigma*numpy.ones(n-1, 'd')
 
-    depth,rho,mu,rho_m,wavelength,theta_m \
-        = [_dense(a,'d') for a in depth, rho, mu,
-           rho_m, wavelength, theta_m]
-    R1,R2,R3,R4 = [numpy.empty(Q.shape,'D') for pol in 1,2,3,4]
-    expth = cos(theta_m * pi/180.0) + 1j*sin(theta_m * pi/180.0)
-
-    rho,mu,rho_m = [v*1e-6 for v in rho,mu,rho_m]
-    reflmodule._magnetic_amplitude(rho, mu, depth, wavelength,
-                                   rho_m,  expth, Aguide, Q,
+    depth, rho, irho, rho_m, thetaM, sigma \
+        = [_dense(a,'d') for a in depth, rho, irho, rhoM, thetaM, sigma]
+    expth = cos(thetaM * pi/180.0) + 1j*sin(thetaM * pi/180.0)
+    #rho,irho,rho_m = [v*1e-6 for v in rho,irho,rho_m]
+    R1,R2,R3,R4 = [numpy.empty(kz.shape,'D') for pol in 1,2,3,4]
+    reflmodule._magnetic_amplitude(depth, sigma, rho, irho, 
+                                   rhoM,  expth, Aguide, kz, rho_index,
                                    R1, R2, R3, R4
                                    )
     return R1,R2,R3,R4

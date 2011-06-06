@@ -108,6 +108,7 @@ class Probe(object):
     and should share the same material.
     """
     polarized = False
+    Aguide = 270  # default guide field for unpolarized measurements
     view = "fresnel"
     substrate = None
     surface = None
@@ -892,18 +893,19 @@ class PolarizedNeutronProbe(object):
     Polarized neutron probe
 
     *xs* (4 x NeutronProbe) is a sequence pp, pm, mp and mm.
-    *Tguide* (degrees) is the angle of the guide field
+    *Aguide* (degrees) is the angle of the guide field
     """
     view = None  # Default to Probe.view so only need to change in one place
     substrate = surface = None
     polarized = True
-    def __init__(self, xs=None, Tguide=270):
+    def __init__(self, xs=None, Aguide=270):
         self.xs = xs
 
         self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
             = measurement_union(xs)
         self._set_calc(self.T, self.L)
         self._check()
+        self.Aguide = Aguide
 
     @property
     def pp(self): return self.xs[0]
@@ -915,10 +917,9 @@ class PolarizedNeutronProbe(object):
     def mm(self): return self.xs[3]
 
     def parameters(self):
-        return dict(pp=self.xs[0].parameters,
-                    pm=self.xs[1].parameters,
-                    mp=self.xs[2].parameters,
-                    mm=self.xs[3].parameters)
+        pp,pm,mp,mm = [(xsi.parameters() if xsi else None)
+                       for xsi in self.xs]
+        return dict(pp=pp, pm=pm, mp=mp, mm=mm)
     def _check(self):
         back_refls = [f.back_reflectivity for f in self.xs if f is not None]
         if all(back_refls) or not any(back_refls):
@@ -963,6 +964,7 @@ class PolarizedNeutronProbe(object):
 
     @property
     def calc_Q(self):
+        # All calc_Q should be the same, so return the first one
         for x in self.xs:
             if x is not None:
                 return x.calc_Q
@@ -972,18 +974,18 @@ class PolarizedNeutronProbe(object):
         """
         Propagate setting of calc_Q to the individual cross sections.
         """
+        # Set all xs to have the same calc_Q
         for x in self.xs:
             if x is not None:
                 x._set_calc(T,L)
 
-    def apply_beam(self, R, resolution=True):
+    def apply_beam(self, Q, R, resolution=True):
         """
         Apply factors such as beam intensity, background, backabsorption,
         and footprint to the data.
         """
-        for Ri,xs in zip(R,self.xs):
-            if xs is not None:
-                xs.apply_beam(Ri, resolution)
+        return [(xs.apply_beam(Q,Ri,resolution) if xs else None)
+                for xs,Ri in zip(self.xs,R)]
 
     def scattering_factors(self, material):
         # doc string is inherited from parent (see below)
@@ -1070,8 +1072,8 @@ class PolarizedNeutronProbe(object):
                            color=c['light'])
             pylab.hold(True)
         if theory is not None:
-            Q,(Rpp,Rpm,Rmp,Rmm) = theory
-            Q,SA,_ = spin_asymmetry(Q,Rpp,None,Q,Rmm,None)
+            pp,pm,mp,mm = theory
+            Q,SA,_ = spin_asymmetry(pp[0],pp[1],None,mm[0],mm[1],None)
             pylab.plot(Q, SA,
                        label=pp.label(prefix=label,gloss='theory'),
                        color=c['dark'])
@@ -1084,13 +1086,7 @@ class PolarizedNeutronProbe(object):
         import pylab
         # Plot available cross sections
         isheld = pylab.ishold()
-        if theory is not None:
-            if plotter == "plot_residuals":
-                theory = self.select_corresponding(theory)
-            else:
-                Q,(pp,pm,mp,mm) = theory
-                theory = (Q,pp),(Q,pm),(Q,mp),(Q,mm)
-        else:
+        if theory is None:
             theory = (None,None,None,None)
         for x_data,x_th,suffix in zip(self.xs, theory,
                                       ('$^{++}$','$^{+-}$','$^{-+}$','$^{--}$')):

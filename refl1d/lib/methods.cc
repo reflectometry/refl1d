@@ -76,9 +76,9 @@ PyObject* Pmagnetic_amplitude(PyObject*obj,PyObject*args)
   OUTVECTOR(r2_obj,r2,nr2);
   OUTVECTOR(r3_obj,r3,nr3);
   OUTVECTOR(r4_obj,r4,nr4);
-  if (nd != nrho || nd != nirho || nd != nrhom || nd != nexpth || nd != nsigma-1) {
+  if (nd != nrho || nd != nirho || nd != nrhom || nd != nexpth || nd != nsigma+1) {
     //printf("%ld %ld %ld %ld %ld %ld\n",
-    //    long(nd), long(nsigma), long(nrho), long(nirho), long(nrhon), long(nexpth));
+    //    long(nd), long(nsigma), long(nrho), long(nirho), long(nrhom), long(nexpth));
 #ifndef BROKEN_EXCEPTIONS
     PyErr_SetString(PyExc_ValueError, "d,sigma,rho,irho,rhom,expth have different lengths");
 #endif
@@ -183,7 +183,7 @@ PyObject* Pcontract_mag(PyObject*obj,PyObject*args)
   double *d, *rho, *irho, *rhoM, *thetaM;
   double dA;
 
-  if (!PyArg_ParseTuple(args, "OOOOd:reflectivity",
+  if (!PyArg_ParseTuple(args, "OOOOOd:contract_mag",
       &d_obj,&rho_obj,&irho_obj,&rhoM_obj,&thetaM_obj,&dA))
     return NULL;
   INVECTOR(d_obj,d,nd);

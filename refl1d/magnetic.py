@@ -36,8 +36,9 @@ reflectometry technique is sensitive
 Magnetism support is split into two parts: describing the layers
 and anchoring them to the structure.
 """
-
-from .model import Layer
+import numpy
+from numpy import inf
+from .model import Layer, Stack
 from .mystic.parameter import Parameter, Constant
 
 class MagneticLayer(Layer):
@@ -47,8 +48,6 @@ class MagneticLayer(Layer):
                  interface_below=None, interface_above=None,
                  name="magnetic"):
         self.stack = Stack(stack)
-        self.interface = interface
-        self.thickness = thickness
         self.dead_below = Parameter.default(dead_below, limits=(0,inf),
                                             name=name+" dead below")
         self.dead_above = Parameter.default(dead_above, limits=(0,inf),
@@ -88,20 +87,21 @@ class MagneticLayer(Layer):
 
     @property
     def thicknessM(self):
-        self.stack.thickness - (self.dead_below.value+self.dead_above.value)
+        return (self.stack.thickness 
+                - (self.dead_below.value+self.dead_above.value))
 
 class MagneticSlab(MagneticLayer):
     """
     Region of constant magnetism.
     """
-    def __init__(self, rhoM=0, thetaM=270, **kw):
-        MagneticLayer.__init__(self, **kw)
+    def __init__(self, stack, rhoM=0, thetaM=270, name="magnetic", **kw):
+        MagneticLayer.__init__(self, stack=stack, name=name, **kw)
         self.rhoM = Parameter.default(rhoM, name=name+" SLD")
         self.thetaM = Parameter.default(thetaM, limits=(0,360),
                                         name=name+" angle")
 
     def parameters(self):
-        parameters = MagneticLayer.parameters()
+        parameters = MagneticLayer.parameters(self)
         parameters.update(rhoM=self.rhoM,
                           thetaM=self.thetaM)
         return parameters
@@ -110,8 +110,8 @@ class MagneticSlab(MagneticLayer):
         anchor, sigma = self.render_stack(probe, slabs)
         slabs.add_magnetism(anchor=anchor,
                             w=[self.thicknessM],
-                            rho=[self.rhoM.value],
-                            theta=[self.thetaM.value],
+                            rhoM=[self.rhoM.value],
+                            thetaM=[self.thetaM.value],
                             sigma=sigma)
     def __str__(self):
         return "magnetic(%g)"%self.rhoM.value
@@ -119,34 +119,22 @@ class MagneticSlab(MagneticLayer):
         return ("Magnetic(rhoM=%g,thetaM=%g)"
                 %(self.rhoM.value,self.thetaM.value))
 
-class MagneticTwist(Layer):
+class MagneticTwist(MagneticLayer):
     """
     Linear change in magnetism throughout layer.
     """
     magnetic = True
-    def __init__(self,
+    def __init__(self, stack,
                  rhoM=[0,0], thetaM=[270,270],
                  name="twist", **kw):
-        MagneticLayer.__init__(self, **kw)
-        self.rhoM = Parameter.default(rhoM, name=name+" SLD")
-        self.thetaM = Parameter.default(thetaM, limits=(0,360),
-                                        name=name+" angle")
-        self.thickness = Constant(0)
-        self.interface = Constant(0)
-        self.width = Parameter.default(width, limits=(0,inf),
-                                       name=name+" width")
-        self.offset = Parameter.default(offset, limits=(0,inf),
-                                        name=name+" offset")
-        self.sigma = Parameter.default(sigma,
-                                       limits=(0,inf),
-                                       name=name+" sigma")
+        MagneticLayer.__init__(self, stack=stack, name=name, **kw)
         self.rhoM = [Parameter.default(v, name=name+" SLD[%d]"%i)
                      for i,v in enumerate(rhoM)]
         self.thetaM = [Parameter.default(v, name=name+" angle[%d]"%i)
                        for i,v in enumerate(thetaM)]
 
     def parameters(self):
-        parameters = MagneticLayer.parameters()
+        parameters = MagneticLayer.parameters(self)
         parameters.update(rhoM=self.rhoM,
                           thetaM=self.thetaM)
         return parameters
@@ -168,14 +156,14 @@ class MagneticTwist(Layer):
         return "MagneticTwist"
 
 
-class FreeMagnetic(Layer):
+class FreeMagnetic(MagneticLayer):
     """
     Linear change in magnetism throughout layer.
     """
     magnetic = True
-    def __init__(self, z = [], rhoM = [], thetaM = [],
+    def __init__(self, stack, z = [], rhoM = [], thetaM = [],
                  name="freemag", **kw):
-        MagneticLayer.__init__(self, **kw)
+        MagneticLayer.__init__(self, stack=stack, name=name, **kw)
         def parvec(vector,name,limits):
             return [Parameter.default(p,name=name+"[%d]"%i,limits=limits)
                     for i,p in enumerate(vector)]
@@ -191,7 +179,7 @@ class FreeMagnetic(Layer):
             raise ValueError("must have one thetaM for each rhoM")
 
     def parameters(self):
-        parameters = MagneticLayer.parameters()
+        parameters = MagneticLayer.parameters(self)
         parameters.update(rhoM=self.rhoM,
                           thetaM=self.thetaM,
                           z=self.z)
@@ -222,7 +210,7 @@ class FreeMagnetic(Layer):
 
     def render(self, probe, slabs):
         anchor, sigma = self.render_stack(probe, slabs)
-        Pw,Pz = slabs.microslabs(self.thickness.value)
+        Pw,Pz = slabs.microslabs(self.thicknessM)
         rhoM,thetaM = self.profile(Pz)
         slabs.add_magnetism(anchor=anchor,
                             w=w,rhoM=rhoM,thetaM=thetaM,

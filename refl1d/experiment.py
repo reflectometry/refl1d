@@ -15,6 +15,7 @@ import traceback
 
 import numpy
 from .reflectivity import reflectivity_amplitude as reflamp
+from .reflectivity import magnetic_amplitude as reflmag
 #print "Using pure python reflectivity calculator"
 #from .abeles import refl as reflamp
 from . import material, profile
@@ -76,13 +77,13 @@ class ExperimentBase(object):
                 or (not self.probe.polarized and self.probe.R is None)):
                 resid = numpy.zeros(0)
             else:
-                Q,R = self.reflectivity()
+                QR = self.reflectivity()
                 if self.probe.polarized:
-                    _,Rth = zip(*self.probe.select_corresponding((Q,R)))
-                    resid = numpy.hstack([(x.R - xth)/x.dR
-                                          for x,xth in zip(self.probe.xs, Rth)])
+                    resid = numpy.hstack([(xs.R - QRi[1])/xs.dR
+                                          for xs,QRi in zip(self.probe.xs, QR)
+                                          if xs is not None])
                 else:
-                    resid = (self.probe.R - R)/self.probe.dR
+                    resid = (self.probe.R - QR[1])/self.probe.dR
             self._cache['residuals'] = resid
 
         return self._cache['residuals']
@@ -110,16 +111,23 @@ class ExperimentBase(object):
 
     def plot_reflectivity(self, show_resolution=False, view=None):
 
-        Q,R = self.reflectivity()
-        self.probe.plot(theory=(Q,R),
+        QR = self.reflectivity()
+        self.probe.plot(theory=QR,
                         substrate=self._substrate, surface=self._surface,
                         view=view,
                         label=self.name)
 
         if show_resolution:
             import pylab
-            Q,R = self.reflectivity(resolution=False)
-            pylab.plot(Q,R,':g',hold=True)
+            QR = self.reflectivity(resolution=False)
+            if self.probe.polarized:
+                # Should be four pairs
+                for Q,R in QR:
+                    pylab.plot(Q,R,':g',hold=True)
+            else:
+                Q,R = QR
+                pylab.plot(Q,R,':g',hold=True)
+                
 
     def plot(self):
         import pylab
@@ -290,13 +298,8 @@ class Experiment(ExperimentBase):
         if key not in self._cache:
             self._slabs.clear()
             self.sample.render(self._probe_cache, self._slabs)
-            self._slabs.finalize()
-            if self.step_interfaces:
-                self._slabs.step_interfaces(self.dz)
-            if self.dA is not None:
-                self._slabs.contract_profile(self.dA)
-                if not self.step_interfaces:
-                    self._slabs.smooth_interfaces(self.dA, self.smoothness)
+            self._slabs.finalize(step_interfaces=self.step_interfaces,
+                                 dA=self.dA, smoothness=self.smoothness)
             self._cache[key] = True
         return self._slabs
 
@@ -311,8 +314,14 @@ class Experiment(ExperimentBase):
             #sigma = slabs.limited_sigma(limit=self.roughness_limit)
             sigma = slabs.sigma
             calc_q = self.probe.calc_Q
-            calc_r = reflamp(-calc_q/2, depth=w, rho=rho, irho=irho,
-                             sigma=sigma)
+            if slabs.ismagnetic:
+                rhoM, thetaM = slabs.rhoM, slabs.thetaM
+                Aguide = self.probe.Aguide
+                calc_r = reflmag(-calc_q/2, depth=w, rho=rho[0], irho=irho[0],
+                                 rhoM=rhoM, thetaM=thetaM, Aguide=Aguide)
+            else:
+                calc_r = reflamp(-calc_q/2, depth=w, rho=rho, irho=irho,
+                                 sigma=sigma)
             if False and numpy.isnan(calc_r).any():
                 print "w",w
                 print "rho",rho
@@ -355,23 +364,23 @@ class Experiment(ExperimentBase):
         key = ('reflectivity',resolution)
         if key not in self._cache:
             calc_q, calc_r = self._reflamp()
-            calc_R = abs(calc_r)**2
-            if numpy.isnan(calc_R).any():
-                print "calc_r contains NaN"
-                slabs = self._slabs
-                #print "w",slabs.w
-                #print "rho",slabs.rho
-                #print "irho",slabs.irho
-                #print "sigma",slabs.sigma
-            Q,R = self.probe.apply_beam(calc_q, calc_R, resolution=resolution)
-            #Q,R = self.probe.Qo,self.probe.R
-            self._cache[key] = Q,R
-            if numpy.isnan(R).any(): print "apply_beam causes NaN"
+            if self._slabs.ismagnetic:
+                calc_R = [abs(xs)**2 for xs in calc_r]
+                if not self.probe.polarized:
+                    calc_R = reduce(numpy.add, calc_R)/2
+            else:
+                calc_R = abs(calc_r)**2
+                if self.probe.polarized:
+                    nonspinflip = calc_R
+                    spinflip = 0*calc_R
+                    calc_R = [nonspinflip, spinflip, spinflip, nonspinflip]
+            res = self.probe.apply_beam(calc_q, calc_R, resolution=resolution)
+            self._cache[key] = res
         return self._cache[key]
 
     def smooth_profile(self,dz=0.1):
         """
-        Compute a density profile for the material.
+        Return the scattering potential for the sample.
 
         If *dz* is not given, use *dz* = 0.1 A.
         """
@@ -384,10 +393,22 @@ class Experiment(ExperimentBase):
                                         sigma_limit=self.roughness_limit)
             self._cache[key] = prof
         return self._cache[key]
+    
+    def magnetic_profile(self):
+        """
+        Return the nuclear and magnetic scattering potential for the sample.
+        """
+        key = 'magnetic_profile'
+        if key not in self._cache:
+            slabs = self._render_slabs()
+            prof = slabs.magnetic_profile()
+            self._cache[key] = prof
+        return self._cache[key]
 
     def step_profile(self):
         """
-        Compute a scattering length density profile
+        Return the step scattering potential for the sample, ignoring 
+        interfaces.
         """
         key = 'step_profile'
         if key not in self._cache:
@@ -425,13 +446,26 @@ class Experiment(ExperimentBase):
 
     def plot_profile(self):
         import pylab
-        z,rho,irho = self.step_profile()
-        pylab.plot(z,rho,':g',z,irho,':b')
-        z,rho,irho = self.smooth_profile()
-        pylab.plot(z,rho,'-g',z,irho,'-b', hold=True)
-        pylab.legend(['rho','irho'])
-        pylab.xlabel('depth (A)')
-        pylab.ylabel('SLD (10^6 inv A**2)')
+        if self.sample.magnetic:
+            z,rho,irho,rhoM,thetaM = self.magnetic_profile()
+            #rhoM_net = rhoM*numpy.cos(numpy.radians(thetaM))
+            pylab.plot(z,rho)
+            pylab.plot(z,irho,hold=True)
+            pylab.plot(z,rhoM,hold=True)
+            pylab.xlabel('depth (A)')
+            pylab.ylabel('SLD (10^6 / A**2)')
+            pylab.legend(['rho','irho','rhoM'])
+            ax = pylab.twinx()
+            pylab.plot(z,thetaM,':k',hold=True,axes=ax)
+            pylab.ylabel('magnetic angle (degrees)')
+        else:
+            z,rho,irho = self.step_profile()
+            pylab.plot(z,rho,':g',z,irho,':b')
+            z,rho,irho = self.smooth_profile()
+            pylab.plot(z,rho,'-g',z,irho,'-b', hold=True)
+            pylab.legend(['rho','irho'])
+            pylab.xlabel('depth (A)')
+            pylab.ylabel('SLD (10^6 / A**2)')
 
 
 class MixedExperiment(ExperimentBase):

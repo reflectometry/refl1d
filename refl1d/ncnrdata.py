@@ -80,7 +80,7 @@ def load(filename, instrument=None, **kw):
     probe.filename = filename
     return probe
 
-def load_magnetic(filename, Tguide=270, shared_beam=True, **kw):
+def load_magnetic(filename, Aguide=270, shared_beam=True, **kw):
     """
     Return a probe for magnetic NCNR data.
 
@@ -89,7 +89,7 @@ def load_magnetic(filename, Tguide=270, shared_beam=True, **kw):
         are the ++, +-, -+, -- cross sections, otherwise the individual
         cross sections should the be the file name for the cross section or
         None if the cross section does not exist.
-    *Tguide* (degrees)
+    *Aguide* (degrees)
         Angle of the guide field relative to the beam.  270 is the default.
     *shared_beam* (True)
         Use false if beam parameters should be fit separately for the
@@ -120,7 +120,7 @@ def load_magnetic(filename, Tguide=270, shared_beam=True, **kw):
     probes = [load(v, **kw) for v in find_xsec(filename)]
     if all(p is None for p in probes):
         raise IOError("Data set has no magnetic cross sections: '%s'"%filename)
-    probe = PolarizedNeutronProbe(probes, Tguide=Tguide)
+    probe = PolarizedNeutronProbe(probes, Aguide=Aguide)
     if shared_beam:
         probe.shared_beam()  # Share the beam parameters by default
     return probe
