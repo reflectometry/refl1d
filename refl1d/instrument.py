@@ -233,20 +233,20 @@ class Monochromatic(object):
         kw.setdefault('radiation',self.radiation)
         return make_probe(**kw)
 
-    def magnetic_probe(self, Tguide=270, shared_beam=True, **kw):
+    def magnetic_probe(self, Aguide=270, shared_beam=True, **kw):
         """
         Simulate a polarized measurement probe.
 
         Returns a probe with Q, angle, wavelength and the associated
         uncertainties, but not any data.
 
-        Guide field angle *Tguide* can be specified, as well as keyword
+        Guide field angle *Aguide* can be specified, as well as keyword
         arguments for the geometry of the probe cross sections such as
         *slits_at_Tlo*, *Tlo*, *Thi*, *slits_below*, and *slits_above*
         to define the angular divergence.
         """
         probes = [self.probe(**kw) for _ in range(4)]
-        probe = PolarizedNeutronProbe(probes, Tguide=Tguide)
+        probe = PolarizedNeutronProbe(probes, Aguide=Aguide)
         if shared_beam:
             probe.shared_beam()  # Share the beam parameters by default
         return probe
@@ -503,20 +503,20 @@ class Pulsed(object):
         return make_probe(T=T,dT=dT,L=L,dL=dL,
                           radiation=self.radiation, **kw)
 
-    def magnetic_probe(self, Tguide=270, shared_beam=True, **kw):
+    def magnetic_probe(self, Aguide=270, shared_beam=True, **kw):
         """
         Simulate a polarized measurement probe.
 
         Returns a probe with Q, angle, wavelength and the associated
         uncertainties, but not any data.
 
-        Guide field angle *Tguide* can be specified, as well as keyword
+        Guide field angle *Aguide* can be specified, as well as keyword
         arguments for the geometry of the probe cross sections such as
         slit settings *slits* and *T* to define the angular divergence
         and *dLoL* to define the wavelength resolution.
         """
         probes = [self.probe(**kw) for _ in range(4)]
-        probe = PolarizedNeutronProbe(probes, Tguide=Tguide)
+        probe = PolarizedNeutronProbe(probes, Aguide=Aguide)
         if shared_beam:
             probe.shared_beam()  # Share the beam parameters by default
         return probe
