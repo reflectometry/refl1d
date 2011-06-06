@@ -255,18 +255,18 @@ class Microslabs(object):
 
         Call this method after the microslab model has been constructed,
         so any post-rendering processes can be completed.
-        
-        In addition to clearing any width from the substrate and 
+
+        In addition to clearing any width from the substrate and
         the surface surround, this will align magnetic and nuclear slabs,
-        convert interfaces to step interfaces if desired, and merge slabs 
+        convert interfaces to step interfaces if desired, and merge slabs
         with similar scattering potentials to reduce computation time.
-        
+
         *step_interfaces* is True if interfaces should be rendered using
         slabs.
-        
+
         *dA* is the tolerance to use when deciding if similar layers can
         be merged.
-        
+
         *smoothness* is the thickness of the Nevot-Croce interface to use
         between merged layers, as a portion to the layer thickness.
         """
@@ -427,7 +427,7 @@ class Microslabs(object):
     def _render_magnetic(self):
         """
         Render nuclear and magnetic profiles on common slab boundaries.
-        
+
         Creates rhoM and thetaM columns.
         """
         # TODO: do we need to worry about magnetism bleeding into the
@@ -437,7 +437,7 @@ class Microslabs(object):
 
         # Fill in gaps for magnetic profile
         wM, rhoM, thetaM, sigmaM = self._join_magnetic_sections()
-        
+
         rhoM = build_profile(z, wM, sigmaM, rhoM)
         thetaM = build_profile(z, wM, sigmaM, thetaM)
         #print [len(v) for v in w, rho, irho, rhoM, thetaM]

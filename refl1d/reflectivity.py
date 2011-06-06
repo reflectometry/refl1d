@@ -199,7 +199,7 @@ def magnetic_amplitude(kz,
     expth = cos(thetaM * pi/180.0) + 1j*sin(thetaM * pi/180.0)
     #rho,irho,rho_m = [v*1e-6 for v in rho,irho,rho_m]
     R1,R2,R3,R4 = [numpy.empty(kz.shape,'D') for pol in 1,2,3,4]
-    reflmodule._magnetic_amplitude(depth, sigma, rho, irho, 
+    reflmodule._magnetic_amplitude(depth, sigma, rho, irho,
                                    rhoM,  expth, Aguide, kz, rho_index,
                                    R1, R2, R3, R4
                                    )

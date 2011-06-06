@@ -127,7 +127,7 @@ class ExperimentBase(object):
             else:
                 Q,R = QR
                 pylab.plot(Q,R,':g',hold=True)
-                
+
 
     def plot(self):
         import pylab
@@ -393,7 +393,7 @@ class Experiment(ExperimentBase):
                                         sigma_limit=self.roughness_limit)
             self._cache[key] = prof
         return self._cache[key]
-    
+
     def magnetic_profile(self):
         """
         Return the nuclear and magnetic scattering potential for the sample.
@@ -407,7 +407,7 @@ class Experiment(ExperimentBase):
 
     def step_profile(self):
         """
-        Return the step scattering potential for the sample, ignoring 
+        Return the step scattering potential for the sample, ignoring
         interfaces.
         """
         key = 'step_profile'

@@ -87,7 +87,7 @@ class MagneticLayer(Layer):
 
     @property
     def thicknessM(self):
-        return (self.stack.thickness 
+        return (self.stack.thickness
                 - (self.dead_below.value+self.dead_above.value))
 
 class MagneticSlab(MagneticLayer):
