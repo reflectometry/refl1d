@@ -692,7 +692,7 @@ class ProbeSet(Probe):
         Q,R = theory
         for p in self.probes:
             n = len(p)
-            p.simulate_data(theory=(Q[offset:offset+n],R[offset:offset+n]), 
+            p.simulate_data(theory=(Q[offset:offset+n],R[offset:offset+n]),
                             noise=noise)
             offset += n
     simulate_data.__doc__ = Probe.simulate_data.__doc__
@@ -935,7 +935,7 @@ class PolarizedNeutronProbe(object):
         return dict(pp=pp, pm=pm, mp=mp, mm=mm)
 
     def resynth_data(self):
-        for p in self.xs: 
+        for p in self.xs:
             if p is not None: p.resynth_data()
     resynth_data.__doc__ = Probe.resynth_data.__doc__
 

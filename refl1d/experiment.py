@@ -554,7 +554,7 @@ class MixedExperiment(ExperimentBase):
                     if not p._slabs.ismagnetic:
                         r[i] = _polarized_nonmagnetic(r[i])
 
-            # Add the cross sections                    
+            # Add the cross sections
             if self.coherent:
                 r = numpy.sum(r,axis=0)
                 R = _amplitude_to_magnitude(r, magnetic=magnetic,
@@ -590,7 +590,7 @@ class MixedExperiment(ExperimentBase):
 
 def _polarized_nonmagnetic(r):
     """Convert nonmagnetic data to polarized representation.
-    
+
     Polarized non-magnetic data repeats the reflectivity in the non spin flip
     channels and sets the spin flip channels to zero.
     """
@@ -600,7 +600,7 @@ def _polarized_nonmagnetic(r):
 
 def _nonpolarized_magnetic(R):
     """Convert magnetic reflectivity to unpolarized representation.
-    
+
     Unpolarized magnetic data adds the cross-sections of the magnetic
     data incoherently and divides by two.
     """

@@ -30,19 +30,19 @@ MgO = SLD(name="MgO",rho=6.01)
 
 # === Sample ===
 #FePt_nuc=FreeInterface(below=FePt,above=air,
-#				dz=[1]*4,dp=[1]*4,name="FePt nuclear")
+#                               dz=[1]*4,dp=[1]*4,name="FePt nuclear")
 FePt_nuc=FreeLayer(below=FePt,above=air,
-				   z=numpy.linspace(0,1,6),
-				   rho=numpy.linspace(4.925,0,6),
-				   name="FePt nuclear")
-FePt_mag=FreeMagnetic(FePt_nuc(270,0), 
-				      z=numpy.linspace(0,1,6),
-				      rhoM=numpy.linspace(0.1,0,6),
-				      name="FePt magnetic")
+                                   z=numpy.linspace(0,1,6),
+                                   rho=numpy.linspace(4.925,0,6),
+                                   name="FePt nuclear")
+FePt_mag=FreeMagnetic(FePt_nuc(270,0),
+                                      z=numpy.linspace(0,1,6),
+                                      rhoM=numpy.linspace(0.1,0,6),
+                                      name="FePt magnetic")
 PtMn_nuc=FreeInterface(below=PtMn,above=FePt,
-						dz=[1]*3,dp=[1]*3,name="PtMn gradient")
+                                                dz=[1]*3,dp=[1]*3,name="PtMn gradient")
 
-#       0            1                2         3	    4
+#       0            1                2         3           4
 sample=(MgO(100,1)|PtMn(375,0)|PtMn_nuc(50,0)|FePt_mag|air (100,1))
 
 # === Fit parameters ===
@@ -50,14 +50,13 @@ for p in FePt_nuc.z[1:-1]: p.range(0,1)
 for p in FePt_nuc.rho[1:-1]: p.range(0,7)
 FePt_mag.z = FePt_nuc.z
 if 0: # Tie magnetic SLD to nuc
-	scale = Parameter(0.1,"FePt mag")
-	FePt_mag.rhoM = FePt_nuc.rho*scale
+    scale = Parameter(0.1,"FePt mag")
+    FePt_mag.rhoM = FePt_nuc.rho*scale
 else:  # Magnetic independent of nuc
-	for p in FePt_mag.rhoM: p.range(0,0.2)
+    for p in FePt_mag.rhoM: p.range(0,0.2)
 
 # === Problem definition ===
 M = Experiment(sample=sample, probe=probe, dz=1,dA=1)
 
 problem = FitProblem(M)
 problem.name = "pmf"
-
