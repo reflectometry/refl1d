@@ -510,7 +510,7 @@ class MixedExperiment(ExperimentBase):
     def _reflamp(self):
         total = sum(r.value for r in self.ratio)
         Qs,Rs = zip(*[p._reflamp() for p in self.parts])
-        Rs = [numpy.asarray(ri)*(ratio_i.value/total)
+        Rs = [numpy.asarray(ri)*numpy.sqrt(ratio_i.value/total)
               for ri,ratio_i in zip(Rs,self.ratio)]
         #print "Rs",Rs
         return Qs[0], Rs
