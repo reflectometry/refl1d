@@ -52,7 +52,9 @@ class FreeLayer(Layer):
         if len(self.irho) > 0 and len(self.z) != len(self.irho):
             raise ValueError("must have one z for each irho value")
     def parameters(self):
-        return dict(rho=self.rho,
+        return dict(thickness=self.thickness,
+                    interface=self.interface,
+                    rho=self.rho,
                     irho=self.irho,
                     z=self.z,
                     below=self.below.parameters(),
