@@ -7,6 +7,7 @@ Experiment definition
 An experiment combines the sample definition with a measurement probe
 to create a fittable reflectometry model.
 """
+from __future__ import division
 
 from math import log, pi, log10, ceil, floor
 import shutil
@@ -155,9 +156,8 @@ class ExperimentBase(object):
         *noise* = 2 : float | %
             Percentage noise to add to the data.
         """
-        _,R = self.reflectivity(resolution=True)
-        dR = 0.01*noise*R
-        self.probe.simulate_data(R,dR)
+        theory = self.reflectivity(resolution=True)
+        self.probe.simulate_data(theory, noise=noise)
     def _set_name(self, name):
         self._name = name
     def _get_name(self):
@@ -352,29 +352,19 @@ class Experiment(ExperimentBase):
             self._cache[key] = self.probe.Q, r
         return self._cache[key]
 
-
     def reflectivity(self, resolution=True):
         """
         Calculate predicted reflectivity.
 
         If *resolution* is true include resolution effects.
-
-        If *beam* is true, include absorption and intensity effects.
         """
         key = ('reflectivity',resolution)
         if key not in self._cache:
-            calc_q, calc_r = self._reflamp()
-            if self._slabs.ismagnetic:
-                calc_R = [abs(xs)**2 for xs in calc_r]
-                if not self.probe.polarized:
-                    calc_R = reduce(numpy.add, calc_R)/2
-            else:
-                calc_R = abs(calc_r)**2
-                if self.probe.polarized:
-                    nonspinflip = calc_R
-                    spinflip = 0*calc_R
-                    calc_R = [nonspinflip, spinflip, spinflip, nonspinflip]
-            res = self.probe.apply_beam(calc_q, calc_R, resolution=resolution)
+            Q, r = self._reflamp()
+            R = _amplitude_to_magnitude(r,
+                                        magnetic=self._slabs.ismagnetic,
+                                        polarized=self.probe.polarized)
+            res = self.probe.apply_beam(Q, R, resolution=resolution)
             self._cache[key] = res
         return self._cache[key]
 
@@ -518,10 +508,12 @@ class MixedExperiment(ExperimentBase):
                     )
 
     def _reflamp(self):
-        f = numpy.array([r.value for r in self.ratio],'d')
-        f /= numpy.sum(f)
+        total = sum(r.value for r in self.ratio)
         Qs,Rs = zip(*[p._reflamp() for p in self.parts])
-        return Qs[0], f*numpy.array(Rs).T
+        Rs = [numpy.asarray(ri)*(ratio_i.value/total)
+              for ri,ratio_i in zip(Rs,self.ratio)]
+        #print "Rs",Rs
+        return Qs[0], Rs
 
     def amplitude(self, resolution=False):
         """
@@ -551,14 +543,31 @@ class MixedExperiment(ExperimentBase):
         """
         key = ('reflectivity',resolution)
         if key not in self._cache:
-            calc_Q, calc_R = self._reflamp()
+            Q, r = self._reflamp()
+
+            polarized = self.probe.polarized
+            magnetic = any(p._slabs.ismagnetic for p in self.parts)
+
+            # If any reflectivity is magnetic, make all reflectivity magnetic
+            if magnetic:
+                for i,p in enumerate(self.parts):
+                    if not p._slabs.ismagnetic:
+                        r[i] = _polarized_nonmagnetic(r[i])
+
+            # Add the cross sections
             if self.coherent:
-                calc_R = abs(numpy.sum(calc_R, axis=1))**2
+                r = numpy.sum(r,axis=0)
+                R = _amplitude_to_magnitude(r, magnetic=magnetic,
+                                            polarized=polarized)
             else:
-                calc_R = numpy.sum(abs(calc_R)**2, axis=1)
-            Q,R = self.probe.apply_beam(calc_Q, calc_R, resolution=resolution)
-            #Q,R = self.probe.Qo,self.probe.R
-            self._cache[key] = Q,R
+                R = [_amplitude_to_magnitude(ri, magnetic=magnetic,
+                                             polarized=polarized)
+                     for ri in r]
+                R = numpy.sum(R,axis=0)
+
+            # Apply resolution
+            res = self.probe.apply_beam(Q, R, resolution=resolution)
+            self._cache[key] = res
         return self._cache[key]
 
     def plot_profile(self):
@@ -578,6 +587,36 @@ class MixedExperiment(ExperimentBase):
     def save_staj(self, basename):
         for i,p in enumerate(self.parts):
             p.save_staj("%s-%d"%(basename,i))
+
+def _polarized_nonmagnetic(r):
+    """Convert nonmagnetic data to polarized representation.
+
+    Polarized non-magnetic data repeats the reflectivity in the non spin flip
+    channels and sets the spin flip channels to zero.
+    """
+    nsf = r
+    sf = 0*r
+    return [nsf, sf, sf, nsf]
+
+def _nonpolarized_magnetic(R):
+    """Convert magnetic reflectivity to unpolarized representation.
+
+    Unpolarized magnetic data adds the cross-sections of the magnetic
+    data incoherently and divides by two.
+    """
+    return reduce(numpy.add, R)/2
+
+def _amplitude_to_magnitude(r, magnetic, polarized):
+    """
+    Compute the reflectivity magnitude
+    """
+    if magnetic:
+        R = [abs(xs)**2 for xs in r]
+        if not polarized: R = _nonpolarized_magnetic(R)
+    else:
+        R = abs(r)**2
+        if polarized: R = _polarized_nonmagnetic(R)
+    return R
 
 
 def nice(v, digits = 2):

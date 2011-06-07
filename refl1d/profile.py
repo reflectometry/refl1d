@@ -234,6 +234,10 @@ class Microslabs(object):
     def sigma(self):
         "rms roughness (A)"
         return self._slabs[:self._num_slabs-1,1]
+    @property
+    def surface_sigma(self):
+        "sigma above the surface (which is not part of sigma)"
+        return self._slabs[self._num_slabs-1,1]
 
     @property
     def rho(self):

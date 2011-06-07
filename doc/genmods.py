@@ -97,7 +97,7 @@ modules=[
     ('cheby', 'Freeform - Chebyshev'),
     ('mono', 'Freeform - Monotonic Spline'),
     ('freeform', 'Freeform - Parametric B-Spline'),
-    #('magnetic', 'Magnetic Models'),
+    ('magnetic', 'Magnetic Models'),
     ('ncnrdata', 'NCNR Data'),
     ('snsdata', 'SNS Data'),
     ('staj', 'Staj File'),

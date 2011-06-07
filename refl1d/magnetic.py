@@ -80,10 +80,10 @@ class MagneticLayer(Layer):
         anchor = slabs.thickness() + self.dead_below.value
 
         s_below = (self.interface_below.value
-                   if self.interface_below else slabs.sigma[-1])
+                   if self.interface_below else slabs.surface_sigma)
         self.stack.render(probe, slabs)
         s_above = (self.interface_above.value
-                   if self.interface_above else slabs.sigma[-1])
+                   if self.interface_above else slabs.surface_sigma)
         return anchor, (s_below, s_above)
 
     @property

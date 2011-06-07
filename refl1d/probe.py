@@ -231,21 +231,23 @@ class Probe(object):
         """
         self.R = self.Ro + numpy.random.randn(*self.Ro.shape)*self.dR
 
-    def simulate_data(self, R, dR):
-        """
-        Set the data for the probe to R, adding random noise dR.
-        """
-        self.Ro, self.dR = R+0, dR+0
-        self.Ro[R==0] = 1e-10
-        self.dR[dR==0] = 1e-11
-        self.resynth_data()
-        self.Ro = self.R
-
     def restore_data(self):
         """
         Restore the original data.
         """
         self.R = self.Ro
+
+    def simulate_data(self, theory, noise=2):
+        """
+        Set the data for the probe to R, adding random noise dR.
+        """
+        _,R = theory
+        dR = 0.01*noise*R
+        self.Ro, self.dR = R+0, dR+0
+        self.Ro[R==0] = 1e-10
+        self.dR[dR==0] = 1e-11
+        self.resynth_data()
+        self.Ro = self.R
 
     def write_data(self, filename,
                    columns=['Q','R','dR'],
@@ -686,6 +688,15 @@ class ProbeSet(Probe):
         self.R = numpy.hstack(p.R for p in self.probes)
     restore_data.__doc__ = Probe.restore_data.__doc__
 
+    def simulate_data(self, theory, noise=2):
+        Q,R = theory
+        for p in self.probes:
+            n = len(p)
+            p.simulate_data(theory=(Q[offset:offset+n],R[offset:offset+n]),
+                            noise=noise)
+            offset += n
+    simulate_data.__doc__ = Probe.simulate_data.__doc__
+
     def __len__(self):
         return self._len
     def _Q(self):
@@ -922,6 +933,22 @@ class PolarizedNeutronProbe(object):
         pp,pm,mp,mm = [(xsi.parameters() if xsi else None)
                        for xsi in self.xs]
         return dict(pp=pp, pm=pm, mp=mp, mm=mm)
+
+    def resynth_data(self):
+        for p in self.xs:
+            if p is not None: p.resynth_data()
+    resynth_data.__doc__ = Probe.resynth_data.__doc__
+
+    def restore_data(self):
+        for p in self.xs:
+            if p is not None: p.restore_data()
+    restore_data.__doc__ = Probe.restore_data.__doc__
+
+    def simulate_data(self, theory, noise=2):
+        for p,th in zip(self.xs,theory):
+            if p is not None: p.simulate_data(theory=th, noise=noise)
+    simulate_data.__doc__ = Probe.simulate_data.__doc__
+
     def _check(self):
         back_refls = [f.back_reflectivity for f in self.xs if f is not None]
         if all(back_refls) or not any(back_refls):
@@ -980,6 +1007,9 @@ class PolarizedNeutronProbe(object):
         for x in self.xs:
             if x is not None:
                 x._set_calc(T,L)
+        # Only keep the scattering factors that you need
+        self._sf_L = numpy.unique(L)
+        self._sf_idx = numpy.searchsorted(self._sf_L, L)
 
     def apply_beam(self, Q, R, resolution=True):
         """
