@@ -508,9 +508,24 @@ class MixedExperiment(ExperimentBase):
                     )
 
     def _reflamp(self):
+        """
+        Calculate the amplitude of the reflectivity...  
+        
+        For an incoherent sum, we want to add the squares of the amplitudes, 
+        with a weighting specified by self.ratio, so the amplitudes
+        are scaled by sqrt(self.ratio/total) so when they get squared and added
+        the normalization is correct.
+        
+        For a coherent sum, just multiply by ratio/total.  
+        It all comes out in the wash.
+        """
         total = sum(r.value for r in self.ratio)
         Qs,Rs = zip(*[p._reflamp() for p in self.parts])
-        Rs = [numpy.asarray(ri)*numpy.sqrt(ratio_i.value/total)
+        if self.coherent == False:
+            Rs = [numpy.asarray(ri)*numpy.sqrt(ratio_i.value/total)
+              for ri,ratio_i in zip(Rs,self.ratio)]
+        else: # self.coherent == True
+            Rs = [numpy.asarray(ri)*(ratio_i.value/total)
               for ri,ratio_i in zip(Rs,self.ratio)]
         #print "Rs",Rs
         return Qs[0], Rs
@@ -535,7 +550,7 @@ class MixedExperiment(ExperimentBase):
         """
         Calculate predicted reflectivity.
 
-        This will be the weigthed sum of the reflectivity from the
+        This will be the weighted sum of the reflectivity from the
         individual systems.  If coherent is set, then the coherent
         sum will be used, otherwise the incoherent sum will be used.
 
