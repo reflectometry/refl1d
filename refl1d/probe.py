@@ -443,6 +443,20 @@ class Probe(object):
                                      Vrho=Vrho*I, Virho=Virho*I)
         return calculator
 
+    def save(self, filename, theory, substrate=None, surface=None):
+        """
+        Save the data and theory to a file.
+        """
+        fresnel = self.fresnel(substrate, surface)
+        _, R = theory
+        A = numpy.array((self.Q,self.dQ,self.R,self.dR, R, fresnel(self.Q)))
+        fid = open(filename,"w")
+        fid.write("# %17s %20s %20s %20s %20s %20s\n"
+                  %("Q (1/A)","dQ (1/A)", "R", "dR", "theory", "fresnel"))
+        #print "A",self.Q.shape,A.shape
+        numpy.savetxt(fid, A.T, fmt="%20.15g")
+        fid.close()
+
     def plot(self, view=None, **kwargs):
         """
         Plot theory against data.
@@ -717,10 +731,17 @@ class ProbeSet(Probe):
         result = [p.apply_beam(calc_Q, calc_R, **kw) for p in self.probes]
         Q,R = [numpy.hstack(v) for v in zip(*result)]
         return Q,R
+    def fresnel(self, *args, **kw):
+        return self.probes[0].fresnel(*args, **kw)
+    fresnel.__doc__ = Probe.fresnel.__doc__
+    def save(self, filename, theory, substrate=None, surface=None):
+        for i,(p,th) in enumerate(self._parts(theory=theory)):
+            p.save(filename+str(i+1), th, substrate=substrate, surface=surface)
+    save.__doc__ = Probe.save.__doc__
     def plot(self, theory=None, **kw):
         import pylab
         ishold = pylab.ishold()
-        for p,th in self._plotparts(theory):
+        for p,th in self._parts(theory):
             p.plot(theory=th, **kw)
             pylab.hold(True)
         pylab.hold(ishold)
@@ -729,21 +750,21 @@ class ProbeSet(Probe):
         for p in self.probes: p.plot_resolution(**kw)
     plot_resolution.__doc__ = Probe.plot_resolution.__doc__
     def plot_linear(self, theory=None, **kw):
-        for p,th in self._plotparts(theory): p.plot_linear(theory=th, **kw)
+        for p,th in self._parts(theory): p.plot_linear(theory=th, **kw)
     plot_linear.__doc__ = Probe.plot_linear.__doc__
     def plot_log(self, theory=None, **kw):
-        for p,th in self._plotparts(theory): p.plot_log(theory=th, **kw)
+        for p,th in self._parts(theory): p.plot_log(theory=th, **kw)
     plot_log.__doc__ = Probe.plot_log.__doc__
     def plot_fresnel(self, theory=None, **kw):
-        for p,th in self._plotparts(theory): p.plot_fresnel(theory=th, **kw)
+        for p,th in self._parts(theory): p.plot_fresnel(theory=th, **kw)
     plot_fresnel.__doc__ = Probe.plot_fresnel.__doc__
     def plot_Q4(self, theory=None, **kw):
-        for p,th in self._plotparts(theory): p.plot_Q4(theory=th, **kw)
+        for p,th in self._parts(theory): p.plot_Q4(theory=th, **kw)
     plot_Q4.__doc__ = Probe.plot_Q4.__doc__
     def plot_residuals(self, theory=None, **kw):
-        for p,th in self._plotparts(theory): p.plot_residuals(theory=th, **kw)
+        for p,th in self._parts(theory): p.plot_residuals(theory=th, **kw)
     plot_residuals.__doc__ = Probe.plot_residuals.__doc__
-    def _plotparts(self, theory):
+    def _parts(self, theory):
         if theory == None:
             for p in self.probes:
                 yield p,None
@@ -1019,6 +1040,10 @@ class PolarizedNeutronProbe(object):
         return [(xs.apply_beam(Q,Ri,resolution) if xs else None)
                 for xs,Ri in zip(self.xs,R)]
 
+    def fresnel(self, *args, **kw):
+        return self.pp.fresnel(*args, **kw)
+    fresnel.__doc__ = Probe.fresnel.__doc__
+
     def scattering_factors(self, material):
         # doc string is inherited from parent (see below)
         rho, irho, rho_incoh = nsf.neutron_sld(material,
@@ -1044,6 +1069,13 @@ class PolarizedNeutronProbe(object):
 
     def __len__(self):
         return len(self.calc_Q)
+
+    def save(self, filename, theory, substrate=None, surface=None):
+        for xsi,xsi_th,suffix in zip(self.xs, theory, ('A','B','C','D')):
+            if xsi is not None:
+                xsi.save(filename+suffix, xsi_th,
+                         substrate=substrate, surface=surface)
+    save.__doc__ = Probe.save.__doc__
 
     def plot(self, view=None, **kwargs):
         """

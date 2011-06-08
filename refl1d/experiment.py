@@ -194,15 +194,9 @@ class ExperimentBase(object):
 
     def save_refl(self, basename):
         # Reflectivity
-        theory = self.reflectivity()[1]
-        fresnel = self.probe.fresnel(self._substrate, self._surface)
-        A = numpy.array((self.probe.Q,self.probe.dQ,self.probe.R,self.probe.dR,
-                         theory, fresnel(self.probe.Q)))
-        fid = open(basename+"-refl.dat","w")
-        fid.write("# %17s %20s %20s %20s %20s %20s\n"
-                  %("Q (1/A)","dQ (1/A)", "R", "dR", "theory", "fresnel"))
-        numpy.savetxt(fid, A.T, fmt="%20.15g")
-        fid.close()
+        theory = self.reflectivity()
+        self.probe.save(filename=basename+"-refl.dat", theory=theory,
+                        substrate=self._substrate, surface=self._surface)
 
 
 
@@ -509,14 +503,14 @@ class MixedExperiment(ExperimentBase):
 
     def _reflamp(self):
         """
-        Calculate the amplitude of the reflectivity...  
-        
-        For an incoherent sum, we want to add the squares of the amplitudes, 
+        Calculate the amplitude of the reflectivity...
+
+        For an incoherent sum, we want to add the squares of the amplitudes,
         with a weighting specified by self.ratio, so the amplitudes
         are scaled by sqrt(self.ratio/total) so when they get squared and added
         the normalization is correct.
-        
-        For a coherent sum, just multiply by ratio/total.  
+
+        For a coherent sum, just multiply by ratio/total.
         It all comes out in the wash.
         """
         total = sum(r.value for r in self.ratio)
