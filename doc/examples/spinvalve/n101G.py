@@ -17,6 +17,9 @@ sample = (Si(0,2.13) | Ta(38.8,2)
           | Cu(5.148,2) | Ta(55.4895,2) | TaOx(47.42,3.5) | air
           )
 
+sample[2].stack[0].thickness.pmp(20)
+sample[2].rhoM.pmp(20)
+
 instrument = NCNR.NG1(slits_at_Tlo=0.1)
 probe = instrument.load_magnetic("n101Gc1.reflA")
 
