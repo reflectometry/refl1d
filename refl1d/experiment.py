@@ -261,7 +261,7 @@ class Experiment(ExperimentBase):
     implemented.
     """
     def __init__(self, sample=None, probe=None, name=None,
-                 roughness_limit=2.5, dz=None, dA=None,
+                 roughness_limit=0, dz=None, dA=None,
                  smoothness=0.3, step_interfaces=False):
         self.sample = sample
         self._substrate=self.sample[0].material
@@ -305,8 +305,8 @@ class Experiment(ExperimentBase):
             slabs = self._render_slabs()
             w = slabs.w
             rho,irho = slabs.rho, slabs.irho
-            #sigma = slabs.limited_sigma(limit=self.roughness_limit)
-            sigma = slabs.sigma
+            sigma = slabs.limited_sigma(limit=self.roughness_limit)
+            #sigma = slabs.sigma
             calc_q = self.probe.calc_Q
             if slabs.ismagnetic:
                 rhoM, thetaM = slabs.rhoM, slabs.thetaM
