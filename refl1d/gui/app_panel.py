@@ -126,7 +126,7 @@ class AppPanel(wx.Panel):
         _item = file_menu.Prepend(wx.ID_ANY,
                                   "E&xport Results ...",
                                   "Save theory, data and parameters")
-        frame.Bind(wx.EVT_MENU, self.OnFileSaveResults, _item)
+        frame.Bind(wx.EVT_MENU, self.OnFileExportResults, _item)
 
         _item = file_menu.Prepend(wx.ID_ANY,
                                   "&Reload",
@@ -387,9 +387,9 @@ class AppPanel(wx.Panel):
             self.save_model(self.model.path)
 
 
-    def OnFileSaveResults(self, event):
+    def OnFileExportResults(self, event):
         dlg = wx.DirDialog(self,
-                           message="Save results",
+                           message="Export results",
                            defaultPath=os.getcwd(),
                            style=wx.DD_DEFAULT_STYLE)
         # Wait for user to close the dialog.
@@ -481,7 +481,7 @@ class AppPanel(wx.Panel):
 
     def save_model(self, path):
         import cPickle as serialize
-        serialize.dump(self.model, open(self.model.path,'wb'))
+        serialize.dump(self.model, open(path,'wb'))
 
     def save_results(self, path):
         output_path = os.path.join(path, self.model.name)
