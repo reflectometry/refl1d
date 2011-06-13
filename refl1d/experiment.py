@@ -170,25 +170,53 @@ class ExperimentBase(object):
         self.save_refl(basename)
 
     def save_profile(self, basename):
+        if self.ismagnetic:
+            self._save_magnetic(basename)
+        else:
+            self._save_nonmagnetic(basename)
+
+    def _save_magnetic(self, basename):
+        # Slabs
+        A = numpy.array(self.magnetic_slabs())
+        fid = open(basename+"-slabs.dat","w")
+        fid.write("# %17s %20s %20s %20s %20s\n"
+                  %("thickness (A)", "rho (1e-6/A^2)", "irho (1e-6/A^2)",
+                    "rhoM (1e-6/A^2)", "theta (degrees)"))
+        numpy.savetxt(fid, A.T, fmt="%20.15g")
+        fid.close()
+
+        # Step profile
+        A = numpy.array(self.magnetic_profile())
+        fid = open(basename+"-steps.dat","w")
+        fid.write("# %10s %12s %12s %12s %12s\n"
+                  %("z (A)", "rho (1e-6/A2)", "irho (1e-6/A2)",
+                    "rhoM (1e-6/A2)", "theta (degrees)"))
+        numpy.savetxt(fid, A.T, fmt="%12.8f")
+        fid.close()
+        
+    def _save_nonmagnetic(self, basename):    
         # Slabs
         A = numpy.array(self.slabs())
         fid = open(basename+"-slabs.dat","w")
-        fid.write("# %17s %20s %20s %20s\n"%("thickness","roughness",
-                                              "rho (1e-6/A2)","irho (1e-6/A2)"))
+        fid.write("# %17s %20s %20s %20s\n"
+                  %("thickness (A)","interface (A)","rho (1e-6/A^2)",
+                    "irho (1e-6/A^2)"))
         numpy.savetxt(fid, A.T, fmt="%20.15g")
         fid.close()
 
         # Step profile
         A = numpy.array(self.step_profile())
         fid = open(basename+"-steps.dat","w")
-        fid.write("# %10s %12s %12s\n"%("z","rho (1e-6/A2)","irho (1e-6/A2)"))
+        fid.write("# %10s %20s %20s\n"
+                  %("z (A)", "rho (1e-6/A2)", "irho (1e-6/A2)"))
         numpy.savetxt(fid, A.T, fmt="%12.8f")
         fid.close()
 
         # Smooth profile
         A = numpy.array(self.smooth_profile())
         fid = open(basename+"-profile.dat","w")
-        fid.write("# %10s %12s %12s\n"%("z","rho (1e-6/A2)","irho (1e-6/A2)"))
+        fid.write("# %10s %12s %12s\n"
+                  %("z (A)", "rho (1e-6/A2)", "irho (1e-6/A2)"))
         numpy.savetxt(fid, A.T, fmt="%12.8f")
         fid.close()
 
@@ -280,6 +308,11 @@ class Experiment(ExperimentBase):
         self._cache = {}  # Cache calculated profiles/reflectivities
         self._name = name
 
+    @property
+    def ismagnetic(self):
+        slabs = self._render_slabs()
+        return slabs.ismagnetic
+
     def parameters(self):
         return dict(sample=self.sample.parameters(),
                     probe=self.probe.parameters())
@@ -356,7 +389,7 @@ class Experiment(ExperimentBase):
         if key not in self._cache:
             Q, r = self._reflamp()
             R = _amplitude_to_magnitude(r,
-                                        magnetic=self._slabs.ismagnetic,
+                                        ismagnetic=self.ismagnetic,
                                         polarized=self.probe.polarized)
             res = self.probe.apply_beam(Q, R, resolution=resolution)
             self._cache[key] = res
@@ -375,17 +408,6 @@ class Experiment(ExperimentBase):
             slabs = self._render_slabs()
             prof = slabs.smooth_profile(dz=dz,
                                         sigma_limit=self.roughness_limit)
-            self._cache[key] = prof
-        return self._cache[key]
-
-    def magnetic_profile(self):
-        """
-        Return the nuclear and magnetic scattering potential for the sample.
-        """
-        key = 'magnetic_profile'
-        if key not in self._cache:
-            slabs = self._render_slabs()
-            prof = slabs.magnetic_profile()
             self._cache[key] = prof
         return self._cache[key]
 
@@ -410,8 +432,24 @@ class Experiment(ExperimentBase):
              Roughness is for the top of the layer.
         """
         slabs = self._render_slabs()
-        return (slabs.w, numpy.hstack((0,slabs.sigma)),
+        return (slabs.w, numpy.hstack((slabs.sigma,0)),
                 slabs.rho[0], slabs.irho[0])
+
+    def magnetic_profile(self):
+        """
+        Return the nuclear and magnetic scattering potential for the sample.
+        """
+        key = 'magnetic_profile'
+        if key not in self._cache:
+            slabs = self._render_slabs()
+            prof = slabs.magnetic_profile()
+            self._cache[key] = prof
+        return self._cache[key]
+
+    def magnetic_slabs(self):
+        slabs = self._render_slabs()
+        return (slabs.w, slabs.rho[0], slabs.irho[0], 
+                slabs.rhoM, slabs.thetaM)
 
     def save_staj(self, basename):
         from .stajconvert import save_mlayer
@@ -430,7 +468,7 @@ class Experiment(ExperimentBase):
 
     def plot_profile(self):
         import pylab
-        if self.sample.magnetic:
+        if self.ismagnetic:
             z,rho,irho,rhoM,thetaM = self.magnetic_profile()
             #rhoM_net = rhoM*numpy.cos(numpy.radians(thetaM))
             pylab.plot(z,rho)
@@ -555,21 +593,21 @@ class MixedExperiment(ExperimentBase):
             Q, r = self._reflamp()
 
             polarized = self.probe.polarized
-            magnetic = any(p._slabs.ismagnetic for p in self.parts)
+            ismagnetic = any(p.ismagnetic for p in self.parts)
 
             # If any reflectivity is magnetic, make all reflectivity magnetic
-            if magnetic:
+            if ismagnetic:
                 for i,p in enumerate(self.parts):
-                    if not p._slabs.ismagnetic:
+                    if not p.ismagnetic:
                         r[i] = _polarized_nonmagnetic(r[i])
 
             # Add the cross sections
             if self.coherent:
                 r = numpy.sum(r,axis=0)
-                R = _amplitude_to_magnitude(r, magnetic=magnetic,
+                R = _amplitude_to_magnitude(r, ismagnetic=ismagnetic,
                                             polarized=polarized)
             else:
-                R = [_amplitude_to_magnitude(ri, magnetic=magnetic,
+                R = [_amplitude_to_magnitude(ri, ismagnetic=ismagnetic,
                                              polarized=polarized)
                      for ri in r]
                 R = numpy.sum(R,axis=0)
@@ -615,11 +653,11 @@ def _nonpolarized_magnetic(R):
     """
     return reduce(numpy.add, R)/2
 
-def _amplitude_to_magnitude(r, magnetic, polarized):
+def _amplitude_to_magnitude(r, ismagnetic, polarized):
     """
     Compute the reflectivity magnitude
     """
-    if magnetic:
+    if ismagnetic:
         R = [abs(xs)**2 for xs in r]
         if not polarized: R = _nonpolarized_magnetic(R)
     else:

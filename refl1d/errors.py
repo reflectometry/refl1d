@@ -16,7 +16,9 @@ def calc_distribution(problem, points):
     try:
         ret = _calc_distribution(problem, points)
     except:
+        import traceback
         print "error calculating distribution on model"
+        traceback.print_exc()
         ret = None
     finally:
         problem.setp(original)
@@ -48,22 +50,32 @@ def _calc_distribution(problem, points):
     #        probes.append(p)
 
     # Find Q
-    Q = dict((m, m.probe.Q)
-             for m in experiments)
+    def residQ(m):
+        if m.probe.polarized:
+            return numpy.hstack([xs.Q
+                                 for xs in m.probe.xs
+                                 if xs is not None])
+        else:
+            return self.probe.Q
+    Q = dict((m, residQ(m)) for m in experiments)
 
-    # Put best at slot 0
-    profiles = dict((m,[[v+0 for v in m.smooth_profile()]])
-                    for m in experiments)
-    residuals = dict((m,[m.residuals()+0])
-                     for m in experiments)
-    for p in points[::-1]:
-        problem.setp(p)
+    profiles = dict((m,[]) for m in experiments)
+    residuals = dict((m,[]) for m in experiments)
+    def record_point():
         chisq = problem.chisq()
         for m in experiments:
             D = m.residuals()
             residuals[m].append(D+0)
-            z,rho,irho = m.smooth_profile()
-            profiles[m].append((z+0,rho+0,irho+0))
+            if m.ismagnetic:
+                z,rho,irho,rhoM,thetaM = m.magnetic_profile()
+                profiles[m].append((z+0,rho+0,irho+0,rhoM+0,thetaM+0))
+            else:
+                z,rho,irho = m.smooth_profile()
+                profiles[m].append((z+0,rho+0,irho+0))
+    record_point() # Put best at slot 0
+    for p in points:
+        problem.setp(p)
+        record_point()
 
     # Align profiles
     _align_profiles(profiles)
@@ -76,11 +88,21 @@ def show_distribution(profiles, Q, residuals):
     import pylab
     pylab.subplot(211)
     for m,p in profiles.items():
-        color = next_color()
-        for z,rho,irho in p[1:]:
-            pylab.plot(z,rho,'-',hold=True,color=color,alpha=0.4)
-        z,rho,irho = p[0]
-        pylab.plot(z,rho,'-k',hold=True) # best
+        if len(p[0]) == 3:
+            color = next_color()
+            for z,rho,_ in p[1:]:
+                pylab.plot(z,rho,'-',hold=True,color=color,alpha=0.4)
+            z,rho,_ = p[0]
+            pylab.plot(z,rho,'-k',hold=True) # best
+        else:
+            rho_color = next_color()
+            rhoM_color = next_color()
+            for z, rho,_,rhoM,_ in p[1:]:
+                pylab.plot(z,rho,'-',hold=True,color=rho_color,alpha=0.4)
+                pylab.plot(z,rhoM,'-',hold=True,color=rhoM_color,alpha=0.4)
+            z,rho,_,rhoM,_ = p[0]
+            pylab.plot(z,rho,'-k',hold=True) # best
+            pylab.plot(z,rhoM,'-k',hold=True) # best
 
     pylab.subplot(212)
     shift = 0
@@ -101,11 +123,12 @@ def _align_profile_set(profiles):
     """
     Align all profiles to the first profile.
     """
-    z1,rho1,_ = profiles[0]
+    p1 = profiles[0]
     offsets = [0]
-    for z2,rho2,_ in profiles[1:]:
-        offsets.append(_align_profile_pair(z1,rho1,z2,rho2))
-    profiles = [(p[0]+offset,p[1],p[2]) for offset,p in zip(offsets,profiles)]
+    for p2 in profiles[1:]:
+        offsets.append(_align_profile_pair(p1[0],p1[1],p2[0],p2[1]))
+    profiles = [tuple([p[0]+offset]+list(p[1:])) 
+                for offset,p in zip(offsets,profiles)]
     return profiles
 
 def _align_profile_pair(z1,r1,z2,r2):
