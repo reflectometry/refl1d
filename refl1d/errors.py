@@ -56,7 +56,7 @@ def _calc_distribution(problem, points):
                                  for xs in m.probe.xs
                                  if xs is not None])
         else:
-            return self.probe.Q
+            return m.probe.Q
     Q = dict((m, residQ(m)) for m in experiments)
 
     profiles = dict((m,[]) for m in experiments)
