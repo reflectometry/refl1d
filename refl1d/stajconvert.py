@@ -208,14 +208,14 @@ def model_to_mlayer(model, datafile):
         roughness = layer.interface.value
         values.append((rho,irho,thickness,roughness))
     vectors = [numpy.array(v) for v in zip(*values)]
-    
+
     # If back reflectivity, reverse the layers and move the interfaces
     # from the top of the layer to the bottom.
     if probe.back_reflectivity:
         vectors = [v[::-1] for v in vectors]
         vectors[3] = numpy.roll(vectors[3],1)
         staj.num_top, staj.num_bottom = staj.num_bottom, staj.num_top
-        
+
     staj.rho,staj.irho,staj.thickness,staj.sigma_roughness = vectors
 
     # If no repeats, split the model into sections
@@ -227,11 +227,11 @@ def model_to_mlayer(model, datafile):
         while len(staj.rho) < 4:
             staj.rho = numpy.hstack((staj.rho[0], staj.rho))
             staj.irho = numpy.hstack((staj.irho[0], staj.irho))
-            staj.thickness = numpy.hstack((0, 
-                                           3.5*staj.sigma_roughness[1], 
+            staj.thickness = numpy.hstack((0,
+                                           3.5*staj.sigma_roughness[1],
                                            staj.thickness[1:]))
             staj.sigma_roughness = numpy.hstack((0, staj.sigma_roughness))
-    
+
         staj.split_sections()
 
     return staj

@@ -193,8 +193,8 @@ class ExperimentBase(object):
                     "rhoM (1e-6/A2)", "theta (degrees)"))
         numpy.savetxt(fid, A.T, fmt="%12.8f")
         fid.close()
-        
-    def _save_nonmagnetic(self, basename):    
+
+    def _save_nonmagnetic(self, basename):
         # Slabs
         A = numpy.array(self.slabs())
         fid = open(basename+"-slabs.dat","w")
@@ -448,7 +448,7 @@ class Experiment(ExperimentBase):
 
     def magnetic_slabs(self):
         slabs = self._render_slabs()
-        return (slabs.w, slabs.rho[0], slabs.irho[0], 
+        return (slabs.w, slabs.rho[0], slabs.irho[0],
                 slabs.rhoM, slabs.thetaM)
 
     def save_staj(self, basename):
