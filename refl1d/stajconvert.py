@@ -3,7 +3,7 @@
 """
 Convert staj files to Refl1D models
 """
-
+import os
 import numpy
 from numpy import tan, cos, sqrt, radians, degrees, pi
 from .mystic import parameter
@@ -23,11 +23,11 @@ def load_mlayer(filename, fit_pmp=0):
         fit_all(model, pmp=fit_pmp)
     return model
 
-def save_mlayer(experiment, filename):
+def save_mlayer(experiment, filename, datafile=None):
     """
     Save a model to a staj file.
     """
-    staj = model_to_mlayer(experiment)
+    staj = model_to_mlayer(experiment, datafile)
     #print staj
     staj.save(filename)
 
@@ -130,7 +130,7 @@ def _mlayer_to_probe(s):
     return probe
 
 
-def model_to_mlayer(model):
+def model_to_mlayer(model, datafile):
     """
     Return an mlayer model based on the a slab stack.
 
@@ -138,9 +138,6 @@ def model_to_mlayer(model):
     """
     stack = model.sample
     probe = model.probe
-
-    if probe.back_reflectivity:
-        raise TypeError("Saving back-reflectivity data to staj not yet supported")
 
     staj = MlayerModel(roughness_steps=51)
 
@@ -153,12 +150,12 @@ def model_to_mlayer(model):
              intensity=probe.intensity.value,
              background=probe.background.value,
              theta_offset=probe.theta_offset.value)
-    if hasattr(probe, 'filename'):
-        staj.data_file = probe.filename
+    if datafile:
+        staj.data_file = os.path.basename(datafile)
     else:
-        staj.Qmin, staj.Qmax = min(probe.Q), max(probe.Q)
-        staj.num_Q = len(probe.Q)
-    staj.fit_FWHMresolution(probe.Q, sigma2FWHM(probe.dQ))
+        staj.Qmin, staj.Qmax = min(probe.Qo), max(probe.Qo)
+        staj.num_Q = len(probe.Qo)
+    staj.fit_FWHMresolution(probe.Qo, sigma2FWHM(probe.dQ))
 
     # Interpret slabs and repeats
     sections = []
@@ -188,10 +185,10 @@ def model_to_mlayer(model):
             raise TypeError("Maximum section length of 9")
         if num_top < 1 or num_middle < 1 or num_bottom < 1:
             raise TypeError("Need at least one slab per section, plus vacuum")
-        model.num_top = num_top
-        model.num_middle = num_middle
-        model.num_bottom = num_bottom
-        model.num_repeats = repeats
+        staj.num_top = num_top
+        staj.num_middle = num_middle
+        staj.num_bottom = num_bottom
+        staj.num_repeats = repeats
         slabs = []
         slabs.extend(reversed(sections[2]))
         slabs.extend(reversed(sections[1]))
@@ -211,11 +208,30 @@ def model_to_mlayer(model):
         roughness = layer.interface.value
         values.append((rho,irho,thickness,roughness))
     vectors = [numpy.array(v) for v in zip(*values)]
-    staj.sigma_roughness = numpy.array([1,2,3])
+    
+    # If back reflectivity, reverse the layers and move the interfaces
+    # from the top of the layer to the bottom.
+    if probe.back_reflectivity:
+        vectors = [v[::-1] for v in vectors]
+        vectors[3] = numpy.roll(vectors[3],1)
+        staj.num_top, staj.num_bottom = staj.num_bottom, staj.num_top
+        
     staj.rho,staj.irho,staj.thickness,staj.sigma_roughness = vectors
 
     # If no repeats, split the model into sections
     if len(sections) == 1:
+        # If the stack is too short, add layers at the top until it is
+        # tall enough.  These layers should have the same SLD as the
+        # old top layer, and a thickness large enough to accommodate
+        # the interface between the top layer and the second layer.
+        while len(staj.rho) < 4:
+            staj.rho = numpy.hstack((staj.rho[0], staj.rho))
+            staj.irho = numpy.hstack((staj.irho[0], staj.irho))
+            staj.thickness = numpy.hstack((0, 
+                                           3.5*staj.sigma_roughness[1], 
+                                           staj.thickness[1:]))
+            staj.sigma_roughness = numpy.hstack((0, staj.sigma_roughness))
+    
         staj.split_sections()
 
     return staj
