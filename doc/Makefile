@@ -18,7 +18,7 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 	$(PYTHON) pylit.py $@ $(patsubst %.rst,%.py,$@) -s -t
 
 WEBFILES = superlattice/PEMU superlattice/NiTi superlattice/freeform \
-	ex1/nifilm ex1/nifilm-tof ex1/nifilm-fit ex1/nifilm-data \
+	ex1/nifilm ex1/nifilm-tof ex1/nifilm-fit ex1/nifilm-data ex1/nifilm-back \
 	polymer/tethered mixed/mixed
 
 WEBDEPS = $(patsubst %,examples/%.rst,$(WEBFILES))
@@ -45,6 +45,7 @@ help:
 	@echo "  changes    to make an overview of all changed/added/deprecated items"
 	@echo "  linkcheck  to check all external links for integrity"
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
+	@echo "  install   to upload the docs to the distribution site"
 
 clean:
 	# Cleaning matplotlib plots from build
