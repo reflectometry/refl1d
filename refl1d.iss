@@ -44,8 +44,8 @@
 ; build script will create this file using the application's internal version string to create
 ; a define statement in the format shown below.
 #define MyAppVersion "0.0.0"
-#ifexist "refl1d.iss-include"
-    #include "refl1d.iss-include"
+#ifexist "iss-version"
+    #include "iss-version"
 #endif
 
 [Setup]
