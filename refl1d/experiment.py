@@ -454,12 +454,16 @@ class Experiment(ExperimentBase):
     def save_staj(self, basename):
         from .stajconvert import save_mlayer
         try:
-            save_mlayer(self, basename+".staj")
+            if self.probe.R is not None:
+                datafile = getattr(self.probe, 'filename', basename+".refl")
+            else:
+                datafile = None
+            save_mlayer(self, basename+".staj", datafile=datafile)
             probe = self.probe
-            datafile = os.path.join(os.path.dirname(basename),probe.filename)
+            datafile = os.path.join(os.path.dirname(basename),datafile)
             fid = open(datafile,"w")
             fid.write("# Q R dR\n")
-            numpy.savetxt(fid, numpy.vstack((probe.Q,probe.R,probe.dR)).T)
+            numpy.savetxt(fid, numpy.vstack((probe.Qo,probe.R,probe.dR)).T)
             fid.close()
         except:
             print "==== could not save staj file ===="
