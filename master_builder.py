@@ -58,9 +58,9 @@ REPO_UPDATE = '"%s" pull origin master'%GIT
 INNO   = r"C:\Program Files\Inno Setup 5\ISCC.exe"  # command line operation
 
 # Name of the package
-PKG_NAME = "refl1d" # temporary name
+PKG_NAME = "refl1d"
 # Name of the application we're building
-APP_NAME = "refl1d" # temporary name
+APP_NAME = "Refl1D"
 
 
 # Required versions of Python packages and utilities to build the application.
@@ -220,13 +220,13 @@ def create_archive(version=None):
         # name of the file varies depending on what package is used to import
         # setup, so its copy is made optional while we are making setup changes.
         shutil.move(os.path.join("dist", PKG_NAME+"-"+str(version)+".zip"),
-                    os.path.join(TOP_DIR, APP_NAME+"-"+str(version)+"-source.zip"))
+                    os.path.join(TOP_DIR, PKG_NAME+"-"+str(version)+"-source.zip"))
         shutil.move(os.path.join("dist", PKG_NAME+"-"+str(version)+".tar.gz"),
-                    os.path.join(TOP_DIR, APP_NAME+"-"+str(version)+"-source.tar.gz"))
-        listing = os.path.join(SRC_DIR, "refl1d.egg-info", "SOURCES.txt")
+                    os.path.join(TOP_DIR, PKG_NAME+"-"+str(version)+"-source.tar.gz"))
+        listing = os.path.join(SRC_DIR, PKG_NAME+".egg-info", "SOURCES.txt")
         if os.path.isfile(listing):
             shutil.copy(listing,
-                os.path.join(TOP_DIR, APP_NAME+"-"+str(version)+"-source-list.txt"))
+                os.path.join(TOP_DIR, PKG_NAME+"-"+str(version)+"-source-list.txt"))
 
 
 def install_package():
@@ -270,7 +270,7 @@ def build_documentation():
     # Create documentation in HTML and PDF format.
     exec_cmd("make clean html pdf")
     # Copy PDF to the doc directory where the py2exe script will look for it.
-    pdf = os.path.join("_build", "latex", "Refl1D.pdf")
+    pdf = os.path.join("_build", "latex", APP_NAME+".pdf")
     if os.path.isfile(pdf):
         shutil.copy(pdf, ".")
 
@@ -295,14 +295,14 @@ def create_windows_installer(version=None):
 
     # First create an include file to convey the application's version
     # information to the Inno Setup compiler.
-    f = open("%s.iss-include" %APP_NAME, "w")
+    f = open("iss-version", "w")
     f.write('#define MyAppVersion "%s"\n' %version)  # version must be quoted
     f.close()
 
     # Run the Inno Setup Compiler to create a Win32 installer/uninstaller.
-    # Override the output specification in <APP_NAME>.iss to put the executable
+    # Override the output specification in <PKG_NAME>.iss to put the executable
     # and the manifest file in the top-level directory.
-    exec_cmd("%s /Q /O%s %s.iss" %(INNO, TOP_DIR, APP_NAME))
+    exec_cmd("%s /Q /O%s %s.iss" %(INNO, TOP_DIR, PKG_NAME))
 
 
 def run_tests():

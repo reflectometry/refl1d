@@ -193,8 +193,8 @@ class ExperimentBase(object):
                     "rhoM (1e-6/A2)", "theta (degrees)"))
         numpy.savetxt(fid, A.T, fmt="%12.8f")
         fid.close()
-        
-    def _save_nonmagnetic(self, basename):    
+
+    def _save_nonmagnetic(self, basename):
         # Slabs
         A = numpy.array(self.slabs())
         fid = open(basename+"-slabs.dat","w")
@@ -247,7 +247,7 @@ class Experiment(ExperimentBase):
         *roughness_limit* limit the roughness based on layer thickness
         *dz* minimum step size for computed profile steps in Angstroms
         *dA* discretization condition for computed profiles
-        *smoothness* thickness of
+        *smoothness* amount of Nevot-Croce smoothing between step slabs
 
     If *step_interfaces* is True, then approximate the interface using
     microslabs with step size *dz*.  The microslabs extend throughout
@@ -448,18 +448,22 @@ class Experiment(ExperimentBase):
 
     def magnetic_slabs(self):
         slabs = self._render_slabs()
-        return (slabs.w, slabs.rho[0], slabs.irho[0], 
+        return (slabs.w, slabs.rho[0], slabs.irho[0],
                 slabs.rhoM, slabs.thetaM)
 
     def save_staj(self, basename):
         from .stajconvert import save_mlayer
         try:
-            save_mlayer(self, basename+".staj")
+            if self.probe.R is not None:
+                datafile = getattr(self.probe, 'filename', basename+".refl")
+            else:
+                datafile = None
+            save_mlayer(self, basename+".staj", datafile=datafile)
             probe = self.probe
-            datafile = os.path.join(os.path.dirname(basename),probe.filename)
+            datafile = os.path.join(os.path.dirname(basename),datafile)
             fid = open(datafile,"w")
             fid.write("# Q R dR\n")
-            numpy.savetxt(fid, numpy.vstack((probe.Q,probe.R,probe.dR)).T)
+            numpy.savetxt(fid, numpy.vstack((probe.Qo,probe.R,probe.dR)).T)
             fid.close()
         except:
             print "==== could not save staj file ===="

@@ -129,7 +129,7 @@ def _align_profile_set(profiles):
     offsets = [0]
     for p2 in profiles[1:]:
         offsets.append(_align_profile_pair(p1[0],p1[1],p2[0],p2[1]))
-    profiles = [tuple([p[0]+offset]+list(p[1:])) 
+    profiles = [tuple([p[0]+offset]+list(p[1:]))
                 for offset,p in zip(offsets,profiles)]
     return profiles
 
