@@ -6,9 +6,11 @@ from .util import next_color
 # TODO: want similar code for covariance matrix based forward analysis
 # TODO: need to delegate accumulation of models and plotting to Fitness
 
-def calc_distribution_from_state(problem, state, nshown=50):
+def calc_distribution_from_state(problem, state, nshown=50, random=False):
     points, logp = state.sample()
     if points.shape[0] < nshown: nshown = points.shape[0]
+    # randomize the draw
+    if random: points = points[numpy.random.permutation(len(points))]
     return calc_distribution(problem, points[-nshown:])
 
 def calc_distribution(problem, points):

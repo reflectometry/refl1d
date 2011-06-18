@@ -133,7 +133,7 @@ def loadtxt(file, report=0):
     """
     if not hasattr(file,'readline'):
         if file.endswith('.gz'):
-            print "opening with gzip"
+            #print "opening with gzip"
             fh = gzip.open(file, 'r')
         else:
             fh = open(file, 'r')
@@ -145,7 +145,7 @@ def loadtxt(file, report=0):
     for line in fh:
         lineno += 1
         if report and lineno%report==0:
-            print "read",section
+            print "read",section*report
             section += 1
         IND_PAT.sub('nan', line)
         INF_PAT.sub('inf', line)
@@ -160,7 +160,7 @@ def loadtxt(file, report=0):
         fh.close()
     return asarray(res)
 
-def load_state(filename, skip=0):
+def load_state(filename, skip=0, report=0):
     # Read chain file
     chain = loadtxt(filename+'-chain'+EXT)
 
@@ -170,7 +170,7 @@ def load_state(filename, skip=0):
     point_dims = line[line.find('[')+1:line.find(']')]
     Nthin,Npop,Nvar = eval(point_dims)
     for _ in range(skip*Npop): file.readline()
-    point = loadtxt(file,report=1000*Npop)
+    point = loadtxt(file,report=report*Npop)
     file.close()
 
     # Read stats file
