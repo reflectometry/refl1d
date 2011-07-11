@@ -1193,7 +1193,7 @@ def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
 
     .. math::
 
-        \Delta S_A^2 = \frac{4(R_{++}^2\Delta R_{--}^2-R_{--}^2\Delta R_{++})}
+        \Delta S_A^2 = \frac{4(R_{++}^2\Delta R_{--}^2+R_{--}^2\Delta R_{++})}
                             {(R_{++} + R_{--})^4}
 
     """
@@ -1201,7 +1201,7 @@ def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
     v = (Rp-Rm)/(Rp+Rm)
     if dRp is not None:
         dRm = numpy.interp(Qp,Qm,dRm)
-        dvsq = 4 * ((Rp*dRm)**2 - (Rm*dRp)**2) / (Rp+Rm)**4
+        dvsq = 4 * ((Rp*dRm)**2 + (Rm*dRp)**2) / (Rp+Rm)**4
         dvsq[dvsq<0] = 0
         return Qp, v, sqrt(dvsq)
     else:
