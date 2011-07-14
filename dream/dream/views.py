@@ -168,6 +168,12 @@ best   = %(best)s
 
     return vstats
 
+def format_num(x, place): 
+    precision = 10**place
+    digits_after_decimal = abs(place) if place < 0 else 0
+    return "%.*f"%(digits_after_decimal,
+                   numpy.round(x/precision)*precision)
+
 def format_vars(varstats, ci=0.95):
     v = dict(parameter="Parameter",
              mean="mean", median="median", best="best",
@@ -179,16 +185,15 @@ def format_vars(varstats, ci=0.95):
         rangeci,range68 = v['rangeci'],v['range68']
         median, mean, std, best = v['median'],v['mean'],v['std'],v['best']
         # Make sure numbers are formatted with the appropriate precision
-        scale = 10**int(numpy.log10(rangeci[1]-rangeci[0])-2)
-        def format(x): return "%g"%(numpy.round(x/scale)*scale)
+        place = int(numpy.log10(rangeci[1]-rangeci[0]))-2
         summary = dict(mean=format_uncertainty(mean,std),
-                       median=format(median),
-                       best=format(best),
-                       lo68=format(range68[0]),
-                       hi68=format(range68[1]),
+                       median=format_num(median,place-1),
+                       best=format_num(best,place-1),
+                       lo68=format_num(range68[0],place),
+                       hi68=format_num(range68[1],place),
                        ci="%g%%"%(100*ci),
-                       loci=format(rangeci[0]),
-                       hici=format(rangeci[1]),
+                       loci=format_num(rangeci[0],place),
+                       hici=format_num(rangeci[1],place),
                        parameter=label,
                        index=index+1)
         s.append("%(index)2d %(parameter)20s %(mean)10s %(median)7s %(best)7s [%(lo68)7s %(hi68)7s] [%(loci)7s %(hici)7s]"%summary)
