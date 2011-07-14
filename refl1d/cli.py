@@ -78,6 +78,8 @@ def preview(problem):
     pylab.show()
 
 def remember_best(fitter, problem, best):
+    # Make sure the problem contains the best value
+    problem.setp(best)
     #print "remembering best"
     pardata = "".join("%s %.15g\n"%(p.name, p.value)
                       for p in problem.parameters)
