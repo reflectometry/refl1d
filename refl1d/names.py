@@ -23,7 +23,7 @@ from .mono import FreeLayer, FreeInterface
 from .cheby import FreeformCheby, ChebyVF, cheby_approx, cheby_points
 from .interface import Erf
 from .probe import (Probe, ProbeSet, NeutronProbe, XrayProbe,
-                    PolarizedNeutronProbe, QProbe, QPolarizedNeutronProbe)
+                    PolarizedNeutronProbe, QProbe, PolarizedNeutronQProbe)
 from .fitproblem import preview, fit, mesh, FitProblem, MultiFitProblem
 from .stajconvert import load_mlayer, save_mlayer
 from . import ncnrdata as NCNR, snsdata as SNS

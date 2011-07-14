@@ -1208,7 +1208,7 @@ def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
         return Qp, v, None
 
 
-class QPolarizedNeutronProbe(PolarizedNeutronProbe):
+class PolarizedNeutronQProbe(PolarizedNeutronProbe):
     polarized = True
     def __init__(self, xs=None):
         self.xs = xs
