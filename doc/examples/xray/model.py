@@ -53,9 +53,7 @@ from periodictable import formula, xray_sld, Cu, Ni, Fe, Pt
 from refl1d.names import *
 
 # Determine what search we are going to perform
-search = "rltest"
-#if len(sys.argv) > 1:
-#    search = sys.argv[1]
+search = sys.argv[1] if len(sys.argv) > 1 else "rltest"
 
 # Slits computed from dT given in the staj file
 slits = 0.03
@@ -137,13 +135,13 @@ elif search == "grower": # grower
         L.interface.range(0,20)
         L.material.rho.pmp(20)
         L.material.irho.pmp(20)
-elif search == "rltest": # grower
+elif search == "rltest": # loose grower
     Lseed.thickness.pmp(100)
     LFePt.thickness.pmp(100)
     LNiFe.thickness.pmp(100)
     Lcap.thickness.pmp(100)
     for i,L in enumerate(sample[:-2]):
-        L.interface.pmp(30)
+        L.interface.pmp(100)
         L.material.rho.pmp(20)
         L.material.irho.pmp(20)
 
@@ -165,4 +163,4 @@ problem = FitProblem(M)
 problem.dream_opts = dict(chains=20,draws=1000,burn=3000)
 problem.name = "Example"
 problem.title = "xray"
-problem.store = "T"+search
+#problem.store = "T"+search
