@@ -77,7 +77,7 @@ def preview(problem):
     problem.plot()
     pylab.show()
 
-def remember_best(fitter, problem, best):
+def remember_best(fitdriver, problem, best):
     # Make sure the problem contains the best value
     problem.setp(best)
     #print "remembering best"
@@ -85,11 +85,11 @@ def remember_best(fitter, problem, best):
                       for p in problem.parameters)
     open(problem.output_path+".par",'wt').write(pardata)
 
-    fitter.save(problem.output_path)
+    fitdriver.save(problem.output_path)
     with util.redirect_console(problem.output_path+".err"):
-        fitter.show()
-        fitter.plot(problem.output_path)
-    fitter.show()
+        fitdriver.show()
+        fitdriver.plot(problem.output_path)
+    fitdriver.show()
     #print "plotting"
 
 
@@ -399,15 +399,15 @@ def initial_model(opts):
         problem = None
     return problem
 
-def resynth(problem, mapper, opts):
+def resynth(fitdriver, problem, mapper, opts):
     make_store(problem,opts,exists_handler=store_overwrite_query)
     fid = open(problem.output_path+".rsy",'at')
-    fitter.mapper = mapper.start_mapper(problem, opts.args)
+    fitdriver.mapper = mapper.start_mapper(problem, opts.args)
     for i in range(opts.resynth):
         problem.resynth_data()
-        best, fbest = fitter.fit()
-        print "found %g"%fbest
-        fid.write('%.15g '%fbest)
+        best, fbest = fitdriver.fit()
+        print "step %d chisq %g"%(i,2*fbest/problem.dof)
+        fid.write('%.15g '%(2*fbest/problem.dof))
         fid.write(' '.join('%.15g'%v for v in best))
         fid.write('\n')
     problem.restore_data()
@@ -483,7 +483,7 @@ def main():
         mapper = SerialMapper
 
     fitopts = FIT_OPTIONS[opts.fit]
-    fitter = FitDriver(fitopts.fitclass, problem=problem, **fitopts.options)
+    fitdriver = FitDriver(fitopts.fitclass, problem=problem, **fitopts.options)
 
     # Which format to view the plots
     try:
@@ -504,7 +504,7 @@ def main():
         if opts.cov: print problem.cov()
         preview(problem)
     elif opts.resynth > 0:
-        resynth(problem, mapper, opts)
+        resynth(fitdriver, problem, mapper, opts)
 
     elif opts.remote:
 
@@ -523,12 +523,12 @@ def main():
         problem.show()
         if opts.stepmon:
             fid = open(problem.output_path+'.log', 'w')
-            fitter.monitors = [ConsoleMonitor(problem),
+            fitdriver.monitors = [ConsoleMonitor(problem),
                                StepMonitor(problem,fid,fields=['step','value'])]
 
-        fitter.mapper = mapper.start_mapper(problem, opts.args)
-        best, fbest = fitter.fit()
-        remember_best(fitter, problem, best)
+        fitdriver.mapper = mapper.start_mapper(problem, opts.args)
+        best, fbest = fitdriver.fit()
+        remember_best(fitdriver, problem, best)
         if opts.cov: print cov(problem)
         if not opts.batch:
             import pylab
