@@ -184,6 +184,16 @@ In addition to macros for units, we also define cdot, angstrom and degrees
 unicode characters here.  The corresponding latex symbols are defined in
 doc/sphinx/conf.py.
 
+There is a bug in sphinx versions (1.0.7 as of this writing) in which
+latex tables cannot be created.  You can fix this by changing::
+
+	self.body.append(self.table.colspec)
+
+to::
+
+    self.body.append(self.table.colspec.lower())
+
+in site-packages/sphinx/writers/latex.py.
 
 Windows Installer
 =================
