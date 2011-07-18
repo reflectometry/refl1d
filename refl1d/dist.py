@@ -1,3 +1,16 @@
+"""
+Inhomogeneous samples
+
+In the presence of samples with short range order on scale of the coherence
+length of the probe in the plane, but long range disorder following some
+distribution of parameter values, the reflectivity can be computed from
+a weighted incoherent sum of the reflectivities for different values of
+the parameter.
+
+DistristributionExperiment allows the model to be computed for a single
+varying parameter.  Multi-parameter dispersion models are not available.
+"""
+
 import numpy
 from refl1d.mystic.parameter import Parameter
 from refl1d.experiment import ExperimentBase

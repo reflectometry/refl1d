@@ -1,3 +1,6 @@
+"""
+Fit job definition for the distributed job queue.
+"""
 import os
 import sys
 import json

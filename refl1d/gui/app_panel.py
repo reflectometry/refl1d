@@ -471,7 +471,7 @@ class AppPanel(wx.Panel):
             raise ValueError("Unknown fit progress message "+event.message)
 
     def new_model(self):
-        from ..fitplugin import new_model as gen
+        from ..profileview.fitplugin import new_model as gen
         self.set_model(gen())
 
     def load_model(self, path):

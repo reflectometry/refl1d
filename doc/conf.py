@@ -13,6 +13,7 @@
 
 from __future__ import with_statement
 import sys, os
+print "python",sys.executable
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the

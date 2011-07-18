@@ -1,5 +1,5 @@
 """
-With context for handling numpy errors.
+Decorator for handling numpy errors.
 
 Use this when you have a routine with numeric issues such as divide by zero
 which are known to be harmless, for example, because infinite or NaN results

@@ -220,7 +220,8 @@ class Refl1dGUIApp(wx.App):
         event.Skip()
 
     def after_show(self):
-        from .. import cli, fitplugin
+        from .. import cli
+        from ..profileview import fitplugin
         sys.excepthook = excepthook
 
         # TODO: only way I could find to set initial split

@@ -9,7 +9,7 @@
 #    from sitedoc import plot_model
 #    plot_model('nifilm-tof.py')
 #
-# This model is defined in :download:`nifilm-tof.py <nifilm-tof.py>
+# This model is defined in :download:`nifilm-tof.py <nifilm-tof.py>`
 #
 # The sample definition is the same:
 

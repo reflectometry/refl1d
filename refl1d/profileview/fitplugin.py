@@ -1,3 +1,11 @@
+"""
+Reflectivity plugin for fitting GUI.
+
+Note that the fitting infrastructure is still heavily tied to the reflectivity
+modeling program, and this represents only the first tiny steps to separating
+the two.
+"""
+
 import numpy
 
 def new_model():

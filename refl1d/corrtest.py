@@ -1,6 +1,8 @@
 """
 Residual correlation test.
 
+INCOMPLETE UNUSED UNTESTED CODE
+
 Returns the probability of seeing the given structure in the residuals.
 
 The residuals are assumed to be e ~ N(0,1).  Gross deviations from this

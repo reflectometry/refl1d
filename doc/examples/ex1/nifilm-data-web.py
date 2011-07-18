@@ -7,7 +7,7 @@
 # :download:`nifilm-tof-1.dat`, :download:`nifilm-tof-2.dat`,
 # :download:`nifilm-tof-3.dat` and :download:`nifilm-tof-4.dat`.
 # We can load these datasets into a new model using
-# :download:`nifilm-data.py <nifilm-data.py>.
+# :download:`nifilm-data.py <nifilm-data.py>`.
 
 # The sample and instrument definition is the same as before:
 

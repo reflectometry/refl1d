@@ -21,7 +21,7 @@ def refl(kz, depth, rho, irho=0, sigma=0, rho_index=None):
         *depth* :  float[m] | |Ang|
             thickness of each layer.  The thickness of the incident medium
             and substrate are ignored.
-        *rho*, *irho* :  float[n,k] | |1e-6/Ang|
+        *rho*, *irho* :  float[n,k] | |1e-6/Ang^2|
             real and imaginary scattering length density for each layer for each kz
             Note: absorption cross section mu = 2 irho/lambda
         *sigma* : float[m-1] | |Ang|
