@@ -1,10 +1,9 @@
-########################################################
-###  This is the python implementation of the t-walk                       ###
-###  By Andres Christen.                                                                 ###
-###  A generic self adjusting MCMC                                               ###
-###  see:  http://www.cimat.mx/~jac/twalk/                                     ###
-###  see also twalktutorial.py                                                           ###
-########################################################
+"""
+T-walk self adjusting MCMC
+"""
+
+# Author: By Andres Christen.
+# see:  http://www.cimat.mx/~jac/twalk/
 
 # 2010-04-17 Paul Kienzle
 # * typo fixups

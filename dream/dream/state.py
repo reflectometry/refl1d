@@ -462,8 +462,8 @@ class MCMCDraw(object):
     def mark_outliers(self, test='IQR', portion=None):
         """
         Mark some chains as outliers but don't remove them.  This can happen
-        after drawing is complete to remove any outstanding chains that
-        did not converge.
+        after drawing is complete, so that chains that did not converge are
+        not included in the statistics.
 
         *test* is 'IQR', 'Mahol' or 'none'.
 
@@ -600,6 +600,43 @@ class MCMCDraw(object):
         Return the best point seen and its log likelihood.
         """
         return self._best_x, self._best_logp
+
+    def keep_best(self):
+        """
+        Place the best point at the end of the chain final good chain.
+
+        Good chains are defined by mark_outliers.
+
+        Because the Markov chain is designed to wander the parameter
+        space, the best individual seen during the random walk may have
+        been observed during the burnin period, and may no longer be
+        present in the chain.  If this is the case, replace the final
+        point with the best, otherwise swap the positions of the final
+        and the best.
+        """
+
+        # Get state as a 1D array
+        _, chains, logp = self.chains()
+        Ngen,Npop,Nvar = chains.shape
+        points = reshape(chains,(Ngen*Npop,Nvar))
+        logp = reshape(logp,Ngen*Npop)
+
+        # Set the final position to the end of the last good chain
+        if numpy.isarray(self._good_chains):
+            final = Npop - self._good_chains[-1] - 1
+        else:
+            final = -1
+
+        # Find the location of the best point if it exists and swap with
+        # the final position
+        idx = numpy.where(logp==self._best_logp)
+        if len(idx) == 0:
+            logp[final] = self._best_logp
+            points[final,:] = self._best_x
+        else:
+            idx = idx[0]
+            logp[final],logp[idx] = logp[idx], logp[final]
+            points[final,:],points[idx,:] = points[idx,:],points[final,:]
 
     def sample(self, portion=1, vars=None, selection=None):
         """

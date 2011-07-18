@@ -1,5 +1,12 @@
 """
-Adaptors for fitting.
+Interface between the models and the fitters.
+
+:class:`Fitness` defines the interface that new model definitions must follow.
+
+:class:`FitProblem` wraps a fitness function for use in the fitters.
+
+:class:`MultiFitProblem` allows simultaneous fitting of multiple functions.
+
 *WARNING* within models self.parameters() returns a tree of all possible
 parameters associated with the model.  Within fit problems, self.parameters
 is a list of fitted parameters only.
@@ -166,7 +173,7 @@ class Result:
         Refit the result multiple times with resynthesized data, building
         up an array in Result.samples which contains the best fit to the
         resynthesized data.  *samples* is the number of samples to generate.
-        *fitter* is the (local) optimizer to use. **kw are the parameters
+        *fitter* is the (local) optimizer to use. The kw are the parameters
         for the optimizer.
         """
         opt = fitter(self.problem)

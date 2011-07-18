@@ -52,7 +52,6 @@ It is implemented as a WSGI python application using
         ErrorLog logs/reflectometry-error_log
         CustomLog logs/reflectometry-access_log common
 
-
         WSGIDaemonProcess reflserve user=pkienzle group=refl threads=3
         WSGIScriptAlias /queue /home/pkienzle/reflserve/www/jobqueue.wsgi
 
@@ -144,7 +143,7 @@ reflworkd privileges to root.
 
 
 A similar profile could be created for the job server, and indeed, any web
-service you have on your machine, but this is less critical since it is not 
+service you have on your machine, but this is less critical since it is not
 running user models.
 
 Once the profile is in place, restart the apparmor.d daemon to enable it::

@@ -33,7 +33,7 @@ from refl1d.names import *
 # NeutronProbe and XrayProbe for defining data, and Experiment and
 # FitProblem to tie everything together.
 
-# Note that 'import *' is bad style for anything but simple scripts.  As
+# Note that 'import \*' is bad style for anything but simple scripts.  As
 # programs get larger, it is much less confusing to list the specific
 # functions that you need from a module rather than importing everything.
 

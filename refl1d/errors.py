@@ -1,3 +1,11 @@
+"""
+Visual representation of model uncertainty.
+
+For reflectivity models, this aligns and plots a set of profiles chosen
+from the parameter uncertainty distribution, and plots the distribution
+of the residual values.
+"""
+
 import numpy
 from .util import next_color
 
@@ -7,13 +15,26 @@ from .util import next_color
 # TODO: need to delegate accumulation of models and plotting to Fitness
 
 def calc_distribution_from_state(problem, state, nshown=50, random=False):
+    """
+    Align the sample profiles and compute the residual difference from the
+    measured reflectivity for a set of points returned from DREAM.
+    """
     points, logp = state.sample()
     if points.shape[0] < nshown: nshown = points.shape[0]
-    # randomize the draw
-    if random: points = points[numpy.random.permutation(len(points))]
-    return calc_distribution(problem, points[-nshown:])
+    # randomize the draw; skip the last point since state.keep_best() put
+    # the best point at the end.
+    if random: points = points[numpy.random.permutation(len(points)-1)]
+    return calc_distribution(problem, points[-nshown:-1])
 
 def calc_distribution(problem, points):
+    """
+    Align the sample profiles and compute the residual difference from the
+    measured reflectivity for a set of points.
+
+    The points should be sampled from the posterior probability
+    distribution computed from MCMC, bootstrapping or sampled from
+    the error ellipse calculated at the minimum.
+    """
     original = problem.getp()
     try:
         ret = _calc_distribution(problem, points)
@@ -87,6 +108,10 @@ def _calc_distribution(problem, points):
     return profiles, Q, residuals
 
 def show_distribution(profiles, Q, residuals):
+    """
+    Plot the aligned profiles and the distribution of the residuals for
+    profiles and residuals returned from calc_distribution.
+    """
     import pylab
     pylab.subplot(211)
     for m,p in profiles.items():

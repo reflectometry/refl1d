@@ -10,7 +10,7 @@ Stacks
 ================
 
 Reflectometry samples consist of 1-D stacks of layers joined by error
-function interfaces. The layers themselves may be uniform slabs, or 
+function interfaces. The layers themselves may be uniform slabs, or
 the scattering density may vary with depth in the layer.  The first
 layer in the stack is the substrate and the final layer is the surface.
 Surface and substrate are assumed to be semi-infinite, with any thickness
@@ -30,15 +30,15 @@ while positive values will introduce blending between the layers.
 
 Blending is usually done with the Nevot-Croce formalism, which scales
 the index of refraction between two layers by $\exp(-2 k_n k_{n+1} \sigma^2)$.
-We show both a step function profile for the interface, as well as the 
-blended interface.  
+We show both a step function profile for the interface, as well as the
+blended interface.
 
-.. note:: 
+.. note::
 
-    The blended interface representation is limited to the neighbouring 
-    layers, and is not an accurate representation of the effective 
-    reflectivity profile when the interface value is large relative to 
-    the thickness of the layer.  
+    The blended interface representation is limited to the neighbouring
+    layers, and is not an accurate representation of the effective
+    reflectivity profile when the interface value is large relative to
+    the thickness of the layer.
 
 We will have a mechanism to force the use of the blended profile for
 direct calculation of the interfaces rather than using the interface
@@ -51,8 +51,8 @@ Slabs
 Materials can be stacked as slabs, with a thickness for each layer and
 roughness at the top of each layer.  Because this is such a common
 operation, there is special syntax to do it, using '|' as the layer
-separator and `()` to specify thickness and interface.  For example, 
-the following is a 30 |Ang| gold layer on top of silicon, with a 
+separator and `()` to specify thickness and interface.  For example,
+the following is a 30 |Ang| gold layer on top of silicon, with a
 silicon:gold interface of 5 |Ang| and a gold:air interface of 2 |Ang|::
 
     >> from refl1d import *
@@ -113,14 +113,14 @@ can be simultaneously fit with freeform profiles.
 We have multiple representations for freeform profiles, each with its
 own strengths and weaknesses:
 
-   * `monotone cubic interpolation 
-     <http://en.wikipedia.org/wiki/Monotone_cubic_interpolation>`_ 
+   * `monotone cubic interpolation
+     <http://en.wikipedia.org/wiki/Monotone_cubic_interpolation>`_
      (:mod:`refl1d.mono`)
-   * `parameteric B-splines 
-     <http://en.wikipedia.org/wiki/B-spline>`_ 
+   * `parameteric B-splines
+     <http://en.wikipedia.org/wiki/B-spline>`_
      (:mod:`refl1d.freeform`)
-   * `Chebyshev interpolating polynomials 
-      <http://en.wikipedia.org/wiki/Chebyshev_polynomials>`_ 
+   * `Chebyshev interpolating polynomials
+      <http://en.wikipedia.org/wiki/Chebyshev_polynomials>`_
       (:mod:`refl1d.cheby`)
 
 At present, monotone cubic interpolation is the most developed, but work
@@ -139,8 +139,8 @@ There are a number of issues surrounding the choice of model.
   user can bring to bear prior information to limit the search space.
   For example, it is common to add an unknown silicon-oxide profile
   to the surface of silicon, with SLD varying between the values for
-  Si and SiO\ :sub:`2`.
-      
+  Si and SiO\ :sub:`2`
+
 * How easy is it to edit the profile interactively
 
   Given a representation of the freeform layer, we want to be able to
@@ -152,7 +152,7 @@ There are a number of issues surrounding the choice of model.
   Many systems are best described by smoothly varying density profiles.
   If the profile oscillates wildly it makes the search for optimal
   parameters more difficult.
-   
+
 * Can you change the order of interpolation and preserve the profile
 
   While the current code does not support it, we would like to be
@@ -162,7 +162,7 @@ There are a number of issues surrounding the choice of model.
   fits with different orders independently, but there are likely to
   be speed gains by first fitting coarse models with low Q then adding
   detail to the profile while adding additional Q values.
-  
+
 * Is the representation unique?  Are the control parameters strongly
   correlated?
 
@@ -171,16 +171,16 @@ There are a number of issues surrounding the choice of model.
   more difficult to interpret the results of the uncertainty analysis
   or to get convergence from the parameter refinement engine.
 
-Monotone cubic interpolation is the easiest to control.  The value of the 
-interpolating polynomial lies mostly within the range of the control 
-points, and the profile goes through the control points.  This means 
-you can set up bounds on the control parameters that limit the profile 
-to a certain range of scattering length densities in a region of the 
+Monotone cubic interpolation is the easiest to control.  The value of the
+interpolating polynomial lies mostly within the range of the control
+points, and the profile goes through the control points.  This means
+you can set up bounds on the control parameters that limit the profile
+to a certain range of scattering length densities in a region of the
 profile.  It also leads to a very intuitive interactive profile editor
-since the control points can be moved directly on profile view.  However, 
-although the profile is $C^1$ smooth everywhere, the $C^2$ transitions 
-can be abrupt at the control points.  Better algorithms for selecting the 
-gradient exist but have not been implemented, so this may improve in 
+since the control points can be moved directly on profile view.  However,
+although the profile is $C^1$ smooth everywhere, the $C^2$ transitions
+can be abrupt at the control points.  Better algorithms for selecting the
+gradient exist but have not been implemented, so this may improve in
 the future.
 
 Parametric B-splines are commonly used in computer graphics because they
@@ -194,8 +194,8 @@ to wild oscillations in the profile when the control points become too
 close together.  While the natural representation can be used in an
 interactive profile editor, the fact that the control points are sometimes
 far away from the profile makes this inconvenient.  The complementary
-representation is used in programs such as Microsoft Excel, with the 
-control point directly on the curve and a secondary control point to 
+representation is used in programs such as Microsoft Excel, with the
+control point directly on the curve and a secondary control point to
 adjust the slope at that control point.
 
 Chebyshev interpolating polynomials are a near optimal representation
@@ -206,10 +206,10 @@ One very interesting property is that the lower order coefficients remain
 the same has higher order interpolation polynomials are constructed.
 This makes the Chebyshev polynomials very interesting candidates for
 a freeform profile fitter which selects the order of the profile as
-part of the fit.  Chebyshev interpolating polynomials can exhibit 
+part of the fit.  Chebyshev interpolating polynomials can exhibit
 wild oscillations if the coefficients become large, so the smoothness
 can be somewhat controlled by limiting these higher values, but we have
-not explored this in depth. The Chebyshev coefficient values are not 
+not explored this in depth. The Chebyshev coefficient values are not
 directly tied to the profile, so there is no intuitive way to directly
 control the coefficients in an interactive editor. The complementary
 representation uses the profile value at the chebyshev nodes for
@@ -225,17 +225,17 @@ Future work
 -----------
 
 We only have polynomial spline representations for our profiles.  Similar
-profiles could be constructed from different basis functions such as 
-wavelets, the idea being to find a multiscale representation of your 
+profiles could be constructed from different basis functions such as
+wavelets, the idea being to find a multiscale representation of your
 profile and use model selection techniques to determine the most coarse
-grained representation that matches your data.   
+grained representation that matches your data.
 
-Totally freeform representations as separately controlled microslab 
-heights would also be interesting in the context of a maximum entropy 
+Totally freeform representations as separately controlled microslab
+heights would also be interesting in the context of a maximum entropy
 fitting engine: find the smoothest profile which matches the data, for
-some definition of 'smooth'.  Some possible smoothness measures are the 
-mean squared distance from zero, the number of sign changes in the second 
-derivative, the sum of the absolute value of the first derivative, the 
+some definition of 'smooth'.  Some possible smoothness measures are the
+mean squared distance from zero, the number of sign changes in the second
+derivative, the sum of the absolute value of the first derivative, the
 maximum flat region, the minimum number of flat slabs, etc.  Given that
 reflectometry inversion is not unique, the smoothness measure must
 correspond to the likelihood of finding the system in that particularly

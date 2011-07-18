@@ -338,9 +338,15 @@ class DreamFit(FitBase):
 
         self.state = sampler.sample()
         self.state.mark_outliers()
+        self.state.keep_best()
         self.state.title = self.dream_model.problem.name
 
         x,fx = self.state.best()
+
+        points,logp = self.state.sample()
+        assert logp[-1] == fx
+        assert all(points[-1,i]==xi for i,xi in enumerate(x))
+
         return x,-fx
 
     def _monitor(self, state, pop, logp):
