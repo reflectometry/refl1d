@@ -470,7 +470,7 @@ class Microslabs(object):
                     thetaM = B[2,0]
                     interfaces.append(0)
                 else:
-                    thetaM = (B[0,3] + blocks[i-1][2,-1])/2.
+                    thetaM = (B[2,0] + blocks[i-1][2,-1])/2.
                     interfaces.append(sigmas[i-1][1])
                 slices.append([[w],[0],[thetaM]])
                 interfaces.append(sigmas[i][0])
