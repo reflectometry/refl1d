@@ -3,6 +3,10 @@
 Optical matrix form of the reflectivity calculation.
 
 O.S. Heavens, Optical Properties of Thin Solid Films
+
+This is a pure python implementation of reflectometry provided for
+convenience when a compiler is not available.  The refl1d
+application uses reflmodule to compute reflectivity.
 """
 from numpy import asarray, isscalar, empty, ones, ones_like
 from numpy import sqrt, exp, pi
