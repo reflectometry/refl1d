@@ -159,6 +159,6 @@ doctest: generated
 	      "results in $(BUILDDIR)/doctest/output.txt."
 
 install:
+	scp _build/html/*.pdf reflectometry.org:web/danse/download
 	ssh reflectometry.org rm -rf web/danse/docs/refl1d
 	scp -r _build/html reflectometry.org:web/danse/docs/refl1d
-	scp _build/html/*.pdf reflectometry.org:web/danse/download
