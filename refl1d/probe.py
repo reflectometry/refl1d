@@ -449,10 +449,15 @@ class Probe(object):
         """
         fresnel = self.fresnel(substrate, surface)
         _, R = theory
-        A = numpy.array((self.Q,self.dQ,self.R,self.dR, R, fresnel(self.Q)))
         fid = open(filename,"w")
-        fid.write("# %17s %20s %20s %20s %20s %20s\n"
-                  %("Q (1/A)","dQ (1/A)", "R", "dR", "theory", "fresnel"))
+        if getattr(self,'R',None) != None:
+            A = numpy.array((self.Q,self.dQ,self.R,self.dR, R, fresnel(self.Q)))
+            fid.write("# %17s %20s %20s %20s %20s %20s\n"
+                      %("Q (1/A)","dQ (1/A)", "R", "dR", "theory", "fresnel"))
+        else:
+            A = numpy.array((self.Q,self.dQ,R,fresnel(self.Q)))
+            fid.write("# %17s %20s %20s %20s\n"
+                      %("Q (1/A)","dQ (1/A)", "theory", "fresnel"))
         #print "A",self.Q.shape,A.shape
         numpy.savetxt(fid, A.T, fmt="%20.15g")
         fid.close()
