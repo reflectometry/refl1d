@@ -50,7 +50,7 @@ from .fit_dialog import OpenFitOptions
 from .fit_thread import (FitThread, EVT_FIT_PROGRESS, EVT_FIT_COMPLETE)
 from .util import nice
 from . import signal
-from .utilities import get_bitmap
+from .utilities import get_bitmap, resource
 
 # File selection strings.
 MODEL_EXT = ".pickle"
@@ -430,6 +430,7 @@ class AppPanel(wx.Panel):
         signal.update_parameters(model=event.problem)
 
         self.sb.SetStatusText("Fit status: Complete", 3)
+        beep()
 
     def OnFitSave(self, event):
         raise NotImplementedError()
@@ -567,3 +568,14 @@ class AppPanel(wx.Panel):
         else:
             signal.log_message(message="new model")
             self.GetTopLevelParent().SetTitle("Refl1D")
+
+SOUND = None
+def beep():
+    """
+    Play fit completion sound.
+    """
+    global SOUND
+    if SOUND is None:
+        SOUND = wx.Sound(resource('done.wav'))
+    if SOUND.IsOk():
+        SOUND.Play(wx.SOUND_ASYNC)

@@ -450,6 +450,15 @@ def config_matplotlib(backend):
 
     matplotlib.interactive(False)
 
+def beep():
+    """
+    Audio signal that fit is complete.
+    """
+    if sys.platform == "win32":
+        import winsound
+        winsound.MessageBeep(winsound.MB_ICONEXCLAMATION)
+    else:
+        print >>sys.__stdout__,"\a"
 
 def main():
     if len(sys.argv) == 1:
@@ -530,6 +539,7 @@ def main():
         best, fbest = fitdriver.fit()
         remember_best(fitdriver, problem, best)
         if opts.cov: print cov(problem)
+        beep()
         if not opts.batch:
             import pylab
             pylab.show()
