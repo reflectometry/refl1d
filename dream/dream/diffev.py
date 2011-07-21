@@ -5,7 +5,7 @@ from numpy.linalg import norm, cholesky, LinAlgError
 from .util import draw
 from numpy import random as RNG
 
-def de_step(Nchain,pop,CR,max_pairs=2,eps=0.05,snooker_rate=0.1):
+def de_step(Nchain,pop,CR,max_pairs=2,eps=0.05,snooker_rate=0.1,noise=1e-6):
     """
     Generates offspring using METROPOLIS HASTINGS monte-carlo markov chain
 
@@ -75,7 +75,7 @@ def de_step(Nchain,pop,CR,max_pairs=2,eps=0.05,snooker_rate=0.1):
             step = xi - z
             denom = sum(step**2)
             if denom == 0:
-                step = 1e-6*RNG.randn(*step.shape)
+                step = noise*RNG.randn(*step.shape)
                 denom = sum(step**2)
             scale = sum( (R1-R2)*step ) / denom
 
@@ -104,7 +104,7 @@ def de_step(Nchain,pop,CR,max_pairs=2,eps=0.05,snooker_rate=0.1):
             try:
                 #print "No step"
                 # Compute the Cholesky Decomposition of x_old
-                R = (2.38/sqrt(Nvar)) * cholesky(cov(pop.T) + 1e-5*eye(Nvar))
+                R = (2.38/sqrt(Nvar)) * cholesky(cov(pop.T) + noise*eye(Nvar))
                 # Generate jump using multinormal distribution
                 delta_x[qq] = dot(RNG.randn(*(1,Nvar)), R)
             except LinAlgError:
@@ -113,7 +113,7 @@ def de_step(Nchain,pop,CR,max_pairs=2,eps=0.05,snooker_rate=0.1):
 
 
     # Update x_old with delta_x and noise
-    x_new = pop[:Nchain] + delta_x + 1e-6*RNG.randn(Nchain,Nvar)
+    x_new = pop[:Nchain] + delta_x + noise*RNG.randn(Nchain,Nvar)
 
     return x_new, step_alpha, use_de_step
 

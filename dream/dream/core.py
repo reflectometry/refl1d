@@ -144,6 +144,7 @@ class Dream(object):
     DE_pairs = 3
     DE_eps = 0.05
     DE_snooker_rate = 0.1
+    DE_noise = 1e-6
     bounds_style = 'reflect'
     # Crossover parameters
     CR = None
@@ -226,7 +227,8 @@ def run_dream(dream):
                 = de_step(Nchain, pop, dream.CR[gen],
                           max_pairs=dream.DE_pairs,
                           eps=dream.DE_eps,
-                          snooker_rate=dream.DE_snooker_rate)
+                          snooker_rate=dream.DE_snooker_rate,
+                          noise=dream.DE_noise)
 
             # Compute the likelihood of the candidates
             apply_bounds(xtry)

@@ -335,7 +335,8 @@ class DreamFit(FitBase):
         sampler = dream.Dream(model=self.dream_model, population=population,
                               draws = pop_size*options['steps'],
                               burn = pop_size*options['burn'],
-                              monitor = self._monitor)
+                              monitor = self._monitor,
+                              DE_noise = 1e-8)
 
         self.state = sampler.sample()
         self.state.mark_outliers()
