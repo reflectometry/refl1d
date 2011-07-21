@@ -45,8 +45,10 @@ class Validator(wx.PyValidator):
 def nice(v, digits = 4):
     from math import log, log10, ceil, floor
     """Fix v to a value with a given number of digits of precision"""
-    if v == 0.: return v
-    sign = v/abs(v)
-    place = floor(log10(abs(v)))
-    scale = 10**(place-(digits-1))
-    return sign*floor(abs(v)/scale+0.5)*scale
+    try:
+        sign = v/abs(v)
+        place = floor(log10(abs(v)))
+        scale = 10**(place-(digits-1))
+        return sign*floor(abs(v)/scale+0.5)*scale
+    except:  # Too many possible math errors to struggle through
+        return v
