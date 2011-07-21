@@ -48,16 +48,17 @@ NOTHING=Vacuum()
 NOTHING.name = ''
 
 class GareflExperiment(Experiment):
-    def __init__(self, model, index, dz=1):
+    def __init__(self, model, index, dz=1, step_interfaces=None):
         self.model = model
         self.index = index
         self.probe = model.get_probe(index)
         self.sample = Stack([NOTHING,NOTHING])
         self.sample[0].interface.fittable = False
+        self.step_interfaces = True
         self._slabs = Microslabs(1, dz=dz)
         self._cache = {}  # Cache calculated profiles/reflectivities
         self._pars = None
-        self.roughness_limit = 3
+        self.roughness_limit = 2.35
         self._substrate = SLD(name='substrate',rho=0)
         self._surface = SLD(name='surface',rho=0)
         self._name = None
