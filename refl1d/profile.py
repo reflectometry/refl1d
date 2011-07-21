@@ -253,7 +253,7 @@ class Microslabs(object):
     def ismagnetic(self):
         return self._magnetic_sections != []
 
-    def finalize(self, step_interfaces, dA, smoothness):
+    def finalize(self, step_interfaces, dA, roughness_limit):
         """
         Rendering complete.
 
@@ -271,17 +271,18 @@ class Microslabs(object):
         *dA* is the tolerance to use when deciding if similar layers can
         be merged.
 
-        *smoothness* is the thickness of the Nevot-Croce interface to use
-        between merged layers, as a portion to the layer thickness.
+        *roughness_limit* is the maximum
         """
         self.w[0] = self.w[-1] = 0
+        self._limited_sigma(limit=roughness_limit)
         if self.ismagnetic:
             self._render_magnetic()
             self._contract_magnetic(dA)
         elif step_interfaces:
             self._render_interfaces()
             self._contract_profile(dA)
-            self._apply_smoothness(dA, smoothness)
+        else:
+            self._contract_profile(dA)
 
     def _render_interfaces(self):
         """
@@ -290,15 +291,16 @@ class Microslabs(object):
 
         The interface effects are limited to the surrounding layers.
 
-        Use of contract_profile afterward is strongly recommended, as
-        most models will have large portions with constant interfaces.
+        Use of contract_profile afterward is strongly recommended, for
+        better performance on models with large sections of constant
+        scattering potential.
         """
-        z, rho, irho = self._build_smooth_profile(dz=self.dz, sigma_limit=0)
+        z, rho, irho = self._build_smooth_profile(dz=self.dz)
         n = len(z)
         w = self.dz*numpy.ones(n)
         self._reserve(n - self._num_slabs)
         self._num_slabs = n
-        # TODO: doesn't handle multple wavelength
+        # TODO: doesn't handle multiple wavelength
         self.w[:] = w
         self.rho[0][:] = rho
         self.irho[0][:] = irho
@@ -340,7 +342,7 @@ class Microslabs(object):
         self.sigma[:] = sigma[:n-1]
         #print "final sld after contract",rho[n-1],self.rho[0][n-1],n
 
-    def _apply_smoothness(self, dA, smoothness=0.3):
+    def _DEAD_apply_smoothness(self, dA, smoothness=0.3):
         """
         Set a guassian interface for layers which have been coalesced using
         the contract_profile function.
@@ -353,6 +355,10 @@ class Microslabs(object):
         the profile used to calculate the reflectivity, so even though
         this behaviour is different from what the user intended, the
         result will not be misleading.
+
+        In a detailed example of a tethered polymer model, smoothness
+        was found to be worse than no smoothness, so this function has
+        been removed from the execution stream.
         """
         if dA is None or smoothness == 0: return
         #TODO: refine this so that it can look forward as well as back
@@ -364,7 +370,7 @@ class Microslabs(object):
         fix = step[idx] < 3*dA
         sigma[idx[fix]] = w[idx[fix]]*smoothness
 
-    def limited_sigma(self, limit=0):
+    def _limited_sigma(self, limit=0):
         """
         Return the roughness limited by layer thickness.
 
@@ -385,7 +391,7 @@ class Microslabs(object):
         determined by profile step size dz.  Below this value artifacts
         can occur when roughness is large.
         """
-        return compute_limited_sigma(self.w, self.sigma, limit)
+        self.sigma[:] = compute_limited_sigma(self.w, self.sigma, limit)
 
     def step_profile(self):
         """
@@ -403,7 +409,7 @@ class Microslabs(object):
             z = numpy.array([-10,0,0,10])
         return z+self._z_offset,rho,irho
 
-    def smooth_profile(self, dz=1, sigma_limit=0):
+    def smooth_profile(self, dz=1):
         """
         Return a smooth profile representation of the microslab structure
 
@@ -412,11 +418,8 @@ class Microslabs(object):
         to the thickness.
 
         The returned profile has uniform step size *dz*.
-
-        *sigma_limit* is the minimum number of interface widths that must
-        lie within each profile.
         """
-        z,rho,irho = self._build_smooth_profile(dz=dz, sigma_limit=sigma_limit)
+        z,rho,irho = self._build_smooth_profile(dz=dz)
         return z+self._z_offset,rho,irho
 
     def magnetic_profile(self):
@@ -499,15 +502,14 @@ class Microslabs(object):
         sigmaM = numpy.array(interfaces)
         return wM,rhoM,thetaM,sigmaM
 
-    def _build_smooth_profile(self, dz, sigma_limit):
-        sigma = self.limited_sigma(limit=sigma_limit)
+    def _build_smooth_profile(self, dz):
         thickness = self.thickness()
-        left  = 0 - max(10,sigma[0]*3)
-        right = thickness + max(10,sigma[-1]*3)
+        left  = 0 - max(10,self.sigma[0]*3)
+        right = thickness + max(10,self.sigma[-1]*3)
         z = numpy.arange(left,right+dz,dz)
         # Only show the first wavelength
-        rho  = build_profile(z, self.w, sigma, self.rho[0])
-        irho = build_profile(z, self.w, sigma, self.irho[0])
+        rho  = build_profile(z, self.w, self.sigma, self.rho[0])
+        irho = build_profile(z, self.w, self.sigma, self.irho[0])
         return z,rho,irho
 
 

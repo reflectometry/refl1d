@@ -247,7 +247,6 @@ class Experiment(ExperimentBase):
         *roughness_limit* limit the roughness based on layer thickness
         *dz* minimum step size for computed profile steps in Angstroms
         *dA* discretization condition for computed profiles
-        *smoothness* amount of Nevot-Croce smoothing between step slabs
 
     If *step_interfaces* is True, then approximate the interface using
     microslabs with step size *dz*.  The microslabs extend throughout
@@ -274,23 +273,11 @@ class Experiment(ExperimentBase):
     than *dA*.  A *dA* of 10 gives coarse slabs.  If *dA* is not provided
     then each profile step forms its own slab.  The *dA* condition will
     also apply to the slab approximation to the interfaces.
-
-    The *smoothness* parameter controls the amount of smoothing between
-    slabs in the contracted profile when *dA* is non-zero.  The smoothing
-    is performed by setting the interface width to smoothness * slab width.
-    A smoothness value of 0 means no smoothing. Smoothness values of 0.3
-    or less are considered safe.  Beyond that value, blending spans multiple
-    layers in the profile, and the profile we display may no longer be an
-    accurate representation of the underlying density profile.
-
-    Note that it would be better to use an analytic representation of a
-    trapezoidal scattering density profile for these layers rather than
-    analytic gaussian interfaces between layers, but this has not been
-    implemented.
     """
     def __init__(self, sample=None, probe=None, name=None,
                  roughness_limit=0, dz=None, dA=None,
-                 smoothness=0.3, step_interfaces=False):
+                 step_interfaces=False, smoothness=None):
+        # Note: smoothness ignored
         self.sample = sample
         self._substrate=self.sample[0].material
         self._surface=self.sample[-1].material
@@ -302,7 +289,6 @@ class Experiment(ExperimentBase):
         self.dz = dz
         self.dA = dA
         self.step_interfaces = step_interfaces
-        self.smoothness = smoothness
         self._slabs = profile.Microslabs(len(probe), dz=dz)
         self._probe_cache = material.ProbeCache(probe)
         self._cache = {}  # Cache calculated profiles/reflectivities
@@ -326,7 +312,8 @@ class Experiment(ExperimentBase):
             self._slabs.clear()
             self.sample.render(self._probe_cache, self._slabs)
             self._slabs.finalize(step_interfaces=self.step_interfaces,
-                                 dA=self.dA, smoothness=self.smoothness)
+                                 dA=self.dA,
+                                 roughness_limit=self.roughness_limit)
             self._cache[key] = True
         return self._slabs
 
@@ -338,7 +325,7 @@ class Experiment(ExperimentBase):
             slabs = self._render_slabs()
             w = slabs.w
             rho,irho = slabs.rho, slabs.irho
-            sigma = slabs.limited_sigma(limit=self.roughness_limit)
+            sigma = slabs.sigma
             #sigma = slabs.sigma
             calc_q = self.probe.calc_Q
             if slabs.ismagnetic:
@@ -406,8 +393,7 @@ class Experiment(ExperimentBase):
         key = 'smooth_profile', dz
         if key not in self._cache:
             slabs = self._render_slabs()
-            prof = slabs.smooth_profile(dz=dz,
-                                        sigma_limit=self.roughness_limit)
+            prof = slabs.smooth_profile(dz=dz)
             self._cache[key] = prof
         return self._cache[key]
 
