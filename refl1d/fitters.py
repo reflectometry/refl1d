@@ -336,7 +336,7 @@ class DreamFit(FitBase):
                               draws = pop_size*options['steps'],
                               burn = pop_size*options['burn'],
                               monitor = self._monitor,
-                              DE_noise = 1e-8)
+                              DE_noise = 1e-6)
 
         self.state = sampler.sample()
         self.state.mark_outliers()

@@ -58,8 +58,8 @@ def de_step(Nchain,pop,CR,max_pairs=2,eps=0.05,snooker_rate=0.1,noise=1e-6):
             step = sum(pop[r1]-pop[r2], axis=0)
 
             # Apply that step with F scaling and noise
-            noise = 1 + eps * (2 * RNG.rand(*step.shape) - 1)
-            delta_x[qq,vars] = (noise*gamma*step)[vars]
+            jiggle = 1 + eps * (2 * RNG.rand(*step.shape) - 1)
+            delta_x[qq,vars] = (jiggle*gamma*step)[vars]
 
         elif alg[qq] == SNOOKER:  # Use snooker update
 
@@ -114,6 +114,13 @@ def de_step(Nchain,pop,CR,max_pairs=2,eps=0.05,snooker_rate=0.1,noise=1e-6):
 
     # Update x_old with delta_x and noise
     x_new = pop[:Nchain] + delta_x + noise*RNG.randn(Nchain,Nvar)
+
+    # [PAK] The noise term needs to depend on the fitting range
+    # of the parameter rather than using a fixed noise value for all
+    # parameters.  The  current parameter value is a pretty good proxy 
+    # in most cases, but it breaks down if the parameter is zero, or
+    # if the range is something like 1 +/- eps.
+    #x_new = pop[:Nchain] * (1+1e-6*RNG.randn(Nchain,Nvar)) + delta_x
 
     return x_new, step_alpha, use_de_step
 
