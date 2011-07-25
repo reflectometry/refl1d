@@ -248,7 +248,7 @@ class PTFit(FitBase):
 
 class AmoebaFit(FitBase):
     name = "Nelder-Mead Simplex"
-    settings = [ ('steps',1000), ('starts',100) ]
+    settings = [ ('steps',1000), ('starts',100), ('radius',0.15) ]
     def solve(self, monitors=None, mapper=None, **options):
         _fill_defaults(options, self.settings)
         # TODO: no mapper??
@@ -260,7 +260,8 @@ class AmoebaFit(FitBase):
         result = simplex(f=self.problem.nllf, x0=self.problem.getp(),
                          bounds=bounds,
                          update_handler=self._monitor,
-                         maxiter=options['steps'])
+                         maxiter=options['steps'],
+                         radius=options['radius'])
         return result.x, result.fx
     def _monitor(self, k, n, x, fx):
         self._update(step=k, point=x[0], value=fx[0],
@@ -491,6 +492,7 @@ class FitOptions(object):
         nT     = ("# Temperatures",  "int"),
         Tmin   = ("Min Temperature", "float"),
         Tmax   = ("Max Temperature", "float"),
+        radius = ("Simplex Radius",  "float"),
         )
 
     def __init__(self, fitclass):
