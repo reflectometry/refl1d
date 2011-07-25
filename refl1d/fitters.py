@@ -92,6 +92,7 @@ class MultiStart(FitBase):
         self.problem = fitter.problem
     def solve(self, monitors=None, mapper=None, **options):
         starts = options.pop('starts',1)
+        reset = not options.pop('keep_best',True)
         f_best = numpy.inf
         for _ in range(max(starts,1)):
             #print "round",_
@@ -100,7 +101,8 @@ class MultiStart(FitBase):
             if fx < f_best:
                 x_best, f_best = x,fx
                 print x_best, fx
-            self.problem.randomize()
+            if reset:
+                self.problem.randomize()
         return x_best, f_best
 
 class DEFit(FitBase):
