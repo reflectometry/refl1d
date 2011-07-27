@@ -21,6 +21,7 @@ from .reflectivity import magnetic_amplitude as reflmag
 #from .abeles import refl as reflamp
 from . import material, profile
 from .mystic.parameter import Parameter
+from .util import auto_shift
 
 
 def plot_sample(sample, instrument=None, roughness_limit=0):
@@ -110,12 +111,13 @@ class ExperimentBase(object):
         # when dR changes, so maybe it belongs in probe.
         return 0.5*numpy.sum(self.residuals()**2) # + self._cache['nllf_scale']
 
-    def plot_reflectivity(self, show_resolution=False, view=None):
+    def plot_reflectivity(self, show_resolution=False, 
+                          view=None, plot_shift=None):
 
         QR = self.reflectivity()
         self.probe.plot(theory=QR,
                         substrate=self._substrate, surface=self._surface,
-                        view=view,
+                        view=view, plot_shift=plot_shift,
                         label=self.name)
 
         if show_resolution:
@@ -130,13 +132,12 @@ class ExperimentBase(object):
                 pylab.plot(Q,R,':g',hold=True)
 
 
-    def plot(self):
+    def plot(self, plot_shift=None, profile_shift=None):
         import pylab
         pylab.subplot(211)
-        self.plot_reflectivity()
+        self.plot_reflectivity(plot_shift=plot_shift)
         pylab.subplot(212)
-        self.plot_profile()
-
+        self.plot_profile(profile_shift=profile_shift)
 
     def resynth_data(self):
         """Resynthesize data with noise from the uncertainty estimates."""
@@ -274,6 +275,7 @@ class Experiment(ExperimentBase):
     then each profile step forms its own slab.  The *dA* condition will
     also apply to the slab approximation to the interfaces.
     """
+    profile_shift = 0
     def __init__(self, sample=None, probe=None, name=None,
                  roughness_limit=0, dz=None, dA=None,
                  step_interfaces=False, smoothness=None):
@@ -456,26 +458,28 @@ class Experiment(ExperimentBase):
             traceback.print_exc()
 
 
-    def plot_profile(self):
+    def plot_profile(self, plot_shift=None):
         import pylab
+        plot_shift = plot_shift if plot_shift is not None else Experiment.profile_shift
+        trans = auto_shift(plot_shift)
         if self.ismagnetic:
             z,rho,irho,rhoM,thetaM = self.magnetic_profile()
             #rhoM_net = rhoM*numpy.cos(numpy.radians(thetaM))
-            pylab.plot(z,rho)
-            pylab.plot(z,irho,hold=True)
-            pylab.plot(z,rhoM,hold=True)
+            pylab.plot(z,rho,transform=trans)
+            pylab.plot(z,irho,hold=True,transform=trans)
+            pylab.plot(z,rhoM,hold=True,transform=trans)
             pylab.xlabel('depth (A)')
             pylab.ylabel('SLD (10^6 / A**2)')
             pylab.legend(['rho','irho','rhoM'])
             if (abs(thetaM-thetaM[0])>1e-3).any():
                 ax = pylab.twinx()
-                pylab.plot(z,thetaM,':k',hold=True,axes=ax)
+                pylab.plot(z,thetaM,':k',hold=True,axes=ax,transform=trans)
                 pylab.ylabel('magnetic angle (degrees)')
         else:
             z,rho,irho = self.step_profile()
-            pylab.plot(z,rho,':g',z,irho,':b')
+            pylab.plot(z,rho,':g',z,irho,':b',transform=trans)
             z,rho,irho = self.smooth_profile()
-            pylab.plot(z,rho,'-g',z,irho,'-b', hold=True)
+            pylab.plot(z,rho,'-g',z,irho,'-b', hold=True,transform=trans)
             pylab.legend(['rho','irho'])
             pylab.xlabel('depth (A)')
             pylab.ylabel('SLD (10^6 / A**2)')

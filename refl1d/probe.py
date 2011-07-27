@@ -47,7 +47,7 @@ from material import Vacuum
 from mystic.parameter import Parameter, Constant
 from .resolution import TL2Q, dTdL2dQ
 from .stitch import stitch
-from .util import coordinated_colors
+from .util import coordinated_colors, auto_shift
 
 PROBE_KW = ('T', 'dT', 'L', 'dL', 'data',
             'intensity', 'background', 'back_absorption',
@@ -101,6 +101,7 @@ class Probe(object):
         *substrate* is the material which makes up the substrate
         *surface* is the material which makes up the surface
         *view* is 'fresnel', 'log', 'linear', 'q4', 'residual'
+        *plot_shift* is the number of pt to shift each new dataset
 
     Normally *view* is set directly in the class rather than the
     instance since it is not specific to the view.  The fresnel
@@ -110,6 +111,8 @@ class Probe(object):
     polarized = False
     Aguide = 270  # default guide field for unpolarized measurements
     view = "fresnel"
+    plot_shift = 0
+    residuals_shift = 0
     substrate = None
     surface = None
     def __init__(self, T=None, dT=0, L=None, dL=0, data = None,
@@ -543,15 +546,18 @@ class Probe(object):
         self._plot_pair(scale=scale, ylabel='R (100 Q)^4', **kwargs)
 
     def _plot_pair(self, theory=None, scale=lambda Q: 1,
-                   ylabel="", suffix="", label=None, **kw):
+                   ylabel="", suffix="", label=None, 
+                   plot_shift=None, **kw):
         import pylab
         c = coordinated_colors()
         isheld = pylab.ishold()
+        plot_shift = plot_shift if plot_shift is not None else Probe.plot_shift
+        trans = auto_shift(plot_shift)
         if hasattr(self,'R') and self.R is not None:
             pylab.errorbar(self.Q, self.R*scale(self.Q)/self.intensity.value,
                            yerr=self.dR*scale(self.Q)/self.intensity.value,
                            xerr=self.dQ,
-                           fmt='.', color=c['light'],
+                           fmt='.', color=c['light'], transform=trans,
                            label=self.label(prefix=label,
                                             gloss='data',
                                             suffix=suffix))
@@ -559,7 +565,7 @@ class Probe(object):
         if theory is not None:
             Q,R = theory
             pylab.plot(Q, R*scale(Q)/self.intensity.value,
-                       color=c['dark'],
+                       color=c['dark'], transform=trans,
                        label=self.label(prefix=label,
                                         gloss='theory',
                                         suffix=suffix))
@@ -570,14 +576,18 @@ class Probe(object):
         h = pylab.legend(fancybox=True)
         h.get_frame().set_alpha(0.5)
 
-    def plot_residuals(self, theory=None, suffix='', label=None,**kwargs):
+    def plot_residuals(self, theory=None, suffix='', label=None,
+                       plot_shift=None, **kwargs):
         import pylab
+        plot_shift = plot_shift if plot_shift is not None else Probe.residuals_shift
+        trans = auto_shift(plot_shift)
         if theory is not None and self.R is not None:
             c = coordinated_colors()
             Q,R = theory
             residual = (R - self.R)/self.dR
             pylab.plot(self.Q, residual,
                        '.', color=c['light'],
+                       transform=trans,
                        label=self.label(prefix=label, suffix=suffix))
         pylab.axhline(1, color='black', ls='--',lw=1)
         pylab.axhline(0, color='black', lw=1)
@@ -1121,11 +1131,14 @@ class PolarizedNeutronProbe(object):
         self._xs_plot('plot_Q4', **kwargs)
     def plot_residuals(self, **kwargs):
         self._xs_plot('plot_residuals', **kwargs)
-    def plot_SA(self, theory=None, label=None, **kwargs):
+    def plot_SA(self, theory=None, label=None, plot_shift=None,
+                **kwargs):
         import pylab
         if self.pp is None or self.mm is None:
             raise TypeError("cannot form spin asymmetry plot without ++ and --")
 
+        plot_shift = plot_shift if plot_shift is not None else Probe.plot_shift
+        trans = auto_shift(plot_shift)
         isheld = pylab.ishold()
         pp,mm = self.pp,self.mm
         c = coordinated_colors()
@@ -1134,10 +1147,12 @@ class PolarizedNeutronProbe(object):
             if dSA is not None:
                 pylab.errorbar(Q, SA, yerr=dSA, xerr=pp.dQ, fmt='.',
                                label=pp.label(prefix=label, gloss='data'),
+                               transform=trans,
                                color=c['light'])
             else:
                 pylab.plot(Q,SA,'.',
                            label=pp.label(prefix=label,gloss='data'),
+                               transform=trans,
                            color=c['light'])
             pylab.hold(True)
         if theory is not None:
@@ -1145,6 +1160,7 @@ class PolarizedNeutronProbe(object):
             Q,SA,_ = spin_asymmetry(pp[0],pp[1],None,mm[0],mm[1],None)
             pylab.plot(Q, SA,
                        label=self.pp.label(prefix=label,gloss='theory'),
+                       transform=trans,
                        color=c['dark'])
         pylab.hold(isheld)
         pylab.xlabel(r'Q (\AA^{-1})')

@@ -254,7 +254,7 @@ class PTFit(FitBase):
 
 class AmoebaFit(FitBase):
     name = "Nelder-Mead Simplex"
-    settings = [ ('steps',1000), ('starts',100), ('radius',0.15) ]
+    settings = [ ('steps',1000), ('starts',1), ('radius',0.15) ]
     def solve(self, monitors=None, mapper=None, **options):
         _fill_defaults(options, self.settings)
         # TODO: no mapper??
@@ -537,4 +537,4 @@ FIT_OPTIONS = dict(
     snobfit = FitOptions(SnobFit),
     )
 
-FIT_DEFAULT = 'de'
+FIT_DEFAULT = 'amoeba'

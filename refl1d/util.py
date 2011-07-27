@@ -126,6 +126,20 @@ def indfloat(s):
         if s == 'nan': return nan
         raise
 
+def auto_shift(offset):
+    from matplotlib.transforms import ScaledTranslation
+    import pylab
+    ax = pylab.gca()
+    if ax.lines: 
+        ax._auto_shift += offset
+    else: 
+        ax._auto_shift = 0
+    trans = pylab.gca().transData
+    if ax._auto_shift:
+        trans += ScaledTranslation(0,ax._auto_shift/72, 
+                                   pylab.gcf().dpi_scale_trans)
+    return trans
+
 def next_color():
     import pylab
     try:
