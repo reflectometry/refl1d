@@ -137,7 +137,7 @@ class ExperimentBase(object):
         pylab.subplot(211)
         self.plot_reflectivity(plot_shift=plot_shift)
         pylab.subplot(212)
-        self.plot_profile(profile_shift=profile_shift)
+        self.plot_profile(plot_shift=profile_shift)
 
     def resynth_data(self):
         """Resynthesize data with noise from the uncertainty estimates."""

@@ -45,7 +45,7 @@ from .reflectivity import convolve
 from . import fresnel
 from material import Vacuum
 from mystic.parameter import Parameter, Constant
-from .resolution import TL2Q, dTdL2dQ
+from .resolution import QL2T, TL2Q, dTdL2dQ
 from .stitch import stitch
 from .util import coordinated_colors, auto_shift
 
@@ -349,9 +349,57 @@ class Probe(object):
         r"""
         Make sure each measured $Q$ point has at least 5 calculated $Q$
         points contributing to it in the range $[-3\Delta Q,3\Delta Q]$.
+        
+        *Not Implemented*
         """
         raise NotImplementedError
         # TODO: implement resolution guard.
+
+    def critical_edge(self,  substrate=None, surface=None,
+                      n=51, delta=0.25):
+        r"""
+        Oversample points near the critical edge.
+
+        The critical edge is defined by the difference in scattering
+        potential for the *substrate* and *surface* materials, or the
+        reverse if *back_reflectivity* is true.
+
+        *n* is the number of $Q$ points to compute near the critical edge.
+        
+        *delta* is the relative uncertainty in the material density,
+        which defines the range of values which are calculated.
+ 
+        The $n$ points $Q_i$ are evenly distributed around the critical 
+        edge from $Q_c - \delta Q_c$ to $Q_c + \delta Q_c$ by varying 
+        angle $\theta$ for a fixed wavelength $< \lambda >$, the average 
+        of all wavelengths in the probe.
+        
+        Specifically:
+        
+        .. math::
+        
+            Q_c^2 &=& 16 \pi (\rho - \rho_{\text incident}) \\
+            Q_i &=& Q_c - \delta_i Q_c (i - (n-1)/2)  \forall i \in 0 \ldots n-1 \\
+            \lambda_i &=& < \lambda > \\
+            \theta_i &=& \sin^-1(Q_i \lambda_i / 4 \pi)
+
+        If $Q_c$ is imaginary, then $-|Q_c|$ is used instead, so this
+        routine can be used for reflectivity signals which scan from
+        back reflectivity to front reflectivity.  For completeness,
+        the angle $\theta = 0$ is added as well.
+        """
+        Srho,Sirho = (0,0) if substrate is None else substrate.sld(self)[:2]
+        Vrho,Virho = (0,0) if surface is None else surface.sld(self)[:2]
+        drho = Srho-Vrho if not self.back_reflectivity else Vrho-Srho
+        Q_c = sign(drho)*sqrt(16*pi*abs(drho)*1e-6)
+        Q = numpy.linspace(Q_c*(1 - delta), Q_c*(1+delta), n)
+        L = numpy.average(self.L)
+        T = QL2T(Q=Q, L=L)
+        T = numpy.hstack((self.T,T,0))
+        L = numpy.hstack((self.L,[L]*(n+1)))
+        print Q
+        self._set_calc(T,L)
+
 
     def oversample(self, n=20, seed=1):
         """
@@ -382,10 +430,10 @@ class Probe(object):
             raise ValueError("Oversampling with n<=5 is not useful")
 
         rng = numpy.random.RandomState(seed=seed)
-        T = rng.normal(self.T[:,None],self.dT[:,None],size=(len(self.dT),n))
-        L = rng.normal(self.L[:,None],self.dL[:,None],size=(len(self.dL),n))
-        T = T.flatten()
-        L = L.flatten()
+        T = rng.normal(self.T[:,None],self.dT[:,None],size=(len(self.dT),n-1))
+        L = rng.normal(self.L[:,None],self.dL[:,None],size=(len(self.dL),n-1))
+        T = numpy.hstack((self.T,T.flatten()))
+        L = numpy.hstack((self.L,L.flatten()))
         self._set_calc(T,L)
 
     def _apply_resolution(self, Qin, Rin):
