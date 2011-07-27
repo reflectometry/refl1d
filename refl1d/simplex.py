@@ -264,6 +264,7 @@ def simplex(f, x0=None, bounds=None, radius=0.05,
 
     status = 0 if iterations < maxiter else 1
     res = Result(sim[0], fsim[0], iterations, fcalls[0], status)
+    res.next_start = sim[numpy.random.randint(N)]
     return res
 
 def main():

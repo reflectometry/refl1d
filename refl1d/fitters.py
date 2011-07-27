@@ -95,7 +95,7 @@ class MultiStart(FitBase):
         reset = not options.pop('keep_best',True)
         f_best = numpy.inf
         for _ in range(max(starts,1)):
-            #print "round",_
+            print "round",_
             x,fx = self.fitter.solve(monitors=monitors, mapper=mapper,
                                      **options)
             if fx < f_best:
@@ -103,6 +103,12 @@ class MultiStart(FitBase):
                 print x_best, fx
             if reset:
                 self.problem.randomize()
+            elif 0:
+                # Jitter
+                self.problem.setp(x_best)
+                pop = initpop.eps_init(1, self.problem.parameters, 
+                                       include_current=False, eps=1e-5)
+                self.problem.setp(pop[0])
         return x_best, f_best
 
 class DEFit(FitBase):
@@ -262,6 +268,10 @@ class AmoebaFit(FitBase):
                          update_handler=self._monitor,
                          maxiter=options['steps'],
                          radius=options['radius'])
+        # Let simplex propose the starting point for the next amoeba
+        # fit in a multistart amoeba context.  If the best is always
+        # used, the fit can get stuck in a local minimum.
+        self.problem.setp(result.next_start)
         return result.x, result.fx
     def _monitor(self, k, n, x, fx):
         self._update(step=k, point=x[0], value=fx[0],

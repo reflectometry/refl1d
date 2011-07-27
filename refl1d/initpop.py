@@ -171,7 +171,7 @@ def eps_init(N, pars, include_current=False, eps=1e-6):
     xmin,xmax = [array(v,'d') for v in zip(*[p.bounds.limits for p in pars])]
     dx = (xmax-xmin)*eps
     dx[isinf(dx)] = eps
-    population = x+eps*(numpy.random.rand(N,len(xmin))-0.5)
+    population = x+dx*(2*numpy.random.rand(N,len(xmin))-1)
     population = clip(population,xmin,xmax)
     if include_current:
         population[0] = x
