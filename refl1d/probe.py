@@ -349,7 +349,7 @@ class Probe(object):
         r"""
         Make sure each measured $Q$ point has at least 5 calculated $Q$
         points contributing to it in the range $[-3\Delta Q,3\Delta Q]$.
-        
+
         *Not Implemented*
         """
         raise NotImplementedError
@@ -365,19 +365,19 @@ class Probe(object):
         reverse if *back_reflectivity* is true.
 
         *n* is the number of $Q$ points to compute near the critical edge.
-        
+
         *delta* is the relative uncertainty in the material density,
         which defines the range of values which are calculated.
- 
-        The $n$ points $Q_i$ are evenly distributed around the critical 
-        edge from $Q_c - \delta Q_c$ to $Q_c + \delta Q_c$ by varying 
-        angle $\theta$ for a fixed wavelength $< \lambda >$, the average 
+
+        The $n$ points $Q_i$ are evenly distributed around the critical
+        edge from $Q_c - \delta Q_c$ to $Q_c + \delta Q_c$ by varying
+        angle $\theta$ for a fixed wavelength $< \lambda >$, the average
         of all wavelengths in the probe.
-        
+
         Specifically:
-        
+
         .. math::
-        
+
             Q_c^2 &=& 16 \pi (\rho - \rho_{\text incident}) \\
             Q_i &=& Q_c - \delta_i Q_c (i - (n-1)/2)  \forall i \in 0 \ldots n-1 \\
             \lambda_i &=& < \lambda > \\
@@ -594,7 +594,7 @@ class Probe(object):
         self._plot_pair(scale=scale, ylabel='R (100 Q)^4', **kwargs)
 
     def _plot_pair(self, theory=None, scale=lambda Q: 1,
-                   ylabel="", suffix="", label=None, 
+                   ylabel="", suffix="", label=None,
                    plot_shift=None, **kw):
         import pylab
         c = coordinated_colors()

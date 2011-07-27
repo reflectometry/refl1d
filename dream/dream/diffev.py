@@ -117,7 +117,7 @@ def de_step(Nchain,pop,CR,max_pairs=2,eps=0.05,snooker_rate=0.1,noise=1e-6):
 
     # [PAK] The noise term needs to depend on the fitting range
     # of the parameter rather than using a fixed noise value for all
-    # parameters.  The  current parameter value is a pretty good proxy 
+    # parameters.  The  current parameter value is a pretty good proxy
     # in most cases, but it breaks down if the parameter is zero, or
     # if the range is something like 1 +/- eps.
     #x_new = pop[:Nchain] * (1+1e-6*RNG.randn(Nchain,Nvar)) + delta_x

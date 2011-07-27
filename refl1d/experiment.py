@@ -111,7 +111,7 @@ class ExperimentBase(object):
         # when dR changes, so maybe it belongs in probe.
         return 0.5*numpy.sum(self.residuals()**2) # + self._cache['nllf_scale']
 
-    def plot_reflectivity(self, show_resolution=False, 
+    def plot_reflectivity(self, show_resolution=False,
                           view=None, plot_shift=None):
 
         QR = self.reflectivity()

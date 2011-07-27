@@ -106,7 +106,7 @@ class MultiStart(FitBase):
             elif 0:
                 # Jitter
                 self.problem.setp(x_best)
-                pop = initpop.eps_init(1, self.problem.parameters, 
+                pop = initpop.eps_init(1, self.problem.parameters,
                                        include_current=False, eps=1e-5)
                 self.problem.setp(pop[0])
         return x_best, f_best
