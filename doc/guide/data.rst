@@ -58,23 +58,17 @@ the original points and the points used in the calculation
 Instrument Resolution
 =====================
 
-The instrument resolution is applied to the theory calculation on
-a point by point basis using a value of $\Delta Q$ derived from
-$\Delta\lambda$ and $\Delta\theta$.  For monochromatic instruments, 
-the wavelength resolution is fixed and the angular resolution varies.  
-For polychromatic instruments, the wavelength resolution varies and 
-the angular resolution is fixed for each measurement.
-Resolution functions are defined in :mod:`refl1d.resolution`.
+With the instrument in a given configuration ($\theta_i = \theta_f, \lambda$), 
+each neutron that is received is assigned to a particular $Q$ based on
+the configuration.  However, these vaues are only nominal.  For example,
+a monochromator lets in a range of wavelengths, and slits permit a range 
+of angles.  In effect, the reflectivity measured at the configuration
+corresponds to a range of $Q$.
 
-Assuming the resolution is well approximated by a Gaussian, 
-:func:`convolve <refl1d.reflectivity.convolve>` applies
-it to the calculated theory function.  While the assumption of 
-Gaussian resolution is reasonable on many instruments, it is less 
-so on time of flight instruments, which have asymmetric wavelength 
-distributions.  You can explore the effects of different distributions 
-by subclassing :class:`Probe <refl1d.probe.Probe>`  and overriding 
-the ``_apply_resolution`` method.  We will happily accept code for 
-improved resolution calculators and non-gaussian convolution.
+For monochromatic instruments, the wavelength resolution is fixed and 
+the angular resolution varies.  For polychromatic instruments, the 
+wavelength resolution varies and the angular resolution is fixed. 
+Resolution functions are defined in :mod:`refl1d.resolution`.
 
 The angular resolution is determined by the geometry (slit positions,
 openings and sample profile) with perhaps an additional contribution
@@ -190,6 +184,74 @@ particular $\theta$:
 Because $d$ is fixed, that means
 $s_1(\theta) = s_1(\theta_o) \cdot \theta/\theta_o$ and
 $s_2(\theta) = s_2(\theta_o) \cdot \theta/\theta_o$.
+
+
+.. _data_resolution_calculator:
+
+Applying Resolution
+===================
+
+The instrument resolution is applied to the theory calculation on
+a point by point basis using a value of $\Delta Q$ derived from
+$\Delta\lambda$ and $\Delta\theta$.   Assuming the resolution is 
+well approximated by a Gaussian,  
+:func:`convolve <refl1d.reflectivity.convolve>` applies it to the 
+calculated theory function.  
+
+The convolution at each point $k$ is computed from the piece-wise linear
+function $\bar R_i(q)$ defined by the refectivity $R(Q_i)$ computed
+at points $Q_i \in Q_{\text calc}$
+
+.. math::
+
+    \bar R_i(q) &=& m_i q + b_i \\
+    m_i &=& (R_{i+1} - R_i)/(Q_{i+1} - Q_i) \\
+    b_i &=& R_i - m_i Q_i
+      double m = (Rin[lo]-Rin[lo-1])/(Qin[lo]-Qin[lo-1]);
+      double b = Rin[lo] - m*Qin[lo];
+
+and the Gaussian of width $\sigma_k = \Delta Q_k$
+
+.. math::
+
+    G_k(q) = \frac{1}{\sqrt{2 \pi}\sigma_k} e^\frac{(q-Q_k)^2}{2 \sigma_k^2)
+
+using the piece-wise integral
+
+.. math::
+
+    \hat R_k = \left\sum_{i=i_{\text min}}^{i_{\text max}} 
+        \int_{Q_i}^{Q_{i+1}} \bar_i(q) G_k(q) dq
+
+The range $i_{\text min}$ to $i_{\text max}$ for point $k$ is defined 
+to be the first $i$ such that $G_k(Q_i) < 0.001$, which is 
+about $3 \Delta Q_k$ away from $Q_k$.
+
+By default the calculation points $Q_{\text calc}$ are the same 
+nominal $Q$ points at which the reflectivity was measured.   If the
+data was measured densely enough, then the piece-wise linear function
+$\bar R$ will be a good approximation to the underlying reflectivity.  
+There are two places in particular where this assumption breaks down.  
+One is near the critical edge for a sample that has sharp interfaces,
+where the reflectivity drops precipitously. The other is in thick
+samples, where the Kissig fringes are so close together that the
+instrument cannot resolve them separately.
+
+The method :meth:`Probe.critical_edge` fills in calculation points
+near the critical edge.  Points are added linear around $Q_c$ for
+a range of $\pm \delta Q_c$.  Thus, if the backing medium SLD or 
+the theta offset are allowed to vary a little during the fit, the
+region after the critical edge may still be over-sampled.
+The method :meth:`Probe.oversample` fills in calculation points
+around every point, giving each $\hat R$ a firm basis of support.
+
+While the assumption of Gaussian resolution is reasonable on fixed
+wavelength instruments, it is less  so on time of flight instruments, 
+which have asymmetric wavelength  distributions.  You can explore the 
+effects of different distributions by subclassing 
+:class:`Probe <refl1d.probe.Probe>`  and overriding the 
+``_apply_resolution`` method.  We will happily accept code for 
+improved resolution calculators and non-gaussian convolution.
 
 
 .. _data_backrefl:

@@ -397,7 +397,7 @@ class Probe(object):
         T = QL2T(Q=Q, L=L)
         T = numpy.hstack((self.T,T,0))
         L = numpy.hstack((self.L,[L]*(n+1)))
-        print Q
+        #print Q
         self._set_calc(T,L)
 
 
