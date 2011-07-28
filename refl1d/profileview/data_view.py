@@ -202,16 +202,20 @@ class TheoryView(wx.Panel):
                 xrange = ax.get_xlim()
                 #print "composing"
                 pylab.clf() # clear the canvas
+                #shift=20 if self.view == 'log' else 0
+                shift=0
                 if isinstance(self.problem,MultiFitProblem):
-                    for p in self.problem.models:
-                        p.fitness.plot_reflectivity(view=self.view)
+                    for i,p in enumerate(self.problem.models):
+                        p.fitness.plot_reflectivity(view=self.view,
+                                                    plot_shift=shift)
                         pylab.hold(True)
                         if self._cancel_calculate \
                             or p.fitness.is_reset(): break
                     if self._cancel_calculate \
                         or self.problem.models[0].fitness.is_reset(): continue
                 else:
-                    self.problem.fitness.plot_reflectivity(view=self.view)
+                    self.problem.fitness.plot_reflectivity(view=self.view,
+                                                           plot_shift=shift)
                     if self._cancel_calculate \
                         or self.problem.fitness.is_reset(): continue
 

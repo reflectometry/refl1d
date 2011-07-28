@@ -25,6 +25,7 @@ All modules in this file are implemented from the book
 J.E. Dennis and Robert B. Schnabel (Only a few minor modifications are done).
 
 EXAMPLE CALL::
+
     n = 2
     x0 = [-0.9 0.9]'
     fn = lambda p: (1-p[0])**2 + 100*(p[1]-p[0]**2)**2
@@ -44,6 +45,8 @@ EXAMPLE CALL::
     print "iterations, function calls, linesearch function calls",\
           result['iterations'],result['evals'],result['linesearch_evals']
 """
+
+__all__ = [ "quasinewton" ]
 
 from numpy import inf, sqrt, isnan, isinf
 from numpy import diag, zeros, ones, array, linalg, inner, outer, dot, amax, maximum

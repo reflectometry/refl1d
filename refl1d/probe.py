@@ -45,9 +45,9 @@ from .reflectivity import convolve
 from . import fresnel
 from material import Vacuum
 from mystic.parameter import Parameter, Constant
-from .resolution import TL2Q, dTdL2dQ
+from .resolution import QL2T, TL2Q, dTdL2dQ
 from .stitch import stitch
-from .util import coordinated_colors
+from .util import coordinated_colors, auto_shift
 
 PROBE_KW = ('T', 'dT', 'L', 'dL', 'data',
             'intensity', 'background', 'back_absorption',
@@ -101,6 +101,7 @@ class Probe(object):
         *substrate* is the material which makes up the substrate
         *surface* is the material which makes up the surface
         *view* is 'fresnel', 'log', 'linear', 'q4', 'residual'
+        *plot_shift* is the number of pt to shift each new dataset
 
     Normally *view* is set directly in the class rather than the
     instance since it is not specific to the view.  The fresnel
@@ -110,6 +111,8 @@ class Probe(object):
     polarized = False
     Aguide = 270  # default guide field for unpolarized measurements
     view = "fresnel"
+    plot_shift = 0
+    residuals_shift = 0
     substrate = None
     surface = None
     def __init__(self, T=None, dT=0, L=None, dL=0, data = None,
@@ -346,9 +349,57 @@ class Probe(object):
         r"""
         Make sure each measured $Q$ point has at least 5 calculated $Q$
         points contributing to it in the range $[-3\Delta Q,3\Delta Q]$.
+
+        *Not Implemented*
         """
         raise NotImplementedError
         # TODO: implement resolution guard.
+
+    def critical_edge(self,  substrate=None, surface=None,
+                      n=51, delta=0.25):
+        r"""
+        Oversample points near the critical edge.
+
+        The critical edge is defined by the difference in scattering
+        potential for the *substrate* and *surface* materials, or the
+        reverse if *back_reflectivity* is true.
+
+        *n* is the number of $Q$ points to compute near the critical edge.
+
+        *delta* is the relative uncertainty in the material density,
+        which defines the range of values which are calculated.
+
+        The $n$ points $Q_i$ are evenly distributed around the critical
+        edge from $Q_c - \delta Q_c$ to $Q_c + \delta Q_c$ by varying
+        angle $\theta$ for a fixed wavelength $< \lambda >$, the average
+        of all wavelengths in the probe.
+
+        Specifically:
+
+        .. math::
+
+            Q_c^2 &= 16 \pi (\rho - \rho_{\text incident}) \\
+            Q_i &= Q_c - \delta_i Q_c (i - (n-1)/2)  \forall i \in 0 \ldots n-1 \\
+            \lambda_i &= < \lambda > \\
+            \theta_i &= \sin^-1(Q_i \lambda_i / 4 \pi)
+
+        If $Q_c$ is imaginary, then $-|Q_c|$ is used instead, so this
+        routine can be used for reflectivity signals which scan from
+        back reflectivity to front reflectivity.  For completeness,
+        the angle $\theta = 0$ is added as well.
+        """
+        Srho,Sirho = (0,0) if substrate is None else substrate.sld(self)[:2]
+        Vrho,Virho = (0,0) if surface is None else surface.sld(self)[:2]
+        drho = Srho-Vrho if not self.back_reflectivity else Vrho-Srho
+        Q_c = sign(drho)*sqrt(16*pi*abs(drho)*1e-6)
+        Q = numpy.linspace(Q_c*(1 - delta), Q_c*(1+delta), n)
+        L = numpy.average(self.L)
+        T = QL2T(Q=Q, L=L)
+        T = numpy.hstack((self.T,T,0))
+        L = numpy.hstack((self.L,[L]*(n+1)))
+        #print Q
+        self._set_calc(T,L)
+
 
     def oversample(self, n=20, seed=1):
         """
@@ -379,10 +430,10 @@ class Probe(object):
             raise ValueError("Oversampling with n<=5 is not useful")
 
         rng = numpy.random.RandomState(seed=seed)
-        T = rng.normal(self.T[:,None],self.dT[:,None],size=(len(self.dT),n))
-        L = rng.normal(self.L[:,None],self.dL[:,None],size=(len(self.dL),n))
-        T = T.flatten()
-        L = L.flatten()
+        T = rng.normal(self.T[:,None],self.dT[:,None],size=(len(self.dT),n-1))
+        L = rng.normal(self.L[:,None],self.dL[:,None],size=(len(self.dL),n-1))
+        T = numpy.hstack((self.T,T.flatten()))
+        L = numpy.hstack((self.L,L.flatten()))
         self._set_calc(T,L)
 
     def _apply_resolution(self, Qin, Rin):
@@ -543,15 +594,18 @@ class Probe(object):
         self._plot_pair(scale=scale, ylabel='R (100 Q)^4', **kwargs)
 
     def _plot_pair(self, theory=None, scale=lambda Q: 1,
-                   ylabel="", suffix="", label=None, **kw):
+                   ylabel="", suffix="", label=None,
+                   plot_shift=None, **kw):
         import pylab
         c = coordinated_colors()
         isheld = pylab.ishold()
+        plot_shift = plot_shift if plot_shift is not None else Probe.plot_shift
+        trans = auto_shift(plot_shift)
         if hasattr(self,'R') and self.R is not None:
             pylab.errorbar(self.Q, self.R*scale(self.Q)/self.intensity.value,
                            yerr=self.dR*scale(self.Q)/self.intensity.value,
                            xerr=self.dQ,
-                           fmt='.', color=c['light'],
+                           fmt='.', color=c['light'], transform=trans,
                            label=self.label(prefix=label,
                                             gloss='data',
                                             suffix=suffix))
@@ -559,7 +613,7 @@ class Probe(object):
         if theory is not None:
             Q,R = theory
             pylab.plot(Q, R*scale(Q)/self.intensity.value,
-                       color=c['dark'],
+                       color=c['dark'], transform=trans,
                        label=self.label(prefix=label,
                                         gloss='theory',
                                         suffix=suffix))
@@ -570,14 +624,18 @@ class Probe(object):
         h = pylab.legend(fancybox=True)
         h.get_frame().set_alpha(0.5)
 
-    def plot_residuals(self, theory=None, suffix='', label=None,**kwargs):
+    def plot_residuals(self, theory=None, suffix='', label=None,
+                       plot_shift=None, **kwargs):
         import pylab
+        plot_shift = plot_shift if plot_shift is not None else Probe.residuals_shift
+        trans = auto_shift(plot_shift)
         if theory is not None and self.R is not None:
             c = coordinated_colors()
             Q,R = theory
             residual = (R - self.R)/self.dR
             pylab.plot(self.Q, residual,
                        '.', color=c['light'],
+                       transform=trans,
                        label=self.label(prefix=label, suffix=suffix))
         pylab.axhline(1, color='black', ls='--',lw=1)
         pylab.axhline(0, color='black', lw=1)
@@ -1121,11 +1179,14 @@ class PolarizedNeutronProbe(object):
         self._xs_plot('plot_Q4', **kwargs)
     def plot_residuals(self, **kwargs):
         self._xs_plot('plot_residuals', **kwargs)
-    def plot_SA(self, theory=None, label=None, **kwargs):
+    def plot_SA(self, theory=None, label=None, plot_shift=None,
+                **kwargs):
         import pylab
         if self.pp is None or self.mm is None:
             raise TypeError("cannot form spin asymmetry plot without ++ and --")
 
+        plot_shift = plot_shift if plot_shift is not None else Probe.plot_shift
+        trans = auto_shift(plot_shift)
         isheld = pylab.ishold()
         pp,mm = self.pp,self.mm
         c = coordinated_colors()
@@ -1134,10 +1195,12 @@ class PolarizedNeutronProbe(object):
             if dSA is not None:
                 pylab.errorbar(Q, SA, yerr=dSA, xerr=pp.dQ, fmt='.',
                                label=pp.label(prefix=label, gloss='data'),
+                               transform=trans,
                                color=c['light'])
             else:
                 pylab.plot(Q,SA,'.',
                            label=pp.label(prefix=label,gloss='data'),
+                               transform=trans,
                            color=c['light'])
             pylab.hold(True)
         if theory is not None:
@@ -1145,6 +1208,7 @@ class PolarizedNeutronProbe(object):
             Q,SA,_ = spin_asymmetry(pp[0],pp[1],None,mm[0],mm[1],None)
             pylab.plot(Q, SA,
                        label=self.pp.label(prefix=label,gloss='theory'),
+                       transform=trans,
                        color=c['dark'])
         pylab.hold(isheld)
         pylab.xlabel(r'Q (\AA^{-1})')

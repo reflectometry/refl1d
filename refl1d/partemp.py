@@ -7,8 +7,10 @@ The program performs Markov chain Monte Carlo exploration of a probability
 density function using a combination of random and differential evolution
 updates.
 """
-
 from __future__ import division
+
+__all__ = ["parallel_tempering"]
+
 import numpy
 from numpy import asarray, zeros, ones, exp, diff, std, inf, \
     array, nonzero, sqrt, zeros_like
@@ -23,8 +25,9 @@ def parallel_tempering(nllf, p, bounds, T=None, steps=1000,
                        monitor=every_ten,
                        logfile=None):
     r"""
-    Parameters
-    ----------
+    Perform a MCMC walk using multiple temperatures in parallel.
+
+    :Parameters:
 
     *nllf* : function(vector) -> float
         Negative log likelihood function to be minimized.  $\chi^2/2$ is a
@@ -66,8 +69,7 @@ def parallel_tempering(nllf, p, bounds, T=None, steps=1000,
         Note that this includes all of the burn steps, so it can get very
         large.
 
-    Returns
-    -------
+    :Returns:
 
     *history* : History
         Structure containing *best*, *best_point* and *buffer*.  *best* is

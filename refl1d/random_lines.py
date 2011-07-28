@@ -1,6 +1,8 @@
 # Author : Ismet Sahin
 # Random Lines Algorithm finds the optimal minima of a function
 
+__all__ = [ "random_lines"]
+
 from numpy import zeros, ones, asarray, sqrt
 from numpy.random import rand, random_integers
 from copy import deepcopy

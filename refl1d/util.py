@@ -1,4 +1,11 @@
 from __future__ import division
+
+__all__ = [ "merge_ends", "parse_file", "indfloat",
+           "auto_shift", "next_color", "coordinated_colors",
+           "dhsv", "profile", "kbhit", "redirect_console",
+           "pushdir", "push_seed",
+           ]
+
 import numpy
 from numpy import inf, nan
 
@@ -106,8 +113,7 @@ def indfloat(s):
     """
     Convert string to float, with support for inf and nan.
 
-    Example
-    -------
+    Example::
 
         >>> import numpy
         >>> print numpy.isinf(indfloat('inf'))
@@ -125,6 +131,20 @@ def indfloat(s):
         if s == '-inf': return -inf
         if s == 'nan': return nan
         raise
+
+def auto_shift(offset):
+    from matplotlib.transforms import ScaledTranslation
+    import pylab
+    ax = pylab.gca()
+    if ax.lines:
+        ax._auto_shift += offset
+    else:
+        ax._auto_shift = 0
+    trans = pylab.gca().transData
+    if ax._auto_shift:
+        trans += ScaledTranslation(0,ax._auto_shift/72,
+                                   pylab.gcf().dpi_scale_trans)
+    return trans
 
 def next_color():
     import pylab
@@ -155,8 +175,7 @@ def dhsv(color, dh=0, ds=0, dv=0, da=0):
     each dimension.  Saturation, value and alpha scales are clipped to [0,1]
     after changing.  The hue scale wraps between red to violet.
 
-    Example
-    -------
+    :Example:
 
     Make sea green 10% darker:
 
@@ -220,8 +239,7 @@ class redirect_console(object):
 
     Redirect the console output to a path or file object.
 
-    Example
-    -------
+    :Example:
 
         >>> print "hello"
         hello
@@ -288,14 +306,12 @@ class push_seed(object):
     When used in a with statement, the random number generator state is
     restored after the with statement is complete.
 
-    Parameters
-    ----------
+    :Parameters:
 
     *seed* : int or array_like, optional
         Seed for RandomState
 
-    Example
-    -------
+    :Example:
 
     Seed can be used directly to set the seed::
 

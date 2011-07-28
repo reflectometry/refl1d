@@ -168,7 +168,7 @@ best   = %(best)s
 
     return vstats
 
-def format_num(x, place): 
+def format_num(x, place):
     precision = 10**place
     digits_after_decimal = abs(place) if place < 0 else 0
     return "%.*f"%(digits_after_decimal,

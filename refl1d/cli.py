@@ -294,7 +294,7 @@ Options:
     --queue=http://reflectometry.org
         remote job queue
 
-    --fit=de        [%(fitter)s]
+    --fit=amoeba    [%(fitter)s]
         fitting engine to use; see manual for details
     --steps=1000    [%(fitter)s]
         number of fit iterations after any burn-in time
