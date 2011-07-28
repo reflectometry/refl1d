@@ -611,13 +611,13 @@ class MixedExperiment(ExperimentBase):
             self._cache[key] = res
         return self._cache[key]
 
-    def plot_profile(self):
+    def plot_profile(self, plot_shift=None):
         import pylab
         f = numpy.array([r.value for r in self.ratio],'d')
         f /= numpy.sum(f)
         held = pylab.hold()
         for p in self.parts:
-            p.plot_profile()
+            p.plot_profile(plot_shift=plot_shift)
             pylab.hold(True)
         pylab.hold(held)
 
