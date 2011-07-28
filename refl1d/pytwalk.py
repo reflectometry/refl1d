@@ -10,6 +10,8 @@ T-walk self adjusting MCMC
 # * move pylab import to the particular functions
 # * remove scipy dependence
 
+__all__ = [ "pytwalk" ]
+
 from numpy.random import uniform, normal
 from numpy import ones, zeros, cumsum, shape, mat, cov, mean, ceil, matrix, sqrt
 from numpy import floor, exp, log, sum, pi
