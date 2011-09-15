@@ -370,18 +370,19 @@ class Probe(object):
         which defines the range of values which are calculated.
 
         The $n$ points $Q_i$ are evenly distributed around the critical
-        edge from $Q_c - \delta Q_c$ to $Q_c + \delta Q_c$ by varying
-        angle $\theta$ for a fixed wavelength $< \lambda >$, the average
-        of all wavelengths in the probe.
+        edge in $Q_c \pm \delta Q_c$ by varying angle $\theta$ for a
+        fixed wavelength $< \lambda >$, the average of all wavelengths
+        in the probe.
 
         Specifically:
 
         .. math::
 
-            Q_c^2 &= 16 \pi (\rho - \rho_{\text incident}) \\
-            Q_i &= Q_c - \delta_i Q_c (i - (n-1)/2)  \forall i \in 0 \ldots n-1 \\
+            Q_c^2 &= 16 \pi (\rho - \rho_\text{incident}) \\
+            Q_i &= Q_c - \delta_i Q_c (i - (n-1)/2)
+                \qquad \text{for} \; i \in 0 \ldots n-1 \\
             \lambda_i &= < \lambda > \\
-            \theta_i &= \sin^-1(Q_i \lambda_i / 4 \pi)
+            \theta_i &= \sin^{-1}(Q_i \lambda_i / 4 \pi)
 
         If $Q_c$ is imaginary, then $-|Q_c|$ is used instead, so this
         routine can be used for reflectivity signals which scan from

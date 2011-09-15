@@ -200,7 +200,7 @@ calculated theory function.
 
 The convolution at each point $k$ is computed from the piece-wise linear
 function $\bar R_i(q)$ defined by the refectivity $R(Q_i)$ computed
-at points $Q_i \in Q_{\text calc}$
+at points $Q_i \in Q_\text{calc}$
 
 .. math::
 
@@ -212,20 +212,20 @@ and the Gaussian of width $\sigma_k = \Delta Q_k$
 
 .. math::
 
-    G_k(q) = \frac{1}{\sqrt{2 \pi}\sigma_k} e^\frac{(q-Q_k)^2}{2 \sigma_k^2}
+    G_k(q) = \frac{1}{\sqrt{2 \pi}\sigma_k} e^{(q-Q_k)^2 / (2 \sigma_k^2)}
 
 using the piece-wise integral
 
 .. math::
 
-    \hat R_k = \sum_{i=i_{\text min}}^{i_{\text max}}
+    \hat R_k = \sum_{i=i_\text{min}}^{i_\text{max}}
         \int_{Q_i}^{Q_{i+1}} \bar R_i(q) G_k(q) dq
 
-The range $i_{\text min}$ to $i_{\text max}$ for point $k$ is defined
+The range $i_\text{min}$ to $i_\text{max}$ for point $k$ is defined
 to be the first $i$ such that $G_k(Q_i) < 0.001$, which is
 about $3 \Delta Q_k$ away from $Q_k$.
 
-By default the calculation points $Q_{\text calc}$ are the same
+By default the calculation points $Q_\text{calc}$ are the same
 nominal $Q$ points at which the reflectivity was measured.   If the
 data was measured densely enough, then the piece-wise linear function
 $\bar R$ will be a good approximation to the underlying reflectivity.

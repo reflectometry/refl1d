@@ -5,7 +5,6 @@
    Printable manual: `Relf1D.pdf <Refl1D.pdf>`_
    Windows installer: :slink:`%(winexe)s`
    Apple installer: :slink:`%(macapp)s`
-   Source: :slink:`%(srczip)s`
 
    :ref:`Index <genindex>` :ref:`Search <search>`
 
