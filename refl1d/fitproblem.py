@@ -356,7 +356,8 @@ class FitProblem(object):
         """
         Update the model according to the changed parameters.
         """
-        self.fitness.update()
+        if hasattr(self.fitness, 'update'):
+            self.fitness.update()
     def model_nllf(self):
         """
         Negative log likelihood of seeing data given model.
@@ -496,9 +497,13 @@ class FitProblem(object):
         print parameter.summarize(self.parameters)
 
     def save(self, basename):
-        self.fitness.save(basename)
+        if hasattr(self.fitness, 'save'):
+            self.fitness.save(basename)
 
     def plot(self, p=None, fignum=None, figfile=None):
+        if not hasattr(self.fitness, 'plot'):
+            return
+
         import pylab
         if fignum != None: pylab.figure(fignum)
         if p != None: self.setp(p)

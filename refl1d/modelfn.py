@@ -89,15 +89,3 @@ class ModelFunction(object):
         Function residual.
         """
         return numpy.array([self()])
-
-    def save(self, basename):
-        """
-        Save model state to file.
-        """
-        pass
-
-    def plot(self):
-        """
-        Plot current model.
-        """
-        pass
