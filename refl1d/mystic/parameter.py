@@ -216,7 +216,7 @@ class Parameter(BaseParameter):
         # this is a fittable parameter, otherwise the parameter
         # defaults to fixed; if value is not set, use the midpoint
         # of the range.
-        if bounds is not None:
+        if bounds is None:
             try:
                 lo, hi = value
                 bounds = lo, hi
