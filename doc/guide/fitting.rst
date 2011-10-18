@@ -254,7 +254,145 @@ need for a one-off plot, the replot the graph::
 
 Be sure to restore the original versions when you are done.  If the change
 is so good that everyone should use it, be sure to feed it back to the
-community via http://github.com/reflecometry/refl1d.
+community via https://github.com/reflectometry/refl1d.
+
+Publication Graphics
+====================
+
+The matplotlib package is capable of producing publication quality
+graphics for your models and fit results, but it requires you to write
+scripts to get the control that you need.  These scripts can be run
+from the refl1d application by first loading the model and the fit
+results then accessing their data directly to produce the plots that
+you need.
+
+The model file (call it plot.py) will start with the following::
+
+    import sys
+    from refl1d.cli import load_problem, recall_best
+
+    model, store = sys.argv[1:3]
+
+    problem = load_problem([model])
+    recall_best(problem, os.path.join(store, model[:-3]+".par"))
+    chisq = problem.chisq
+
+    print "chisq",chisq
+
+Assuming your model script is in model.py and you have run a fit with
+--store=X5, you can run this file using::
+
+    $ refl1d plot.py model.py X5
+
+Now model.py is loaded and the best fit parameters are set.
+
+To produce plots, you will need access to the data and the theory.  This
+can be complex depending on how many models you are fitting and how many
+datasets there are per model.  For :class:`refl1d.fitproblem.FitProblem`
+models, the :class:`refl1d.experiment.Experiment` object is referenced
+by *problem.fitness*.  For :class:`refl1d.fitproblem.MultiFitProblem` models,
+you need to use *problem.models[k].fitness* to access the experiment for
+model *k*.  Profiles and reflectivity theory are returned from methods
+in experiment.  The :class:`refl1d.probe.Probe` data for the experiment is
+referenced by *experiment.probe*.  This will have attributes for *Q*, *dQ*,
+*R*, *dR*, *T*, *dT*, and *L*, *dL*, as well as methods for plotting
+the data.   This is not quite so simple: the sample may be non uniform,
+and composed of multiple samples for the same probe, and at the same time
+the probe may be composed of independent measurements kept separate so that
+you can fit alignment angle and overall intensity.  Magnetism adds
+another level of complexity, with extra profiles associated with each
+sample and separate reflectivities for the different spin states.
+
+How does this work in practice?  Consider a simple model such as nifilm-fit
+from the example directory.  We can access the parts by extending plot.py
+as follows:
+
+    experiment = problem.fitness
+    z,rho,irho = experiment.smooth_profile(dz=0.2)
+    # ... insert profile plotting code here ...
+    QR = experiment.reflectivity()
+    for p,th in self.parts(QR):
+        Q,dQ,R,dR,theory = p.Q, p.dQ, p.R, p.dR, th[1]
+        # ... insert reflectivity plotting code here ...
+
+Next we can reload the the error sample data from the DREAM MCMC sequence::
+
+    import dream.state
+    from refl1d.errors import calc_errors_from_state, align_profiles
+
+    state = dream.state.load_state(os.path.join(store, model[:-3]))
+    state.mark_outliers()
+    # ... insert correlation plots, etc. here ...
+    profiles,slabs,Q,residuals = calc_errors_from_state(problem, state)
+    aligned_profiles = align_profiles(profiles, slabs, 2.5)
+    # ... insert profile and residuals uncertainty plots here ...
+
+The function :func:`refl1d.errors.calc_errors` details on the data
+structures for *profiles*, *Q* and *residuals*.  Look at the source in
+refl1d/errors.py to see how this data is used to produce the error plots
+with _profiles_overplot, _profiles_contour, _residuals_overplot and
+_residuals_contour.  The source is available from:
+
+    https://github.com/reflectometry/refl1d
+
+Putting the pieces together, here is a skeleton for a specialized
+plotting script::
+
+    import sys
+    import pylab
+    import dream.state
+    from refl1d.cli import load_problem, recall_best
+    from refl1d.errors import calc_errors_from_state, align_profiles
+
+    model, store = sys.argv[1:3]
+
+    problem = load_problem([model])
+    recall_best(problem, os.path.join(store, model[:-3]+".par"))
+
+    chisq = problem.chisq
+    experiment = problem.fitness
+    z,rho,irho = experiment.smooth_profile(dz=0.2)
+    # ... insert profile plotting code here ...
+    QR = experiment.reflectivity()
+    for p,th in self.parts(QR):
+        Q,dQ,R,dR,theory = p.Q, p.dQ, p.R, p.dR, th[1]
+        # ... insert reflectivity plotting code here ...
+
+    if 1:  # Loading errors is expensive; may not want to do so all the time.
+        state = dream.state.load_state(os.path.join(store, model[:-3]))
+        state.mark_outliers()
+        # ... insert correlation plots, etc. here ...
+        profiles,slabs,Q,residuals = calc_errors_from_state(problem, state)
+        aligned_profiles = align_profiles(profiles, slabs, 2.5)
+        # ... insert profile and residuals uncertainty plots here ...
+
+    pylab.show()
+    raise Exception()  # We are just plotting; don't run the model
+
+For the common problem of generating profile error plots aligned on
+a particular interface, you can use the simpler align.py model:
+
+    from refl1d.names import *
+    align_errors(model="", store="", align='auto')
+
+If you are using the command line then you should be able to type the
+following at the command prompt to generate the plots:
+
+    $ refl1d align.py <model>.py <store> [<align>] [1|2|n]
+
+If you are using the GUI, you will have to set model, store and
+align directly in align.py each time you run.
+
+Align is either auto for the current behaviour, or it is an interface
+number. You can align on the center of a layer by adding 0.5 to the
+interface number. You can count interfaces from the surface by prefixing
+with R.  For example, 0 is the substrate interface, R1 is the surface
+interface, 2.5 is the the middle of layer 2 above the substrate.
+
+You can plot the profiles and residuals on one plot by setting plots to 1,
+on two separate plots by setting plots to 2, or each curve on its own
+plot by setting plots to n. Output is saved in <store>/<model>-err#.png.
+
 
 
 Tough Problems

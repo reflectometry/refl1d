@@ -62,12 +62,12 @@ class ErrorView(PlotView):
         import pylab
         with self.pylab_interface:
             pylab.clf()
-            errors.show_distribution(*self.plot_state)
+            errors.show_errors(self.plot_state)
             pylab.draw()
     def OnFitProgress(self, event):
         if event.problem != self.model: return
         self.new_state(event.problem, event.uncertainty_state)
     def new_state(self, problem, state):
         # Should happen in a separate process
-        self.plot_state = errors.calc_distribution_from_state(problem, state)
+        self.plot_state = errors.calc_errors_from_state(problem, state)
         self.plot()
