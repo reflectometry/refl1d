@@ -199,7 +199,6 @@ class Microslabs(object):
         """
         Add magnetic layers.
         """
-        # Keep the magnetic sections until the end
         w = numpy.asarray(w,'d')
         if numpy.isscalar(sigma): sigma = (sigma,sigma)
         self._magnetic_sections.append((numpy.vstack((w,rhoM,thetaM)),
@@ -459,6 +458,9 @@ class Microslabs(object):
         # Find the magnetic blocks
         blocks, offsets, sigmas = zip(*self._magnetic_sections)
 
+        #print "blocks",blocks
+        #print "offsets",offsets
+        #print "sigmas",sigmas
         # Splice the blocks together with rhoM_gap=0 and
         # thetaM_gap=(thetaM_below+thetaM_above)/2.
         slices = [[[0],[0],[blocks[0][2,0]]]]
