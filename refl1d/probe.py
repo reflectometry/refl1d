@@ -799,13 +799,13 @@ class ProbeSet(Probe):
         return self.probes[0].fresnel(*args, **kw)
     fresnel.__doc__ = Probe.fresnel.__doc__
     def save(self, filename, theory, substrate=None, surface=None):
-        for i,(p,th) in enumerate(self._parts(theory=theory)):
+        for i,(p,th) in enumerate(self.parts(theory=theory)):
             p.save(filename+str(i+1), th, substrate=substrate, surface=surface)
     save.__doc__ = Probe.save.__doc__
     def plot(self, theory=None, **kw):
         import pylab
         ishold = pylab.ishold()
-        for p,th in self._parts(theory):
+        for p,th in self.parts(theory):
             p.plot(theory=th, **kw)
             pylab.hold(True)
         pylab.hold(ishold)
@@ -814,21 +814,21 @@ class ProbeSet(Probe):
         for p in self.probes: p.plot_resolution(**kw)
     plot_resolution.__doc__ = Probe.plot_resolution.__doc__
     def plot_linear(self, theory=None, **kw):
-        for p,th in self._parts(theory): p.plot_linear(theory=th, **kw)
+        for p,th in self.parts(theory): p.plot_linear(theory=th, **kw)
     plot_linear.__doc__ = Probe.plot_linear.__doc__
     def plot_log(self, theory=None, **kw):
-        for p,th in self._parts(theory): p.plot_log(theory=th, **kw)
+        for p,th in self.parts(theory): p.plot_log(theory=th, **kw)
     plot_log.__doc__ = Probe.plot_log.__doc__
     def plot_fresnel(self, theory=None, **kw):
-        for p,th in self._parts(theory): p.plot_fresnel(theory=th, **kw)
+        for p,th in self.parts(theory): p.plot_fresnel(theory=th, **kw)
     plot_fresnel.__doc__ = Probe.plot_fresnel.__doc__
     def plot_Q4(self, theory=None, **kw):
-        for p,th in self._parts(theory): p.plot_Q4(theory=th, **kw)
+        for p,th in self.parts(theory): p.plot_Q4(theory=th, **kw)
     plot_Q4.__doc__ = Probe.plot_Q4.__doc__
     def plot_residuals(self, theory=None, **kw):
-        for p,th in self._parts(theory): p.plot_residuals(theory=th, **kw)
+        for p,th in self.parts(theory): p.plot_residuals(theory=th, **kw)
     plot_residuals.__doc__ = Probe.plot_residuals.__doc__
-    def _parts(self, theory):
+    def parts(self, theory):
         if theory == None:
             for p in self.probes:
                 yield p,None
