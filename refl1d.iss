@@ -138,7 +138,7 @@ Filename: "{app}\vcredist_x86.exe"; Parameters: "/qb!"; WorkingDir: "{tmp}"; Sta
 
 [UninstallDelete]
 ; Delete directories and files that are dynamically created by the application (i.e. at runtime).
-Type: filesandordirs; Name: "{app}\.matplotlib"
+Type: filesandordirs; Name: "{localappdata}\refl1d-mpl-{#MyAppVersion}"
 Type: files; Name: "{app}\*.exe.log"
 ; The following is a workaround for the case where the application is installed and uninstalled but the
 ;{app} directory is not deleted because it has user files.  Then the application is installed into the

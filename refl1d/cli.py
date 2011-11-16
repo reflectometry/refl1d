@@ -413,6 +413,37 @@ def resynth(fitdriver, problem, mapper, opts):
     problem.restore_data()
     fid.close()
 
+def appdatadir():
+    """
+    Return the application data directory.
+
+    Note: Windows only at this point.
+    """
+    try:
+        # Windows Vista and above
+        return os.environ['LOCALAPPDATA']
+    except KeyError:
+        pass
+    
+    # Windows XP
+    # From http://stackoverflow.com/questions/626927 by Jay Loden
+    import ctypes
+    from ctypes import wintypes, windll
+    
+    CSIDL_APPDATA = 25
+    CSIDL_LOCAL_APPDATA = 28
+    CSIDL_COMMON_APPDATA = 35
+    SHGetFolderPath = windll.shell32.SHGetFolderPathW
+    SHGetFolderPath.argtypes = [wintypes.HWND,
+                                 ctypes.c_int,
+                                 wintypes.HANDLE,
+                                 wintypes.DWORD,
+                                 wintypes.LPCWSTR]
+    path = wintypes.create_unicode_buffer(wintypes.MAX_PATH)
+    result= SHGetFolderPath(0, CSIDL_LOCAL_APPDATA, 0, 0, path)
+    return path.value
+    
+    
 def config_matplotlib(backend):
     """
     Setup matplotlib.
@@ -431,10 +462,14 @@ def config_matplotlib(backend):
     # installer/uninstaller such as Inno Setup should explicitly delete this
     # private directory on uninstall.
     if hasattr(sys, 'frozen'):
-        mplconfigdir = os.path.join(sys.prefix, '.matplotlib')
+        mplconfigdir = os.path.join(appdatadir(), 'refl1d-mpl-'+__version__)
         if not os.path.exists(mplconfigdir):
-            os.mkdir(mplconfigdir)
-        os.environ['MPLCONFIGDIR'] = mplconfigdir
+            try:
+                os.makedirs(mplconfigdir)
+            except:
+                mplconfigdir = None
+        if mplconfigdir:
+            os.environ['MPLCONFIGDIR'] = mplconfigdir
 
     import matplotlib
 
