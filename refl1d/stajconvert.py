@@ -6,7 +6,8 @@ Convert staj files to Refl1D models
 import os
 import numpy
 from numpy import tan, cos, sqrt, radians, degrees, pi
-from .mystic import parameter
+from bumps import parameter
+
 from .staj import MlayerModel
 from .model import Slab, Stack, Repeat
 from .material import SLD

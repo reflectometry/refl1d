@@ -12,7 +12,7 @@ varying parameter.  Multi-parameter dispersion models are not available.
 """
 
 import numpy
-from refl1d.mystic.parameter import Parameter
+from bumps.parameter import Parameter
 from refl1d.experiment import ExperimentBase
 
 class Weights(object):

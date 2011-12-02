@@ -20,7 +20,8 @@ from __future__ import division
 import inspect
 import numpy
 from numpy import real, imag, exp
-from mystic import Parameter
+from bumps.parameter import Parameter
+
 from .model import Layer
 from . import util
 

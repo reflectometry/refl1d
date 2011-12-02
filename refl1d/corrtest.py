@@ -74,7 +74,7 @@ def plot_deriv(self, theory=None):
     pylab.ylabel('R\' (100 Q)^4')
 
 def deriv(Q, R, dR=None, width=5, degree=2):
-    from .wsolve import wpolyfit
+    from bumps.wsolve import wpolyfit
     d = numpy.empty_like(Q)
     if dR is None: dR = numpy.ones_like(Q)
     k = (width-1)/2

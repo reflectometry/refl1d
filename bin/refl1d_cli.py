@@ -36,5 +36,7 @@ if __name__ == "__main__":
     import multiprocessing
     multiprocessing.freeze_support()
 
-    import refl1d.cli
-    refl1d.cli.main()
+    import refl1d.fitplugin
+    import bumps.cli
+    bumps.cli.install_plugin(refl1d.fitplugin)
+    bumps.cli.main()

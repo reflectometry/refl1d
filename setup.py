@@ -18,7 +18,7 @@ if len(sys.argv) == 1:
 def reflmodule_config():
     sources = [os.path.join('refl1d','lib',f)
                for f in ("reflmodule.cc","methods.cc","reflectivity.cc",
-                         "magnetic.cc","resolution.c","contract_profile.cc")]
+                         "magnetic.cc","contract_profile.cc")]
     module = Extension('refl1d.reflmodule', sources=sources)
     return module
 

@@ -5,7 +5,7 @@ For reflectivity models, this aligns and plots a set of profiles chosen
 from the parameter uncertainty distribution, and plots the distribution
 of the residual values.
 
-Use *align_errors* in a model file to reload the results of a batch DREAM fit.
+Use *run_errors* in a model file to reload the results of a batch DREAM fit.
 """
 __all__ = ['reload_errors', 'run_errors',
            'calc_errors_from_state', 'calc_errors', 'align_profiles',
@@ -14,16 +14,16 @@ __all__ = ['reload_errors', 'run_errors',
 from pprint import pprint
 
 import numpy
-from refl1d.util import next_color, dhsv
+from bumps.plotutil import next_color, dhsv, plot_quantiles
 
 #_CONTOURS = [68, 95, 100]
 _CONTOURS = [57, 68, 83, 95, 100]
 
-def align_errors(**kw):
+def run_errors(**kw):
     """
     Argument parser for generating error plots from models.
 
-    The model directory should contain align.py with:
+    The model directory should contain a fake model align.py with:
 
         from refl1d.names import *
         run_errors(model="", store="", align='auto')
@@ -94,57 +94,11 @@ def _usage():
     raise RuntimeError()
 
 
-def reload_errors(model, store, nshown=50, random=False):
-    """
-    Reload the error information for a model.
-
-    The loaded error data is a sample from the fit space according to the
-    fit parameter uncertainty.  This is a subset of the samples returned
-    by the DREAM MCMC sampling process.
-
-    *model* is the name of the model python file
-
-    *store* is the name of the store directory containing the dream results
-
-    *nshown* and *random* are as for :func:`calc_errors_from_state`.
-
-    See :func:`calc_errors` for details on the return values.
-    """
-    import os
-    import dream.state
-    from refl1d.cli import load_problem, recall_best
-
-    problem = load_problem([model])
-    recall_best(problem, os.path.join(store, model[:-3]+".par"))
-    state = dream.state.load_state(os.path.join(store, model[:-3]))
-    dream.state.mark_outliers()
-    return calc_errors_from_state(problem, state,
-                                        nshown=nshown, random=random)
-
 # TODO: we should just keep a certain number of evaluations as a matter of
 #       course during sampling rather than recomputing them after the fact.
 # TODO: want similar code for covariance matrix based forward analysis
 # TODO: need to delegate accumulation of models and plotting to Fitness
-# TODO: move run_errors/reload_errors somewhere more appropriate, like cli.py
-
-def calc_errors_from_state(problem, state, nshown=50, random=False):
-    """
-    Align the sample profiles and compute the residual difference from the
-    measured reflectivity for a set of points returned from DREAM.
-
-    *nshown* is the number of samples to include from the state.
-
-    *random* is True if the samples are randomly selected, or False if
-    the most recent samples should be used.
-
-    See :func:`calc_errors` for details on the return values.
-    """
-    points, logp = state.sample()
-    if points.shape[0] < nshown: nshown = points.shape[0]
-    # randomize the draw; skip the last point since state.keep_best() put
-    # the best point at the end.
-    if random: points = points[numpy.random.permutation(len(points)-1)]
-    return calc_errors(problem, points[-nshown:-1])
+# TODO: move run_errors somewhere more appropriate, like cli.py
 
 def calc_errors(problem, points):
     """
@@ -183,17 +137,61 @@ def calc_errors(problem, points):
         Array of (theory-data)/uncertainty for each data point in
         the measurement.  There will be one array returned per error sample.
     """
-    original = problem.getp()
-    try:
-        ret = _calc_errors(problem, points)
-    except:
-        import traceback
-        print "error calculating distribution on model"
-        traceback.print_exc()
-        ret = None
-    finally:
-        problem.setp(original)
-    return ret
+    # Grab the individual samples
+    if hasattr(problem, 'models'):
+        models = [m.fitness for m in problem.models]
+    else:
+        models = [problem.fitness]
+
+    experiments = []
+    for m in models:
+        if hasattr(m,'parts'):
+            experiments.extend(m.parts)
+        else:
+            experiments.append(m)
+    #probes = []
+    #for m in experiments:
+    #    if hasattr(m.probe,'probes'):
+    #        probes.extend(m.probe.probes)
+    #    elif hasattr(m.probe,'xs'):
+    #        probes.extend([p for p in m.probe if p])
+    #    else:
+    #        probes.append(p)
+
+    # Find Q
+    def residQ(m):
+        if m.probe.polarized:
+            return numpy.hstack([xs.Q
+                                 for xs in m.probe.xs
+                                 if xs is not None])
+        else:
+            return m.probe.Q
+    Q = dict((m, residQ(m)) for m in experiments)
+
+    profiles = dict((m,[]) for m in experiments)
+    residuals = dict((m,[]) for m in experiments)
+    slabs = dict((m,[]) for m in experiments)
+    def record_point():
+        chisq = problem.chisq()
+        for m in experiments:
+            D = m.residuals()
+            residuals[m].append(D+0)
+            slabs_i = [L.thickness.value for L in m.sample[1:-1]]
+            slabs[m].append(numpy.array(slabs_i))
+            if m.ismagnetic:
+                z,rho,irho,rhoM,thetaM = m.magnetic_profile()
+                profiles[m].append((z+0,rho+0,irho+0,rhoM+0,thetaM+0))
+            else:
+                z,rho,irho = m.smooth_profile()
+                profiles[m].append((z+0,rho+0,irho+0))
+    record_point() # Put best at slot 0, no alignment
+    for p in points:
+        problem.setp(p)
+        record_point()
+
+    # Turn residuals into arrays
+    residuals = dict((k,numpy.asarray(v).T) for k,v in residuals.items())
+    return profiles, slabs, Q, residuals
 
 def align_profiles(profiles, slabs, align):
     """
@@ -288,30 +286,6 @@ def show_residuals(errors, contours):
     pylab.xlabel('Q (1/A)')
     pylab.ylabel('Residuals')
 
-# ==== Quantiles plotter =====
-
-def plot_quantiles(x, y, contours, color, alpha=None):
-    import pylab
-    from scipy.stats.mstats import mquantiles
-    p = _convert_contours_to_probabilities(reversed(sorted(contours)))
-    q = mquantiles(y, prob = p, axis=0)
-    q = numpy.reshape(q, (-1, 2, len(x)))
-    #print "p",p
-    #print "q",q[:,:,0]
-    #print "y",y[:,0]
-    if alpha is None: alpha = 2./(len(contours) + 1)
-    edgecolor = dhsv(color, ds = -(1-alpha), dv = (1-alpha))
-    for lo,hi in q:
-        pylab.fill_between(x, lo, hi,
-                           facecolor=color, edgecolor=edgecolor,
-                           alpha=alpha, hold=True)
-
-def _convert_contours_to_probabilities(contours):
-    """
-    given [a,b,c] return [100-a, a, 100-b, b, 100-c, c]/100
-    """
-    return numpy.hstack( [(100.-v, v) for v in contours] )/100
-
 # ===== Plotting functions =====
 
 def _profiles_overplot(profiles):
@@ -398,65 +372,6 @@ def _residuals_contour(Q, residuals, contours=_CONTOURS):
 # ==== Helper functions =====
 
 
-def _calc_errors(problem, points):
-    from refl1d.experiment import ExperimentBase
-
-    # Grab the individual samples
-    if hasattr(problem, 'models'):
-        models = [m.fitness for m in problem.models]
-    else:
-        models = [problem.fitness]
-    # Hack: this only works for refl!
-    if not isinstance(models[0],ExperimentBase): return None
-    experiments = []
-    for m in models:
-        if hasattr(m,'parts'):
-            experiments.extend(m.parts)
-        else:
-            experiments.append(m)
-    #probes = []
-    #for m in experiments:
-    #    if hasattr(m.probe,'probes'):
-    #        probes.extend(m.probe.probes)
-    #    elif hasattr(m.probe,'xs'):
-    #        probes.extend([p for p in m.probe if p])
-    #    else:
-    #        probes.append(p)
-
-    # Find Q
-    def residQ(m):
-        if m.probe.polarized:
-            return numpy.hstack([xs.Q
-                                 for xs in m.probe.xs
-                                 if xs is not None])
-        else:
-            return m.probe.Q
-    Q = dict((m, residQ(m)) for m in experiments)
-
-    profiles = dict((m,[]) for m in experiments)
-    residuals = dict((m,[]) for m in experiments)
-    slabs = dict((m,[]) for m in experiments)
-    def record_point():
-        chisq = problem.chisq()
-        for m in experiments:
-            D = m.residuals()
-            residuals[m].append(D+0)
-            slabs_i = [L.thickness.value for L in m.sample[1:-1]]
-            slabs[m].append(numpy.array(slabs_i))
-            if m.ismagnetic:
-                z,rho,irho,rhoM,thetaM = m.magnetic_profile()
-                profiles[m].append((z+0,rho+0,irho+0,rhoM+0,thetaM+0))
-            else:
-                z,rho,irho = m.smooth_profile()
-                profiles[m].append((z+0,rho+0,irho+0))
-    record_point() # Put best at slot 0, no alignment
-    for p in points:
-        problem.setp(p)
-        record_point()
-
-    # Turn residuals into arrays
-    residuals = dict((k,numpy.asarray(v).T) for k,v in residuals.items())
-    return profiles, slabs, Q, residuals
 
 def _align_profile_set(profiles, slabs, align):
     """

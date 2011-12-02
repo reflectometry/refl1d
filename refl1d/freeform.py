@@ -4,9 +4,9 @@ Freeform modeling with B-Splines
 
 import numpy
 from numpy import inf, argmin, argmax
-from mystic import Parameter as Par, IntegerParameter as IntPar
+from bumps.parameter import Parameter as Par, IntegerParameter as IntPar
+from bumps.bspline import pbs, bspline
 from .model import Layer
-from .bspline import pbs, bspline
 from . import util
 
 #TODO: add left_sld,right_sld to all layers so that fresnel works

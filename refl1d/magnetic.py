@@ -39,9 +39,10 @@ and anchoring them to the structure.
 """
 import numpy
 from numpy import inf
-from .mystic.parameter import Parameter, Constant
+from bumps.parameter import Parameter, Constant
+from bumps.mono import monospline
+
 from .model import Layer, Stack
-from .mono import monospline
 
 class MagneticLayer(Layer):
     magnetic = True

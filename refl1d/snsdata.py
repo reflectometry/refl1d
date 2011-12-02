@@ -16,9 +16,9 @@ import re
 import math
 import numpy
 from numpy import sqrt
+from bumps.data import parse_file
 from .instrument import Pulsed
 from . import resolution
-from . import util
 from .probe import make_probe
 
 ## Estimated intensity vs. wavelength for liquids reflectometer
@@ -49,7 +49,7 @@ def load(filename, instrument=None, **kw):
     Return a probe for SNS data.
     """
     if instrument is None: instrument=Pulsed()
-    header,data = parse_file(filename)
+    header,data = parse_sns_file(filename)
     header.update(**kw) # calling parameters override what's in the file.
     #print "\n".join(k+":"+str(v) for k,v in header.items())
     # Guess what kind of data we have
@@ -112,14 +112,14 @@ def TOF_to_data(instrument, header, data):
     probe = make_probe(T=T,dT=dT,L=L,dL=dL, data=(R,dR),**header)
     return probe
 
-def parse_file(filename):
+def parse_sns_file(filename):
     """
     Parse SNS reduced data, returning *header* and *data*.
 
     *header* dictionary of fields such as 'data', 'title', 'instrument'
     *data* 2D array of data
     """
-    raw_header, data = util.parse_file(filename)
+    raw_header, data = parse_file(filename)
     header = {}
 
     # guess instrument from file name

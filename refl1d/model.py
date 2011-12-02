@@ -30,9 +30,8 @@ import periodictable
 import periodictable.xsf as xsf
 import periodictable.nsf as nsf
 
-from mystic.parameter import Parameter as Par, IntegerParameter as IntPar, Function
+from bumps.parameter import Parameter as Par, IntegerParameter as IntPar, Function
 
-from .interface import Erf
 from . import material
 
 class Layer(object): # Abstract base class

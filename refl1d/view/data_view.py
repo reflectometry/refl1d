@@ -14,13 +14,14 @@ from matplotlib.figure import Figure
 
 import pylab
 
-from refl1d.probe import Probe
-from refl1d.fitproblem import MultiFitProblem
+from bumps.gui.util import EmbeddedPylab
+from bumps.fitproblem import MultiFitProblem
 
-from ..gui.util import EmbeddedPylab
+from refl1d.probe import Probe
+
 
 # ------------------------------------------------------------------------
-class TheoryView(wx.Panel):
+class DataView(wx.Panel):
     title = 'Reflectivity'
     default_size = (600,400)
     def __init__(self, *args, **kw):

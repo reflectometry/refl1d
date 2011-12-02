@@ -77,9 +77,10 @@ the bounds.  Bounds on the oscillation are easier to control using
 # - Direct methods: random walk should be biased toward the domain
 # - moderately complicated
 import numpy
-from numpy import inf, real, imag, exp, pi, cos, hstack, arange, asarray
-from numpy.fft import fft
-from mystic import Parameter as Par, IntegerParameter as IntPar
+from numpy import inf, real, imag
+from bumps.parameter import  Parameter as Par
+from bumps.cheby import cheby_val, cheby_coeff
+from bumps.cheby import cheby_approx, cheby_points # for export
 from .model import Layer
 from . import util
 
@@ -96,23 +97,26 @@ class FreeformCheby(Layer):
     """
     def __init__(self, thickness=0, interface=0, rho=[], irho=[],
                  name="Cheby", method="interp"):
-        if interface != 0: raise NotImplementedError("interface not yet supported")
+        if interface != 0:
+            raise NotImplementedError("interface not yet supported")
         self.name = name
         self.method = method
         self.thickness = Par.default(thickness, limits=(0,inf),
                                    name=name+" thickness")
-        self.rho,self.irho \
-            = [[Par.default(p,name=name+"[%d] %s"%(i,part),limits=limits)
+        self.rho, self.irho \
+            = [[Par.default(p, name=name+"[%d] %s"%(i,part), limits=limits)
                 for i,p in enumerate(v)]
                for v,part,limits in zip((rho, irho),
                                         ('rho', 'irho'),
-                                        ((-inf,inf),(-inf,inf)),
+                                        ((-inf,inf), (-inf,inf)),
                                         )]
     def parameters(self):
+        """Return parameters used to define layer"""
         return dict(rho=self.rho,
                     irho=self.irho,
                     thickness=self.thickness)
     def render(self, probe, slabs):
+        """Render slabs for use with the given probe"""
         thickness = self.thickness.value
         Pw,Pz = slabs.microslabs(thickness)
         t = Pz/thickness
@@ -158,13 +162,14 @@ class ChebyVF(Layer):
     def __init__(self, thickness=0, interface=0,
                  material=None, solvent=None, vf=None,
                  name="ChebyVF", method="interp"):
-        if interface != 0: raise NotImplementedError("interface not yet supported")
+        if interface != 0:
+            raise NotImplementedError("interface not yet supported")
         self.name = name
         self.thickness = Par.default(thickness, name="solvent thickness")
         self.interface = Par.default(interface, name="solvent interface")
         self.solvent = solvent
         self.material = material
-        self.vf = [Par.default(p,name="vf[%d]"%i) for i,p in enumerate(vf)]
+        self.vf = [Par.default(p, name="vf[%d]"%i) for i,p in enumerate(vf)]
         self.method = method
         # Constraints:
         #   base_vf in [0,1]
@@ -188,10 +193,10 @@ class ChebyVF(Layer):
         Pw,Pz = slabs.microslabs(thickness)
         t = Pz/thickness
         vf = _profile([p.value for p in self.vf], t, self.method)
-        vf = numpy.clip(vf,0,1)
+        vf = numpy.clip(vf, 0, 1)
         Pw,vf = util.merge_ends(Pw, vf, tol=1e-3)
         P = M*vf + S*(1-vf)
-        Pr, Pi = real(P), imag(P)
+        Pr,Pi = real(P), imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
 
 def _profile(c, t, method):
@@ -208,54 +213,3 @@ def _profile(c, t, method):
     if method == 'interp':
         c = cheby_coeff(c)
     return cheby_val(c, t)
-
-def cheby_approx(n, f, range=[0,1]):
-    """
-    Return the coefficients for the order n chebyshev approximation to
-    function f evaluated over the range [low,high].
-    """
-    fx = f(cheby_points(n, range=range))
-    return cheby_coeff(fx)
-
-def cheby_val(c, x, method='direct'):
-    r"""
-    Evaluate the chebyshev approximation c at points x.
-
-    The values $c_i$ are the coefficients for the chebyshev
-    polynomials $T_i$ yielding $p(x) = \sum_i{c_i T_i(x)}$.
-    """
-    c = numpy.asarray(c)
-    if len(c) == 0: return 0*x
-
-    # Crenshaw recursion from numerical recipes sec. 5.8
-    y = 4*x - 2
-    d = dd = 0
-    for c_j in c[:0:-1]:
-        d, dd = y*d + (c_j - dd), d
-    return y*(0.5*d) + (0.5*c[0] - dd)
-
-def cheby_points(n, range=[0,1]):
-    r"""
-    Return the points in at which a function must be evaluated to
-    generate the order $n$ Chebyshev approximation function.
-
-    Over the range [-1,1], the points are $p_k = \cos(\pi(2 k + 1)/(2n))$.
-    Adjusting the range to $[x_L,x_R]$, the points become
-    $x_k = \frac{1}{2} (p_k - x_L + 1)/(x_R-x_L)$.
-    """
-    return 0.5*(cos(pi*(arange(n)+0.5)/n)-range[0]+1)/(range[1]-range[0])
-
-def cheby_coeff(fx):
-    """
-    Compute chebyshev coefficients for a polynomial of order n given
-    the function evaluated at the chebyshev points for order n.
-
-    This can be used as the basis of a direct interpolation method where
-    the n control points are positioned at cheby_points(n).
-    """
-    fx = asarray(fx)
-    n = len(fx)
-    w = exp((-0.5j*pi/n)*arange(n))
-    y = numpy.hstack((fx[0::2], fx[1::2][::-1]))
-    c = (2./n) * real(fft(y)*w)
-    return c

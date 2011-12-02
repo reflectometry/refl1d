@@ -6,7 +6,7 @@ Composition space modeling
 
 import numpy
 from numpy import inf
-from .mystic.parameter import Parameter as Par
+from bumps.parameter import Parameter as Par
 from .model import Layer
 from .materialdb import air
 

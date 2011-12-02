@@ -38,16 +38,19 @@ See `data-guide`_ for details.
 
 from __future__ import with_statement, division
 import os
+
 import numpy
 from numpy import radians, sin, sqrt, tan, cos, pi, inf, sign, log
+
 from periodictable import nsf, xsf
-from .reflectivity import convolve
+from bumps.parameter import Parameter, Constant
+from bumps.plotutil import coordinated_colors, auto_shift
+from bumps.data import convolve
+
 from . import fresnel
-from material import Vacuum
-from mystic.parameter import Parameter, Constant
+from .material import Vacuum
 from .resolution import QL2T, TL2Q, dTdL2dQ
 from .stitch import stitch
-from .util import coordinated_colors, auto_shift
 
 PROBE_KW = ('T', 'dT', 'L', 'dL', 'data',
             'intensity', 'background', 'back_absorption',
@@ -709,12 +712,10 @@ class XrayProbe(Probe):
     """
     X-Ray probe.
 
-    Contains information about the kind of probe used to investigate
-    the sample.
-
-    X-ray data is traditionally recorded by angle and energy, rather
-    than angle and wavelength as is used by neutron probes.
+    By providing a scattering factor calculator for X-ray scattering, model
+    components can be defined by mass density and chemical composition.
     """
+    radiation = "xray"
     def scattering_factors(self, material):
         # doc string is inherited from parent (see below)
         rho, irho = xsf.xray_sld(material,
@@ -726,6 +727,13 @@ class XrayProbe(Probe):
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
 class NeutronProbe(Probe):
+    """
+    X-Ray probe.
+
+    By providing a scattering factor calculator for X-ray scattering, model
+    components can be defined by mass density and chemical composition.
+    """
+    radiation = "neutron"
     def scattering_factors(self, material):
         # doc string is inherited from parent (see below)
         rho, irho, rho_incoh = nsf.neutron_sld(material,
@@ -735,7 +743,6 @@ class NeutronProbe(Probe):
         return rho, irho[0], rho_incoh
         return rho, irho[self._sf_idx], rho_incoh
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
-
 
 
 class ProbeSet(Probe):

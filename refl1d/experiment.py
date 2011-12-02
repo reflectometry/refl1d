@@ -15,13 +15,15 @@ import os
 import traceback
 
 import numpy
+from bumps.plotutil import auto_shift
+from bumps import parameter
+from bumps.parameter import Parameter
+
 from .reflectivity import reflectivity_amplitude as reflamp
 from .reflectivity import magnetic_amplitude as reflmag
 #print "Using pure python reflectivity calculator"
 #from .abeles import refl as reflamp
 from . import material, profile
-from .mystic.parameter import Parameter
-from .util import auto_shift
 
 
 def plot_sample(sample, instrument=None, roughness_limit=0):
@@ -39,9 +41,8 @@ def plot_sample(sample, instrument=None, roughness_limit=0):
 
 class ExperimentBase(object):
     def format_parameters(self):
-        import mystic.parameter
         p = self.parameters()
-        print mystic.parameter.format(p)
+        print parameter.format(p)
 
     def update_composition(self):
         """
@@ -345,7 +346,6 @@ class Experiment(ExperimentBase):
                 print "sigma",sigma
                 print "kz",self.probe.calc_Q/2
                 print "R",abs(calc_r**2)
-                from .mystic import parameter
                 pars = parameter.unique(self.parameters())
                 fitted = parameter.varying(pars)
                 print parameter.summarize(fitted)

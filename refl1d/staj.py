@@ -14,7 +14,7 @@ from math import pi
 import os
 import sys
 import numpy
-import wsolve
+from bumps.wsolve import wsolve
 
 ERF_FWHM = 2.35482004503095 # 2 * sqrt(2*log(2))
 TANH_FWHM = 0.47320111770856327 # 1/2 atanh(erf(1/sqrt(2))) / acosh(sqrt(2))
@@ -353,7 +353,7 @@ class MlayerModel(object):
         """
         A = numpy.array([abs(Q)/self.wavelength,
                          numpy.ones_like(Q)*(4*pi/self.wavelength)]).T
-        s = wsolve.wsolve(A,y=dQ,dy=weight)
+        s = wsolve(A,y=dQ,dy=weight)
         self.wavelength_dispersion = s.x[0]
         self.angular_divergence = s.x[1]
 
@@ -859,7 +859,7 @@ class MlayerMagnetic(object):
     def fit_FWHMresolution(self, Q, dQ, weight=1):
         A = numpy.array([abs(Q)/self.wavelength,
                          numpy.ones_like(Q)*(4*pi/self.wavelength)])
-        s = wsolve.wsolve(A,y=dQ,dy=weight)
+        s = wsolve(A,y=dQ,dy=weight)
         self.wavelength_dispersion = s.x[0]
         self.angular_divergence = s.x[1]
 

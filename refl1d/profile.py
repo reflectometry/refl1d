@@ -61,9 +61,9 @@ using one energy so we only show the first column.
 
 import numpy
 from numpy import inf
-from .reflmodule import _contract_by_area, _contract_mag
-from .reflectivity import erf
+from bumps.util import erf
 #from scipy.special import erf
+from .reflmodule import _contract_by_area, _contract_mag
 
 class Microslabs(object):
     """

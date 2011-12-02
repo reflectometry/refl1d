@@ -29,6 +29,11 @@ def get_data_path():
 
 
 _REGISTRY = {
+    # List the example datasets that are needed for demos and doctests.
+    # Each line looks like:
+    #
+    #     'dataset': ['subdirectory','filename'],
+    #
     'spin_valve01.refl': ['spinvalve','spin_valve01.refl'],
     'chale207.refl': ['polymer','10ndt001.refl'],
     '10ndt001.refl': ['polymer','10ndt001.refl'],

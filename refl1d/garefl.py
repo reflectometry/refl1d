@@ -9,13 +9,13 @@ from threading import current_thread
 from os import getpid
 
 from numpy import empty, zeros, array
+from bumps.parameter import Parameter, Constant
+from bumps.fitproblem import FitProblem, MultiFitProblem
 
-from .mystic.parameter import Parameter, Constant
 from .probe import QProbe, PolarizedNeutronQProbe
 from .experiment import Experiment
 from .model import Stack
 from .profile import Microslabs
-from .fitproblem import FitProblem, MultiFitProblem
 from .material import SLD, Vacuum
 
 def trace(fn):

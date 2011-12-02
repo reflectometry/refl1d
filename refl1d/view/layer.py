@@ -4,7 +4,7 @@ Layer interactor.
 from __future__ import division
 from math import log
 import numpy
-from ..mystic.parameter import Parameter
+from bumps.parameter import Parameter
 from ..material import SLD, Vacuum, Material, Mixture, Compound
 from .interactor import BaseInteractor
 from .config import pick_radius

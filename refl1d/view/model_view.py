@@ -14,17 +14,18 @@ from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wxagg import FigureManager
 from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 
+from bumps.fitproblem import MultiFitProblem
+from bumps.gui import signal
+
+from refl1d.experiment import MixedExperiment
+
 from .binder import pixel_to_data
 from .util import CopyImage
-from ..gui import signal
 from .profilei import ProfileInteractor
 from .interactor import BaseInteractor
 
-from ..experiment import MixedExperiment
-from ..fitproblem import MultiFitProblem
-
 # ------------------------------------------------------------------------
-class ProfileView(wx.Panel):
+class ModelView(wx.Panel):
     title = 'Profile'
     default_size = (600,400)
     def __init__( self, *args, **kw):

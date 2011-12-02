@@ -134,10 +134,6 @@ magnetic_amplitude(const int layers,
                    const double kz[], const int rho_offset[],
                    Cplx Ra[], Cplx Rb[], Cplx Rc[], Cplx Rd[]);
 
-void
-resolution(int Nin, const double Qin[], const double Rin[],
-	   int N, const double Q[], const double dQ[], double R[]);
-
 int
 contract_by_step(int n, double d[], double sigma[],
                  double rho[], double irho[], double dh);

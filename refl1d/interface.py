@@ -77,9 +77,9 @@ from numpy import arctanh as atanh
 from scipy.special import erf, erfinv
 
 try:
-    from mystic.parameter import Parameter
+    from bumps.parameter import Parameter
 except ImportError:
-    print "Could not import Parameter from mystic; using trivial implementation"
+    print "Could not import Parameter; using trivial implementation"
     class Parameter:
         def __init__(self, value, **kw):
             self.value = value

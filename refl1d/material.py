@@ -46,7 +46,7 @@ import numpy
 from numpy import inf, sqrt, pi, NaN
 import periodictable
 from periodictable.constants import avogadro_number
-from mystic import Parameter as Par
+from bumps.parameter import Parameter as Par
 
 class Scatterer(object):
     """
@@ -200,10 +200,9 @@ class Material(Scatterer):
         .. Note::
 
             Calling *fitby* replaces the *density* parameter in the
-            material, so be sure to do so before using *density* in
-            a parameter expression.  Using :class:`WrappedParameter
-            <refl1d.mystic.parameter.WrappedParameter>` for *density*
-            is another alternative.
+            material, so be sure to do so before using *density* in a
+            parameter expression.  Using *bumps.parameter.WrappedParameter*
+            for *density* is another alternative.
         """
 
         # Clean out old parameter
