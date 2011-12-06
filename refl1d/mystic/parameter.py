@@ -117,7 +117,7 @@ class BaseParameter(object):
     def __rdiv__(self, other): return OperatorDiv(other,self)
     def __rpow__(self, other): return OperatorPow(other,self)
     def __abs__(self): return _abs(self)
-    def __neg__(self): return _mul(self,-1)
+    def __neg__(self): return self * -1
     def __pos__(self): return self
     def __float__(self): return float(self.value)
 

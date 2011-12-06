@@ -20,18 +20,19 @@ components are fixed.
 The scattering behaviour is dependent upon net field strength relative to
 polarization direction.   This arises from three underlying quantities:
 the strength of the individual dipole moments in the layer, the degree
-of alignment of these moments, and the net direction of the alignment.  The
-strength of the dipole moment depends on the details of the electronic
-structure, so is not This could in principle be approximated from
-the dipole moments of the individual moments
-aligned within the sample, then you would see the
-If the fields for all carriers are aligned with
-the polarization direction, you will see the idealized magnetic scattering
-strength
-will see the saturated This is determined by the number and strength
-of the magnetic 'carriers', the amount of order, and the direct or :math:`\rho_M \cos(\theta_M)`, where
-orientation, which leads to over-parameterization in the fits.  The
-reflectometry technique is sensitive
+of alignment of these moments, and the net direction of the alignment.
+The strength of the dipole moment depends on the details of the electronic
+structure, so unlike the nuclear scattering potential, it cannot be readily
+determined from material composition.  Similarly, net magnetization
+depends on the details of the magnetic domains within the material, and
+cannot readily be determined from first principles.  The interaction
+potential of the net magnetic moment depends on the alignment of the field
+with respect to the beam, with a net scattering length density of
+:math:`\rho_M \cos(\theta_M)`.  Clearly the scattering measurement will
+not be able to distinguish between a reduced net magnetic strength
+:math:`\rho_M` and a change in orientation :math:`\theta_M` for an
+individual measurement, as should be apparent from the correlated
+uncertainty plot produced when both parameters are fit.
 
 Magnetism support is split into two parts: describing the layers
 and anchoring them to the structure.
@@ -120,6 +121,58 @@ class MagneticSlab(MagneticLayer):
         return ("Magnetic(rhoM=%g,thetaM=%g)"
                 %(self.rhoM.value,self.thetaM.value))
 
+class MagneticStack(MagneticLayer):
+    """
+    Magnetic slabs within a magnetic layer.
+    """
+    def __init__(self, stack, weight=[], rhoM=[], thetaM=[270], interfaceM=[0],
+                 name="mag. stack", **kw):
+        if (len(thetaM) != 1 and len(thetaM) != len(weight)
+            and len(rhoM) != 1 and len(rhoM) != len(weight)
+            and len(interfaceM) != 1 and len(interfaceM) != len(weight)-1):
+            raise ValueError("Must have one rhoM, thetaM and intefaceM for each layer")
+        if interfaceM != [0]:
+            raise NotImplementedError("Doesn't support magnetic roughness")
+
+        MagneticLayer.__init__(self, stack=stack, name=name, **kw)
+        self.weight = [Parameter.default(v, name=name+" weight[%d]"%i)
+                       for i,v in enumerate(weight)]
+        self.rhoM = [Parameter.default(v, name=name+" rhoM[%d]"%i)
+                     for i,v in enumerate(rhoM)]
+        self.thetaM = [Parameter.default(v, name=name+" angle[%d]"%i)
+                       for i,v in enumerate(thetaM)]
+        self.interfaceM = [Parameter.default(v, name=name+" interface[%d]"%i)
+                           for i,v in enumerate(interfaceM)]
+
+    def parameters(self):
+        parameters = MagneticLayer.parameters(self)
+        parameters.update(rhoM=self.rhoM,
+                          thetaM=self.thetaM,
+                          interfaceM=self.interfaceM,
+                          weight=self.weight)
+        return parameters
+
+    def render(self, probe, slabs):
+        anchor, sigma = self.render_stack(probe, slabs)
+        w = numpy.array([p.value for p in self.weight])
+        w *= self.thicknessM.value / numpy.sum(w)
+        rhoM = [p.value for p in self.rhoM]
+        thetaM = [p.value for p in self.thetaM]
+        sigmaM = [p.value for p in self.interfaceM]
+        if len(rhoM) == 1: rhoM = [rhoM[0]]*len(w)
+        if len(thetaM) == 1: thetaM = [thetaM[0]]*len(w)
+        if len(sigmaM) == 1: sigmaM = [sigmaM[0]]*(len(w)-1)
+
+        slabs.add_magnetism(anchor=anchor,
+                            w=w,rhoM=rhoM,thetaM=thetaM,
+                            sigma=sigma)
+
+    def __str__(self):
+        return "MagneticStack(%d)"%(len(self.rhoM))
+    def __repr__(self):
+        return "MagneticStack"
+
+
 class MagneticTwist(MagneticLayer):
     """
     Linear change in magnetism throughout layer.
@@ -129,7 +182,7 @@ class MagneticTwist(MagneticLayer):
                  rhoM=[0,0], thetaM=[270,270],
                  name="twist", **kw):
         MagneticLayer.__init__(self, stack=stack, name=name, **kw)
-        self.rhoM = [Parameter.default(v, name=name+" SLD[%d]"%i)
+        self.rhoM = [Parameter.default(v, name=name+" rhoM[%d]"%i)
                      for i,v in enumerate(rhoM)]
         self.thetaM = [Parameter.default(v, name=name+" angle[%d]"%i)
                        for i,v in enumerate(thetaM)]
@@ -201,9 +254,11 @@ class FreeMagnetic(MagneticLayer):
             print "p",[p.value for p in self.z]
 
 
-        if len(self.thetaM)>0:
+        if len(self.thetaM)>1:
             thetaM = numpy.hstack((tbelow, [p.value for p in self.thetaM], tabove))
             PthetaM = monospline(z, thetaM, Pz)
+        elif len(self.thetaM)==1:
+            PthetaM = self.thetaM.value * numpy.ones_like(PrhoM)
         else:
             PthetaM = 270*numpy.ones_like(PrhoM)
         return PrhoM,PthetaM

@@ -39,4 +39,4 @@ from .instrument import Monochromatic, Pulsed
 # Python doesn't allow "from .module import *"
 from refl1d.materialdb import *
 from .support import sample_data
-from .magnetic import MagneticSlab, MagneticTwist, FreeMagnetic
+from .magnetic import MagneticSlab, MagneticTwist, FreeMagnetic, MagneticStack

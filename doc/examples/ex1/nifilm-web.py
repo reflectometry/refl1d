@@ -24,7 +24,7 @@
 #
 # The first step in any model is to load the names of the functions and
 # data that we are going to use.  These are defined in a module named
-# refl1d.names, and we import them all as follows::
+# refl1d.names, and we import them all as follows:
 
 from refl1d.names import *
 
@@ -39,7 +39,7 @@ from refl1d.names import *
 
 # Next we define the materials that we are going to use in our sample.
 # silicon and air are common, so we don't need to define them.  We just
-# need to define nickel, which we do as follows::
+# need to define nickel, which we do as follows:
 
 nickel = Material('Ni')
 
