@@ -285,22 +285,23 @@ class Probe(object):
         self._sf_L = numpy.unique(self.calc_L)
         self._sf_idx = numpy.searchsorted(self._sf_L, L)
 
-    def _Q(self):
+    @property
+    def Q(self):
         if self.theta_offset.value != 0:
             Q = TL2Q(T=self.T+self.theta_offset.value, L=self.L)
             #TODO: this may break the Q order on measurements with varying L
         else:
             Q = self.Qo
         return Q
-    Q = property(_Q)
-    def _calc_Q(self):
+
+    @property
+    def calc_Q(self):
         if self.theta_offset.value != 0:
             Q = TL2Q(T=self.calc_T+self.theta_offset.value, L=self.calc_L)
             #TODO: this may break the Q order on measurements with varying L
         else:
             Q = self.calc_Qo
         return Q if not self.back_reflectivity else -Q
-    calc_Q = property(_calc_Q)
     def parameters(self):
         return dict(intensity=self.intensity,
                     background=self.background,
@@ -784,12 +785,12 @@ class ProbeSet(Probe):
 
     def __len__(self):
         return self._len
-    def _Q(self):
+    @property
+    def Q(self):
         return numpy.hstack(p.Q for p in self.probes)
-    Q = property(_Q)
-    def _calc_Q(self):
+    @property
+    def calc_Q(self):
         return numpy.unique(numpy.hstack(p.calc_Q for p in self.probes))
-    calc_Q = property(_calc_Q)
     def oversample(self, **kw):
         for p in self.probes: p.oversample(**kw)
     oversample.__doc__ = Probe.oversample.__doc__
