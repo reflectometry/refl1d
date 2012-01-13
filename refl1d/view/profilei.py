@@ -2,12 +2,10 @@
 Reflectometry profile interactor.
 """
 
-import wx
 import math
 import numpy
 from numpy import inf
 from .binder import BindArtist, pixel_to_data
-from .util import twinx
 from .config import rho_color, rhoI_color, rhoM_color, thetaM_color
 from .config import layer_hysteresis
 

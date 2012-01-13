@@ -15,7 +15,7 @@ def get_data_path():
     # Check for data path in the environment
     key = 'REFL1D_DATA'
     if os.environ.has_key(key):
-        path = os.path.join(os.environ[key],data)
+        path = os.path.join(os.environ[key],"data")
         if not os.path.isdir(path):
             raise RuntimeError('Path in environment %s not a directory'%key)
         return path

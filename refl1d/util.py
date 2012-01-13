@@ -1,5 +1,7 @@
 __all__ = [ "merge_ends"]
 
+import numpy
+
 def merge_ends(w, p, tol=1e-3):
     """
     join the leading and trailing ends of the profile together so fewer

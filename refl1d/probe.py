@@ -40,7 +40,7 @@ from __future__ import with_statement, division
 import os
 
 import numpy
-from numpy import radians, sin, sqrt, tan, cos, pi, inf, sign, log
+from numpy import sqrt, pi, inf, sign, log
 
 from periodictable import nsf, xsf
 from bumps.parameter import Parameter, Constant
@@ -776,6 +776,7 @@ class ProbeSet(Probe):
 
     def simulate_data(self, theory, noise=2):
         Q,R = theory
+        offset = 0
         for p in self.probes:
             n = len(p)
             p.simulate_data(theory=(Q[offset:offset+n],R[offset:offset+n]),
