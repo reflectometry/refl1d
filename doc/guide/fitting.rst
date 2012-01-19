@@ -105,9 +105,7 @@ A common command line for running DREAM is::
    refl1d --fit=dream --burn=1000 --steps=1000 --init=cov --parallel --pars=T1/model.par model.py --store=T2
 
 
-Bayesian uncertainty analysis us described in the GUM Supplement 1,[8]
-and is a valid technique for reporting parameter uncertainties in NIST
-publications.   Given sufficient burn time, points in the search space
+Given sufficient burn time, points in the search space
 will be visited with probability proportional to the goodness of fit.
 The file T1/model.err contains a table showing for each
 parameter the mean(std), median and best values, and the 68% and 95%
@@ -255,6 +253,80 @@ need for a one-off plot, the replot the graph::
 Be sure to restore the original versions when you are done.  If the change
 is so good that everyone should use it, be sure to feed it back to the
 community via https://github.com/reflectometry/refl1d.
+
+Reporting results
+=================
+
+As with any parametric modeling technique, you cannot say that the model
+is correct and has certain parameter value, only that the observed data is
+consistent with the model and the given parameter values.  There may be
+other models within the parameter search space that are equally 
+consistent, but which were not discovered by Refl1D, particularly if
+you are forced to use --init=eps to achieve convergence.  This is true
+even for models which exhibit good convergence:
+
+   * the marginal maximum likelihood (the green line) 
+     follows the marginal probability density (the blue line)
+   * the log likelihood function is flat, not sweeping upward
+   * the individual parameter traces exhibit good mixing
+   * the marginal probability density is unimodal and roughly normal
+   * the joint probabilities show no correlation structure
+   * :math:`\chi^2 \approx 1`
+   * the residuals plot shows no structure 
+
+The following blurb can be used as a description of the analysis method
+when reporting your results:
+
+    Refl1D[1] was used to model the reflectivity data.  The sample depth
+    profile is represented as a series of slabs of varying scattering length 
+    density and thickness with gaussian interfaces between them.  Freeform
+    sections of the profile are modeled using monotonic splines.  
+    Reflectivity is computed using the Abeles optical matrix method, with 
+    interfacial effects computed by the method of Nevot and Croce or by 
+    approximating the interfaces by a series of thin slabs.  Refl1d supports
+    simultaneous refinement of multiple reflectivity data sets with
+    constraints between the models.
+    
+    Refl1D uses a Bayesian approach to determine the uncertainty in the
+    model parameters.  By representing the problem as the likelihood of
+    observing the measured reflectivity curve given a particular choice of 
+    parameters, Refl1D can use Markov Chain Monte Carlo (MCMC) methods[2] 
+    to draw a random sample from the joint parameter probability 
+    distribution.  This sample can then used to estimate the probability 
+    distribution for each individual parameter.
+
+    [1] Kienzle P. A., Krycka J., A., and Patel, N.  Refl1D: Interactive 
+    depth profile modeler.  http://www.reflectometry.org/danse/software
+
+    [2] Vrugt J. A., ter Braak C. J. F., Diks C. G. H., Higdon D., 
+    Robinson B. A., and Hyman J. M.  Accelerating Markov chain Monte Carlo 
+    simulation by differential evolution with self-adaptive randomized 
+    subspace sampling, Int. J. Nonlin. Sci. Num., 10, 271--288, 2009.
+
+
+If you are reporting maximum likelihood and credible intervals:
+
+    The parameter values reported are the those from the model which best
+    fits the data, with uncertainty determined from the range of parameter
+    values which covers 68% of the sample set.  This corresponds to the 
+    :math:`1-\sigma` uncertainty level if the sample set were normally
+    distributed.
+
+If you are reporting mean and standard deviation:
+
+    The reported parameter values are computed from the mean and standard
+    deviation of the sample set.  This corresponds to the best fitting
+    normal distribition to marginal probability distribution for the
+    parameter.
+    
+There are caveats to reporting mean and standard deviation.  The technique
+is not robust.   If burn-in is insufficient, if the distribution is
+multi-modal, or if the distribution has long tails, then the reported
+mean may correspond to a bad fit, and the standard deviation can be
+huge. [We should confirm this by modeling a cauchy distribution]  
+
+
+
 
 Publication Graphics
 ====================
@@ -464,7 +536,7 @@ WH Press, BP Flannery, SA Teukolsky and WT Vetterling, Numerical Recipes in C, C
 I. Sahin (2011) Random Lines: A Novel Population Set-Based Evolutionary Global Optimization Algorithm. Lecture Notes in Computer Science, 2011, Volume 6621/2011, 97-107
 DOI:10.1007/978-3-642-20407-4_9
 
-Vrugt, J. A., ter Braak, C. J. F., Diks, C. G. H., Higdon, D., Robinson, B. A., and Hyman, J. M.:Accelerating Markov chain Monte Carlo simulation by differential evolution with self-adaptive randomized subspace sampling, Int. J. Nonlin. Sci. Num., 10, 271–288, 2009.
+Vrugt, J. A., ter Braak, C. J. F., Diks, C. G. H., Higdon, D., Robinson, B. A., and Hyman, J. M.:Accelerating Markov chain Monte Carlo simulation by differential evolution with self-adaptive randomized subspace sampling, Int. J. Nonlin. Sci. Num., 10, 271--288, 2009.
 
 Kennedy, J.; Eberhart, R. (1995). "Particle Swarm Optimization". Proceedings of IEEE International Conference on Neural Networks. IV. pp. 1942–1948. doi:10.1109/ICNN.1995.488968
 
@@ -474,6 +546,4 @@ Storn, R.: System Design by Constraint Adaptation and Differential Evolution,
 Technical Report TR-96-039, International Computer Science Institute (November 1996)
 
 Swendsen RH and Wang JS (1986) Replica Monte Carlo simulation of spin glasses Physical Review Letters 57 : 2607-2609
-
-BIPM, IEC, IFCC, ILAC, ISO, IUPAC, IUPAP, and OIML. Evaluation of measurement data – Supplement 1 to the ‘Guide to the expression of uncertainty in measurement’ – Propagation of distributions using a Monte Carlo method. Joint Committee for Guides in Metrology, JCGM 101 <http://www.bipm.org/utils/common/documents/jcgm/JCGM_101_2008_E.pdf>, 2008.
 
