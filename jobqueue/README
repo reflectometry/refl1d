@@ -1,5 +1,0 @@
-Simple RESTful service api to a job queue
-
-Requires the following external packages:
-
-* flask
