@@ -1,7 +1,6 @@
 """
 Extension to MPL to support the binding of artists to key/mouse events.
 """
-import warnings
 import traceback
 import sys
 
@@ -445,8 +444,8 @@ class BindArtist:
         found = self._find_current(event)
         self.trigger(found, 'scroll', event)
 
-def warn_exception(str):
+def warn_exception(msg):
     trace = traceback.format_exception(*sys.exc_info())
-    print str
+    print msg
     print trace[-2][:-1]
     print trace[-1][:-1]

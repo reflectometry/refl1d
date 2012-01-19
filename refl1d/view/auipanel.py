@@ -1,5 +1,4 @@
 import wx
-import traceback
 
 class AuiPanel(wx.Panel):
     """ A base panel to support AUI managerment. """

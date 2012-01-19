@@ -9,11 +9,13 @@ the two.
 __all__ = [ "data_view", "model_view", "new_model",
             "calc_errors", "show_errors" ]
 
+import numpy
+from bumps.fitproblem import FitProblem
+
 import refl1d.names as refl
 
-# These are names used by the driver
-from refl1d.errors import calc_errors, show_errors
 
+# These are names used by the driver
 def data_view():
     from .view.data_view import DataView
     return DataView
@@ -26,11 +28,9 @@ def load_model(filename):
     if (filename.endswith('.so') or filename.endswith('.dll')
         or filename.endswith('.dyld')):
         from . import garefl
-        options = []
         return garefl.load(filename)
     elif filename.endswith('.staj'):
-        from .stajconvert import load_mlayer, fit_all
-        options = []
+        from .stajconvert import load_mlayer
         return FitProblem(load_mlayer(filename))
         #fit_all(problem.fitness, pmp=20)
     else:

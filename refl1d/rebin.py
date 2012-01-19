@@ -3,7 +3,7 @@
 """
 import numpy
 
-from . import reflmodule as _reduction
+from . import reflmodule as _reduction #@UnresolvedImport (pyd)
 
 def rebin(x,I,xo,Io=None,dtype=numpy.float64):
     """

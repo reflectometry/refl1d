@@ -23,7 +23,7 @@ __all__ = [ 'reflectivity', 'reflectivity_amplitude',
 import numpy
 from numpy import pi, sin, cos, conj
 from numpy import ascontiguousarray as _dense
-from . import reflmodule
+from . import reflmodule #@UnresolvedImport compiled
 
 
 def reflectivity(*args, **kw):

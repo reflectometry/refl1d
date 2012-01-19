@@ -15,12 +15,7 @@ from .thickness import ThicknessInteractor
 from .interface import InterfaceInteractor
 
 from matplotlib import transforms
-try:
-    # matplotlib 0.98
-    blend_xy = transforms.blended_transform_factory
-except:
-    # CRUFT: matplotlib 0.91
-    blend_xy = transforms.blend_xy_sep_transform
+blend_xy = transforms.blended_transform_factory
 
 # ================== Main profile interactor =====================
 class ProfileInteractor(object):

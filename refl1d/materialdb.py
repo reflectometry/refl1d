@@ -18,7 +18,7 @@ these materials.  For example, for permalloy::
     Parameter(permalloy density)
 """
 import periodictable
-from .material import Vacuum, Mixture, Material
+from .material import Vacuum, Material
 
 __all__ = ['air',
            'water','H2O','heavywater','D2O','lightheavywater','DHO',

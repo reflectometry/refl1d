@@ -11,8 +11,6 @@ has files ending in **.sta**.
 """
 
 from math import pi
-import os
-import sys
 import numpy
 from bumps.wsolve import wsolve
 
@@ -1039,7 +1037,6 @@ class MlayerMagnetic(object):
         #Line next (1):  rho   depth   rough  mu
         #Line next (2):  mrho  mdepth  mrough (mrho is also known as phi)
         #Line next (3):  mtheta
-        offset = 0
         rho = self.rho*(16*pi/1e6)
         w,s = self.thickness, self.roughness
         wm = self.mthickness if self.mthickness is not None else self.thickness

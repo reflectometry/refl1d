@@ -63,7 +63,7 @@ import numpy
 from numpy import inf
 from bumps.util import erf
 #from scipy.special import erf
-from .reflmodule import _contract_by_area, _contract_mag
+from .reflmodule import _contract_by_area, _contract_mag #@UnresolvedImport (pyd)
 
 class Microslabs(object):
     """

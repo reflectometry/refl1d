@@ -95,8 +95,8 @@ class PolymerBrush(Layer):
                     sigma = self.sigma)
 
     def profile(self, z):
-        thickness, base_vf, base, length, power, sigma \
-            = [p.value for p in self.thickness, self.base_vf, self.base,
+        base_vf, base, length, power, sigma \
+            = [p.value for p in self.base_vf, self.base,
                self.length, self.power, self.sigma]
         base_vf /= 100. # % to fraction
         L0 = base  # if base < thickness else thickness
@@ -113,7 +113,7 @@ class PolymerBrush(Layer):
         return vf
 
     def render(self, probe, slabs):
-        thickness,interface = self.thickness.value,self.interface.value
+        thickness = self.thickness.value
         Pw,Pz = slabs.microslabs(thickness)
         # Skip layer if it falls to zero thickness.  This may lead to
         # problems in the fitter, since R(thickness) is non-differentiable
@@ -139,14 +139,11 @@ def layer_thickness(z):
     """
     Return the thickness of a layer given the microslab z points.
 
-    The layer is sliced into bins of equal width, with the final
-    bin making up the remainder.  The z values given to the profile
-    function are the centers of these bins.  Using this, we can
-    guess that the total layer thickness will be the following::
-
-         2*z[-1]-z[-2] if len(z) > 0 else 2*z[0]
+    The z points are at the centers of the bins.  we can use the recurrence
+    that boundary b[k] = z[k-1] + (z[k-1] - b[k-1]) to compute the
+    total length of the layer.
     """
-    2*z[-1]-z[-2] if len(z) > 0 else 2*z[0]
+    return 2 * (numpy.sum(z[-1::-2]) - numpy.sum(z[-2::-2]))
 
 class VolumeProfile(Layer):
     """

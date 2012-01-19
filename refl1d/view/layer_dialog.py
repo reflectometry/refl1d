@@ -2,10 +2,10 @@ import wx
 
 from numpy import inf
 
-from ..gui.input_list import ItemListValidator, InputListPanel
+from bumps.gui.input_list import InputListPanel
 
-from refl1d.names import (Slab, FreeLayer, FreeInterface, PolymerBrush,
-                          VolumeProfile)
+from refl1d.names import Slab, FreeLayer, FreeInterface, PolymerBrush
+from refl1d.material import SLD
 
 # name, type, description, *args
 # type: 'string'
@@ -126,7 +126,7 @@ class LayerEditorDialog(wx.Dialog):
     """
     def __init__(self,
                  parent = None,
-                 id = wx.ID_ANY,
+                 id = wx.ID_ANY, #@ReservedAssignment
                  title = "Layer Editor",
                  pos = wx.DefaultPosition,
                  size = (-1, 400),
@@ -262,6 +262,6 @@ def main(stack):
     app.MainLoop()
 
 if __name__ == "__main__":
-    from refl1d.names import *
+    from refl1d.names import silicon, air
     stack = silicon | air
     main(stack)

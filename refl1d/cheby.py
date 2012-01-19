@@ -80,7 +80,7 @@ import numpy
 from numpy import inf, real, imag
 from bumps.parameter import  Parameter as Par
 from bumps.cheby import cheby_val, cheby_coeff
-from bumps.cheby import cheby_approx, cheby_points # for export
+from bumps.cheby import cheby_approx, cheby_points # for export @UnusedImport
 from .model import Layer
 from . import util
 

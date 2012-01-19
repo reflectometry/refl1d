@@ -18,7 +18,7 @@ os.system('"%s" setup.py build'%sys.executable)
 here = os.path.abspath(os.path.dirname(__file__))
 sys.path = [p for p in sys.path if os.path.abspath(p) != here]
 
-import py2app
+import py2app # @UnresolvedImport @UnusedImport except on mac
 from distutils.core import setup
 from distutils.util import get_platform
 
@@ -47,7 +47,6 @@ PACKAGE_DATA = {}
 
 import refl1d
 import periodictable
-from refl1d.gui.utilities import resource as refl1d_resource
 
 NAME = 'Refl1D'
 # Until we figure out why packages=... doesn't work reliably,

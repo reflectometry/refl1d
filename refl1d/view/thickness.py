@@ -1,8 +1,6 @@
 """
 Reflectometry thickness interactor.
 """
-from numpy import inf
-
 from .config import thickness_color, pick_radius
 from .interactor import BaseInteractor
 from .util import clip

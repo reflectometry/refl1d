@@ -53,7 +53,7 @@ from distutils.util import get_platform
 
 # Augment the setup interface with the py2exe command and make sure the py2exe
 # option is passed to setup.
-import py2exe
+import py2exe # @UnresolvedImport @UnusedImport except on windows
 
 if len(sys.argv) == 1:
     sys.argv.append('py2exe')
@@ -68,7 +68,7 @@ sys.path.insert(0, build_lib)
 
 #print "\n".join(sys.path)
 
-import wx
+#import wx  # May need this to force wx to be included
 import matplotlib
 matplotlib.use('WXAgg')
 import periodictable

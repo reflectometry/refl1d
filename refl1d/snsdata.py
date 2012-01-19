@@ -75,7 +75,7 @@ def QRL_to_data(instrument, header, data):
     Q,dQ,R,dR,L = data
     dL = resolution.binwidths(L)
     if 'angle' in header and 'slits_at_Tlo' in header:
-        T = kw.pop('angle',kw.pop('T',None))
+        T = header.pop('angle',header.pop('T',None))
         probe = instrument.probe(L=L, dL=dL, T=T, data=(R,dR),
                                  **header)
     else:

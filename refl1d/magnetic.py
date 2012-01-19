@@ -39,7 +39,7 @@ and anchoring them to the structure.
 """
 import numpy
 from numpy import inf
-from bumps.parameter import Parameter, Constant
+from bumps.parameter import Parameter
 from bumps.mono import monospline
 
 from .model import Layer, Stack

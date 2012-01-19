@@ -41,11 +41,9 @@ for X-ray, there is no need to scale by probe by electron radius.  In
 the end, sld is just the returned scattering factors times density.
 """
 __all__ = ['Material','Mixture','SLD','Vacuum', 'Scatterer', 'ProbeCache']
-import sys;
 import numpy
-from numpy import inf, sqrt, pi, NaN
+from numpy import inf, NaN
 import periodictable
-from periodictable.constants import avogadro_number
 from bumps.parameter import Parameter as Par
 
 class Scatterer(object):

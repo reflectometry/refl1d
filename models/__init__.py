@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 models: sample models and functions prepared for use in mystic
 
@@ -6,73 +5,51 @@ models: sample models and functions prepared for use in mystic
 Functions
 =========
 
-Mystic provides a set of standard fitting functions that derive from
-the function API found in `mystic.models.abstract_model`. These standard
-functions are provided::
-    rosen      -- Rosenbrock's function
-    step       -- De Jong's step function
-    quartic    -- De Jong's quartic function
-    shekel     -- Shekel's function
-    corana     -- Corana's function
-    fosc3d     -- the fOsc3D Mathematica function
-    griewangk  -- Griewangk's function
-    zimmermann -- Zimmermann's function
-    wavy1      -- a simple sine-based multi-minima function
-    wavy2      -- another simple sine-based multi-minima function
+Standard test functions for minimizers:
+
+    rosenbrock         -- Rosenbrock's function
+    step               -- De Jong's step function
+    quartic            -- De Jong's quartic function
+    shekel             -- Shekel's function
+    corana1d,2d,3d,4d  -- Corana's function
+    fosc3d             -- the fOsc3D Mathematica function
+    griewangk          -- Griewangk's function
+    zimmermann         -- Zimmermann's function
+    wavy1              -- a simple sine-based multi-minima function
+    wavy2              -- another simple sine-based multi-minima function
 
 
 Models
 ======
 
-Mystic also provides a set of example models that derive from the model API
-found in `mystic.models.abstract_model`. These standard models are provided::
-    poly       -- 1d model representation for polynomials
-    circle     -- 2d array representation of a circle
-    lorentzian -- Lorentzian peak model
-    br8        -- Bevington & Robinson's model of dual exponential decay
-    mogi       -- Mogi's model of surface displacements from a point spherical
-                  source in an elastic half space
+Curve fitting tests:
 
-Additionally, circle has been extended to provide three additional models,
-each with different packing densities::
-    - dense_circle, sparse_circle, and minimal_circle
+    disk_coverage  -- minimal disk for covering a set of points
+    lorentzian     -- Lorentzian peak model
+    decay          -- Bevington & Robinson's model of dual exponential decay
+    mogi           -- Mogi's model of surface displacements from a point spherical
+                      source in an elastic half space
 
-Poly also provides two additional models, each for 8th and 16th order
-Chebyshev polynomials::
-    - chebyshev8, chebyshev16
+For each model s there will be a sample data set:
 
+   s_data = {'x':x, 'y':y, 'dy':dy}
 
-Tools
-=====
-Mystic also provides two tools for manipulating polynomials::
-    polyeval   -- fast evaluation of an n-dimensional polynomial
-    poly1d     -- generate a 1d polynomial instance
+and generating parameters if they are available:
+
+   s_pars = { ... }
 
 """
-# base classes
-from abstract_model import AbstractModel, AbstractFunction
 
 # models
-from poly import poly, chebyshev8, chebyshev16
 from mogi import mogi
-from br8 import decay
-from lorentzian import lorentzian
-from circle import circle, dense_circle, sparse_circle, minimal_circle
+from br8 import dual_exponential as decay, data as decay_data
+from lorentzian import lorentzian, data as lorentzian_data, coeff as lorenztian_pars
+from circle import disk_coverage, simulate_circle, simulate_disk
 
 # functions
-from dejong import rosen, step, quartic, shekel
-from corana import corana
-from fosc3d import fosc3d
+from dejong import rosenbrock, step, quartic, shekel
+from corana import corana1d, corana2d, corana3d, corana4d
+from fosc3d import fOsc3D
 from griewangk import griewangk
 from zimmermann import zimmermann
 from wavy import wavy1, wavy2
-
-#shortcuts
-#from poly import polyeval, poly1d
-#from poly import chebyshev8cost, chebyshev16cost
-#from br8 import data as br8data
-#from br8 import cost as br8cost
-#from corana import corana1d, corana2d, corana3d
-#from lorentzian import gendata, histogram
-
-# end of file

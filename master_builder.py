@@ -119,7 +119,7 @@ def get_version():
     # This has to be done after we have checked out the repository.
     for line in open(os.path.join(SRC_DIR, PKG_NAME, '__init__.py')).readlines():
         if (line.startswith('__version__')):
-            exec(line.strip())
+            __version__ = int(line.split('=')[1])
             break
     else:
         raise RuntimeError("Could not find package version")

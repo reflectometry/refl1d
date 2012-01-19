@@ -12,43 +12,22 @@ References::
     (Same title as above, but as a technical report.)
     http://www.icsi.berkeley.edu/~storn/deshort1.ps
 """
-from abstract_model import AbstractFunction
 
-from numpy import asarray
 from math import cos, sqrt
 
-class Griewangk(AbstractFunction):
-    """Griewangk function:
-a multi-minima function, Equation (23) of [2]"""
+def griewangk(coeffs):
+    """
+    Griewangk function: a multi-minima function, Equation (23) of [2]
 
-    def __init__(self):
-        AbstractFunction.__init__(self)
-        return
+    minimum is f(x)=0.0 at xi=0.0
+    """
 
-    def function(self,coeffs):
-        """evaluates the Griewangk function for a list of coeffs
+    # ensure that there are 10 coefficients
+    x = [0]*10
+    x[:len(coeffs)]=coeffs
 
-minimum is f(x)=0.0 at xi=0.0"""
-        # ensure that there are 10 coefficients
-        x = [0]*10
-        x[:len(coeffs)]=coeffs
-       #x = asarray(x) #XXX: converting to numpy.array slows by 10x
+    term1 = sum([xi*xi for xi in x])/4000
+    term2 = prod([cos(xi/sqrt(i+1.)) for i,xi in enumerate(x)])
+    return term1 - term2 + 1
 
-        term1 = sum([c*c for c in x])/4000
-        term2 = 1
-        for i in range(10):
-            term2 = term2 * cos( x[i] / sqrt(i+1.0) )
-        return term1 - term2 + 1
-
-
-#   def forward(self,pts):
-#       """10-D Griewangk; returns f(xi,yi,...) for pts=(x,y,...)"""
-#       return AbstractFunction.forward(self,pts)
-
-    pass
-
-
-# prepared instances
-griewangk = Griewangk()
-
-# End of file
+prod = lambda x: reduce(lambda a,b: a*b, x, 1.)

@@ -19,7 +19,7 @@ from bumps.gui import signal
 
 from refl1d.experiment import MixedExperiment
 
-from .binder import pixel_to_data
+#from .binder import pixel_to_data
 from .util import CopyImage
 from .profilei import ProfileInteractor
 from .interactor import BaseInteractor
@@ -99,9 +99,9 @@ class ModelView(wx.Panel):
         """
         Forward the context menu invocation to profile, if profile exists.
         """
-        transform = self.axes.transData
         sx,sy = event.GetX(), event.GetY()
-        data_x,data_y = pixel_to_data(transform, sx, self.fig.bbox.height-sy)
+        #transform = self.axes.transData
+        #data_x,data_y = pixel_to_data(transform, sx, self.fig.bbox.height-sy)
 
         popup = wx.Menu()
         item = popup.Append(wx.ID_ANY,'&Grid on/off', 'Toggle grid lines')
@@ -180,7 +180,7 @@ class ModelView(wx.Panel):
 
         self.profile_selector.Clear()
         if len(self.profiles) > 1:
-            self.profile_selector.AppendItems([k for k,v in self.profiles])
+            self.profile_selector.AppendItems([k for k,_ in self.profiles])
             self.profile_selector_label.Show()
             self.profile_selector.Show()
             self.profile_selector.SetSelection(0)

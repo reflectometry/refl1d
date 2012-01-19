@@ -2,19 +2,16 @@
 Layer interactor.
 """
 from __future__ import division
-from math import log
-import numpy
 from bumps.parameter import Parameter
-from ..material import SLD, Vacuum, Material, Mixture, Compound
+from refl1d.material import SLD
 from .interactor import BaseInteractor
 from .config import pick_radius
-from .config import rho_color, rhoI_color, disabled_color, profile_color
-from .config import vf_scale
-from .util import clip, setpar
+from .config import rho_color, rhoI_color, disabled_color
+from .util import setpar
 
 
 class MaterialInteractor(BaseInteractor):
-    def __init__(self, profile, material, range=(0,1)):
+    def __init__(self, profile, material, range=(0,1)): #@ReservedAssignment
         super(MaterialInteractor,self).__init__(profile)
         self.material = material
         self.range = range

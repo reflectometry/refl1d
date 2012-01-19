@@ -1,12 +1,10 @@
 import wx
 
-from .profile_view import ProfileView
-
-import numpy
+from .model_view import ModelView
 
 def make_frame(experiment):
     frame = wx.Frame(None, -1, "profile interactor")
-    panel = ProfileView(frame)
+    panel = ModelView(frame)
     panel.quit_on_error()
     panel.set_job(experiment)
     frame.panel = panel

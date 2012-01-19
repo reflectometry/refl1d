@@ -2,7 +2,13 @@
 # Author: Paul Kienzle
 """
 Composition space modeling
+
+INCOMPLETE UNUSED UNTESTED CODE
+
+
 """
+
+#@PydevCodeAnalysisIgnore
 
 import numpy
 from numpy import inf

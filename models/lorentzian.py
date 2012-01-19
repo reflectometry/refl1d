@@ -6,46 +6,23 @@ Lorentzian peak model
 References::
     None
 """
-from abstract_model import AbstractModel
 
-from numpy import sum as numpysum
-from numpy import array, pi, asarray, arange
+from numpy import array, pi, asarray, arange, sqrt
 from numpy import random
 
-class Lorentzian(AbstractModel):
+
+def lorentzian(E, Io, Eo, Gamma, A=0, B=0, C=0):
     """
-Computes lorentzian
+    lorentzian with quadratic background::
+
+        I = Io  (Gamma/2*pi) / ( (E-Eo)^2 + (Gamma/2)^2 ) + (A + B E + C E^2)
     """
-
-    def __init__(self,name='lorentz',metric=lambda x: numpysum(x*x),sigma=1.0):
-        AbstractModel.__init__(self,name,metric,sigma)
-        return
-
-    def evaluate(self,coeffs,evalpts):
-        """evaluate lorentzian with given coeffs over given evalpts
-coeffs = (a1,a2,a3,A0,E0,G0,n)"""
-        a1,a2,a3,A0,E0,G0,n = coeffs
-        x = asarray(evalpts) #XXX: requires a numpy.array
-        return (a1 + a2*x + a3*x*x + A0 * ( G0/(2*pi) )/( (x-E0)*(x-E0)+(G0/2)*(G0/2) ))/n
-
-    def ForwardFactory(self,coeffs):
-        """generates a lorentzian model instance from a list of coefficients"""
-        a1,a2,a3,A0,E0,G0,n = coeffs
-        def forward_lorentzian(evalpts):
-            """a lorentzian peak over a 1D numpy array
-with (a1,a2,a3,A0,E0,G0,n) = (%s,%s,%s,%s,%s,%s,%s)""" % (a1,a2,a3,A0,E0,G0,n)
-            return self.evaluate((a1,a2,a3,A0,E0,G0,n),evalpts)
-        return forward_lorentzian
-
-    pass
+    E = asarray(E) # force E to be a numpy array
+    return (A + (B + C*E)*E + Io * (Gamma/2/pi) / ( (E-Eo)**2 + (Gamma/2)**2 ))
 
 
-# prepared instances
-lorentzian = Lorentzian()
-
-def gendata(params,xmin,xmax,npts=4000):
+def simulate_events(params,xmin,xmax,npts=4000):
     """Generate a lorentzian dataset of npts between [min,max] from given params"""
-    F = lorentzian.ForwardFactory
     def gensample(F, xmin, xmax):
         a = arange(xmin, xmax, (xmax-xmin)/200.)
         ymin = 0
@@ -56,21 +33,62 @@ def gendata(params,xmin,xmax,npts=4000):
             t3 = F(t1)
             if t2 < t3:
                 return t1
-    fwd = F(params)
-    return array([gensample(fwd, xmin,xmax) for i in xrange(npts)])
+    fwd = lambda x: lorentzian(x, **params)
+    return array([gensample(fwd, xmin,xmax) for _ in range(npts)])
+
+def simulate_histogram(pars, Emin, Emax, dE, npts=4000):
+    events = simulate_events(pars, Emin, Emax)
+    E,I = histogram(events, dE, Emin, Emax)
+    #print min(events),max(events)
+    dI = sqrt(I)
+    data = { 'x': (E[1:]+E[:-1])/2., 'y': I, 'dy': dI }
+    return data
+
+def demo_data():
+    # integrated intensity = 4000
+    # center = 6400
+    # width gamma = 180
+    # background = -(E-6340)^2/1000 + 10
+    bgC = 6340.
+    bgW = 10000.
+    A = 35 - bgC**2/bgW
+    B = 2.*bgC/bgW
+    C = -1./bgW
+    #A,B,C = 0,0,0
+    N = 4000
+    pars = { 'Eo': 6500.0, 'Gamma': 180.0, 'Io': 20*N, 'A': A, 'B': B, 'C': C }
+    Emin,Emax = 6000, 6700
+    dE = 20
+
+    return pars, simulate_histogram(pars, Emin, Emax, dE, N)
+
 
 # probably shouldn't be in here...
 from numpy import histogram as numpyhisto
-def histogram(data,binwidth, xmin,xmax):
-    """generate bin-centered histogram of provided data
-return bins of given binwidth (and histogram) generated between [xmin,xmax]"""
-    bins = arange(xmin,xmax, binwidth)
-    binsc = bins + (0.5 * binwidth)
-    try: #FIXME: use updated numpy.histogram
-        histo = numpyhisto(data, bins, new=False)[0]
-    except:
-        histo = numpyhisto(data, bins)[0]
-    return binsc, histo
+def histogram(data,binwidth,xmin,xmax):
+    """
+    generate bin-centered histogram of provided data
 
+    return bins of given binwidth (and histogram) generated between [xmin,xmax]
+    """
+    edges = arange(xmin,xmax+binwidth*0.9999999, binwidth)
+    centers = edges + (0.5 * binwidth)
+    histo,_ = numpyhisto(data, bins=edges)
+    #print data.size, sum(histo), edges[0], edges[-1], min(data),max(data)
+    return centers, histo
 
-# End of file
+coeff, data = demo_data()
+
+def demo():
+    import pylab
+    x,y,dy = data['x'],data['y'],data['dy']
+    A,B,C = coeff['A'],coeff['B'],coeff['C']
+    Io,Eo,Gamma = coeff['Io'],coeff['Eo'],coeff['Gamma']
+    pylab.errorbar(x, y, yerr=dy, label="data")
+    pylab.plot(x, pylab.polyval([C,B,A], x), label="background")
+    pylab.plot(x, lorentzian(x,Eo=Eo,Io=Io,Gamma=Gamma), label="peak")
+    pylab.plot(x, lorentzian(x,**coeff), label="peak+bkg")
+    pylab.legend()
+    pylab.show()
+
+if __name__ == "__main__": demo()

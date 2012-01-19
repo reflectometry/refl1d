@@ -76,7 +76,7 @@ class PolymerBrushInteractor(BaseInteractor):
         self.solvent.update_markers()
 
         n = self.profile.layer_num
-        left,right = self.profile.boundary[n:n+2]
+        left = self.profile.boundary[n]
         layer = self.layer
 
         # TODO: want to use smae step size for profile as we do for

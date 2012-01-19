@@ -3,8 +3,8 @@ Resolution calculations
 
 """
 
-from numpy import pi, inf, nan, sqrt, log, degrees, radians, cos, sin, tan
-from numpy import arcsin as asin, ceil, clip
+from numpy import pi, sqrt, log, degrees, radians, cos, sin, tan
+from numpy import arcsin as asin, ceil
 from numpy import ones_like, arange, isscalar, asarray, hstack
 
 def QL2T(Q=None,L=None):

@@ -102,7 +102,6 @@ class DataView(wx.Panel):
         return menu
 
     # ==== Views ====
-    # TODO: can probably parameterize the view selection.
     def OnLog(self, event):
         self.view = "log"
         self.redraw()
@@ -195,18 +194,17 @@ class DataView(wx.Panel):
                     or self.problem.fitness.is_reset(): continue
 
             # Redraw the canvas with newly calculated reflectivity
-            # TODO: drawing is 10x too slow!
             with self.pylab_interface:
                 ax = pylab.gca()
                 #print "reset",reset, ax.get_autoscalex_on(), ax.get_xlim()
                 reset = reset or ax.get_autoscalex_on()
-                xrange = ax.get_xlim()
+                range_x = ax.get_xlim()
                 #print "composing"
                 pylab.clf() # clear the canvas
                 #shift=20 if self.view == 'log' else 0
                 shift=0
                 if isinstance(self.problem,MultiFitProblem):
-                    for i,p in enumerate(self.problem.models):
+                    for _,p in enumerate(self.problem.models):
                         p.fitness.plot_reflectivity(view=self.view,
                                                     plot_shift=shift)
                         pylab.hold(True)
@@ -229,7 +227,7 @@ class DataView(wx.Panel):
                 #print "drawing"
                 if not reset:
                     self.toolbar.push_current()
-                    set_xrange(pylab.gca(), xrange)
+                    set_xrange(pylab.gca(), range_x)
                     self.toolbar.push_current()
                 pylab.draw()
                 #print "done drawing"
@@ -249,11 +247,11 @@ class DataView(wx.Panel):
         wx.Yield()
         if self._cancel_calculate or fitness.is_reset(): return
 
-def set_xrange(ax, xrange):
+def set_xrange(ax, range_x):
     miny,maxy = inf,-inf
     for L in ax.get_lines():
         x,y = L.get_data()
-        idx = (x>xrange[0]) & (x<xrange[1])
+        idx = (x>range_x[0]) & (x<range_x[1])
         if idx.any():
             miny = min(miny,min(y[idx]))
             maxy = max(maxy,max(y[idx]))
@@ -263,5 +261,5 @@ def set_xrange(ax, xrange):
             miny,maxy = miny-padding, maxy+padding
         else:
             miny,maxy = miny*0.95, maxy*1.05
-    ax.set_xlim(xrange)
+    ax.set_xlim(range_x)
     ax.set_ylim(miny,maxy)
