@@ -34,7 +34,7 @@ def checkspeed(uri=URI):
             testj['notify'] = 'me%d'%j
             queue.submit(testj, origin="here%d"%j)
         for j in range(10):
-            request = queue.nextjob(queue='cue')
+            _request = queue.nextjob(queue='cue')
             queue.postjob(1, {'status': 'COMPLETE', 'result': 0})
         print 10*(i+1), time.time()-t
         t = time.time()
