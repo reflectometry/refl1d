@@ -10,8 +10,11 @@ scattering density may vary with depth in the layer.
 .. Note::
    By importing model, the definition of :class:`material.Scatterer <refl1d.material.Scatterer>`
    changes so that materials can be stacked into layers using operator
-   overloading. This will affect all instances of the Scatterer class,
-   and all of its subclasses.
+   overloading:
+   - the | operator, (previously known as "bitwise or") joins stacks
+   - the * operator repeats stacks (n times, n is an int)
+   
+   This will affect all instances of the Scatterer class, and all of its subclasses.
 """
 
 #TODO: xray has smaller beam spot
