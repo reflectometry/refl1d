@@ -321,6 +321,14 @@ class FitProblem(object):
     def __init__(self, fitness):
         self.fitness = fitness
         self.model_reset()
+        
+    def __getstate__(self):
+        return self.fitness
+        
+    def __setstate__(self, state):
+        self.fitness = state
+        self.model_reset()
+        
     def model_reset(self):
         """
         Prepare for the fit.
