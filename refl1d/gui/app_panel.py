@@ -570,12 +570,44 @@ class AppPanel(wx.Panel):
             self.GetTopLevelParent().SetTitle("Refl1D")
 
 SOUND = None
+### create beep
+#import wave 
+#from StringIO import StringIO 
+#out = StringIO() 
+
+#w = wave.open( out, "w" ) 
+#w.setnchannels( 1 ) 
+#w.setsampwidth( 1 ) 
+#w.setframerate( 22000 ) 
+
+#from array import array 
+#import math 
+
+#F = 200 
+#ang = 0.0 
+#delta = ( math.pi * 2 * F  ) / 22000.0 
+
+#for _1 in xrange( 2 ): 
+#  data = array( 'B' ) 
+#  for _2 in xrange( 22000 ): 
+#    data.append( int( 128 + ( 127 * math.sin( ang ) ) ) ) 
+#    ang += delta 
+#  w.writeframes( data.tostring())
+#  
+#w.close() 
+
+#sample = out.getvalue() 
+#out.close()
+
+#SOUND = wx.SoundFromData(sample)
+
 def beep():
     """
     Play fit completion sound.
     """
-    global SOUND
-    if SOUND is None:
-        SOUND = wx.Sound(resource('done.wav'))
-    if SOUND.IsOk():
-        SOUND.Play(wx.SOUND_ASYNC)
+    wx.Beep()
+#    global SOUND
+#    if SOUND is None:
+#        SOUND = wx.Sound(resource('done.wav'))
+#    if SOUND.IsOk():
+#        SOUND.Play(wx.SOUND_ASYNC)
