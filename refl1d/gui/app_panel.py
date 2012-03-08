@@ -605,7 +605,7 @@ def beep():
     """
     Play fit completion sound.
     """
-    wx.Beep()
+    wx.Bell()
 #    global SOUND
 #    if SOUND is None:
 #        SOUND = wx.Sound(resource('done.wav'))
