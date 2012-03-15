@@ -318,15 +318,17 @@ class Fitness(object):
 
 
 class FitProblem(object):
-    def __init__(self, fitness):
+    def __init__(self, fitness, name="FitProblem"):
         self.fitness = fitness
-        self.model_reset()
+        self.name = name
+        self.model_reset()      
         
     def __getstate__(self):
-        return self.fitness
+        return {'fitness': self.fitness, 'name': self.name}
         
     def __setstate__(self, state):
-        self.fitness = state
+        self.fitness = state['fitness']
+        self.name = state['name']
         self.model_reset()
         
     def model_reset(self):
@@ -612,12 +614,20 @@ class MultiFitProblem(FitProblem):
     """
     Weighted fits for multiple models.
     """
-    def __init__(self, models, weights=None):
+    def __init__(self, models, weights=None, name="MultiFitProblem"):
         self.models = [FitProblem(m) for m in models]
         if weights is None:
             weights = [1 for m in models]
         self.weights = weights
         self.model_reset()
+    
+    def __getstate__(self):
+        result = self.__dict__.copy()
+        return result
+        
+    def __setstate__(self, state):
+        self.__dict__ = state
+        
     def model_parameters(self):
         """Return parameters from all models"""
         return [f.model_parameters() for f in self.models]

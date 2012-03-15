@@ -365,8 +365,8 @@ def _profiles_contour(profiles, contours=_CONTOURS, npoints=200):
             rho = numpy.vstack([numpy.interp(zp, L[0], L[1]) for L in p])
             rhoM = numpy.vstack([numpy.interp(zp, L[0], L[3]) for L in p])
             # Plot the quantiles
-            plot_quantiles(zp, rho, contours, color)
-            plot_quantiles(zp, rhoM, contours, color)
+            plot_quantiles(zp, rho, contours, rho_color)
+            plot_quantiles(zp, rhoM, contours, rhoM_color)
             # Plot the best
             z,rho,_,rhoM,_ = p[0]
             pylab.plot(z,rho,'-',color=dhsv(rho_color,dv=-0.2), hold=True)
