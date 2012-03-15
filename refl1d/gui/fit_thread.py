@@ -152,7 +152,7 @@ class FitThread(Thread):
                                  rate=30),
                     ]
         if True: # Multiprocessing parallel
-            mapper = MPMapper()
+            mapper = MPMapper
         else:
             mapper = SerialMapper
 
@@ -173,5 +173,3 @@ class FitThread(Thread):
                                point=x,
                                value=fx)
         wx.PostEvent(self.win, evt)
-        mapper.stop_mapper(mapper)
-        #mapper.close_all()

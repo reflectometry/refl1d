@@ -52,27 +52,24 @@ def _MP_run_problem(point):
     return _problem.nllf(point)
     
 class MPMapper(object):
-    def __init__(self):
-        self.mapper = None
-        self.pool = None
-    #@staticmethodqqq
+    pool = None
+    
+    @staticmethod
     def start_worker(self, problem):
         pass
-    #@staticmethod
-    def start_mapper(self, problem, modelargs, cpus=None):
+    @staticmethod
+    def start_mapper(problem, modelargs, cpus=None):
         import multiprocessing
         if cpus is None:
             cpus = multiprocessing.cpu_count()
-        pool = multiprocessing.Pool(cpus,_MP_set_problem,(problem,))
-        self.pool = pool
-        self.mapper = lambda points: pool.map(_MP_run_problem, points)
-        return self.mapper
+        if MPMapper.pool is None:
+            MPMapper.pool = multiprocessing.Pool(cpus,_MP_set_problem,(problem,))
+        mapper = lambda points: MPMapper.pool.map(_MP_run_problem, points)
+        return mapper
         
     @staticmethod
     def stop_mapper(mapper):
-        if mapper.pool is not None:
-            print "closing"
-            mapper.pool.terminate()
+        pass
 
 class AMQPMapper(object):
 
