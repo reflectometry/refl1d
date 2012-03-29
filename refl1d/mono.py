@@ -7,6 +7,7 @@ from __future__ import division, with_statement
 from numpy import (diff, hstack, sqrt, searchsorted, asarray, cumsum,
                    inf, nonzero, linspace, sort, isnan, clip)
 from mystic.parameter import Parameter as Par, Function as ParFunction
+
 from . import numpyerrors
 from . import util
 from .model import Layer

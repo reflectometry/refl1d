@@ -100,6 +100,8 @@ def poisson_average(QdQRdRw):
     The above formula gives the expected result for combining two
     measurements, assuming there is no uncertainty in the monitor.
 
+    ::
+
         measure N counts during M monitors
           rate:                   r = N/M
           rate uncertainty:       dr = sqrt(N)/M
@@ -110,9 +112,15 @@ def poisson_average(QdQRdRw):
           w = ra/dra^2 + rb/drb^2 = Ma + Mb
           y = ((ra/dra)^2 + (rb/drb)^2)/w = (Na + Nb)/(Ma + Mb)
           dy = sqrt(y/w) = sqrt( (Na + Nb)/ w^2 ) = sqrt(Na+Nb)/(Ma + Mb)
+
+    This formula isn't strictly correct when applied to values which
+    have been scaled, for example to account for an attenuator in the
+    counting system.
     """
     # TODO: need better estimate of dQ, with weighted broadening according
     # to the distance of the Q's from the centers.
+    # TODO: check the accuracy of the formula in the presence of
+    # attenuators.
     Q,dQ,R,dR,weight = QdQRdRw
     w = sum(weight)
     Q = sum(Q*weight)/w
@@ -121,3 +129,4 @@ def poisson_average(QdQRdRw):
     dR = sqrt(R/w)
     #print "averaging",QdQRdR,Q,dQ,R,dR
     return Q,dQ,R,dR,w
+

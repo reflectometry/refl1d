@@ -38,16 +38,19 @@ See `data-guide`_ for details.
 
 from __future__ import with_statement, division
 import os
+
 import numpy
-from numpy import radians, sin, sqrt, tan, cos, pi, inf, sign, log
+from numpy import sqrt, pi, inf, sign, log
+
 from periodictable import nsf, xsf
-from .reflectivity import convolve
-from . import fresnel
-from material import Vacuum
 from mystic.parameter import Parameter, Constant
+from .util import coordinated_colors, auto_shift
+from .reflectivity import convolve
+
+from . import fresnel
+from .material import Vacuum
 from .resolution import QL2T, TL2Q, dTdL2dQ
 from .stitch import stitch
-from .util import coordinated_colors, auto_shift
 
 PROBE_KW = ('T', 'dT', 'L', 'dL', 'data',
             'intensity', 'background', 'back_absorption',
@@ -282,27 +285,30 @@ class Probe(object):
         self._sf_L = numpy.unique(self.calc_L)
         self._sf_idx = numpy.searchsorted(self._sf_L, L)
 
-    def _Q(self):
+    @property
+    def Q(self):
         if self.theta_offset.value != 0:
             Q = TL2Q(T=self.T+self.theta_offset.value, L=self.L)
             #TODO: this may break the Q order on measurements with varying L
         else:
             Q = self.Qo
         return Q
-    Q = property(_Q)
-    def _calc_Q(self):
+
+    @property
+    def calc_Q(self):
         if self.theta_offset.value != 0:
             Q = TL2Q(T=self.calc_T+self.theta_offset.value, L=self.calc_L)
             #TODO: this may break the Q order on measurements with varying L
         else:
             Q = self.calc_Qo
         return Q if not self.back_reflectivity else -Q
-    calc_Q = property(_calc_Q)
+
     def parameters(self):
         return dict(intensity=self.intensity,
                     background=self.background,
                     back_absorption=self.back_absorption,
                     theta_offset=self.theta_offset)
+
     def scattering_factors(self, material):
         """
         Returns the scattering factors associated with the material given
@@ -709,12 +715,10 @@ class XrayProbe(Probe):
     """
     X-Ray probe.
 
-    Contains information about the kind of probe used to investigate
-    the sample.
-
-    X-ray data is traditionally recorded by angle and energy, rather
-    than angle and wavelength as is used by neutron probes.
+    By providing a scattering factor calculator for X-ray scattering, model
+    components can be defined by mass density and chemical composition.
     """
+    radiation = "xray"
     def scattering_factors(self, material):
         # doc string is inherited from parent (see below)
         rho, irho = xsf.xray_sld(material,
@@ -726,6 +730,13 @@ class XrayProbe(Probe):
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
 class NeutronProbe(Probe):
+    """
+    Neutron probe.
+
+    By providing a scattering factor calculator for X-ray scattering, model
+    components can be defined by mass density and chemical composition.
+    """
+    radiation = "neutron"
     def scattering_factors(self, material):
         # doc string is inherited from parent (see below)
         rho, irho, rho_incoh = nsf.neutron_sld(material,
@@ -735,7 +746,6 @@ class NeutronProbe(Probe):
         return rho, irho[0], rho_incoh
         return rho, irho[self._sf_idx], rho_incoh
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
-
 
 
 class ProbeSet(Probe):
@@ -768,6 +778,7 @@ class ProbeSet(Probe):
 
     def simulate_data(self, theory, noise=2):
         Q,R = theory
+        offset = 0
         for p in self.probes:
             n = len(p)
             p.simulate_data(theory=(Q[offset:offset+n],R[offset:offset+n]),
@@ -777,12 +788,12 @@ class ProbeSet(Probe):
 
     def __len__(self):
         return self._len
-    def _Q(self):
+    @property
+    def Q(self):
         return numpy.hstack(p.Q for p in self.probes)
-    Q = property(_Q)
-    def _calc_Q(self):
+    @property
+    def calc_Q(self):
         return numpy.unique(numpy.hstack(p.calc_Q for p in self.probes))
-    calc_Q = property(_calc_Q)
     def oversample(self, **kw):
         for p in self.probes: p.oversample(**kw)
     oversample.__doc__ = Probe.oversample.__doc__
@@ -965,14 +976,13 @@ def measurement_union(xs):
     # Sort by Q
     idx = numpy.argsort(Q)
     T,dT,L,dL,Q,dQ = T[idx],dT[idx],L[idx],dL[idx],Q[idx],dQ[idx]
-    Q,dQ = Q[idx],dQ[idx]
     if abs(Q[1:] - Q[:-1]).any() < 1e-14:
         raise ValueError("Q is not unique")
     return T, dT, L, dL, Q, dQ
 
 def Qmeasurement_union(xs):
     """
-    Determine the unique (T,dT,L,dL) across all datasets.
+    Determine the unique Q,dQ across all datasets.
     """
     Qset = set()
     for x in xs:

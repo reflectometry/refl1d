@@ -4,18 +4,19 @@ Load garefl models into refl1d
 __all__ = ["load"]
 
 import os
-from ctypes import CDLL, c_int, c_void_p, c_char_p, c_double, byref
+from ctypes import CDLL, c_int, c_void_p, c_char_p, byref
 from threading import current_thread
 from os import getpid
 
 from numpy import empty, zeros, array
 
-from .mystic.parameter import Parameter, Constant
+from .mystic.parameter import Parameter
+from .fitproblem import FitProblem, MultiFitProblem
+
 from .probe import QProbe, PolarizedNeutronQProbe
 from .experiment import Experiment
 from .model import Stack
 from .profile import Microslabs
-from .fitproblem import FitProblem, MultiFitProblem
 from .material import SLD, Vacuum
 
 def trace(fn):
@@ -103,7 +104,7 @@ class GareflExperiment(Experiment):
         """
         key = 'reflectivity'
         if key not in self._cache:
-            slabs = self._render_slabs()
+            self._render_slabs()  # Force recacluation
             if self.probe.polarized:
                 Q,Rmm = self.model.get_reflectivity(self.index, 0)
                 Q,Rmp = self.model.get_reflectivity(self.index, 1)

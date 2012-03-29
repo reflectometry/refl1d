@@ -3,10 +3,11 @@ Freeform modeling with B-Splines
 """
 
 import numpy
-from numpy import inf, argmin, argmax
+from numpy import inf
 from mystic import Parameter as Par, IntegerParameter as IntPar
-from .model import Layer
 from .bspline import pbs, bspline
+
+from .model import Layer
 from . import util
 
 #TODO: add left_sld,right_sld to all layers so that fresnel works
@@ -101,7 +102,6 @@ class FreeformInterface01(Layer):
                     thickness=self.thickness)
     def render(self, probe, slabs):
         thickness = self.thickness.value
-        interface = self.interface.value
         left_rho,left_irho = self.below.sld(probe)
         right_rho,right_irho = self.above.sld(probe)
         z = numpy.hstack((0, sorted([v.value for v in self.z]), 1))
@@ -159,17 +159,15 @@ class FreeInterface(Layer):
                     above=self.above.parameters(),
                     interface=self.interface)
     def render(self, probe, slabs):
-        interface = self.interface.value
         left_rho,left_irho = self.below.sld(probe)
         right_rho,right_irho = self.above.sld(probe)
         z = numpy.hstack( (0, numpy.cumsum([v.value for v in self.dz])) )
         p = numpy.hstack( (0, numpy.cumsum([v.value for v in self.dp])) )
-        thickness = z[-1]
         if p[-1] == 0: p[-1] = 1
         p /= p[-1]
         Pw,Pz = slabs.microslabs(z[-1])
         _,profile = pbs(z, p, Pz, parametric=False, clamp=True)
-        profile = clip(profile, 0, 1)
+        profile = numpy.clip(profile, 0, 1)
         Pw,profile = util.merge_ends(Pw, profile, tol=1e-3)
         Prho  = (1-profile)*left_rho  + profile*right_rho
         Pirho = (1-profile)*left_irho + profile*right_irho

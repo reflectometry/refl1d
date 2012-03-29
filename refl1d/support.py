@@ -15,7 +15,7 @@ def get_data_path():
     # Check for data path in the environment
     key = 'REFL1D_DATA'
     if os.environ.has_key(key):
-        path = os.path.join(os.environ[key],data)
+        path = os.path.join(os.environ[key],"data")
         if not os.path.isdir(path):
             raise RuntimeError('Path in environment %s not a directory'%key)
         return path
@@ -29,6 +29,11 @@ def get_data_path():
 
 
 _REGISTRY = {
+    # List the example datasets that are needed for demos and doctests.
+    # Each line looks like:
+    #
+    #     'dataset': ['subdirectory','filename'],
+    #
     'spin_valve01.refl': ['spinvalve','spin_valve01.refl'],
     'chale207.refl': ['polymer','10ndt001.refl'],
     '10ndt001.refl': ['polymer','10ndt001.refl'],

@@ -153,7 +153,7 @@ class DistributionExperiment(ExperimentBase):
         """
         Compute a scattering length density profile
         """
-        key = 'step_profile', dz
+        key = 'step_profile'
         if key not in self._cache:
             P = self._max_P()
             if self.P.value != P:

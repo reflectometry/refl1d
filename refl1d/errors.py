@@ -319,7 +319,7 @@ def _profiles_overplot(profiles):
 
     alpha = 0.1
     magnetic = False
-    for m,p in profiles.items():
+    for p in profiles.values():
         if len(p[0]) == 3:
             color = next_color()
             for z,rho,_ in p[1:]:
@@ -344,7 +344,7 @@ def _profiles_contour(profiles, contours=_CONTOURS, npoints=200):
     import pylab
 
     magnetic = False
-    for m,p in profiles.items():
+    for p in profiles.values():
         # Find limits of all profiles
         z = numpy.hstack([line[0] for line in p])
         zp = numpy.linspace(numpy.min(z), numpy.max(z), npoints)
@@ -379,9 +379,9 @@ def _residuals_overplot(Q, residuals):
     shift = 0
     for m,r in residuals.items():
         color = next_color()
-        pylab.plot(Q[m], shift+residuals[m][:,1:],'.', markersize=1,
+        pylab.plot(Q[m], shift+r[:,1:],'.', markersize=1,
                    color=color, alpha=alpha, hold=True)
-        pylab.plot(Q[m], shift+residuals[m][:,0],'.', markersize=1,
+        pylab.plot(Q[m], shift+r[:,0],'.', markersize=1,
                    color=dhsv(color,dv=-0.2), hold=True) # best
         shift += 5
 
@@ -390,8 +390,8 @@ def _residuals_contour(Q, residuals, contours=_CONTOURS):
     shift = 0
     for m,r in residuals.items():
         color = next_color()
-        plot_quantiles(Q[m], shift+residuals[m].T, contours, color)
-        pylab.plot(Q[m], shift+residuals[m][:,0],'.', markersize=1,
+        plot_quantiles(Q[m], shift+r.T, contours, color)
+        pylab.plot(Q[m], shift+r[:,0],'.', markersize=1,
                    color=dhsv(color,dv=-0.2), hold=True) # best
         shift += 5
 
@@ -479,12 +479,12 @@ def _align_profile_pair(z1,r1,t1_offset,z2,r2,t2,align):
     """
     if align == 'auto':
         # Assume z1,z2 have the same step size
-        n1,n2 = len(r1),len(r2)
+        n2 = len(r2)
         idx = numpy.argmax(numpy.correlate(r1,r2,'full'))
         if idx < n2:
-            offset = z2[n2-idx-1] - z1[0]
+            offset = z2[(n2-1)-idx] - z1[0]
         else:
-            offset = z2[0] - z1[idx-n2+1]
+            offset = z2[0] - z1[idx-(n2-1)]
         return -offset
     else:
         return -(_find_offset(t2, align) - t1_offset)

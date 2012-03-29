@@ -96,7 +96,8 @@ class FreeformCheby(Layer):
     """
     def __init__(self, thickness=0, interface=0, rho=[], irho=[],
                  name="Cheby", method="interp"):
-        if interface != 0: raise NotImplementedError("interface not yet supported")
+        if interface != 0:
+            raise NotImplementedError("interface not yet supported")
         self.name = name
         self.method = method
         self.thickness = Par.default(thickness, limits=(0,inf),
@@ -109,10 +110,12 @@ class FreeformCheby(Layer):
                                         ((-inf,inf),(-inf,inf)),
                                         )]
     def parameters(self):
+        """Return parameters used to define layer"""
         return dict(rho=self.rho,
                     irho=self.irho,
                     thickness=self.thickness)
     def render(self, probe, slabs):
+        """Render slabs for use with the given probe"""
         thickness = self.thickness.value
         Pw,Pz = slabs.microslabs(thickness)
         t = Pz/thickness
@@ -158,7 +161,8 @@ class ChebyVF(Layer):
     def __init__(self, thickness=0, interface=0,
                  material=None, solvent=None, vf=None,
                  name="ChebyVF", method="interp"):
-        if interface != 0: raise NotImplementedError("interface not yet supported")
+        if interface != 0:
+            raise NotImplementedError("interface not yet supported")
         self.name = name
         self.thickness = Par.default(thickness, name="solvent thickness")
         self.interface = Par.default(interface, name="solvent interface")

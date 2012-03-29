@@ -16,6 +16,7 @@ from periodictable import elements, formula
 from .mystic.parameter import Parameter
 from .mystic import pmath
 from .modelfn import ModelFunction
+from .fitproblem import preview, fit, mesh, FitProblem, MultiFitProblem
 
 
 from .experiment import Experiment, plot_sample, MixedExperiment
@@ -27,7 +28,6 @@ from .cheby import FreeformCheby, ChebyVF, cheby_approx, cheby_points
 from .interface import Erf
 from .probe import (Probe, ProbeSet, NeutronProbe, XrayProbe,
                     PolarizedNeutronProbe, QProbe, PolarizedNeutronQProbe)
-from .fitproblem import preview, fit, mesh, FitProblem, MultiFitProblem
 from .stajconvert import load_mlayer, save_mlayer
 from . import ncnrdata as NCNR, snsdata as SNS
 from .instrument import Monochromatic, Pulsed

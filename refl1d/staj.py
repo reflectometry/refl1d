@@ -11,10 +11,8 @@ has files ending in **.sta**.
 """
 
 from math import pi
-import os
-import sys
 import numpy
-import wsolve
+from .wsolve import wsolve
 
 ERF_FWHM = 2.35482004503095 # 2 * sqrt(2*log(2))
 TANH_FWHM = 0.47320111770856327 # 1/2 atanh(erf(1/sqrt(2))) / acosh(sqrt(2))
@@ -353,7 +351,7 @@ class MlayerModel(object):
         """
         A = numpy.array([abs(Q)/self.wavelength,
                          numpy.ones_like(Q)*(4*pi/self.wavelength)]).T
-        s = wsolve.wsolve(A,y=dQ,dy=weight)
+        s = wsolve(A,y=dQ,dy=weight)
         self.wavelength_dispersion = s.x[0]
         self.angular_divergence = s.x[1]
 
@@ -859,7 +857,7 @@ class MlayerMagnetic(object):
     def fit_FWHMresolution(self, Q, dQ, weight=1):
         A = numpy.array([abs(Q)/self.wavelength,
                          numpy.ones_like(Q)*(4*pi/self.wavelength)])
-        s = wsolve.wsolve(A,y=dQ,dy=weight)
+        s = wsolve(A,y=dQ,dy=weight)
         self.wavelength_dispersion = s.x[0]
         self.angular_divergence = s.x[1]
 
@@ -1039,7 +1037,6 @@ class MlayerMagnetic(object):
         #Line next (1):  rho   depth   rough  mu
         #Line next (2):  mrho  mdepth  mrough (mrho is also known as phi)
         #Line next (3):  mtheta
-        offset = 0
         rho = self.rho*(16*pi/1e6)
         w,s = self.thickness, self.roughness
         wm = self.mthickness if self.mthickness is not None else self.thickness

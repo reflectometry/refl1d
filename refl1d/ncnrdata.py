@@ -57,8 +57,9 @@ import os
 import numpy
 from numpy import inf, pi
 
+from .util import parse_file
+
 from .instrument import Monochromatic
-from . import util
 from probe import PolarizedNeutronProbe, make_probe
 
 def load(filename, instrument=None, **kw):
@@ -69,7 +70,7 @@ def load(filename, instrument=None, **kw):
     """
     if filename is None: return None
     if instrument is None: instrument=Monochromatic()
-    header,data = parse_file(filename)
+    header,data = parse_ncnr_file(filename)
     header.update(**kw) # calling parameters override what's in the file.
     Q,R,dR = data
     probe = instrument.probe(Q=Q, data=(R,dR), **header)
@@ -146,7 +147,7 @@ def find_xsec(filename):
         else: return None
     return (check('A'),check('B'),check('C'),check('D'))
 
-def parse_file(filename):
+def parse_ncnr_file(filename):
     """
     Parse NCNR reduced data file returning *header* and *data*.
 
@@ -160,7 +161,7 @@ def parse_file(filename):
     Slit geometry is set to the default from the instrument if it is not
     available in the reduced file.
     """
-    header, data = util.parse_file(filename)
+    header, data = parse_file(filename)
 
     # Fill in instrument parameters, if not available from the file
     if 'instrument' in header and header['instrument'] in INSTRUMENTS:
@@ -179,7 +180,7 @@ def parse_file(filename):
 
 class NCNRData(object):
     def readfile(self, filename):
-        return parse_file(filename)
+        return parse_ncnr_file(filename)
     def load(self, filename, **kw):
         return load(filename, instrument=self, **kw)
     def load_magnetic(self, filename, **kw):

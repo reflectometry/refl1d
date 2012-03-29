@@ -9,19 +9,18 @@ to create a fittable reflectometry model.
 """
 from __future__ import division
 
-from math import log, pi, log10, ceil, floor
-import shutil
+from math import pi, log10, floor
 import os
 import traceback
 
 import numpy
+from .mystic import parameter
+
 from .reflectivity import reflectivity_amplitude as reflamp
 from .reflectivity import magnetic_amplitude as reflmag
 #print "Using pure python reflectivity calculator"
 #from .abeles import refl as reflamp
 from . import material, profile
-from .mystic.parameter import Parameter
-from .util import auto_shift
 
 
 def plot_sample(sample, instrument=None, roughness_limit=0):
@@ -39,9 +38,8 @@ def plot_sample(sample, instrument=None, roughness_limit=0):
 
 class ExperimentBase(object):
     def format_parameters(self):
-        import mystic.parameter
         p = self.parameters()
-        print mystic.parameter.format(p)
+        print parameter.format(p)
 
     def update_composition(self):
         """
@@ -345,7 +343,6 @@ class Experiment(ExperimentBase):
                 print "sigma",sigma
                 print "kz",self.probe.calc_Q/2
                 print "R",abs(calc_r**2)
-                from .mystic import parameter
                 pars = parameter.unique(self.parameters())
                 fitted = parameter.varying(pars)
                 print parameter.summarize(fitted)
@@ -460,6 +457,7 @@ class Experiment(ExperimentBase):
 
     def plot_profile(self, plot_shift=None):
         import pylab
+        from .util import auto_shift
         plot_shift = plot_shift if plot_shift is not None else Experiment.profile_shift
         trans = auto_shift(plot_shift)
         if self.ismagnetic:
@@ -514,7 +512,7 @@ class MixedExperiment(ExperimentBase):
                  name=None, coherent=False, **kw):
         self.samples = samples
         self.probe = probe
-        self.ratio = [Parameter.default(r, name="ratio %d"%i)
+        self.ratio = [parameter.Parameter.default(r, name="ratio %d"%i)
                       for i,r in enumerate(ratio)]
         self.parts = [Experiment(s,probe,**kw) for s in samples]
         self.coherent = coherent
@@ -565,8 +563,8 @@ class MixedExperiment(ExperimentBase):
         if key not in self._cache:
             calc_Q, calc_R = self._reflamp()
             calc_R = numpy.sum(calc_R, axis=1)
-            r_real = self.probe.apply_beam(calc_q, calc_r.real, resolution=resolution)
-            r_imag = self.probe.apply_beam(calc_q, calc_r.imag, resolution=resolution)
+            r_real = self.probe.apply_beam(calc_Q, calc_R.real, resolution=resolution)
+            r_imag = self.probe.apply_beam(calc_Q, calc_R.imag, resolution=resolution)
             r = r_real + 1j*r_imag
             self._cache[key] = self.probe.Q, r
         return self._cache[key]

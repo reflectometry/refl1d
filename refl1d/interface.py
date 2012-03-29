@@ -68,8 +68,6 @@ See the implementation of :class:`Erf` or :class:`Tanh` for a complete example.
 from __future__ import division
 __all__ = ['Interface','Sharp', 'Erf', 'Tanh', 'Linear']
 
-import math
-
 import numpy
 from numpy import tanh, cosh, exp, log, sqrt, pi, inf
 from numpy import arccosh as acosh
@@ -79,7 +77,7 @@ from scipy.special import erf, erfinv
 try:
     from mystic.parameter import Parameter
 except ImportError:
-    print "Could not import Parameter from mystic; using trivial implementation"
+    print "Could not import Parameter; using trivial implementation"
     class Parameter:
         def __init__(self, value, **kw):
             self.value = value
@@ -416,8 +414,8 @@ def demo():
     ptanh = Tanh(w)
     plinear = Linear(2.35*w)
 
-    arrowprops=dict(arrowstyle='wedge',connectionstyle='arc3',fc='0.6')
-    bbox=dict(boxstyle='round', fc='0.8')
+    #arrowprops=dict(arrowstyle='wedge',connectionstyle='arc3',fc='0.6')
+    #bbox=dict(boxstyle='round', fc='0.8')
 
     z=pylab.linspace(-3*w,3*w,800)
     pylab.subplot(211)
