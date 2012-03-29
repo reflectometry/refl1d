@@ -330,7 +330,7 @@ class DreamModel(MCMCModel):
 
 class DreamFit(FitBase):
     name = "DREAM"
-    settings = [('steps',500),  ('burn', 0), ('pop', 10), ('init', 'lhs')]
+    settings = [('steps',500),  ('burn', 0), ('pop', 10), ('init', 'eps')]
     def __init__(self, problem):
         self.dream_model = DreamModel(problem)
 
@@ -496,7 +496,7 @@ class FitOptions(object):
         steps  = ("Steps",           "int"),
         burn   = ("Burn-in Steps",   "int"),
         pop    = ("Population",      "float"),
-        init   = ("Initializer",     ("lhs","cov","random","eps")),
+        init   = ("Initializer",     ("eps","lhs","cov","random")),
         CR     = ("Crossover Ratio", "float"),
         F      = ("Scale",           "float"),
         nT     = ("# Temperatures",  "int"),
