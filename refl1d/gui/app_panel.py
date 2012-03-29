@@ -29,8 +29,6 @@ of the frame of the GUI for the Refl1D application.
 
 from __future__ import division
 import os
-import sys
-import traceback
 
 import wx
 import wx.aui
@@ -330,9 +328,9 @@ class AppPanel(wx.Panel):
                 v.update_model(model)
 
     def OnModelSetpar(self, model):
-        for k,v in self.view.items():
+        for _,v in self.view.items():
             if hasattr(v, 'update_parameters'):
-                #print "updating",k
+                #print "updating",_
                 v.update_parameters(model)
 
     def OnFileNew(self, event):
@@ -570,37 +568,6 @@ class AppPanel(wx.Panel):
             self.GetTopLevelParent().SetTitle("Refl1D")
 
 SOUND = None
-### create beep
-#import wave 
-#from StringIO import StringIO 
-#out = StringIO() 
-
-#w = wave.open( out, "w" ) 
-#w.setnchannels( 1 ) 
-#w.setsampwidth( 1 ) 
-#w.setframerate( 22000 ) 
-
-#from array import array 
-#import math 
-
-#F = 200 
-#ang = 0.0 
-#delta = ( math.pi * 2 * F  ) / 22000.0 
-
-#for _1 in xrange( 2 ): 
-#  data = array( 'B' ) 
-#  for _2 in xrange( 22000 ): 
-#    data.append( int( 128 + ( 127 * math.sin( ang ) ) ) ) 
-#    ang += delta 
-#  w.writeframes( data.tostring())
-#  
-#w.close() 
-
-#sample = out.getvalue() 
-#out.close()
-
-#SOUND = wx.SoundFromData(sample)
-
 def beep():
     """
     Play fit completion sound.
