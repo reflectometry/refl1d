@@ -5,6 +5,8 @@ __all__ = [ "merge_ends", "parse_file", "indfloat",
            "dhsv", "profile", "kbhit", "redirect_console",
            "pushdir", "push_seed",
            ]
+import sys
+import os
 
 import numpy
 from numpy import inf, nan
@@ -201,7 +203,7 @@ def profile(fn, *args, **kw):
     """
     Profile a function called with the given arguments.
     """
-    import cProfile, pstats, os
+    import cProfile, pstats
     global call_result
     def call():
         global call_result
@@ -227,12 +229,10 @@ def kbhit():
         import msvcrt
         return msvcrt.kbhit()
     except: # Unix
-        import sys
         import select
         i,_,_ = select.select([sys.stdin],[],[],0.0001)
         return sys.stdin in i
 
-import sys
 class redirect_console(object):
     """
     Console output redirection context
@@ -289,7 +289,6 @@ class redirect_console(object):
         del self.sys_stderr[-1]
         return False
 
-import os
 class pushdir(object):
     def __init__(self, path):
         self.path = os.path.abspath(path)

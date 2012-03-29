@@ -1,5 +1,4 @@
 import os
-from copy import deepcopy
 
 ## {{{ http://code.activestate.com/recipes/496767/ (r1)
 ## Converted to use ctypes by Paul Kienzle
@@ -55,8 +54,9 @@ class MPMapper(object):
     pool = None
     
     @staticmethod
-    def start_worker(self, problem):
+    def start_worker(problem):
         pass
+
     @staticmethod
     def start_mapper(problem, modelargs, cpus=None):
         import multiprocessing
@@ -75,24 +75,25 @@ class AMQPMapper(object):
 
     @staticmethod
     def start_worker(problem):
-        #sys.stderr = open("dream-%d.log"%os.getpid(),"w")
+        #sys.stderr = open("bumps-%d.log"%os.getpid(),"w")
         #print >>sys.stderr,"worker is starting"; sys.stdout.flush()
         from amqp_map.config import SERVICE_HOST
         from amqp_map.core import connect, start_worker as serve
         server = connect(SERVICE_HOST)
         #os.system("echo 'serving' > /tmp/map.%d"%(os.getpid()))
         #print "worker is serving"; sys.stdout.flush()
-        serve(server, "dream", problem.nllf)
+        serve(server, "bumps", problem.nllf)
         #print >>sys.stderr,"worker ended"; sys.stdout.flush()
 
     @staticmethod
     def start_mapper(problem, modelargs):
+        import sys
         import multiprocessing
         from amqp_map.config import SERVICE_HOST
         from amqp_map.core import connect, Mapper
 
         server = connect(SERVICE_HOST)
-        mapper = Mapper(server, "dream")
+        mapper = Mapper(server, "bumps")
         cpus = multiprocessing.cpu_count()
         pipes = []
         for _ in range(cpus):

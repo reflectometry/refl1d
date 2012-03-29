@@ -12,23 +12,14 @@ parameters associated with the model.  Within fit problems, self.parameters
 is a list of fitted parameters only.
 """
 from __future__ import division, with_statement
-import os
 import sys
 import time
 
-# Use dill if it is available since it can pickle functions
-try:
-    import dill
-    def deepcopy(obj): return dill.loads(dill.dumps(obj))
-except:
-    from copy import deepcopy
-
-from numpy import inf, nan, isnan
+from numpy import inf, isnan
 import numpy
 
-from .mystic import parameter, bounds as mbounds, monitor
+from .mystic import parameter, bounds as mbounds
 from .mystic.formatnum import format_uncertainty
-from .mystic.history import History
 
 
 def preview(models=[], weights=None):
@@ -108,25 +99,13 @@ def show_correlations(pars, points, fid=None):
     """
     List correlations between parameters in descending order.
     """
-    if 1: # Use correlation coefficient
-        R = numpy.corrcoef(points.T)
-        corr = [(i,j,R[i,j])
-                for i in range(len(pars))
-                for j in range(i+1, len(pars))]
-        # Trim those which are not significant
-        corr = [(i,j,r) for i,j,r in corr if abs(r) > 0.2]
-        corr = list(sorted(corr, cmp=lambda x,y: cmp(abs(y[2]),abs(x[2]))))
-
-    else: # Use ??
-        z = util.zscore(points, axis=0)
-        # Compute all cross correlations
-        corr = [(i,j,xcorr(z[i],z[j]))
-                for i in range(j+1, len(pars))
-                for j in range(len(pars))]
-        # Trim those which are not significant
-        corr = [(i,j,r) for i,j,r in corr if abs(r-2) > 0.5]
-        # Sort the remaining list
-        corr = list(sorted(corr, cmp=lambda x,y: cmp(abs(y[2]-2),abs(x[2]-2))))
+    R = numpy.corrcoef(points.T)
+    corr = [(i,j,R[i,j])
+            for i in range(len(pars))
+            for j in range(i+1, len(pars))]
+    # Trim those which are not significant
+    corr = [(i,j,r) for i,j,r in corr if abs(r) > 0.2]
+    corr = list(sorted(corr, cmp=lambda x,y: cmp(abs(y[2]),abs(x[2]))))
 
     # Print the remaining correlations
     if len(corr) > 0:
@@ -322,14 +301,6 @@ class FitProblem(object):
         self.fitness = fitness
         self.name = name
         self.model_reset()      
-        
-    def __getstate__(self):
-        return {'fitness': self.fitness, 'name': self.name}
-        
-    def __setstate__(self, state):
-        self.fitness = state['fitness']
-        self.name = state['name']
-        self.model_reset()
         
     def model_reset(self):
         """
@@ -608,6 +579,12 @@ class FitProblem(object):
         """
         return numpy.sqrt(numpy.diag(self.cov(pvec, step=step)))
 
+    def __getstate__(self):
+        return self.fitness,self.name
+    def __setstate__(self, state):
+        self.fitness,self.name = state
+        self.model_reset()
+
 
 
 class MultiFitProblem(FitProblem):
@@ -621,13 +598,6 @@ class MultiFitProblem(FitProblem):
         self.weights = weights
         self.model_reset()
     
-    def __getstate__(self):
-        result = self.__dict__.copy()
-        return result
-        
-    def __setstate__(self, state):
-        self.__dict__ = state
-        
     def model_parameters(self):
         """Return parameters from all models"""
         return [f.model_parameters() for f in self.models]
@@ -678,6 +648,11 @@ class MultiFitProblem(FitProblem):
             pylab.suptitle('Model %d'%i)
             if figfile != None:
                 pylab.savefig(figfile+"-model%d.png"%i, format='png')
+
+    def __getstate__(self):
+        return self.__dict__
+    def __setstate__(self, state):
+        self.__dict__ = state
 
 def load_problem(file, options=[]):
     """
