@@ -154,7 +154,7 @@ def run_profile(problem, steps):
     Using the GPU for abeles/convolution will only give us 2-3x speedup.
     """
     from .util import profile
-    p = initpop.random(N=steps, pars=problem.parameters)
+    p = initpop.random_init(N=steps, pars=problem.parameters)
 
     # The cost of
     # To get good information from the profiler, you wil
