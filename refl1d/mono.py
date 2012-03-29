@@ -8,6 +8,7 @@ from numpy import (diff, hstack, sqrt, searchsorted, asarray, cumsum,
                    inf, nonzero, linspace, sort, isnan, clip)
 from bumps.parameter import Parameter as Par, Function as ParFunction
 from bumps.mono import monospline, count_inflections
+
 from . import util
 from .model import Layer
 

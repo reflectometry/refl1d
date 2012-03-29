@@ -6,6 +6,7 @@ import numpy
 from numpy import inf
 from bumps.parameter import Parameter as Par
 from bumps.bspline import pbs, bspline
+
 from .model import Layer
 from . import util
 
@@ -107,7 +108,7 @@ class FreeformInterface01(Layer):
         vf = numpy.hstack((0, sorted([v.value for v in self.vf]), 1))
         Pw,Pz = slabs.microslabs(thickness)
         t = Pz/thickness
-        _offset,profile = pbs(z, vf, t, parametric=False, clamp=True)
+        offset,profile = pbs(z, vf, t, parametric=False, clamp=True)
         Pw,profile = util.merge_ends(Pw, profile, tol=1e-3)
         Prho  = (1-profile)*left_rho  + profile*right_rho
         Pirho = (1-profile)*left_irho + profile*right_irho

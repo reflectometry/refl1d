@@ -23,7 +23,7 @@ __all__ = [ 'reflectivity', 'reflectivity_amplitude',
 import numpy
 from numpy import pi, sin, cos, conj
 from numpy import ascontiguousarray as _dense
-from . import reflmodule #@UnresolvedImport compiled
+from . import reflmodule
 
 
 def reflectivity(*args, **kw):
@@ -204,3 +204,22 @@ def magnetic_amplitude(kz,
                                    R1, R2, R3, R4
                                    )
     return R1,R2,R3,R4
+
+def convolve(Qi,Ri,Q,dQ):
+    """
+    Apply Q-dependent resolution function to the theory.
+
+    Returns convolution R[k] of width dQ[k] at points Q[k].
+    """
+    R = numpy.empty(Q.shape,'d')
+    reflmodule._convolve(_dense(Qi),_dense(Ri),_dense(Q),_dense(dQ),R)
+    return R
+
+def erf(x):
+    """
+    Error function calculator.
+    """
+    input = _dense(x,'d')
+    output = numpy.empty_like(input)
+    reflmodule._erf(input,output)
+    return output

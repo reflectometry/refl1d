@@ -118,7 +118,6 @@ modules=[
     ('pytwalk', 'MCMC error analysis using T-Walk steps'),
     ('quasinewton', 'BFGS quasi-newton optimizer'),
     ('random_lines', 'random lines and particle swarm optimizers'),
-    ('rebin','1D and 2D rebinning'),
     ('reflectivity', 'Reflectivity'),
     ('reflmodule','Low level reflectivity calculations'),
     ('resolution', 'Resolution'),

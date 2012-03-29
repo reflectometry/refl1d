@@ -9,6 +9,7 @@ from threading import current_thread
 from os import getpid
 
 from numpy import empty, zeros, array
+
 from bumps.parameter import Parameter
 from bumps.fitproblem import FitProblem, MultiFitProblem
 
@@ -78,7 +79,7 @@ class GareflExperiment(Experiment):
                 self._chisq = self.model.update_model(pvec)
 
             self._slabs.clear()
-            w,rho,irho,rhoM,_thetaM = self.model.get_profile(self.index)
+            w,rho,irho,rhoM,thetaM = self.model.get_profile(self.index)
             rho,irho,rhoM = 1e6*rho,1e6*irho,1e6*rhoM # remove zeros
             self._slabs.extend(w=w,rho=rho[None,:],irho=irho[None,:])
             # TODO: What about rhoM, thetaM

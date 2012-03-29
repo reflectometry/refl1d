@@ -17,6 +17,8 @@ import math
 import numpy
 from numpy import sqrt
 from bumps.data import parse_file
+from bumps.rebin import rebin
+
 from .instrument import Pulsed
 from . import resolution
 from .probe import make_probe
@@ -252,7 +254,6 @@ INSTRUMENTS = {
 # ===== utils ==============
 
 def intensity_from_spline(Lrange,dLoL,feather):
-    from danse.reflectometry.reduction import rebin
     L0,L1 = Lrange
     n = math.ceil(math.log(L1/L0)/math.log(1+dLoL))
     L = L0*(1+dLoL)**numpy.arange(0,n)

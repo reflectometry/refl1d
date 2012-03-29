@@ -13,12 +13,12 @@ examples = [
     "interface/model.py",
     "mixed/mixed-web.py",
     "mixed/mixed_magnetic.py",
-    "peaks/model.py",
+    #"peaks/model.py",
     "polymer/tethered-web.py",
     "polymer/freeform.py",
     "spinvalve/n101G.py",
     "staj/De2_VATR.py",
-    "superlattice/freeform.py",
+    "superlattice/freeform-web.py",
     "superlattice/NiTi-web.py",
     "superlattice/PEMU-web.py",
     "thick/nifilm.py",
@@ -31,9 +31,9 @@ examples = [
 ROOT = os.path.abspath(os.path.dirname(__file__))
 EXAMPLEDIR = os.path.join(ROOT,'doc','examples')
 if os.name == 'nt':
-    os.environ['PYTHONPATH'] = ROOT+";"+ROOT+"/dream"
+    os.environ['PYTHONPATH'] = os.environ['PYTHONPATH']+";"+ROOT+";"+ROOT+"/dream"
 else:
-    os.environ['PYTHONPATH'] = ROOT+":"+ROOT+"/dream"
+    os.environ['PYTHONPATH'] = os.environ['PYTHONPATH']+":"+ROOT+":"+ROOT+"/dream"
 PYTHON = sys.executable
 CLI = "%s %s/bin/refl1d_cli.py %%s %%s"%(PYTHON,ROOT)
 

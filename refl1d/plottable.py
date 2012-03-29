@@ -1,4 +1,3 @@
-#@PydevCodeAnalysisIgnore
 # DEAD CODE
 class Vector:
     """

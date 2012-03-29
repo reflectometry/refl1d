@@ -302,11 +302,13 @@ class Probe(object):
         else:
             Q = self.calc_Qo
         return Q if not self.back_reflectivity else -Q
+
     def parameters(self):
         return dict(intensity=self.intensity,
                     background=self.background,
                     back_absorption=self.back_absorption,
                     theta_offset=self.theta_offset)
+
     def scattering_factors(self, material):
         """
         Returns the scattering factors associated with the material given
@@ -729,7 +731,7 @@ class XrayProbe(Probe):
 
 class NeutronProbe(Probe):
     """
-    X-Ray probe.
+    Neutron probe.
 
     By providing a scattering factor calculator for X-ray scattering, model
     components can be defined by mass density and chemical composition.
@@ -974,14 +976,13 @@ def measurement_union(xs):
     # Sort by Q
     idx = numpy.argsort(Q)
     T,dT,L,dL,Q,dQ = T[idx],dT[idx],L[idx],dL[idx],Q[idx],dQ[idx]
-    Q,dQ = Q[idx],dQ[idx]
     if abs(Q[1:] - Q[:-1]).any() < 1e-14:
         raise ValueError("Q is not unique")
     return T, dT, L, dL, Q, dQ
 
 def Qmeasurement_union(xs):
     """
-    Determine the unique (T,dT,L,dL) across all datasets.
+    Determine the unique Q,dQ across all datasets.
     """
     Qset = set()
     for x in xs:

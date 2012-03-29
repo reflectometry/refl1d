@@ -14,9 +14,6 @@ Protects against an incorrect estimation of the uncertainty in the data,
 which is anyway already covered by the chisq cost function.
 """
 
-#@PydevCodeAnalysisIgnore
-
-
 from scipy import stats
 
 def residual_nllf(v):
