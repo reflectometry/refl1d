@@ -50,9 +50,7 @@ Options for controlling the development and testing environment:
 
 #==============================================================================
 
-import os
 import sys
-import time
 
 import wx
 
@@ -82,7 +80,7 @@ LOGTIM = True if (len(sys.argv) > 1 and '--time' in sys.argv[1:]) else False
 
 #==============================================================================
 
-class Refl1dGUIApp(wx.App):
+class MainApp(wx.App):
     """
     This class builds the wxPython GUI for the Refl1D Reflectometry Modeler
     application.
@@ -275,7 +273,7 @@ def _protected_main():
     if LOGTIM: log_time("Starting Refl1D")
 
     # Instantiate the application class and give control to wxPython.
-    app = Refl1dGUIApp(redirect=0)
+    app = MainApp(redirect=0)
 
     # Enter event loop which allows the user to interact with the application.
     if LOGTIM: log_time("Entering the event loop")

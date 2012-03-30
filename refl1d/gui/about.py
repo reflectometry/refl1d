@@ -94,7 +94,11 @@ Paul Kienzle, NIST
     - Application concept and design
     - Application API and Command Line Interface development
     - Reflectivity and resolution calculations
+    - Optimizers and uncertainty analysis
     - Documentation
+
+Ismet Sahin, UMD
+    - Optimizers
 
 James Krycka, UMD
     - Graphical User Interface design and development
@@ -163,7 +167,7 @@ class AboutDialog(wx.Dialog):
         if show_notice:
             copyright = wx.StaticText(self, wx.ID_ANY, label=APP_COPYRIGHT)
 
-        # Display hyperlink to the Reflectometry home page and/or doc page.
+        # Display hyperlink to the home page and/or doc page.
         if show_link:
             hyper1 = HyperLinkCtrl(self, wx.ID_ANY, label=APP_PROJECT_TAG,
                                                     URL=APP_PROJECT_URL)

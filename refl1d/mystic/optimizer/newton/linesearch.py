@@ -33,7 +33,7 @@
 %    retcode : boolean indicating a new point xp found (0) or not (1)    (N).
 %    xp : the new point (Rn)
 %    fp : function value at xp (R)
-%    maxtaken : boolean (N)
+%    #maxtaken : boolean (N)
 
 % NOTES:
 %    alfa : is used to prevent function value reductions which are too small.
@@ -44,7 +44,7 @@
 from numpy import linalg, array, dot, sqrt, amax, maximum
 
 def linesearch(cost_func, n, xc, fc, g, p, Sx, maxstep, steptol):
-    maxtaken = 0.0
+    #maxtaken = 0.0
     retcode = 1.0
 
     # alfa specifies how much function value reduction is allowable.  The smaller
@@ -78,8 +78,8 @@ def linesearch(cost_func, n, xc, fc, g, p, Sx, maxstep, steptol):
         if fp <= fc + alfa * lambdaM * initslope:
             # satisfactory xp is found
             retcode = 0.0
-            if lambdaM == 1.0 and Newtlen > 0.99 * maxstep:
-                maxtaken = 1.0
+            #if lambdaM == 1.0 and Newtlen > 0.99 * maxstep:
+            #    maxtaken = 1.0
             break                                                    # return from here
         elif lambdaM < minlambda:
             # step length is too small, therefore a satisfactory xp cannot be found
@@ -117,6 +117,7 @@ def linesearch(cost_func, n, xc, fc, g, p, Sx, maxstep, steptol):
 
             lambda_prev = lambdaM
             fp_prev = fp
+
             if lambda_temp <= 0.1 * lambdaM:
                 # smaller than 1/10 th of previous lambda is not allowed.
                 lambdaM = 0.1 * lambdaM

@@ -41,12 +41,10 @@ A Practical Approach to Global Optimization. Springer, 1st Edition, 2005
 __all__ = ['de','stop']
 
 import numpy
-from numpy import random
 
 from .. import stop
 from .. import solver
 from ..util import choose_without_replacement
-from ..functional import minimizer_function
 
 CROSSOVER = 'c_exp','c_bin'
 MUTATE = 'best1','best1u','best2','randtobest1','rand1','rand2'

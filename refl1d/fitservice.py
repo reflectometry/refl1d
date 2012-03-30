@@ -5,6 +5,7 @@ import os
 import sys
 import json
 import cPickle as pickle
+from copy import deepcopy
 
 import matplotlib
 
@@ -13,8 +14,10 @@ from . import __version__
 
 # Site configurate determines what kind of mapper to use
 # This should be true in cli.py as well
+from .mystic import parameter
 from .mapper import MPMapper as mapper
-from .mystic.monitor import TimedUpdate
+from .mystic import monitor
+from .fitters import FitDriver
 
 def fitservice(request):
     matplotlib.use('Agg')
@@ -29,8 +32,6 @@ def fitservice(request):
 
     data = request['data']
     model = str(data['package'])
-    if model != 'refl1d':
-        raise ValueError('model is not refl1d')
 
     service_model_version = __version__
     request_model_version = str(data['version'])
@@ -42,28 +43,25 @@ def fitservice(request):
     problem.store = path
     problem.output_path = os.path.join(path,'model')
 
-    if options.fit == 'dream':
-        fitter = cli.DreamProxy(problem=problem, opts=options)
-    else:
-        fitter = cli.FitProxy(cli.FITTERS[options.fit],
-                              problem=problem, options=options)
 
-    fitter.mapper = mapper.start_mapper(problem, options.args)
+    fitdriver = FitDriver(options.fit, problem=problem, **options)
+
+    fitdriver.mapper = mapper.start_mapper(problem, options.args)
     problem.show()
     print "#", " ".join(sys.argv)
-    best, fbest = fitter.fit()
-    cli.remember_best(fitter, problem, best)
+    best, fbest = fitdriver.fit()
+    cli.remember_best(fitdriver, problem, best)
     matplotlib.pyplot.show()
     return list(best), fbest
 
-class ServiceMonitor(TimedUpdate):
+class ServiceMonitor(monitor.TimedUpdate):
     """
     Display fit progress on the console
     """
     def __init__(self, problem, path, progress=60, improvement=60):
         monitor.TimedUpdate.__init__(self, progress=progress,
                                      improvement=improvement)
-        self.path = filename
+        self.path = path
         self.problem = deepcopy(problem)
         self.images = []
     def show_progress(self, history):
@@ -86,6 +84,7 @@ Generation %(step)d, chisq %(cost)g
 <img file="K-model.png" alt="model plot"/>
 </body></html>
 """%status
+
     def show_improvement(self, history):
         #print "step",history.step[0],"chisq",history.value[0]
         self.problem.setp(history.point[0])

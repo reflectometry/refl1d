@@ -34,7 +34,7 @@
 #    enough for preventing very large initial Newton steps.
 '''
 
-from numpy import sqrt, Inf
+from numpy import sqrt
 from numpy import (eye, zeros, ones, dot, outer, array, linalg, finfo, asarray)
 eps = finfo(type(1.)).eps
 import modelhess as mh
@@ -57,7 +57,7 @@ def bfgs_cholesky_backtracking(fn, x0, max_iter=500, vtr=1e-6, verbose=False):
     scale = max(f, 1)           # scale diagonals of init Hessian
     H = scale * eye(n)          # initial Hessian
 
-    x_star = Inf
+    #x_star = Inf
 
     fv = array(zeros((max_iter, 1)))
 
@@ -94,7 +94,7 @@ def bfgs_cholesky_backtracking(fn, x0, max_iter=500, vtr=1e-6, verbose=False):
         # Check for convergence
         if linalg.norm(g) < vtr:
             print 'Convergence is achieved after', k, 'iterations', cost_func.calls,'calls'
-            x_star = x_new
+            #x_star = x_new
             return x[:,0], fv
     else:
         print 'Failed to converge after',k,'iterations',cost_func.calls,'calls'
@@ -113,7 +113,7 @@ def check(scale=10):
         print "***Trying",i,x0
         x,fv = bfgs_cholesky_backtracking(rosen,x0)
         if x is None: fail += 1
-        x,f,g,H,fun,grad,warn = opt.fmin_bfgs(opt.rosen,x0,opt.rosen_der,full_output=True)
+        scipy_x,scipy_fv,g,H,fun,grad,warn = opt.fmin_bfgs(opt.rosen,x0,opt.rosen_der,full_output=True)
         if warn>0: sfail += 1
 
     print "sahin failed",fail,"out of",100

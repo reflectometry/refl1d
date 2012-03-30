@@ -27,7 +27,6 @@ This module implements the Parameter View panel.
 #==============================================================================
 
 import wx
-import sys
 
 import wx.gizmos as gizmos
 
@@ -53,7 +52,7 @@ class ParameterView(wx.Panel):
                                         | wx.TR_HAS_BUTTONS
                                         | wx.TR_TWIST_BUTTONS
                                         | wx.TR_ROW_LINES
-                                        | wx.TR_COLUMN_LINES
+                                        #| wx.TR_COLUMN_LINES
                                         | wx.TR_NO_LINES
                                         | wx.TR_FULL_ROW_HIGHLIGHT
                                        )

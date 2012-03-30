@@ -107,7 +107,6 @@ class PlotView(wx.Panel):
     '''
 
     def OnShow(self, event):
-        import pylab
         #print "theory show"
         if not event.Show: return
         #print "showing theory"
@@ -157,7 +156,6 @@ class PlotView(wx.Panel):
         with self.pylab_interface:
             self._calculating = True
 
-            # Calculate reflectivity
             #print "calling again"
             while True:
                 #print "restarting"

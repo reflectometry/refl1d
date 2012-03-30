@@ -4,7 +4,6 @@ import sys
 import os
 
 import shutil
-import subprocess
 try:
     import dill as pickle
 except:
@@ -14,14 +13,14 @@ import numpy
 
 from . import fitters
 from .fitters import FIT_OPTIONS, FitDriver, StepMonitor, ConsoleMonitor
-from .fitproblem import FitProblem, load_problem as load_script
+from .fitproblem import load_problem as load_script
 from .mapper import MPMapper, AMQPMapper, SerialMapper
 from . import util
-from .mystic import parameter
 from . import initpop
 from . import __version__
 
 from .util import pushdir
+
 
 def mesh(problem, vars=None, n=40):
     x,y = [numpy.linspace(p.bounds.limits[0],p.bounds.limits[1],n) for p in vars]
@@ -47,6 +46,7 @@ def load_problem(args):
             options = []
             problem = garefl.load(filename)
         elif filename.endswith('.staj'):
+            from .fitproblem import FitProblem
             from .stajconvert import load_mlayer, fit_all
             options = []
             problem = FitProblem(load_mlayer(filename))
@@ -62,8 +62,8 @@ def load_problem(args):
                 problem = load_script(filename, options=options)
                 # Guard against the user changing parameters after defining
                 # the problem.
-            problem.model_reset()
 
+    problem.model_reset()
     problem.path = os.path.abspath(path)
     if not hasattr(problem,'title'):
         problem.title = filename
@@ -265,7 +265,7 @@ Options:
     --pars=filename
         initial parameter values; fit results are saved as <modelname>.par
     --plot=log      [%(plotter)s]
-        type of reflectivity plot to display
+        type of plot to display
     --random
         use a random initial configuration
     --simulate
@@ -462,14 +462,10 @@ def config_matplotlib(backend):
     # installer/uninstaller such as Inno Setup should explicitly delete this
     # private directory on uninstall.
     if hasattr(sys, 'frozen'):
-        mplconfigdir = os.path.join(appdatadir(), 'refl1d-mpl-'+__version__)
+        mplconfigdir = os.path.join(sys.prefix, '.matplotlib')
         if not os.path.exists(mplconfigdir):
-            try:
-                os.makedirs(mplconfigdir)
-            except:
-                mplconfigdir = None
-        if mplconfigdir:
-            os.environ['MPLCONFIGDIR'] = mplconfigdir
+            os.mkdir(mplconfigdir)
+        os.environ['MPLCONFIGDIR'] = mplconfigdir
 
     import matplotlib
 
@@ -573,7 +569,7 @@ def main():
         fitdriver.mapper = mapper.start_mapper(problem, opts.args)
         best, fbest = fitdriver.fit()
         remember_best(fitdriver, problem, best)
-        if opts.cov: print cov(problem)
+        if opts.cov: print problem.cov()
         beep()
         if not opts.batch:
             import pylab

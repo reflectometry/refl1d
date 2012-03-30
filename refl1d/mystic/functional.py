@@ -2,6 +2,7 @@
 Defines a functional interface to the optimizers.
 """
 import inspect
+from copy import copy
 from .solver import Minimizer
 from .problem import Problem
 from . import stop
@@ -118,13 +119,13 @@ def minimizer_function(strategy=None, **kw):
         raise TypeError("Strategy arguments shadow minimizer arguments")
     strategy_args = dict(zip(args[1:],defaults))
 
-    # Add strategy arguments to the list of optimizer arguments
-    optimizer_args.update(strategy_args)
-
-    # Override defaults as specified by wrapper
-    if not all([(k in optimizer_args) for k in kw.keys()]):
-        raise TypeError("Creating minimizer with incorrect default args")
-    optimizer_args.update(kw)
+    ## Add strategy arguments to the list of optimizer arguments
+    #optimizer_args.update(strategy_args)
+    #
+    ## Override defaults as specified by wrapper
+    #if not all([(k in optimizer_args) for k in kw.keys()]):
+    #    raise TypeError("Creating minimizer with incorrect default args")
+    #optimizer_args.update(kw)
 
     def wrapper(**kw):
         def _args(t):
@@ -150,4 +151,4 @@ def minimizer_function(strategy=None, **kw):
     wrapper.__doc__ = strategy.__doc__ + standard_doc
 
 
-    return minimizer
+    return wrapper

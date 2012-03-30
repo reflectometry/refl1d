@@ -121,6 +121,14 @@ def display_fontsize(fontname=None, benchmark_text=BENCHMARK_TEXT,
 
     frame.Destroy()
 
+def _finddata():
+    patterns = ['*.png','*.ico','*.jpg']
+    path = resource_dir()
+    files = []
+    for p in patterns:
+        files += glob.glob(os.path.join(path,p))
+    return files
+
 def data_files():
     """
     Return the data files associated with the package.
@@ -132,13 +140,6 @@ def data_files():
               data_files=data_files(),
               ...)
     """
-    import os, glob
-    def _finddata(*patterns):
-        path = resource_dir()
-        files = []
-        for p in patterns:
-            files += glob.glob(os.path.join(path,p))
-        return files
     data_files = [('refl1d-data', _finddata('*.png','*.ico','*.jpg'))]
     return data_files
 
@@ -172,7 +173,7 @@ def resource_dir():
     # Check for data path in the environment
     key = 'REFL1D_DATA'
     if os.environ.has_key(key):
-        path = os.path.join(os.environ[key],data)
+        path = os.path.join(os.environ[key],"data")
         if not os.path.isdir(path):
             raise RuntimeError('Path in environment %s not a directory'%key)
         _RESOURCE_DIR = path
@@ -260,9 +261,7 @@ class StatusBarInfo():
         frame = wx.FindWindowByName("AppFrame", parent=None)
         self.sb = frame.GetStatusBar()
         self.cnt = self.sb.GetFieldsCount()
-        self.field = []
-        for index in range(self.cnt):
-            self.field.append("")
+        self.field = [""]*self.cnt
 
 
     def write(self, index=0, text=""):
@@ -294,7 +293,7 @@ class ExecuteInThread():
     """
 
     def __init__(self, callback, function, *args, **kwargs):
-        if callback is None: callback = _callback
+        if callback is None: callback = self._callback
         #print "*** ExecuteInThread init:", callback, function, args, kwargs
         delayedresult.startWorker(consumer=callback, workerFn=function,
                                   wargs=args, wkwargs=kwargs)

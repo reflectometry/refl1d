@@ -13,12 +13,10 @@ parts of the model, or different models.
 """
 #__all__ = [ 'Parameter', 'ParameterSet']
 
-import sys
 import numpy
 
 from numpy import inf
 from . import bounds as mbounds
-from .formatnum import format_uncertainty
 
 # TODO: avoid evaluation of subexpressions if parameters do not change.
 # This is especially important if the subexpression invokes an expensive
@@ -425,7 +423,6 @@ class Function(BaseParameter):
             kw = [str(k)+"="+str(v) for k,v in self.kw.items()]
             name = self.op.__name__ + "(" + ", ".join(args+kw) + ")"
         return "%s:%g"%(name,self.value)
-from functools import wraps
 def function(op):
     """
     Convert a function into a delayed evaluator.

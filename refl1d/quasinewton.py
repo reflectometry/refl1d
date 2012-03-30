@@ -714,7 +714,7 @@ a termination condition which is satisfied.
 # algorithm will approach it.
 
 def umstop0(n, x0, f, g, Sx, typf, gradtol):
-    consecmax = 0
+    #consecmax = 0
     if max(abs(g) * maximum(abs(x0), 1/Sx) / max(abs(f), typf)) <= 1e-3 * gradtol :
         termcode = 1
     else :
@@ -726,8 +726,6 @@ def umstop0(n, x0, f, g, Sx, typf, gradtol):
 
 def example_call():
     print '***********************************'
-
-    n = 2;
 
     # Rosenbrock function
     fn = lambda p: (1-p[0])**2 + 100*(p[1]-p[0]**2)**2

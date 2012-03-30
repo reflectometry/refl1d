@@ -1,6 +1,4 @@
-import sys
 import time
-import math
 from copy import deepcopy
 
 import numpy
@@ -57,7 +55,7 @@ class StepMonitor(monitor.Monitor):
 
 class MonitorRunner(object):
     """
-    Adaptor which allows non-mystic solvers to accept progress monitors.
+    Adaptor which allows solvers to accept progress monitors.
     """
     def __init__(self, monitors, problem):
         if monitors == None:
@@ -303,7 +301,7 @@ except:
     MCMCModel = object
 class DreamModel(MCMCModel):
     """
-    DREAM wrapper for refl1d models.
+    DREAM wrapper for fit problems.
     """
     def __init__(self, problem=None, mapper=None):
         """
@@ -384,29 +382,29 @@ class DreamFit(FitBase):
 
     def error_plot(self, figfile):
         # Produce error plot
-        import errors, pylab
+        import errors as errplot, pylab
         # TODO: shouldn't mix calc and display!
-        res = errors.calc_errors_from_state(self.dream_model.problem,
+        res = errplot.calc_errors_from_state(self.dream_model.problem,
                                             self.state)
         if res is not None:
             pylab.figure()
-            errors.show_errors(res)
+            errplot.show_errors(res)
             pylab.savefig(figfile+"-errors.png", format='png')
 
 class Resampler(FitBase):
     #TODO: why isn't cli.resynth using this?
     def __init__(self, fitter):
+        raise NotImplementedError
         self.fitter = fitter
-        self.problem = fitter.problem
     def solve(self, **options):
         starts = options.pop('starts',1)
         restart = options.pop('restart',False)
         x,fx = self.fitter.solve(**options)
-        points = _resampler(fitter, x, samples=starts,
+        points = _resampler(self.fitter, x, samples=starts,
                             restart=restart, **options)
         return x,fx
 
-def _resampler(fitter, x, samples=100, restart=False, **options):
+def _resampler(fitter, xinit, samples=100, restart=False, **options):
     """
     Refit the result multiple times with resynthesized data, building
     up an array in Result.samples which contains the best fit to the
@@ -414,29 +412,28 @@ def _resampler(fitter, x, samples=100, restart=False, **options):
     *fitter* is the (local) optimizer to use. **kw are the parameters
     for the optimizer.
     """
-    opt = fitter(self.problem)
+    x = xinit
     points = []
     try: # TODO: some solvers already catch KeyboardInterrupt
-        for i in range(samples):
+        for _ in range(samples):
             #print "== resynth %d of %d" % (i, samples)
-            self.problem.resynth_data()
+            fitter.problem.resynth_data()
             if restart:
-                parameter.randomize(self.problem.parameters)
+                parameter.randomize(fitter.problem.parameters)
             else:
-                self.problem.setp(self.solution)
-            x = fitter.solve(**options)
-            nllf = self.problem.nllf(x) # TODO: don't recalculate!
-            points.append(numpy.hstack((nllf,x)))
+                fitter.problem.setp(x)
+            x, fx = fitter.solve(**options)
+            points.append(numpy.hstack((fx,x)))
             #print parameter.summarize(self.problem.parameters)
             #print "[chisq=%g]" % (nllf*2/self.problem.dof)
     except KeyboardInterrupt:
         pass
     finally:
         # Restore the state of the problem
-        problem.restore_data()
-        problem.setp(x)
-        problem.model_update()
-    points = numpy.vstack([self.points] + points)
+        fitter.problem.restore_data()
+        fitter.problem.setp(xinit)
+        fitter.problem.model_update()
+    return points
 
 
 class FitDriver(object):
