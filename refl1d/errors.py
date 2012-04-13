@@ -162,11 +162,14 @@ def _align_profile_pair(z1,r1,z2,r2):
     """
     Use autocorrelation to align r1 and r2.
     """
-    # Assume z1,z2 have the same step size
     n1,n2 = len(r1),len(r2)
+    if n1 == 0 or n2 == 0:
+        #with open('/tmp/output','w') as fid: print >>fid, len(z1),n1,len(z2),n2
+        return 0
+    # Assume z1,z2 have the same step size
     idx = numpy.argmax(numpy.correlate(r1,r2,'full'))
     if idx < n2:
-        offset = z2[n2-idx-1] - z1[0]
+        offset = z2[(n2-1)-idx] - z1[0]
     else:
-        offset = z2[0] - z1[idx-n2+1]
+        offset = z2[0] - z1[idx-(n2-1)]
     return offset
