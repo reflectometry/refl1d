@@ -28,7 +28,7 @@ def data_files():
               data_files=data_files(),
               ...)
     """
-    from .gui.utilities import data_files
+    from .gui import data_files
     return data_files()
 
 def package_data():
@@ -42,5 +42,5 @@ def package_data():
               package_data=package_data(),
               ...)
     """
-    from .gui.utilities import package_data
+    from .gui import package_data
     return package_data()
