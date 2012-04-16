@@ -7,6 +7,7 @@ from setuptools import setup, find_packages, Extension
 #import fix_setuptools_chmod
 
 import refl1d
+from bumps.gui.resources import resources as gui_resources
 
 if len(sys.argv) == 1:
     sys.argv.append('install')
@@ -41,7 +42,7 @@ dist = setup(
             'Topic :: Scientific/Engineering :: Chemistry',
             'Topic :: Scientific/Engineering :: Physics',
             ],
-        package_data = refl1d.package_data(),
+        package_data = gui_resources.package_data(),
         scripts = ['bin/reflworkerd','bin/refl1d_cli.py','bin/refl1d_gui.py'],
         ext_modules = [reflmodule_config()],
         install_requires = ['httplib2'],

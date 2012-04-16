@@ -1,6 +1,6 @@
 /* This program is public domain. */
 
-//#include <Python.h>
+#include <Python.h>
 #include "methods.h"
 
 //#define PY_ARRAY_UNIQUE_SYMBOL reflmodule_array
