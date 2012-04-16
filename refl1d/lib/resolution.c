@@ -28,7 +28,7 @@
  * gaussian G of width sima, or when x = sqrt(-2 sigma^2 log(0.001)). */
 #define LOG_RESLIMIT -6.90775527898213703123
 
-/** \file 
+/** \file
 The resolution function returns the convolution of the reflectometry
 curve with a Q-dependent gaussian.
 
@@ -51,41 +51,41 @@ The contribution of Q to a resolution of width dQo at point Qo is:
    p(Q) = 1/sqrt(2 pi dQo^2) exp ( (Q-Qo)^2/(2 dQo^2) )
 
 We are approximating the convolution at Qo using a numerical
-approximation to the integral over the measured points.  For 
-efficiency, the integral is limited to p(Q_i)/p(0)>=0.001.  
+approximation to the integral over the measured points.  For
+efficiency, the integral is limited to p(Q_i)/p(0)>=0.001.
 
 Note that the function we are convoluting is falling off as Q^4.
 That means the correct convolution should uniformly sample across
 the entire width of the Gaussian.  This is not possible at the
 end points unless you calculate the reflectivity beyond what is
-strictly needed for the data. The function resolution_pad(dQ,step) 
-returns the number of additional steps of size step required to 
+strictly needed for the data. The function resolution_pad(dQ,step)
+returns the number of additional steps of size step required to
 go beyond this limit for the given width dQ.  This occurs when:
 
     (n*step)^2 < -2 dQ^2 * ln 0.001
 
-The choice of sampling density is particularly important near the 
-critical edge.  This is where the resolution calculation has the 
-largest effect on the reflectivity curve. In one particular model, 
-calculating every 0.001 rather than every 0.02 changed one value 
-above the critical edge by 15%.  This is likely to be a problem for 
+The choice of sampling density is particularly important near the
+critical edge.  This is where the resolution calculation has the
+largest effect on the reflectivity curve. In one particular model,
+calculating every 0.001 rather than every 0.02 changed one value
+above the critical edge by 15%.  This is likely to be a problem for
 any system with a well defined critical edge.  The solution is to
 compute the theory function over a finer mesh where the derivative
 is changing rapidly.  For the critical edge, I have found a sampling
 density of 0.005 to be good enough.
 
-For systems involving thick layers, the theory function oscillates 
+For systems involving thick layers, the theory function oscillates
 rapidly around the measured points.  This is a problem when the
 period of the oscillation, 2 pi/d for total sample depth d, is on
-the order of the width of the resolution function. This is true even 
+the order of the width of the resolution function. This is true even
 for gradually changing profiles in materials with very high roughness
 values.  In these systems, the theory function should be oversampled
 around the measured points Q.  With a single thick layer, oversampling
 can be limited to just one period.  With multiple thick layers,
-oscillations will show interference patterns and it will be necessary 
+oscillations will show interference patterns and it will be necessary
 to oversample uniformly between the measured points.  When oversampled
 spacing is less than about 2 pi/7 d, it is possible to see aliasing
-effects.  
+effects.
 
 FIXME is it better to use random sampling or strictly
 regular spacing when you are undersampling?
@@ -101,18 +101,18 @@ regular spacing when you are undersampling?
    is a spike, but we are approximating it by a triangle so it is
    not surprising it works so poorly.  A slightly better solution is
    to use the inner limits rather than the outer limits, but this will
-   still break down if the Q spacing is approximately equal to limit. 
+   still break down if the Q spacing is approximately equal to limit.
    Best is to not use trapezoid.
 */
 
 /* Trapezoid rule for numerical integration of convolution */
-double 
-convolve_point(const double Qin[], const double Rin[], int k, int n,
+double
+convolve_point(const double Qin[], const double Rin[], size_t k, size_t n,
         double Qo, double limit, double sigma)
 {
   const double two_sigma_sq = 2. * sigma * sigma;
   double z, Glo, RGlo, R, norm;
-  
+
   z = Qo - Qin[k];
   Glo = exp(-z*z/two_sigma_sq);
   RGlo = Rin[k]*Glo;
@@ -123,15 +123,15 @@ convolve_point(const double Qin[], const double Rin[], int k, int n,
     const double Ghi = exp(-zhi*zhi/two_sigma_sq);
     const double RGhi = Rin[k] * Ghi;
     const double halfstep = 0.5*(Qin[k] - Qin[k-1]);
-    
+
     /* Add the trapezoidal area. */
     norm += halfstep * (Ghi + Glo);
     R += halfstep * (RGhi + RGlo);
-    
+
     /* Save the endpoint for next trapezoid. */
     Glo = Ghi;
     RGlo = RGhi;
-    
+
     /* Check if we've calculated far enough */
     if (Qin[k] >= Qo+limit) break;
   }
@@ -148,13 +148,13 @@ convolve_point(const double Qin[], const double Rin[], int k, int n,
 
 /* Analytic convolution of gaussian with linear spline */
 /* More expensive but more reliable */
-double 
-convolve_point(const double Qin[], const double Rin[], int k, int n,
+double
+convolve_point(const double Qin[], const double Rin[], size_t k, size_t n,
                double Qo, double limit, double sigma)
 {
   const double two_sigma_sq = 2. * sigma * sigma;
   double z, Glo, erflo, erfmin, R;
-  
+
   z = Qo - Qin[k];
   Glo = exp(-z*z/two_sigma_sq);
   erfmin = erflo = erf(-z/(SQRT2*sigma));
@@ -163,7 +163,7 @@ convolve_point(const double Qin[], const double Rin[], int k, int n,
   while (++k < n) {
   	/* No additional contribution from duplicate points. */
   	if (Qin[k] == Qin[k-1]) continue;
- 
+
     /* Compute the next endpoint */
     const double zhi = Qo - Qin[k];
     const double Ghi = exp(-zhi*zhi/two_sigma_sq);
@@ -181,11 +181,11 @@ convolve_point(const double Qin[], const double Rin[], int k, int n,
     	       k,zhi,Ghi,erfhi,m,b);
     }
     */
-    
+
     /* Save the endpoint for next trapezoid. */
     Glo = Ghi;
     erflo = erfhi;
-    
+
     /* Check if we've calculated far enough */
     if (Qin[k] >= Qo+limit) break;
   }
@@ -206,10 +206,10 @@ convolve_point(const double Qin[], const double Rin[], int k, int n,
 #endif /* !USE_TRAPEZOID_RULE */
 
 void
-resolution(int Nin, const double Qin[], const double Rin[],
-           int N, const double Q[], const double dQ[], double R[])
+resolution(size_t Nin, const double Qin[], const double Rin[],
+           size_t N, const double Q[], const double dQ[], double R[])
 {
-  int lo,out;
+  size_t lo,out;
 
   /* FIXME fails if Qin are not sorted; slow if Q not sorted */
   assert(Nin>1);

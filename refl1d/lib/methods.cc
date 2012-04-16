@@ -92,8 +92,8 @@ PyObject* Pmagnetic_amplitude(PyObject*obj,PyObject*args)
 #endif
     return NULL;
   }
-  magnetic_amplitude(nd, d, sigma, rho, irho, rhom, expth,
-                     Aguide, nkz, kz, rho_index, r1, r2, r3, r4);
+  magnetic_amplitude((int)nd, d, sigma, rho, irho, rhom, expth,
+                     Aguide, (int)nkz, kz, rho_index, r1, r2, r3, r4);
   return Py_BuildValue("");
 }
 
@@ -145,7 +145,8 @@ PyObject* Preflectivity_amplitude(PyObject*obj,PyObject*args)
 #endif
     return NULL;
   }
-  reflectivity_amplitude(nd, d, sigma, rho, irho, nkz, kz, rho_index, r);
+  reflectivity_amplitude((int)nd, d, sigma, rho, irho,
+		  (int)nkz, kz, rho_index, r);
   return Py_BuildValue("");
 }
 
@@ -172,7 +173,7 @@ PyObject* Pcontract_by_area(PyObject*obj,PyObject*args)
 #endif
     return NULL;
   }
-  int newlen = contract_by_area(nd, d, sigma, rho, irho, dA);
+  int newlen = contract_by_area((int)nd, d, sigma, rho, irho, dA);
   return Py_BuildValue("i",newlen);
 }
 
@@ -198,7 +199,7 @@ PyObject* Pcontract_mag(PyObject*obj,PyObject*args)
 #endif
     return NULL;
   }
-  int newlen = contract_mag(nd, d, rho, irho, rhoM, thetaM, dA);
+  int newlen = contract_mag((int)nd, d, rho, irho, rhoM, thetaM, dA);
   return Py_BuildValue("i",newlen);
 }
 
@@ -224,7 +225,7 @@ PyObject* Pcontract_by_step(PyObject*obj,PyObject*args)
 #endif
     return NULL;
   }
-  int newlen = contract_by_step(nd, d, sigma, rho, irho, dv);
+  int newlen = contract_by_step((int)nd, d, sigma, rho, irho, dv);
   return Py_BuildValue("i",newlen);
 }
 
