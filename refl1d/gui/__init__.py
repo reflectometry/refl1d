@@ -1,6 +1,7 @@
 """
 Refl1D GUI support
 """
+from utilities import resource_dir
 
 def data_files():
     """
