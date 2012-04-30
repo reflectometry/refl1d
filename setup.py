@@ -9,6 +9,8 @@ from setuptools import setup, find_packages, Extension
 import refl1d
 from bumps.gui.resources import resources as gui_resources
 
+packages = find_packages()
+
 if len(sys.argv) == 1:
     sys.argv.append('install')
 
@@ -42,6 +44,7 @@ dist = setup(
             'Topic :: Scientific/Engineering :: Chemistry',
             'Topic :: Scientific/Engineering :: Physics',
             ],
+        packages = packages,
         package_data = gui_resources.package_data(),
         scripts = ['bin/reflworkerd','bin/refl1d_cli.py','bin/refl1d_gui.py'],
         ext_modules = [reflmodule_config()],
