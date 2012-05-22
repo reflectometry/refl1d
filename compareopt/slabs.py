@@ -3,23 +3,32 @@ from numpy.random import uniform
 from refl1d.names import *
 from bumps.parameter import summarize
 
+num_layers = int(sys.argv[1])
+init_file = sys.argv[2] if len(sys.argv) > 2 else "/tmp/problem"
 
-out = open("/tmp/problem","w")
+out = open(init_file,"w")
 seed = getrandbits(16)
 print >>out,"seed",seed
 numpy.random.seed(int(seed))
 
 
-num_layers = int(sys.argv[1])
+
+#CONSTRAINTS="unknown"
+CONSTRAINTS="known"
 
 def genlayer(name):
     material = SLD(name=name, rho=uniform(-3,10))
     thickness = uniform(3,200)
     interface = uniform(0,thickness/3)
     layer = material(thickness,interface)
-    layer.thickness.range(3,200)
-    layer.interface.range(3,200./3)
-    layer.material.rho.range(-3,10)
+    if CONSTRAINTS=="unknown":
+        layer.thickness.range(3,200)
+        layer.interface.range(0,200./3)
+        layer.material.rho.range(-3,10)
+    elif CONSTRAINTS=="known":
+        layer.thickness.range(3,2*layer.thickness.value)
+        layer.interface.range(0,min([2*layer.thickness.value/3.,200.]))
+        layer.material.rho.range(layer.material.rho.value-1,layer.material.rho.value+1)
     return layer
 
 layers = [genlayer("L%d"%i) for i in range(num_layers)]
@@ -34,9 +43,10 @@ T = numpy.linspace(0, 5, 100)
 probe = NeutronProbe(T=T, dT=0.01, L=4.75, dL=0.0475)
 
 M = Experiment(probe=probe, sample=sample)
-M.simulate_data(5)
+M.simulate_data(1.5)
 
 problem = FitProblem(M)
+print >>out,"chisq",problem.chisq()
 print >>out,"target"
 print >>out,summarize(problem.parameters)
 problem.randomize()

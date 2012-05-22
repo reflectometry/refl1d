@@ -103,7 +103,7 @@ class Probe(object):
 
         *substrate* is the material which makes up the substrate
         *surface* is the material which makes up the surface
-        *view* is 'fresnel', 'log', 'linear', 'q4', 'residual'
+        *view* is 'fresnel', 'log', 'linear', 'q4', 'residuals'
         *plot_shift* is the number of pt to shift each new dataset
 
     Normally *view* is set directly in the class rather than the
@@ -243,17 +243,27 @@ class Probe(object):
         """
         self.R = self.Ro
 
-    def simulate_data(self, theory, noise=2):
+    def simulate_data(self, theory, noise=None):
         """
         Set the data for the probe to R, adding random noise dR.
+
+        If noise is None, then use the uncertainty in the probe.
+
+        As a hack, if noise<0, use the probe uncertainty but don't add
+        noise to the data.  Don't depend on this behavior.
         """
-        _,R = theory
-        dR = 0.01*noise*R
-        self.Ro, self.dR = R+0, dR+0
-        self.Ro[R==0] = 1e-10
-        self.dR[dR==0] = 1e-11
-        self.resynth_data()
-        self.Ro = self.R
+        self.Ro = theory[1]+0.
+        if noise is not None and noise >=0:
+            self.dR = 0.01*noise*self.Ro
+            # If noise is None, then use existing dR
+        self.Ro[self.Ro==0] = 1e-10
+        self.dR[self.dR==0] = 1e-11
+        if noise is None or noise > 0:
+            # Hack: don't want noise in the sim, but want uncertainty in data
+            self.resynth_data()
+            self.Ro = self.R  # our new data is the value with added noise
+        else:
+            self.R = self.Ro
 
     def write_data(self, filename,
                    columns=['Q','R','dR'],
@@ -539,7 +549,7 @@ class Probe(object):
             self.plot_Q4(**kwargs)
         elif view == 'resolution':
             self.plot_resolution(**kwargs)
-        elif view == 'residual':
+        elif view == 'residuals':
             self.plot_residuals(**kwargs)
         elif view == 'fft':
             self.plot_fft(**kwargs)
@@ -1169,7 +1179,7 @@ class PolarizedNeutronProbe(object):
             self.plot_fresnel(**kwargs)
         elif view == 'q4':
             self.plot_Q4(**kwargs)
-        elif view == 'residual':
+        elif view == 'residuals':
             self.plot_residuals(**kwargs)
         elif view == 'SA':
             self.plot_SA(**kwargs)
