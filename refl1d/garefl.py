@@ -8,6 +8,7 @@ from ctypes import CDLL, c_int, c_void_p, c_char_p, byref
 from threading import current_thread
 from os import getpid
 
+import numpy
 from numpy import empty, zeros, array
 
 from bumps.parameter import Parameter
@@ -139,6 +140,8 @@ class GareflModel(object):
         MODELS = c_int()
         self.models = c_void_p(self.dll.setup_models(byref(MODELS)))
         self.num_models = MODELS.value
+        lo, hi = self._par_bounds()
+        self.scale = numpy.where((abs(lo)<1e-4)|(abs(hi)<1e-4), 1e6, 1)
 
     # Pickle protocol doesn't support ctypes linkage; reload the
     # module on the other side.
@@ -157,6 +160,7 @@ class GareflModel(object):
 
     @trace
     def update_model(self, p, weighted=1, approximate_roughness=0):
+        p = p/self.scale
         self.dll.ex_set_pars(self.models, p.ctypes.data)
         chisq = self.dll.ex_update_models(self.models, self.num_models,
                                        weighted, approximate_roughness)
@@ -211,6 +215,10 @@ class GareflModel(object):
 
     @trace
     def par_bounds(self):
+        return self._par_bounds()*self.scale
+
+    @trace
+    def _par_bounds(self):
         n = self.dll.ex_npars(self.models)
         lo,hi = empty(n,'d'), empty(n,'d')
         self.dll.ex_par_bounds(self.models, lo.ctypes.data, hi.ctypes.data)
@@ -221,4 +229,4 @@ class GareflModel(object):
         n = self.dll.ex_npars(self.models)
         p = empty(n,'d')
         self.dll.ex_par_values(self.models, p.ctypes.data)
-        return p
+        return p*self.scale
