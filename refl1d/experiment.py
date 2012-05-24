@@ -328,6 +328,7 @@ class Experiment(ExperimentBase):
             sigma = slabs.sigma
             #sigma = slabs.sigma
             calc_q = self.probe.calc_Q
+            #print "calc Q", self.probe.calc_Q
             if slabs.ismagnetic:
                 rhoM, thetaM = slabs.rhoM, slabs.thetaM
                 Aguide = self.probe.Aguide
@@ -445,7 +446,7 @@ class Experiment(ExperimentBase):
                 datafile = None
             save_mlayer(self, basename+".staj", datafile=datafile)
             probe = self.probe
-            datafile = os.path.join(os.path.dirname(basename),datafile)
+            datafile = os.path.join(os.path.dirname(basename),os.path.basename(datafile))
             fid = open(datafile,"w")
             fid.write("# Q R dR\n")
             numpy.savetxt(fid, numpy.vstack((probe.Qo,probe.R,probe.dR)).T)
