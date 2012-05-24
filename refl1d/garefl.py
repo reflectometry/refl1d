@@ -141,7 +141,8 @@ class GareflModel(object):
         self.models = c_void_p(self.dll.setup_models(byref(MODELS)))
         self.num_models = MODELS.value
         lo, hi = self._par_bounds()
-        self.scale = numpy.where((abs(lo)<1e-4)|(abs(hi)<1e-4), 1e6, 1)
+        small = numpy.max(numpy.vstack((abs(lo),abs(hi))),axis=0)<1e-4
+        self.scale = numpy.where(small, 1e6, 1)
 
     # Pickle protocol doesn't support ctypes linkage; reload the
     # module on the other side.
