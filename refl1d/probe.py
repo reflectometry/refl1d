@@ -253,17 +253,24 @@ class Probe(object):
         noise to the data.  Don't depend on this behavior.
         """
         self.Ro = theory[1]+0.
-        if noise is not None and noise >=0:
-            self.dR = 0.01*noise*self.Ro
-            # If noise is None, then use existing dR
-        self.Ro[self.Ro==0] = 1e-10
-        self.dR[self.dR==0] = 1e-11
-        if noise is None or noise > 0:
-            # Hack: don't want noise in the sim, but want uncertainty in data
-            self.resynth_data()
-            self.Ro = self.R  # our new data is the value with added noise
-        else:
+
+        if numpy.isscalar(noise) and noise < 0:
+            # leave the probe uncertainty alone, and don't add noise to the data
             self.R = self.Ro
+            return
+
+        if noise is None:
+            pass # use existing noise
+        else:
+            self.dR = 0.01*noise*self.Ro
+            self.dR[self.dR==0] = 1e-11
+
+        # Add noise to the theory function
+        self.resynth_data()
+
+        # Pretend the noisy theory function is the underlying measured data
+        # This allows us to resynthesize later, as needed.
+        self.Ro = self.R
 
     def write_data(self, filename,
                    columns=['Q','R','dR'],
