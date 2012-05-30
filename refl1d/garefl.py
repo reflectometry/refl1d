@@ -31,6 +31,13 @@ def trace(fn):
     return wrapper
 
 def load(modelfile):
+    M = experiment(modelfile)
+    if len(M) > 1:
+        return MultiFitProblem(M)
+    else:
+        return FitProblem(M[0])
+
+def experiment(modelfile):
     setup = GareflModel(modelfile)
     M = [GareflExperiment(setup, k)
          for k in range(setup.num_models)]
@@ -40,11 +47,7 @@ def load(modelfile):
     pars = [Parameter(v, name=s, bounds=(L,H))
             for v,s,L,H in zip(value,names,low,high)]
     M[0]._pars = pars
-
-    if len(M) > 1:
-        return MultiFitProblem(M)
-    else:
-        return FitProblem(M[0])
+    return M
 
 NOTHING=Vacuum()
 NOTHING.name = ''
