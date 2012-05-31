@@ -105,8 +105,6 @@ A common command line for running DREAM is::
    refl1d --fit=dream --burn=1000 --steps=1000 --init=cov --parallel --pars=T1/model.par model.py --store=T2
 
 
-Given sufficient burn time, points in the search space
-will be visited with probability proportional to the goodness of fit.
 The file T1/model.err contains a table showing for each
 parameter the mean(std), median and best values, and the 68% and 95%
 credible intervals.  The mean and standard deviation are computed from
@@ -183,6 +181,24 @@ has converged, this plot will be flat with no distinct lines visible.
 If it shows a general upward sweep, then the burn time was not
 sufficient, and the analysis should be restarted.  The ability to
 continue to burn from the current population is not yet implemented.
+
+Given sufficient burn time, points in the search space will be visited 
+with probability proportional to the goodness of fit.  It can be difficult
+to determine the correct amount of burn time in advance.  If burn is not
+long enough, then the population of log likelihood values will show an
+upward sweep.  Similarly, if steps is insufficient, th likelihood
+observed as a function of parameter value will be sparsely sampled, and
+the maximum likelihood curve will not match the posterior probability
+histogram.  To correct these issues, the DREAM analysis can be extended
+using the --resume option.  Assume the previous run completed with Markov
+chain convergence achieved at step 500.  The following command line will
+generate an additional 600 steps so that the posterior sample size is
+1600, then run an additional 500 steps of burn to remove the intial upward
+sweep in the log likelihood plot::
+
+    refl1d --fit=dream --burn=500 --steps=1600 --parallel --resume=T2 --store=T3
+
+The results are stored in directory T3.
 
 Just because all the plots are well behaved does not mean that the
 Markov process has converged on the best result.  It is practically
