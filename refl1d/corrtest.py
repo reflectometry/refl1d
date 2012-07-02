@@ -32,11 +32,11 @@ def plot(self):
 # Experiments with different sorts of
 def plot_transform(self, theory=None, substrate=None, surround=None):
     """
-    Plot the Fresnel reflectivity associated with the probe.
+    Plot the Fresnel-normalized reflectivity associated with the probe.
     """
     import pylab
     if substrate is None and surround is None:
-        raise TypeError("Fresnel reflectivity needs substrate or surround")
+        raise TypeError("Fresnel-normalized reflectivity needs substrate or surround")
     F = self.fresnel(substrate=substrate,surround=surround)
     print "substrate",substrate
     #Qc = sqrt(16*pi*substrate)

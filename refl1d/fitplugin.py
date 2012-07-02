@@ -12,8 +12,8 @@ __all__ = [ "data_view", "model_view", "new_model",
 import numpy
 from bumps.fitproblem import FitProblem
 
-import refl1d.names as refl
-
+from . import names as refl
+from .errors import calc_errors, show_errors
 
 # These are names used by the driver
 def data_view():

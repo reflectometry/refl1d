@@ -77,6 +77,19 @@ class Probe(object):
     points only, but for some systems, such as those with very thick layers,
     oversampling is needed to avoid aliasing effects.
 
+    A measurement consists of an angle
+
+        *T* : float or [float] | degrees
+            Incident angle
+        *dT* : float or [float] | degrees
+            FWHM angular resolution
+        *L* : float or [float] | |Ang|
+            Incident wavelength
+        *dL* : float or [float] | |Ang|
+            FWHM wavelength dispersion
+        *data* : ([float],[float])
+            R,dR reflectivity measurement and uncertainty
+
     Measurement properties:
 
         *intensity* is the beam intensity
@@ -86,8 +99,8 @@ class Probe(object):
         *back_reflectivity* is true if the beam enters through the substrate
 
     Measurement properties are fittable parameters.  *theta_offset* in
-    particular should be set using probe.theta_offset.dev(dT), with dT
-    equal to the uncertainty in the peak position for the rocking curve,
+    particular should be set using *probe.theta_offset.dev(dT)*, with *dT*
+    equal to the FWHM uncertainty in the peak position for the rocking curve,
     as measured in radians.  Changes to *theta_offset* will then be penalized
     in the cost function for the fit as if it were another measurement.  Use
     :meth:`alignment_uncertainty` to compute dT from the shape of the
@@ -107,9 +120,9 @@ class Probe(object):
         *plot_shift* is the number of pt to shift each new dataset
 
     Normally *view* is set directly in the class rather than the
-    instance since it is not specific to the view.  The fresnel
-    substrate and surface materials are a property of the sample,
-    and should share the same material.
+    instance since it is not specific to the view.  The substrate and 
+    surface materials are a property of the sample, and should share 
+    the same Material object.
     """
     polarized = False
     Aguide = 270  # default guide field for unpolarized measurements
@@ -541,7 +554,7 @@ class Probe(object):
         """
         Plot theory against data.
 
-        Need substrate/surface for Fresnel reflectivity
+        Need substrate/surface for Fresnel-normalized reflectivity
         """
 
         view = view if view is not None else self.view
@@ -593,11 +606,11 @@ class Probe(object):
 
     def plot_fresnel(self, substrate=None, surface=None, **kwargs):
         """
-        Plot the Fresnel reflectivity associated with the probe.
+        Plot the Fresnel-normalized reflectivity associated with the probe.
         """
         import pylab
         if substrate is None and surface is None:
-            raise TypeError("Fresnel reflectivity needs substrate or surface")
+            raise TypeError("Fresnel-normalized reflectivity needs substrate or surface")
         F = self.fresnel(substrate=substrate,surface=surface)
         scale = lambda Q: 1./F(Q)
         if substrate is None:
@@ -1172,7 +1185,7 @@ class PolarizedNeutronProbe(object):
         """
         Plot theory against data.
 
-        Need substrate/surface for Fresnel reflectivity
+        Need substrate/surface for Fresnel-normalized reflectivity
         """
         view = view if view is not None else self.view
 

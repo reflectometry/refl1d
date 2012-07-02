@@ -48,7 +48,7 @@ D_polymer_layer = FreeInterface(below=D_polystyrene,above=D_toluene,
                                 dz=[1]*n,dp=[1]*n)
 
 # Stack materials into samples
-# Note: only need D_toluene to compute Fresnel reflectivity --- should fix
+# Note: only need D_toluene to compute Fresnel-normalized reflectivity --- should fix
 # this later so that we can use a pure freeform layer on top.
 D = silicon(0,5) | SiOx(100,5) | D_initiator(100,20) | D_polymer_layer(1000,0) | D_toluene
 
