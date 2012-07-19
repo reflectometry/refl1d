@@ -87,7 +87,7 @@ def load_magnetic(filename, Aguide=270, shared_beam=True, **kw):
 
     *filename* (string, or 4x string)
         If it is a string, then filenameA, filenameB, filenameC, filenameD,
-        are the ++, +-, -+, -- cross sections, otherwise the individual
+        are the --, -+, +-, ++ cross sections, otherwise the individual
         cross sections should the be the file name for the cross section or
         None if the cross section does not exist.
     *Aguide* (degrees)
@@ -102,10 +102,10 @@ def load_magnetic(filename, Aguide=270, shared_beam=True, **kw):
     The data sets should are the base filename with an additional character
     corresponding to the spin state::
 
-        'a' corresponds to spin ++
-        'b' corresponds to spin +-
-        'c' corresponds to spin -+
-        'd' corresponds to spin --
+        'a' corresponds to spin --
+        'b' corresponds to spin -+
+        'c' corresponds to spin +-
+        'd' corresponds to spin ++
 
     Unfortunately the interpretation is a little more complicated than
     this as the data acquisition system assigns letter on the basis of

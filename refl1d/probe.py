@@ -1046,16 +1046,16 @@ class PolarizedNeutronProbe(object):
         self.Aguide = Aguide
 
     @property
-    def pp(self): return self.xs[0]
+    def pp(self): return self.xs[3]
     @property
     def pm(self): return self.xs[1]
     @property
-    def mp(self): return self.xs[2]
+    def mp(self): return self.xs[1]
     @property
-    def mm(self): return self.xs[3]
+    def mm(self): return self.xs[0]
 
     def parameters(self):
-        pp,pm,mp,mm = [(xsi.parameters() if xsi else None)
+        mm,mp,pm,pp = [(xsi.parameters() if xsi else None)
                        for xsi in self.xs]
         return dict(pp=pp, pm=pm, mp=mp, mm=mm)
 
