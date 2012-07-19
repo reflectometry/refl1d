@@ -44,8 +44,8 @@ def dTdL2dQ(T=None, dT=None, L=None, dL=None):
     r"""
     Convert wavelength dispersion and angular divergence to $Q$ resolution.
 
-    *T*,*dT*  (degrees) angle and FWHM angular divergence
-    *L*,*dL*  (Angstroms) wavelength and FWHM wavelength dispersion
+    *T*, *dT*  (degrees) angle and FWHM angular divergence
+    *L*, *dL*  (Angstroms) wavelength and FWHM wavelength dispersion
 
     Returns 1-\ $\sigma$ $\Delta Q$
     """

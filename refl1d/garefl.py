@@ -88,7 +88,7 @@ class GareflExperiment(Experiment):
             self._slabs.extend(w=w,rho=rho[None,:],irho=irho[None,:])
             # TODO: What about rhoM, thetaM
 
-            # Set values for the Fresnel reflectivity plot
+            # Set values for the Fresnel-normalized reflectivity plot
             self._substrate.rho.value = rho[0]
             self._substrate.irho.value = irho[0]
             self._surface.rho.value = rho[-1]

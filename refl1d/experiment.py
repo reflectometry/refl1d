@@ -89,7 +89,10 @@ class ExperimentBase(object):
         return self._cache['residuals']
 
     def numpoints(self):
-        return len(self.probe.Q)
+        if self.probe.polarized:
+            return sum(len(xs.R) for xs in self.probe.xs if xs is not None)
+        else:
+            return len(self.probe.R) if self.probe.R is not None else 0
 
     def nllf(self):
         """

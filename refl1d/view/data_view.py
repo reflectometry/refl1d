@@ -71,31 +71,31 @@ class DataView(wx.Panel):
         menu = wx.Menu()
         _item = menu.AppendRadioItem(wx.ID_ANY,
                                           "&Fresnel",
-                                          "Plot y-axis in Fresnel scale")
+                                          "Plot R/R_F")
         frame.Bind(wx.EVT_MENU, self.OnFresnel, _item)
         _item.Check(True)
         _item = menu.AppendRadioItem(wx.ID_ANY,
                                           "Li&near",
-                                          "Plot y-axis in linear scale")
+                                          "Plot linear R")
         frame.Bind(wx.EVT_MENU, self.OnLinear, _item)
         _item = menu.AppendRadioItem(wx.ID_ANY,
                                           "&Log",
-                                          "Plot y-axis in log scale")
+                                          "Plot log R")
         frame.Bind(wx.EVT_MENU, self.OnLog, _item)
         _item = menu.AppendRadioItem(wx.ID_ANY,
                                           "&Q4",
-                                          "Plot y-axis in Q4 scale")
+                                          "Plot R * Q^4")
         frame.Bind(wx.EVT_MENU, self.OnQ4, _item)
         _item = menu.AppendRadioItem(wx.ID_ANY,
                                           "&SA",
-                                          "Spin Asymmetry")
+                                          "Plot spin asymmetry")
         frame.Bind(wx.EVT_MENU, self.OnSA, _item)
 
         menu.AppendSeparator()
 
         _item = menu.Append(wx.ID_ANY,
                                  "&Residuals",
-                                 "Show residuals on plot panel")
+                                 "Plot residuals (R_theory - R)/dR")
         frame.Bind(wx.EVT_MENU, self.OnResiduals, _item)
         menu.Enable(id=_item.GetId(), enable=True)
 
