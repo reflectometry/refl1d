@@ -1245,7 +1245,7 @@ class PolarizedNeutronProbe(object):
                            color=c['light'])
             pylab.hold(True)
         if theory is not None:
-            pp,pm,mp,mm = theory
+            mm,mp,pm,pp = theory
             Q,SA,_ = spin_asymmetry(pp[0],pp[1],None,mm[0],mm[1],None)
             pylab.plot(Q, SA,
                        label=self.pp.label(prefix=label,gloss='theory'),
@@ -1263,7 +1263,7 @@ class PolarizedNeutronProbe(object):
         if theory is None:
             theory = (None,None,None,None)
         for x_data,x_th,suffix in zip(self.xs, theory,
-                                      ('$^{++}$','$^{+-}$','$^{-+}$','$^{--}$')):
+                                      ('$^{--}$','$^{-+}$','$^{+-}$','$^{++}$')):
             if x_data is not None:
                 fn = getattr(x_data, plotter)
                 fn(theory=x_th, suffix=suffix, **kwargs)
