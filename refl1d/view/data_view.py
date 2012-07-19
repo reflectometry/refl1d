@@ -123,7 +123,7 @@ class DataView(wx.Panel):
         self.redraw()
 
     def OnResiduals(self, event):
-        self.view = "residual"
+        self.view = "residuals"
         self.redraw()
 
     # ==== Model view interface ===
