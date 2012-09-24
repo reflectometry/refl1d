@@ -84,6 +84,9 @@ class FreeLayer(Layer):
             Pirho = 0*Prho
         return Prho,Pirho
 
+    def penalty(self):
+        dz = numpy.diff([p.value for p in self.z])
+        return numpy.sum(dz[dz<0]**2)
     def render(self, probe, slabs):
         below = self.below.sld(probe)
         above = self.above.sld(probe)

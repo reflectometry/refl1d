@@ -90,9 +90,9 @@ class ExperimentBase(object):
 
     def numpoints(self):
         if self.probe.polarized:
-            return sum(len(xs.R) for xs in self.probe.xs if xs is not None)
+            return sum(len(xs.Q) for xs in self.probe.xs if xs is not None)
         else:
-            return len(self.probe.R) if self.probe.R is not None else 0
+            return len(self.probe.Q) if self.probe.Q is not None else 0
 
     def nllf(self):
         """
@@ -292,7 +292,7 @@ class Experiment(ExperimentBase):
         self.dz = dz
         self.dA = dA
         self.step_interfaces = step_interfaces
-        self._slabs = profile.Microslabs(len(probe), dz=dz)
+        self._slabs = profile.Microslabs(len(probe.unique_L) if probe.unique_L is not None else 1, dz=dz)
         self._probe_cache = material.ProbeCache(probe)
         self._cache = {}  # Cache calculated profiles/reflectivities
         self._name = name
