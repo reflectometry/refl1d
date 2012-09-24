@@ -23,7 +23,7 @@ examples = [
     "superlattice/PEMU-web.py",
     "thick/nifilm.py",
     "TOF/du53.py",
-    "xray/mlayer.staj",
+    "xray/mlayer-lin.staj",
     "xray/model.py",
     "xray/staj.py",
     ]
@@ -41,10 +41,12 @@ class Commands(object):
     @staticmethod
     def preview(f):
         os.system(CLI%(f,'--preview --seed=1'))
+        return 0
 
     @staticmethod
     def edit(f):
         os.system(CLI%(f,'--edit --seed=1'))
+        return 0
 
     @staticmethod
     def chisq(f):
@@ -57,6 +59,8 @@ def main():
         command = getattr(Commands, sys.argv[1])
         for f in examples:
             print "Example",f
-            command(os.path.join(EXAMPLEDIR,f))
+            if command(os.path.join(EXAMPLEDIR,f)) != 0:
+                #break
+                pass
 
 if __name__ == "__main__": main()

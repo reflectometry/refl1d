@@ -88,6 +88,9 @@ class MagneticLayer(Layer):
                    if self.interface_above else slabs.surface_sigma)
         return anchor, (s_below, s_above)
 
+    def penalty(self):
+        return self.stack.penalty()
+
     @property
     def thicknessM(self):
         return (self.stack.thickness

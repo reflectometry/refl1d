@@ -69,6 +69,20 @@ class Layer(object): # Abstract base class
         """
         Use the probe to render the layer into a microslab representation.
         """
+    def penalty(self):
+        """
+        Return a penalty value associated with the layer.  This should be
+        zero if the parameters are valid, and increasing as the parameters
+        become more invalid.  For example, if total volume fraction exceeds
+        unity, then the penalty would be the amount by which it exceeds
+        unity, or if z values must be sorted, then penalty would be the
+        amount by which they are unsorted.
+
+        Note that penalties are handled separately from any probability of
+        seeing a combination of layer parameters; the final solution to the
+        problem should not include any penalized points.
+        """
+        return 0
 
     def __str__(self):
         """
@@ -205,6 +219,8 @@ class Stack(Layer):
         #attrs = dict(thickness=self.thickness)
         #return (attrs,layers)
         #return [L.parameters() for L in self._layers]
+    def penalty(self):
+        return sum(L.penalty() for L in self._layers)
     def _calc_thickness(self):
         """returns the total thickness of the stack"""
         t = 0
@@ -344,6 +360,8 @@ class Repeat(Layer):
     def __setstate__(self, state):
         self.interface, self.repeat, self.name, self.stack = state
         self._thickness = Function(self._calc_thickness,name="repeat thickness")
+    def penalty(self):
+        return self.stack.penalty()
     @property
     def magnetic(self):
         return self.stack.magnetic
