@@ -4,7 +4,7 @@ Load garefl models into refl1d
 __all__ = ["load"]
 
 import os
-from ctypes import CDLL, c_int, c_void_p, c_char_p, byref
+from ctypes import CDLL, c_int, c_double, c_void_p, c_char_p, byref
 from threading import current_thread
 from os import getpid
 
@@ -32,10 +32,11 @@ def trace(fn):
 
 def load(modelfile):
     M = experiment(modelfile)
+    constraints = M[0].model.get_penalty
     if len(M) > 1:
-        return MultiFitProblem(M)
+        return MultiFitProblem(M,constraints=constraints)
     else:
-        return FitProblem(M[0])
+        return FitProblem(M[0],constraints=constraints)
 
 def experiment(modelfile):
     setup = GareflModel(modelfile)
@@ -80,7 +81,7 @@ class GareflExperiment(Experiment):
 
             if self._pars is not None:
                 pvec = array([p.value for p in self._pars], 'd')
-                self._chisq = self.model.update_model(pvec)
+                self._chisq = self.model.update_model(pvec, forced=True)
 
             self._slabs.clear()
             w,rho,irho,rhoM,thetaM = self.model.get_profile(self.index)
@@ -133,6 +134,7 @@ class GareflModel(object):
         dll.ex_get_data.restype = c_char_p
         dll.setup_models.restype = c_void_p
         dll.ex_par_name.restype = c_char_p
+        dll.ex_get_penalty.restype = c_double
         self.dll = dll
         self.num_models = 0
 
@@ -146,6 +148,9 @@ class GareflModel(object):
         lo, hi = self._par_bounds()
         small = numpy.max(numpy.vstack((abs(lo),abs(hi))),axis=0)<1e-4
         self.scale = numpy.where(small, 1e6, 1)
+
+        # TODO: better way to force recalc on load
+        self.update_model(self.par_values())
 
     # Pickle protocol doesn't support ctypes linkage; reload the
     # module on the other side.
@@ -163,11 +168,11 @@ class GareflModel(object):
             self.num_models = 0
 
     @trace
-    def update_model(self, p, weighted=1, approximate_roughness=0):
+    def update_model(self, p, weighted=1, approximate_roughness=0, forced=False):
         p = p/self.scale
         self.dll.ex_set_pars(self.models, p.ctypes.data)
         chisq = self.dll.ex_update_models(self.models, self.num_models,
-                                       weighted, approximate_roughness)
+                                       weighted, approximate_roughness, int(forced))
         return chisq
 
     @trace
@@ -191,8 +196,7 @@ class GareflModel(object):
         data = empty((n,4),'d')
         filename = self.dll.ex_get_data(self.models, k, xs, data.ctypes.data)
         Q,dQ,R,dR = data.T
-        probe = QProbe(Q,dQ,data=(R,dR))
-        probe.filename = filename
+        probe = QProbe(Q,dQ,data=(R,dR),name=filename)
         return probe
 
     @trace
@@ -211,6 +215,11 @@ class GareflModel(object):
         self.dll.ex_get_reflectivity(self.models, k, xs,
                                      Q.ctypes.data, R.ctypes.data)
         return Q, R
+
+    @trace
+    def get_penalty(self):
+        #print "returning penalty",self.dll.ex_get_penalty(self.models)
+        return self.dll.ex_get_penalty(self.models)
 
     @trace
     def par_names(self):
