@@ -840,7 +840,7 @@ class ProbeSet(Probe):
         Q,R = theory
         offset = 0
         for p in self.probes:
-            n = len(p)
+            n = len(p.Q)
             p.simulate_data(theory=(Q[offset:offset+n],R[offset:offset+n]),
                             noise=noise)
             offset += n
@@ -909,7 +909,7 @@ class ProbeSet(Probe):
             offset = 0
             Q,R = theory
             for p in self.probes:
-                n = len(p)
+                n = len(p.Q)
                 yield p,(Q[offset:offset+n],R[offset:offset+n])
                 offset += n
 

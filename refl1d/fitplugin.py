@@ -28,7 +28,8 @@ def load_model(filename):
     if (filename.endswith('.so') or filename.endswith('.dll')
         or filename.endswith('.dyld')):
         from . import garefl
-        return garefl.load(filename)
+        problem = garefl.load(filename)
+        return problem
     elif filename.endswith('.staj'):
         from .stajconvert import load_mlayer
         return FitProblem(load_mlayer(filename))
