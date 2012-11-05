@@ -487,6 +487,9 @@ class Experiment(ExperimentBase):
             pylab.ylabel('SLD (10^6 / A**2)')
 
 
+    def penalty(self):
+        return self.sample.penalty()
+
 class MixedExperiment(ExperimentBase):
     """
     Support composite sample reflectivity measurements.
@@ -630,6 +633,9 @@ class MixedExperiment(ExperimentBase):
     def save_staj(self, basename):
         for i,p in enumerate(self.parts):
             p.save_staj("%s-%d"%(basename,i))
+
+    def penalty(self):
+        return sum(s.penalty() for s in self.samples)
 
 def _polarized_nonmagnetic(r):
     """Convert nonmagnetic data to polarized representation.
