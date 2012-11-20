@@ -30,10 +30,9 @@ examples = [
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 EXAMPLEDIR = os.path.join(ROOT,'doc','examples')
-if os.name == 'nt':
-    os.environ['PYTHONPATH'] = os.environ['PYTHONPATH']+";"+ROOT+";"+ROOT+"/dream"
-else:
-    os.environ['PYTHONPATH'] = os.environ['PYTHONPATH']+":"+ROOT+":"+ROOT+"/dream"
+sep = ";" if os.name == "nt" else ":"
+path = os.environ.get('PYTHONPATH','')
+os.environ['PYTHONPATH'] = (path + sep + ROOT) if path else ROOT
 PYTHON = sys.executable
 CLI = "%s %s/bin/refl1d_cli.py %%s %%s"%(PYTHON,ROOT)
 
