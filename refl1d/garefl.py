@@ -145,6 +145,7 @@ class GareflModel(object):
         MODELS = c_int()
         self.models = c_void_p(self.dll.setup_models(byref(MODELS)))
         self.num_models = MODELS.value
+        self.num_pars = self.dll.ex_npars(self.models)
         lo, hi = self._par_bounds()
         small = numpy.max(numpy.vstack((abs(lo),abs(hi))),axis=0)<1e-4
         self.scale = numpy.where(small, 1e6, 1)
@@ -170,7 +171,9 @@ class GareflModel(object):
     @trace
     def update_model(self, p, weighted=1, approximate_roughness=0, forced=False):
         p = p/self.scale
-        self.dll.ex_set_pars(self.models, p.ctypes.data)
+        #assert p.flags.aligned and (p.flags.c_contiguous or p.flags.f_contiguous)
+        #assert p.size == self.num_pars
+        self.dll.ex_set_pars(self.models, p.ctypes)
         chisq = self.dll.ex_update_models(self.models, self.num_models,
                                        weighted, approximate_roughness, int(forced))
         return chisq
@@ -194,7 +197,7 @@ class GareflModel(object):
         n = self.dll.ex_ndata(self.models, k, xs);
         if n == 0: return None
         data = empty((n,4),'d')
-        filename = self.dll.ex_get_data(self.models, k, xs, data.ctypes.data)
+        filename = self.dll.ex_get_data(self.models, k, xs, data.ctypes)
         Q,dQ,R,dR = data.T
         probe = QProbe(Q,dQ,data=(R,dR),name=filename)
         return probe
@@ -203,9 +206,9 @@ class GareflModel(object):
     def get_profile(self, k):
         n = self.dll.ex_nprofile(self.models, k)
         w, rho,irho,rhoM,thetaM = [zeros(n,'d') for _ in range(5)]
-        self.dll.ex_get_profile(self.models, k, w.ctypes.data,
-                             rho.ctypes.data, irho.ctypes.data,
-                             rhoM.ctypes.data, thetaM.ctypes.data)
+        self.dll.ex_get_profile(self.models, k, w.ctypes,
+                             rho.ctypes, irho.ctypes,
+                             rhoM.ctypes, thetaM.ctypes)
         return w[::-1], rho[::-1], irho[::-1], rhoM[::-1], thetaM[::-1]
 
     @trace
@@ -213,7 +216,7 @@ class GareflModel(object):
         n = self.dll.ex_ncalc(self.models, k)
         Q, R = empty(n,'d'), empty(n,'d')
         self.dll.ex_get_reflectivity(self.models, k, xs,
-                                     Q.ctypes.data, R.ctypes.data)
+                                     Q.ctypes, R.ctypes)
         return Q, R
 
     @trace
@@ -223,8 +226,8 @@ class GareflModel(object):
 
     @trace
     def par_names(self):
-        n = self.dll.ex_npars(self.models)
-        return [self.dll.ex_par_name(self.models, i) for i in range(n)]
+        return [self.dll.ex_par_name(self.models, i) 
+                for i in range(self.num_pars)]
 
     @trace
     def par_bounds(self):
@@ -232,14 +235,12 @@ class GareflModel(object):
 
     @trace
     def _par_bounds(self):
-        n = self.dll.ex_npars(self.models)
-        lo,hi = empty(n,'d'), empty(n,'d')
-        self.dll.ex_par_bounds(self.models, lo.ctypes.data, hi.ctypes.data)
+        lo,hi = empty(self.num_pars,'d'), empty(self.num_pars,'d')
+        self.dll.ex_par_bounds(self.models, lo.ctypes, hi.ctypes)
         return lo, hi
 
     @trace
     def par_values(self):
-        n = self.dll.ex_npars(self.models)
-        p = empty(n,'d')
-        self.dll.ex_par_values(self.models, p.ctypes.data)
+        p = empty(self.num_pars,'d')
+        self.dll.ex_par_values(self.models, p.ctypes)
         return p*self.scale
