@@ -32,7 +32,7 @@ def trace(fn):
 
 def load(modelfile):
     M = experiment(modelfile)
-    constraints = M[0].model.get_penalty
+    constraints = M[0]._get_penalty
     if len(M) > 1:
         return MultiFitProblem(M,constraints=constraints)
     else:
@@ -97,11 +97,18 @@ class GareflExperiment(Experiment):
             self._cache[key] = True
         return self._slabs
 
+    def _get_penalty(self):
+        """
+        Update the model if necessary and return the penalty value for the point.
+        """
+        self._render_slabs()
+        return self.model.get_penalty()
+
     def amplitude(self, resolution=True):
         """
         Calculate reflectivity amplitude at the probe points.
         """
-        raise NotImplementedError("amplitude not available from garefl")
+        raise NotImplementedError("amplitude not yet available from garefl")
 
     def reflectivity(self, resolution=True):
         """
@@ -147,7 +154,7 @@ class GareflModel(object):
         self.num_models = MODELS.value
         self.num_pars = self.dll.ex_npars(self.models)
         lo, hi = self._par_bounds()
-        small = numpy.max(numpy.vstack((abs(lo),abs(hi))),axis=0)<1e-4
+        small = numpy.max(numpy.vstack((abs(lo),abs(hi))),axis=0)<1e-3
         self.scale = numpy.where(small, 1e6, 1)
 
         # TODO: better way to force recalc on load
@@ -221,7 +228,7 @@ class GareflModel(object):
 
     @trace
     def get_penalty(self):
-        #print "returning penalty",self.dll.ex_get_penalty(self.models)
+        #print "penalty",self.dll.ex_get_penalty(self.models),self.par_values()
         return self.dll.ex_get_penalty(self.models)
 
     @trace
