@@ -1,5 +1,33 @@
 """
-Load garefl models into refl1d
+Load garefl models into refl1d.
+
+The models themselves don't need to be modified.  See the garefl documentation
+for setting up the model.
+
+One extension provided to refl1d that is not available in garefl is the use
+of penalty values in the constraints.  The model constraints is able to set::
+
+    fit[0].penalty = FIT_REJECT_PENALTY + distance
+
+Here, *distance* is the distance to the valid region of the search space so
+that any fitter that gets lost in a penalty region can more quickly return
+to the valid region.  Any penalty value above *FIT_REJECT_PENALTY* will
+suppress the evaluation of the model at that point during the fit.
+
+Consider a model with Si|Au|FeNi|air, with the constraint that
+d_Au + d_FeNi < 200 A.  The constraints function would be written something
+like:
+
+    double excess = fit[0].m.d[1] + fit[0].m.d[2] - 200;
+    fit[0].penalty = excess > 0 ? excess*excess+FIT_REJECT_PENALTY : 0.;
+
+Then, if the fit algorithm proposes a value such as Au=125, FeNi=90, the
+excess will be 15, and the penalty will be FIT_REJECT_PENALTY+225.
+
+You can use penalties less than FIT_REJECT_PENALTY, but these should
+correspond to the negative log likelihood of seeing that constraint value
+within the model in order for the MCMC uncertainty analysis to work correctly.
+
 """
 __all__ = ["load"]
 
@@ -32,7 +60,7 @@ def trace(fn):
 
 def load(modelfile):
     M = experiment(modelfile)
-    constraints = M[0].model.get_penalty
+    constraints = M[0]._get_penalty
     if len(M) > 1:
         return MultiFitProblem(M,constraints=constraints)
     else:
@@ -97,11 +125,18 @@ class GareflExperiment(Experiment):
             self._cache[key] = True
         return self._slabs
 
+    def _get_penalty(self):
+        """
+        Update the model if necessary and return the penalty value for the point.
+        """
+        self._render_slabs()
+        return self.model.get_penalty()
+
     def amplitude(self, resolution=True):
         """
         Calculate reflectivity amplitude at the probe points.
         """
-        raise NotImplementedError("amplitude not available from garefl")
+        raise NotImplementedError("amplitude not yet available from garefl")
 
     def reflectivity(self, resolution=True):
         """
@@ -147,7 +182,7 @@ class GareflModel(object):
         self.num_models = MODELS.value
         self.num_pars = self.dll.ex_npars(self.models)
         lo, hi = self._par_bounds()
-        small = numpy.max(numpy.vstack((abs(lo),abs(hi))),axis=0)<1e-4
+        small = numpy.max(numpy.vstack((abs(lo),abs(hi))),axis=0)<1e-3
         self.scale = numpy.where(small, 1e6, 1)
 
         # TODO: better way to force recalc on load
@@ -221,7 +256,7 @@ class GareflModel(object):
 
     @trace
     def get_penalty(self):
-        #print "returning penalty",self.dll.ex_get_penalty(self.models)
+        #print "penalty",self.dll.ex_get_penalty(self.models),self.par_values()
         return self.dll.ex_get_penalty(self.models)
 
     @trace

@@ -85,6 +85,9 @@ class ExperimentBase(object):
                 else:
                     resid = (self.probe.R - QR[1])/self.probe.dR
             self._cache['residuals'] = resid
+            #print ("%12s "*4)%("Q","R","dR","Rtheory")
+            #print "\n".join(("%12.6e "*4)%el for el in list(zip(QR[0],self.probe.R,self.probe.dR,QR[1])))
+            #print "resid",numpy.sum(resid**2)/2
 
         return self._cache['residuals']
 
