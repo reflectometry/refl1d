@@ -14,9 +14,9 @@ that any fitter that gets lost in a penalty region can more quickly return
 to the valid region.  Any penalty value above *FIT_REJECT_PENALTY* will
 suppress the evaluation of the model at that point during the fit.
 
-Consider a model with Si|Au|FeNi|air, with the constraint that
+Consider a model with layers (Si | Au | FeNi | air) and the constraint that
 d_Au + d_FeNi < 200 A.  The constraints function would be written something
-like:
+like::
 
     double excess = fit[0].m.d[1] + fit[0].m.d[2] - 200;
     fit[0].penalty = excess > 0 ? excess*excess+FIT_REJECT_PENALTY : 0.;
@@ -24,10 +24,11 @@ like:
 Then, if the fit algorithm proposes a value such as Au=125, FeNi=90, the
 excess will be 15, and the penalty will be FIT_REJECT_PENALTY+225.
 
-You can use penalties less than FIT_REJECT_PENALTY, but these should
+You can use penalties less than *FIT_REJECT_PENALTY*, but these should
 correspond to the negative log likelihood of seeing that constraint value
 within the model in order for the MCMC uncertainty analysis to work correctly.
-
+*FIT_REJECT_PENALTY* is set to 1e6, which should be high enough that it 
+doesn't perturb the fit.
 """
 __all__ = ["load"]
 

@@ -2,7 +2,8 @@ from refl1d.names import *
 from refl1d.stajconvert import load_mlayer
 
 # Load neutron model and data from staj file
-M = load_mlayer("De2_VATR.staj")
+layers=["Al2O3","Al2Ox","H2O","nafion","solvent","air"]
+M = load_mlayer("De2_VATR.staj",layers=layers,name="n6hd2")
 
 # Set thickness/roughness fitting parameters to +/- 20 %
 # Set SLD to +/- 5% for all but the incident medium and the substrate.
