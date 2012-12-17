@@ -14,12 +14,12 @@ from .material import SLD
 from .resolution import QL2T,sigma2FWHM
 from .probe import NeutronProbe, XrayProbe
 
-def load_mlayer(filename, fit_pmp=0):
+def load_mlayer(filename, fit_pmp=0, name=None, layers=None):
     """
     Load a staj file as a model.
     """
     staj = MlayerModel.load(filename)
-    model = mlayer_to_model(staj)
+    model = mlayer_to_model(staj, name=name, layers=layers)
     if fit_pmp != 0:
         fit_all(model, pmp=fit_pmp)
     return model
@@ -54,36 +54,49 @@ def fit_all(M, pmp=20):
         if p.value != 0: p.pmp(pmp)
         #p.fixed = False
 
-def mlayer_to_model(staj):
+def mlayer_to_model(staj, name=None, layers=None):
     """
     Convert a loaded staj file to a refl1d experiment.
 
     Returns a new experiment
     """
     from .experiment import Experiment
-    sample = _mlayer_to_stack(staj)
-    probe = _mlayer_to_probe(staj)
+    sample = _mlayer_to_stack(staj, name, layers)
+    probe = _mlayer_to_probe(staj, name)
     return Experiment(sample=sample,probe=probe)
 
-def _mlayer_to_stack(s):
+def _mlayer_to_stack(s, name, layers):
     """
     Return a sample stack based on the model used in the staj file.
     """
+    # check pars
+    if len(layers) != len(s.rho):
+        raise ValueError("Have %d staj layers but got %d layer names"
+                         % (len(s.rho), len(layers)))
+
+    # prepend datafile name to layers
+    if name is None:
+        name = os.path.splitext(s.data_file)[0]
+    if name and not name.endswith(" "): name += " "
+
     i1 = s.num_top+1
     i2 = s.num_top+s.num_middle+1
 
     # Construct slabs
     slabs = []
     for i in reversed(range(len(s.rho))):
-        if i == 0:
-            name = 'V'
+        if layers:
+            Lname = layers[i]
+        elif i == 0:
+            Lname = 'V'
         elif i < i1:
-            name = 'T%d'%(i)
+            Lname = 'T%d'%(i)
         elif i < i2:
-            name = 'M%d'%(i-i1+1)
+            Lname = 'M%d'%(i-i1+1)
         else:
-            name = 'B%d'%(i-i2+1)
-        slabs.append(Slab(material=SLD(rho=s.rho[i],irho=s.irho[i],name=name),
+            Lname = 'B%d'%(i-i2+1)
+        slabs.append(Slab(material=SLD(rho=s.rho[i],irho=s.irho[i],
+                                       name=name+Lname),
                           thickness=s.thickness[i],
                           interface=s.sigma_roughness[i]))
 
@@ -97,10 +110,13 @@ def _mlayer_to_stack(s):
 
     return stack
 
-def _mlayer_to_probe(s):
+def _mlayer_to_probe(s, name):
     """
     Return a model probe based on the data used for the staj file.
     """
+    if name is None:
+        name = os.path.splitext(s.data_file)[0]
+
     if s.data_file == "":
         Q = numpy.linspace(s.Qmin, s.Qmax, s.num_Q)
         R,dR = None,None
@@ -126,7 +142,8 @@ def _mlayer_to_probe(s):
     probe = probe(T=T,dT=dT,L=L,dL=dL,data=(R,dR),
                   theta_offset=s.theta_offset,
                   background=s.background,
-                  intensity=s.intensity)
+                  intensity=s.intensity,
+                  name=name)
     probe.filename = s.data_file
     return probe
 
