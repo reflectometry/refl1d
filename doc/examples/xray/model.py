@@ -97,10 +97,10 @@ if search == "grower":
     glass_sld = 15,0.5
 
     # Bulk SLD
-    cap.rho.value, cap.irho.value = xray_sld(fPt, wavelength=Cu.Kalpha)
-    NiFe.rho.value, NiFe.irho.value = xray_sld(fNiFe, wavelength=Cu.Kalpha)
-    FePt.rho.value, FePt.irho.value = xray_sld(fFePt, wavelength=Cu.Kalpha)
-    seed.rho.value, seed.irho.value = xray_sld(fFePt, wavelength=Cu.Kalpha)
+    cap.rho.value, cap.irho.value = xray_sld(fPt, wavelength=Cu.K_alpha)
+    NiFe.rho.value, NiFe.irho.value = xray_sld(fNiFe, wavelength=Cu.K_alpha)
+    FePt.rho.value, FePt.irho.value = xray_sld(fFePt, wavelength=Cu.K_alpha)
+    seed.rho.value, seed.irho.value = xray_sld(fFePt, wavelength=Cu.K_alpha)
     glass.rho.value,glass.irho_value = glass_sld
 
     # Expected thickness/interface

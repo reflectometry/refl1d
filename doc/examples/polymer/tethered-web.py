@@ -151,6 +151,8 @@ instrument = NCNR.NG7(Qlo=0.005, slits_at_Qlo=0.075)
 D_probe = instrument.load('10ndt001.refl', back_reflectivity=True)
 H_probe = instrument.load('10nht001.refl', back_reflectivity=True)
 
+D_probe.theta_offset.range(-0.1,0.1)
+
 # We set ``back_reflectivity=True`` because we are coming in through the
 # substrate.  The reflectometry calculator will automatically reverse
 # the stack and adjust the effective incident angle to account for the

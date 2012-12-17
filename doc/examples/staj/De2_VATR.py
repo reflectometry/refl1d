@@ -2,7 +2,10 @@ from refl1d.names import *
 from refl1d.stajconvert import load_mlayer
 
 # Load neutron model and data from staj file
-layers=["Al2O3","Al2Ox","H2O","nafion","solvent","air"]
+# Layer names are ordered from substrate to surface, and defaults to
+# the names in the original staj file.
+# Model name defaults to the data file name
+layers=["MgO","MgOx","MgHx1","MgHx2","Pd","air"]
 M = load_mlayer("De2_VATR.staj",layers=layers,name="n6hd2")
 
 # Set thickness/roughness fitting parameters to +/- 20 %
