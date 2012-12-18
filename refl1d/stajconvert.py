@@ -70,7 +70,7 @@ def _mlayer_to_stack(s, name, layers):
     Return a sample stack based on the model used in the staj file.
     """
     # check pars
-    if len(layers) != len(s.rho):
+    if layers and len(layers) != len(s.rho):
         raise ValueError("Have %d staj layers but got %d layer names"
                          % (len(s.rho), len(layers)))
 
@@ -86,7 +86,7 @@ def _mlayer_to_stack(s, name, layers):
     slabs = []
     for i in reversed(range(len(s.rho))):
         if layers:
-            Lname = layers[i]
+            Lname = layers[len(layers)-i-1]
         elif i == 0:
             Lname = 'V'
         elif i < i1:

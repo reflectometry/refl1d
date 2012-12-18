@@ -85,3 +85,7 @@ example::
     M2 = load_mlayer("De2_VATR.staj")
     M1.sample[3].thickness = M2.sample[3].thickness
     problem = MultiFitProblem([M1,M2])
+
+
+Dura, J. A. et al. Porous Mg formation upon dehydrogenation of MgH2 thin films. Journal of Applied Physics 109, 093501–093501–7 (2011).
+

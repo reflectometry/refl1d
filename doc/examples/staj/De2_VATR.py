@@ -5,7 +5,7 @@ from refl1d.stajconvert import load_mlayer
 # Layer names are ordered from substrate to surface, and defaults to
 # the names in the original staj file.
 # Model name defaults to the data file name
-layers=["MgO","MgOx","MgHx1","MgHx2","Pd","air"]
+layers=["sappire","MgO","MgHx1","MgHx2","Pd","air"]
 M = load_mlayer("De2_VATR.staj",layers=layers,name="n6hd2")
 
 # Set thickness/roughness fitting parameters to +/- 20 %
