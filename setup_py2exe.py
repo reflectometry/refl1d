@@ -40,7 +40,7 @@ import os
 import sys
 
 # Force build before continuing
-os.system('"%s" setup.py build'%sys.executable)
+#os.system('"%s" setup.py build'%sys.executable)
 
 # Remove the current directory from the python path
 here = os.path.abspath(os.path.dirname(__file__))
@@ -72,6 +72,7 @@ sys.path.insert(0, build_lib)
 import matplotlib
 matplotlib.use('WXAgg')
 import periodictable
+import bumps
 
 # Retrieve the application version string.
 import refl1d
@@ -178,7 +179,7 @@ data_files.append( ('.', [os.path.join('.', 'README.txt')]) )
 data_files.append( ('.', [os.path.join('.', 'bin', 'refl1d_launch.bat')]) )
 
 # Add application specific data files from the refl1d\refl1d-data folder.
-data_files += refl1d.data_files()
+data_files += bumps.data_files()
 
 # Add data files from the matplotlib\mpl-data folder and its subfolders.
 # For matploblib prior to version 0.99 see the examples at the end of the file.
@@ -205,11 +206,9 @@ for path in glob.glob(os.path.join('doc', 'examples', '*')):
         data_files.append( ('doc', [path]) )
 
 # Add PDF documentation to the dist staging directory.
-pdf = os.path.join('doc', 'Refl1D.pdf')
+pdf = os.path.join('doc', '_build', 'latex', 'Refl1D.pdf')
 if os.path.isfile(pdf):
     data_files.append( ('doc', [pdf]) )
-else:
-    print "*** %s not found - building frozen image without it ***" %pdf
 
 # Add the Microsoft Visual C++ 2008 redistributable kit if we are building with
 # Python 2.6 or 2.7.  This kit will be installed on the target system as part
@@ -241,7 +240,7 @@ includes = []
 # - Since we do not support Win 9x systems, w9xpopen.dll is not needed.
 # - For some reason cygwin1.dll gets included by default, but it is not needed.
 
-excludes = ['Tkinter', 'PyQt4', '_ssl', '_tkagg', 'numpy.distutils.test']
+excludes = ['Tkinter', 'PyQt4', '_ssl', '_tkagg', 'numpy.distutils.tests']
 
 dll_excludes = ['libgdk_pixbuf-2.0-0.dll',
                 'libgobject-2.0-0.dll',
@@ -262,12 +261,13 @@ class Target():
         self.__dict__.update(kw)
         self.version = version
 
+ICON_FILE = os.path.join(os.path.abspath(os.path.dirname(bumps.__file__)),'gui', 'resources', 'bumps.ico')
 clientCLI = Target(
     name = 'Refl1D',
     description = 'Refl1D CLI application',
     script = os.path.join('bin', 'refl1d_cli.py'),  # module to run on application start
     dest_base = 'refl1d',  # file name part of the exe file to create
-    icon_resources = [(1, os.path.join('refl1d', 'gui', 'resources', 'refl1d.ico'))],  # also need to specify in data_files
+    icon_resources = [(1, ICON_FILE)],  # also need to specify in data_files
     bitmap_resources = [],
     other_resources = [(24, 1, manifest % dict(prog='Refl1D'))] )
 
@@ -276,7 +276,7 @@ clientGUI = Target(
     description = 'Refl1D GUI application',
     script = os.path.join('bin', 'refl1d_gui.py'),  # module to run on application start
     dest_base = 'refl1d_gui',  # file name part of the exe file to create
-    icon_resources = [(1, os.path.join('refl1d', 'gui', 'resources', 'refl1d.ico'))],  # also need to specify in data_files
+    icon_resources = [(1, ICON_FILE)],  # also need to specify in data_files
     bitmap_resources = [],
     other_resources = [(24, 1, manifest % dict(prog='Refl1D'))] )
 
@@ -307,5 +307,5 @@ setup(
       # Since we are building two exe's, do not put the shared library in each
       # of them.  Instead create a single, separate library.zip file.
       ### zipfile=None,               # bundle library.zip in exe
-      data_files=data_files           # list of files to copy to dist directory
+      data_files=data_files,          # list of files to copy to dist directory
      )

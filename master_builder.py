@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# Author: James Krycka
+# Author: James Krycka, Paul Kienzle
 
 """
 This script builds the Refl1D application and documentation from source and
@@ -43,6 +43,14 @@ directory is defined as one-level-up and the repository is not downloaded
 implicit root (i.e. top-level) directory.
   E:/work/test1/refl1d/master_builder.py
                /refl1d/...
+
+Getting "git pull" support on Windows requires some work.  You first need to
+install Git Bash from msysgit (github.com has a link), and the PuTTY installer.
+Use puttygen to convert your private key to a putty key, which you can then 
+drop on your desktop.  Click the private key icon before running this script
+in a cmd console.  If for some reason you don't want to use PuTTY, you can
+comment out os.environ['GIT_SSH'] below, and run this script from a Git Bash
+console with the usual ssh-agent, ssh-add sequence to set up the remote agent.
 """
 
 import os
@@ -51,11 +59,30 @@ import shutil
 import subprocess
 
 # Windows commands to run utilities
-GIT = r"C:\Program Files\Git\bin\git.exe"
-REPO_NEW = '"%s" clone git@github.com:reflectometry/refl1d.git'%GIT
-REPO_UPDATE = '"%s" pull origin master'%GIT
+if os.name == "nt":
+    SYSBIN=r"C:\Program Files (x86)"
+    if not os.path.exists(SYSBIN): SYSBIN=r"C:\Program Files"
+    GIT = SYSBIN+r"\Git\bin\git.exe"
+    INNO   = SYSBIN+r"\Inno Setup 5\ISCC.exe"  # command line operation
 
-INNO   = r"C:\Program Files\Inno Setup 5\ISCC.exe"  # command line operation
+    if not os.path.exists(GIT):
+        print >>sys.stderr, "missing git: "+GIT
+        sys.exit(1)
+    if not os.path.exists(INNO):
+        print >>sys.stderr, "missing inno setup: "+INNO
+        sys.exit(1)
+
+    # Put PYTHON in the environment and add the python directory and its
+    # corresponding script directory (for nose, sphinx, pip, etc) to the path.
+    PYTHON = sys.executable
+    PYTHONDIR = os.path.dirname(os.path.abspath(PYTHON))
+    SCRIPTDIR = os.path.join(PYTHONDIR,'Scripts')
+    os.environ['PATH'] = ";".join((PYTHONDIR,SCRIPTDIR,os.environ['PATH']))
+    os.environ['PYTHON'] = "/".join(PYTHON.split("\\"))
+    os.environ['GIT_SSH'] = r"C:\Program Files (x86)\PuTTY\plink.exe"
+else:
+    GIT = "git"
+
 
 # Name of the package
 PKG_NAME = "refl1d"
@@ -64,7 +91,7 @@ APP_NAME = "Refl1D"
 
 
 # Required versions of Python packages and utilities to build the application.
-MIN_PYTHON = "2.5"
+MIN_PYTHON = "2.6"
 MAX_PYTHON = "3.0"
 MIN_MATPLOTLIB = "1.0.0"
 MIN_NUMPY = "1.3.0"
@@ -103,36 +130,26 @@ if tail == PKG_NAME:
     TOP_DIR = head
 else:
     TOP_DIR = RUN_DIR
-SRC_DIR = os.path.join(TOP_DIR, PKG_NAME)
 INS_DIR = os.path.join(TOP_DIR, LOCAL_INSTALL)
+os.environ['PYTHONPATH'] = INS_DIR
 
-# Put PYTHON in the environment and add the python directory and its
-# corresponding script directory (for nose, sphinx, pip, etc) to the path.
-PYTHON = sys.executable
-PYTHONDIR = os.path.dirname(os.path.abspath(PYTHON))
-SCRIPTDIR = os.path.join(PYTHONDIR,'Scripts')
-os.environ['PATH'] = ";".join((PYTHONDIR,SCRIPTDIR,os.environ['PATH']))
-os.environ['PYTHON'] = "/".join(PYTHON.split("\\"))
+BUMPS_DIR = os.path.join(TOP_DIR, "bumps")
+BUMPS_NEW = '"%s" clone -b bumps-split https://github.com/reflectometry/bumps.git'%GIT
+SRC_DIR = os.path.join(TOP_DIR, "refl1d")
+SRC_NEW = '"%s" clone https://github.com/reflectometry/refl1d.git'%GIT
+REPO_UPDATE = '"%s" pull'%GIT
+
 
 def get_version():
+    global PKG_VERSION
     # Get the version string of the application for use later.
     # This has to be done after we have checked out the repository.
     for line in open(os.path.join(SRC_DIR, PKG_NAME, '__init__.py')).readlines():
         if (line.startswith('__version__')):
-            __version__ = int(line.split('=')[1])
+            PKG_VERSION = line.split('=')[1].strip()[1:-1]
             break
     else:
         raise RuntimeError("Could not find package version")
-
-    global PKG_VERSION, EGG_NAME, PKG_DIR
-    PKG_VERSION = __version__
-    EGG_NAME = "%s-%s-py%d.%d-%s.egg"%(PKG_NAME,PKG_VERSION,
-                                       sys.version_info[0],
-                                       sys.version_info[1],
-                                       sys.platform)
-    PKG_DIR = os.path.join(INS_DIR, EGG_NAME)
-    # Add the local site packages to the python path
-    os.environ['PYTHONPATH'] = PKG_DIR
 
 #==============================================================================
 
@@ -196,8 +213,11 @@ def checkout_code():
 
     if RUN_DIR == TOP_DIR:
         os.chdir(TOP_DIR)
-        exec_cmd(REPO_NEW)
+        exec_cmd(BUMPS_NEW)
+        exec_cmd(SRC_NEW)
     else:
+        os.chdir(BUMPS_DIR)
+        exec_cmd(REPO_UPDATE)
         os.chdir(SRC_DIR)
         exec_cmd(REPO_UPDATE)
 
@@ -207,10 +227,11 @@ def create_archive(version=None):
     # containing the names of all files.
     print SEPARATOR
     print "\nStep 2 - Creating an archive of the source code ...\n"
-    os.chdir(SRC_DIR)
 
+    
     try:
         # Create zip and tar archives in the dist subdirectory.
+        os.chdir(SRC_DIR)
         exec_cmd("%s setup.py sdist --formats=zip,gztar" %(PYTHON))
     except:
         print "*** Failed to create source archive ***"
@@ -235,7 +256,6 @@ def install_package():
     # Intermediate work files are stored in the <SRC_DIR>/build directory tree.
     print SEPARATOR
     print "\nStep 3 - Installing the %s package in %s...\n" %(PKG_NAME, INS_DIR)
-    os.chdir(SRC_DIR)
 
     if os.path.isdir(INS_DIR):
         print "WARNING: In order to build", APP_NAME, "cleanly, the local build"
@@ -254,9 +274,12 @@ def install_package():
     # Perform the installation to a private directory tree and create the
     # PYTHONPATH environment variable to pass this info to the py2exe build
     # script later on.
-    os.environ["PYTHONPATH"] = INS_DIR
     if not os.path.exists(INS_DIR):
         os.makedirs(INS_DIR)
+
+    os.chdir(BUMPS_DIR)
+    exec_cmd("%s setup.py -q install --install-lib=%s" %(PYTHON, INS_DIR))
+    os.chdir(SRC_DIR)
     exec_cmd("%s setup.py -q install --install-lib=%s" %(PYTHON, INS_DIR))
 
 
@@ -268,11 +291,13 @@ def build_documentation():
 
     # Delete any left over files from a previous build.
     # Create documentation in HTML and PDF format.
-    exec_cmd("make clean html pdf")
-    # Copy PDF to the doc directory where the py2exe script will look for it.
+    exec_cmd("make clean")
+    exec_cmd("make html")
+    exec_cmd("make pdf")
+    # Copy PDF to the html directory where the html can find it.
     pdf = os.path.join("_build", "latex", APP_NAME+".pdf")
     if os.path.isfile(pdf):
-        shutil.copy(pdf, ".")
+        shutil.copy(pdf, os.path.join("_build","html"))
 
 
 def create_windows_exe():
@@ -483,11 +508,9 @@ def check_dependencies():
 def exec_cmd(command):
     """Runs the specified command in a subprocess."""
 
-    if os.name == 'nt': flag = False
-    else:               flag = True
-
+    shell = os.name != 'nt'
     print "$",command
-    subprocess.call(command, shell=flag)
+    subprocess.call(command, shell=shell)
 
 
 if __name__ == "__main__":

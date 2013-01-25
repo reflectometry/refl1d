@@ -5,7 +5,7 @@
 PYTHON        ?= python
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
-PAPER         =
+PAPER         ?= letter
 BUILDDIR      = _build
 
 # Internal variables.
@@ -130,7 +130,6 @@ pdf: generated
 	@echo "Running LaTeX files through (pdf)latex..."
 	make -C $(BUILDDIR)/latex all-pdf
 	@echo "pdflatex finished; the PDF files are in $(BUILDDIR)/latex."
-	cp $(BUILDDIR)/latex/Refl1D.pdf $(BUILDDIR)/html
 
 text: generated
 	$(SPHINXBUILD) -b text $(ALLSPHINXOPTS) $(BUILDDIR)/text

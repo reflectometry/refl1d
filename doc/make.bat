@@ -2,6 +2,8 @@
 
 REM Command file for Sphinx documentation
 
+set PAPER=letter
+
 if "%SPHINXBUILD%" == "" (
 	set SPHINXBUILD=sphinx-build
 )
@@ -115,6 +117,16 @@ if "%1" == "latex" (
 	goto end
 )
 
+if "%1" == "pdf" (
+    %SPHINXBUILD% -b latex %ALLSPHINXOPTS% %BUILDDIR%/latex
+	cd %BUILDDIR%/latex
+	pdflatex Refl1D.tex
+	REM cd ../..
+	echo.
+	echo.Build finished. The pdf file is in %BUILDDIR%/latex
+	goto end
+)
+
 if "%1" == "text" (
 	%SPHINXBUILD% -b text %ALLSPHINXOPTS% %BUILDDIR%/text
 	echo.
@@ -151,5 +163,7 @@ if "%1" == "doctest" (
 results in %BUILDDIR%/doctest/output.txt.
 	goto end
 )
+
+echo Do not know how to make %1.
 
 :end
