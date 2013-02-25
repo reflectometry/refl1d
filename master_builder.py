@@ -45,12 +45,16 @@ implicit root (i.e. top-level) directory.
                /refl1d/...
 
 Getting "git pull" support on Windows requires some work.  You first need to
-install Git Bash from msysgit (github.com has a link), and the PuTTY installer.
-Use puttygen to convert your private key to a putty key, which you can then 
-drop on your desktop.  Click the private key icon before running this script
-in a cmd console.  If for some reason you don't want to use PuTTY, you can
-comment out os.environ['GIT_SSH'] below, and run this script from a Git Bash
-console with the usual ssh-agent, ssh-add sequence to set up the remote agent.
+install Git Bash from msysgit (github.com has a link).  To build, start
+gitbash, and set up your ssh keys using::
+
+    $ eval `ssh-agent -s`
+    $ ssh-add
+
+If you want to use PuTTY instead, you must convert your private key to a
+putty key and drop it on your desktop.  Click the private key icon to start
+pagent with your key.  Uncomment os.environ['GIT_SSH'] below, and set it to
+the location of plink.exe on your system.
 """
 
 import os
@@ -79,7 +83,7 @@ if os.name == "nt":
     SCRIPTDIR = os.path.join(PYTHONDIR,'Scripts')
     os.environ['PATH'] = ";".join((PYTHONDIR,SCRIPTDIR,os.environ['PATH']))
     os.environ['PYTHON'] = "/".join(PYTHON.split("\\"))
-    os.environ['GIT_SSH'] = r"C:\Program Files (x86)\PuTTY\plink.exe"
+    #os.environ['GIT_SSH'] = r"C:\Program Files (x86)\PuTTY\plink.exe"
 else:
     GIT = "git"
 
@@ -509,8 +513,9 @@ def exec_cmd(command):
     """Runs the specified command in a subprocess."""
 
     shell = os.name != 'nt'
-    print "$",command
-    subprocess.call(command, shell=shell)
+    print os.getcwd(),"$",command
+    result = subprocess.call(command, shell=shell)
+    if result != 0: sys.exit(result)
 
 
 if __name__ == "__main__":
