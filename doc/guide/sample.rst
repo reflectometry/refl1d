@@ -1,4 +1,4 @@
-.. _sample-guide:
+.. sample-guide_:
 
 *********************
 Sample Representation
@@ -139,7 +139,7 @@ There are a number of issues surrounding the choice of model.
   user can bring to bear prior information to limit the search space.
   For example, it is common to add an unknown silicon-oxide profile
   to the surface of silicon, with SLD varying between the values for
-  Si and SiO\ :sub:`2`
+  Si and SiO\ :sub:`2`.
 
 * How easy is it to edit the profile interactively
 
@@ -243,7 +243,7 @@ state:  that is, don't expect your sample to show zebra stripes unless
 you are on an African safari or visiting a zoo.
 
 
-.. _new_layers:
+.. new-layers_:
 
 Subclassing Layer
 =================

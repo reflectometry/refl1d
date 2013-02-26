@@ -1,4 +1,4 @@
-.. _data-guide:
+.. data-guide_:
 
 *******************
 Data Representation
@@ -23,12 +23,12 @@ used for X-ray radiation.  Additional properties,
 
 Knowing the angle is necessary to correct for errors in sample alignment.
 
-.. _data_simulation:
+.. data_simulation_:
 
 Simulated probes
 ================
 
-.. _data_loading:
+.. data_loading_:
 
 Loading data
 ============
@@ -44,7 +44,7 @@ separately --- each points will contribute to the overall cost function
 in accordance with its statistical weight.
 
 
-.. _data_views:
+.. data_views_:
 
 Viewing data
 ============
@@ -53,7 +53,7 @@ The probe object controls the plotting of theory and data curves.  This
 is reasonable since it is only the probe which knows details such as
 the original points and the points used in the calculation
 
-.. _data_resolution:
+.. data_resolution_:
 
 Instrument Resolution
 =====================
@@ -186,7 +186,7 @@ $s_1(\theta) = s_1(\theta_o) \cdot \theta/\theta_o$ and
 $s_2(\theta) = s_2(\theta_o) \cdot \theta/\theta_o$.
 
 
-.. _data_resolution_calculator:
+.. data_resolution_calculator_:
 
 Applying Resolution
 ===================
@@ -252,7 +252,7 @@ effects of different distributions by subclassing
 improved resolution calculators and non-gaussian convolution.
 
 
-.. _data_backrefl:
+.. data_backrefl_:
 
 Back reflectivity
 =================
@@ -295,7 +295,7 @@ The interaction between *back_reflectivity*, *back_absorption*,
 sample representation and $Q$ value can be somewhat tricky.  It
 
 
-.. _data_alignment:
+.. data_alignment_:
 
 Alignment offset
 ================
@@ -337,7 +337,7 @@ $I$ is the integrated intensity under the peak and $d$ is the motor
 step size is radians.
 
 
-.. _data_scattering_factors:
+.. data_scattering_factors_:
 
 Scattering Factors
 ==================

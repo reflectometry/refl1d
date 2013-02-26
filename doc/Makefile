@@ -4,7 +4,7 @@
 # You can set these variables from the command line.
 PYTHON        ?= python
 SPHINXOPTS    =
-SPHINXBUILD   = sphinx-build
+SPHINXBUILD   = python `which sphinx-build`
 PAPER         ?= letter
 BUILDDIR      = _build
 
@@ -47,24 +47,25 @@ help:
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 	@echo "  install   to upload the docs to the distribution site"
 
-clean:
+clean: clean_api
 	# Cleaning matplotlib plots from build
-	# Cleaning html/pdf from _build
-	# Resetting api/
-	-rm -rf $(BUILDDIR)/* build api
+	# Cleaning html/pdf from $(BUILDDIR)
+	-rm -rf $(BUILDDIR) build
 
-api: genmods.py
-	-rm -rf api
+clean_api:
+	-rm -rf refl1d_api bumps_api
+
+api: clean_api genmods.py
 	$(PYTHON) genmods.py
 
 
-_build/html:
-	mkdir -p _build/html/_static
-	-cp -r MathJax _build/html/_static/MathJax
+$(BUILDDIR)/html:
+	mkdir -p $(BUILDDIR)/html/_static
+	-cp -r MathJax $(BUILDDIR)/html/_static/MathJax
 
 generated: api $(WEBDEPS)
 
-html: _build/html generated
+html: $(BUILDDIR)/html generated
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
@@ -158,6 +159,6 @@ doctest: generated
 	      "results in $(BUILDDIR)/doctest/output.txt."
 
 install:
-	scp _build/html/*.pdf reflectometry.org:web/danse/download
+	scp $(BUILDDIR)/html/*.pdf reflectometry.org:web/danse/download
 	ssh reflectometry.org rm -rf web/danse/docs/refl1d
-	scp -r _build/html reflectometry.org:web/danse/docs/refl1d
+	scp -r $(BUILDDIR)/html reflectometry.org:web/danse/docs/refl1d
