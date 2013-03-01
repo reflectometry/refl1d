@@ -35,7 +35,7 @@
 ; Use a batch file to launch refl1d.exe to setup a custom environment.
 #define MyAppCLIFileName "refl1d_launch.bat"
 #define MyAppGUIFileName "refl1d_gui.exe"
-#define MyIconFileName "refl1d.ico"
+#define MyIconFileName "bumps.ico"
 #define MyIconPath = "refl1d-data\refl1d.ico"
 #define MyReadmeFileName "README.txt"
 #define MyLicenseFileName "LICENSE.txt"
@@ -65,7 +65,7 @@ DisableProgramGroupPage=yes
 OutputBaseFilename={#MyAppNameLowercase}-{#MyAppVersion}-win32
 OutputManifestFile={#MyAppNameLowercase}-{#MyAppVersion}-win32-manifest.txt
 ; Note that the icon file is in the bin subdirectory, not in the top-level directory.
-SetupIconFile=refl1d\gui\resources\{#MyIconFileName}
+SetupIconFile=..\bumps\bumps\gui\resources\{#MyIconFileName}
 LicenseFile={#MyLicenseFileName}
 SourceDir=.
 OutputDir=.

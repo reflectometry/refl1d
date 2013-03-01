@@ -8,7 +8,7 @@ of the residual values.
 Use *run_errors* in a model file to reload the results of a batch DREAM fit.
 """
 __all__ = ['reload_errors', 'run_errors',
-           'calc_errors_from_state', 'calc_errors', 'align_profiles',
+           'calc_errors', 'align_profiles',
            'show_errors', 'show_profiles', 'show_residuals',
            ]
 
@@ -50,7 +50,7 @@ def run_errors(**kw):
 
         *nshown*, *random* :
 
-            see :func:`calc_errors_from_state`
+            see :func:`bumps.errplot.calc_errors_from_state`
 
         *contours*, *npoints*, *plots*, *save* :
 

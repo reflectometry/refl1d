@@ -43,15 +43,15 @@ Job Controller
 an http API for interacting with jobs.
 
 It is implemented as a WSGI python application using
-`Flask <http://flask.pocoo.org>`_
+`Flask <http://flask.pocoo.org>`_::
 
-<VirtualHost *:80>
+  <VirtualHost *:80>
         ServerAdmin pkienzle@nist.gov
         ServerName www.reflectometry.org
         ServerAlias reflectometry.org
         ErrorLog logs/reflectometry-error_log
         CustomLog logs/reflectometry-access_log common
-
+        
         WSGIDaemonProcess reflserve user=pkienzle group=refl threads=3
         WSGIScriptAlias /queue /home/pkienzle/reflserve/www/jobqueue.wsgi
 
@@ -61,13 +61,12 @@ It is implemented as a WSGI python application using
                 Order deny,allow
                 Allow from all
         </Directory>
-
+        
         DocumentRoot /var/www/reflectometry
         <Directory "/var/www/reflectometry/">
                 AllowOverride All
         </Directory>
-
-</VirtualHost>
+  </VirtualHost>
 
 
 There is a choice of two different queuing systems to configure.  If your

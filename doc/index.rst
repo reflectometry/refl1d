@@ -17,4 +17,5 @@ Contents
    getting_started/index.rst
    examples/index.rst
    guide/index.rst
-   api/index.rst
+   refl1d_api/index.rst
+   bumps_api/index.rst
