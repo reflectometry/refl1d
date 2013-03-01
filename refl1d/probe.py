@@ -99,11 +99,16 @@ class Probe(object):
 
     Measurement properties:
 
-        *intensity* is the beam intensity
-        *background* is the background
-        *back_absorption* is the amount of absorption through the substrate
-        *theta_offset* is the offset of the sample from perfect alignment
-        *back_reflectivity* is true if the beam enters through the substrate
+        *intensity* : float or Parameter
+           Beam intensity
+        *background* : float or Parameter
+           Constant background
+        *back_absorption* : float or Parameter
+           Absorption through the substrate relative to beam intensity
+        *theta_offset* : float or Parameter
+           Offset of the sample from perfect alignment
+        *back_reflectivity* : True or False
+           True if the beam enters through the substrate
 
     Measurement properties are fittable parameters.  *theta_offset* in
     particular should be set using *probe.theta_offset.dev(dT)*, with *dT*
@@ -121,24 +126,25 @@ class Probe(object):
 
     View properties:
 
-        *substrate* is the material which makes up the substrate
-        *surface* is the material which makes up the surface
-        *view* is 'fresnel', 'log', 'linear', 'q4', 'residuals'
-        *plot_shift* is the number of pt to shift each new dataset
+        *view* : string
+            One of 'fresnel', 'log', 'linear', 'q4', 'residuals'
+        *plot_shift* : float
+            The number of pixels to shift each new dataset so
+            datasets can be seen separately
+        *residuals_shift* : 
+            The number of pixels to shift each new set of residuals
+            so the residuals plots can be seen separately.
 
     Normally *view* is set directly in the class rather than the
-    instance since it is not specific to the view.  The substrate and 
-    surface materials are a property of the sample, and should share 
-    the same Material object.  Fresnel and Q4 views are corrected for
-    background and intensity; log and linear views show the uncorrected data.
+    instance since it is not specific to the view.  Fresnel and Q4 
+    views are corrected for background and intensity; log and 
+    linear views show the uncorrected data.
     """
     polarized = False
     Aguide = 270  # default guide field for unpolarized measurements
     view = "fresnel"
     plot_shift = 0
     residuals_shift = 0
-    substrate = None
-    surface = None
     def __init__(self, T=None, dT=0, L=None, dL=0, data=None, name=None,
                  intensity=1, background=0, back_absorption=1, theta_offset=0,
                  back_reflectivity=False):
