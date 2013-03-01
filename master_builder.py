@@ -118,9 +118,6 @@ MIN_JINJA2 = "2.5.2"
 MIN_PY2EXE = "0.6.9"
 MIN_INNO = "5.3.10"
 
-# Create a line separator string for printing
-SEPARATOR = "\n" + "/"*79
-
 # Relative path for local install under our build tree; this is used in place
 # of the default installation path on Windows of C:\PythonNN\Lib\site-packages
 LOCAL_INSTALL = "local-site-packages"
@@ -145,6 +142,7 @@ REPO_UPDATE = '"%s" pull'%GIT
 
 
 def get_version():
+    "Determine package version"
     global PKG_VERSION
     # Get the version string of the application for use later.
     # This has to be done after we have checked out the repository.
@@ -157,63 +155,9 @@ def get_version():
 
 #==============================================================================
 
-def build_it():
-    # If no arguments, start at the first step
-    start_with = sys.argv[1] if len(sys.argv)>1 else 'deps'
-    started = False
-    only = len(sys.argv)>2 and sys.argv[2] == "only"
-
-    # Check the system for all required dependent packages.
-    started = started or start_with == 'deps'
-    if started: check_dependencies()
-    if started and only: return
-
-    # Checkout code from repository.
-    started = started or start_with in ('co', 'checkout', 'update')
-    if started: checkout_code()
-    if started and only: return
-
-    # Version may have been updated on another repository
-    get_version()
-
-    # Install the application in a local directory tree.
-    started = started or start_with == 'build'
-    if started: install_package()
-    if started and only: return
-
-    # Run unittests and doctests using a test script.
-    started = started or start_with == 'test'
-    if started: run_tests()
-    if started and only: return
-
-    # Build HTML and PDF documentaton using sphinx.
-    # This step is done before building the Windows installer so that PDF
-    # documentation can be included in the installable product.
-    started = started or start_with == 'docs'
-    if started: build_documentation()
-    if started and only: return
-
-    # Create an archive of the source code.
-    started = started or start_with == 'zip'
-    if started: create_archive(PKG_VERSION)
-    if started and only: return
-
-    # Create a Windows executable file using py2exe.
-    started = started or start_with == 'exe'
-    if started and os.name == 'nt': create_windows_exe()
-    if started and only: return
-
-    # Create a Windows installer/uninstaller exe using the Inno Setup Compiler.
-    started = started or start_with == 'installer'
-    if started and os.name == 'nt': create_windows_installer(PKG_VERSION)
-    if started and only: return
-
-
 def checkout_code():
-    # Checkout the application code from the repository into a directory tree
-    # under the top level directory.
-    print SEPARATOR
-    print "\nStep 1 - Checking out application code from the repository ...\n"
+    "download or update source code"
+    print "Checking out application code from the repository ...\n"
 
     if RUN_DIR == TOP_DIR:
         os.chdir(TOP_DIR)
@@ -225,12 +169,16 @@ def checkout_code():
         os.chdir(SRC_DIR)
         exec_cmd(REPO_UPDATE)
 
+    get_version()  # reset version number in case it was updated remotely
+
 
 def create_archive(version=None):
+    "create source distribution"
+    if version == None: version = PKG_VERSION
+
     # Create zip and tar archives of the source code and a manifest file
     # containing the names of all files.
-    print SEPARATOR
-    print "\nStep 2 - Creating an archive of the source code ...\n"
+    print "Creating an archive of the source code ...\n"
 
     
     try:
@@ -255,11 +203,10 @@ def create_archive(version=None):
 
 
 def install_package():
-    # Install the application package in a private directory tree.
+    "build and install the package"
     # If the INS_DIR directory already exists, warn the user.
     # Intermediate work files are stored in the <SRC_DIR>/build directory tree.
-    print SEPARATOR
-    print "\nStep 3 - Installing the %s package in %s...\n" %(PKG_NAME, INS_DIR)
+    print "Installing the %s package in %s...\n" %(PKG_NAME, INS_DIR)
 
     if os.path.isdir(INS_DIR):
         print "WARNING: In order to build", APP_NAME, "cleanly, the local build"
@@ -288,9 +235,8 @@ def install_package():
 
 
 def build_documentation():
-    # Run the Sphinx utility to build the application's documentation.
-    print SEPARATOR
-    print "\nStep 4 - Running the Sphinx utility to build documentation ...\n"
+    "build the documentation"
+    print "Running the Sphinx utility to build documentation ...\n"
     os.chdir(os.path.join(SRC_DIR, "doc"))
 
     # Delete any left over files from a previous build.
@@ -305,20 +251,22 @@ def build_documentation():
 
 
 def create_windows_exe():
+    "create the standalone windows executable"
+    if os.name != 'nt': return
     # Use py2exe to create a Win32 executable along with auxiliary files in the
     # <SRC_DIR>/dist directory tree.
-    print SEPARATOR
-    print "\nStep 5 - Using py2exe to create a Win32 executable ...\n"
+    print "Using py2exe to create a Win32 executable ...\n"
     os.chdir(SRC_DIR)
 
     exec_cmd("%s setup_py2exe.py" %PYTHON)
 
 
 def create_windows_installer(version=None):
+    "create the windows installer"
+    if os.name != 'nt': return
     # Run the Inno Setup Compiler to create a Win32 installer/uninstaller for
     # the application.
-    print SEPARATOR
-    print "\nStep 6 - Running Inno Setup Compiler to create Win32 "\
+    print "Running Inno Setup Compiler to create Win32 "\
           "installer/uninstaller ...\n"
     os.chdir(SRC_DIR)
 
@@ -335,19 +283,17 @@ def create_windows_installer(version=None):
 
 
 def run_tests():
+    "run the test suite"
     # Run unittests and doctests using a test script.
     # Running from a test script allows customization of the system path.
-    print SEPARATOR
-    print "\nStep 7 - Running tests from test.py (using Nose) ...\n"
+    print "Running tests from test.py (using Nose) ...\n"
     #os.chdir(os.path.join(INS_DIR, PKG_NAME))
     os.chdir(SRC_DIR)
 
     exec_cmd("%s test.py" %PYTHON)
 
 def check_dependencies():
-    """
-    Checks that the system has the necessary Python packages installed.
-    """
+    "check that required packages are installed"
 
     import platform
     from pkg_resources import parse_version as PV
@@ -517,26 +463,37 @@ def exec_cmd(command):
     result = subprocess.call(command, shell=shell)
     if result != 0: sys.exit(result)
 
+BUILD_POINTS = [
+  ('deps', check_dependencies),
+  ('update', checkout_code),
+  ('build', install_package),
+  ('test', run_tests),
+  ('docs', build_documentation),  # Needed by windows installer
+  ('zip', create_archive),
+  ('exe', create_windows_exe),
+  ('installer', create_windows_installer),
+]
 
-if __name__ == "__main__":
-    START_POINTS = ('deps', 'co', 'checkout', 'update', 'build', 'test',
-                    'docs', 'zip', 'exe', 'installer')
 
+
+def main():
+
+    start = BUILD_POINTS[0][0]
+    only = False
     if len(sys.argv)>1:
         # Display help if requested.
-        if len(sys.argv) > 1 and sys.argv[1] not in START_POINTS:
+        if (len(sys.argv) > 1 and sys.argv[1] not in zip(*BUILD_POINTS)[0]
+                or len(sys.argv) > 2 and sys.argv[2] != 'only'
+                or len(sys.argv) > 3):
             print "\nUsage: python master_builder.py [<start>] [only]\n"
             print "Build start points:"
-            print "  deps       check dependencies"
-            print "  update     update archive"
-            print "  build      build package"
-            print "  test       test package"
-            print "  docs       build docs"
-            print "  zip        build source archive"
-            print "  exe        build executable"
-            print "  installer  build installer"
+            for point,fn in BUILD_POINTS:
+                print "  %-10s %s"%(point,fn.__doc__)
             print "Add 'only' to the command to only perform a single step"
             sys.exit()
+        else:
+            start = sys.argv[1]
+            only = len(sys.argv)>2 and sys.argv[2] == 'only'
 
     print "\nBuilding the %s application from the %s repository ...\n" \
         %(APP_NAME, PKG_NAME)
@@ -544,6 +501,14 @@ if __name__ == "__main__":
     print "Top-level (root) directory =", TOP_DIR
     print "Package (source) directory =", SRC_DIR
     print "Installation directory     =", INS_DIR
-    print ""
 
-    build_it()
+    started = False
+    for point,fn in BUILD_POINTS:
+        started = point==start
+        if not started: continue
+        print "/"*5,point,"/"*25
+        fn()
+        if only: break
+
+if __name__ == "__main__":
+     main()
