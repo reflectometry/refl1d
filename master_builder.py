@@ -62,6 +62,9 @@ import sys
 import shutil
 import subprocess
 
+GIT="git"
+MAKE="make"
+
 # Windows commands to run utilities
 if os.name == "nt":
     SYSBIN=r"C:\Program Files (x86)"
@@ -84,9 +87,7 @@ if os.name == "nt":
     os.environ['PATH'] = ";".join((PYTHONDIR,SCRIPTDIR,os.environ['PATH']))
     os.environ['PYTHON'] = "/".join(PYTHON.split("\\"))
     #os.environ['GIT_SSH'] = r"C:\Program Files (x86)\PuTTY\plink.exe"
-else:
-    GIT = "git"
-
+    MAKE = r"C:\mingw\bin\make"
 
 # Name of the package
 PKG_NAME = "refl1d"
@@ -241,9 +242,9 @@ def build_documentation():
 
     # Delete any left over files from a previous build.
     # Create documentation in HTML and PDF format.
-    exec_cmd("make clean")
-    exec_cmd("make html")
-    exec_cmd("make pdf")
+    exec_cmd(MAKE+" clean")
+    exec_cmd(MAKE+" html")
+    exec_cmd(MAKE+" pdf")
     # Copy PDF to the html directory where the html can find it.
     pdf = os.path.join("_build", "latex", APP_NAME+".pdf")
     if os.path.isfile(pdf):
