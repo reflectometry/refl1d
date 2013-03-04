@@ -223,7 +223,8 @@ if sys.version_info >= (2, 6):
 
 # Specify required packages to bundle in the executable image.
 packages = ['numpy', 'scipy', 'matplotlib', 'pytz', 'pyparsing',
-            'periodictable', 'refl1d.names', 'dream'
+            'periodictable', 'refl1d.names', 'bumps', 'wx',
+            'wx.py.path',
             ]
 
 # Specify files to include in the executable image.
@@ -240,7 +241,7 @@ includes = []
 # - Since we do not support Win 9x systems, w9xpopen.dll is not needed.
 # - For some reason cygwin1.dll gets included by default, but it is not needed.
 
-excludes = ['Tkinter', 'PyQt4', '_ssl', '_tkagg', 'numpy.distutils.tests']
+excludes = ['Tkinter', 'PyQt4', '_ssl', '_tkagg', 'zmq','pyzmq','sympy'] #, 'numpy.distutils.tests']
 
 dll_excludes = ['libgdk_pixbuf-2.0-0.dll',
                 'libgobject-2.0-0.dll',

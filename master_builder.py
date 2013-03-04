@@ -265,6 +265,7 @@ def create_windows_exe():
 def create_windows_installer(version=None):
     "create the windows installer"
     if os.name != 'nt': return
+    if not version: version = PKG_VERSION
     # Run the Inno Setup Compiler to create a Win32 installer/uninstaller for
     # the application.
     print "Running Inno Setup Compiler to create Win32 "\
@@ -496,8 +497,9 @@ def main():
             start = sys.argv[1]
             only = len(sys.argv)>2 and sys.argv[2] == 'only'
 
-    print "\nBuilding the %s application from the %s repository ...\n" \
-        %(APP_NAME, PKG_NAME)
+    get_version()
+    print "\nBuilding the %s-%s application from the %s repository ...\n" \
+        %(APP_NAME, PKG_VERSION, PKG_NAME)
     print "Current working directory  =", RUN_DIR
     print "Top-level (root) directory =", TOP_DIR
     print "Package (source) directory =", SRC_DIR
