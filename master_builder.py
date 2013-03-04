@@ -230,9 +230,9 @@ def install_package():
         os.makedirs(INS_DIR)
 
     os.chdir(BUMPS_DIR)
-    exec_cmd("%s setup.py -q install --install-lib=%s" %(PYTHON, INS_DIR))
+    exec_cmd("%s setup.py install --install-lib=%s" %(PYTHON, INS_DIR))
     os.chdir(SRC_DIR)
-    exec_cmd("%s setup.py -q install --install-lib=%s" %(PYTHON, INS_DIR))
+    exec_cmd("%s setup.py install --install-lib=%s" %(PYTHON, INS_DIR))
 
 
 def build_documentation():
@@ -505,11 +505,11 @@ def main():
 
     started = False
     for point,fn in BUILD_POINTS:
-        started = point==start
+        if point==start: started = True
         if not started: continue
         print "/"*5,point,"/"*25
         fn()
         if only: break
-
+        
 if __name__ == "__main__":
      main()
