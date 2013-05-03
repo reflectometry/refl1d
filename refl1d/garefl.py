@@ -41,7 +41,7 @@ import numpy
 from numpy import empty, zeros, array
 
 from bumps.parameter import Parameter
-from bumps.fitproblem import FitProblem, MultiFitProblem
+from bumps.fitproblem import FitProblem
 
 from .probe import QProbe, PolarizedNeutronQProbe
 from .experiment import Experiment
@@ -63,7 +63,7 @@ def load(modelfile):
     M = experiment(modelfile)
     constraints = M[0]._get_penalty
     if len(M) > 1:
-        return MultiFitProblem(M,constraints=constraints)
+        return FitProblem(M,constraints=constraints)
     else:
         return FitProblem(M[0],constraints=constraints)
 

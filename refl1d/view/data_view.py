@@ -187,7 +187,7 @@ class DataView(wx.Panel):
                     if self._cancel_calculate \
                         or p.fitness.is_reset(): break
                 if self._cancel_calculate \
-                    or self.problem.models[0].fitness.is_reset(): continue
+                    or self.problem.active_model.fitness.is_reset(): continue
             else:
                 self._precalc(self.problem.fitness)
                 if self._cancel_calculate \
@@ -211,7 +211,7 @@ class DataView(wx.Panel):
                         if self._cancel_calculate \
                             or p.fitness.is_reset(): break
                     if self._cancel_calculate \
-                        or self.problem.models[0].fitness.is_reset(): continue
+                        or self.problem.active_model.fitness.is_reset(): continue
                 else:
                     self.problem.fitness.plot_reflectivity(view=self.view,
                                                            plot_shift=shift)

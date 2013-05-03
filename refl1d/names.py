@@ -16,7 +16,10 @@ from periodictable import elements, formula
 from bumps.parameter import Parameter
 from bumps import pmath
 from bumps.modelfn import ModelFunction
-from bumps.fitproblem import preview, fit, mesh, FitProblem, MultiFitProblem
+from bumps.fitproblem import preview, fit, mesh, FitProblem, FreeVariables
+
+# Deprecated
+from bumps.fitproblem import MultiFitProblem
 
 
 from .experiment import Experiment, plot_sample, MixedExperiment

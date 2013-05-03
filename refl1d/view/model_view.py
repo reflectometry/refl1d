@@ -114,7 +114,7 @@ class ModelView(wx.Panel):
         return False
 
     def OnProfileSelect(self, event):
-        self.set_profile(self.profiles[event.GetInt()][1])
+        self.set_profile(*self.profiles[event.GetInt()])
 
     # ==== Model view interface ===
     def OnShow(self, event):
@@ -164,23 +164,23 @@ class ModelView(wx.Panel):
     def _set_model(self):
         """Initialize model by profile."""
         self.profiles = []
-        def add_profiles(name, exp):
+        def add_profiles(name, exp, idx):
             if isinstance(exp,MixedExperiment):
                 for i,p in enumerate(exp.parts):
-                    self.profiles.append( (name+chr(ord("a")+i), p) )
+                    self.profiles.append( (name+chr(ord("a")+i), p, idx) )
             else:
-                self.profiles.append( (name, exp) )
+                self.profiles.append( (name, exp, idx) )
         if isinstance(self.model,MultiFitProblem):
             for i,p in enumerate(self.model.models):
                 name = p.fitness.name
                 if not name: name = "M%d"%(i+1)
-                add_profiles(name, p.fitness)
+                add_profiles(name, p.fitness, i)
         else:
-            add_profiles("", self.model.fitness)
+            add_profiles("", self.model.fitness, -1)
 
         self.profile_selector.Clear()
         if len(self.profiles) > 1:
-            self.profile_selector.AppendItems([k for k,_ in self.profiles])
+            self.profile_selector.AppendItems([k for k,_,_ in self.profiles])
             self.profile_selector_label.Show()
             self.profile_selector.Show()
             self.profile_selector.SetSelection(0)
@@ -188,13 +188,13 @@ class ModelView(wx.Panel):
             self.profile_selector_label.Hide()
             self.profile_selector.Hide()
 
-        self.set_profile(self.profiles[0][1])
+        self.set_profile(*self.profiles[0])
 
         # update the figure
         self.profile.redraw(reset_limits=True)
 
 
-    def set_profile(self, experiment):
+    def set_profile(self, name, experiment, idx):
         # Turn the model into a user interface
         # It is the responsibility of the party that is indicating
         # that a redraw is necessary to clear the precalculated
@@ -209,6 +209,7 @@ class ModelView(wx.Panel):
             signal.update_parameters(model=self.model)
         def force_recalc():
             self.model.model_update()
+        self.model.set_model(idx)
         self.profile.set_experiment(experiment,
                                     force_recalc=force_recalc,
                                     signal_update=signal_update)
