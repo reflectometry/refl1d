@@ -270,7 +270,29 @@ class Stack(Layer):
 
 
     # Stacks as lists
+    def _lookup(self, el):
+        """
+        Allow indexing by material or layername in addition to integer
+        """
+        # If it is a material, try finding the specific material
+        if isinstance(el, material.Scatterer):
+            for i,layer in enumerate(self._layers):
+                el_i = getattr(layer,'material',None)
+                if id(el_i) == id(el): return i
+            # Material doesn't exist, so try looking up the material name
+            el = str(el)
+        # If it is a string, lookup the string in the layer name
+        if isinstance(el, basestring):
+            for i,layer in enumerate(self._layers):
+                if str(layer) == el: return i
+            return KeyError(el+" not found")
+        # If it is a slice, lookup up start and stop recursively
+        if isinstance(el,slice):
+            return slice(self._lookup(el.start),self._lookup(el.stop),el.step)
+        return el
+
     def __getitem__(self, idx):
+        idx = self._lookup(idx)
         if isinstance(idx,slice):
             s = Stack()
             s._layers = self._layers[idx]
@@ -278,6 +300,7 @@ class Stack(Layer):
         else:
             return self._layers[idx]
     def __setitem__(self, idx, other):
+        idx = self._lookup(idx)
         if isinstance(idx, slice):
             if isinstance(other,Stack):
                 self._layers[idx] = other._layers
@@ -286,6 +309,7 @@ class Stack(Layer):
         else:
             self._layers[idx] = _check_layer(other)
     def __delitem__(self, idx):
+        idx = self._lookup(idx)
         # works the same for slices and individual indices
         del self._layers[idx]
 
