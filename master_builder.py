@@ -230,9 +230,9 @@ def install_package():
         os.makedirs(INS_DIR)
 
     os.chdir(BUMPS_DIR)
-    exec_cmd("%s setup.py -q install --install-lib=%s" %(PYTHON, INS_DIR))
+    exec_cmd("%s setup.py install --install-lib=%s" %(PYTHON, INS_DIR))
     os.chdir(SRC_DIR)
-    exec_cmd("%s setup.py -q install --install-lib=%s" %(PYTHON, INS_DIR))
+    exec_cmd("%s setup.py install --install-lib=%s" %(PYTHON, INS_DIR))
 
 
 def build_documentation():
@@ -265,6 +265,7 @@ def create_windows_exe():
 def create_windows_installer(version=None):
     "create the windows installer"
     if os.name != 'nt': return
+    if not version: version = PKG_VERSION
     # Run the Inno Setup Compiler to create a Win32 installer/uninstaller for
     # the application.
     print "Running Inno Setup Compiler to create Win32 "\
@@ -496,8 +497,9 @@ def main():
             start = sys.argv[1]
             only = len(sys.argv)>2 and sys.argv[2] == 'only'
 
-    print "\nBuilding the %s application from the %s repository ...\n" \
-        %(APP_NAME, PKG_NAME)
+    get_version()
+    print "\nBuilding the %s-%s application from the %s repository ...\n" \
+        %(APP_NAME, PKG_VERSION, PKG_NAME)
     print "Current working directory  =", RUN_DIR
     print "Top-level (root) directory =", TOP_DIR
     print "Package (source) directory =", SRC_DIR
@@ -505,11 +507,11 @@ def main():
 
     started = False
     for point,fn in BUILD_POINTS:
-        started = point==start
+        if point==start: started = True
         if not started: continue
         print "/"*5,point,"/"*25
         fn()
         if only: break
-
+        
 if __name__ == "__main__":
      main()
