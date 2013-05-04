@@ -127,7 +127,7 @@ class Probe(object):
     View properties:
 
         *view* : string
-            One of 'fresnel', 'log', 'linear', 'q4', 'residuals'
+            One of 'fresnel', 'logfresnel', 'log', 'linear', 'q4', 'residuals'
         *plot_shift* : float
             The number of pixels to shift each new dataset so
             datasets can be seen separately
@@ -578,6 +578,8 @@ class Probe(object):
             self.plot_log(**kwargs)
         elif view == 'fresnel':
             self.plot_fresnel(**kwargs)
+        elif view == 'logfresnel':
+            self.plot_logfresnel(**kwargs)
         elif view == 'q4':
             self.plot_Q4(**kwargs)
         elif view == 'resolution':
@@ -615,6 +617,14 @@ class Probe(object):
         """
         import pylab
         self._plot_pair(ylabel='Reflectivity', **kwargs)
+        pylab.yscale('log')
+
+    def plot_logfresnel(self, *args, **kw):
+        """
+        Plot the log Fresnel-normalized reflectivity associated with the probe.
+        """
+        import pylab
+        self.plot_fresnel(*args, **kw)
         pylab.yscale('log')
 
     def plot_fresnel(self, substrate=None, surface=None, **kwargs):
@@ -683,7 +693,7 @@ class Probe(object):
         trans = auto_shift(plot_shift)
         if hasattr(self,'R') and self.R is not None:
             Q, dQ, R, dR = correct(self.Q, self.dQ, self.R, self.dR)
-            pylab.errorbar(Q, R, yerr=dR, xerr=dQ,
+            pylab.errorbar(Q, R, yerr=dR, xerr=dQ, capsize=0,
                            fmt='.', color=c['light'], transform=trans,
                            label=self.label(prefix=label,
                                             gloss='data',
@@ -701,7 +711,7 @@ class Probe(object):
         pylab.xlabel('Q (inv Angstroms)')
         pylab.ylabel(ylabel)
         #pylab.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-        h = pylab.legend(fancybox=True)
+        h = pylab.legend(fancybox=True, numpoints=1)
         h.get_frame().set_alpha(0.5)
 
     def plot_residuals(self, theory=None, suffix='', label=None,
@@ -722,7 +732,7 @@ class Probe(object):
         pylab.axhline(-1, color='black', ls='--',lw=1)
         pylab.xlabel('Q (inv A)')
         pylab.ylabel('(theory-data)/error')
-        pylab.legend()
+        pylab.legend(numpoints=1)
 
     def plot_fft(self, theory=None, suffix='', label=None,
                  substrate=None, surface=None, **kwargs):
@@ -901,6 +911,9 @@ class ProbeSet(Probe):
     def plot_fresnel(self, theory=None, **kw):
         for p,th in self.parts(theory): p.plot_fresnel(theory=th, **kw)
     plot_fresnel.__doc__ = Probe.plot_fresnel.__doc__
+    def plot_logfresnel(self, theory=None, **kw):
+        for p,th in self.parts(theory): p.plot_logfresnel(theory=th, **kw)
+    plot_logfresnel.__doc__ = Probe.plot_logfresnel.__doc__
     def plot_Q4(self, theory=None, **kw):
         for p,th in self.parts(theory): p.plot_Q4(theory=th, **kw)
     plot_Q4.__doc__ = Probe.plot_Q4.__doc__
@@ -1236,6 +1249,8 @@ class PolarizedNeutronProbe(object):
             self.plot_log(**kwargs)
         elif view == 'fresnel':
             self.plot_fresnel(**kwargs)
+        elif view == 'logfresnel':
+            self.plot_logfresnel(**kwargs)
         elif view == 'q4':
             self.plot_Q4(**kwargs)
         elif view == 'residuals':
@@ -1255,6 +1270,8 @@ class PolarizedNeutronProbe(object):
         self._xs_plot('plot_log', **kwargs)
     def plot_fresnel(self, **kwargs):
         self._xs_plot('plot_fresnel', **kwargs)
+    def plot_logfresnel(self, **kwargs):
+        self._xs_plot('plot_logfresnel', **kwargs)
     def plot_Q4(self, **kwargs):
         self._xs_plot('plot_Q4', **kwargs)
     def plot_residuals(self, **kwargs):
@@ -1273,7 +1290,7 @@ class PolarizedNeutronProbe(object):
         if hasattr(pp,'R'):
             Q,SA,dSA = spin_asymmetry(pp.Q,pp.R,pp.dR,mm.Q,mm.R,mm.dR)
             if dSA is not None:
-                pylab.errorbar(Q, SA, yerr=dSA, xerr=pp.dQ, fmt='.',
+                pylab.errorbar(Q, SA, yerr=dSA, xerr=pp.dQ, fmt='.', capsize=0,
                                label=pp.label(prefix=label, gloss='data'),
                                transform=trans,
                                color=c['light'])
@@ -1293,7 +1310,7 @@ class PolarizedNeutronProbe(object):
         pylab.hold(isheld)
         pylab.xlabel(r'Q (\AA^{-1})')
         pylab.ylabel(r'spin asymmetry $(R^{++} -\, R^{--}) / (R^{++} +\, R^{--})$')
-        pylab.legend()
+        pylab.legend(numpoints=1)
 
     def _xs_plot(self, plotter, theory=None, **kwargs):
         import pylab

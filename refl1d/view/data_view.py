@@ -75,6 +75,10 @@ class DataView(wx.Panel):
         frame.Bind(wx.EVT_MENU, self.OnFresnel, _item)
         _item.Check(True)
         _item = menu.AppendRadioItem(wx.ID_ANY,
+                                          "Log Fresnel",
+                                          "Plot log R/R_F")
+        frame.Bind(wx.EVT_MENU, self.OnLogFresnel, _item)
+        _item = menu.AppendRadioItem(wx.ID_ANY,
                                           "Li&near",
                                           "Plot linear R")
         frame.Bind(wx.EVT_MENU, self.OnLinear, _item)
@@ -112,6 +116,10 @@ class DataView(wx.Panel):
 
     def OnFresnel(self, event):
         self.view = "fresnel"
+        self.redraw()
+
+    def OnLogFresnel(self, event):
+        self.view = "logfresnel"
         self.redraw()
 
     def OnQ4(self, event):

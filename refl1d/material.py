@@ -462,9 +462,9 @@ class Mixture(Scatterer):
         return rho,irho
 
     def __str__(self):
-        return "<%s>"%(",".join(str(M) for M in self.material))
+        return "<%s>"%(",".join(str(M) for M in [self.base]+self.material))
     def __repr__(self):
-        return "Mixture(%s)"%(",".join(repr(M) for M in self.material))
+        return "Mixture(%s)"%(",".join(repr(M) for M in [self.base]+self.material))
 
 # ============================ SLD cache =============================
 
