@@ -61,8 +61,8 @@ class ProfileInteractor(object):
 
         # Theta needs a separate axis, we put these two axes into a figure
         self.axes.set_xlabel( r'$\rm{z}/\AA$' )
-        self.magnetic = experiment.sample.magnetic
-        if self.magnetic:
+        self.ismagnetic = experiment.sample.ismagnetic
+        if self.ismagnetic:
             self.axes.set_ylabel( r'$\rm{SLD}/10^{-6} \AA^{-2}\ \ \rho,\  \rho_i,\  \rho_M$')
             self.theta_axes.set_ylabel(r'$\rm{Magnetic\ Angle\ (\ ^\circ)}$')
             self.theta_axes.set_visible(True)
@@ -185,7 +185,7 @@ class ProfileInteractor(object):
         self.layer_interactor.update_markers()
 
     def update_profile(self):
-        if self.magnetic:
+        if self.ismagnetic:
             z,rho,rhoI,rhoM,thetaM = self.experiment.magnetic_profile()
             self.hrhoM.set_data(z,rhoM)
             self.hthetaM.set_data(z,thetaM)
@@ -210,7 +210,7 @@ class ProfileInteractor(object):
         rhoI = self.hrhoI.get_ydata()
         self.axes.set_xlim(z[0],z[-1])
 
-        if self.magnetic:
+        if self.ismagnetic:
             rhoM = self.hrhoM.get_ydata()
             thetaM = self.hthetaM.get_ydata()
             lo = min( rho.min(), rhoI.min(), rhoM.min() )

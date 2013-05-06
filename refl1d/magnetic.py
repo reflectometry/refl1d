@@ -45,7 +45,7 @@ from bumps.mono import monospline
 from .model import Layer, Stack
 
 class MagneticLayer(Layer):
-    magnetic = True
+    magnetism = True
     def __init__(self, stack=None,
                  dead_below=0, dead_above=0,
                  interface_below=None, interface_above=None,

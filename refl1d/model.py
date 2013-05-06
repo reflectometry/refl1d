@@ -48,7 +48,7 @@ class Layer(object): # Abstract base class
     """
     thickness = None
     interface = None
-    magnetic = False
+    magnetism = None
     def constraints(self):
         """
         Constraints
@@ -161,8 +161,8 @@ class Stack(Layer):
         self._thickness = Function(self._calc_thickness,name="stack thickness")
 
     @property
-    def magnetic(self):
-        return any(p.magnetic for p in self._layers)
+    def ismagnetic(self):
+        return any(p.magnetism for p in self._layers)
     def find(self, z):
         """
         Find the layer at depth z.
@@ -270,48 +270,95 @@ class Stack(Layer):
 
 
     # Stacks as lists
-    def _lookup(self, el):
+    def _find_by_material(self, target):
         """
-        Allow indexing by material or layername in addition to integer
+        Iterate over all layers that have the given material.
         """
-        # If it is a material, try finding the specific material
-        if isinstance(el, material.Scatterer):
-            for i,layer in enumerate(self._layers):
-                el_i = getattr(layer,'material',None)
-                if id(el_i) == id(el): return i
-            # Material doesn't exist, so try looking up the material name
-            el = str(el)
-        # If it is a string, lookup the string in the layer name
-        if isinstance(el, basestring):
-            for i,layer in enumerate(self._layers):
-                if str(layer) == el: return i
-            return KeyError(el+" not found")
-        # If it is a slice, lookup up start and stop recursively
-        if isinstance(el,slice):
-            return slice(self._lookup(el.start),self._lookup(el.stop),el.step)
-        return el
+        for i,layer in enumerate(self._layers):
+            if hasattr(layer, 'stack'):
+                for sub in layer.stack._find_by_material(target): 
+                    yield sub
+            elif hasattr(layer, 'material'):
+                if id(layer.material) == id(target): 
+                    yield self,i
+
+    def _find_by_name(self, target):
+        """
+        Iterate over all layers that have the given name.
+        """
+        for i,layer in enumerate(self._layers):
+            if hasattr(layer, 'stack'):
+                for sub in layer.stack._find_by_name(target): 
+                    yield sub
+            else:
+                if str(layer) == target: 
+                    yield self,i
+
+    def _lookup(self, idx):
+        """
+        Lookup a layer by integer index, name, material or (material,repeat) if not the first
+        occurrence of the material in the sample.  Search is depth first.  Returns the stack
+        or substack that contains the material, and the index in that stack.
+        """
+        if isinstance(idx, int):
+            return self, idx
+
+        if isinstance(idx, slice):
+            start = (self, 0) if idx.start == None else self._lookup(idx.start)
+            stop = (self, len(self)) if idx.stop == None else self._lookup(idx.stop)
+            if start[0] != stop[0]:
+                raise IndexError("start and and stop of sample slice must be in the same stack")
+            return start[0],slice(start[1],stop[1],idx.step)
+
+        # Check for lookup of the nth occurrence of a given layer
+        if isinstance(idx, tuple): 
+            target, count = idx
+        else:
+            target, count = idx, 1
+
+        # Check if lookup by material or by name
+        if isinstance(target, material.Scatterer):
+            sequence = self._find_by_material(target)
+        elif isinstance(target, basestring):
+            sequence = self._find_by_name(target)
+        else:
+            raise TypeError("expected integer, material or layer name as sample index")
+
+        # Move to the nth item in the sequence
+        i = -1
+        for i,el in enumerate(sequence):
+            if i+1 == count: return el
+        if i == -1:
+            raise IndexError("layer %s not found"%str(target))
+        else:
+            raise IndexError("only found %d layers of %s"%(str(target),i+1))
+
 
     def __getitem__(self, idx):
-        idx = self._lookup(idx)
+        #import sys;print >>sys.stderr,"lookup idx",idx
+        stack,idx= self._lookup(idx)
+        #print >>sys.stderr,"found",idx
         if isinstance(idx,slice):
-            s = Stack()
-            s._layers = self._layers[idx]
-            return s
+            newstack = Stack()
+            newstack._layers = stack._layers[idx]
+            return newstack
         else:
-            return self._layers[idx]
+            return stack._layers[idx]
+
     def __setitem__(self, idx, other):
-        idx = self._lookup(idx)
+        stack,idx = self._lookup(idx)
         if isinstance(idx, slice):
             if isinstance(other,Stack):
-                self._layers[idx] = other._layers
+                stack._layers[idx] = other._layers
             else:
-                self._layers[idx] = [_check_layer(el) for el in other]
+                stack._layers[idx] = [_check_layer(el) for el in other]
         else:
-            self._layers[idx] = _check_layer(other)
+            stack._layers[idx] = _check_layer(other)
+
     def __delitem__(self, idx):
-        idx = self._lookup(idx)
+        stack,idx = self._lookup(idx)
         # works the same for slices and individual indices
-        del self._layers[idx]
+        del stack._layers[idx]
 
     def insert(self, idx, other):
         """
@@ -319,18 +366,19 @@ class Stack(Layer):
         another stack, the stack will be expanded to accommodate.  You
         cannot make nested stacks.
         """
+        stack,idx = self._lookup(idx)
         if isinstance(other,Stack):
             for i,L in enumerate(other._layers):
-                self._layers.insert(idx+i,L)
+                stack._layers.insert(idx+i,L)
         elif isinstance(other,Repeat):
-            self._layers.insert(idx, other)
+            stack._layers.insert(idx, other)
         else:
             try:
                 other = iter(other)
             except:
                 other = [other]
             for i,L in enumerate(other):
-                self._layers.insert(idx+i,_check_layer(L))
+                stack._layers.insert(idx+i,_check_layer(L))
 
     # Define a little algebra for composing samples
     # Stacks can be repeated or extended
@@ -387,8 +435,8 @@ class Repeat(Layer):
     def penalty(self):
         return self.stack.penalty()
     @property
-    def magnetic(self):
-        return self.stack.magnetic
+    def ismagnetic(self):
+        return self.stack.ismagnetic
     def find(self, z):
         """
         Find the layer at depth z.
