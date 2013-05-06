@@ -209,7 +209,7 @@ class ModelView(wx.Panel):
             signal.update_parameters(model=self.model)
         def force_recalc():
             self.model.model_update()
-        self.model.set_model(idx)
+        self.model.set_active_model(idx)
         self.profile.set_experiment(experiment,
                                     force_recalc=force_recalc,
                                     signal_update=signal_update)

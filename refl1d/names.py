@@ -13,10 +13,10 @@ small scripts.
 import sys
 import numpy
 from periodictable import elements, formula
-from bumps.parameter import Parameter
+from bumps.parameter import Parameter, FreeVariables
 from bumps import pmath
 from bumps.modelfn import ModelFunction
-from bumps.fitproblem import preview, fit, mesh, FitProblem, FreeVariables
+from bumps.fitproblem import preview, fit, mesh, FitProblem
 
 # Deprecated
 from bumps.fitproblem import MultiFitProblem
