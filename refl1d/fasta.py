@@ -231,7 +231,7 @@ def fasta_table():
 beta_casein = "RELEELNVPGEIVESLSSSEESITRINKKIEKFQSEEQQQTEDELQDKIHPFAQTQSLVYPFPGPIPNSLPQNIPPLTQTPVVVPPFLQPEVMGVSKVKEAMAPKHKEMPFPKYPVEPFTESQSLTLTDVENLHLPLPLLQSWMHQPHQPLPPTVMFPPQSVLSLSQSKVLPVPQKAVPYPQRDMPIQAFLLYQEPVLGPVRGPFPIIV"
 
 def test():
-    # Beta casein results checked against Duncan McGillavray's spreadsheet
+    # Beta casein results checked against Duncan McGillivray's spreadsheet
     # beta casein 23561.9 23880.9 30872.9  1.27 12614 11.55  1.68  2.75
     s = Sequence("beta casein", beta_casein)
     assert abs(s.deuterated.mass-23880.9) < 0.1
