@@ -43,3 +43,5 @@ from .instrument import Monochromatic, Pulsed
 from refl1d.materialdb import *
 from .support import sample_data
 from .magnetic import MagneticSlab, MagneticTwist, FreeMagnetic, MagneticStack
+from .magnetism import Magnetism, MagnetismTwist, FreeMagnetism, MagnetismStack
+

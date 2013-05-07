@@ -31,9 +31,9 @@ class CompositionSpace(Layer):
         self.thickness = Par.default(thickness, limits=(0,inf),
                                    name=name+" thickness")
     def parameters(self):
-        return dict(solvent=self.solvent.parameters(),
-                    thickness=self.thickness,
-                    parts=[p.parameters() for p in self.parts])
+        return {'solvent':self.solvent.parameters(),
+                'parts':[p.parameters() for p in self.parts],
+                }
 
     def add(self, part=None):
         self.parts.append(part)
@@ -98,9 +98,10 @@ class Part(object):
         self.fraction = Par.default(fraction, limits=(0,1),
                                   name=self.material.name+" fraction")
     def parameters(self):
-        return dict(material=self.material.parameters(),
-                    profile=self.profile.parameters(),
-                    fraction=self.fraction)
+        return {'material':self.material.parameters(),
+                'profile':self.profile.parameters(),
+                'fraction':self.fraction,
+                }
     def f_sld(self, probe, z):
         # Note: combining f and sld because there my be some
         # composites such as oriented proteins for which the
@@ -138,7 +139,7 @@ class Gaussian(object):
         self.stretch = Par.default(sigma, limits=(0,inf),
                                  name=name + " sigma")
     def parameters(self):
-        return dict(center=self.center, width=self.width, sigma=self.sigma)
+        return {'center':self.center, 'width':self.width, 'sigma':self.sigma}
     def __call__(self, z):
         mu,sigma,w = self.center.value, self.sigma.value, self.width.value/2
         if w <= 0:

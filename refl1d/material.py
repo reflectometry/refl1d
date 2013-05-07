@@ -111,7 +111,7 @@ class SLD(Scatterer):
         self.rho = Par.default(rho, name=name+" rho" )
         self.irho = Par.default(irho, name=name+" irho" )
     def parameters(self):
-        return dict(rho=self.rho, irho=self.irho)
+        return {'rho':self.rho, 'irho':self.irho}
     def sld(self, probe):
         return self.rho.value,self.irho.value
 
@@ -296,7 +296,7 @@ class Compound(Scatterer):
         constituent and the relative scale fraction used to tweak
         the overall density.
         """
-        return dict(count=self.count)
+        return {'count':self.count}
 
     def formula(self):
         return tuple( (c.value,f) for c,f in zip(self.count,self.parts))
@@ -407,10 +407,10 @@ class Mixture(Scatterer):
         constituent and the relative scale fraction used to tweak
         the overall density.
         """
-        return dict(base=self.base.parameters(),
-                    material=[m.parameters() for m in self.material],
-                    fraction=self.fraction,
-                    )
+        return {'base':self.base.parameters(),
+                'material':[m.parameters() for m in self.material],
+                'fraction':self.fraction,
+                }
 
     def _density(self):
         """

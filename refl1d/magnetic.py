@@ -45,7 +45,10 @@ from bumps.mono import monospline
 from .model import Layer, Stack
 
 class MagneticLayer(Layer):
-    magnetism = True
+    @property
+    def ismagnetic(self):
+        return True
+
     def __init__(self, stack=None,
                  dead_below=0, dead_above=0,
                  interface_below=None, interface_above=None,
@@ -59,11 +62,12 @@ class MagneticLayer(Layer):
         self.interface_above = interface_above
         self.name = name
     def parameters(self):
-        return dict(stack=self.stack.parameters(),
-                    dead_below=self.dead_below,
-                    dead_above=self.dead_above,
-                    interface_below=self.interface_below,
-                    interface_above=self.interface_above)
+        return {'stack':self.stack.parameters(),
+                'dead_below':self.dead_below,
+                'dead_above':self.dead_above,
+                'interface_below':self.interface_below,
+                'interface_above':self.interface_above,
+                }    
     @property
     def thickness(self):
         """Thickness of the magnetic region"""
@@ -108,8 +112,7 @@ class MagneticSlab(MagneticLayer):
 
     def parameters(self):
         parameters = MagneticLayer.parameters(self)
-        parameters.update(rhoM=self.rhoM,
-                          thetaM=self.thetaM)
+        parameters.update(rhoM=self.rhoM, thetaM=self.thetaM)
         return parameters
 
     def render(self, probe, slabs):
@@ -193,8 +196,7 @@ class MagneticTwist(MagneticLayer):
 
     def parameters(self):
         parameters = MagneticLayer.parameters(self)
-        parameters.update(rhoM=self.rhoM,
-                          thetaM=self.thetaM)
+        parameters.update(rhoM=self.rhoM, thetaM=self.thetaM)
         return parameters
 
     def render(self, probe, slabs):
@@ -238,9 +240,7 @@ class FreeMagnetic(MagneticLayer):
 
     def parameters(self):
         parameters = MagneticLayer.parameters(self)
-        parameters.update(rhoM=self.rhoM,
-                          thetaM=self.thetaM,
-                          z=self.z)
+        parameters.update(rhoM=self.rhoM, thetaM=self.thetaM, z=self.z)
         return parameters
 
     def profile(self, Pz):

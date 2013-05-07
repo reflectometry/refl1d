@@ -73,7 +73,7 @@ class ExperimentBase(object):
     def residuals(self):
         if 'residuals' not in self._cache:
             if ((self.probe.polarized
-                 and all(x.R is None for x in self.probe.xs))
+                 and all(x is None or x.R is None for x in self.probe.xs))
                 or (not self.probe.polarized and self.probe.R is None)):
                 resid = numpy.zeros(0)
             else:
@@ -306,8 +306,9 @@ class Experiment(ExperimentBase):
         return slabs.ismagnetic
 
     def parameters(self):
-        return dict(sample=self.sample.parameters(),
-                    probe=self.probe.parameters())
+        return {'sample':self.sample.parameters(),
+                'probe':self.probe.parameters(),
+                }
 
     def _render_slabs(self):
         """
@@ -536,10 +537,10 @@ class MixedExperiment(ExperimentBase):
         for p in self.parts: p.update()
 
     def parameters(self):
-        return dict(samples = [s.parameters() for s in self.samples],
-                    ratio = self.ratio,
-                    probe = self.probe.parameters(),
-                    )
+        return {'samples': [s.parameters() for s in self.samples],
+                'ratio': self.ratio,
+                'probe': self.probe.parameters(),
+                } 
 
     def _reflamp(self):
         """

@@ -65,6 +65,11 @@ import subprocess
 GIT="git"
 MAKE="make"
 
+#PYTHON = sys.executable
+os.environ['PYTHONHOME'] = sys.prefix
+PYTHON = os.path.join(sys.real_prefix,'bin','python')
+os.environ['PYTHON'] = PYTHON
+
 # Windows commands to run utilities
 if os.name == "nt":
     SYSBIN=r"C:\Program Files (x86)"
@@ -81,7 +86,6 @@ if os.name == "nt":
 
     # Put PYTHON in the environment and add the python directory and its
     # corresponding script directory (for nose, sphinx, pip, etc) to the path.
-    PYTHON = sys.executable
     PYTHONDIR = os.path.dirname(os.path.abspath(PYTHON))
     SCRIPTDIR = os.path.join(PYTHONDIR,'Scripts')
     os.environ['PATH'] = ";".join((PYTHONDIR,SCRIPTDIR,os.environ['PATH']))
@@ -244,7 +248,7 @@ def build_documentation():
     # Create documentation in HTML and PDF format.
     exec_cmd(MAKE+" clean")
     exec_cmd(MAKE+" html")
-    exec_cmd(MAKE+" pdf")
+    #exec_cmd(MAKE+" pdf")
     # Copy PDF to the html directory where the html can find it.
     pdf = os.path.join("_build", "latex", APP_NAME+".pdf")
     if os.path.isfile(pdf):

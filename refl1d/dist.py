@@ -65,7 +65,7 @@ class Weights(object):
         self.scale = Parameter.default(scale)
         self.args = [Parameter.default(a) for a in args]
     def parameters(self):
-        return dict(args=self.args,loc=self.loc,scale=self.scale)
+        return {'args':self.args,'loc':self.loc,'scale':self.scale}
     def __iter__(self):
         # Find weights and normalize the sum to 1
         centers = (self.edges[:-1]+self.edges[1:])/2
@@ -110,8 +110,9 @@ class DistributionExperiment(ExperimentBase):
         self._cache = {}  # Cache calculated profiles/reflectivities
         self._name = None
     def parameters(self):
-        return dict(distribution=self.distribution.parameters(),
-                    experiment=self.experiment.parameters())
+        return {'distribution':self.distribution.parameters(),
+                'experiment':self.experiment.parameters(),
+                }
     def reflectivity(self, resolution=True):
         key = "reflectivity",resolution
         if key not in self._cache:

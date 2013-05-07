@@ -174,7 +174,7 @@ class Erf(Interface):
         self._scale = 1
         self.width = Parameter.default(width, limits=(0,inf), name=name)
     def parameters(self):
-        return dict(width=self.width)
+        return {'width':self.width}
     def cdf(self, z):
         sigma = self.width.value * self._scale
         if sigma <= 0.0:
@@ -211,7 +211,7 @@ class Linear(Interface):
     def __init__(self, width=0, name="linear"):
         self.width = Parameter.default(width, limits=(0,inf), name=name)
     def parameters(self):
-        return dict(width=self.width)
+        return {'width':self.width}
     def cdf(self, z):
         w = float(self.width.value)
         if w <= 0.0:
@@ -307,7 +307,7 @@ class Tanh(Interface):
         self._scale = 1
         self.width = Parameter.default(width, limits=(0,inf), name=name)
     def parameters(self):
-        return dict(width=self.width)
+        return {'width':self.width}
     def cdf(self, z):
         w = self.width.value * self._scale
         if w <= 0.0:

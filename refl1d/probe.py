@@ -350,10 +350,11 @@ class Probe(object):
         return Q if not self.back_reflectivity else -Q
 
     def parameters(self):
-        return dict(intensity=self.intensity,
-                    background=self.background,
-                    back_absorption=self.back_absorption,
-                    theta_offset=self.theta_offset)
+        return {'intensity':self.intensity,
+                'background':self.background,
+                'back_absorption':self.back_absorption,
+                'theta_offset':self.theta_offset,
+                }
 
     def scattering_factors(self, material):
         """
@@ -1110,7 +1111,7 @@ class PolarizedNeutronProbe(object):
     def parameters(self):
         mm,mp,pm,pp = [(xsi.parameters() if xsi else None)
                        for xsi in self.xs]
-        return dict(pp=pp, pm=pm, mp=mp, mm=mm)
+        return {'pp':pp, 'pm':pm, 'mp':mp, 'mm':mm}
 
     def resynth_data(self):
         for p in self.xs:

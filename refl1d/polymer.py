@@ -84,16 +84,15 @@ class PolymerBrush(Layer):
         #   base,length,sigma,thickness,interface>0
         #   base+length+3*sigma <= thickness
     def parameters(self):
-        return dict(solvent=self.solvent.parameters(),
-                    polymer=self.polymer.parameters(),
-                    thickness=self.thickness,
-                    interface=self.interface,
-                    base_vf=self.base_vf,
-                    base=self.base,
-                    length=self.length,
-                    power = self.power,
-                    sigma = self.sigma)
-
+        return {'solvent':self.solvent.parameters(),
+                'polymer':self.polymer.parameters(),
+                'base_vf':self.base_vf,
+                'base':self.base,
+                'length':self.length,
+                'power':self.power,
+                'sigma':self.sigma,
+                }
+                
     def profile(self, z):
         base_vf, base, length, power, sigma \
             = [p.value for p in self.base_vf, self.base,
@@ -215,10 +214,9 @@ class VolumeProfile(Layer):
         self._parameters = vars
 
     def parameters(self):
-        P = dict(solvent=self.solvent.parameters(),
-                 material=self.material.parameters(),
-                 thickness=self.thickness,
-                 interface=self.interface)
+        P = {'solvent':self.solvent.parameters(),
+             'material':self.material.parameters(),
+             }
         for k in self._parameters:
             P[k] = getattr(self,k)
         return P
