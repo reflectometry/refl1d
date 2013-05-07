@@ -65,11 +65,6 @@ import subprocess
 GIT="git"
 MAKE="make"
 
-#PYTHON = sys.executable
-os.environ['PYTHONHOME'] = sys.prefix
-PYTHON = os.path.join(sys.real_prefix,'bin','python')
-os.environ['PYTHON'] = PYTHON
-
 # Windows commands to run utilities
 if os.name == "nt":
     SYSBIN=r"C:\Program Files (x86)"
@@ -86,12 +81,18 @@ if os.name == "nt":
 
     # Put PYTHON in the environment and add the python directory and its
     # corresponding script directory (for nose, sphinx, pip, etc) to the path.
+    PYTHON = sys.executable
     PYTHONDIR = os.path.dirname(os.path.abspath(PYTHON))
     SCRIPTDIR = os.path.join(PYTHONDIR,'Scripts')
     os.environ['PATH'] = ";".join((PYTHONDIR,SCRIPTDIR,os.environ['PATH']))
     os.environ['PYTHON'] = "/".join(PYTHON.split("\\"))
     #os.environ['GIT_SSH'] = r"C:\Program Files (x86)\PuTTY\plink.exe"
     MAKE = r"C:\mingw\bin\make"
+else:
+    # Support for wx in virtualenv on mac
+    PYTHON = os.path.join(sys.real_prefix,'bin','python')
+    os.environ['PYTHON'] = PYTHON
+    os.environ['PYTHONHOME'] = sys.prefix
 
 # Name of the package
 PKG_NAME = "refl1d"
