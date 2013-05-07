@@ -178,7 +178,7 @@ models = H_model, D_model
 # of fit measure $\chi^2$.  Since no weight vector was defined the fits
 # have equal weight.
 
-problem = MultiFitProblem(models=models)
+problem = FitProblem(models)
 problem.name = "tethered"
 
 # The polymer brush model is a smooth profile function, which is evaluated
