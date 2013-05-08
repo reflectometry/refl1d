@@ -38,14 +38,14 @@ sys.path.insert(0, build_lib)
 
 
 # TODO: Combine with setup-py2exe so that consistency is easier.
-packages = ['numpy', 'scipy', 'matplotlib', 'pytz',
-            'periodictable', 'dream'
-            ]
+packages = ['numpy', 'scipy', 'matplotlib', 'pytz', 'periodictable', 
+            'bumps', 'refl1d', 'IPython', 'wx']
 includes = []
 excludes = ['Tkinter', 'PyQt4', '_ssl', '_tkagg', 'numpy.distutils.test']
 PACKAGE_DATA = {}
 
 import refl1d
+import bumps
 import periodictable
 
 NAME = 'Refl1D'
@@ -58,7 +58,7 @@ VERSION = refl1d.__version__
 ICON = 'extra/refl1d.icns'
 ID = 'Refl1D'
 COPYRIGHT = 'This program is public domain'
-DATA_FILES = refl1d.data_files() + periodictable.data_files()
+DATA_FILES = bumps.data_files() + periodictable.data_files()
 
 plist = dict(
     CFBundleIconFile            = ICON,
@@ -80,6 +80,10 @@ py2app_opt = dict(argv_emulation=True,
                   optimize=2)
 options = dict(py2app=py2app_opt,)
 
+PRODUCT = NAME+" "+VERSION
+PRODUCTDASH = NAME+"-"+VERSION
+APP="dist/%s.app"%PRODUCT
+DMG="dist/%s.dmg"%PRODUCTDASH
 def build_app():
     setup(
           data_files = DATA_FILES,
@@ -87,13 +91,10 @@ def build_app():
           app = [app_data],
           options = options,
           )
+    shutil.copy2('extra/appbin/*',APP)
 
 def build_dmg():
     """DMG builder; should include docs"""
-    PRODUCT = NAME+" "+VERSION
-    PRODUCTDASH = NAME+"-"+VERSION
-    APP="dist/%s.app"%PRODUCT
-    DMG="dist/%s.dmg"%PRODUCTDASH
     # Remove previous build if it is still sitting there
     if os.path.exists(APP): shutil.rmtree(APP)
     if os.path.exists(DMG): os.unlink(DMG)
