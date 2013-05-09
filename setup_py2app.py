@@ -11,32 +11,31 @@ import os
 import sys
 import shutil
 
-# Force build of bumps and refl1d before continuing
-os.system('cd ../bumps && "%s" setup.py build'%sys.executable)
-os.system('"%s" setup.py build'%sys.executable)
-
-# Remove the current directory from the python path
-here = os.path.abspath(os.path.dirname(__file__))
-sys.path = [p for p in sys.path if os.path.abspath(p) != here]
-
 import py2app # @UnresolvedImport @UnusedImport except on mac
 from distutils.core import setup
 from distutils.util import get_platform
-
-if len(sys.argv) == 1:
-    sys.argv.append('py2app')
 
 # Put the build lib on the start of the path.
 # For packages with binary extensions, need platform.  If it is a pure
 # script library, use an empty platform string.
 platform = '.%s-%s'%(get_platform(),sys.version[:3])
-#platform = ''
 sys.path.insert(0, os.path.abspath('../periodictable'))
 sys.path.insert(0, os.path.abspath('../bumps/build/lib'+platform))
 sys.path.insert(0, os.path.abspath('build/lib'+platform))
 
+# Remove the current directory from the python path
+here = os.path.abspath(os.path.dirname(__file__))
+sys.path = [p for p in sys.path if os.path.abspath(p) != here]
 #print "\n".join(sys.path)
 
+
+# Force build of bumps and refl1d before continuing
+os.environ['PYTHONPATH'] = '../periodictable:../bumps/build/lib'+platform
+os.system('cd ../bumps && "%s" setup.py build'%sys.executable)
+os.system('"%s" setup.py build'%sys.executable)
+
+if len(sys.argv) == 1:
+    sys.argv.append('py2app')
 
 
 # TODO: Combine with setup-py2exe so that consistency is easier.
@@ -93,7 +92,7 @@ def build_app():
           app = [app_data],
           options = options,
           )
-    os.system('cp -a extra/appbin/* "%s"'%APP)
+    os.system('cp -a extra/appbin/* "dist/%s.app"'%NAME)
 
 def build_dmg():
     """DMG builder; should include docs"""
