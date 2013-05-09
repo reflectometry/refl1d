@@ -11,7 +11,8 @@ import os
 import sys
 import shutil
 
-# Force build before continuing
+# Force build of bumps and refl1d before continuing
+os.system('cd ../bumps && "%s" setup.py build'%sys.executable)
 os.system('"%s" setup.py build'%sys.executable)
 
 # Remove the current directory from the python path
@@ -30,8 +31,9 @@ if len(sys.argv) == 1:
 # script library, use an empty platform string.
 platform = '.%s-%s'%(get_platform(),sys.version[:3])
 #platform = ''
-build_lib = os.path.abspath('build/lib'+platform)
-sys.path.insert(0, build_lib)
+sys.path.insert(0, os.path.abspath('../periodictable'))
+sys.path.insert(0, os.path.abspath('../bumps/build/lib'+platform))
+sys.path.insert(0, os.path.abspath('build/lib'+platform))
 
 #print "\n".join(sys.path)
 
@@ -91,7 +93,7 @@ def build_app():
           app = [app_data],
           options = options,
           )
-    shutil.copy2('extra/appbin/*',APP)
+    os.system('cp -a extra/appbin/* "%s"'%APP)
 
 def build_dmg():
     """DMG builder; should include docs"""
