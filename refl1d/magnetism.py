@@ -246,7 +246,7 @@ class FreeMagnetism(BaseMagnetism):
         PrhoM = monospline(z, rhoM, Pz)
 
         if numpy.any(numpy.isnan(PrhoM)):
-            print "in mono"
+            print "in mono with bad PrhoM"
             print "z",z
             print "p",[p.value for p in self.z]
 

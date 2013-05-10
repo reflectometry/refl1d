@@ -36,7 +36,7 @@ PtMn_nuc=FreeInterface(below=PtMn,above=FePt,
 FePt_nuc=FreeLayer(below=FePt,above=air,
                    #z=[0,0.1,0.5,0.5,0.9,1],
                    #rho=[4.925,4.925*0.9,4.925/2,4.925/2,4.925*0.1,0],
-                   z=numpy.linspace(1e-10,1-1e-10,6),
+                   z=numpy.linspace(0,1,6),
                    rho=numpy.linspace(4.925,0,6),
                    name="FePt nuclear")
 FePt_mag=FreeMagnetism(z=numpy.linspace(0,1,6),
