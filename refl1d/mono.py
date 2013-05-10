@@ -4,6 +4,7 @@ Monotonic spline modeling for free interfaces
 
 
 from __future__ import division, with_statement
+import numpy
 from numpy import (diff, hstack, sqrt, searchsorted, asarray, cumsum,
                    inf, nonzero, linspace, sort, isnan, clip)
 from bumps.parameter import Parameter as Par, Function as ParFunction
@@ -67,13 +68,6 @@ class FreeLayer(Layer):
 
         rho = hstack((rbelow, [p.value for p in self.rho], rabove))
         Prho = monospline(z, rho, Pz)
-
-        import numpy
-        if numpy.any(numpy.isnan(Prho)):
-            print "in mono"
-            print "z",z
-            print "p",[p.value for p in self.z]
-
 
         if len(self.irho)>0:
             irho = hstack((ibelow, [p.value for p in self.irho], iabove))

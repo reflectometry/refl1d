@@ -237,8 +237,7 @@ class FreeMagnetism(BaseMagnetism):
         parameters.update(rhoM=self.rhoM, thetaM=self.thetaM, z=self.z)
         return parameters
 
-    def profile(self, Pz):
-        thickness = self.thickness.value
+    def profile(self, Pz, thickness):
         mbelow,tbelow = 0,(self.thetaM[0].value if self.thetaM else 270)
         mabove,tabove = 0,(self.thetaM[-1].value if self.thetaM else 270)
         z = numpy.sort([0]+[p.value for p in self.z]+[1])*thickness
@@ -263,7 +262,7 @@ class FreeMagnetism(BaseMagnetism):
 
     def render(self, probe, slabs, thickness, anchor, sigma):
         Pw,Pz = slabs.microslabs(thickness)
-        rhoM,thetaM = self.profile(Pz)
+        rhoM,thetaM = self.profile(Pz, thickness)
         slabs.add_magnetism(anchor=anchor,
                             w=Pw,rhoM=rhoM,thetaM=thetaM,
                             sigma=sigma)

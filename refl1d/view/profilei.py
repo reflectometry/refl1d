@@ -63,8 +63,8 @@ class ProfileInteractor(object):
         self.axes.set_xlabel( r'$\rm{z}/\AA$' )
         self.ismagnetic = experiment.sample.ismagnetic
         if self.ismagnetic:
-            self.axes.set_ylabel( r'$\rm{SLD}/10^{-6} \AA^{-2}\ \ \rho,\  \rho_i,\  \rho_M$')
-            self.theta_axes.set_ylabel(r'$\rm{Magnetic\ Angle\ (\ ^\circ)}$')
+            self.axes.set_ylabel( r'$\rm{SLD}\ \rho,\  \rho_i,\  \rho_M\ /\ 10^{-6} \AA^{-2}$')
+            self.theta_axes.set_ylabel(r'$\rm{Magnetic\ Angle}\ \theta_M\ /\ ^\circ$')
             self.theta_axes.set_visible(True)
             self.hrhoM.set_visible(True)
             self.hthetaM.set_visible(True)
@@ -76,7 +76,7 @@ class ProfileInteractor(object):
                 #loc='upper right'
                 )
         else:
-            self.axes.set_ylabel(r'$\rm{SLD}/10^{-6} \AA^{-2}\ \ \rho,\  \rho_i$')
+            self.axes.set_ylabel(r'$\rm{SLD}\ \rho,\  \rho_i\ /\ 10^{-6} \AA^{-2}$')
             self.theta_axes.set_ylabel('')
             self.theta_axes.set_visible(False)
             self.hrhoM.set_visible(False)
