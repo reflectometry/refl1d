@@ -32,7 +32,7 @@ class ThicknessInteractor(BaseInteractor):
 
         # Add bars
         style = dict(linewidth=1, linestyle='-',
-                     color=thickness_color, alpha=0.5,
+                     color=thickness_color, alpha=0.75,
                      pickradius=pick_radius,
                      visible=self._show_boundaries,
                      )
@@ -43,7 +43,7 @@ class ThicknessInteractor(BaseInteractor):
                     for idx,_ in enumerate(self.markers)]
         fittable[0] = False # First interface is not fittable
         for f,m in zip(fittable,self.markers):
-            if not f: m.set(linestyle=':')
+            if not f: m.set(linestyle='--', linewidth=1.25)
         self.connect_markers(m for f,m in zip(fittable,self.markers) if f)
 
         # Add labels

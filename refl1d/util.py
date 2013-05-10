@@ -22,6 +22,9 @@ def merge_ends(w, p, tol=1e-3):
         w[ridx],p[ridx] = numpy.sum(w[ridx:]),p[-1]
         return w[lidx:ridx+1],p[lidx:ridx+1]
     except:
-        # All one big layer
-        w[0] = numpy.sum(w)
-        return w[0:1],p[0:1]
+        if len(w):
+            # All one big layer
+            w[0] = numpy.sum(w)
+            return w[0:1],p[0:1]
+        else:
+            return w,p

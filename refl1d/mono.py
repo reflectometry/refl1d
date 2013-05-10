@@ -4,6 +4,7 @@ Monotonic spline modeling for free interfaces
 
 
 from __future__ import division, with_statement
+import numpy
 from numpy import (diff, hstack, sqrt, searchsorted, asarray, cumsum,
                    inf, nonzero, linspace, sort, isnan, clip)
 from bumps.parameter import Parameter as Par, Function as ParFunction
@@ -53,14 +54,12 @@ class FreeLayer(Layer):
         if len(self.irho) > 0 and len(self.z) != len(self.irho):
             raise ValueError("must have one z for each irho value")
     def parameters(self):
-        return dict(thickness=self.thickness,
-                    interface=self.interface,
-                    rho=self.rho,
-                    irho=self.irho,
-                    z=self.z,
-                    below=self.below.parameters(),
-                    above=self.above.parameters(),
-                    )
+        return {'rho':self.rho,
+                'irho':self.irho,
+                'z':self.z,
+                'below':self.below.parameters(),
+                'above':self.above.parameters(),
+                }
     def profile(self, Pz, below, above):
         thickness = self.thickness.value
         rbelow,ibelow = below
@@ -69,13 +68,6 @@ class FreeLayer(Layer):
 
         rho = hstack((rbelow, [p.value for p in self.rho], rabove))
         Prho = monospline(z, rho, Pz)
-
-        import numpy
-        if numpy.any(numpy.isnan(Prho)):
-            print "in mono"
-            print "z",z
-            print "p",[p.value for p in self.z]
-
 
         if len(self.irho)>0:
             irho = hstack((ibelow, [p.value for p in self.irho], iabove))
@@ -138,13 +130,12 @@ class FreeInterface(Layer):
                                        name=name+" inflections")
 
     def parameters(self):
-        return dict(dz=self.dz,
-                    dp=self.dp,
-                    below=self.below.parameters(),
-                    above=self.above.parameters(),
-                    thickness=self.thickness,
-                    interface=self.interface,
-                    inflections=self.inflections)
+        return {'dz':self.dz,
+                'dp':self.dp,
+                'below':self.below.parameters(),
+                'above':self.above.parameters(),
+                'inflections':self.inflections,
+                }
     def profile(self, Pz):
         thickness = self.thickness.value
         z,p = [hstack( (0, cumsum(asarray([v.value for v in vector],'d'))) )
@@ -207,11 +198,11 @@ class _FreeInterfaceW(Layer):
     thickness = property(_get_thickness, _set_thickness)
 
     def parameters(self):
-        return dict(dz=self.dz,
-                    dp=self.dp,
-                    below=self.below.parameters(),
-                    above=self.above.parameters(),
-                    interface=self.interface)
+        return {'dz':self.dz,
+                'dp':self.dp,
+                'below':self.below.parameters(),
+                'above':self.above.parameters(),
+                }
     def render(self, probe, slabs):
         interface = self.interface.value
         below_rho,below_irho = self.below.sld(probe)

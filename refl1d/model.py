@@ -43,17 +43,34 @@ class Layer(object): # Abstract base class
 
     thickness (Parameter: angstrom)
         Thickness of the layer
-    interface (Interface function)
+    interface (Parameter: angstrom)
         Interface for the top of the layer.
+    magnetism (Magnetism info)
+        Magnetic profile anchored to the layer.
     """
     thickness = None
     interface = None
-    magnetic = False
+    
+    # Make magnetism a property so we can update the magnetism parameter
+    # names with the layer name when we assign magnetism to the layer
+    _magnetism = None 
+    @property
+    def magnetism(self):
+        return self._magnetism
+    @magnetism.setter
+    def magnetism(self, magnetism):
+        self._magnetism = magnetism
+        if magnetism: magnetism.set_layer_name(str(self))
+    @property
+    def ismagnetic(self):
+        return self._magnetism is not None
+
     def constraints(self):
         """
         Constraints
         """
         return self.thickness >= 0, self.interface >= 0
+
     def find(self, z):
         """
         Find the layer at depth z.
@@ -61,14 +78,26 @@ class Layer(object): # Abstract base class
         Returns layer, start, end
         """
         return self, 0, self.thickness.value
+
     def parameters(self):
         """
-        Returns a list of parameters used in the layer.
+        Returns a dictionary of parameters specific to the layer.  These will
+        be added to the dictionary containing interface, thickness and magnetism
+        parameters.
         """
+
+    def layer_parameters(self):
+        pars = { 'thickness': self.thickness }
+        if self.interface: pars['interface'] = self.interface
+        if self.magnetism: pars['magnetism'] = self.magnetism.parameters()
+        pars.update(self.parameters())
+        return pars
+
     def render(self, probe, slabs):
         """
         Use the probe to render the layer into a microslab representation.
         """
+
     def penalty(self):
         """
         Return a penalty value associated with the layer.  This should be
@@ -92,13 +121,14 @@ class Layer(object): # Abstract base class
 
 
     # Define a little algebra for composing samples
-    # Layers can be stacked, repeated, or have length/roughness set
+    # Layers can be stacked, repeated, or have length/roughness/magnetism set
     def __or__(self, other):
         """Join two layers to make a stack"""
         s = Stack()
         s.add(self)
         s.add(other)
         return s
+
     def __mul__(self, other):
         """Repeat a stack or complex layer"""
         if not isinstance(other, int) or not other > 1:
@@ -109,16 +139,22 @@ class Layer(object): # Abstract base class
         s.add(self)
         r = Repeat(stack=s, repeat=other)
         return r
+
     def __rmul__(self, other):
         return self.__mul__(other)
-    def __call__(self, thickness=None, interface=None):
+
+    def __call__(self, thickness=None, interface=None, magnetism=None):
         c = copy(self)
+        # Only set values if they are not None so that defaults
+        # carry over from the copied layer
         if thickness != None:
             c.thickness = Par.default(thickness, limits=(0,inf),
                                       name=self.name+" thickness")
         if interface != None:
             c.interface = Par.default(interface, limits=(0,inf),
                                       name=self.name+" interface")
+        if magnetism != None:
+            c.magnetism = magnetism
         return c
 
 def _parinit(p, v):
@@ -130,6 +166,7 @@ def _parinit(p, v):
     else:
         p.set(v)
     return p
+
 def _parcopy(p, v):
     """
     If v is a parameter use v, otherwise use a copy of p but with value v.
@@ -161,8 +198,9 @@ class Stack(Layer):
         self._thickness = Function(self._calc_thickness,name="stack thickness")
 
     @property
-    def magnetic(self):
-        return any(p.magnetic for p in self._layers)
+    def ismagnetic(self):
+        return any(p.ismagnetic for p in self._layers)
+
     def find(self, z):
         """
         Find the layer at depth z.
@@ -196,42 +234,101 @@ class Stack(Layer):
 
     def __getstate__(self):
         return self.interface, self._layers, self.name
+
     def __setstate__(self, state):
         self.interface, self._layers, self.name = state
         self._thickness = Function(self._calc_thickness,name="stack thickness")
+
     def __copy__(self):
         newone = Stack()
         newone.interface = self.interface
         newone._layers = self._layers[:]
         return newone
+
     def __len__(self):
         return len(self._layers)
+
     def __str__(self):
         return " | ".join("%s(%.3g)"%(L,L.thickness.value)
                           for L in self._layers)
+
     def __repr__(self):
         return "Stack("+", ".join(repr(L) for L in self._layers)+")"
+
     def parameters(self):
-        layers=[L.parameters() for L in self._layers]
+        layers=[L.layer_parameters() for L in self._layers]
+        return {'thickness':self.thickness, 'layers':layers}
 
-        return dict(thickness=self.thickness, layers = layers)
-
-        #attrs = dict(thickness=self.thickness)
-        #return (attrs,layers)
-        #return [L.parameters() for L in self._layers]
     def penalty(self):
         return sum(L.penalty() for L in self._layers)
+
+    # This is the function which defines the functional parameter that
+    # is attached to _thickness.  Thickness is a property on which defines
+    # _thickness as a read-only parameter.
     def _calc_thickness(self):
         """returns the total thickness of the stack"""
         t = 0
         for L in self._layers:
             t += L.thickness.value
         return t
+
     @property
     def thickness(self): return self._thickness
+
     def render(self, probe, slabs):
+        """
+        Render the stack into slabs.
+        """
+        if any(layer.magnetism is not None for layer in self._layers):
+            return self._render_magnetic(probe,slabs)
+        else:
+            return self._render_nonmagnetic(probe,slabs)
+
+    def _render_nonmagnetic(self, probe, slabs):
+        """
+        Render and sld stack in which no layers are magnetic.
+        """ 
         for layer in self._layers:
             layer.render(probe, slabs)
+
+    def _render_magnetic(self, probe, slabs):
+        """
+        Render and sld stack in which some layers are magnetic.
+        
+        If the magnetism interface above or below is left unspecified, the 
+        corresponding nuclear interface is used.
+        """
+        magnetism = None 
+        end_layer = -1
+        for i,layer in enumerate(self._layers):
+            # Trigger start of a magnetic layer
+            if layer.magnetism:
+                if magnetism: 
+                    raise IndexError("magnetic layer %s overlap"%magnetism)
+                magnetism = layer.magnetism
+                #import sys; print >>sys.stderr,"magnetism",magnetism
+                anchor = slabs.thickness() + magnetism.dead_below.value
+                s_below = (magnetism.interface_below.value
+                           if magnetism.interface_below 
+                           else slabs.surface_sigma)
+                end_layer = i + magnetism.extent - 1
+
+            # Render nuclear layer
+            layer.render(probe, slabs)
+
+            # Wait for end of magnetic layer
+            if i == end_layer:
+                s_above = (magnetism.interface_above.value
+                           if magnetism.interface_above 
+                           else slabs.surface_sigma)
+                w = (slabs.thickness() - magnetism.dead_above.value) - anchor
+                magnetism.render(probe, slabs, thickness=w, anchor=anchor, 
+                                 sigma=(s_below, s_above))
+                magnetism = None
+
+        if magnetism: 
+            raise IndexError("magnetic layer %s is incomplete"%magnetism)
+
 
     def _plot(self, dz=1, roughness_limit=0):
         import pylab
@@ -270,24 +367,95 @@ class Stack(Layer):
 
 
     # Stacks as lists
-    def __getitem__(self, idx):
-        if isinstance(idx,slice):
-            s = Stack()
-            s._layers = self._layers[idx]
-            return s
+    def _find_by_material(self, target):
+        """
+        Iterate over all layers that have the given material.
+        """
+        for i,layer in enumerate(self._layers):
+            if hasattr(layer, 'stack'):
+                for sub in layer.stack._find_by_material(target): 
+                    yield sub
+            elif hasattr(layer, 'material'):
+                if id(layer.material) == id(target): 
+                    yield self,i
+
+    def _find_by_name(self, target):
+        """
+        Iterate over all layers that have the given name.
+        """
+        for i,layer in enumerate(self._layers):
+            if hasattr(layer, 'stack'):
+                for sub in layer.stack._find_by_name(target): 
+                    yield sub
+            else:
+                if str(layer) == target: 
+                    yield self,i
+
+    def _lookup(self, idx):
+        """
+        Lookup a layer by integer index, name, material or (material,repeat) if not the first
+        occurrence of the material in the sample.  Search is depth first.  Returns the stack
+        or substack that contains the material, and the index in that stack.
+        """
+        if isinstance(idx, int):
+            return self, idx
+
+        if isinstance(idx, slice):
+            start = (self, 0) if idx.start == None else self._lookup(idx.start)
+            stop = (self, len(self)) if idx.stop == None else self._lookup(idx.stop)
+            if start[0] != stop[0]:
+                raise IndexError("start and and stop of sample slice must be in the same stack")
+            return start[0],slice(start[1],stop[1],idx.step)
+
+        # Check for lookup of the nth occurrence of a given layer
+        if isinstance(idx, tuple): 
+            target, count = idx
         else:
-            return self._layers[idx]
+            target, count = idx, 1
+
+        # Check if lookup by material or by name
+        if isinstance(target, material.Scatterer):
+            sequence = self._find_by_material(target)
+        elif isinstance(target, basestring):
+            sequence = self._find_by_name(target)
+        else:
+            raise TypeError("expected integer, material or layer name as sample index")
+
+        # Move to the nth item in the sequence
+        i = -1
+        for i,el in enumerate(sequence):
+            if i+1 == count: return el
+        if i == -1:
+            raise IndexError("layer %s not found"%str(target))
+        else:
+            raise IndexError("only found %d layers of %s"%(str(target),i+1))
+
+
+    def __getitem__(self, idx):
+        #import sys;print >>sys.stderr,"lookup idx",idx
+        stack,idx= self._lookup(idx)
+        #print >>sys.stderr,"found",idx
+        if isinstance(idx,slice):
+            newstack = Stack()
+            newstack._layers = stack._layers[idx]
+            return newstack
+        else:
+            return stack._layers[idx]
+
     def __setitem__(self, idx, other):
+        stack,idx = self._lookup(idx)
         if isinstance(idx, slice):
             if isinstance(other,Stack):
-                self._layers[idx] = other._layers
+                stack._layers[idx] = other._layers
             else:
-                self._layers[idx] = [_check_layer(el) for el in other]
+                stack._layers[idx] = [_check_layer(el) for el in other]
         else:
-            self._layers[idx] = _check_layer(other)
+            stack._layers[idx] = _check_layer(other)
+
     def __delitem__(self, idx):
+        stack,idx = self._lookup(idx)
         # works the same for slices and individual indices
-        del self._layers[idx]
+        del stack._layers[idx]
 
     def insert(self, idx, other):
         """
@@ -295,18 +463,19 @@ class Stack(Layer):
         another stack, the stack will be expanded to accommodate.  You
         cannot make nested stacks.
         """
+        stack,idx = self._lookup(idx)
         if isinstance(other,Stack):
             for i,L in enumerate(other._layers):
-                self._layers.insert(idx+i,L)
+                stack._layers.insert(idx+i,L)
         elif isinstance(other,Repeat):
-            self._layers.insert(idx, other)
+            stack._layers.insert(idx, other)
         else:
             try:
                 other = iter(other)
             except:
                 other = [other]
             for i,L in enumerate(other):
-                self._layers.insert(idx+i,_check_layer(L))
+                stack._layers.insert(idx+i,_check_layer(L))
 
     # Define a little algebra for composing samples
     # Stacks can be repeated or extended
@@ -344,9 +513,11 @@ class Repeat(Layer):
 
     Note: Repeat is not a type of Stack, but it does have a stack inside.
     """
-    def __init__(self, stack, repeat=1, interface=None, name=None):
+    def __init__(self, stack, repeat=1, interface=None, name=None, 
+                 magnetism=None):
         if name is None: name = "multilayer"
         if interface is None: interface = stack[-1].interface.value
+        self.magnetism = magnetism
         self.name = name
         self.repeat = IntPar(repeat, limits=(0,inf),
                              name=name + " repeats")
@@ -363,8 +534,8 @@ class Repeat(Layer):
     def penalty(self):
         return self.stack.penalty()
     @property
-    def magnetic(self):
-        return self.stack.magnetic
+    def ismagnetic(self):
+        return self.magnetism is not None or self.stack.ismagnetic
     def find(self, z):
         """
         Find the layer at depth z.
@@ -390,10 +561,16 @@ class Repeat(Layer):
         del self.stack[idx]
 
     def parameters(self):
-        return dict(stack=self.stack.parameters(),
-                    repeat=self.repeat,
-                    thickness=self._thickness,
-                    interface=self.interface)
+        pars = {
+            'stack': self.stack.parameters(),
+            'repeat': self.repeat,
+            'thickness': self._thickness,
+            'interface': self.interface,
+        }
+        if self.magnetism:
+            pars['magnetism'] = self.magnetism.parameters()
+        return pars
+
     # Mark thickness as read only
     @property
     def thickness(self): return self._thickness
@@ -412,7 +589,7 @@ class Repeat(Layer):
 
 # Extend the materials scatterer class so that any scatter can be
 # implicitly turned into a slab.  This is a nasty thing to do
-# since those who have to debug the system later will not know
+# since those who have to debug the system later will not know where
 # to look elsewhere for the class attributes.  On the flip side,
 # changing the base class definition saves us the equally nasty
 # problem of having to create a sister hierarchy of stackable
@@ -432,8 +609,9 @@ class _MaterialStacker:
         s.add(self)
         s.add(other)
         return s
-    def __call__(self, thickness=0,interface=0):
-        c = Slab(material=self, thickness=thickness, interface=interface)
+    def __call__(self, thickness=0,interface=0,magnetism=None):
+        c = Slab(material=self, thickness=thickness, interface=interface, 
+                 magnetism=magnetism)
         return c
 material.Scatterer.__bases__ += (_MaterialStacker,)
 
@@ -441,7 +619,8 @@ class Slab(Layer):
     """
     A block of material.
     """
-    def __init__(self, material=None, thickness=0, interface=0, name=None):
+    def __init__(self, material=None, thickness=0, interface=0, name=None,
+                 magnetism=None):
         if name is None: name = material.name
         self.name = name
         self.material = material
@@ -449,11 +628,10 @@ class Slab(Layer):
                                      name=name+" thickness")
         self.interface = Par.default(interface, limits=(0,inf),
                                      name=name+" interface")
+        self.magnetism = magnetism
 
     def parameters(self):
-        return dict(thickness=self.thickness,
-                    interface=self.interface,
-                    material=self.material.parameters())
+        return {'material':self.material.parameters()}
 
     def render(self, probe, slabs):
         rho, irho = self.material.sld(probe)

@@ -112,9 +112,7 @@ class FreeformCheby(Layer):
                                         )]
     def parameters(self):
         """Return parameters used to define layer"""
-        return dict(rho=self.rho,
-                    irho=self.irho,
-                    thickness=self.thickness)
+        return {'rho':self.rho, 'irho':self.irho}
     def render(self, probe, slabs):
         """Render slabs for use with the given probe"""
         thickness = self.thickness.value
@@ -176,11 +174,9 @@ class ChebyVF(Layer):
         #   base,length,sigma,thickness,interface>0
         #   base+length+3*sigma <= thickness
     def parameters(self):
-        return dict(solvent=self.solvent.parameters(),
-                    material=self.material.parameters(),
-                    thickness=self.thickness,
-                    interface=self.interface,
-                    vf=self.vf)
+        return {'solvent': self.solvent.parameters(),
+                'material': self.material.parameters(),
+                'vf': self.vf}
     def render(self, probe, slabs):
         Mr,Mi = self.material.sld(probe)
         Sr,Si = self.solvent.sld(probe)

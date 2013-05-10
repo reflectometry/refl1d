@@ -88,6 +88,11 @@ if os.name == "nt":
     os.environ['PYTHON'] = "/".join(PYTHON.split("\\"))
     #os.environ['GIT_SSH'] = r"C:\Program Files (x86)\PuTTY\plink.exe"
     MAKE = r"C:\mingw\bin\make"
+else:
+    # Support for wx in virtualenv on mac
+    PYTHON = os.path.join(sys.real_prefix,'bin','python')
+    os.environ['PYTHON'] = PYTHON
+    os.environ['PYTHONHOME'] = sys.prefix
 
 # Name of the package
 PKG_NAME = "refl1d"
@@ -244,7 +249,7 @@ def build_documentation():
     # Create documentation in HTML and PDF format.
     exec_cmd(MAKE+" clean")
     exec_cmd(MAKE+" html")
-    exec_cmd(MAKE+" pdf")
+    #exec_cmd(MAKE+" pdf")
     # Copy PDF to the html directory where the html can find it.
     pdf = os.path.join("_build", "latex", APP_NAME+".pdf")
     if os.path.isfile(pdf):

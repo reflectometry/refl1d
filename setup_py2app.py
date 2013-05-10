@@ -11,41 +11,42 @@ import os
 import sys
 import shutil
 
-# Force build before continuing
-os.system('"%s" setup.py build'%sys.executable)
-
-# Remove the current directory from the python path
-here = os.path.abspath(os.path.dirname(__file__))
-sys.path = [p for p in sys.path if os.path.abspath(p) != here]
-
 import py2app # @UnresolvedImport @UnusedImport except on mac
 from distutils.core import setup
 from distutils.util import get_platform
-
-if len(sys.argv) == 1:
-    sys.argv.append('py2app')
 
 # Put the build lib on the start of the path.
 # For packages with binary extensions, need platform.  If it is a pure
 # script library, use an empty platform string.
 platform = '.%s-%s'%(get_platform(),sys.version[:3])
-#platform = ''
-build_lib = os.path.abspath('build/lib'+platform)
-sys.path.insert(0, build_lib)
+sys.path.insert(0, os.path.abspath('../periodictable'))
+sys.path.insert(0, os.path.abspath('../bumps/build/lib'+platform))
+sys.path.insert(0, os.path.abspath('build/lib'+platform))
 
+# Remove the current directory from the python path
+here = os.path.abspath(os.path.dirname(__file__))
+sys.path = [p for p in sys.path if os.path.abspath(p) != here]
 #print "\n".join(sys.path)
 
 
+# Force build of bumps and refl1d before continuing
+os.environ['PYTHONPATH'] = '../periodictable:../bumps/build/lib'+platform
+os.system('cd ../bumps && "%s" setup.py build'%sys.executable)
+os.system('"%s" setup.py build'%sys.executable)
+
+if len(sys.argv) == 1:
+    sys.argv.append('py2app')
+
 
 # TODO: Combine with setup-py2exe so that consistency is easier.
-packages = ['numpy', 'scipy', 'matplotlib', 'pytz',
-            'periodictable', 'dream'
-            ]
+packages = ['numpy', 'scipy', 'matplotlib', 'pytz', 'periodictable', 
+            'bumps', 'refl1d', 'IPython', 'wx']
 includes = []
 excludes = ['Tkinter', 'PyQt4', '_ssl', '_tkagg', 'numpy.distutils.test']
 PACKAGE_DATA = {}
 
 import refl1d
+import bumps
 import periodictable
 
 NAME = 'Refl1D'
@@ -58,7 +59,7 @@ VERSION = refl1d.__version__
 ICON = 'extra/refl1d.icns'
 ID = 'Refl1D'
 COPYRIGHT = 'This program is public domain'
-DATA_FILES = refl1d.data_files() + periodictable.data_files()
+DATA_FILES = bumps.data_files() + periodictable.data_files()
 
 plist = dict(
     CFBundleIconFile            = ICON,
@@ -80,6 +81,10 @@ py2app_opt = dict(argv_emulation=True,
                   optimize=2)
 options = dict(py2app=py2app_opt,)
 
+PRODUCT = NAME+" "+VERSION
+PRODUCTDASH = NAME+"-"+VERSION
+APP="dist/%s.app"%PRODUCT
+DMG="dist/%s.dmg"%PRODUCTDASH
 def build_app():
     setup(
           data_files = DATA_FILES,
@@ -87,13 +92,10 @@ def build_app():
           app = [app_data],
           options = options,
           )
+    os.system('cp -a extra/appbin/* "dist/%s.app"'%NAME)
 
 def build_dmg():
     """DMG builder; should include docs"""
-    PRODUCT = NAME+" "+VERSION
-    PRODUCTDASH = NAME+"-"+VERSION
-    APP="dist/%s.app"%PRODUCT
-    DMG="dist/%s.dmg"%PRODUCTDASH
     # Remove previous build if it is still sitting there
     if os.path.exists(APP): shutil.rmtree(APP)
     if os.path.exists(DMG): os.unlink(DMG)
