@@ -52,7 +52,7 @@ from .material import Vacuum
 from .resolution import QL2T, TL2Q, dTdL2dQ
 from .stitch import stitch
 
-PROBE_KW = ('T', 'dT', 'L', 'dL', 'data',
+PROBE_KW = ('T', 'dT', 'L', 'dL', 'data', 'name', 'filename',
             'intensity', 'background', 'back_absorption',
             'theta_offset', 'back_reflectivity', 'data')
 
@@ -145,11 +145,13 @@ class Probe(object):
     view = "fresnel"
     plot_shift = 0
     residuals_shift = 0
-    def __init__(self, T=None, dT=0, L=None, dL=0, data=None, name=None,
+    def __init__(self, T=None, dT=0, L=None, dL=0, data=None, 
                  intensity=1, background=0, back_absorption=1, theta_offset=0,
-                 back_reflectivity=False):
+                 back_reflectivity=False, name=None, filename=None):
         if T is None or L is None:
             raise TypeError("T and L required")
+        if not name and filename: 
+            name = os.path.splitext(os.path.basename(filename))[0]
         qualifier = " "+name if name is not None else ""
         self.intensity = Parameter.default(intensity,name="intensity"+qualifier)
         self.background = Parameter.default(background,name="background"+qualifier,
@@ -167,6 +169,7 @@ class Probe(object):
 
         self._set_TLR(T,dT,L,dL,R,dR)
         self.name = name
+        self.filename = filename
 
     def _set_TLR(self, T,dT,L,dL,R,dR):
         #if L is None:
