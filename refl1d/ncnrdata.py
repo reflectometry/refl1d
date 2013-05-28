@@ -71,14 +71,13 @@ def load(filename, instrument=None, **kw):
     if filename is None: return None
     if instrument is None: instrument=Monochromatic()
     header,data = parse_ncnr_file(filename)
-    header.update(**kw) # calling parameters override what's in the file.
+    header.update(filename=filename,**kw) # calling parameters override what's in the file.
     Q,R,dR = data
     probe = instrument.probe(Q=Q, data=(R,dR), **header)
     probe.title = header['title'] if 'title' in header else filename
     probe.date = header['date'] if 'date' in header else "unknown"
     probe.instrument = (header['instrument'] if 'instrument' in header
                         else instrument.instrument)
-    probe.filename = filename
     return probe
 
 def load_magnetic(filename, Aguide=270, shared_beam=True, **kw):

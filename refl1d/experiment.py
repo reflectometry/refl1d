@@ -121,8 +121,7 @@ class ExperimentBase(object):
         QR = self.reflectivity()
         self.probe.plot(theory=QR,
                         substrate=self._substrate, surface=self._surface,
-                        view=view, plot_shift=plot_shift,
-                        label=self.name)
+                        view=view, plot_shift=plot_shift)
 
         if show_resolution:
             import pylab

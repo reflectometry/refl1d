@@ -392,5 +392,12 @@ def test():
     assert abs(s.mass/avogadro_number/s.cell_volume*1e24 - 1.267) < 0.01
     assert abs(s.Dsld-2.75) < 0.01
 
+    # Check that X-ray sld is independent of isotope
+    H = isotope_substitution(s.formula, pt.T, pt.H)
+    D = isotope_substitution(s.formula, pt.T, pt.D)
+    Hsld, Dsld = pt.xray_sld(H,wavelength=1.54), pt.xray_sld(D,wavelength=1.54)
+    #print Hsld, Dsld
+    assert abs(Hsld[0]-Dsld[0]) < 1e-10
+
 if __name__=="__main__":
     fasta_table()
