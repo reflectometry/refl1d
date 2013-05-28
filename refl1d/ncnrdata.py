@@ -5,7 +5,7 @@ NCNR data loaders
 
 The following instruments are defined:
 
-    ANDR, NG1, NG7 and XRay
+    MAGIK, PBR, ANDR, NG1, NG7 and XRay
 
 These are :class:`refl1d.instrument.Monochromatic` classes tuned with default
 instrument parameters and loaders for reduced NCNR data.
@@ -195,6 +195,17 @@ class ANDR(NCNRData, Monochromatic):
     dLoL = 0.009
     d_s1 = 230.0 + 1856.0
     d_s2 = 230.0
+
+class MAGIK(NCNRData, Monochromatic):
+    """
+    Instrument definition for NCNR MAGIK diffractometer/reflectometer.
+    """
+    instrument = "MAGIK"
+    radiation = "neutron"
+    wavelength = 5.0042
+    dLoL = 0.009
+    d_s1 = 1321. + 438.
+    d_s2 = 1321. - 991.
 
 class NG1(NCNRData, Monochromatic):
     """
