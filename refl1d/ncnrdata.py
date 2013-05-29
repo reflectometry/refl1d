@@ -185,17 +185,6 @@ class NCNRData(object):
     def load_magnetic(self, filename, **kw):
         return load_magnetic(filename, instrument=self, **kw)
 
-class ANDR(NCNRData, Monochromatic):
-    """
-    Instrument definition for NCNR AND/R diffractometer/reflectometer.
-    """
-    instrument = "AND/R"
-    radiation = "neutron"
-    wavelength = 5.0042
-    dLoL = 0.009
-    d_s1 = 230.0 + 1856.0
-    d_s2 = 230.0
-
 class MAGIK(NCNRData, Monochromatic):
     """
     Instrument definition for NCNR MAGIK diffractometer/reflectometer.
@@ -207,18 +196,18 @@ class MAGIK(NCNRData, Monochromatic):
     d_s1 = 1321. + 438.
     d_s2 = 1321. - 991.
 
-class NG1(NCNRData, Monochromatic):
+class PBR(NCNRData, Monochromatic):
     """
-    Instrument definition for NCNR NG-1 reflectometer.
+    Instrument definition for NCNR PBR reflectometer.
     """
-    instrument = "NG-1"
+    instrument = "PBR"
     radiation = "neutron"
     wavelength = 4.75
     dLoL = 0.015
-    d_s1 = 75*25.4
-    d_s2 = 14*25.4
-    d_s3 = 9*25.4
-    d_s4 = 42*25.4
+    d_s1 = 1835
+    d_s2 = 343
+    d_s3 = 380
+    d_s4 = 1015 
 
 class NG7(NCNRData, Monochromatic):
     """
@@ -262,8 +251,34 @@ class XRay(NCNRData, Monochromatic):
     d_s3 = 175.0
     d_detector = None
 
+class ANDR(NCNRData, Monochromatic):
+    """
+    Instrument definition for NCNR AND/R diffractometer/reflectometer.
+    """
+    instrument = "AND/R"
+    radiation = "neutron"
+    wavelength = 5.0042
+    dLoL = 0.009
+    d_s1 = 230.0 + 1856.0
+    d_s2 = 230.0
+
+class NG1(NCNRData, Monochromatic):
+    """
+    Instrument definition for NCNR NG-1 reflectometer.
+    """
+    instrument = "NG-1"
+    radiation = "neutron"
+    wavelength = 4.75
+    dLoL = 0.015
+    d_s1 = 75*25.4
+    d_s2 = 14*25.4
+    d_s3 = 9*25.4
+    d_s4 = 42*25.4
+
 # Instrument names assigned by reflpak
 INSTRUMENTS = {
+    'CG-D': MAGIK,
+    'NG-D': PBR,
     'CG-1': ANDR,
     'NG-1': NG1,
     'NG-7': NG7,
