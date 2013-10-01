@@ -190,10 +190,10 @@ class DataView(wx.Panel):
             if isinstance(self.problem,MultiFitProblem):
                 #print "n=",len(self.problem.models)
                 for p in self.problem.models:
-                    self._precalc(p.fitness)
+                    if hasattr(p.fitness, 'reflectivity'):
+                        self._precalc(p.fitness)
                     #print "cancel",self._cancel_calculate,"reset",p.fitness.is_reset()
-                    if self._cancel_calculate \
-                        or p.fitness.is_reset(): break
+                        if p.fitness.is_reset() or self._cancel_calculate: break
                 if self._cancel_calculate \
                     or self.problem.active_model.fitness.is_reset(): continue
             else:
@@ -213,11 +213,11 @@ class DataView(wx.Panel):
                 shift=0
                 if isinstance(self.problem,MultiFitProblem):
                     for _,p in enumerate(self.problem.models):
-                        p.fitness.plot_reflectivity(view=self.view,
-                                                    plot_shift=shift)
-                        pylab.hold(True)
-                        if self._cancel_calculate \
-                            or p.fitness.is_reset(): break
+                        if hasattr(p.fitness, 'reflectivity'):
+                            p.fitness.plot_reflectivity(view=self.view,
+                                                        plot_shift=shift)
+                            pylab.hold(True)
+                            if self._cancel_calculate or p.fitness.is_reset(): break
                     if self._cancel_calculate \
                         or self.problem.active_model.fitness.is_reset(): continue
                 else:
