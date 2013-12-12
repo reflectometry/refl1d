@@ -7,7 +7,7 @@ Experiment
 .. contents:: :local:
 
 The :class:`Experiment <refl1d.experiment.Experiment>` object links a
-`sample <sample>`_ with an experimental `probe <data>`_.
+`sample <sample-guide>`_ with an experimental `probe <data-guide>`_.
 The probe defines the Q values and the resolution of the individual 
 measurements, and returns the scattering factors associated with the 
 different materials in the sample.
@@ -46,6 +46,8 @@ The following performs a complete calculation for a silicon
 substrate with 5 |Ang| roughness using neutrons.  The theory is sampled 
 at intervals of 0.001, which is convolved with a 1% $\Delta Q/Q$ resolution
 function to yield reflectivities at intervals of 0.01.
+
+::
 
     >>> from numpy import arange
     >>> from refl1d.reflectivity import reflectivity_amplitude as reflamp
