@@ -15,12 +15,13 @@ import numpy
 from periodictable import elements, formula
 from bumps.parameter import Parameter, FreeVariables
 from bumps import pmath
-from bumps.modelfn import ModelFunction
+from bumps.pdfwrapper import PDF
 from bumps.fitproblem import preview, fit, mesh, FitProblem
 
 # Deprecated
 from bumps.fitproblem import MultiFitProblem
-
+def ModelFunction(*args,**kw):
+    raise NotImplementedError("ModelFunction no longer supported --- use PDF instead")
 
 from .experiment import Experiment, plot_sample, MixedExperiment
 from .material import SLD, Material, Compound, Mixture
