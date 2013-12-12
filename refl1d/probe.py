@@ -359,7 +359,7 @@ class Probe(object):
                 'theta_offset':self.theta_offset,
                 }
 
-    def scattering_factors(self, material):
+    def scattering_factors(self, material, density):
         """
         Returns the scattering factors associated with the material given
         the range of wavelengths/energies used in the probe.
@@ -799,11 +799,13 @@ class XrayProbe(Probe):
     components can be defined by mass density and chemical composition.
     """
     radiation = "xray"
-    def scattering_factors(self, material):
+    def scattering_factors(self, material, density):
         # doc string is inherited from parent (see below)
+        # Note: the real density is calculated as a scale factor applied to
+        # the returned sld as computed assuming density=1
         rho, irho = xsf.xray_sld(material,
                                  wavelength = self.unique_L,
-                                 density=1)
+                                 density = density)
         # TODO: support wavelength dependent systems
         return rho[0], irho[0], 0
         return rho[self._L_idx], irho[self._L_idx], 0
@@ -817,11 +819,13 @@ class NeutronProbe(Probe):
     components can be defined by mass density and chemical composition.
     """
     radiation = "neutron"
-    def scattering_factors(self, material):
+    def scattering_factors(self, material, density):
         # doc string is inherited from parent (see below)
+        # Note: the real density is calculated as a scale factor applied to
+        # the returned sld as computed assuming density=1
         rho, irho, rho_incoh = nsf.neutron_sld(material,
-                                               wavelength=self.unique_L,
-                                               density=1)
+                                               wavelength = self.unique_L,
+                                               density = density)
         # TODO: support wavelength dependent systems
         return rho, irho[0], rho_incoh
         return rho, irho[self._L_idx], rho_incoh
@@ -878,10 +882,10 @@ class ProbeSet(Probe):
     def oversample(self, **kw):
         for p in self.probes: p.oversample(**kw)
     oversample.__doc__ = Probe.oversample.__doc__
-    def scattering_factors(self, material):
+    def scattering_factors(self, material, density):
         # TODO: support wavelength dependent systems
-        return self.probes[0].scattering_factors(material)
-        result = [p.scattering_factors(material) for p in self.probes]
+        return self.probes[0].scattering_factors(material, density)
+        result = [p.scattering_factors(material, density) for p in self.probes]
         return [numpy.hstack(v) for v in zip(*result)]
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
     def apply_beam(self, calc_Q, calc_R, resolution=True, **kw):
@@ -1205,11 +1209,11 @@ class PolarizedNeutronProbe(object):
         return self.pp.fresnel(*args, **kw)
     fresnel.__doc__ = Probe.fresnel.__doc__
 
-    def scattering_factors(self, material):
+    def scattering_factors(self, material, density):
         # doc string is inherited from parent (see below)
         rho, irho, rho_incoh = nsf.neutron_sld(material,
                                                wavelength=self.unique_L,
-                                               density=1)
+                                               density=density)
         # TODO: support wavelength dependent systems
         return rho, irho[0], rho_incoh
         return rho, irho[self._L_idx], rho_incoh
