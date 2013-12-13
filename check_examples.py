@@ -16,6 +16,7 @@ examples = [
     #"peaks/model.py",
     "polymer/tethered-web.py",
     "polymer/freeform.py",
+    "profile/model.py",
     "spinvalve/n101G.py",
     "staj/De2_VATR.py",
     "superlattice/freeform-web.py",

@@ -13,10 +13,11 @@ Usage:
 """
 
 import os, sys, subprocess
+from glob import glob
 import nose
 import matplotlib
 matplotlib.use('Agg')
-print matplotlib.__file__
+#print matplotlib.__file__
 
 sys.stderr = sys.stdout # Doctest doesn't see sys.stderr
 #import numpy; numpy.seterr(all='raise')
@@ -33,7 +34,7 @@ if not os.path.exists(mplconfig): os.mkdir(mplconfig)
 import pylab; pylab.hold(False)
 
 # Build reflmodule.pyd if it has not already been built in the source tree.
-if not os.path.exists(os.path.join(path, 'refl1d', 'reflmodule.pyd')):
+if not glob(os.path.join(path, 'refl1d', 'reflmodule.*')):
     print "-"*70
     print "Building reflmodule.pyd ..."
     print "-"*70

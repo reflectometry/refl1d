@@ -13,7 +13,7 @@ layer = TetheredPolymer(polymer,solvent,head,tail,power,
 
 .. [#Karima] Karima, A; Douglas, JF; Horkay, F; Fetters, LJ; Satija, SK (1996)
    "Comparative swelling of gels and polymer brush layers",
-   Physica B 221, 331-336. `<DOI: 10.1016/0921-4526(95)00946-9>`_
+   Physica B 221, 331-336. `<http://dx.doi.org/10.1016/0921-4526(95)00946-9>`_
 """
 from __future__ import division
 #__all__ = ["TetheredPolymer","VolumeProfile","layer_thickness"]

@@ -66,7 +66,9 @@ D = (silicon(0,5) | SiOx(100,5) | D_initiator(100,20) | D_brush(400,0)
 # a number of tasks for you.  One thing it is doing is wrapping materials
 # (which are objects that understand scattering length densities) into
 # slabs (which are objects that understand thickness and interface).  These
-# slabs are then gathered together into a stack::
+# slabs are then gathered together into a stack:
+#
+# .. parsed-literal::
 #
 #    L_silicon = Slab(material=silicon, thickness=0, interface=5)
 #    L_SiOx = Slab(material=SiOx, thickness=100, interface=5)
@@ -204,6 +206,8 @@ problem.name = "tethered"
 #
 # .. literalinclude:: tethered.py
 #
-# The model can be fit using the parallel tempering optimizer::
+# The model can be fit using the parallel tempering optimizer:
+#
+# .. parsed-literal::
 #
 #    $ refl1d tethered.py --fit=pt --store=T1

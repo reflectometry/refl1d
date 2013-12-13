@@ -71,6 +71,8 @@ problem = FitProblem(M)
 # .. literalinclude:: mixed.py
 #
 # We can test how well the fitter can recover the original model
-# by running refl1d with --random::
+# by running refl1d with --random:
+#
+# .. parsed-literal::
 #
 #    $ refl1d mixed.py --random --store=T1

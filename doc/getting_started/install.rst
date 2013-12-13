@@ -159,20 +159,9 @@ that will work using *cmd* but it doesn't yet build PDF files.
 
 You can see the result by pointing your browser to::
 
-    refl1d/doc/_build/html/index.html
-    refl1d/doc/_build/latex/Refl1D.pdf
+    doc/_build/html/index.html
+    doc/_build/latex/Bumps.pdf
 
-As of this writing, the \\AA LaTeX command for the Angstrom symbol is not
-available in the MathJax distribution. We patched jax/input/TeX/jax.js
-with the additional symbol AA using::
-
-    // Ord symbols
-    S:            '00A7',
-  + AA:           '212B',
-    aleph:        ['2135',{mathvariant: MML.VARIANT.NORMAL}],
-
-If you are using unusual math characters, you may need similar patches
-for your own documentation.
 
 ReStructured text format does not have a nice syntax for superscripts and
 subscripts.  Units such as |g/cm^3| are entered using macros such as

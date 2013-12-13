@@ -157,5 +157,5 @@ bumps_modules = [
     ('util','Miscellaneous functions'),
     ('wsolve','Weighted linear and polynomial solver with uncertainty'),
 ]
-genfiles('refl1d', refl1d_modules, dir='refl1d_api')
-genfiles('bumps',bumps_modules, dir='bumps_api')
+genfiles('refl1d', refl1d_modules, dir='api')
+#genfiles('bumps',bumps_modules, dir='bumps_api')

@@ -15,7 +15,9 @@
 #
 # This model is defined in :download:`nifilm.py <nifilm.py>`.
 #
-# You can preview the model on the command line::
+# You can preview the model on the command line:
+#
+# .. parsed-literal::
 #
 #   $ refl1d nifilm.py --preview
 #

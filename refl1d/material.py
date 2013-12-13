@@ -253,13 +253,12 @@ class Material(Scatterer):
     def parameters(self):
         return {'density': self.density}
     def sld(self, probe):
-        rho, irho, incoh = probe.scattering_factors(self.formula)
+        rho, irho, incoh = probe.scattering_factors(self.formula, 
+            density=self.density.value)
         if self.use_incoherent:
             raise NotImplementedError("incoherent scattering not supported")
             irho += incoh
-        scale = self.density.value
-        #print "Material sld ",self.name,scale,scale*rho,scale*irho
-        return (scale*rho,scale*irho)
+        return rho, irho
     def __str__(self):
         return self.name
     def __repr__(self):
@@ -490,11 +489,13 @@ class ProbeCache:
     def __delitem__(self, material):
         if material in self._cache:
             del self._cache[material]
-    def scattering_factors(self, material):
+    def scattering_factors(self, material, density):
         """
         Return the scattering factors for the material, retrieving them from
         the cache if they have already been looked up.
         """
         if material not in self._cache:
-            self._cache[material] = self._probe.scattering_factors(material)
-        return self._cache[material]
+            # lookup density of 1, and scale to actual density on retrieval
+            self._cache[material] = self._probe.scattering_factors(material, 
+                density=1.0)
+        return [v*density for v in self._cache[material]]

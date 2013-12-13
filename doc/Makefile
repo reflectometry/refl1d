@@ -13,15 +13,14 @@ PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
 ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
-%.rst: %-web.py
+EXWEB=_examples
+EXDIR=examples
+WEB_FILES = $(wildcard $(EXWEB)/*/*-web.py)
+WEB2RST_FILES = $(patsubst $(EXWEB)/%-web.py,$(EXDIR)/%.rst,$(WEB_FILES))
+
+$(EXDIR)/%.rst: $(EXWEB)/%-web.py
 	$(PYTHON) pylit.py $< $@
 	$(PYTHON) pylit.py $@ $(patsubst %.rst,%.py,$@) -s -t
-
-WEBFILES = superlattice/PEMU superlattice/NiTi superlattice/freeform \
-	ex1/nifilm ex1/nifilm-tof ex1/nifilm-fit ex1/nifilm-data ex1/nifilm-back \
-	polymer/tethered mixed/mixed
-
-WEBDEPS = $(patsubst %,examples/%.rst,$(WEBFILES))
 
 .PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp \
         devhelp epub latex pdf text man changes linkcheck doctest generated
@@ -47,25 +46,31 @@ help:
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 	@echo "  install   to upload the docs to the distribution site"
 
-clean: clean_api
+clean:
 	# Cleaning matplotlib plots from build
 	# Cleaning html/pdf from $(BUILDDIR)
-	-rm -rf $(BUILDDIR) build
+	# Resetting api/ and examples/
+	-rm -rf $(BUILDDIR) build api $(EXDIR)
 
 clean_api:
-	-rm -rf refl1d_api bumps_api
+	-rm -rf refl1d_api $(EXDIR)
 
-api: clean_api genmods.py
+api: genmods.py
+	-rm -rf api
 	$(PYTHON) genmods.py
 
+$(EXDIR):
+	mkdir -p $(EXDIR)
+	-cp -rp $(EXWEB)/* $(EXDIR)
 
-$(BUILDDIR)/html:
-	mkdir -p $(BUILDDIR)/html/_static
-	-cp -r MathJax $(BUILDDIR)/html/_static/MathJax
+## MathJax now uses CDN by default
+#$(BUILDDIR)/html:
+#	mkdir -p $(BUILDDIR)/html/_static
+#	-cp -r MathJax $(BUILDDIR)/html/_static/MathJax
 
-generated: api $(WEBDEPS)
+generated: api $(EXDIR) $(WEB2RST_FILES)
 
-html: $(BUILDDIR)/html generated
+html: generated
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
