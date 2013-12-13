@@ -13,4 +13,5 @@ dist/
 refl1d.egg-info/
 refl1d.iss-include
 _build/
-doc/*_api/
+doc/api/
+doc/examples/
