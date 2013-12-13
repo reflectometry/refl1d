@@ -25,7 +25,7 @@ purposes:
 Because our models allow representation based on composition, it is no
 longer trivial to compute the reflectivity from the model.  We now have
 to look up the effective scattering density based on the probe type and
-probe energy.  You've already seen this in the `new_layers`_ section:
+probe energy.  You've already seen this in :ref:`new-layers`:
 the render method for the layer requires the probe to look up the material
 scattering factors.
 

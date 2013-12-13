@@ -7,7 +7,7 @@ The experimental probe describes the incoming beam for the experiment.
 Scattering properties of the sample are dependent on the type and
 energy of the radiation.
 
-See `data_guide`_ for details.
+See :ref:`data-guide` for details.
 
 """
 
