@@ -1,9 +1,0 @@
-#!/usr/bin/env python
-"""
-Debug server for the reflfit infrastructure.
-"""
-
-from jobqueue.serve import serve
-serve()
-
-

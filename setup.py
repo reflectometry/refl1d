@@ -46,7 +46,7 @@ dist = setup(
             ],
         packages = packages,
         package_data = gui_resources.package_data(),
-        scripts = ['bin/reflworkerd','bin/refl1d_cli.py','bin/refl1d_gui.py'],
+        scripts = ['bin/refl1d_cli.py','bin/refl1d_gui.py'],
         ext_modules = [reflmodule_config()],
         install_requires = ['httplib2'],
         )

@@ -15,4 +15,4 @@ if __name__ == "__main__":
     multiprocessing.freeze_support()
 
     import refl1d.main
-    refl1d.main.main()
+    refl1d.main.cli()

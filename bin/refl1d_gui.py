@@ -33,6 +33,6 @@ if __name__ == "__main__":
     import multiprocessing
     multiprocessing.freeze_support()
 
-    import bumps.main
-    bumps.main.gui()
+    import refl1d.main
+    refl1d.main.gui()
 
