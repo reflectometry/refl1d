@@ -34,9 +34,9 @@ serves the same purpose with less work on your part.
 
     >>> from numpy import tanh
     >>> Pw,Pz = S.microslabs(20)
-    >>> print "widths = %s ..."%(" ".join("%g"%v for v in Pw[:5]))
+    >>> print("widths = %s ..."%(" ".join("%g"%v for v in Pw[:5])))
     widths = 2 2 2 2 2 ...
-    >>> print "centers = %s ..."%(" ".join("%g"%v for v in Pz[:5]))
+    >>> print("centers = %s ..."%(" ".join("%g"%v for v in Pz[:5])))
     centers = 1 3 5 7 9 ...
     >>> rho = (1-tanh((Pz-10)/5))/2*(2.07-4.5)+4.5
     >>> S.extend(w=Pw, rho=[rho])
@@ -46,16 +46,16 @@ is a matrix, with one column for each incident energy.  We are only
 using one energy so we only show the first column.
 
     >>> S.append(w=0,rho=4.5)
-    >>> print "width = %s ..."%(" ".join("%g"%v for v in S.w[:5]))
+    >>> print("width = %s ..."%(" ".join("%g"%v for v in S.w[:5])))
     width = 0 2 2 2 2 ...
-    >>> print "rho = %s ..."%(" ".join("%.2f"%v for v in S.rho[0,:5]))
+    >>> print("rho = %s ..."%(" ".join("%.2f"%v for v in S.rho[0,:5])))
     rho = 2.07 2.13 2.21 2.36 2.63 ...
 
  Since *irho* and *sigma* were not specified, they will be zero.
 
-    >>> print "sigma = %s ..."%(" ".join("%g"%v for v in S.sigma[:5]))
+    >>> print("sigma = %s ..."%(" ".join("%g"%v for v in S.sigma[:5])))
     sigma = 0 0 0 0 0 ...
-    >>> print "irho = %s ..."%(" ".join("%g"%v for v in S.irho[0,:5]))
+    >>> print("irho = %s ..."%(" ".join("%g"%v for v in S.irho[0,:5])))
     irho = 0 0 0 0 0 ...
 """
 
@@ -314,7 +314,7 @@ class Microslabs(object):
         if dA is None: return
         w,rho,irho,rhoM,thetaM = \
             [numpy.ascontiguousarray(v,'d')
-             for v in self.w,self.rho[0],self.irho[0],self.rhoM, self.thetaM]
+             for v in (self.w,self.rho[0],self.irho[0],self.rhoM, self.thetaM)]
         #print "final sld before contract",rho[-1]
         n = _contract_mag(w,rho,irho,rhoM,thetaM,dA)
         self._num_slabs = n
@@ -332,7 +332,7 @@ class Microslabs(object):
         if dA is None: return
         w,sigma,rho,irho = \
             [numpy.ascontiguousarray(v,'d')
-             for v in self.w,self.sigma,self.rho[0],self.irho[0]]
+             for v in (self.w,self.sigma,self.rho[0],self.irho[0])]
         #print "final sld before contract",rho[-1]
         n = _contract_by_area(w,sigma,rho,irho,dA)
         self._num_slabs = n

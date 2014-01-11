@@ -129,7 +129,7 @@ class Sequence(Molecule):
         Load the first FASTA sequence from a file.
         """
         with open(filename, 'rt') as fh:
-            name, seq = read_fasta(fh).next()
+            name, seq = next(read_fasta(fh))
             return Sequence(name, seq)
 
     def __init__(self, name, sequence, type='aa'):
@@ -369,16 +369,16 @@ def fasta_table():
     rows += [v for k,v in sorted(NUCLEIC_ACID_COMPONENTS.items())]
     rows += [Sequence("beta casein",beta_casein)]
 
-    print "%20s %7s %7s %7s %5s %5s %5s %5s %5s %5s"%(
+    print("%20s %7s %7s %7s %5s %5s %5s %5s %5s %5s"%(
         "name","M(H2O)","M(D2O)","volume",
-        "den","#el","xray","nH2O","nD2O","%D2O match")
+        "den","#el","xray","nH2O","nD2O","%D2O match"))
     for v in rows:
         protons = sum(num*el.number for el,num in v.formula.atoms.items())
         electrons = protons - v.charge
         Xsld = pt.xray_sld(v.formula, wavelength=pt.Cu.K_alpha)
-        print "%20s %7.1f %7.1f %7.1f %5.2f %5d %5.2f %5.2f %5.2f %5.1f"%(
+        print("%20s %7.1f %7.1f %7.1f %5.2f %5d %5.2f %5.2f %5.2f %5.1f"%(
             v.name, v.Hmass, v.Dmass, v.cell_volume, v.formula.density,
-            electrons, Xsld[0], v.Hsld, v.Dsld, v.D2Omatch) 
+            electrons, Xsld[0], v.Hsld, v.Dsld, v.D2Omatch)) 
 
 beta_casein = "RELEELNVPGEIVESLSSSEESITRINKKIEKFQSEEQQQTEDELQDKIHPFAQTQSLVYPFPGPIPNSLPQNIPPLTQTPVVVPPFLQPEVMGVSKVKEAMAPKHKEMPFPKYPVEPFTESQSLTLTDVENLHLPLPLLQSWMHQPHQPLPPTVMFPPQSVLSLSQSKVLPVPQKAVPYPQRDMPIQAFLLYQEPVLGPVRGPFPIIV"
 

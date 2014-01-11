@@ -95,8 +95,8 @@ class PolymerBrush(Layer):
                 
     def profile(self, z):
         base_vf, base, length, power, sigma \
-            = [p.value for p in self.base_vf, self.base,
-               self.length, self.power, self.sigma]
+            = [p.value for p in (self.base_vf, self.base,
+               self.length, self.power, self.sigma)]
         base_vf /= 100. # % to fraction
         L0 = base  # if base < thickness else thickness
         L1 = base+length # if base+length < thickness else thickness-L0

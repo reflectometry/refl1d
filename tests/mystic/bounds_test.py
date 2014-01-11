@@ -26,7 +26,7 @@ def test_all_codecs():
     assert abs(sm.put01(sm.get01(-1e5))/-1e5-1) < 1e-9
     assert abs(sm.put01(sm.get01(-1e15))/-1e15-1) < 1e-9
     assert abs(sm.put01(sm.get01(-1e308))/-1e308-1) < 1e-9
-    print "need more bounds tests"
+    print("need more bounds tests")
 
 def test():
     test_all_codecs()

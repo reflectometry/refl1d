@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 Basic reflectometry calculations
 
@@ -11,20 +9,22 @@ spin polarization cross sections [++, +-, -+, --].  The function
 unpolarized_magnetic returns the expected magnitude for a measurement
 of the magnetic scattering using an unpolarized beam.
 """
+from six.moves import reduce
 
 #__doc__ = "Fundamental reflectivity calculations"
 __author__ = "Paul Kienzle"
 __all__ = [ 'reflectivity', 'reflectivity_amplitude',
             'magnetic_reflectivity', 'magnetic_amplitude',
             'unpolarized_magnetic', 'convolve',
-            'erf'
             ]
 
 import numpy
 from numpy import pi, sin, cos, conj
 from numpy import ascontiguousarray as _dense
+# Export convolve and erf from bumps
+from bumps.data import convolve
+from bumps.util import erf
 from . import reflmodule
-
 
 def reflectivity(*args, **kw):
     """
@@ -195,31 +195,13 @@ def magnetic_amplitude(kz,
         sigma = sigma*numpy.ones(n-1, 'd')
 
     depth, rho, irho, rho_m, thetaM, sigma \
-        = [_dense(a,'d') for a in depth, rho, irho, rhoM, thetaM, sigma]
+        = [_dense(a,'d') for a in (depth, rho, irho, rhoM, thetaM, sigma)]
     expth = cos(thetaM * pi/180.0) + 1j*sin(thetaM * pi/180.0)
     #rho,irho,rho_m = [v*1e-6 for v in rho,irho,rho_m]
-    R1,R2,R3,R4 = [numpy.empty(kz.shape,'D') for pol in 1,2,3,4]
+    R1,R2,R3,R4 = [numpy.empty(kz.shape,'D') for pol in (1,2,3,4)]
     reflmodule._magnetic_amplitude(depth, sigma, rho, irho,
                                    rhoM,  expth, Aguide, kz, rho_index,
                                    R1, R2, R3, R4
                                    )
     return R1,R2,R3,R4
 
-def convolve(Qi,Ri,Q,dQ):
-    """
-    Apply Q-dependent resolution function to the theory.
-
-    Returns convolution R[k] of width dQ[k] at points Q[k].
-    """
-    R = numpy.empty(Q.shape,'d')
-    reflmodule._convolve(_dense(Qi),_dense(Ri),_dense(Q),_dense(dQ),R)
-    return R
-
-def erf(x):
-    """
-    Error function calculator.
-    """
-    input = _dense(x,'d')
-    output = numpy.empty_like(input)
-    reflmodule._erf(input,output)
-    return output

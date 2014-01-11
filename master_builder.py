@@ -56,6 +56,7 @@ putty key and drop it on your desktop.  Click the private key icon to start
 pagent with your key.  Uncomment os.environ['GIT_SSH'] below, and set it to
 the location of plink.exe on your system.
 """
+from __future__ import print_function
 
 import os
 import sys
@@ -73,10 +74,10 @@ if os.name == "nt":
     INNO   = SYSBIN+r"\Inno Setup 5\ISCC.exe"  # command line operation
 
     if not os.path.exists(GIT):
-        print >>sys.stderr, "missing git: "+GIT
+        print("missing git: "+GIT, file=sys.stderr)
         sys.exit(1)
     if not os.path.exists(INNO):
-        print >>sys.stderr, "missing inno setup: "+INNO
+        print("missing inno setup: "+INNO, file=sys.stderr)
         sys.exit(1)
 
     # Put PYTHON in the environment and add the python directory and its
@@ -163,7 +164,7 @@ def get_version():
 
 def checkout_code():
     "download or update source code"
-    print "Checking out application code from the repository ...\n"
+    print("Checking out application code from the repository ...\n")
 
     if RUN_DIR == TOP_DIR:
         os.chdir(TOP_DIR)
@@ -184,7 +185,7 @@ def create_archive(version=None):
 
     # Create zip and tar archives of the source code and a manifest file
     # containing the names of all files.
-    print "Creating an archive of the source code ...\n"
+    print("Creating an archive of the source code ...\n")
 
     
     try:
@@ -192,7 +193,7 @@ def create_archive(version=None):
         os.chdir(SRC_DIR)
         exec_cmd("%s setup.py sdist --formats=zip,gztar" %(PYTHON))
     except:
-        print "*** Failed to create source archive ***"
+        print("*** Failed to create source archive ***")
     else:
         # Copy the archives and its source listing to the top-level directory.
         # The location of the file that contains the source listing and the
@@ -212,15 +213,15 @@ def install_package():
     "build and install the package"
     # If the INS_DIR directory already exists, warn the user.
     # Intermediate work files are stored in the <SRC_DIR>/build directory tree.
-    print "Installing the %s package in %s...\n" %(PKG_NAME, INS_DIR)
+    print("Installing the %s package in %s...\n" %(PKG_NAME, INS_DIR))
 
     if os.path.isdir(INS_DIR):
-        print "WARNING: In order to build", APP_NAME, "cleanly, the local build"
-        print "directory", INS_DIR, "needs to be deleted."
-        print "Do you want to delete this directory and continue (D)"
-        print "            or leave contents intact and continue (C)"
-        print "            or exit the build script (E)"
-        answer = raw_input("Please choose either (D|C|E)? [E]: ")
+        print("WARNING: In order to build %s cleanly, the local build"%APP_NAME)
+        print("directory %s needs to be deleted."%INS_DIR)
+        print("Do you want to delete this directory and continue (D)")
+        print("            or leave contents intact and continue (C)")
+        print("            or exit the build script (E)")
+        answer = input("Please choose either (D|C|E)? [E]: ")
         if answer.upper() == "D":
             shutil.rmtree(INS_DIR, ignore_errors=True)
         elif answer.upper() == "C":
@@ -242,7 +243,7 @@ def install_package():
 
 def build_documentation():
     "build the documentation"
-    print "Running the Sphinx utility to build documentation ...\n"
+    print("Running the Sphinx utility to build documentation ...\n")
     os.chdir(os.path.join(SRC_DIR, "doc"))
 
     # Delete any left over files from a previous build.
@@ -261,7 +262,7 @@ def create_windows_exe():
     if os.name != 'nt': return
     # Use py2exe to create a Win32 executable along with auxiliary files in the
     # <SRC_DIR>/dist directory tree.
-    print "Using py2exe to create a Win32 executable ...\n"
+    print("Using py2exe to create a Win32 executable ...\n")
     os.chdir(SRC_DIR)
 
     exec_cmd("%s setup_py2exe.py" %PYTHON)
@@ -273,8 +274,8 @@ def create_windows_installer(version=None):
     if not version: version = PKG_VERSION
     # Run the Inno Setup Compiler to create a Win32 installer/uninstaller for
     # the application.
-    print "Running Inno Setup Compiler to create Win32 "\
-          "installer/uninstaller ...\n"
+    print("Running Inno Setup Compiler to create Win32 "
+          "installer/uninstaller ...\n")
     os.chdir(SRC_DIR)
 
     # First create an include file to convey the application's version
@@ -293,7 +294,7 @@ def run_tests():
     "run the test suite"
     # Run unittests and doctests using a test script.
     # Running from a test script allows customization of the system path.
-    print "Running tests from test.py (using Nose) ...\n"
+    print("Running tests from test.py (using Nose) ...\n")
     #os.chdir(os.path.join(INS_DIR, PKG_NAME))
     os.chdir(SRC_DIR)
 
@@ -307,11 +308,11 @@ def check_dependencies():
 
     # ------------------------------------------------------
     python_ver = platform.python_version()
-    print "Using Python", python_ver
-    print ""
+    print("Using Python %s"%python_ver)
+    print("")
     if PV(python_ver) < PV(MIN_PYTHON) or PV(python_ver) >= PV(MAX_PYTHON):
-        print "ERROR - build requires Python >= %s, but < %s" %(MIN_PYTHON,
-                                                                MAX_PYTHON)
+        print("ERROR - build requires Python >= %s, but < %s"
+              %(MIN_PYTHON, MAX_PYTHON))
         sys.exit()
 
     req_pkg = {}
@@ -440,33 +441,33 @@ def check_dependencies():
 
     # ------------------------------------------------------
     error = False
-    for key, values in req_pkg.items():
+    for key, values in list(req_pkg.items()):
         if req_pkg[key][0] == "0":
-            print "====> %s not found; version %s or later is required - ERROR" \
-                %(key, req_pkg[key][1])
+            print("====> %s not found; version %s or later is required - ERROR"
+                %(key, req_pkg[key][1]))
             error = True
         elif req_pkg[key][0] == "?":
-            print "Found %s" %(key)  # version is unknown
+            print("Found %s" %(key))  # version is unknown
         elif PV(req_pkg[key][0]) >= PV(req_pkg[key][1]):
-            print "Found %s %s" %(key, req_pkg[key][0])
+            print("Found %s %s" %(key, req_pkg[key][0]))
         else:
-            print "Found %s %s but minimum tested version is %s - WARNING" \
-                %(key, req_pkg[key][0], req_pkg[key][1])
+            print("Found %s %s but minimum tested version is %s - WARNING"
+                %(key, req_pkg[key][0], req_pkg[key][1]))
             error = True
 
     if error:
-        ans = raw_input("\nDo you want to continue (Y|N)? [N]: ")
+        ans = input("\nDo you want to continue (Y|N)? [N]: ")
         if ans.upper() != "Y":
             sys.exit()
     else:
-        print "\nSoftware dependencies have been satisfied"
+        print("\nSoftware dependencies have been satisfied")
 
 
 def exec_cmd(command):
     """Runs the specified command in a subprocess."""
 
     shell = os.name != 'nt'
-    print os.getcwd(),"$",command
+    print("%s$ %s"%(os.getcwd(),command))
     result = subprocess.call(command, shell=shell)
     if result != 0: sys.exit(result)
 
@@ -492,29 +493,29 @@ def main():
         if (len(sys.argv) > 1 and sys.argv[1] not in zip(*BUILD_POINTS)[0]
                 or len(sys.argv) > 2 and sys.argv[2] != 'only'
                 or len(sys.argv) > 3):
-            print "\nUsage: python master_builder.py [<start>] [only]\n"
-            print "Build start points:"
+            print("\nUsage: python master_builder.py [<start>] [only]\n")
+            print("Build start points:")
             for point,fn in BUILD_POINTS:
-                print "  %-10s %s"%(point,fn.__doc__)
-            print "Add 'only' to the command to only perform a single step"
+                print("  %-10s %s"%(point,fn.__doc__))
+            print("Add 'only' to the command to only perform a single step")
             sys.exit()
         else:
             start = sys.argv[1]
             only = len(sys.argv)>2 and sys.argv[2] == 'only'
 
     get_version()
-    print "\nBuilding the %s-%s application from the %s repository ...\n" \
-        %(APP_NAME, PKG_VERSION, PKG_NAME)
-    print "Current working directory  =", RUN_DIR
-    print "Top-level (root) directory =", TOP_DIR
-    print "Package (source) directory =", SRC_DIR
-    print "Installation directory     =", INS_DIR
+    print("\nBuilding the %s-%s application from the %s repository ...\n"
+        %(APP_NAME, PKG_VERSION, PKG_NAME))
+    print("Current working directory  = %s"%RUN_DIR)
+    print("Top-level (root) directory = %s"%TOP_DIR)
+    print("Package (source) directory = %s"%SRC_DIR)
+    print("Installation directory     = %s"%INS_DIR)
 
     started = False
     for point,fn in BUILD_POINTS:
         if point==start: started = True
         if not started: continue
-        print "/"*5,point,"/"*25
+        print("%s %s %s"%("/"*5,point,"/"*25))
         fn()
         if only: break
         

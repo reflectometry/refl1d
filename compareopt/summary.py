@@ -24,7 +24,7 @@ def main():
                         if len(filelist) > 1: raise RuntimeException("Too many log files")
                         filename = filelist[0]
                         try:
-                            #print "scanning",filename
+                            #print("scanning %s"%filename)
                             data = [[float(n) for n in s.split()]
                                     for s in open(filename).readlines()
                                     if s.strip() != '' and not s.startswith('#')]
@@ -32,9 +32,9 @@ def main():
                         except KeyboardInterrupt:
                             raise
                         except:
-                            print traceback.print_exc()
-                            print "while loading",filename
+                            print(traceback.print_exc())
+                            print("while loading %s"%filename)
                         else:
-                            print attempt,min(result[1])*scale
+                            print("%s %s"%(attempt,min(result[1])*scale))
 
 if __name__ == "__main__": main()

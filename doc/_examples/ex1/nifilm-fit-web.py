@@ -32,7 +32,7 @@ sample[1].interface.range(0,20)
 # The data is loaded as before.
 
 instrument = SNS.Liquids()
-files = ['nifilm-tof-%d.dat'%d for d in 1,2,3,4]
+files = ['nifilm-tof-%d.dat'%d for d in (1,2,3,4)]
 probe = ProbeSet(instrument.load(f) for f in files)
 
 M = Experiment(probe=probe, sample=sample)

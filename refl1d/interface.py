@@ -77,7 +77,7 @@ from scipy.special import erf, erfinv
 try:
     from bumps.parameter import Parameter
 except ImportError:
-    print "Could not import Parameter; using trivial implementation"
+    print("Could not import Parameter; using trivial implementation")
     class Parameter:
         def __init__(self, value, **kw):
             self.value = value
@@ -435,28 +435,28 @@ def demo():
     pylab.legend(['erf','tanh','linear'])
     pylab.grid(True)
 
-def _test_one(p,w):
+def _test_one(name,p,w,tol):
     import scipy.integrate as sum
     # Check that the pdf approximately matchs the numerical integral
     # Check that integral(-inf,0) of pdf sums to 0.5
     err = abs(sum.romberg(p.pdf,-20*w,0,tol=1e-15) - 0.5)
-    assert err<1e-14,"cdf(0) == 0.5 yields %g"%err
+    assert err<tol,"%s cdf(0) == 0.5 yields %g"%(name,err)
 
     # Check that integral(-inf,x) of pdf sums to cdf when x != 0
     err = abs(sum.romberg(p.pdf,-20*w,w/6,tol=1e-15) - p.cdf(w/6))
-    assert err<1e-14,"cdf(w/6) == w/6 yields %g"%err
+    assert err<tol,"%s cdf(w/6) == w/6 yields %g"%(name,err)
 
     # Check that P = cdf(ppf(P))
     P = 0.002
     err = abs(p.cdf(p.ppf(P)) - P)
-    assert err < 1e-14,"p(lo) = P yields %g"%err
+    assert err<tol,"%s p(lo) = P yields %g"%(name,err)
 
 def test():
     w=1.5
-    _test_one(Erf(w),w=w)
-    _test_one(Tanh(w),w=w)
-    _test_one(Erf.as_fwhm(2.35*w),w)
-    _test_one(Tanh.as_fwhm(2*w),w)
+    _test_one('Erf',Erf(w),w=w,tol=1e-13)
+    _test_one('Tanh',Tanh(w),w=w,tol=1e-11)
+    _test_one('Erf:fwhm',Erf.as_fwhm(2.35*w),w=w,tol=1e-11)
+    _test_one('Tanh:fwhm',Tanh.as_fwhm(2*w),w=w,tol=1e-11)
 
 if __name__ == "__main__":
     #demo()

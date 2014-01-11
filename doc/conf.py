@@ -13,7 +13,7 @@
 
 from __future__ import with_statement
 import sys, os
-print "python",sys.executable
+print("python %s"%sys.executable)
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -35,8 +35,8 @@ from distutils.util import get_platform
 platform = '.%s-%s'%(get_platform(),sys.version[:3])
 build_lib = os.path.abspath('../build/lib'+platform)
 sys.path.insert(0, build_lib)
-print "== path =="
-print "\n".join(sys.path)
+print("== path ==")
+print("\n".join(sys.path))
 
 # Register the refl1d model loader
 import refl1d.fitplugin

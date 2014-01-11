@@ -45,12 +45,12 @@ from numpy import sqrt, pi, inf, sign, log
 from periodictable import nsf, xsf
 from bumps.parameter import Parameter, Constant
 from bumps.plotutil import coordinated_colors, auto_shift
-from bumps.data import convolve
 
 from . import fresnel
 from .material import Vacuum
 from .resolution import QL2T, TL2Q, dTdL2dQ
 from .stitch import stitch
+from .reflectivity import convolve
 
 PROBE_KW = ('T', 'dT', 'L', 'dL', 'data', 'name', 'filename',
             'intensity', 'background', 'back_absorption',
@@ -510,7 +510,7 @@ class Probe(object):
         if self.back_reflectivity:
             calc_Q = -calc_Q
         if calc_Q[-1] < calc_Q[0]:
-            calc_Q, calc_R = [v[::-1] for v in calc_Q, calc_R]
+            calc_Q, calc_R = [v[::-1] for v in (calc_Q, calc_R)]
         if resolution:
             Q,R = self._apply_resolution(calc_Q, calc_R)
         else:
@@ -1057,7 +1057,7 @@ def measurement_union(xs):
         if x is not None:
             TL = TL | set(zip(x.T,x.dT,x.L,x.dL))
     T,dT,L,dL = zip(*[item for item in TL])
-    T,dT,L,dL = [numpy.asarray(v) for v in T,dT,L,dL]
+    T,dT,L,dL = [numpy.asarray(v) for v in (T,dT,L,dL)]
 
     # Convert to Q,dQ
     Q = TL2Q(T,L)

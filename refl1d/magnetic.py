@@ -3,6 +3,10 @@
 """
 Magnetic modeling for 1-D reflectometry.
 
+** Deprecated ** use magnetism to set magnetism on a nuclear layer
+rather than creating a magnetic layer with a nuclear layer stack
+underneath.
+
 Magnetic properties are tied to the structural description of the
 but only loosely.
 
@@ -253,9 +257,9 @@ class FreeMagnetic(MagneticLayer):
         PrhoM = monospline(z, rhoM, Pz)
 
         if numpy.any(numpy.isnan(PrhoM)):
-            print "in mono"
-            print "z",z
-            print "p",[p.value for p in self.z]
+            print("in mono")
+            print("z %s"%str(z))
+            print("p %s"%str([p.value for p in self.z]))
 
 
         if len(self.thetaM)>1:

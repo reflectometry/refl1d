@@ -10,6 +10,7 @@ can simply perform:
 This is bad style for library and applications but convenient for
 small scripts.
 """
+
 import sys
 import numpy
 from periodictable import elements, formula
@@ -35,6 +36,9 @@ from .probe import (Probe, ProbeSet, NeutronProbe, XrayProbe,
 from .stajconvert import load_mlayer, save_mlayer
 from . import ncnrdata as NCNR, snsdata as SNS
 from .instrument import Monochromatic, Pulsed
+from .magnetic import MagneticSlab, MagneticTwist, FreeMagnetic, MagneticStack
+from .magnetism import Magnetism, MagnetismTwist, FreeMagnetism, MagnetismStack
+from .support import sample_data
 
 # Pull in common materials for reflectometry experiments.
 # This could lead to a lot of namespace pollution, and particularly to
@@ -42,7 +46,3 @@ from .instrument import Monochromatic, Pulsed
 # both of them create elements.
 # Python doesn't allow "from .module import *"
 from refl1d.materialdb import *
-from .support import sample_data
-from .magnetic import MagneticSlab, MagneticTwist, FreeMagnetic, MagneticStack
-from .magnetism import Magnetism, MagnetismTwist, FreeMagnetism, MagnetismStack
-

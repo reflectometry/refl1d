@@ -116,7 +116,7 @@ def test():
     _ = (str(mono),str(ncnrdata.NG1.defaults()),str(ncnrdata.NG1()),
          str(poly),str(snsdata.Liquids.defaults()))
     if 1:
-        for s in _: print s
+        for s in _: print(s)
 
 
 

@@ -54,9 +54,16 @@ function to yield reflectivities at intervals of 0.01.
     >>> from refl1d.reflectivity import convolve
     >>> Qin = arange(0,0.21,0.001)
     >>> w,rho,irho,sigma = zip((0,2.07,0,5),(0,0,0,0))
-    >>> r = reflamp(kz=Qin/2, depth=w, rho=rho, irho=irho, sigma=sigma)
+    >>> # the last layer has no interface
+    >>> r = reflamp(kz=Qin/2, depth=w, rho=rho, irho=irho, sigma=sigma[:-1])
     >>> Rin = (r*r.conj()).real
     >>> Q = arange(0,0.2,0.01)
     >>> dQ = Q*0.01 # resolution dQ/Q = 0.01
     >>> R = convolve(Qin, Rin, Q, dQ)
-    >>> print "\n".join("Q: %.2g  R: %.5g"%(Qi,Ri) for Qi,Ri in zip(Q,R))
+    >>> print("\n".join("Q: %.2f  R: %.5e"%(Qi,Ri) for Qi,Ri in zip(Q,R)))
+    Q: 0.00  R: 1.00000e+00
+    Q: 0.01  R: 3.11332e-02
+    Q: 0.02  R: 3.30684e-03
+    ...
+    Q: 0.19  R: 2.10084e-07
+

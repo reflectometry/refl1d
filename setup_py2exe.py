@@ -161,7 +161,7 @@ manifest_for_python26 = """
 
 # Select the appropriate manifest to use.
 if sys.version_info >= (3, 0) or sys.version_info < (2, 5):
-    print "*** This script only works with Python 2.5, 2.6, or 2.7."
+    print("*** This script only works with Python 2.5, 2.6, or 2.7.")
     sys.exit()
 elif sys.version_info >= (2, 6):
     manifest = manifest_for_python26

@@ -7,7 +7,7 @@ Experiment definition
 An experiment combines the sample definition with a measurement probe
 to create a fittable reflectometry model.
 """
-from __future__ import division
+from __future__ import division, print_function
 
 from math import pi, log10, floor
 import os
@@ -18,7 +18,7 @@ from bumps import parameter
 
 from .reflectivity import reflectivity_amplitude as reflamp
 from .reflectivity import magnetic_amplitude as reflmag
-#print "Using pure python reflectivity calculator"
+#print("Using pure python reflectivity calculator")
 #from .abeles import refl as reflamp
 from . import material, profile
 
@@ -39,7 +39,7 @@ def plot_sample(sample, instrument=None, roughness_limit=0):
 class ExperimentBase(object):
     def format_parameters(self):
         p = self.parameters()
-        print parameter.format(p)
+        print(parameter.format(p))
 
     def update_composition(self):
         """
@@ -67,7 +67,7 @@ class ExperimentBase(object):
         # the optical matrices and only adjust those that have changed
         # as the result of a parameter changing.   More trouble than it
         # is worth, methinks.
-        #print "reseting calculation"
+        #print("reseting calculation")
         self._cache = {}
 
     def residuals(self):
@@ -85,9 +85,9 @@ class ExperimentBase(object):
                 else:
                     resid = (self.probe.R - QR[1])/self.probe.dR
             self._cache['residuals'] = resid
-            #print ("%12s "*4)%("Q","R","dR","Rtheory")
-            #print "\n".join(("%12.6e "*4)%el for el in list(zip(QR[0],self.probe.R,self.probe.dR,QR[1])))
-            #print "resid",numpy.sum(resid**2)/2
+            #print(("%12s "*4)%("Q","R","dR","Rtheory"))
+            #print("\n".join(("%12.6e "*4)%el for el in zip(QR[0],self.probe.R,self.probe.dR,QR[1]))
+            #print("resid",numpy.sum(resid**2)/2)
 
         return self._cache['residuals']
 
@@ -334,7 +334,7 @@ class Experiment(ExperimentBase):
             sigma = slabs.sigma
             #sigma = slabs.sigma
             calc_q = self.probe.calc_Q
-            #print "calc Q", self.probe.calc_Q
+            #print("calc Q", self.probe.calc_Q)
             if slabs.ismagnetic:
                 rhoM, thetaM = slabs.rhoM, slabs.thetaM
                 Aguide = self.probe.Aguide
@@ -344,19 +344,19 @@ class Experiment(ExperimentBase):
                 calc_r = reflamp(-calc_q/2, depth=w, rho=rho, irho=irho,
                                  sigma=sigma)
             if False and numpy.isnan(calc_r).any():
-                print "w",w
-                print "rho",rho
-                print "irho",irho
-                print "sigma",sigma
-                print "kz",self.probe.calc_Q/2
-                print "R",abs(calc_r**2)
+                print("w %s",w)
+                print("rho",rho)
+                print("irho",irho)
+                print("sigma",sigma)
+                print("kz",self.probe.calc_Q/2)
+                print("R",abs(calc_r**2))
                 pars = parameter.unique(self.parameters())
                 fitted = parameter.varying(pars)
-                print parameter.summarize(fitted)
-                print "==="
+                print(parameter.summarize(fitted))
+                print("===")
             self._cache[key] = calc_q,calc_r
-            #if numpy.isnan(calc_q).any(): print "calc_Q contains NaN"
-            #if numpy.isnan(calc_r).any(): print "calc_r contains NaN"
+            #if numpy.isnan(calc_q).any(): print("calc_Q contains NaN")
+            #if numpy.isnan(calc_r).any(): print("calc_r contains NaN")
         return self._cache[key]
 
     def amplitude(self, resolution=False):
@@ -458,7 +458,7 @@ class Experiment(ExperimentBase):
             numpy.savetxt(fid, numpy.vstack((probe.Qo,probe.R,probe.dR)).T)
             fid.close()
         except:
-            print "==== could not save staj file ===="
+            print("==== could not save staj file ====")
             traceback.print_exc()
 
 
@@ -561,7 +561,7 @@ class MixedExperiment(ExperimentBase):
         else: # self.coherent == True
             Rs = [numpy.asarray(ri)*(ratio_i.value/total)
               for ri,ratio_i in zip(Rs,self.ratio)]
-        #print "Rs",Rs
+        #print("Rs",Rs)
         return Qs[0], Rs
 
     def amplitude(self, resolution=False):

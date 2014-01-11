@@ -97,7 +97,7 @@ PyObject* Preflectivity_amplitude(PyObject*obj,PyObject*args)
   // interfaces should be one shorter than layers
   if (nrho%nd != 0 || nirho%nd != 0 || nd != nsigma+1) {
 #ifndef BROKEN_EXCEPTIONS
-    PyErr_SetString(PyExc_ValueError, "d,rho,mu,sigma have different lengths");
+    PyErr_SetString(PyExc_ValueError, "d,rho,irho,sigma have different lengths");
 #endif
     return NULL;
   }

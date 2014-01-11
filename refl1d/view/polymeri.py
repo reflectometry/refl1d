@@ -39,7 +39,7 @@ class PolymerBrushInteractor(BaseInteractor):
                      linewidth = 1,
                      visible=True,
                      )
-        self.hphi = ax.plot( [], [], **style)[0]
+        self.hphi = ax.plot([], [], **style)[0]
         self.hbase = ax.plot([],[], **style)[0]
         self.hlength = ax.plot([],[], **style)[0]
 
@@ -105,8 +105,8 @@ class PolymerBrushInteractor(BaseInteractor):
         """
         Update the model with the new widget position.
         """
-        map = dict(zip(self.markers,self.parameters))
-        par = map[ev.artist]
+        table = dict(zip(self.markers,self.parameters))
+        par = table[ev.artist]
         n = self.profile.layer_num
         left = self.profile.boundary[n]
         right = self.profile.boundary[n+1]
@@ -136,8 +136,8 @@ class PolymerBrushInteractor(BaseInteractor):
         """
         Save the current state of the model represented by the widget.
         """
-        map = dict(zip(self.markers,self.parameters))
-        par = map[ev.artist]
+        table = dict(zip(self.markers,self.parameters))
+        par = table[ev.artist]
         self._save_par = par
         self._save_val = par.value
 

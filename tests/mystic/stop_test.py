@@ -69,7 +69,7 @@ def test():
     # We know all conditions should be negated on failure
     assert set(c.condition for c in s[1]) == success.primitives()
     assert set(c.condition for c in f[1]) == failure.primitives()
-    print "need to test all termination conditions"
+    print("need to test all termination conditions")
 
 if __name__ == "__main__":
     import doctest

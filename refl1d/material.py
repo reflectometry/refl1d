@@ -155,8 +155,8 @@ class Material(Scatterer):
         >>> m = Material('Pd', fitby='cell_volume')
         >>> m.cell_volume.range(1,10)
         Parameter(Pd cell volume)
-        >>> print m.density.value, m.cell_volume.value
-        12.02 14.7017085944
+        >>> print("%.2f %.2f"%(m.density.value, m.cell_volume.value))
+        12.02 14.70
 
     You can change density representation by calling *material.fitby(type)*.
 
@@ -472,7 +472,9 @@ class ProbeCache:
     Probe proxy for materials properties.
 
     A caching probe which only looks up scattering factors for materials
-    which it hasn't seen before.
+    which it hasn't seen before.   Note that caching is based on object
+    id, and will fail if the material object is updated with a new atomic
+    structure.
 
     *probe* is the probe to use when looking up the scattering length density.
 
@@ -494,8 +496,9 @@ class ProbeCache:
         Return the scattering factors for the material, retrieving them from
         the cache if they have already been looked up.
         """
-        if material not in self._cache:
+        h = id(material)
+        if h not in self._cache:
             # lookup density of 1, and scale to actual density on retrieval
-            self._cache[material] = self._probe.scattering_factors(material, 
+            self._cache[h] = self._probe.scattering_factors(material,
                 density=1.0)
-        return [v*density for v in self._cache[material]]
+        return [v*density for v in self._cache[h]]

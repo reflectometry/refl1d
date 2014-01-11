@@ -82,15 +82,15 @@ def run_errors(**kw):
     if not load['store'] or not load['model']: _usage()
     show['save'] = os.path.join(load['store'],load['model'][:-3])
 
-    print "loading... this may take awhile"
+    print("loading... this may take awhile")
     errors = reload_errors(**load)
-    print "showing..."
+    print("showing...")
     show_errors(errors, **show)
     pylab.show()
     raise KeyboardInterrupt()
 
 def _usage():
-    print run_errors.__doc__
+    print(run_errors.__doc__)
     raise RuntimeError()
 
 

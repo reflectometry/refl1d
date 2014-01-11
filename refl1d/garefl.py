@@ -53,9 +53,11 @@ def trace(fn):
     """simple function trace function"""
     return fn  # Comment this to turn on tracing
     def wrapper(*args, **kw):
-        print "entering",fn.func_name,"from",current_thread(),getpid()
+        print("entering %s for thread %s:%s"
+              %(fn.func_name, getpid(), current_thread()))
         ret = fn(*args, **kw)
-        print "leaving",fn.func_name,"from",current_thread(),getpid()
+        print("leaving %s for thread %s:%s"
+              %(fn.func_name,getpid(),current_thread()))
         return ret
     return wrapper
 
