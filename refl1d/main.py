@@ -9,7 +9,7 @@ def set_mplconfig():
     """
     import os,sys
     if hasattr(sys, 'frozen'):
-        mplconfigdir = os.path.join(os.environ['APPLOCALDATA'],'Refl1D', 'mplconfig')
+        mplconfigdir = os.path.join(os.environ['LOCALAPPDATA'],'Refl1D', 'mplconfig')
         mplconfigdir = os.environ.setdefault('MPLCONFIGDIR',mplconfigdir)
         if not os.path.exists(mplconfigdir): os.makedirs(mplconfigdir)
 
