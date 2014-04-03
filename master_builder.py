@@ -62,6 +62,7 @@ import os
 import sys
 import shutil
 import subprocess
+from distutils.util import get_platform
 
 # python 3 uses input rather than raw_input
 try: input = raw_input
@@ -128,10 +129,6 @@ MIN_JINJA2 = "2.5.2"
 MIN_PY2EXE = "0.6.9"
 MIN_INNO = "5.3.10"
 
-# Relative path for local install under our build tree; this is used in place
-# of the default installation path on Windows of C:\PythonNN\Lib\site-packages
-LOCAL_INSTALL = "local-site-packages"
-
 # Determine the full directory paths of the top-level, source, and installation
 # directories based on the directory where the script is running.  Here the
 # top-level directory refers to the parent directory of the package.
@@ -141,14 +138,20 @@ if tail == PKG_NAME:
     TOP_DIR = head
 else:
     TOP_DIR = RUN_DIR
-INS_DIR = os.path.join(TOP_DIR, LOCAL_INSTALL)
-os.environ['PYTHONPATH'] = INS_DIR
 
+# Set the python path
+platform = '.%s-%s'%(get_platform(),sys.version[:3])
 BUMPS_DIR = os.path.join(TOP_DIR, "bumps")
+REFL_DIR = os.path.join(TOP_DIR, "refl1d")
+BUMPS_LIB = os.path.join(BUMPS_DIR,'build','lib'+platform)
+REFL_LIB = os.path.join(REFL_DIR,'build','lib'+platform)
+os.environ['PYTHONPATH'] = os.pathsep.join((BUMPS_LIB,REFL_LIB))
+
 BUMPS_NEW = '"%s" clone -b bumps-split https://github.com/reflectometry/bumps.git'%GIT
-SRC_DIR = os.path.join(TOP_DIR, "refl1d")
-SRC_NEW = '"%s" clone https://github.com/reflectometry/refl1d.git'%GIT
+REFL_NEW = '"%s" clone https://github.com/reflectometry/refl1d.git'%GIT
 REPO_UPDATE = '"%s" pull'%GIT
+
+DIST_DIR = os.path.join(REFL_DIR,'dist')
 
 
 def get_version():
@@ -156,7 +159,7 @@ def get_version():
     global PKG_VERSION
     # Get the version string of the application for use later.
     # This has to be done after we have checked out the repository.
-    for line in open(os.path.join(SRC_DIR, PKG_NAME, '__init__.py')).readlines():
+    for line in open(os.path.join(REFL_DIR, PKG_NAME, '__init__.py')).readlines():
         if (line.startswith('__version__')):
             PKG_VERSION = line.split('=')[1].strip()[1:-1]
             break
@@ -176,11 +179,11 @@ def checkout_code():
     if RUN_DIR == TOP_DIR:
         os.chdir(TOP_DIR)
         exec_cmd(BUMPS_NEW)
-        exec_cmd(SRC_NEW)
+        exec_cmd(REFL_NEW)
     else:
         os.chdir(BUMPS_DIR)
         exec_cmd(REPO_UPDATE)
-        os.chdir(SRC_DIR)
+        os.chdir(REFL_DIR)
         exec_cmd(REPO_UPDATE)
 
     get_version()  # reset version number in case it was updated remotely
@@ -197,61 +200,26 @@ def create_archive(version=None):
     
     try:
         # Create zip and tar archives in the dist subdirectory.
-        os.chdir(SRC_DIR)
+        os.chdir(REFL_DIR)
         exec_cmd("%s setup.py sdist --formats=zip,gztar" %(PYTHON))
     except:
         print("*** Failed to create source archive ***")
-    else:
-        # Copy the archives and its source listing to the top-level directory.
-        # The location of the file that contains the source listing and the
-        # name of the file varies depending on what package is used to import
-        # setup, so its copy is made optional while we are making setup changes.
-        shutil.move(os.path.join("dist", PKG_NAME+"-"+str(version)+".zip"),
-                    os.path.join(TOP_DIR, PKG_NAME+"-"+str(version)+"-source.zip"))
-        shutil.move(os.path.join("dist", PKG_NAME+"-"+str(version)+".tar.gz"),
-                    os.path.join(TOP_DIR, PKG_NAME+"-"+str(version)+"-source.tar.gz"))
-        listing = os.path.join(SRC_DIR, PKG_NAME+".egg-info", "SOURCES.txt")
-        if os.path.isfile(listing):
-            shutil.copy(listing,
-                os.path.join(TOP_DIR, PKG_NAME+"-"+str(version)+"-source-list.txt"))
 
 
-def install_package():
+def build_package():
     "build and install the package"
-    # If the INS_DIR directory already exists, warn the user.
-    # Intermediate work files are stored in the <SRC_DIR>/build directory tree.
-    print("Installing the %s package in %s...\n" %(PKG_NAME, INS_DIR))
-
-    if os.path.isdir(INS_DIR):
-        print("WARNING: In order to build %s cleanly, the local build"%APP_NAME)
-        print("directory %s needs to be deleted."%INS_DIR)
-        print("Do you want to delete this directory and continue (D)")
-        print("            or leave contents intact and continue (C)")
-        print("            or exit the build script (E)")
-        answer = input("Please choose either (D|C|E)? [E]: ")
-        if answer.upper() == "D":
-            shutil.rmtree(INS_DIR, ignore_errors=True)
-        elif answer.upper() == "C":
-            pass
-        else:
-            sys.exit()
-
-    # Perform the installation to a private directory tree and create the
-    # PYTHONPATH environment variable to pass this info to the py2exe build
-    # script later on.
-    if not os.path.exists(INS_DIR):
-        os.makedirs(INS_DIR)
+    print("Building the %s package ...\n" %(PKG_NAME,))
 
     os.chdir(BUMPS_DIR)
-    exec_cmd("%s setup.py install --install-lib=%s" %(PYTHON, INS_DIR))
-    os.chdir(SRC_DIR)
-    exec_cmd("%s setup.py install --install-lib=%s" %(PYTHON, INS_DIR))
+    exec_cmd("%s setup.py build" %(PYTHON,))
+    os.chdir(REFL_DIR)
+    exec_cmd("%s setup.py build" %(PYTHON,))
 
 
 def build_documentation():
     "build the documentation"
     print("Running the Sphinx utility to build documentation ...\n")
-    os.chdir(os.path.join(SRC_DIR, "doc"))
+    os.chdir(os.path.join(REFL_DIR, "doc"))
 
     # Delete any left over files from a previous build.
     # Create documentation in HTML and PDF format.
@@ -267,10 +235,8 @@ def build_documentation():
 def create_windows_exe():
     "create the standalone windows executable"
     if os.name != 'nt': return
-    # Use py2exe to create a Win32 executable along with auxiliary files in the
-    # <SRC_DIR>/dist directory tree.
     print("Using py2exe to create a Win32 executable ...\n")
-    os.chdir(SRC_DIR)
+    os.chdir(REFL_DIR)
 
     exec_cmd("%s setup_py2exe.py" %PYTHON)
 
@@ -285,7 +251,7 @@ def create_windows_installer(version=None):
     # the application.
     print("Running Inno Setup Compiler to create Win32 "
           "installer/uninstaller ...\n")
-    os.chdir(SRC_DIR)
+    os.chdir(REFL_DIR)
 
     # First create an include file to convey the application's version
     # information to the Inno Setup compiler.
@@ -296,17 +262,18 @@ def create_windows_installer(version=None):
     # Run the Inno Setup Compiler to create a Win32 installer/uninstaller.
     # Override the output specification in <PKG_NAME>.iss to put the executable
     # and the manifest file in the top-level directory.
-    exec_cmd("%s /Q /O%s %s.iss" %(INNO, TOP_DIR, PKG_NAME))
+    exec_cmd("%s /Q /O%s %s.iss" %(INNO, DIST_DIR, PKG_NAME))
 
 
 def run_tests():
     "run the test suite"
     # Run unittests and doctests using a test script.
     # Running from a test script allows customization of the system path.
-    print("Running tests from test.py (using Nose) ...\n")
-    #os.chdir(os.path.join(INS_DIR, PKG_NAME))
-    os.chdir(SRC_DIR)
-
+    print("Running bumps tests ...\n")
+    os.chdir(BUMPS_DIR)
+    exec_cmd("%s test.py" %PYTHON)
+    print("Running refl tests ...\n")
+    os.chdir(REFL_DIR)
     exec_cmd("%s test.py" %PYTHON)
 
 def check_dependencies():
@@ -483,7 +450,7 @@ def exec_cmd(command):
 BUILD_POINTS = [
   ('deps', check_dependencies),
   ('update', checkout_code),
-  ('build', install_package),
+  ('build', build_package),
   ('test', run_tests),
   ('docs', build_documentation),  # Needed by windows installer
   ('zip', create_archive),
@@ -517,8 +484,7 @@ def main():
         %(APP_NAME, PKG_VERSION, PKG_NAME))
     print("Current working directory  = %s"%RUN_DIR)
     print("Top-level (root) directory = %s"%TOP_DIR)
-    print("Package (source) directory = %s"%SRC_DIR)
-    print("Installation directory     = %s"%INS_DIR)
+    print("Package (source) directory = %s"%REFL_DIR)
 
     started = False
     for point,fn in BUILD_POINTS:

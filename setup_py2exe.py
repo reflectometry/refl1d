@@ -49,7 +49,6 @@ sys.path = [p for p in sys.path if os.path.abspath(p) != here]
 import glob
 
 from distutils.core import setup
-from distutils.util import get_platform
 
 import numpy.core
 
@@ -59,15 +58,6 @@ import py2exe # @UnresolvedImport @UnusedImport except on windows
 
 if len(sys.argv) == 1:
     sys.argv.append('py2exe')
-
-# Put the build lib on the start of the path.
-# For packages with binary extensions, need platform.  If it is a pure
-# script library, use an empty platform string.
-platform = '.%s-%s'%(get_platform(),sys.version[:3])
-#platform = ''
-build_lib = os.path.abspath('build/lib'+platform)
-sys.path.insert(0, build_lib)
-
 #print "\n".join(sys.path)
 
 #import wx  # May need this to force wx to be included
