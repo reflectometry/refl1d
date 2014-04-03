@@ -4,9 +4,20 @@
 # You can set these variables from the command line.
 PYTHON        ?= python
 SPHINXOPTS    =
-SPHINXBUILD   = $(PYTHON) `which sphinx-build`
+SPHINXBUILD   = $(PYTHON) -m sphinx.__init__
 PAPER         ?= letter
 BUILDDIR      = _build
+ifdef ComSpec
+    RMDIR   = del /s/q/f
+    CPDIR   = xcopy /q/e/i
+    MKDIR   = mkdir
+    PATHSEP = $(strip /)
+else
+    RMDIR   = rm -rf
+    CPDIR   = cp -rp
+    MKDIR   = mkdir -p
+    PATHSEP = $(strip \)
+endif
 
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
@@ -47,26 +58,26 @@ help:
 	@echo "  install   to upload the docs to the distribution site"
 
 clean:
-	# Cleaning matplotlib plots from build
-	# Cleaning html/pdf from $(BUILDDIR)
-	# Resetting api/ and examples/
-	-rm -rf $(BUILDDIR) build api $(EXDIR)
+# Cleaning matplotlib plots from build
+# Cleaning html/pdf from $(BUILDDIR)
+# Resetting api/ and examples/
+	$(RMDIR) $(BUILDDIR) build api $(EXDIR)
 
 clean_api:
-	-rm -rf refl1d_api $(EXDIR)
+#   $(RMDIR) refl1d_api $(EXDIR)
 
 api: genmods.py
-	-rm -rf api
+	$(RMDIR) api
 	$(PYTHON) genmods.py
 
 $(EXDIR):
-	mkdir -p $(EXDIR)
-	-cp -rp $(EXWEB)/* $(EXDIR)
+	$(MKDIR) $(EXDIR)
+	$(CPDIR) $(EXWEB)/* $(EXDIR)
 
 ## MathJax now uses CDN by default
 #$(BUILDDIR)/html:
 #	mkdir -p $(BUILDDIR)/html/_static
-#	-cp -r MathJax $(BUILDDIR)/html/_static/MathJax
+#	$(CPDIR) MathJax $(BUILDDIR)/html/_static/MathJax
 
 generated: api $(EXDIR) $(WEB2RST_FILES)
 

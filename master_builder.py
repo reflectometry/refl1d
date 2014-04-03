@@ -63,6 +63,10 @@ import sys
 import shutil
 import subprocess
 
+# python 3 uses input rather than raw_input
+try: input = raw_input
+except: pass
+
 GIT="git"
 MAKE="make"
 
@@ -74,11 +78,9 @@ if os.name == "nt":
     INNO   = SYSBIN+r"\Inno Setup 5\ISCC.exe"  # command line operation
 
     if not os.path.exists(GIT):
-        print("missing git: "+GIT, file=sys.stderr)
-        sys.exit(1)
+        print("missing git: "+GIT+" --- source will not be updated", file=sys.stderr)
     if not os.path.exists(INNO):
-        print("missing inno setup: "+INNO, file=sys.stderr)
-        sys.exit(1)
+        print("missing inno setup: "+INNO+" --- installer will not be built", file=sys.stderr)
 
     # Put PYTHON in the environment and add the python directory and its
     # corresponding script directory (for nose, sphinx, pip, etc) to the path.
@@ -88,7 +90,8 @@ if os.name == "nt":
     os.environ['PATH'] = ";".join((PYTHONDIR,SCRIPTDIR,os.environ['PATH']))
     os.environ['PYTHON'] = "/".join(PYTHON.split("\\"))
     #os.environ['GIT_SSH'] = r"C:\Program Files (x86)\PuTTY\plink.exe"
-    MAKE = r"C:\mingw\bin\make"
+    MAKE = r"C:\mingw\bin\mingw32-make"
+    #MAKE = r"make.bat"
 else:
     # Support for wx in virtualenv on mac
     PYTHON = os.path.join(sys.real_prefix,'bin','python')
@@ -165,6 +168,10 @@ def get_version():
 def checkout_code():
     "download or update source code"
     print("Checking out application code from the repository ...\n")
+
+    if not os.path.exists(GIT):
+        print("missing git --- source not checked out")
+        return
 
     if RUN_DIR == TOP_DIR:
         os.chdir(TOP_DIR)
@@ -271,6 +278,8 @@ def create_windows_exe():
 def create_windows_installer(version=None):
     "create the windows installer"
     if os.name != 'nt': return
+    if not os.path.exists(INNO):
+        print("missing INNO --- no installer")
     if not version: version = PKG_VERSION
     # Run the Inno Setup Compiler to create a Win32 installer/uninstaller for
     # the application.
@@ -468,7 +477,7 @@ def exec_cmd(command):
 
     shell = os.name != 'nt'
     print("%s$ %s"%(os.getcwd(),command))
-    result = subprocess.call(command, shell=shell)
+    result = subprocess.call(command, shell=shell, cwd=os.getcwd())
     if result != 0: sys.exit(result)
 
 BUILD_POINTS = [
