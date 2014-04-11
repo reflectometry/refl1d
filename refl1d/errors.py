@@ -247,7 +247,7 @@ def show_errors(errors, contours=_CONTOURS, npoints=200,
         for m in profiles.keys():
             pylab.figure()
             show_profiles( errors=({m:profiles[m]}, {m:slabs[m]}, None, None),
-                           countours=contours, npoints=npoints, align=align)
+                           contours=contours, npoints=npoints, align=align)
             if save: pylab.savefig(save+"-err%d.png"%fignum)
             fignum += 1
         for m in residuals.keys():
