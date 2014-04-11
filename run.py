@@ -6,20 +6,7 @@ Usage:
 
 ./run.py [refl1d cli args]
 """
-
 import os, sys
-
-from distutils.util import get_platform
-platform = '.%s-%s'%(get_platform(),sys.version[:3])
-
-# Make sure that we have a private version of mplconfig
-mplconfig = os.path.join(os.getcwd(), '.mplconfig')
-os.environ['MPLCONFIGDIR'] = mplconfig
-if not os.path.exists(mplconfig): os.mkdir(mplconfig)
-#import matplotlib
-#matplotlib.use('Agg')
-#print matplotlib.__file__
-#import pylab; pylab.hold(False)
 
 def addpath(path):
     """
@@ -42,31 +29,47 @@ def cd(path):
     yield
     os.chdir(old_dir)
 
-sys.dont_write_bytecode = True
+def prepare_environment():
+    from distutils.util import get_platform
+    platform = '.%s-%s'%(get_platform(),sys.version[:3])
 
-#import numpy; numpy.seterr(all='raise')
-root = os.path.abspath(os.path.dirname(__file__))
+    sys.dont_write_bytecode = True
 
-# add bumps and periodictable to the path
-try: import periodictable
-except: addpath(os.path.join(root, '..','periodictable'))
-try: import bumps
-except: addpath(os.path.join(root, '..','bumps','build/lib'+platform))
+    # Make sure that we have a private version of mplconfig
+    mplconfig = os.path.join(os.getcwd(), '.mplconfig')
+    os.environ['MPLCONFIGDIR'] = mplconfig
+    if not os.path.exists(mplconfig): os.mkdir(mplconfig)
+    #import matplotlib
+    #matplotlib.use('Agg')
+    #print matplotlib.__file__
+    #import pylab; pylab.hold(False)
 
-# Force a rebuild
-import subprocess
-devnull = open('/dev/null', 'w')
-with cd(root):
-    subprocess.call((sys.executable, "setup.py", "build"), shell=False, stdout=devnull)
 
-# Add the build dir to the system path
-build_path = os.path.join(root, 'build','lib'+platform)
-addpath(build_path)
+    #import numpy; numpy.seterr(all='raise')
+    root = os.path.abspath(os.path.dirname(__file__))
 
-# Make sample data and models available
-os.environ['REFL1D_DATA'] = os.path.join(root,'doc','_examples')
+    # add bumps and periodictable to the path
+    try: import periodictable
+    except: addpath(os.path.join(root, '..','periodictable'))
+    try: import bumps
+    except: addpath(os.path.join(root, '..','bumps','build/lib'+platform))
 
-import multiprocessing
-multiprocessing.freeze_support()
-import refl1d.main
-refl1d.main.cli()
+    # Force a rebuild
+    import subprocess
+    #devnull = open('/dev/null', 'w')
+    with cd(root):
+        subprocess.call((sys.executable, "setup.py", "build"), shell=False)
+
+    # Add the build dir to the system path
+    build_path = os.path.join(root, 'build','lib'+platform)
+    addpath(build_path)
+
+    # Make sample data and models available
+    os.environ['REFL1D_DATA'] = os.path.join(root,'doc','_examples')
+
+if __name__ == "__main__":
+    import multiprocessing
+    multiprocessing.freeze_support()
+    prepare_environment()
+    import refl1d.main
+    refl1d.main.cli()

@@ -4,9 +4,20 @@
 # You can set these variables from the command line.
 PYTHON        ?= python
 SPHINXOPTS    =
-SPHINXBUILD   = $(PYTHON) `which sphinx-build`
+SPHINXBUILD   = $(PYTHON) -m sphinx.__init__
 PAPER         ?= letter
 BUILDDIR      = _build
+ifdef ComSpec
+    RMDIR   = del /s/q/f
+    CPDIR   = xcopy /q/e/i
+    MKDIR   = mkdir
+    PATHSEP = $(strip /)
+else
+    RMDIR   = rm -rf
+    CPDIR   = cp -rp
+    MKDIR   = mkdir -p
+    PATHSEP = $(strip \)
+endif
 
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
@@ -47,63 +58,63 @@ help:
 	@echo "  install   to upload the docs to the distribution site"
 
 clean:
-	# Cleaning matplotlib plots from build
-	# Cleaning html/pdf from $(BUILDDIR)
-	# Resetting api/ and examples/
-	-rm -rf $(BUILDDIR) build api $(EXDIR)
+# Cleaning matplotlib plots from build
+# Cleaning html/pdf from $(BUILDDIR)
+# Resetting api/ and examples/
+	$(RMDIR) $(BUILDDIR) build api $(EXDIR)
 
 clean_api:
-	-rm -rf refl1d_api $(EXDIR)
+#   $(RMDIR) refl1d_api $(EXDIR)
 
 api: genmods.py
-	-rm -rf api
+	$(RMDIR) api
 	$(PYTHON) genmods.py
 
 $(EXDIR):
-	mkdir -p $(EXDIR)
-	-cp -rp $(EXWEB)/* $(EXDIR)
+	$(MKDIR) $(EXDIR)
+	$(CPDIR) $(EXWEB)$(PATHSEP)* $(EXDIR)
 
 ## MathJax now uses CDN by default
 #$(BUILDDIR)/html:
 #	mkdir -p $(BUILDDIR)/html/_static
-#	-cp -r MathJax $(BUILDDIR)/html/_static/MathJax
+#	$(CPDIR) MathJax $(BUILDDIR)/html/_static/MathJax
 
 generated: api $(EXDIR) $(WEB2RST_FILES)
 
 html: generated
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
-	@echo
+	@echo #
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
 dirhtml: generated
 	$(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
-	@echo
+	@echo #
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/dirhtml."
 
 singlehtml: generated
 	$(SPHINXBUILD) -b singlehtml $(ALLSPHINXOPTS) $(BUILDDIR)/singlehtml
-	@echo
+	@echo #
 	@echo "Build finished. The HTML page is in $(BUILDDIR)/singlehtml."
 
 pickle: generated
 	$(SPHINXBUILD) -b pickle $(ALLSPHINXOPTS) $(BUILDDIR)/pickle
-	@echo
+	@echo #
 	@echo "Build finished; now you can process the pickle files."
 
 json: generated
 	$(SPHINXBUILD) -b json $(ALLSPHINXOPTS) $(BUILDDIR)/json
-	@echo
+	@echo #
 	@echo "Build finished; now you can process the JSON files."
 
 htmlhelp: generated
 	$(SPHINXBUILD) -b htmlhelp $(ALLSPHINXOPTS) $(BUILDDIR)/htmlhelp
-	@echo
+	@echo #
 	@echo "Build finished; now you can run HTML Help Workshop with the" \
 	      ".hhp project file in $(BUILDDIR)/htmlhelp."
 
 qthelp: generated
 	$(SPHINXBUILD) -b qthelp $(ALLSPHINXOPTS) $(BUILDDIR)/qthelp
-	@echo
+	@echo #
 	@echo "Build finished; now you can run "qcollectiongenerator" with the" \
 	      ".qhcp project file in $(BUILDDIR)/qthelp, like this:"
 	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/Refl1Ddocumentation.qhcp"
@@ -112,7 +123,7 @@ qthelp: generated
 
 devhelp: generated
 	$(SPHINXBUILD) -b devhelp $(ALLSPHINXOPTS) $(BUILDDIR)/devhelp
-	@echo
+	@echo #
 	@echo "Build finished."
 	@echo "To view the help file:"
 	@echo "# mkdir -p $$HOME/.local/share/devhelp/Refl1Ddocumentation"
@@ -121,12 +132,12 @@ devhelp: generated
 
 epub: generated
 	$(SPHINXBUILD) -b epub $(ALLSPHINXOPTS) $(BUILDDIR)/epub
-	@echo
+	@echo #
 	@echo "Build finished. The epub file is in $(BUILDDIR)/epub."
 
 latex: generated
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
-	@echo
+	@echo #
 	@echo "Build finished; the LaTeX files are in $(BUILDDIR)/latex."
 	@echo "Run \`make' in that directory to run these through (pdf)latex" \
 	      "(use \`make pdf' here to do that automatically)."
@@ -139,22 +150,22 @@ pdf: generated
 
 text: generated
 	$(SPHINXBUILD) -b text $(ALLSPHINXOPTS) $(BUILDDIR)/text
-	@echo
+	@echo #
 	@echo "Build finished. The text files are in $(BUILDDIR)/text."
 
 man: generated
 	$(SPHINXBUILD) -b man $(ALLSPHINXOPTS) $(BUILDDIR)/man
-	@echo
+	@echo #
 	@echo "Build finished. The manual pages are in $(BUILDDIR)/man."
 
 changes: generated
 	$(SPHINXBUILD) -b changes $(ALLSPHINXOPTS) $(BUILDDIR)/changes
-	@echo
+	@echo #
 	@echo "The overview file is in $(BUILDDIR)/changes."
 
 linkcheck: generated
 	$(SPHINXBUILD) -b linkcheck $(ALLSPHINXOPTS) $(BUILDDIR)/linkcheck
-	@echo
+	@echo #
 	@echo "Link check complete; look for any errors in the above output " \
 	      "or in $(BUILDDIR)/linkcheck/output.txt."
 

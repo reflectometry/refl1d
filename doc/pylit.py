@@ -1501,6 +1501,9 @@ def open_streams(infile = '-', outfile = '-', overwrite='update', **keyw):
     elif overwrite == 'update' and is_newer(outfile, infile):
         raise IOError(1, "Output file is newer than input file!", outfile)
     else:
+        path = os.path.dirname(outfile)
+        if not os.path.exists(path):
+            os.makedirs(path)
         out_stream = open(outfile, 'w')
     return (in_stream, out_stream)
 
