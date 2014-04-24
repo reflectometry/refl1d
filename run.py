@@ -44,21 +44,17 @@ def prepare_environment():
     #print matplotlib.__file__
     #import pylab; pylab.hold(False)
 
-
     #import numpy; numpy.seterr(all='raise')
     root = os.path.abspath(os.path.dirname(__file__))
 
     # add bumps and periodictable to the path
-    try: import periodictable
-    except: addpath(os.path.join(root, '..','periodictable'))
-    try: import bumps
-    except: addpath(os.path.join(root, '..','bumps','build/lib'+platform))
+    addpath(os.path.join(root, '..','periodictable'))
+    addpath(os.path.join(root, '..','bumps','build/lib'+platform))
 
-    # Force a rebuild
+    # Force a rebuild of refl1d
     import subprocess
-    #devnull = open('/dev/null', 'w')
-    with cd(root):
-        subprocess.call((sys.executable, "setup.py", "build"), shell=False)
+    with cd(root), open(os.devnull, 'w') as devnull:
+        subprocess.call((sys.executable, "setup.py", "build"), shell=False, stdout=devnull)
 
     # Add the build dir to the system path
     build_path = os.path.join(root, 'build','lib'+platform)

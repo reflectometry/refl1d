@@ -223,9 +223,7 @@ def build_documentation():
 
     # Delete any left over files from a previous build.
     # Create documentation in HTML and PDF format.
-    exec_cmd(MAKE+" clean")
-    exec_cmd(MAKE+" html")
-    #exec_cmd(MAKE+" pdf")
+    exec_cmd(MAKE+" clean html pdf")
     # Copy PDF to the html directory where the html can find it.
     pdf = os.path.join("_build", "latex", APP_NAME+".pdf")
     if os.path.isfile(pdf):
@@ -262,7 +260,7 @@ def create_windows_installer(version=None):
     # Run the Inno Setup Compiler to create a Win32 installer/uninstaller.
     # Override the output specification in <PKG_NAME>.iss to put the executable
     # and the manifest file in the top-level directory.
-    exec_cmd("%s /Q /O%s %s.iss" %(INNO, DIST_DIR, PKG_NAME))
+    exec_cmd('"%s" /Q /O%s %s.iss' %(INNO, TOP_DIR, PKG_NAME))
 
 
 def run_tests():
