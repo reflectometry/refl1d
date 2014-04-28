@@ -2,17 +2,24 @@
 import sys
 import os
 
+if len(sys.argv) == 1:
+    sys.argv.append('install')
+
+# Use our own nose-based test harness
+if sys.argv[1] == 'test':
+    from subprocess import call
+    sys.exit(call([sys.executable, 'test.py']+sys.argv[2:]))
+
+sys.dont_write_bytecode = True
+
 #from distutils.core import Extension
 from setuptools import setup, find_packages, Extension
 #import fix_setuptools_chmod
 
 import refl1d
-from bumps.gui.resources import resources as gui_resources
+#from bumps.gui.resources import resources as gui_resources
 
 packages = find_packages()
-
-if len(sys.argv) == 1:
-    sys.argv.append('install')
 
 # reflmodule extension
 def reflmodule_config():
@@ -26,6 +33,7 @@ def reflmodule_config():
 # installed by easy_install
 #dependency_check('numpy>=1.0', 'scipy>=0.6', 'matplotlib>=1.0', 'wx>=2.8.9')
 
+sys.dont_write_bytecode = False
 dist = setup(
         name = 'refl1d',
         version = refl1d.__version__,
@@ -45,10 +53,10 @@ dist = setup(
             'Topic :: Scientific/Engineering :: Physics',
             ],
         packages = packages,
-        package_data = gui_resources.package_data(),
-        scripts = ['bin/reflworkerd','bin/refl1d_cli.py','bin/refl1d_gui.py'],
+        #package_data = gui_resources.package_data(),
+        scripts = ['bin/refl1d_cli.py','bin/refl1d_gui.py'],
         ext_modules = [reflmodule_config()],
-        install_requires = ['httplib2'],
+        requires = [], # ['bumps>=0.9'],
         )
 
 # End of file

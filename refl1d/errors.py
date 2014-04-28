@@ -82,15 +82,15 @@ def run_errors(**kw):
     if not load['store'] or not load['model']: _usage()
     show['save'] = os.path.join(load['store'],load['model'][:-3])
 
-    print "loading... this may take awhile"
+    print("loading... this may take awhile")
     errors = reload_errors(**load)
-    print "showing..."
+    print("showing...")
     show_errors(errors, **show)
     pylab.show()
     raise KeyboardInterrupt()
 
 def _usage():
-    print run_errors.__doc__
+    print(run_errors.__doc__)
     raise RuntimeError()
 
 
@@ -247,7 +247,7 @@ def show_errors(errors, contours=_CONTOURS, npoints=200,
         for m in profiles.keys():
             pylab.figure()
             show_profiles( errors=({m:profiles[m]}, {m:slabs[m]}, None, None),
-                           countours=contours, npoints=npoints, align=align)
+                           contours=contours, npoints=npoints, align=align)
             if save: pylab.savefig(save+"-err%d.png"%fignum)
             fignum += 1
         for m in residuals.keys():

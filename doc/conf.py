@@ -13,7 +13,7 @@
 
 from __future__ import with_statement
 import sys, os
-print "python",sys.executable
+print("python %s"%sys.executable)
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -35,8 +35,13 @@ from distutils.util import get_platform
 platform = '.%s-%s'%(get_platform(),sys.version[:3])
 build_lib = os.path.abspath('../build/lib'+platform)
 sys.path.insert(0, build_lib)
-print "== path =="
-print "\n".join(sys.path)
+print("== path ==")
+print("\n".join(sys.path))
+
+# Register the refl1d model loader
+import refl1d.fitplugin
+import bumps.cli
+bumps.cli.install_plugin(refl1d.fitplugin)
 
 # -- General configuration -----------------------------------------------------
 
@@ -47,7 +52,7 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest',
               'sphinx.ext.coverage',
               'sphinx.ext.viewcode',
               #'sphinx.ext.pngmath',
-              'sphinx.ext.jsmath',
+              'sphinx.ext.mathjax',
               #'only_directives',
               #'matplotlib.sphinxext.mathmpl',
               'matplotlib.sphinxext.only_directives',
@@ -55,7 +60,7 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest',
               #'inheritance_diagram',
               'dollarmath',
               'slink',
-              'wx_directive',
+              #'wx_directive',
               #'numpydoc.numpydoc',
              ]
 #plot_formats = [('png', 120), ('pdf', 50)] # Only make 80 dpi plots
@@ -74,7 +79,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Refl1D'
-copyright = '2006-2011, Paul Kienzle, Nikunj Patel, James Krycka'
+copyright = '2006-2013, Paul Kienzle, Nikunj Patel, James Krycka'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

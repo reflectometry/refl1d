@@ -108,7 +108,7 @@ def TOF_to_data(instrument, header, data):
     dR = dR[:-1]
     min_time,max_time = header.get('TOF_range',instrument.TOF_range)
     keep = numpy.isfinite(R)&numpy.isfinite(dR)&(TOF[:-1]>=min_time)&(TOF[1:]<=max_time)
-    L,dL,R,dR = [v[keep] for v in L,dL,R,dR]
+    L,dL,R,dR = [v[keep] for v in (L,dL,R,dR)]
     T = numpy.array([header.get('angle',header.get('T',None))],'d')
     T,dT,L,dL = instrument.resolution(L=L, dL=dL, T=T, **header)
     probe = make_probe(T=T,dT=dT,L=L,dL=dL, data=(R,dR),**header)

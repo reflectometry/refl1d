@@ -248,7 +248,7 @@ class BaseInteractor(object):
         if  inside:
             # In case of no click and just drag
             if not self._dragging:
-                print "We have a drag without a click"
+                print("We have a drag without a click")
                 self._dragging = True
             self.drag(event)
         else:
@@ -284,7 +284,7 @@ class BaseInteractor(object):
                 return True
 
             if  not (hasattr(self, '_arrow_x') and hasattr(self, '_arrow_y')):
-                print "got key event without having location"
+                print("got key event without having location")
                 return True
 
             step = 0.2 if event.control else 1

@@ -32,7 +32,7 @@ sample[1].interface.range(0,20)
 # The data is loaded as before.
 
 instrument = SNS.Liquids()
-files = ['nifilm-tof-%d.dat'%d for d in 1,2,3,4]
+files = ['nifilm-tof-%d.dat'%d for d in (1,2,3,4)]
 probe = ProbeSet(instrument.load(f) for f in files)
 
 M = Experiment(probe=probe, sample=sample)
@@ -49,7 +49,9 @@ problem = FitProblem(M)
 #
 # We can now load and run the fit::
 #
-#   # refl1d nifilm-fit.py --fit=newton --steps=100 --store=T1
+# .. parsed-literal::
+#
+#    $ refl1d nifilm-fit.py --fit=newton --steps=100 --store=T1
 #
 # The ``--fit=newton`` option says to use the quasi-newton optimizer for
 # not more than 100 steps.  The ``--store=T1`` option says to store the
@@ -63,5 +65,5 @@ problem = FitProblem(M)
 #    from sitedoc import fit_model
 #    fit_model('nifilm-fit.py')
 #
-# All is well: $\chi^2$ will be approximately 1 and the line goes nicely
+# All is well: Normalized $\chi^2_N$ is close to 1 and the line goes nicely
 # through the data.

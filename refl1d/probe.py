@@ -7,7 +7,7 @@ The experimental probe describes the incoming beam for the experiment.
 Scattering properties of the sample are dependent on the type and
 energy of the radiation.
 
-See `data_guide`_ for details.
+See :ref:`data-guide` for details.
 
 """
 
@@ -45,12 +45,12 @@ from numpy import sqrt, pi, inf, sign, log
 from periodictable import nsf, xsf
 from bumps.parameter import Parameter, Constant
 from bumps.plotutil import coordinated_colors, auto_shift
-from bumps.data import convolve
 
 from . import fresnel
 from .material import Vacuum
 from .resolution import QL2T, TL2Q, dTdL2dQ
 from .stitch import stitch
+from .reflectivity import convolve
 
 PROBE_KW = ('T', 'dT', 'L', 'dL', 'data', 'name', 'filename',
             'intensity', 'background', 'back_absorption',
@@ -359,7 +359,7 @@ class Probe(object):
                 'theta_offset':self.theta_offset,
                 }
 
-    def scattering_factors(self, material):
+    def scattering_factors(self, material, density):
         """
         Returns the scattering factors associated with the material given
         the range of wavelengths/energies used in the probe.
@@ -510,7 +510,7 @@ class Probe(object):
         if self.back_reflectivity:
             calc_Q = -calc_Q
         if calc_Q[-1] < calc_Q[0]:
-            calc_Q, calc_R = [v[::-1] for v in calc_Q, calc_R]
+            calc_Q, calc_R = [v[::-1] for v in (calc_Q, calc_R)]
         if resolution:
             Q,R = self._apply_resolution(calc_Q, calc_R)
         else:
@@ -799,11 +799,13 @@ class XrayProbe(Probe):
     components can be defined by mass density and chemical composition.
     """
     radiation = "xray"
-    def scattering_factors(self, material):
+    def scattering_factors(self, material, density):
         # doc string is inherited from parent (see below)
+        # Note: the real density is calculated as a scale factor applied to
+        # the returned sld as computed assuming density=1
         rho, irho = xsf.xray_sld(material,
                                  wavelength = self.unique_L,
-                                 density=1)
+                                 density = density)
         # TODO: support wavelength dependent systems
         return rho[0], irho[0], 0
         return rho[self._L_idx], irho[self._L_idx], 0
@@ -817,11 +819,13 @@ class NeutronProbe(Probe):
     components can be defined by mass density and chemical composition.
     """
     radiation = "neutron"
-    def scattering_factors(self, material):
+    def scattering_factors(self, material, density):
         # doc string is inherited from parent (see below)
+        # Note: the real density is calculated as a scale factor applied to
+        # the returned sld as computed assuming density=1
         rho, irho, rho_incoh = nsf.neutron_sld(material,
-                                               wavelength=self.unique_L,
-                                               density=1)
+                                               wavelength = self.unique_L,
+                                               density = density)
         # TODO: support wavelength dependent systems
         return rho, irho[0], rho_incoh
         return rho, irho[self._L_idx], rho_incoh
@@ -878,10 +882,10 @@ class ProbeSet(Probe):
     def oversample(self, **kw):
         for p in self.probes: p.oversample(**kw)
     oversample.__doc__ = Probe.oversample.__doc__
-    def scattering_factors(self, material):
+    def scattering_factors(self, material, density):
         # TODO: support wavelength dependent systems
-        return self.probes[0].scattering_factors(material)
-        result = [p.scattering_factors(material) for p in self.probes]
+        return self.probes[0].scattering_factors(material, density)
+        result = [p.scattering_factors(material, density) for p in self.probes]
         return [numpy.hstack(v) for v in zip(*result)]
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
     def apply_beam(self, calc_Q, calc_R, resolution=True, **kw):
@@ -1053,7 +1057,7 @@ def measurement_union(xs):
         if x is not None:
             TL = TL | set(zip(x.T,x.dT,x.L,x.dL))
     T,dT,L,dL = zip(*[item for item in TL])
-    T,dT,L,dL = [numpy.asarray(v) for v in T,dT,L,dL]
+    T,dT,L,dL = [numpy.asarray(v) for v in (T,dT,L,dL)]
 
     # Convert to Q,dQ
     Q = TL2Q(T,L)
@@ -1205,11 +1209,11 @@ class PolarizedNeutronProbe(object):
         return self.pp.fresnel(*args, **kw)
     fresnel.__doc__ = Probe.fresnel.__doc__
 
-    def scattering_factors(self, material):
+    def scattering_factors(self, material, density):
         # doc string is inherited from parent (see below)
         rho, irho, rho_incoh = nsf.neutron_sld(material,
                                                wavelength=self.unique_L,
-                                               density=1)
+                                               density=density)
         # TODO: support wavelength dependent systems
         return rho, irho[0], rho_incoh
         return rho, irho[self._L_idx], rho_incoh

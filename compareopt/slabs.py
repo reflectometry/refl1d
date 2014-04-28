@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from random import getrandbits
 from numpy.random import uniform
 from refl1d.names import *
@@ -8,7 +10,7 @@ init_file = sys.argv[2] if len(sys.argv) > 2 else "/tmp/problem"
 
 out = open(init_file,"w")
 seed = getrandbits(16)
-print >>out,"seed",seed
+print("seed",seed, file=out)
 numpy.random.seed(int(seed))
 
 
@@ -46,12 +48,12 @@ M = Experiment(probe=probe, sample=sample)
 M.simulate_data(1.5)
 
 problem = FitProblem(M)
-print >>out,"chisq",problem.chisq()
-print >>out,"target"
-print >>out,summarize(problem.parameters)
+print("chisq",problem.chisq(), file=out)
+print("target", file=out)
+print(summarize(problem.parameters), file=out)
 problem.randomize()
 M.update()
-print >>out,"start"
-print >>out,summarize(problem.parameters)
+print("start", file=out)
+print(summarize(problem.parameters), file=out)
 out.close()
 

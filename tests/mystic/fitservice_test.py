@@ -5,7 +5,7 @@ from mystic.examples.simple import f
 
 def test():
     result = fit.fit( (f,[2,4],None) )
-    print "result",result
+    print("result %s"%str(result))
 
 if __name__ == "__main__":
     import doctest

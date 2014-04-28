@@ -13,65 +13,87 @@ Usage:
 """
 
 import os, sys, subprocess
+from glob import glob
 import nose
+
+from distutils.util import get_platform
+platform = '.%s-%s'%(get_platform(),sys.version[:3])
+
+# Make sure that we have a private version of mplconfig
+mplconfig = os.path.join(os.getcwd(), '.mplconfig')
+os.environ['MPLCONFIGDIR'] = mplconfig
+if not os.path.exists(mplconfig): os.mkdir(mplconfig)
 import matplotlib
 matplotlib.use('Agg')
-print matplotlib.__file__
+#print(matplotlib.__file__)
+import pylab; pylab.hold(False)
+
+def addpath(path):
+    """
+    Add a directory to the python path environment, and to the PYTHONPATH
+    environment variable for subprocesses.
+    """
+    path = os.path.abspath(path)
+    if 'PYTHONPATH' in os.environ:
+        PYTHONPATH = path + os.pathsep + os.environ['PYTHONPATH']
+    else:
+        PYTHONPATH = path
+    os.environ['PYTHONPATH'] = PYTHONPATH
+    sys.path.insert(0, path)
+
+sys.dont_write_bytecode = True
 
 sys.stderr = sys.stdout # Doctest doesn't see sys.stderr
 #import numpy; numpy.seterr(all='raise')
 
 # Check that we are running from the root.
-path = os.path.abspath(os.getcwd())
-assert os.path.exists(os.path.join(path, 'refl1d', 'model.py'))
+root = os.path.abspath(os.getcwd())
+assert os.path.exists(os.path.join(root, 'refl1d', 'abeles.py'))
 
-# Make sure that we have a private version of mplconfig
-mplconfig = os.path.join(os.getcwd(), '.mplconfig')
-os.environ['MPLCONFIGDIR'] = mplconfig
-os.putenv('MPLCONFIGDIR', mplconfig)
-if not os.path.exists(mplconfig): os.mkdir(mplconfig)
-import pylab; pylab.hold(False)
+# add bumps and periodictable to the path
+try: import periodictable
+except: addpath(os.path.join('..','periodictable'))
+try: import bumps
+except: addpath(os.path.join('..','bumps','build/lib'+platform))
 
-# Build reflmodule.pyd if it has not already been built in the source tree.
-if not os.path.exists(os.path.join(path, 'refl1d', 'reflmodule.pyd')):
-    print "-"*70
-    print "Building reflmodule.pyd ..."
-    print "-"*70
-    if os.name == 'nt': flag = False
-    else:               flag = True
-    subprocess.call("python setup.py build_ext --inplace", shell=flag)
-    print "-"*70
+# Force a rebuild
+print("-"*70)
+print("Building refl1d ...")
+print("-"*70)
+subprocess.call((sys.executable, "setup.py", "build"), shell=False)
+print("-"*70)
 
-# Run the source tests with the system path augmented such that imports can
-# be performed 'from refl1d..." and 'from dream...'.  By manipulating the
-# system path in this way, we can test without having to build and install.
-# We are adding doc/sphinx to the path because the periodic table extension
-# doctests need to be able to find the example extensions.
-sys.path.insert(0, path)
-sys.path.insert(1, os.path.join(path, 'dream'))
-nose_args = [__file__, '-v', '--with-doctest', '--doctest-extension=.rst',
-             '--cover-package=refl1d']
+# Add the build dir to the system path
+build_path = os.path.join('build','lib'+platform)
+addpath(build_path)
+
+# Make sample data and models available
+os.environ['REFL1D_DATA'] = os.path.join(root,'doc','_examples')
+
+# Set the nosetest args
+nose_args = ['-v', '--all-modules',
+             '-m(^_?test_|_test$|^test$)',
+             '--with-doctest', '--doctest-extension=.rst',
+             '--doctest-options=+ELLIPSIS,+NORMALIZE_WHITESPACE',
+             '--cover-package=refl1d',
+             ]
+
+
+# exclude gui subdirectory if wx is not available
+try: import wx
+except ImportError: nose_args.append('-eview')
+
 nose_args += sys.argv[1:]  # allow coverage arguments
-nose_args += [os.path.join('tests', 'refl1d'), 'refl1d',
-              #'doc/sphinx/guide'
-             ]
-'''
-nose_args += ['tests/refl1d', 'refl1d',
-              #'doc/sphinx/guide'
-             ]
-'''
+
+# Add targets
+nose_args += [build_path, os.path.join('tests', 'refl1d')]
+nose_args += glob('doc/g*/*.rst')
+nose_args += glob('doc/_examples/*/*.rst')
+
+print("nosetests "+" ".join(nose_args))
 if not nose.run(argv=nose_args): sys.exit(1)
 
-# Run isolated tests in their own environment.  In this case we will have
-# to set the PYTHONPATH environment variable before running since it is
-# happening in a separate process.
-if 'PYTHONPATH' in os.environ:
-    PYTHONPATH = path + ":" + os.environ['PYTHONPATH']
-else:
-    PYTHONPATH = path
-os.putenv('PYTHONPATH', PYTHONPATH)
-
 ## Run the command line version of Refl1D which should display help text.
-#for p in ['refl1d_cli.py']:
-#    ret = os.system(" ".join( (sys.executable, os.path.join('bin', '%s'%p)) ))
+#for p in ['bin/refl1d_cli.py']:
+#    ret = subprocess.call((sys.executable, p), shell=False)
 #    if ret != 0: sys.exit()

@@ -4,7 +4,7 @@ Extension to MPL to support the binding of artists to key/mouse events.
 import traceback
 import sys
 
-from matplotlib      import transforms
+from matplotlib import transforms
 
 # CRUFT: matplotlib doesn't yet support canvas.draw_now()
 from matplotlib.backends.backend_wx import FigureCanvasWx
@@ -52,8 +52,9 @@ class Selection:
     def __ne__(self,other):
         return self.artist is not other.artist
 
-    def __nonzero__(self):
+    def __bool__(self):
         return self.artist is not None
+    __nonzero__ = __bool__ # CRUFT: python 2.x support
 
 
 
@@ -212,8 +213,8 @@ class BindArtist:
         """
         # Check that the trigger is valid
         if trigger not in self._actions:
-            raise ValueError,"%s invalid --- valid triggers are %s"\
-                              %(trigger,", ".join(self.events))
+            raise ValueError("%s invalid --- valid triggers are %s"\
+                              %(trigger,", ".join(self.events)))
 
         # Register the trigger callback
         self._actions[trigger][artist]=action
@@ -230,7 +231,7 @@ class BindArtist:
         to figure, and to 'all' if the event is not processed.
         """
         if action not in self.events:
-            raise ValueError, "Trigger expects "+", ".join(self.events)
+            raise ValueError("Trigger expects "+", ".join(self.events))
 
         # Tag the event with modifiers
         for mod in ('alt','control','shift','meta'):
@@ -446,6 +447,6 @@ class BindArtist:
 
 def warn_exception(msg):
     trace = traceback.format_exception(*sys.exc_info())
-    print msg
-    print trace[-2][:-1]
-    print trace[-1][:-1]
+    print(msg)
+    print(trace[-2][:-1])
+    print(trace[-1][:-1])

@@ -41,9 +41,9 @@ def run(job):
     store = os.path.join(root, modelname, fitname, "T%d"%k)
     if not os.path.exists(store):
         os.makedirs(store)
-    print "starting %d %s %s\n"%(k,model,opts),
+    print("starting %d %s %s\n"%(k,model,opts))
     subprocess.call(cmd(store,model,opts), shell=True)
-    print "done %d %s %s\n"%(k,model,opts),
+    print("done %d %s %s\n"%(k,model,opts))
 
 def main(problems, fitters, nthread, root):
     if os.path.exists(root):

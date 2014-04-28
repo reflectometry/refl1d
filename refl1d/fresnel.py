@@ -36,11 +36,11 @@ class Fresnel:
         # If Q < 0, then we are going from substrate into incident medium.
         # In that case we must negate the change in scattering length density
         # and ignore the absorption.
-        rho_Qp = 1e-6*(self.rho-self.Vrho + 1j*self.irho)
-        rho_Qm = 1e-6*(self.Vrho-self.rho + 1j*self.Virho)
+        rho_Qp = 1e-6*((self.rho-self.Vrho) + 1j*self.irho)
+        rho_Qm = 1e-6*((self.Vrho-self.rho) + 1j*self.Virho)
         #print "fresnel",rho_Qp.shape,rho_Qm.shape,Q.shape
 
-        rho = choose(Q<0, (rho_Qp,rho_Qm))
+        rho = choose(Q<0, (rho_Qm,rho_Qp))
         kz = abs(Q)/2
         f = sqrt(kz**2 - 4*pi*rho)  # fresnel coefficient
 
@@ -55,19 +55,18 @@ class Fresnel:
         # For mu != 0:
         # * f has an imaginary component, so |Q|+f != 0.
 
-        R = real(amp*conj(amp))
-        return R
+        return (amp*conj(amp)).real
 
     # Make the reflectivity method the default
     __call__ = reflectivity
 
 def test():
     import numpy
-    import abeles
+    from . import abeles
 
     # Rough silicon with an anomolously large absorbtion
-    rho,irho = 2.07,0.01
-    Vrho,Virho = -1,0.1
+    rho,irho = 2.07,1.01
+    Vrho,Virho = -1,1.1
     sigma = 20
     fresnel = Fresnel(rho=rho, irho=irho, Vrho=Vrho, Virho=Virho, sigma=sigma)
 
@@ -81,7 +80,9 @@ def test():
     rm = abeles.refl(Q/2, depth=Mw, rho=Mrho, irho=Mirho, sigma=Msigma)
     Rm = abs(rm)**2
 
+    #print "Rm",Rm
+    #print "Rf",Rf
     relerr = numpy.linalg.norm((Rf-Rm)/Rm)
-    assert relerr < 1e-10, "relative error is %g"%relerr
+    assert relerr < 1e-14, "relative error is %g"%relerr
 
 if __name__ == "__main__": test()

@@ -49,7 +49,8 @@ sys.path = [p for p in sys.path if os.path.abspath(p) != here]
 import glob
 
 from distutils.core import setup
-from distutils.util import get_platform
+
+import numpy.core
 
 # Augment the setup interface with the py2exe command and make sure the py2exe
 # option is passed to setup.
@@ -57,15 +58,6 @@ import py2exe # @UnresolvedImport @UnusedImport except on windows
 
 if len(sys.argv) == 1:
     sys.argv.append('py2exe')
-
-# Put the build lib on the start of the path.
-# For packages with binary extensions, need platform.  If it is a pure
-# script library, use an empty platform string.
-platform = '.%s-%s'%(get_platform(),sys.version[:3])
-#platform = ''
-build_lib = os.path.abspath('build/lib'+platform)
-sys.path.insert(0, build_lib)
-
 #print "\n".join(sys.path)
 
 #import wx  # May need this to force wx to be included
@@ -161,7 +153,7 @@ manifest_for_python26 = """
 
 # Select the appropriate manifest to use.
 if sys.version_info >= (3, 0) or sys.version_info < (2, 5):
-    print "*** This script only works with Python 2.5, 2.6, or 2.7."
+    print("*** This script only works with Python 2.5, 2.6, or 2.7.")
     sys.exit()
 elif sys.version_info >= (2, 6):
     manifest = manifest_for_python26
@@ -230,6 +222,11 @@ packages = ['numpy', 'scipy', 'matplotlib', 'pytz', 'pyparsing',
 # Specify files to include in the executable image.
 includes = []
 
+dll_includes = glob.glob(os.path.join(os.path.dirname(numpy.core.__file__),'*.dll'))
+#includes += ['numpy.core.'+os.path.basename(f)[:-4] for f in dll_includes]
+#data_files += [('.', dll_includes)]
+
+
 # Specify files to exclude from the executable image.
 # - We can safely exclude Tk/Tcl and Qt modules because our app uses wxPython.
 # - We do not use ssl services so they are omitted.
@@ -243,15 +240,10 @@ includes = []
 
 excludes = ['Tkinter', 'PyQt4', '_ssl', '_tkagg', 'zmq','pyzmq','sympy'] #, 'numpy.distutils.tests']
 
-dll_excludes = ['libgdk_pixbuf-2.0-0.dll',
-                'libgobject-2.0-0.dll',
-                'libgdk-win32-2.0-0.dll',
-                'tcl84.dll',
-                'tk84.dll',
-                'QtGui4.dll',
-                'QtCore4.dll',
-                'msvcr71.dll',
-                'msvcp90.dll',
+dll_excludes = ['libgdk_pixbuf-2.0-0.dll', 'libgobject-2.0-0.dll', 'libgdk-win32-2.0-0.dll',
+                'tcl84.dll', 'tk84.dll', 'QtGui4.dll', 'QtCore4.dll',
+                'msvcr71.dll', 'msvcp90.dll',
+                'libiomp5md.dll', 'libifcoremd.dll', 'libmmd.dll', 'svml_dispmd.dll','libifportMD.dll',
                 'w9xpopen.exe',
                 'cygwin1.dll']
 

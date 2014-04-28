@@ -38,7 +38,7 @@ def plot_transform(self, theory=None, substrate=None, surround=None):
     if substrate is None and surround is None:
         raise TypeError("Fresnel-normalized reflectivity needs substrate or surround")
     F = self.fresnel(substrate=substrate,surround=surround)
-    print "substrate",substrate
+    print("substrate %s"%substrate)
     #Qc = sqrt(16*pi*substrate)
     Qc = 0
     T = numpy.linspace(Qc,max(self.Q),len(self.Q))

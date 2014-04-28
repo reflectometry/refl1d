@@ -92,7 +92,8 @@ def build_app():
           app = [app_data],
           options = options,
           )
-    os.system('cp -a extra/appbin/* "dist/%s.app"'%NAME)
+    # Add cli interface to the app directory
+    os.system('cp -p extra/appbin/* "dist/%s.app"'%NAME)
 
 def build_dmg():
     """DMG builder; should include docs"""

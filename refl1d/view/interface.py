@@ -28,7 +28,7 @@ class InterfaceInteractor(BaseInteractor):
                      visible    = False,
                      )
         self.markers=[ax.plot([0],[0.05], label=label, **style)[0]
-                      for label in 'interface marker L','interface marker R']
+                      for label in ('interface marker L','interface marker R')]
 
         # lines for roughness
         style = dict(linestyle = '-',
@@ -37,7 +37,7 @@ class InterfaceInteractor(BaseInteractor):
                      color     = interface_color,
                      visible   = False)
         self.lines=[ax.plot([0,0],[0.05,0.05], label=label, **style)[0]
-                    for label in 'interface line L','interface line R']
+                    for label in ('interface line L','interface line R')]
 
         self.connect_markers(self.markers)
         self._left = self._right = None

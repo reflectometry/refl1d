@@ -124,10 +124,10 @@ class Layer(object): # Abstract base class
     # Layers can be stacked, repeated, or have length/roughness/magnetism set
     def __or__(self, other):
         """Join two layers to make a stack"""
-        s = Stack()
-        s.add(self)
-        s.add(other)
-        return s
+        stack = Stack()
+        stack.add(self)
+        stack.add(other)
+        return stack
 
     def __mul__(self, other):
         """Repeat a stack or complex layer"""
@@ -135,9 +135,9 @@ class Layer(object): # Abstract base class
             raise TypeError("Repeat count must be an integer > 1")
         if isinstance(self, Slab):
             raise TypeError("Cannot repeat single slab""")
-        s = Stack()
-        s.add(self)
-        r = Repeat(stack=s, repeat=other)
+        stack = Stack()
+        stack.add(self)
+        r = Repeat(stack=stack, repeat=other)
         return r
 
     def __rmul__(self, other):
@@ -228,7 +228,7 @@ class Stack(Layer):
         else:
             try:
                 L = iter(other)
-            except:
+            except TypeError:
                 L = [other]
             self._layers.extend(_check_layer(el) for el in L)
 
@@ -240,10 +240,10 @@ class Stack(Layer):
         self._thickness = Function(self._calc_thickness,name="stack thickness")
 
     def __copy__(self):
-        newone = Stack()
-        newone.interface = self.interface
-        newone._layers = self._layers[:]
-        return newone
+        stack = Stack()
+        stack.interface = self.interface
+        stack._layers = self._layers[:]
+        return stack
 
     def __len__(self):
         return len(self._layers)
@@ -332,7 +332,7 @@ class Stack(Layer):
 
     def _plot(self, dz=1, roughness_limit=0):
         import pylab
-        import profile, material, probe
+        from . import profile, material, probe
         neutron_probe = probe.NeutronProbe(T=numpy.arange(0,5,100), L=5.)
         xray_probe = probe.XrayProbe(T=numpy.arange(0,5,100), L=1.54)
         slabs = profile.Microslabs(1, dz=dz)
@@ -416,7 +416,7 @@ class Stack(Layer):
         # Check if lookup by material or by name
         if isinstance(target, material.Scatterer):
             sequence = self._find_by_material(target)
-        elif isinstance(target, basestring):
+        elif isinstance(target, str):
             sequence = self._find_by_name(target)
         else:
             raise TypeError("expected integer, material or layer name as sample index")
@@ -488,10 +488,10 @@ class Stack(Layer):
     def __rmul__(self, other):
         return self.__mul__(other)
     def __or__(self, other):
-        s = Stack()
-        s.add(self)
-        s.add(other)
-        return s
+        stack = Stack()
+        stack.add(self)
+        stack.add(other)
+        return stack
 
     render.__doc__ = Layer.render.__doc__
 
@@ -587,33 +587,48 @@ class Repeat(Layer):
     def __repr__(self):
         return "Repeat(%s, %d)"%(repr(self.stack),self.repeat.value)
 
-# Extend the materials scatterer class so that any scatter can be
-# implicitly turned into a slab.  This is a nasty thing to do
-# since those who have to debug the system later will not know where
-# to look elsewhere for the class attributes.  On the flip side,
-# changing the base class definition saves us the equally nasty
-# problem of having to create a sister hierarchy of stackable
-# scatterers mirroring the structure of the materials class.
-class _MaterialStacker:
+# Extend the material.Scatterer class so that any scatter can be
+# implicitly turned into a slab.
+def _material_stacker():
     """
-    Allows materials to be used in a stack algebra, automatically
-    turning them into slabs when they are given a thickness (e.g., M/10)
-    or roughness (e.g., M%10), or when they are added together
-    (e.g., M1 + M2).
+    Allow materials to be used in the stack algebra.  Material can be
+    called with thickness, interface, magnetism and turned into a slab.
+    So instead of::
+
+        sample = Slab(Si,0,5) | Slab(Ni,100,5) | Slab(air)
+
+    models can use::
+
+        sample = Si(0,5) | Ni(100,5) | air
+
+    WARNING: this adds __or__ and __call__ methods to the material.Scatterer
+    base class.  This is a nasty thing to do since those who have to debug
+    the Scatterer later will not know where to look for these class
+    attributes.  On the flip side, changing the base class definition saves
+    us from the nastier problem of having to create a sister hierarchy of
+    stackable scatterers mirroring the scatterers hierarchy, or the nasty
+    problem of a circular definition that Slab depends on Scatterer and
+    Scatterer depends on Slab.
     """
-    # Define a little algebra for composing samples
-    # Layers can be repeated, stacked, or have length/interface set
+    # Note: should have been add these as a Mixin class, but couldn't
+    # get it to work on python 3.3
     def __or__(self, other):
-        """Place a slab of material into a layer stack"""
-        s = Stack()
-        s.add(self)
-        s.add(other)
-        return s
+        # need __or__ for stacks which start with a bare material, such
+        # as Si | air
+        stack = Stack()
+        # Note: stack.add() converts materials to slabs
+        stack.add(self)
+        stack.add(other)
+        return stack
+
     def __call__(self, thickness=0,interface=0,magnetism=None):
-        c = Slab(material=self, thickness=thickness, interface=interface, 
-                 magnetism=magnetism)
-        return c
-material.Scatterer.__bases__ += (_MaterialStacker,)
+        slab = Slab(material=self, thickness=thickness, interface=interface,
+                    magnetism=magnetism)
+        return slab
+
+    material.Scatterer.__or__ = __or__
+    material.Scatterer.__call__ = __call__
+_material_stacker()
 
 class Slab(Layer):
     """

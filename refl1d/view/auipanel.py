@@ -38,7 +38,7 @@ class AuiPanel(wx.Panel):
 
             mgr.LoadPerspective(self.GetPerspective())
             all_panes = mgr.GetAllPanes()
-            for pane in xrange(len(all_panes)):
+            for pane in range(len(all_panes)):
                 all_panes[pane].Show()
             mgr.Update()
 

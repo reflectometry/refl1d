@@ -53,7 +53,7 @@ For magnetic systems a polarized beam probe is needed::
 The string representation of the geometry prints a multi-line
 description of the default instrument configuration:
 
-    >>> print geometry
+    >>> print(geometry)
     == Instrument SP:2 ==
     radiation = neutron at 5.0042 Angstrom with 0.9% resolution
     slit distances = 2086 mm and 230 mm
@@ -92,7 +92,7 @@ in a couple of lines of code:
 
 The defaults() method prints the static components of the geometry:
 
-    >>> print SP2.defaults()
+    >>> print(SP2.defaults())
     == Instrument class SP:2 ==
     radiation = neutron at 5.0042 Angstrom with 0.9% resolution
     slit distances = 2086 mm and 230 mm
@@ -127,10 +127,10 @@ from __future__ import division
 
 import numpy
 #from numpy import pi, inf, sqrt, log, degrees, radians, cos, sin, tan
-from resolution import QL2T
-from resolution import bins, binwidths, binedges
-from resolution import slit_widths, divergence
-from probe import make_probe, PolarizedNeutronProbe
+from .resolution import QL2T
+from .resolution import bins, binwidths, binedges
+from .resolution import slit_widths, divergence
+from .probe import make_probe, PolarizedNeutronProbe
 
 
 class Monochromatic(object):
@@ -406,7 +406,7 @@ sample broadening = %(sample_broadening)g degrees\
 radiation = %(radiation)s at %(L)s Angstrom with %(dL)s resolution
 slit distances = %(d_s1)s mm and %(d_s2)s mm"""
         L,d_s1,d_s2 = ["%g"%v if v is not None else 'unknown'
-                       for v in cls.wavelength, cls.d_s1, cls.d_s2]
+                       for v in (cls.wavelength, cls.d_s1, cls.d_s2)]
         dL = "%g%%"%(cls.dLoL*100) if cls.dLoL else 'unknown'
         return msg % dict(name=cls.instrument, radiation=cls.radiation,
                           L=L, dL=dL, d_s1=d_s1, d_s2=d_s2)
@@ -607,14 +607,14 @@ class Pulsed(object):
             R = (Irefl-Iback)/Ibeam
             dR = numpy.sqrt((Irefl + Iback + Ibeam)*(Irefl/Ibeam))/Ibeam
             if numpy.isnan(dR).any() or (dR==0).any() or (R<=0).any():
-                print "Ibeam",Ibeam
-                print "Irefl",Irefl
-                print "Iback",Iback
-                print "R",R
-                print "dR",dR
+                print("Ibeam %s"%Ibeam)
+                print("Irefl %s"%Irefl)
+                print("Iback %s"%Iback)
+                print("R %s"%R)
+                print("dR %s"%dR)
                 raise RuntimeError("Should not be able to get here!!")
             #dR[Irefl==0] == 1./Ibeam[Irefl==0]
-            #print "median",numpy.median(dR/R)
+            #print("median %s"%numpy.median(dR/R))
 
             if not normalize:
                 #Ci = 1./max(R)

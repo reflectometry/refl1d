@@ -6,10 +6,10 @@
 # Literate programming with reStructuredText
 # ++++++++++++++++++++++++++++++++++++++++++
 #
-# :Date:      $Date: 2010-06-23 09:08:18 -0400 (Wed, 23 Jun 2010) $
-# :Revision:  $Revision: 121 $
-# :URL:       $URL: svn://svn.berlios.de/pylit/trunk/src/pylit.py $
-# :Copyright: Â© 2005, 2007 GÃ¼nter Milde.
+# :Date:      $Date$
+# :Revision:  $Revision$
+# :URL:       $URL$
+# :Copyright: © 2005, 2007 Günter Milde.
 #             Released without warranty under the terms of the
 #             GNU General Public License (v. 2 or later)
 #
@@ -105,11 +105,17 @@ with embedded documentation.
 #                     use DefaultDict for language-dependent defaults,
 #                     new defaults setting `add_missing_marker`_.
 # 0.7.7   2010-06-23  New command line option --codeindent.
+# 0.7.8   2011-03-30  bugfix: do not overwrite custom `add_missing_marker` value,
+#                     allow directive options following the 'code' directive.
+# 0.7.9   2011-04-05  Decode doctest string if 'magic comment' gives encoding.
+# pak     2013-12-18  2to3
 # ======  ==========  ===========================================================
 #
 # ::
 
-_version = "0.7.7"
+from __future__ import print_function
+
+_version = "0.7.9"
 
 __docformat__ = 'restructuredtext'
 
@@ -131,7 +137,7 @@ __docformat__ = 'restructuredtext'
 #
 # ::
 
-import __builtin__, os, sys
+import os, sys
 import re, optparse
 
 
@@ -410,6 +416,7 @@ class TextCodeConverter(object):
     strip = defaults.strip
     strip_marker = defaults.strip_marker
     add_missing_marker = defaults.add_missing_marker
+    directive_option_regexp = re.compile(r' +:(\w|[-._+:])+:( |$)')
     state = "" # type of current block, see `TextCodeConverter.convert`_
 
 # Interface methods
@@ -464,13 +471,12 @@ class TextCodeConverter(object):
 # the groups: ``\1 prefix, \2 code_block_marker, \3 remainder`` ::
 
         marker = self.code_block_marker
-        if False and marker == '::':  # PAK: force marker to be a line by itself
+        if marker == '::':
             # the default marker may occur at the end of a text line
             self.marker_regexp = re.compile('^( *(?!\.\.).*)(::)([ \n]*)$')
         else:
             # marker must be on a separate line
-            self.marker_regexp = re.compile('^( *)(%s)([ ]*)$' % marker)
-            #self.marker_regexp = re.compile('^( *)(%s)(.*\n?)$' % marker)
+            self.marker_regexp = re.compile('^( *)(%s)(.*\n?)$' % marker)
 
 # .. _TextCodeConverter.__iter__:
 #
@@ -777,40 +783,40 @@ class Text2Code(TextCodeConverter):
 #
 # The 'documentation' handler processes everything that is not recognised as
 # "code_block". Documentation is quoted with `self.comment_string`
-# (or filtered with `--strip=True`). ::
-
-    def documentation_handler(self, lines):
-        """Convert documentation blocks from text to code format
-        """
-
-# Test for the end of the documentation block: does the second last line end
-# with `::` but is neither a comment nor a directive?
+# (or filtered with `--strip=True`).
 #
 # If end-of-documentation marker is detected,
 #
 # * set state to 'code_block'
 # * set `self._textindent` (needed by `Text2Code.set_state`_ to find the
 #   next "documentation" block)
-# * do not comment the last line (the blank line separating documentation
-#   and code blocks).
 #
 # ::
 
-        endnum = len(lines) - 2
-        for (num, line) in enumerate(lines):
-            if not self.strip:
-                if self.state == "code_block":
-                    yield line
-                else:
-                    yield self.comment_string + line
-            if (num == endnum and self.marker_regexp.search(line)):
+    def documentation_handler(self, lines):
+        """Convert documentation blocks from text to code format
+        """
+        for line in lines:
+            # test lines following the code-block marker for false positives
+            if (self.state == "code_block" and line.rstrip()
+                and not self.directive_option_regexp.search(line)):
+                self.state = "documentation"
+            # test for end of documentation block
+            if self.marker_regexp.search(line):
                 self.state = "code_block"
                 self._textindent = self.get_indent(line)
+            # yield lines
+            if self.strip:
+                continue
+            # do not comment blank lines preceding a code block
+            if self.state == "code_block" and not line.rstrip():
+                yield line
+            else:
+                yield self.comment_string + line
 
-# TODO: Ensure a trailing blank line? Would need to test all documentation
-# lines for end-of-documentation marker and add a line by calling the
-# `ensure_trailing_blank_line` method (which also issues a warning)
-#
+
+
+
 # .. _Text2Code.code_block_handler:
 #
 # code_block_handler
@@ -836,8 +842,8 @@ class Text2Code(TextCodeConverter):
 
         for line in block:
             if line.lstrip() and self.get_indent(line) < self._codeindent:
-                raise ValueError, "code block contains line less indented " \
-                      "than %d spaces \n%r"%(self._codeindent, block)
+                raise ValueError("code block contains line less indented " \
+                      "than %d spaces \n%r"%(self._codeindent, block))
             yield line.replace(" "*self._codeindent, "", 1)
 
 
@@ -901,7 +907,7 @@ class Code2Text(TextCodeConverter):
         # get iterator over the lines that formats them as code-block
         lines = iter(self.code_block_handler(lines))
         # prepend header string to first line
-        yield self.header_string + lines.next()
+        yield self.header_string + next(lines)
         # yield remaining lines
         for line in lines:
             yield line
@@ -923,17 +929,24 @@ class Code2Text(TextCodeConverter):
         lines = [self.uncomment_line(line) for line in block]
 
 # If the code block is stripped, the literal marker would lead to an
-# error when the text is converted with Docutils. Strip it as well.
-# Otherwise, check for the `code_block_marker`_ at the end of the
-# documentation block::
+# error when the text is converted with Docutils. Strip it as well. ::
 
         if self.strip or self.strip_marker:
             self.strip_code_block_marker(lines)
+
+# Otherwise, check for the `code_block_marker`_ at the end of the
+# documentation block (skipping directive options that might follow it)::
+
         elif self.add_missing_marker:
-            try:
-                self._add_code_block_marker = \
-                    not self.marker_regexp.search(lines[-2])
-            except IndexError:  # len(lines < 2), e.g. last line of document
+            for line in lines[::-1]:
+                if self.marker_regexp.search(line):
+                    self._add_code_block_marker = False
+                    break
+                if (line.rstrip() and
+                    not self.directive_option_regexp.search(line)):
+                    self._add_code_block_marker = True
+                    break
+            else:
                 self._add_code_block_marker = True
 
 # Yield lines::
@@ -985,9 +998,9 @@ class Code2Text(TextCodeConverter):
 #
 # Replace the literal marker with the equivalent of Docutils replace rules
 #
-# * strip `::`-line (and preceding blank line) if on a line on its own
-# * strip `::` if it is preceded by whitespace.
-# * convert `::` to a single colon if preceded by text
+# * strip ``::``-line (and preceding blank line) if on a line on its own
+# * strip ``::`` if it is preceded by whitespace.
+# * convert ``::`` to a single colon if preceded by text
 #
 # `lines` is a list of documentation lines (with a trailing blank line).
 # It is modified in-place::
@@ -1237,7 +1250,7 @@ class OptionValues(optparse.Values):
         have a corresponding attribute in `self`,
         """
         for key in keyw:
-            if not self.__dict__.has_key(key):
+            if key not in self.__dict__:
                 setattr(self, key, keyw[key])
 
 # .. _OptionValues.__getattr__:
@@ -1286,7 +1299,7 @@ class PylitOptions(object):
         p.add_option("-t", "--txt2code", action="store_true",
                      help="convert text source to code source")
         p.add_option("--language",
-                     choices = defaults.languages.values(),
+                     choices = list(defaults.languages.values()),
                      help="use LANGUAGE native comment style")
         p.add_option("--comment-string", dest="comment_string",
                      help="documentation block marker in code source "
@@ -1378,7 +1391,7 @@ class PylitOptions(object):
             in_extension = os.path.splitext(values.infile)[1]
             if in_extension in values.text_extensions:
                 values.txt2code = True
-            elif in_extension in values.languages.keys():
+            elif in_extension in list(values.languages.keys()):
                 values.txt2code = False
 
 # Auto-determine the output file name::
@@ -1427,7 +1440,7 @@ class PylitOptions(object):
         (base, ext) = os.path.splitext(values.infile)
         if ext in values.text_extensions:
             return base # strip
-        if ext in values.languages.keys() or values.txt2code == False:
+        if ext in list(values.languages.keys()) or values.txt2code == False:
             return values.infile + values.text_extensions[0] # add
         # give up
         return values.infile + ".out"
@@ -1466,8 +1479,8 @@ def open_streams(infile = '-', outfile = '-', overwrite='update', **keyw):
 
     open_streams(infile, outfile) -> (in_stream, out_stream)
 
-    in_stream   --  file(infile) or sys.stdin
-    out_stream  --  file(outfile) or sys.stdout
+    in_stream   --  open(infile) or sys.stdin
+    out_stream  --  open(outfile) or sys.stdout
     overwrite   --  'yes': overwrite eventually existing `outfile`,
                     'update': fail if the `outfile` is newer than `infile`,
                     'no': fail if `outfile` exists.
@@ -1476,19 +1489,22 @@ def open_streams(infile = '-', outfile = '-', overwrite='update', **keyw):
     """
     if not infile:
         strerror = "Missing input file name ('-' for stdin; -h for help)"
-        raise IOError, (2, strerror, infile)
+        raise IOError(2, strerror, infile)
     if infile == '-':
         in_stream = sys.stdin
     else:
-        in_stream = file(infile, 'r')
+        in_stream = open(infile, 'r')
     if outfile == '-':
         out_stream = sys.stdout
     elif overwrite == 'no' and os.path.exists(outfile):
-        raise IOError, (1, "Output file exists!", outfile)
+        raise IOError(1, "Output file exists!", outfile)
     elif overwrite == 'update' and is_newer(outfile, infile):
-        raise IOError, (1, "Output file is newer than input file!", outfile)
+        raise IOError(1, "Output file is newer than input file!", outfile)
     else:
-        out_stream = file(outfile, 'w')
+        path = os.path.dirname(outfile)
+        if not os.path.exists(path):
+            os.makedirs(path)
+        out_stream = open(outfile, 'w')
     return (in_stream, out_stream)
 
 # is_newer
@@ -1561,11 +1577,21 @@ def run_doctest(infile="-", txt2code=True,
 
     (data, out_stream) = open_streams(infile, "-")
     if txt2code is False:
-        converter = Code2Text(data, add_missing_marker=False, **keyw)
+        keyw.update({'add_missing_marker': False})
+        converter = Code2Text(data, **keyw)
         docstring = str(converter)
     else:
         docstring = data.read()
 
+# decode doc string if there is a "magic comment" in the first or second line
+# (http://docs.python.org/reference/lexical_analysis.html#encoding-declarations)
+# ::
+
+    firstlines = ' '.join(docstring.splitlines()[:2])
+    match = re.search('coding[=:]\s*([-\w.]+)', firstlines)
+    if match:
+        docencoding = match.group(1)
+        docstring = docstring.decode(docencoding)
 
 # Use the doctest Advanced API to run all doctests in the source text::
 
@@ -1576,7 +1602,7 @@ def run_doctest(infile="-", txt2code=True,
     runner.summarize
     # give feedback also if no failures occurred
     if not runner.failures:
-        print "%d failures in %d tests"%(runner.failures, runner.tries)
+        print("%d failures in %d tests"%(runner.failures, runner.tries))
     return runner.failures, runner.tries
 
 
@@ -1594,7 +1620,7 @@ def diff(infile='-', outfile='-', txt2code=True, **keyw):
 
     import difflib
 
-    instream = file(infile)
+    instream = open(infile)
     # for diffing, we need a copy of the data as list::
     data = instream.readlines()
     # convert
@@ -1602,7 +1628,7 @@ def diff(infile='-', outfile='-', txt2code=True, **keyw):
     new = converter()
 
     if outfile != '-' and os.path.exists(outfile):
-        outstream = file(outfile)
+        outstream = open(outfile)
         old = outstream.readlines()
         oldname = outfile
         newname = "<conversion of %s>"%infile
@@ -1623,11 +1649,11 @@ def diff(infile='-', outfile='-', txt2code=True, **keyw):
                                       fromfile=oldname, tofile=newname)
     for line in delta:
         is_different = True
-        print line,
+        print(line, end=' ')
     if not is_different:
-        print oldname
-        print newname
-        print "no differences found"
+        print(oldname)
+        print(newname)
+        print("no differences found")
     return is_different
 
 
@@ -1642,11 +1668,11 @@ def execute(infile="-", txt2code=True, **keyw):
     """Execute the input file. Convert first, if it is a text source.
     """
 
-    data = file(infile)
+    data = open(infile)
     if txt2code:
         data = str(Text2Code(data, **keyw))
     # print "executing " + options.infile
-    exec data
+    exec(data)
 
 
 # main
@@ -1694,8 +1720,8 @@ def main(args=sys.argv[1:], **defaults):
 
     try:
         (data, out_stream) = open_streams(**options.as_dict())
-    except IOError, ex:
-        print "IOError: %s %s" % (ex.filename, ex.strerror)
+    except IOError as ex:
+        print("IOError: %s %s" % (ex.filename, ex.strerror))
         sys.exit(ex.errno)
 
 # Get a converter instance::
@@ -1707,7 +1733,7 @@ def main(args=sys.argv[1:], **defaults):
     out_stream.write(str(converter))
 
     if out_stream is not sys.stdout:
-        print "extract written to", out_stream.name
+        print("extract written to", out_stream.name)
         out_stream.close()
 
 # If input and output are from files, set the modification time (`mtime`) of

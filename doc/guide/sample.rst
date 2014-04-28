@@ -1,4 +1,4 @@
-.. sample-guide_:
+.. _sample-guide:
 
 *********************
 Sample Representation
@@ -113,14 +113,11 @@ can be simultaneously fit with freeform profiles.
 We have multiple representations for freeform profiles, each with its
 own strengths and weaknesses:
 
-   * `monotone cubic interpolation
-     <http://en.wikipedia.org/wiki/Monotone_cubic_interpolation>`_
+   * `monotone cubic interpolation <http://en.wikipedia.org/wiki/Monotone_cubic_interpolation>`_
      (:mod:`refl1d.mono`)
-   * `parameteric B-splines
-     <http://en.wikipedia.org/wiki/B-spline>`_
+   * `parameteric B-splines <http://en.wikipedia.org/wiki/B-spline>`_
      (:mod:`refl1d.freeform`)
-   * `Chebyshev interpolating polynomials
-      <http://en.wikipedia.org/wiki/Chebyshev_polynomials>`_
+   * `Chebyshev interpolating polynomials <http://en.wikipedia.org/wiki/Chebyshev_polynomials>`_
       (:mod:`refl1d.cheby`)
 
 At present, monotone cubic interpolation is the most developed, but work
@@ -243,7 +240,7 @@ state:  that is, don't expect your sample to show zebra stripes unless
 you are on an African safari or visiting a zoo.
 
 
-.. new-layers_:
+.. _new-layers:
 
 Subclassing Layer
 =================

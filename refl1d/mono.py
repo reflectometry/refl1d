@@ -139,7 +139,7 @@ class FreeInterface(Layer):
     def profile(self, Pz):
         thickness = self.thickness.value
         z,p = [hstack( (0, cumsum(asarray([v.value for v in vector],'d'))) )
-               for vector in self.dz, self.dp]
+               for vector in (self.dz, self.dp)]
         if p[-1] == 0: p[-1] = 1
         p *= 1/p[-1]
         z *= thickness/z[-1]

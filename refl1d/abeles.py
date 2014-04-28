@@ -58,11 +58,10 @@ def refl(kz, depth, rho, irho=0, sigma=0, rho_index=None):
     ## shorter than rho,mu so when reversing it, start at n-1.
     ## This allows the caller to provide an array of length n
     ## corresponding to rho,mu or of length n-1.
-    idx = (kz>=0)
     r = empty(len(kz),'D')
-    r[idx] = calc(abs(kz[idx]), depth, rho, irho, sigma)
-    r[~idx] = calc(abs(kz[~idx]),
-                   depth[::-1], rho[:,::-1], irho[:,::-1], sigma[m-2::-1])
+    r[kz>=1e-10] = calc(kz[kz>=1e-10], depth, rho, irho, sigma)
+    r[kz<=1e-10] = calc(-kz[kz<=1e-10], depth[::-1], rho[:,::-1],
+                        irho[:,::-1], sigma[m-2::-1])
     r[abs(kz) < 1e-10] = -1
     return r
 
