@@ -88,7 +88,8 @@ if os.name == "nt":
     PYTHON = sys.executable
     PYTHONDIR = os.path.dirname(os.path.abspath(PYTHON))
     SCRIPTDIR = os.path.join(PYTHONDIR,'Scripts')
-    os.environ['PATH'] = ";".join((PYTHONDIR,SCRIPTDIR,os.environ['PATH']))
+    LATEXDIR = 'C:/Program Files/MikTeX 2.9/miktex/bin/x64'
+    os.environ['PATH'] = ";".join((PYTHONDIR,SCRIPTDIR,LATEXDIR,os.environ['PATH']))
     os.environ['PYTHON'] = "/".join(PYTHON.split("\\"))
     #os.environ['GIT_SSH'] = r"C:\Program Files (x86)\PuTTY\plink.exe"
     MAKE = r"C:\mingw\bin\mingw32-make"

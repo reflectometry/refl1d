@@ -45,23 +45,28 @@ def prepare_environment():
     #import pylab; pylab.hold(False)
 
     #import numpy; numpy.seterr(all='raise')
-    root = os.path.abspath(os.path.dirname(__file__))
+    refl1d_root = os.path.abspath(os.path.dirname(__file__))
+    periodictable_root = os.path.abspath(os.path.join(refl1d_root, '..','periodictable'))
+    bumps_root = os.path.abspath(os.path.join(refl1d_root, '..','bumps'))
 
     # add bumps and periodictable to the path
-    addpath(os.path.join(root, '..','periodictable'))
-    addpath(os.path.join(root, '..','bumps','build/lib'+platform))
+    addpath(periodictable_root)
+    addpath(os.path.join(bumps_root, 'build', 'lib'+platform))
 
-    # Force a rebuild of refl1d
+    # Force a rebuild of bumps/refl1d
     import subprocess
-    with cd(root), open(os.devnull, 'w') as devnull:
-        subprocess.call((sys.executable, "setup.py", "build"), shell=False, stdout=devnull)
+    with open(os.devnull, 'w') as devnull:
+        with cd(bumps_root):
+            subprocess.call((sys.executable, "setup.py", "build"), shell=False, stdout=devnull)
+        with cd(refl1d_root):
+            subprocess.call((sys.executable, "setup.py", "build"), shell=False, stdout=devnull)
 
     # Add the build dir to the system path
-    build_path = os.path.join(root, 'build','lib'+platform)
+    build_path = os.path.join(refl1d_root, 'build','lib'+platform)
     addpath(build_path)
 
     # Make sample data and models available
-    os.environ['REFL1D_DATA'] = os.path.join(root,'doc','_examples')
+    os.environ['REFL1D_DATA'] = os.path.join(refl1d_root,'doc','_examples')
 
 if __name__ == "__main__":
     import multiprocessing

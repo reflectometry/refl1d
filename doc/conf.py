@@ -31,10 +31,11 @@ print("python %s"%sys.executable)
 sys.path.append(os.path.abspath('.')) # for sitedoc
 sys.path.append(os.path.abspath('_extensions')) # for sphinx extensions
 
-from distutils.util import get_platform
-platform = '.%s-%s'%(get_platform(),sys.version[:3])
-build_lib = os.path.abspath('../build/lib'+platform)
-sys.path.insert(0, build_lib)
+import imp
+from os.path import abspath, dirname, split as splitpath, join as joinpath
+run_py = joinpath(dirname(dirname(abspath(__file__))), 'run.py')
+run = imp.load_source('run', run_py)
+run.prepare_environment()
 print("== path ==")
 print("\n".join(sys.path))
 

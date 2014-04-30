@@ -60,6 +60,12 @@ if len(sys.argv) == 1:
     sys.argv.append('py2exe')
 #print "\n".join(sys.path)
 
+import imp
+from os.path import abspath, dirname, split as splitpath, join as joinpath
+run_py = joinpath(dirname(abspath(__file__)), 'run.py')
+run = imp.load_source('run', run_py)
+run.prepare_environment()
+
 #import wx  # May need this to force wx to be included
 import matplotlib
 matplotlib.use('WXAgg')
