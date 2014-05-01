@@ -2,7 +2,7 @@ import os
 import numpy
 import pylab
 from bumps.fitters import BFGSFit, DEFit, RLFit, PTFit
-from bumps.cli import load_problem
+from bumps.cli import load_model
 
 SEED = 1
 
@@ -40,14 +40,14 @@ def example_dir():
 def plot_model(filename):
     #import sys; print >>sys.stderr, "in plot with",filename, example_dir()
     numpy.random.seed(SEED)
-    p = load_problem([os.path.join(example_dir(), filename)])
+    p = load_model([os.path.join(example_dir(), filename)])
     p.plot()
     pylab.show()
 
 def fit_model(filename):
     #import sys; print >>sys.stderr, "in plot with",filename, example_dir()
     numpy.random.seed(SEED)
-    p =load_problem([os.path.join(example_dir(),filename)])
+    p =load_model([os.path.join(example_dir(),filename)])
     #x.fx = RLFit(p).solve(steps=1000, burn=99)
     x,fx = DEFit(p).solve(steps=200, pop=10)
     #x,fx = PTFit(p).solve(steps=100,burn=400)

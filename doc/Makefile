@@ -11,12 +11,12 @@ ifdef ComSpec
     RMDIR   = del /s/q/f
     CPDIR   = xcopy /q/e/i
     MKDIR   = mkdir
-    PATHSEP = $(strip /)
+    PATHSEP = $(strip \)
 else
     RMDIR   = rm -rf
     CPDIR   = cp -rp
     MKDIR   = mkdir -p
-    PATHSEP = $(strip \)
+    PATHSEP = $(strip /)
 endif
 
 # Internal variables.
@@ -74,7 +74,7 @@ $(EXDIR):
 	$(MKDIR) $(EXDIR)
 	$(CPDIR) $(EXWEB)$(PATHSEP)* $(EXDIR)
 
-## MathJax now uses CDN by default
+## MathJax now uses CDN
 #$(BUILDDIR)/html:
 #	mkdir -p $(BUILDDIR)/html/_static
 #	$(CPDIR) MathJax $(BUILDDIR)/html/_static/MathJax

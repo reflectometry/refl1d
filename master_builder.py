@@ -144,9 +144,12 @@ else:
 platform = '.%s-%s'%(get_platform(),sys.version[:3])
 BUMPS_DIR = os.path.join(TOP_DIR, "bumps")
 REFL_DIR = os.path.join(TOP_DIR, "refl1d")
+PERIODICTABLE_DIR = os.path.join(TOP_DIR, "periodictable")
 BUMPS_LIB = os.path.join(BUMPS_DIR,'build','lib'+platform)
 REFL_LIB = os.path.join(REFL_DIR,'build','lib'+platform)
-os.environ['PYTHONPATH'] = os.pathsep.join((BUMPS_LIB,REFL_LIB))
+paths = [BUMPS_LIB, REFL_LIB, PERIODICTABLE_DIR]
+sys.path  = paths + sys.path
+os.environ['PYTHONPATH'] = os.pathsep.join(paths)
 
 BUMPS_NEW = '"%s" clone -b bumps-split https://github.com/reflectometry/bumps.git'%GIT
 REFL_NEW = '"%s" clone https://github.com/reflectometry/refl1d.git'%GIT
