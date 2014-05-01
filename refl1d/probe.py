@@ -1381,9 +1381,10 @@ def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
 
 class PolarizedNeutronQProbe(PolarizedNeutronProbe):
     polarized = True
-    def __init__(self, xs=None, name=None):
+    def __init__(self, xs=None, name=None, Aguide=270):
         self.xs = xs
         self.Q, self.dQ = Qmeasurement_union(xs)
         self._check()
         self.name = name if name is not None else xs[0].name
+        self.Aguide = Aguide
 

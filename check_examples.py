@@ -49,6 +49,7 @@ examples = [
     "polymer/freeform.py",
     "profile/model.py",
     "spinvalve/n101G.py",
+    "spinvalve/n101G.sta",
     "staj/De2_VATR.py",
     "superlattice/freeform-web.py",
     "superlattice/NiTi-web.py",

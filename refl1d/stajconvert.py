@@ -8,18 +8,23 @@ import numpy
 from numpy import tan, cos, sqrt, radians, degrees, pi
 from bumps import parameter
 
-from .staj import MlayerModel
+from .staj import MlayerModel, MlayerMagnetic, ERF_FWHM
 from .model import Slab, Stack, Repeat
+from .magnetism import Magnetism
 from .material import SLD
 from .resolution import QL2T,sigma2FWHM
-from .probe import NeutronProbe, XrayProbe
+from .probe import NeutronProbe, XrayProbe, PolarizedNeutronProbe
 
 def load_mlayer(filename, fit_pmp=0, name=None, layers=None):
     """
     Load a staj file as a model.
     """
-    staj = MlayerModel.load(filename)
-    model = mlayer_to_model(staj, name=name, layers=layers)
+    if filename.endswith('.staj'):
+        staj = MlayerModel.load(filename)
+        model = mlayer_to_model(staj, name=name, layers=layers)
+    else:
+        sta = MlayerMagnetic.load(filename)
+        model = mlayer_magnetic_to_model(sta, name=name, layers=layers)
     if fit_pmp != 0:
         fit_all(model, pmp=fit_pmp)
     return model
@@ -62,8 +67,8 @@ def mlayer_to_model(staj, name=None, layers=None):
     """
     from .experiment import Experiment
     sample = _mlayer_to_stack(staj, name, layers)
-    probe = _mlayer_to_probe(staj, name)
-    return Experiment(sample=sample,probe=probe)
+    probe = _load_probe(staj, name, xs='')
+    return Experiment(sample=sample, probe=probe)
 
 def _mlayer_to_stack(s, name, layers):
     """
@@ -110,28 +115,37 @@ def _mlayer_to_stack(s, name, layers):
 
     return stack
 
-def _mlayer_to_probe(s, name):
-    """
-    Return a model probe based on the data used for the staj file.
-    """
+XS = {'A': '--', 'B': '-+', 'C': '+-', 'D': '++', '':'' }
+def _load_probe(s, name, xs):
+
     if name is None:
         name = os.path.splitext(s.data_file)[0]
 
     if s.data_file == "":
+        filename = "simulated"
         Q = numpy.linspace(s.Qmin, s.Qmax, s.num_Q)
         R,dR = None,None
     else:
-        Q,R,dR = numpy.loadtxt(s.data_file).T
-    # (dQ/Q)^2 = (dL/L)^2 + (dT/tan(T))^2
-    # Transform so that Q=0 is not an error
-    # =>  dT = tan(T)*sqrt((dQ/Q)^2 - (dL/L)^2))
-    #        = sqrt( (dQ*L/4*pi*sin(T))^2*(sin(T)/cos(T))^2 - (tan(T)*dL/L)^2 )
-    #        = sqrt( (dQ*L/4*pi*cos(T))^2 - (tan(T)*dL/L)^2 )
-    dQ = s.FWHMresolution(Q)
-    L,dL = s.wavelength,s.wavelength_dispersion
+        filename = s.data_file
+        Q,R,dR = numpy.loadtxt(s.data_file+xs).T
+
+    # Use Q and wavelength L from the staj file to determine angle T
+    L = s.wavelength
     T = QL2T(Q=Q,L=s.wavelength)
-    dT = sqrt( (dQ*L/(4*pi*cos(radians(T))))**2 - (tan(radians(T))*dL/L)**2 )
-    dT = degrees(dT)
+
+    # Refl1D uses the following for dQ:
+    #
+    #     (dQ/Q)^2 = (dL/L)^2 + (dT/tan(T))^2
+    #
+    # Given the mlayer resolution dQ, and wavelength divergence dL, we can solve the
+    # above for dT such that dQ in refl1d matches dQ in mlayer.
+    #
+    #      dT = sqrt( tan(T)^2 * ( (dQ/Q)^2 - (dL/L)^2) ) )
+    #         = sqrt( (dQ*L/4*pi*sin(T))^2*(sin(T)/cos(T))^2 - (tan(T)*dL/L)^2 )
+    #         = sqrt( (dQ*L/4*pi*cos(T))^2 - (tan(T)*dL/L)^2 )
+    dQ = s.FWHMresolution(Q)
+    dL = s.wavelength_dispersion
+    dT = degrees( sqrt( (dQ*L/(4*pi*cos(radians(T))))**2 - (tan(radians(T))*dL/L)**2 ) )
 
     # Hack: X-ray is 1.54; anything above 2 is neutron.  Doesn't matter since
     # materials are set as SLD rather than composition.
@@ -140,11 +154,11 @@ def _mlayer_to_probe(s, name):
     else:
         probe = NeutronProbe
     probe = probe(T=T,dT=dT,L=L,dL=dL,data=(R,dR),
-                  theta_offset=s.theta_offset,
+                  theta_offset=getattr(s,'theta_offset', 0), # gj2 has no theta offset
                   background=s.background,
                   intensity=s.intensity,
                   name=name)
-    probe.filename = s.data_file
+    probe.filename = filename
     return probe
 
 
@@ -253,3 +267,65 @@ def model_to_mlayer(model, datafile):
         staj.split_sections()
 
     return staj
+
+def mlayer_magnetic_to_model(sta, name=None, layers=None):
+    """
+    Convert a loaded sta file to a refl1d experiment.
+
+    Returns a new experiment
+    """
+    from .experiment import Experiment
+    sample = _mlayer_magnetic_to_stack(sta, name, layers)
+    probe = _mlayer_magnetic_to_probe(sta, name)
+    return Experiment(sample=sample,probe=probe, dz=0.01)
+
+def _mlayer_magnetic_to_stack(s, name, layers):
+    """
+    Return a sample stack based on the model used in the sta file.
+    """
+    # check pars
+    if layers and len(layers) != len(s.rho):
+        raise ValueError("Have %d sta layers but got %d layer names"
+                         % (len(s.rho), len(layers)))
+
+    # prepend datafile name to layers
+    if name is None:
+        name = os.path.splitext(s.data_file)[0]
+    if name and not name.endswith(" "): name += " "
+
+    # Construct slabs
+    magnetic_offset = numpy.cumsum(s.thickness-s.mthickness)
+    slabs = []
+    print s.sigma_mroughness
+    for i in reversed(range(len(s.rho))):
+        if layers:
+            Lname = layers[len(layers)-i-1]
+        elif i == 0:
+            Lname = 'V'
+        else:
+            Lname = 'M%d'%i
+        slab_i = Slab(material=SLD(rho=s.rho[i],irho=s.irho[i], name=name+Lname),
+                      thickness=s.thickness[i],
+                      interface=s.sigma_roughness[i])
+        if s.mrho[i] != 0.0:
+            slab_i.magnetism = Magnetism(s.mrho[i], s.mtheta[i],
+                                         interface_below=s.sigma_mroughness[i+1],
+                                         interface_above=s.sigma_mroughness[i],
+                                         dead_below=magnetic_offset[i+1],
+                                         dead_above=magnetic_offset[i])
+        slabs.append(slab_i)
+
+    return Stack(slabs)
+
+def _mlayer_magnetic_to_probe(s, name):
+    """
+    Return a model probe based on the data used for the staj file.
+    """
+    if name is None:
+        name = os.path.splitext(s.data_file)[0]
+
+    active_xsec = s.active_xsec.upper()
+    xs = [_load_probe(s, name, xs) if (xs in active_xsec) else None
+          for xs in 'ABCD']
+    return PolarizedNeutronProbe(xs, Aguide=s.guide_angle)
+

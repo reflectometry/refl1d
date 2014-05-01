@@ -30,7 +30,7 @@ def load_model(filename):
         from . import garefl
         problem = garefl.load(filename)
         return problem
-    elif filename.endswith('.staj'):
+    elif filename.endswith('.staj') or filename.endswith('.sta'):
         from .stajconvert import load_mlayer
         return FitProblem(load_mlayer(filename))
         #fit_all(problem.fitness, pmp=20)

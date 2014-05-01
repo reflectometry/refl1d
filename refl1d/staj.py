@@ -759,7 +759,7 @@ class MlayerMagnetic(object):
 
     model = MlayerMagnetic.load(filename)
 
-        Construct a new MLayer model from a staj file.
+        Construct a new MLayer model from a sta file.
 
     model.set(attribute=value, ...)
 
@@ -893,7 +893,7 @@ class MlayerMagnetic(object):
                       "Rho (1e-6/A)","iRho (1e-6/A)",
                       "Mag width","Mag interface","Mag rho","Mag angle (deg)"))
         for i in range(len(self.rho)):
-            line.append(("%3d:"+("%15g "*4)+"\n    " + ("%15g="*4))
+            line.append(("%3d:"+("%15g "*4)+"\n    " + ("%15g "*4))
                         %(i, w[i],s[i],rho[i],irho[i],
                           wm[i],sm[i],mrho[i],mtheta[i]))
         if self.constraints != "":
