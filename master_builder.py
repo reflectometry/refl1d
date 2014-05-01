@@ -271,12 +271,15 @@ def run_tests():
     "run the test suite"
     # Run unittests and doctests using a test script.
     # Running from a test script allows customization of the system path.
+    print("Running periodictable tests ...\n")
+    os.chdir(PERIODICTABLE_DIR)
+    exec_cmd("%s test.py"%PYTHON)
     print("Running bumps tests ...\n")
     os.chdir(BUMPS_DIR)
-    exec_cmd("%s test.py" %PYTHON)
+    exec_cmd("%s test.py"%PYTHON)
     print("Running refl tests ...\n")
     os.chdir(REFL_DIR)
-    exec_cmd("%s test.py" %PYTHON)
+    exec_cmd("%s test.py"%PYTHON)
 
 def check_dependencies():
     "check that required packages are installed"
