@@ -58,7 +58,7 @@ class Molecule(object):
     the the proton swapping effect.
 
     *sld*/*Hsld*/*Dsld* are the the scattering length densities of the molecule with tritium
-    repaced by naturally occuring H/D ratios, pure H[1] and pure H[2] respectively.
+    replaced by naturally occurring H/D ratios, pure H[1] and pure H[2] respectively.
 
     *mass*/*Hmass*/*Dmass* are the masses the three conditions.
 
