@@ -4,6 +4,7 @@
 * display constraints info on graph
 * estimate parameter uncertainty from covariance matrix
 * fix windows binary
+* read magnetic models from reflpak
 
 2014-04-03 R0.7.4
 =================
