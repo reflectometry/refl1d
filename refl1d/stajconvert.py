@@ -159,6 +159,7 @@ def _load_probe(s, name, xs):
                   intensity=s.intensity,
                   name=name)
     probe.filename = filename
+    #probe.oversample(n=10)
     return probe
 
 
@@ -277,7 +278,7 @@ def mlayer_magnetic_to_model(sta, name=None, layers=None):
     from .experiment import Experiment
     sample = _mlayer_magnetic_to_stack(sta, name, layers)
     probe = _mlayer_magnetic_to_probe(sta, name)
-    return Experiment(sample=sample,probe=probe, dz=0.01)
+    return Experiment(sample=sample,probe=probe, dz=0.1)
 
 def _mlayer_magnetic_to_stack(s, name, layers):
     """
@@ -296,8 +297,8 @@ def _mlayer_magnetic_to_stack(s, name, layers):
     # Construct slabs
     magnetic_offset = numpy.cumsum(s.thickness-s.mthickness)
     slabs = []
-    print s.sigma_mroughness
-    for i in reversed(range(len(s.rho))):
+    nlayers = len(s.rho)
+    for i in range(nlayers-1,-1,-1):
         if layers:
             Lname = layers[len(layers)-i-1]
         elif i == 0:
@@ -309,9 +310,9 @@ def _mlayer_magnetic_to_stack(s, name, layers):
                       interface=s.sigma_roughness[i])
         if s.mrho[i] != 0.0:
             slab_i.magnetism = Magnetism(s.mrho[i], s.mtheta[i],
-                                         interface_below=s.sigma_mroughness[i+1],
+                                         interface_below=s.sigma_mroughness[i+1] if i < nlayers-1 else 0,
                                          interface_above=s.sigma_mroughness[i],
-                                         dead_below=magnetic_offset[i+1],
+                                         dead_below=magnetic_offset[i+1] if i < nlayers-1 else 0,
                                          dead_above=magnetic_offset[i])
         slabs.append(slab_i)
 
@@ -327,5 +328,7 @@ def _mlayer_magnetic_to_probe(s, name):
     active_xsec = s.active_xsec.upper()
     xs = [_load_probe(s, name, xs) if (xs in active_xsec) else None
           for xs in 'ABCD']
-    return PolarizedNeutronProbe(xs, Aguide=s.guide_angle)
+    probe = PolarizedNeutronProbe(xs, Aguide=s.guide_angle)
+    #probe.oversample(n=6)
+    return probe
 
