@@ -16,8 +16,17 @@ sys.dont_write_bytecode = True
 from setuptools import setup, find_packages, Extension
 #import fix_setuptools_chmod
 
+# Grab the openmp extension builder from the bumps package
+try:
+    import bumps
+except:
+    from os.path import dirname, abspath, join as joinpath
+    bumps_path = joinpath(dirname(dirname(abspath(__file__))),'bumps')
+    sys.path.insert(0, bumps_path)
+from bumps.openmp_ext import openmp_build_ext
+
 import refl1d
-#from bumps.gui.resources import resources as gui_resources
+
 
 packages = find_packages()
 
@@ -57,6 +66,7 @@ dist = setup(
         scripts = ['bin/refl1d_cli.py','bin/refl1d_gui.py'],
         ext_modules = [reflmodule_config()],
         requires = [], # ['bumps>=0.9'],
+        cmdclass = {'build_ext': openmp_build_ext(default=False)},
         )
 
 # End of file

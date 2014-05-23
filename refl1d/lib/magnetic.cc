@@ -365,6 +365,9 @@ magnetic_amplitude(const int layers,
                       const int points, const double KZ[], const int rho_index[],
                       Cplx Ra[], Cplx Rb[], Cplx Rc[], Cplx Rd[])
 {
+  #ifdef _OPENMP
+  #pragma omp parallel for
+  #endif
   for (int i=0; i < points; i++) {
     const int offset = layers*(rho_index != NULL?rho_index[i]:0);
     Cr4xa(layers,d,sigma,rho+offset,irho+offset,rhoM,expth,

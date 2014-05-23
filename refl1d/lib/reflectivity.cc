@@ -98,6 +98,9 @@ reflectivity_amplitude(const int    layers,
              const int    rho_index[],
              Cplx r[])
 {
+  #ifdef _OPENMP
+  #pragma omp parallel for
+  #endif
   for (int i=0; i < points; i++) {
     const int offset = layers*(rho_index!=NULL ? rho_index[i] : 0);
     refl(layers, kz[i], depth, sigma, rho+offset, irho+offset, r[i]);
