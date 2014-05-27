@@ -29,6 +29,21 @@ def cd(path):
     yield
     os.chdir(old_dir)
 
+def import_dll(module, build_path):
+    """Import a DLL from the build directory"""
+    import sysconfig, imp
+    ext = sysconfig.get_config_var('SO')
+    # build_path comes from context
+    path = os.path.join(build_path, *module.split('.'))+ext
+    mod = imp.load_dynamic(module, path)
+    #print "importing", module, "from", path
+
+    # make sure module can be imported from package
+    package_name,module_name = module.rsplit('.',1)
+    package = __import__(package_name)
+    setattr(package,module_name,mod)
+    return mod
+
 def prepare_environment():
     from distutils.util import get_platform
     platform = '.%s-%s'%(get_platform(),sys.version[:3])
@@ -45,13 +60,17 @@ def prepare_environment():
     #import pylab; pylab.hold(False)
 
     #import numpy; numpy.seterr(all='raise')
-    refl1d_root = os.path.abspath(os.path.dirname(__file__))
     periodictable_root = os.path.abspath(os.path.join(refl1d_root, '..','periodictable'))
     bumps_root = os.path.abspath(os.path.join(refl1d_root, '..','bumps'))
+    refl1d_root = os.path.abspath(os.path.dirname(__file__))
+    bumps_build,refl1d_build = [os.path.join(v,'buil','lib'+platform)
+                                for v in (bumps_root, refl1d_root)]
 
     # add bumps and periodictable to the path
     addpath(periodictable_root)
-    addpath(os.path.join(bumps_root, 'build', 'lib'+platform))
+    #addpath(bumps_build)
+    addpath(bumps_root)
+    import_dll('bumps._reduction', bumps_build)
 
     # Force a rebuild of bumps/refl1d
     import subprocess
@@ -62,8 +81,9 @@ def prepare_environment():
             subprocess.call((sys.executable, "setup.py", "build"), shell=False, stdout=devnull)
 
     # Add the build dir to the system path
-    build_path = os.path.join(refl1d_root, 'build','lib'+platform)
-    addpath(build_path)
+    #addpath(refl1d_build)
+    addpath(refl1d_root)
+    import_dll('refl1d.reflmodule', refl1d_build)
 
     # Make sample data and models available
     os.environ['REFL1D_DATA'] = os.path.join(refl1d_root,'doc','_examples')

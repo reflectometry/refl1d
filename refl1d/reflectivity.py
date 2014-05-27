@@ -21,9 +21,7 @@ __all__ = [ 'reflectivity', 'reflectivity_amplitude',
 import numpy
 from numpy import pi, sin, cos, conj
 from numpy import ascontiguousarray as _dense
-# Export convolve and erf from bumps
 from bumps.data import convolve
-from bumps.util import erf
 from . import reflmodule
 
 def reflectivity(*args, **kw):
