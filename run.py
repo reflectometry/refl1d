@@ -35,8 +35,8 @@ def import_dll(module, build_path):
     ext = sysconfig.get_config_var('SO')
     # build_path comes from context
     path = os.path.join(build_path, *module.split('.'))+ext
+    #print(" ".join(("importing", module, "from", path)))
     mod = imp.load_dynamic(module, path)
-    #print "importing", module, "from", path
 
     # make sure module can be imported from package
     package_name,module_name = module.rsplit('.',1)
@@ -60,10 +60,10 @@ def prepare_environment():
     #import pylab; pylab.hold(False)
 
     #import numpy; numpy.seterr(all='raise')
+    refl1d_root = os.path.abspath(os.path.dirname(__file__))
     periodictable_root = os.path.abspath(os.path.join(refl1d_root, '..','periodictable'))
     bumps_root = os.path.abspath(os.path.join(refl1d_root, '..','bumps'))
-    refl1d_root = os.path.abspath(os.path.dirname(__file__))
-    bumps_build,refl1d_build = [os.path.join(v,'buil','lib'+platform)
+    bumps_build,refl1d_build = [os.path.join(v,'build','lib'+platform)
                                 for v in (bumps_root, refl1d_root)]
 
     # add bumps and periodictable to the path
