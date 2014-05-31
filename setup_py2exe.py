@@ -49,6 +49,7 @@ sys.path = [p for p in sys.path if os.path.abspath(p) != here]
 import glob
 
 from distutils.core import setup
+from distutils.util import get_platform
 
 import numpy.core
 
@@ -60,20 +61,22 @@ if len(sys.argv) == 1:
     sys.argv.append('py2exe')
 #print "\n".join(sys.path)
 
-import imp
-from os.path import abspath, dirname, split as splitpath, join as joinpath
-run_py = joinpath(dirname(abspath(__file__)), 'run.py')
-run = imp.load_source('run', run_py)
-run.prepare_environment()
+platform = '.%s-%s' % (get_platform(), sys.version[:3])
+packages = [
+    os.path.abspath('../periodictable'),
+    os.path.abspath('../bumps/build/lib'+platform),
+    os.path.abspath('build/lib'+platform),
+]
+sys.path = packages + sys.path
 
 #import wx  # May need this to force wx to be included
 import matplotlib
 matplotlib.use('WXAgg')
 import periodictable
 import bumps
+import refl1d
 
 # Retrieve the application version string.
-import refl1d
 version = refl1d.__version__
 
 # A manifest is required to be included in a py2exe image (or accessible as a
@@ -229,8 +232,13 @@ packages = ['numpy', 'scipy', 'matplotlib', 'pytz', 'pyparsing',
 includes = []
 
 dll_includes = glob.glob(os.path.join(os.path.dirname(numpy.core.__file__),'*.dll'))
+# Intel compiler dlls for new numpy releases
+#dll_includes += [ 'libifcoremd.dll', 'libmmd.dll', 'svml_dispmd.dll', 'libiomp5md.dll' ]
 #includes += ['numpy.core.'+os.path.basename(f)[:-4] for f in dll_includes]
 #data_files += [('.', dll_includes)]
+
+# non-system dlls that didn't get picked up by standard build
+dll_includes += ['gdiplus.dll', 'mfc90.dll']
 
 
 # Specify files to exclude from the executable image.
@@ -244,14 +252,17 @@ dll_includes = glob.glob(os.path.join(os.path.dirname(numpy.core.__file__),'*.dl
 # - Since we do not support Win 9x systems, w9xpopen.dll is not needed.
 # - For some reason cygwin1.dll gets included by default, but it is not needed.
 
-excludes = ['Tkinter', 'PyQt4', '_ssl', '_tkagg', 'zmq','pyzmq','sympy'] #, 'numpy.distutils.tests']
+excludes = ['Tkinter', 'PyQt4', '_ssl', 'tkagg', 'zmq','pyzmq','sympy'] #, 'numpy.distutils.tests']
 
 dll_excludes = ['libgdk_pixbuf-2.0-0.dll', 'libgobject-2.0-0.dll', 'libgdk-win32-2.0-0.dll',
-                'tcl84.dll', 'tk84.dll', 'QtGui4.dll', 'QtCore4.dll',
-                'msvcr71.dll', 'msvcp90.dll',
-                'libiomp5md.dll', 'libifcoremd.dll', 'libmmd.dll', 'svml_dispmd.dll','libifportMD.dll',
-                'w9xpopen.exe',
-                'cygwin1.dll']
+                'tcl84.dll', 'tk84.dll', 'tcl85.dll', 'tk85.dll',
+                'QtGui4.dll', 'QtCore4.dll',
+                #'msvcr71.dll', 'msvcp71.dll',
+                'msvcp90.dll', 'msvcr90.dll',
+                #'libiomp5md.dll', 'libifcoremd.dll', 'libmmd.dll',
+                #'svml_dispmd.dll','libifportMD.dll',
+                'MPR.dll', 'API-MS-Win-Core-LocalRegistry-L1-1-0.dll',
+                ]
 
 class Target():
     """This class stores metadata about the distribution in a dictionary."""

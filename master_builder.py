@@ -155,7 +155,7 @@ BUMPS_NEW = '"%s" clone -b bumps-split https://github.com/reflectometry/bumps.gi
 REFL_NEW = '"%s" clone https://github.com/reflectometry/refl1d.git'%GIT
 REPO_UPDATE = '"%s" pull'%GIT
 
-DIST_DIR = os.path.join(REFL_DIR,'dist')
+INSTALLER_DIR = os.path.join(REFL_DIR, 'dist')
 
 
 def get_version():
@@ -181,14 +181,11 @@ def checkout_code():
         return
 
     if RUN_DIR == TOP_DIR:
-        os.chdir(TOP_DIR)
-        exec_cmd(BUMPS_NEW)
-        exec_cmd(REFL_NEW)
+        exec_cmd(BUMPS_NEW, cwd=TOP_DIR)
+        exec_cmd(REFL_NEW, cwd=TOP_DIR)
     else:
-        os.chdir(BUMPS_DIR)
-        exec_cmd(REPO_UPDATE)
-        os.chdir(REFL_DIR)
-        exec_cmd(REPO_UPDATE)
+        exec_cmd(REPO_UPDATE, cwd=BUMPS_DIR)
+        exec_cmd(REPO_UPDATE, cwd=REFL_DIR)
 
     get_version()  # reset version number in case it was updated remotely
 
@@ -204,8 +201,10 @@ def create_archive(version=None):
     
     try:
         # Create zip and tar archives in the dist subdirectory.
-        os.chdir(REFL_DIR)
-        exec_cmd("%s setup.py sdist --formats=zip,gztar" %(PYTHON))
+        exec_cmd("%s setup.py sdist --formats=zip,gztar --dist-dir=%s"
+                 %(PYTHON,INSTALLER_DIR), cwd=REFL_DIR)
+        exec_cmd("%s setup.py sdist --formats=zip,gztar --dist-dir=%s"
+                 %(PYTHON,INSTALLER_DIR), cwd=BUMPS_DIR)
     except:
         print("*** Failed to create source archive ***")
 
@@ -214,33 +213,32 @@ def build_package():
     "build and install the package"
     print("Building the %s package ...\n" %(PKG_NAME,))
 
-    os.chdir(BUMPS_DIR)
-    exec_cmd("%s setup.py build" %(PYTHON,))
-    os.chdir(REFL_DIR)
-    exec_cmd("%s setup.py build" %(PYTHON,))
+    exec_cmd("%s setup.py build" %(PYTHON,), cwd=BUMPS_DIR)
+    exec_cmd("%s setup.py build" %(PYTHON,), cwd=REFL_DIR)
 
 
 def build_documentation():
     "build the documentation"
     print("Running the Sphinx utility to build documentation ...\n")
-    os.chdir(os.path.join(REFL_DIR, "doc"))
+    doc_dir = os.path.join(REFL_DIR, "doc")
+    latex_dir = os.path.join(doc_dir, "_build", "latex")
+    html_dir = os.path.join(doc_dir, "_build", "html")
+    pdf = os.path.join(latex_dir, APP_NAME+".pdf")
 
     # Delete any left over files from a previous build.
     # Create documentation in HTML and PDF format.
-    exec_cmd(MAKE+" clean html pdf")
+    exec_cmd(MAKE+" clean html pdf", cwd=doc_dir)
     # Copy PDF to the html directory where the html can find it.
-    pdf = os.path.join("_build", "latex", APP_NAME+".pdf")
     if os.path.isfile(pdf):
-        shutil.copy(pdf, os.path.join("_build","html"))
+        shutil.copy(pdf, html_dir)
 
 
 def create_windows_exe():
     "create the standalone windows executable"
     if os.name != 'nt': return
     print("Using py2exe to create a Win32 executable ...\n")
-    os.chdir(REFL_DIR)
 
-    exec_cmd("%s setup_py2exe.py" %PYTHON)
+    exec_cmd("%s setup_py2exe.py"%PYTHON, cwd=REFL_DIR)
 
 
 def create_windows_installer(version=None):
@@ -253,18 +251,18 @@ def create_windows_installer(version=None):
     # the application.
     print("Running Inno Setup Compiler to create Win32 "
           "installer/uninstaller ...\n")
-    os.chdir(REFL_DIR)
 
     # First create an include file to convey the application's version
     # information to the Inno Setup compiler.
-    f = open("iss-version", "w")
-    f.write('#define MyAppVersion "%s"\n' %version)  # version must be quoted
+    f = open(os.path.join(REFL_DIR, "iss-version"), "w")
+    f.write('#define MyAppVersion "%s"\n'%version)  # version must be quoted
     f.close()
 
     # Run the Inno Setup Compiler to create a Win32 installer/uninstaller.
     # Override the output specification in <PKG_NAME>.iss to put the executable
     # and the manifest file in the top-level directory.
-    exec_cmd('"%s" /Q /O%s %s.iss' %(INNO, TOP_DIR, PKG_NAME))
+    #if not os.path.exists(INSTALLER_DIR):  os.mkdir(INSTALLER_DIR)
+    exec_cmd('"%s" /Q /O%s %s.iss' %(INNO, INSTALLER_DIR, PKG_NAME), cwd=REFL_DIR)
 
 
 def run_tests():
@@ -272,14 +270,11 @@ def run_tests():
     # Run unittests and doctests using a test script.
     # Running from a test script allows customization of the system path.
     print("Running periodictable tests ...\n")
-    os.chdir(PERIODICTABLE_DIR)
-    exec_cmd("%s test.py"%PYTHON)
+    exec_cmd("%s test.py"%PYTHON, cwd=PERIODICTABLE_DIR)
     print("Running bumps tests ...\n")
-    os.chdir(BUMPS_DIR)
-    exec_cmd("%s test.py"%PYTHON)
+    exec_cmd("%s test.py"%PYTHON, cwd=BUMPS_DIR)
     print("Running refl tests ...\n")
-    os.chdir(REFL_DIR)
-    exec_cmd("%s test.py"%PYTHON)
+    exec_cmd("%s test.py"%PYTHON, cwd=REFL_DIR)
 
 def check_dependencies():
     "check that required packages are installed"
@@ -444,13 +439,14 @@ def check_dependencies():
         print("\nSoftware dependencies have been satisfied")
 
 
-def exec_cmd(command):
+def exec_cmd(command, cwd=None):
     """Runs the specified command in a subprocess."""
 
     shell = os.name != 'nt'
-    print("%s$ %s"%(os.getcwd(),command))
-    result = subprocess.call(command, shell=shell, cwd=os.getcwd())
-    if result != 0: sys.exit(result)
+    print("%s$ %s" % (os.getcwd(), command))
+    result = subprocess.call(command, shell=shell, cwd=cwd)
+    if result != 0:
+        sys.exit(result)
 
 BUILD_POINTS = [
   ('deps', check_dependencies),
