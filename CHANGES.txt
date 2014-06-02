@@ -1,3 +1,9 @@
+2014-05-30 R0.7.6
+=================
+
+* add levenberg-marquardt to available fitting engines
+* load reflpak magnetic .sta files
+
 2014-05-01 R0.7.5
 =================
 
