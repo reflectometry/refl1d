@@ -1,3 +1,23 @@
+# Generate a completely random film on Si to test fitting.
+#
+# For example, the following generates a random film with three layers:  
+#  
+#   refl1d model.py 3 --simrandom --seed=101 --preview
+#
+# A different model will be generated for each different seed.  If 
+# no seed is given, then the random number generator will be seeded 
+# with noise.
+#
+# To test the fitting engine, you will want to use --shake to set
+# a random initial value before starting the fit:
+#
+#   refl1d model.py 3 --simrandom --seed=101 --shake --fit=amoeba
+#
+# You will find that the amoeba fitter does not work well for
+# random models.  Dream performs a bit better, able to recover
+# models of 1-2 layers.
+#
+
 from refl1d.names import *
 
 n = int(sys.argv[1]) if len(sys.argv)>1 else 2
