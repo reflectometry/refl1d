@@ -485,8 +485,9 @@ class Microslabs(object):
                 if i == 0:
                     interfaces.append(sigmas[0][0])
                 else:
-                    # Average the sigmas between blocks which are connected
-                    interfaces.append((sigmas[i-1][1]+sigmas[i][0])/2.)
+                    # Use interface_above between blocks which are connected,
+                    # ignoring interface_below.
+                    interfaces.append(sigmas[i-1][1])
             else: # negative gap should never happen
                 raise ValueError("Overlapping magnetic layers at %d"%i)
             slices.append(B)
