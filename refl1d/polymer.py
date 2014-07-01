@@ -666,10 +666,6 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=0,phi0=None):
         print "lattice size:", layers
     
     return phi
-        
-def interpfield(phired,fullsize):
-    return pchip(np.arange(len(phired)),phired,
-                np.linspace(0,len(phired)-1,num=fullsize))
     
 class ShortCircuitError(Exception):
     ''' Special Error to stop root() before a solution is found.
@@ -749,6 +745,8 @@ def SCFeqns_Cosgrove(phi_z,chi,chi_s,theta,pdi,segments,verbose,p_i,fulloutput=F
     
     # let the solver go negative if it wants, or outside the limits 0..1
     phi_z = abs(phi_z.reshape(-1,order='F')) 
+    if np.any(phi_z>=1):
+        return np.empty_like(phi_z).fill(np.nan)
     phi_z_0 = 1.0 - phi_z
     layers=phi_z.size
     
