@@ -576,21 +576,9 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=0,phi0=None):
     
     sigmainput=theta/r
 
-    default_layers=max(MINLAT,theta/np.sqrt(sigmainput))
-    default_phi0=np.linspace(np.sqrt(sigmainput),0,num=default_layers)
-    default_phi0=default_phi0.reshape(-1,order='F')
-    
-    if phi0 is None:
-        phi0=default_phi0
-        
     if sigmainput>=1:
         raise ValueError('Chains that short cannot be squeezed that high')
     
-    if not all([0.0<=x<1.0 for x in phi0]):
-        print 'phi0=',phi0
-        print [0.0<=x<1.0 for x in phi0]
-        raise ValueError('all phi0 values must be between zero and one')
-        
     if pdi==1:
         SCFeqns=lambda phi: SCFeqns_Cosgrove(phi,chi,chi_s,theta,pdi,r,disp,p_i)
         p_i=False
@@ -606,53 +594,63 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=0,phi0=None):
     
     starttime=time.time()   
     
+    default_layers=round(max(MINLAT,theta/np.sqrt(sigmainput)))
+    default_phi0=np.linspace(np.sqrt(sigmainput),0,num=default_layers)
+    default_phi0=default_phi0.reshape(-1,order='F')
+
     # Check if default guess is a better guess than input
-    if phi0 is not default_phi0:
+    if phi0 is None:
+        phi0=default_phi0
+        layers=default_layers
+        if disp: print '\nno guess passed, using default phi0: layers =',layers,'\n'
+    else:
+        if not all([0.0<=x<1.0 for x in phi0]):
+            print 'phi0=',phi0
+            print [0.0<=x<1.0 for x in phi0]
+            raise ValueError('all phi0 values must be between zero and one')
+        layers=len(phi0)
         eps=SCFeqns(phi0)
         default_eps=SCFeqns(default_phi0)
-        if norm(eps)/norm(default_eps)>1:
+        if (norm(eps))>(norm(default_eps)):
+            if disp: print "\ndefault phi0 is better: layers =",layers,'\n'
             phi0=default_phi0
+        else:
+            if disp: print "\npassed phi0 is better: layers =", layers,'\n'
     
     done=False
     tol=2e-6*theta
     ratio=1.2
     layers=len(phi0)
     growing=False
-    shrinking=False
     
     def callback(x,*args,**kwargs):
         _proto_callback(x,disp,theta,layers,tol,ratio)
             
     
     while not done:
-        if disp: print "Solving full SCF equation set"
+        if disp: print "\nSolving SCF equation set..."
         try:
             result=root(SCFeqns,phi0,method='Krylov',callback=callback,
                     options={'disp':bool(disp),'jac_options':{'method':'gmres'}})
             phi=abs(result.x)
-            if disp:
-                print 'Solver exit code:',result.status,result.message
-                print 'result.success', result.success
-                print 'lattice size', layers
+            if disp: print '\nSolver exit code:',result.status,result.message
         except ShortCircuitError as e:
             phi=e.x
             if disp: print e
             
-        if disp: print 'phi(L)/sum(phi) =',phi[-1] / theta * 1e6,'(ppm)'
-            
+        if disp: print 'phi(L)/sum(phi) =',phi[-1] / theta * 1e6,'(ppm)\n'
+        
         if phi[-1] > tol:
-            if not shrinking:
-                newlayers=max(1,round(layers*(ratio-1)))
-                if disp: print 'Growing undersized lattice by ', newlayers
-                phi0=np.append(phi,np.linspace(phi[-1],0,num=newlayers))
-                growing=1
+            newlayers=max(1,round(layers*(ratio-1)))
+            if disp: print 'Growing undersized lattice by', newlayers
+            phi0=np.append(phi,np.linspace(phi[-1],0,num=newlayers))
+            growing=True
         elif layers>MINLAT and phi[round(layers/ratio)] < tol:
             if growing:
                 done=True
             else:
                 if disp: print 'Shrinking undersized lattice...'
                 phi0=phi[0:round(layers/ratio)]
-                shrinking=1
         else:
             done=True
             phi0=phi
