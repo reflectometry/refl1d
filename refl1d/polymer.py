@@ -522,7 +522,6 @@ from numpy import absolute as abs
 import time
 from numpy.linalg import norm
 from scipy.optimize import  root
-from scipy.interpolate import pchip_interpolate as pchip
 
 MINLAT=35
 
@@ -548,10 +547,13 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None,
             
         # determine number of lattice layers needed
         keep = phi0/theta > 1e-6
-        layers = sum(keep)
+        z_end=z[keep].max()
+        layers=round(z_end/l_lat-0.5)
+        z_end=l_lat*(layers+.5) # match rounding exactly
+        
         # convert initial guess to lattice space
-        z_lat = np.linspace(l_lat/2,z[keep].max(),num=layers) 
-        phi0 = abs(pchip(z[keep],phi0[keep],z_lat))
+        z_lat = np.linspace(l_lat/2,z_end,num=layers)
+        phi0 = np.interp(z_lat,z,phi0)
 
     # solve the self consistent field equations    
     phi_lat=SCFsolve(chi=chi,chi_s=chi_s,pdi=pdi,
@@ -559,13 +561,15 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None,
     if disp: print "lattice segments: ", r
     
     # re-dimensionalize the solution
-    layers=len(phi_lat)
-    keep=z<l_lat*layers
-    z_lat=np.linspace(l_lat/2,(layers-.5)*l_lat,num=layers)
-    phi=pchip(z_lat,phi_lat,z[keep])
-    
+    layers = len(phi_lat)
+    z_end = l_lat*(layers+.5)
+    keep = z<=z_end
+    z_lat = np.linspace(l_lat/2,z_end,num=layers)
+    phi = np.interp(z[keep],z_lat,phi_lat)
+
     # fill in the end with zeros
-    zextra=z[np.logical_not(keep)]
+    zextra = z[np.logical_not(keep)]
+    
     return np.concatenate((phi,np.zeros_like(zextra)))
     
 def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=0,phi0=None):
