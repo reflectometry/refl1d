@@ -38,6 +38,12 @@ def reflmodule_config():
     module = Extension('refl1d.reflmodule', sources=sources)
     return module
 
+from numpy import get_include
+# SCF extension
+def SCFmodule_config():
+    return Extension('refl1d.calc_g_zs_cex', sources=[os.path.join('refl1d','lib','calc_g_zs_cex.c')],
+                     include_dirs=[get_include()])
+                     
 #TODO: write a proper dependency checker for packages which cannot be
 # installed by easy_install
 #dependency_check('numpy>=1.0', 'scipy>=0.6', 'matplotlib>=1.0', 'wx>=2.8.9')
@@ -64,7 +70,7 @@ dist = setup(
         packages = packages,
         #package_data = gui_resources.package_data(),
         scripts = ['bin/refl1d_cli.py','bin/refl1d_gui.py'],
-        ext_modules = [reflmodule_config()],
+        ext_modules = [reflmodule_config(),SCFmodule_config()],
         requires = [], # ['bumps>=0.9'],
         cmdclass = {'build_ext': openmp_build_ext(default=False)},
         )

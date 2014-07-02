@@ -690,7 +690,6 @@ def _proto_callback(x,disp,theta,layers,tol,ratio):
         raise ShortCircuitError('Stopping, lattice too big',x)
 
 from scipy.special import gammaln
-# from reflmodule import _calc_g_zs_inner #TODO: not included yet
 
 lambda_1=np.float64(1.0)/6.0 #always assume cubic lattice for now
 lambda_0=1.0-2.0*lambda_1
@@ -783,6 +782,8 @@ def SCFeqns_Cosgrove(phi_z,chi,chi_s,theta,pdi,segments,verbose,p_i,fulloutput=F
 def calc_phi_z_avg(phi_z):
     return np.convolve(phi_z,lambda_array,'same')
 
+from refl1d.calc_g_zs_cex import _calc_g_zs_inner
+
 def calc_g_zs(g_z,c_i,layers,segments):
     
     # initialize     
@@ -804,14 +805,13 @@ def calc_g_zs(g_z,c_i,layers,segments):
     
     # FASTEST: call some custom C code identical to "SLOW" loop
         # beware, this changes g_zs _in_place!_
-    # _calc_g_zs_inner(g_z,c_i,g_zs,lambda_0,lambda_1,layers,segments)
+    _calc_g_zs_inner(g_z,c_i,g_zs,lambda_0,lambda_1,layers,segments)
     
     # FASTER: use the convolve function to partially vectorize  
-    #TODO: using this until _calc_g_zs_inner is included in reflmodule
-    pg_zs=g_zs[:,0]    
-    for r in range(1,segments):
-        pg_zs=g_z*(c_i[0,segments-r-1]+np.convolve(pg_zs,lambda_array,'same'))
-        g_zs[:,r]=pg_zs
+#    pg_zs=g_zs[:,0]    
+#    for r in range(1,segments):
+#        pg_zs=g_z*(c_i[0,segments-r-1]+np.convolve(pg_zs,lambda_array,'same'))
+#        g_zs[:,r]=pg_zs
     
     # SLOW: loop outright, pulling some slicing out of the innermost loop  
 #    pg_zs=g_zs[:,0] 
