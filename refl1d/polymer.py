@@ -584,8 +584,8 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=0,phi0=None):
         raise ValueError('Chains that short cannot be squeezed that high')
     
     if pdi==1:
-        SCFeqns=lambda phi: SCFeqns_Cosgrove(phi,chi,chi_s,theta,pdi,r,disp,p_i)
         p_i=False
+        SCFeqns=lambda phi: SCFeqns_Cosgrove(phi,chi,chi_s,theta,pdi,r,disp,p_i)
     elif pdi>1:
         try:
             p_i=SZdist(pdi,r)
