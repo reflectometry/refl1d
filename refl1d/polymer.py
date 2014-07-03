@@ -592,6 +592,7 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=0,phi0=None):
             SCFeqns=lambda phi: SCFeqns_deVos(phi,chi,chi_s,theta,pdi,r,disp,p_i)
         except SZerror:
             print 'PDI below threshold of numerical stability. Defaulting to calculations of uniform polymer.'
+            p_i=False
             SCFeqns=lambda phi: SCFeqns_Cosgrove(phi,chi,chi_s,theta,pdi,r,disp,p_i)
     else:
         raise ValueError('Invalid PDI')
