@@ -8,7 +8,7 @@ Analytic Self-consistent Field (SCF) Brush profile [#Zhulina]_ [#Karim]_
 
 Analytical Self-consistent Field (SCF) Mushroom Profile [#Adamuţi-Trache]_
 
-Numerical Self-consistent Field (SCF) End-Tethered Polymer Profile [#Cosgrove]_ [#deVoss]_ [#Sheridan]_
+Numerical Self-consistent Field (SCF) End-Tethered Polymer Profile [#Cosgrove]_ [#deVos]_ [#Sheridan]_
 
 
 .. [#Zhulina] Zhulina, EB; Borisov, OV; Pryamitsyn, VA; Birshtein, TM (1991)
@@ -39,7 +39,7 @@ Numerical Self-consistent Field (SCF) End-Tethered Polymer Profile [#Cosgrove]_ 
 from __future__ import division
 __all__ = ["PolymerBrush","PolymerMushroom","EndTetheredPolymer","VolumeProfile","layer_thickness"]
 import inspect
-import numpy
+import numpy as np
 from numpy import real, imag, exp
 from bumps.parameter import Parameter
 
@@ -122,7 +122,7 @@ class PolymerBrush(Layer):
         L0 = base  # if base < thickness else thickness
         L1 = base+length # if base+length < thickness else thickness-L0
         if length == 0:
-            v = numpy.ones_like(z)
+            v = np.ones_like(z)
         else:
             v = (1 - ((z-L0)/(L1-L0))**2)
         v[z<L0] = 1
@@ -163,7 +163,7 @@ def layer_thickness(z):
     that boundary b[k] = z[k-1] + (z[k-1] - b[k-1]) to compute the
     total length of the layer.
     """
-    return 2 * (numpy.sum(z[-1::-2]) - numpy.sum(z[-2::-2]))
+    return 2 * (np.sum(z[-1::-2]) - np.sum(z[-2::-2]))
 
 class VolumeProfile(Layer):
     """
@@ -283,29 +283,28 @@ def smear(z, P, sigma):
     dz = z[1]-z[0]
     if 3*sigma < dz: return P
     w = int(3*sigma/dz)
-    G = exp(-0.5*(numpy.arange(-w,w+1)*(dz/sigma))**2)
-    full = numpy.hstack( ([P[0]]*w, P, [P[-1]]*w) )
-    return numpy.convolve(full,G/numpy.sum(G),'valid')
+    G = exp(-0.5*(np.arange(-w,w+1)*(dz/sigma))**2)
+    full = np.hstack( ([P[0]]*w, P, [P[-1]]*w) )
+    return np.convolve(full,G/np.sum(G),'valid')
 
 class PolymerMushroom(Layer):
-    """
-        Polymer mushrooms in a solvent (volume profile)
+    """ 
+    Polymer mushrooms in a solvent (volume profile)
 
-        Parameters:
+    Parameters:
 
-        *z* the SLD depth array
-        *delta* interaction parameter
-        *vf* not quite volume fraction but pretty close
-        *sigma* convolution roughness (A)
-        *base* a small plateau just long enough to capture the roughness 
-        
-        Using analytical SCF methods for gaussian chains, which are then scaled by 
-        the radius of gyration of the equivalent free polymer as an approximation to
-        results of renormalization group methods [#Adamuţi-Trache]
+    *z* the SLD depth array
+    *delta* interaction parameter
+    *vf* not quite volume fraction but pretty close
+    *sigma* convolution roughness (A)
+    
+    Using analytical SCF methods for gaussian chains, which are scaled
+    by the radius of gyration of the equivalent free polymer as an 
+    approximation to results of renormalization group methods.[#Adamuţi-Trache]
 
-    .. [#Adamuţi-Trache] Adamuţi-Trache, M., McMullen, W. E. & Douglas, J. F. 
-        Segmental concentration profiles of end-tethered polymers with excluded-
-        volume and surface interactions. J. Chem. Phys. 105, 4798 (1996).
+.. [#Adamuţi-Trache] Adamuţi-Trache, M., McMullen, W. E. & Douglas, J. F. 
+    Segmental concentration profiles of end-tethered polymers with 
+    excluded-volume and surface interactions. J. Chem. Phys. 105, 4798 (1996).
     """
     
     def __init__(self, thickness=0, interface=0, name="shroom",
@@ -356,39 +355,20 @@ class PolymerMushroom(Layer):
         phi = self.profile(Pz)
         Pw,phi = util.merge_ends(Pw, phi, tol=1e-3)
         P = M*phi + S*(1-phi)
-        Pr, Pi = numpy.real(P), numpy.imag(P)
+        Pr, Pi = np.real(P), np.imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
 
 from numpy import sqrt, pi, hstack, ones_like
 from scipy.special import erfc, erfcx
 
-thresh=1e-10
 def MushroomProfile(z, delta=0.1, vf=1.0, sigma=1.0):
-    """
-        Polymer mushrooms in a solvent (volume profile)
-
-        Parameters:
-
-        *z* the SLD depth array
-        *delta* interaction parameter
-        *vf* not quite volume fraction but pretty close
-        *sigma* convolution roughness (A)
-        *base* a small plateau just long enough to capture the roughness 
-        
-        Using analytical SCF methods for gaussian chains, which are then scaled by 
-        the radius of gyration of the equivalent free polymer as an approximation to
-        results of renormalization group methods [#Adamuţi-Trache]
-
-    .. [#Adamuţi-Trache] Adamuţi-Trache, M., McMullen, W. E. & Douglas, J. F. 
-        Segmental concentration profiles of end-tethered polymers with excluded-
-        volume and surface interactions. J. Chem. Phys. 105, 4798 (1996).
-    """
+    thickness = layer_thickness(z)
+    thresh=1e-10
     
-    thickness=layer_thickness(z)
-    
-    base=3.0*sigma # tail is erf, capture 95% of the mixing
+    base = 3.0*sigma # tail is erf, capture 95% of the mixing
     Rg = (thickness-base) / 4.0 # profile ends by ~4 RG, so we can tether these
-    x = (z[(z-base)>=0.0] - base) / Rg
+    keep = (z-base) >= 0.0    
+    x = (z[keep] - base) / Rg
     '''
     mushroom_profile_math has a divide by zero problem at delta=0.
     Fix it by weighted average of the profile above and below a threshold.
@@ -396,53 +376,62 @@ def MushroomProfile(z, delta=0.1, vf=1.0, sigma=1.0):
     floating point error until ~+-1e-14.
     '''
 
-    if abs(delta)>thresh:
-        mushroom_profile = mushroom_profile_math(x,delta,vf)
+    if abs(delta) > thresh:
+        mushroom_profile = mushroom_math(x,delta,vf)
     else: # we should RARELY get here
-        scale=(delta+thresh)/2.0/thresh             
-        mushroom_profile=scale*mushroom_profile_math(x,thresh,vf)        
-        mushroom_profile=mushroom_profile+(1.0-scale)*mushroom_profile_math(x,-thresh,vf)  
+        scale = (delta+thresh)/2.0/thresh             
+        mushroom_profile = scale*mushroom_math(x,thresh,vf)        
+        mushroom_profile = (mushroom_profile +
+                            (1.0-scale)*mushroom_math(x,-thresh,vf)) 
 
     try:
-        base_profile=ones_like(z[(z-base)<0.0])*mushroom_profile[0] # make the base connect with the profile
+        # make the base connect with the profile
+        zextra = z[np.logical_not(keep)]
+        base_profile = ones_like(zextra)*mushroom_profile[0]
     except IndexError:
-        base_profile=ones_like(z)*mushroom_profile[0]
+        base_profile = ones_like(z)*mushroom_profile[0]
         
-    return hstack((base_profile,mushroom_profile)) # because appending arrays is hard
-    
-def mushroom_profile_math(x,delta=.1,vf=.1):
+    return hstack((base_profile, mushroom_profile))
+
+sqrt_pi=sqrt(pi)
+def mushroom_math(x,delta=.1,vf=.1):
     '''
     new method, rewrite for numerical stability at high delta
-    delta==0 causes divide by zero error!! Compensate elsewhere.
+    delta=0 causes divide by zero error!! Compensate elsewhere.
     http://ab-initio.mit.edu/wiki/index.php/Faddeeva_Package
     '''
     
-    return ((erfc(x/2.0)- \
-        erfcx(2.0*(delta+x/4.0))*exp(-((x/2.0)**2))- \
-        erfc(x)+ \
-        ((1.0-4.0*delta*(x+2.0*delta))*erfcx(2.0*(delta+x/2.0))+ \
-        4.0*delta/sqrt(pi))*exp(-(x**2)) \
-        )*vf/(2.0 * delta * erfcx(2.0*delta)))
+    return (
+            (
+             erfc(x/2.0) 
+             -erfcx(2.0*(delta+x/4.0))*exp(-((x/2.0)**2)) 
+             -erfc(x)
+             + (
+                (1.0-4.0*delta*(x+2.0*delta))*erfcx(2.0*(delta+x/2.0))
+                + 4.0*delta/sqrt_pi
+               ) * exp(-(x**2))
+            ) * vf/(2.0 * delta * erfcx(2.0*delta))
+           )
 
 class EndTetheredPolymer(Layer):
     """
-        Polymer end-tethered to an interface in a solvent
+    Polymer end-tethered to an interface in a solvent
 
-        Previous layer should not have roughness! use a spline to simulate it.
-        
-        Parameters:
+    Previous layer should not have roughness! use a spline to simulate it.
+    
+    Parameters:
 
-        *z* the SLD depth array
-        *chi* solvent interaction parameter
-        *chi_s* surface interaction parameter
-        *h_dry* thickness of the neat polymer layer
-        *l_lat* real length per lattice site
-        *mn* Number average molecular weight
-        *m_seg* real mass per lattice segment
-        *pdi* Dispersity (Polydispersity index)
-        *thickness* Slab thickness should be greater than the contour length
-                of the polymer
-        *interface* should be zero
+    *z* the SLD depth array
+    *chi* solvent interaction parameter
+    *chi_s* surface interaction parameter
+    *h_dry* thickness of the neat polymer layer
+    *l_lat* real length per lattice site
+    *mn* Number average molecular weight
+    *m_seg* real mass per lattice segment
+    *pdi* Dispersity (Polydispersity index)
+    *thickness* Slab thickness should be greater than the contour length
+            of the polymer
+    *interface* should be zero
     
     The materials can either use the scattering length density directly,
     such as PDMS = SLD(0.063, 0.00006) or they can use chemical composition
@@ -514,16 +503,15 @@ class EndTetheredPolymer(Layer):
         phi = self.profile(Pz)
         Pw,phi = util.merge_ends(Pw, phi, tol=1e-3)
         P = M*phi + S*(1-phi)
-        Pr, Pi = numpy.real(P), numpy.imag(P)
+        Pr, Pi = np.real(P), np.imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
 
-import numpy as np
 from numpy import absolute as abs
 import time
 from numpy.linalg import norm
 from scipy.optimize import  root
 
-MINLAT=35
+MINLAT = 35
 
 def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None, 
                m_seg=1, pdi=1, phi0=None, disp=None):
@@ -533,30 +521,30 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None,
     '''
     
     # calculate lattice space parameters    
-    theta=h_dry/l_lat
-    r=int(mn/m_seg-.5)
+    theta = h_dry/l_lat
+    r = int(mn/m_seg-.5)
     
     if phi0 is not None:
         # squeeze or stretch our initial guess to match the input space
-        phi0_len=len(phi0)
-        z_len=len(z)
-        if phi0_len<z_len:
-            phi0=np.concatenate((phi0,np.zeros(z_len-phi0_len)))
-        elif phi0_len>z_len:
-            phi0=phi0[0:z_len]
+        phi0_len = len(phi0)
+        z_len = len(z)
+        if phi0_len < z_len:
+            phi0 = hstack((phi0,np.zeros(z_len-phi0_len)))
+        elif phi0_len > z_len:
+            phi0 = phi0[0:z_len]
             
         # determine number of lattice layers needed
         keep = phi0/theta > 1e-6
-        z_end=z[keep].max()
-        layers=round(z_end/l_lat-0.5)
-        z_end=l_lat*(layers+.5) # match rounding exactly
+        z_end = z[keep].max()
+        layers = round(z_end/l_lat-0.5)
+        z_end = l_lat*(layers+.5) # match rounding exactly
         
         # convert initial guess to lattice space
         z_lat = np.linspace(l_lat/2,z_end,num=layers)
         phi0 = np.interp(z_lat,z,phi0)
 
     # solve the self consistent field equations    
-    phi_lat=SCFsolve(chi=chi,chi_s=chi_s,pdi=pdi,
+    phi_lat = SCFsolve(chi=chi,chi_s=chi_s,pdi=pdi,
                      theta=theta,r=r,disp=disp,phi0=phi0)
     if disp: print "lattice segments: ", r
     
@@ -570,99 +558,98 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None,
     # fill in the end with zeros
     zextra = z[np.logical_not(keep)]
     
-    return np.concatenate((phi,np.zeros_like(zextra)))
+    return hstack((phi,np.zeros_like(zextra)))
     
-def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=0,phi0=None):
+def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
     ''' Solve SCF equations using an initial guess and lattice parameters
     
     More doctext to come.
     '''
     
-    sigmainput=theta/r
+    sigmainput = theta/r
 
-    if sigmainput>=1:
+    if sigmainput >= 1:
         raise ValueError('Chains that short cannot be squeezed that high')
     
     if pdi==1:
-        p_i=False
-        SCFeqns=lambda phi: SCFeqns_Cosgrove(phi,chi,chi_s,theta,pdi,r,disp,p_i)
+        def SCFeqns(phi):
+            return SCFeqns_Cosgrove(phi,chi,chi_s,theta,pdi,r)
     elif pdi>1:
         try:
-            p_i=SZdist(pdi,r)
-            SCFeqns=lambda phi: SCFeqns_deVos(phi,chi,chi_s,theta,pdi,r,disp,p_i)
+            p_i = SZdist(pdi,r)
+            def SCFeqns(phi):
+                return SCFeqns_deVos(phi,chi,chi_s,theta,pdi,r,p_i)
         except SZerror:
-            print 'PDI below threshold of numerical stability. Defaulting to calculations of uniform polymer.'
-            p_i=False
-            SCFeqns=lambda phi: SCFeqns_Cosgrove(phi,chi,chi_s,theta,pdi,r,disp,p_i)
+            if disp: print 'PDI below threshold of numerical stability. Defaulting to calculations of uniform polymer.'
+            def SCFeqns(phi):
+                return SCFeqns_Cosgrove(phi,chi,chi_s,theta,pdi,r)
     else:
         raise ValueError('Invalid PDI')
     
-    starttime=time.time()   
+    starttime = time.time()   
     
-    default_layers=round(max(MINLAT,theta/np.sqrt(sigmainput)))
-    default_phi0=np.linspace(np.sqrt(sigmainput),0,num=default_layers)
-    default_phi0=default_phi0.reshape(-1,order='F')
+    default_layers = round(max(MINLAT,theta/sqrt(sigmainput)))
+    default_phi0 = np.linspace(sqrt(sigmainput),0,num=default_layers)
+    default_phi0 = default_phi0.ravel()
 
     # Check if default guess is a better guess than input
     if phi0 is None:
-        phi0=default_phi0
-        layers=default_layers
+        phi0 = default_phi0
+        layers = default_layers
         if disp: print '\nno guess passed, using default phi0: layers =',layers,'\n'
     else:
-        if not all([0.0<=x<1.0 for x in phi0]):
-            print 'phi0=',phi0
-            print [0.0<=x<1.0 for x in phi0]
-            raise ValueError('all phi0 values must be between zero and one')
-        layers=len(phi0)
-        eps=SCFeqns(phi0)
-        default_eps=SCFeqns(default_phi0)
-        if (norm(eps))>(norm(default_eps)):
-            if disp: print "\ndefault phi0 is better: layers =",layers,'\n'
-            phi0=default_phi0
+        phi0 = abs(phi0)
+        phi0[phi0>1.0] = 1.0
+        layers = len(phi0)
+        eps = SCFeqns(phi0)
+        default_eps = SCFeqns(default_phi0)
+        if norm(eps)/sqrt(layers) > norm(default_eps)/sqrt(default_layers):
+            if disp: print "\ndefault phi0 is better: layers =",default_layers,'\n'
+            phi0 = default_phi0
         else:
             if disp: print "\npassed phi0 is better: layers =", layers,'\n'
     
-    done=False
-    tol=2e-6*theta
-    ratio=1.2
-    layers=len(phi0)
-    growing=False
+    done = False
+    tol = 2e-6*theta
+    ratio = 1.2
+    layers = len(phi0)
+    growing = False
     
-    def callback(x,*args,**kwargs):
-        _proto_callback(x,disp,theta,layers,tol,ratio)
-            
+    # apparently scope rules dictate that we can change 'layers' without a
+    # redefinition of this callback, so i got rid of the one in the while block    
+    def callback(x,*args,**kwargs): 
+        _proto_callback(x,disp,layers,tol,ratio)
     
     while not done:
         if disp: print "\nSolving SCF equation set..."
         try:
-            result=root(SCFeqns,phi0,method='Krylov',callback=callback,
-                    options={'disp':bool(disp),'jac_options':{'method':'gmres'}})
-            phi=abs(result.x)
+            result = root(SCFeqns,phi0,method='Krylov',callback=callback,
+                    options={'disp':bool(disp),
+                             'jac_options':{'method':'gmres'}})
+            phi = abs(result.x)
             if disp: print '\nSolver exit code:',result.status,result.message
         except ShortCircuitError as e:
-            phi=e.x
+            phi = e.x
             if disp: print e
             
         if disp: print 'phi(L)/sum(phi) =',phi[-1] / theta * 1e6,'(ppm)\n'
         
         if phi[-1] > tol:
-            newlayers=max(1,round(layers*(ratio-1)))
+            newlayers = max(1,round(layers*(ratio-1)))
             if disp: print 'Growing undersized lattice by', newlayers
-            phi0=np.append(phi,np.linspace(phi[-1],0,num=newlayers))
-            growing=True
-        elif layers>MINLAT and phi[round(layers/ratio)] < tol:
+            phi0 = np.append(phi,np.linspace(phi[-1],0,num=newlayers))
+            growing = True
+        elif layers > MINLAT and phi[round(layers/ratio)] < tol:
             if growing:
-                done=True
+                done = True
             else:
                 if disp: print 'Shrinking undersized lattice...'
-                phi0=phi[0:round(layers/ratio)]
+                phi0 = phi[0:round(layers/ratio)]
         else:
-            done=True
-            phi0=phi
+            done = True
+            phi0 = phi
             
-        layers=len(phi0)
-        def callback(x,*args,**kwargs):
-            _proto_callback(x,disp,theta,layers,tol,ratio) 
+        layers = len(phi0)
             
     if disp:
         print "execution time:", round(time.time()-starttime,3), "s"
@@ -676,112 +663,119 @@ class ShortCircuitError(Exception):
     '''
     def __init__(self, value,x):
          self.value = value
-         self.x=x
+         self.x = x
     def __str__(self):
          return repr(self.value)
          
-def _proto_callback(x,disp,theta,layers,tol,ratio):
+def _proto_callback(x,disp,layers,tol,ratio):
     ''' Special callback to stop root() before solution is found.
     
     '''
     if disp: print "Iterating..."
     if x[-1] > 4*tol:
         raise ShortCircuitError('Stopping, lattice too small',x)
-    elif layers>MINLAT and x[min(layers-1,round(layers/ratio))] < 4*tol:
+    elif layers > MINLAT and x[min(layers-1,round(layers/ratio))] < 4*tol:
         raise ShortCircuitError('Stopping, lattice too big',x)
 
 from scipy.special import gammaln
 
-lambda_1=np.float64(1.0)/6.0 #always assume cubic lattice for now
-lambda_0=1.0-2.0*lambda_1
-lambda_array=np.array([lambda_1,lambda_0,lambda_1])
+lambda_1 = np.float64(1.0)/6.0 #always assume cubic lattice for now
+lambda_0 = 1.0-2.0*lambda_1
+lambda_array = np.array([lambda_1,lambda_0,lambda_1])
 def _fzeros(*args):
     return np.zeros(args,dtype=np.float64,order='F')
 
-def SCFeqns_deVos(phi_z,chi,chi_s,theta,pdi,navgsegments,verbose,p_i,fulloutput=False):
+def SCFeqns_deVos(phi_z,chi,chi_s,theta,pdi,navgsegments,p_i,
+                  disp=False,fulloutput=False):
     ''' System of SCF equation for uniform terminally attached polymers.
     
         Formatted for input to a nonlinar minimizer or solver.
     '''
     
     # let the solver go negative if it wants, or outside the limits 0..1
-    phi_z = abs(phi_z.reshape(-1,order='F'))
+    phi_z = abs(phi_z.ravel())
     if np.any(phi_z>=1):
         return np.empty_like(phi_z).fill(np.nan)
     phi_z_0 = 1.0 - phi_z
     
-    layers=phi_z.size
-    cutoff=p_i.size
-    sigma=theta/navgsegments
+    layers = phi_z.size
+    cutoff = p_i.size
+    sigma = theta/navgsegments
     
     if pdi <= 1.0:
         raise ValueError('de Vos nSCF equations only valid for disperse polymer')
     
     # calculate all needed quantities for new g_z
-    delta=_fzeros(layers)
-    delta[0]=1.0
-    phi_z_avg=calc_phi_z_avg(phi_z)
-    phi_z_0_avg=calc_phi_z_avg(phi_z_0)
+    delta = _fzeros(layers)
+    delta[0] = 1.0
+    phi_z_avg = calc_phi_z_avg(phi_z)
+    phi_z_0_avg = calc_phi_z_avg(phi_z_0)
     
-    # calculate new g_z and difference given all inputs
-    g_z=phi_z_0*np.exp(chi*(phi_z_avg-phi_z_0_avg)+chi_s*delta)
-    u=-np.log(g_z)
-    uavg=np.mean(u)
-    g_z_norm=g_z*np.exp(uavg)
+    # calculate new g_z
+    g_z = phi_z_0*exp(chi*(phi_z_avg-phi_z_0_avg) + chi_s*delta)
+    
+    # normalize g_z for numerical stability
+    u = -np.log(g_z)
+    uavg = np.mean(u)
+    g_z_norm = g_z*exp(uavg)
     
     # calculate needed quantites for new phi_z
     g_zs_ta_norm = calc_g_zs(g_z_norm,1,layers,cutoff)
-    c_i_norm=sigma*p_i/np.sum(g_zs_ta_norm,axis=0)
+    c_i_norm = sigma*p_i/np.sum(g_zs_ta_norm,axis=0)
     g_zs_free_ngts_norm = calc_g_zs(g_z_norm,c_i_norm,layers,cutoff)
     
     phi_z_new = calc_phi_z(g_zs_ta_norm,g_zs_free_ngts_norm,g_z_norm)
-    eps_z=phi_z-phi_z_new
+    eps_z = phi_z-phi_z_new
     
     return eps_z
     
-def SCFeqns_Cosgrove(phi_z,chi,chi_s,theta,pdi,segments,verbose,p_i,fulloutput=False):
+def SCFeqns_Cosgrove(phi_z,chi,chi_s,theta,pdi,segments,
+                     disp=False,fulloutput=False):
     ''' System of SCF equation for uniform terminally attached polymers.
     
         Formatted for input to a nonlinar minimizer or solver.
     '''
     
     # let the solver go negative if it wants, or outside the limits 0..1
-    phi_z = abs(phi_z.reshape(-1,order='F')) 
+    phi_z = abs(phi_z.ravel()) 
     if np.any(phi_z>=1):
         return np.empty_like(phi_z).fill(np.nan)
     phi_z_0 = 1.0 - phi_z
-    layers=phi_z.size
+    layers = phi_z.size
     
-    if pdi != 1.0 and verbose:
+    if pdi != 1.0 and disp:
         print "Cosgrove nSCF assume PDI == 1"
         
     # calculate all needed quantities for new g_z
-    delta=_fzeros(layers)
-    delta[0]=1.0
-    phi_z_avg=calc_phi_z_avg(phi_z)
-    phi_z_0_avg=calc_phi_z_avg(phi_z_0)
+    delta = _fzeros(layers)
+    delta[0] = 1.0
+    phi_z_avg = calc_phi_z_avg(phi_z)
+    phi_z_0_avg = calc_phi_z_avg(phi_z_0)
     
     # calculate new g_z and difference given all inputs
-    g_z=phi_z_0*np.exp(chi*(phi_z_avg-phi_z_0_avg)+chi_s*delta)
-    u=-np.log(g_z)
-    uavg=np.mean(u)
-    g_z_norm=g_z*np.exp(uavg)
+    g_z = phi_z_0*exp(chi*(phi_z_avg-phi_z_0_avg)+chi_s*delta)
+    u = -np.log(g_z)
+    uavg = np.mean(u)
+    g_z_norm = g_z*exp(uavg)
     
     # calculate needed quantites for new phi_z
     g_ta_norm = calc_g_zs(g_z_norm,1,layers,segments)
-    sigma=theta/segments
-    p_i=_fzeros(1,segments)
-    p_i[0,-1]=1
-    c_i_norm=sigma*p_i/np.sum(g_ta_norm[:,segments-1])
+    sigma = theta/segments
+    p_i = _fzeros(1,segments)
+    p_i[0,-1] = 1
+    c_i_norm = sigma*p_i/np.sum(g_ta_norm[:,segments-1])
     g_free_norm = calc_g_zs(g_z_norm,c_i_norm,layers,segments)
     
     phi_z_new = calc_phi_z(g_ta_norm,g_free_norm,g_z_norm)
-    eps_z=phi_z-phi_z_new
+    eps_z = phi_z-phi_z_new
     
     return eps_z
 
 def calc_phi_z_avg(phi_z):
     return np.convolve(phi_z,lambda_array,'same')
+    
+def calc_phi_z(g_ta,g_free,g_z):
+    return np.sum(g_ta*np.fliplr(g_free),axis=1)/g_z
 
 from refl1d.calc_g_zs_cex import _calc_g_zs_inner
 
@@ -793,14 +787,14 @@ def calc_g_zs(g_z,c_i,layers,segments):
     
     # choose special case 
     
-    if np.size(c_i)==1:
+    if np.size(c_i) == 1:
         # terminally attached chains
-        c_i=_fzeros(1,segments)
-        g_zs[:,0]=_fzeros(layers)
-        g_zs[0,0]=g_z[0]
+        c_i = _fzeros(1,segments)
+        g_zs[:,0] = _fzeros(layers)
+        g_zs[0,0] = g_z[0]
     else:
         # free chains
-        g_zs[:,0]=c_i[0,segments-1]*g_z
+        g_zs[:,0] = c_i[0,segments-1]*g_z
     
     # inner loops
     
@@ -828,9 +822,6 @@ def calc_g_zs(g_z,c_i,layers,segments):
                
     return g_zs
     
-def calc_phi_z(g_ta,g_free,g_z):
-    return np.sum(g_ta*np.fliplr(g_free),axis=1)/g_z
-    
 def SZdist(pdi,nn):
     ''' Calculate Shultz-Zimm distribution from PDI and number average DP
     
@@ -839,24 +830,27 @@ def SZdist(pdi,nn):
     which can be caught to default to an exact uniform calculation.
     '''
     
-    if pdi<=1.0:
+    if pdi <= 1.0:
         raise ValueError('Invalid PDI')
-    x=1.0/(pdi-1.0)
-    cutoff=9000
+        
+    x = 1.0/(pdi-1.0)
+    cutoff = 9000
     
     ni = np.arange(1,cutoff+1,dtype=np.float64)
-    r=ni/nn
-    p_ni=np.exp(np.log(x/ni)-gammaln(x+1)+x*r*(np.log(x*r)/r-1))
+    r = ni/nn
+    p_ni = exp(
+                  np.log(x/ni) - gammaln(x+1) + x*r*(np.log(x*r)/r-1)
+                  )
     
     if any(p_ni>=1):
         raise SZerror('Schultz-Zimm calculation blew up')
     
-    mysums=np.cumsum(p_ni)
-    keep=np.logical_and(
-        np.logical_or(np.array(range(cutoff))<nn , p_ni >= 1.0e-6),
-        mysums<1)
+    mysums = np.cumsum(p_ni)
+    keep = np.logical_and(
+        np.logical_or(np.array(range(cutoff)) < nn, p_ni >= 1.0e-6),
+        mysums < 1)
         
-    return p_ni[keep].reshape(1,-1,order='F')
+    return p_ni[keep].reshape(1,-1)
     
 class SZerror(Exception):
      def __init__(self, value):
