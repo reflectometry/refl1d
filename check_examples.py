@@ -48,7 +48,7 @@ examples = [
     "polymer/tethered-web.py",
     "polymer/freeform.py",
     "profile/model.py",
-    "spinvalve/n101G.py",
+    "spinvalve/n101G-web.py",
     "spinvalve/n101G.sta",
     "staj/De2_VATR.py",
     "superlattice/freeform-web.py",
