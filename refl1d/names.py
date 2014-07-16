@@ -17,7 +17,7 @@ from periodictable import elements, formula
 from bumps.parameter import Parameter, FreeVariables
 from bumps import pmath
 from bumps.pdfwrapper import PDF
-from bumps.fitproblem import preview, fit, mesh, FitProblem
+from bumps.fitproblem import FitProblem
 
 # Deprecated
 from bumps.fitproblem import MultiFitProblem
