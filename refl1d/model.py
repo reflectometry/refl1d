@@ -21,6 +21,7 @@ scattering density may vary with depth in the layer.
 # => smaller roughness
 # => thickness depends on where the beam spot hits the sample
 # Xray thickness variance = neutron roughness - xray roughness
+from refl1d.material import SLD
 
 
 __all__ = ['Repeat','Slab','Stack','Layer']
@@ -34,6 +35,7 @@ import periodictable.xsf as xsf
 import periodictable.nsf as nsf
 
 from bumps.parameter import Parameter as Par, IntegerParameter as IntPar, Function
+from bumps.gui import signal
 
 from . import material
 
@@ -455,7 +457,12 @@ class Stack(Layer):
     def __delitem__(self, idx):
         stack,idx = self._lookup(idx)
         # works the same for slices and individual indices
-        del stack._layers[idx]
+        if(len(stack)>2 and (idx>=0 and idx < len(stack))):
+            del stack._layers[idx]
+        else:
+            import logging;logging.error("You cannot remove this layer. You need at least 2 layers!")
+            signal.log_message("You cannot remove this layer. You need at least 2 layers!")
+
 
     def insert(self, idx, other):
         """
@@ -463,6 +470,7 @@ class Stack(Layer):
         another stack, the stack will be expanded to accommodate.  You
         cannot make nested stacks.
         """
+
         stack,idx = self._lookup(idx)
         if isinstance(other,Stack):
             for i,L in enumerate(other._layers):

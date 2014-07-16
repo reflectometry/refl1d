@@ -36,8 +36,8 @@ class ThicknessInteractor(BaseInteractor):
                      pickradius=pick_radius,
                      visible=self._show_boundaries,
                      )
-        self.markers = [ax.axvline(x=z, **style)
-                        for z in self.profile.boundary[1:-1]]
+        self.markers = [ax.axvline(x=z, zorder=i, **style)
+                        for i, z in enumerate(self.profile.boundary[1:-1])]
 
         fittable = [self.profile.sample_layer(idx).thickness.fittable
                     for idx,_ in enumerate(self.markers)]

@@ -5,6 +5,7 @@ interface  interactor.
 from .config import interface_color, pick_radius
 from .interactor import BaseInteractor
 from .util import clip, setpar
+import numpy
 
 MAX_ROUGH=3
 
@@ -24,7 +25,7 @@ class InterfaceInteractor(BaseInteractor):
                      color      = interface_color,
                      alpha      = 0.6,
                      pickradius = pick_radius,
-                     zorder     = 8, #Prefer this to other lines
+                     zorder     = numpy.inf, #Prefer this to other lines
                      visible    = False,
                      )
         self.markers=[ax.plot([0],[0.05], label=label, **style)[0]

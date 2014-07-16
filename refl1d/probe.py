@@ -1027,7 +1027,7 @@ class QProbe(Probe):
         self.back_absorption = Parameter.default(back_absorption,
                                                  name="back_absorption"+qualifier,
                                                  limits=[0,1])
-        self.theta_offset = Constant(0,name="theta_offset"+qualifier)
+        self.theta_offset = Constant(0, name="theta_offset"+qualifier)
 
         self.back_reflectivity = back_reflectivity
 

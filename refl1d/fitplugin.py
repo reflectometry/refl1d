@@ -38,7 +38,9 @@ def load_model(filename):
         return None
 
 def new_model():
-    stack = refl.silicon(0,10) | refl.air
+    silicon = refl.SLD('Si', 2.07)
+    air = refl.SLD('air', 0)
+    stack = silicon(0, 10) | air
     instrument = refl.NCNR.NG1()
     probe = instrument.probe(T=numpy.linspace(0,5,200),
                              Tlo=0.2, slits_at_Tlo=2)

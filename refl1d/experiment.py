@@ -286,18 +286,35 @@ class Experiment(ExperimentBase):
         self.sample = sample
         self._substrate=self.sample[0].material
         self._surface=self.sample[-1].material
-        self.probe = probe
         self.roughness_limit = roughness_limit
         if dz is None:
             dz = nice((2*pi/probe.Q.max())/10)
             if dz > 5: dz = 5
-        self.dz = dz
+        # TODO: probe and dz are mutually dependent
+        self._slabs = profile.Microslabs(1, dz=dz)
+        self.probe = probe
         self.dA = dA
         self.step_interfaces = step_interfaces
-        self._slabs = profile.Microslabs(len(probe.unique_L) if probe.unique_L is not None else 1, dz=dz)
-        self._probe_cache = material.ProbeCache(probe)
         self._cache = {}  # Cache calculated profiles/reflectivities
         self._name = name
+
+    @property
+    def probe(self):
+        return self._probe
+
+    @probe.setter
+    def probe(self, probe):
+        self._probe = probe
+        self._probe_cache = material.ProbeCache(probe)
+        self._slabs.nprobe = len(probe.unique_L) if probe.unique_L is not None else 1
+
+    @property
+    def dz(self):
+        return self._slabs.dz
+
+    @dz.setter
+    def dz(self, value):
+        self._slabs.dz = value
 
     @property
     def ismagnetic(self):

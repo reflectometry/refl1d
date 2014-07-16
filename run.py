@@ -48,7 +48,7 @@ def prepare_environment():
     from distutils.util import get_platform
     platform = '.%s-%s'%(get_platform(),sys.version[:3])
 
-    sys.dont_write_bytecode = True
+    #sys.dont_write_bytecode = True
 
     # Make sure that we have a private version of mplconfig
     mplconfig = os.path.join(os.getcwd(), '.mplconfig')
