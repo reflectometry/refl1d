@@ -377,7 +377,7 @@ class MyValidator(wx.PyValidator):
 
 class LayerDialog(wx.Dialog):
     '''
-    This is a class in which the user can enter, edit, and remove layers from the profile.
+    Creates a dialog in which the user can edit or insert a layer into the current stack.
     '''
     def __init__(self,
                  parent=None,
@@ -465,6 +465,10 @@ class LayerDialog(wx.Dialog):
         self.Fit()
 
     def __GetSlabObject(self):
+        """
+        :returns the Slab Object that the should be edited or inserted into the layer.
+
+        """
         # Strings values of the parameters
         namestr = str(self.materialName.GetValue())
         rhoft = float(self.rho.GetValue())
@@ -483,6 +487,12 @@ class LayerDialog(wx.Dialog):
 
     # Events for the buttons
     def OnDelLayer(self, event): #TODO debug: Sometimes you get an index out of bounds error
+        """
+        Deletes the layer the user clicked on.
+        Cannot delete layer when there are only two inside of the stack.
+        :param event:
+        :return:
+        """
         del self.profile.experiment.sample[self.profile.layer_num]
         #if we are on the last layer, decrement layer_num
         if self.profile.layer_num == len(self.profile.experiment.sample):
@@ -490,20 +500,42 @@ class LayerDialog(wx.Dialog):
         self.ResetView()
 
     def OnInsertLayer(self, event):
+        """
+        Inserts a layer at the index before the mouse click in the stack.
+        Cannot insert a layer before the substrate (first layer)
+        :param event:
+        :return:
+        """
         slabObject = self.__GetSlabObject()
         self.profile.experiment.sample.insert(self.profile.layer_num, slabObject)
         self.ResetView()
         self.Destroy()
 
     def OnCancel(self, event):
+        """
+        Exit the Layer Dialog.
+        Dont do anything.
+        :param event:
+        :return:
+        """
         self.Destroy()
 
     def OnEditLayer(self, event):
+        """
+        Get the values of the current Slab object and place them into the parameters
+        :param event:
+        :return:
+        """
         slabObject = self.__GetSlabObject()
         self.profile.experiment.sample[self.profile.layer_num] = slabObject
         self.ResetView()
 
     def ResetView(self):
+        """
+        Reset the profile view so that changes take effect
+        immediately after an event (i.e. delete, insert, or edit layer)
+        :return:
+        """
         self.profile._find_layer_boundaries()
         self.profile.thickness_interactor.reset_markers()
         self.profile.update()
@@ -521,6 +553,12 @@ REFL_FILES = "Refl files (*.refl)|*.refl"
 
 
 class ExperimentDialog(wx.Dialog):
+    """
+    Create a Dialog for editing the current experiment and adding data.
+     The user can edit the roughness limit for layers, the dz, the dA, and enable/disable
+     step interfaces.
+     The user can also edit the dRoR and the dQoQ
+    """
     def __init__(self,
                  parent=None,
                  id=wx.ID_ANY,
@@ -530,7 +568,6 @@ class ExperimentDialog(wx.Dialog):
                  style=wx.DEFAULT_DIALOG_STYLE,
                  experiment=None,
                  profile=None):
-
         # Defualt Values
         self.experiment = experiment
         self.profile = profile
@@ -538,40 +575,56 @@ class ExperimentDialog(wx.Dialog):
         dz = self.experiment.dz
         dA = self.experiment.dA
         step_interfaces = "Yes" if self.experiment.step_interfaces else "No"
-        currentFile = os.getcwd()
+        try:
+            dRoR = self.experiment.probe.dRoR
+        except AttributeError:
+            dRoR = 0.
+        try:
+            dQoQ = self.experiment.probe.dQoQ
+        except AttributeError:
+            dQoQ = 0.
+        self.currentFile = os.getcwd()
 
         #  Create a dialog
         wx.Dialog.__init__(self, parent, id, title, pos, size, style)
 
         #sizers
         self.wholeSizer = wx.BoxSizer(wx.VERTICAL)
-        self.contentSizer = wx.GridBagSizer(4, 2)
+        self.contentSizer = wx.GridBagSizer(6, 2)
         self.buttonSizer = wx.StdDialogButtonSizer()
 
         self.contentSizer.Add(wx.StaticText(self, wx.ID_ANY, " File Entry: "), (0, 0), (1, 1))
-        self.fileText = wx.TextCtrl(self, wx.ID_ANY, currentFile, size=(299, -1))
+        self.fileText = wx.TextCtrl(self, wx.ID_ANY, self.currentFile, size=(299, -1))
         self.contentSizer.Add(self.fileText, (0, 1), (1, 1))
         open_btn = wx.Button(self, wx.ID_OPEN, "Open", size=(-1, -1))
         self.contentSizer.Add(open_btn, (0, 2), (1, 1))
         self.Bind(wx.EVT_BUTTON, self.OnExperimentOpen, open_btn)
 
-        self.contentSizer.Add(wx.StaticText(self, wx.ID_ANY, " Use Step Interface: "), (1, 0), (1, 1))
+        self.contentSizer.Add(wx.StaticText(self, wx.ID_ANY, " dRoR: "), (1, 0), (1, 1))
+        self.dRoR = wx.TextCtrl(self, -1, str(dRoR))
+        self.contentSizer.Add(self.dRoR, (1, 1), (1, 1))
+
+        self.contentSizer.Add(wx.StaticText(self, wx.ID_ANY, " dQoQ: "), (2, 0), (1, 1))
+        self.dQoQ = wx.TextCtrl(self, -1, str(dQoQ))
+        self.contentSizer.Add(self.dQoQ, (2, 1), (1, 1))
+
+        self.contentSizer.Add(wx.StaticText(self, wx.ID_ANY, " Use Step Interface: "), (3, 0), (1, 1))
         self.step_interfaces = wx.ComboBox(self, wx.ID_ANY, value=step_interfaces, pos=wx.DefaultPosition,
                                            size=wx.DefaultSize,
                                            choices=['Yes', 'No'], style=wx.CB_DROPDOWN, name=wx.ComboBoxNameStr)
-        self.contentSizer.Add(self.step_interfaces, (1, 1), (1, 1))
+        self.contentSizer.Add(self.step_interfaces, (3, 1), (1, 1))
 
-        self.contentSizer.Add(wx.StaticText(self, wx.ID_ANY, " Roughness Limit: "), (2, 0), (1, 1))
+        self.contentSizer.Add(wx.StaticText(self, wx.ID_ANY, " Roughness Limit: "), (4, 0), (1, 1))
         self.roughness_limit = wx.TextCtrl(self, -1, str(roughness_limit))
-        self.contentSizer.Add(self.roughness_limit, (2, 1), (1, 1))
+        self.contentSizer.Add(self.roughness_limit, (4, 1), (1, 1))
 
-        self.contentSizer.Add(wx.StaticText(self, wx.ID_ANY, " dA: "), (3, 0), (1, 1))
+        self.contentSizer.Add(wx.StaticText(self, wx.ID_ANY, " dA: "), (5, 0), (1, 1))
         self.dA = wx.TextCtrl(self, -1, str(dA))
-        self.contentSizer.Add(self.dA, (3, 1), (1, 1))
+        self.contentSizer.Add(self.dA, (5, 1), (1, 1))
 
-        self.contentSizer.Add(wx.StaticText(self, wx.ID_ANY, " dz: "), (4, 0), (1, 1))
+        self.contentSizer.Add(wx.StaticText(self, wx.ID_ANY, " dz: "), (6, 0), (1, 1))
         self.dz = wx.TextCtrl(self, -1, str(dz))
-        self.contentSizer.Add(self.dz, (4, 1), (1, 1))
+        self.contentSizer.Add(self.dz, (6, 1), (1, 1))
 
         ok_btn = wx.Button(self, wx.ID_OK, "Ok")
         ok_btn.SetDefault()
@@ -592,6 +645,11 @@ class ExperimentDialog(wx.Dialog):
         self.Fit()
 
     def OnOk(self, event):
+        """
+        Get user changes (input) and reset the experiment to accomodate the changes.
+        :param event:
+        :return:
+        """
         # Get the values from the user input
         step_interfaces = (str(self.step_interfaces.GetValue()) == "Yes")
         roughness_limit = float(self.roughness_limit.GetValue())
@@ -603,7 +661,8 @@ class ExperimentDialog(wx.Dialog):
         self.experiment.roughness_limit = roughness_limit
         self.experiment.dA = dA
         self.experiment.dz = dz
-        self.experiment.probe = self.probe
+        if self.currentFile != os.getcwd():
+            self.experiment.probe = self.probe
         self.ResetView()
 
         '''
@@ -617,9 +676,20 @@ class ExperimentDialog(wx.Dialog):
 
 
     def OnCancel(self, event):
+        """
+        Exit the Layer Dialog.
+        Dont do anything.
+        :param event:
+        :return:
+        """
         self.Destroy()
 
     def OnExperimentOpen(self, evt):
+        """
+        Open a FileDialog and load data to be processed in the experiment.
+        :param evt:
+        :return:
+        """
         dlg = wx.FileDialog(self,
                             message="Select File",
                             # defaultDir=os.getcwd(),
@@ -635,13 +705,13 @@ class ExperimentDialog(wx.Dialog):
             Q = D[:, 0]
             R = D[:, 1]
             if D.shape[1] < 3:
-                dRoR = 1
-                dR = R * dRoR / 100.
+                self.dRoR = float(self.dRoR.GetValue())
+                dR = R * self.dRoR / 100.
             else:
                 dR = D[:, 2]
             if D.shape[1] < 4:
-                dQoQ = 1
-                dQ = Q * dQoQ / 100.
+                self.dQoQ = float(self.dQoQ.GetValue())
+                dQ = Q * self.dQoQ / 100.
             else:
                 dQ = D[:, 3]
             from refl1d.probe import QProbe
@@ -652,6 +722,11 @@ class ExperimentDialog(wx.Dialog):
             dlg.Destroy()
 
     def ResetView(self):
+        """
+        Reset the profile view so that changes take effect
+        immediately after an event (i.e. delete, insert, or edit layer)
+        :return:
+        """
         self.profile._find_layer_boundaries()
         self.profile.thickness_interactor.reset_markers()
         self.profile.update()

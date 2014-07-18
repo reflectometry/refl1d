@@ -1045,7 +1045,6 @@ class QProbe(Probe):
         self.calc_Qo = self.Qo
         self.name = name
 
-
 def measurement_union(xs):
     """
     Determine the unique (T,dT,L,dL) across all datasets.
