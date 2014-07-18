@@ -60,6 +60,8 @@ class BaseMagnetism(object):
     *interface_below* and *interface_above* are the interface widths
     for the magnetic layer, which default to the interface widths for
     the corresponding nuclear layers if no interfaces are specified.
+    For consecutive layers, only *interface_above* is used; any value
+    for *interface_below* is ignored.
     """
     def __init__(self, extent=1,
                  dead_below=0, dead_above=0,
