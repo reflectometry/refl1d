@@ -291,16 +291,17 @@ class PolymerMushroom(Layer):
     """ 
     Polymer mushrooms in a solvent (volume profile)
 
-    Parameters:
+    :Parameters:
 
-    *z* the SLD depth array
-    *delta* interaction parameter
-    *vf* not quite volume fraction but pretty close
-    *sigma* convolution roughness (A)
+    *delta* | interaction parameter
+    *vf* | not quite volume fraction (dimensionless grafting density)
+    *sigma* | convolution roughness (A)
     
     Using analytical SCF methods for gaussian chains, which are scaled
     by the radius of gyration of the equivalent free polymer as an 
     approximation to results of renormalization group methods.[#Adamuţi-Trache]
+    
+    Solutions are only strictly valid for vf << 1. 
 
 .. [#Adamuţi-Trache] Adamuţi-Trache, M., McMullen, W. E. & Douglas, J. F. 
     Segmental concentration profiles of end-tethered polymers with 
@@ -416,32 +417,49 @@ def mushroom_math(x,delta=.1,vf=.1):
 class EndTetheredPolymer(Layer):
     """
     Polymer end-tethered to an interface in a solvent
-
-    Previous layer should not have roughness! use a spline to simulate it.
     
-    Parameters:
+    :Parameters:
 
-    *z* the SLD depth array
-    *chi* solvent interaction parameter
-    *chi_s* surface interaction parameter
-    *h_dry* thickness of the neat polymer layer
-    *l_lat* real length per lattice site
-    *mn* Number average molecular weight
-    *m_seg* real mass per lattice segment
-    *pdi* Dispersity (Polydispersity index)
-    *thickness* Slab thickness should be greater than the contour length
+    *z* | the SLD depth array
+    *chi* | solvent interaction parameter
+    *chi_s* | surface interaction parameter
+    *h_dry* | thickness of the neat polymer layer
+    *l_lat* | real length per lattice site
+    *mn* | Number average molecular weight
+    *m_lat* | real mass per lattice segment
+    *pdi* | Dispersity (Polydispersity index)
+    *thickness* | Slab thickness should be greater than the contour length
             of the polymer
-    *interface* should be zero
+    *interface* | should be zero
+    *material* | the polymer material
+    *solvent* | the solvent material
     
-    The materials can either use the scattering length density directly,
-    such as PDMS = SLD(0.063, 0.00006) or they can use chemical composition
-    and material density such as PDMS=Material("C2H6OSi",density=0.965).
+    Previous layer should not have roughness! Use a spline to simulate it. 
+    You can put this material in the "above" slot of Freelayer.
+    
+    According to [#Vincent], l_lat and m_lat should be calculated by the formulas
+    
+    l_lat = a**2 * m / l / p_l
+    m_lat = (a * m / l)**2 / p_l
+    
+    where l is the real polymer's bond length, m is the real segment mass,
+    and a is the proportionality constant between molecular weight and radius
+    of gyration at theta conditions. The lattice persistence is 
+    
+    p_l = 1/6*((1+1/Z)/(1-1/Z))
+    
+    with coordination number Z = 6 for a cubic lattice, p_l = .233.
+
+..  [#Vincent] Vincent, B., Edwards, J., Emmett, S., & Croot, R. (1988). 
+        Phase separation in dispersions of weakly-interacting particles in 
+        solutions of non-adsorbing polymer. Colloids and Surfaces, 31, 267–298.
+        doi:10.1016/0166-6622(88)80200-2
 
     """
     
     def __init__(self, thickness=0, interface=0, name="EndTetheredPolymer",
                  polymer=None, solvent=None, chi=0, chi_s=0, h_dry=None, 
-                 l_lat=1, mn=None, m_seg=1, pdi=1):
+                 l_lat=1, mn=None, m_lat=1, pdi=1):
         if interface != 0: raise NotImplementedError("interface not yet supported")
         if polymer is None or solvent is None or h_dry is None or mn is None:
             raise TypeError("Need polymer, solvent and profile")
@@ -453,9 +471,10 @@ class EndTetheredPolymer(Layer):
         self.h_dry = Parameter.default(h_dry, name="dry thickness")
         self.l_lat = Parameter.default(l_lat, name="lattice layer length")
         self.mn    = Parameter.default(mn, name="Num. Avg. MW")
-        self.m_seg = Parameter.default(m_seg, name="lattice segment mass")
+        self.m_lat = Parameter.default(m_lat, name="lattice segment mass")
         self.pdi   = Parameter.default(pdi, name="Dispersity")
         self.phi_prev = None
+        self.z_prev = None
         self.solvent = solvent
         self.polymer = polymer
         self.name = name
@@ -468,7 +487,7 @@ class EndTetheredPolymer(Layer):
                 'h_dry':self.h_dry,
                 'l_lat':self.l_lat,
                 'mn':self.mn,
-                'm_seg':self.m_seg,
+                'm_lat':self.m_lat,
                 'pdi':self.pdi,
                 'thickness':self.thickness,
                 'interface':self.interface
@@ -477,11 +496,11 @@ class EndTetheredPolymer(Layer):
     def profile(self, z):
         phi = SCFprofile(z, chi=self.chi.value, chi_s=self.chi_s.value, 
                  h_dry=self.h_dry.value,l_lat=self.l_lat.value,
-                 mn=self.mn.value, m_seg=self.m_seg.value, pdi=self.pdi.value,
+                 mn=self.mn.value, m_lat=self.m_lat.value, pdi=self.pdi.value,
                  phi0=self.phi_prev)
         self.phi_prev = phi
+        self.z_prev = z
         return phi
-
 
     def render(self, probe, slabs):
         thickness = self.thickness.value
@@ -505,6 +524,27 @@ class EndTetheredPolymer(Layer):
         P = M*phi + S*(1-phi)
         Pr, Pi = np.real(P), np.imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
+    
+    def sld(self, probe):
+        '''Enables use as a "material" in context of spline layers'''
+        Mr,Mi = self.polymer.sld(probe)
+        Sr,Si = self.solvent.sld(probe)
+        M = Mr + 1j*Mi
+        S = Sr + 1j*Si
+        try: M,S = M[0],S[0]  # Temporary hack
+        except: pass
+        
+        if self.z_prev is None:
+            zmax = self.thickness.value
+            z = np.linspace(0,zmax,int(10000))
+        else:
+            z = self.z_prev
+        phi = self.profile(z) # TODO: why can't i just use self.phi_prev?
+        
+        # phi = self.phi_prev
+        P = M*phi[0] + S*(1-phi[0])
+            
+        return np.real(P), np.imag(P)
 
 from numpy import absolute as abs
 import time
@@ -514,15 +554,25 @@ from scipy.optimize import  root
 MINLAT = 35
 
 def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None, 
-               m_seg=1, pdi=1, phi0=None, disp=None):
-    ''' Generate volume fraction profile from SCFsolve based on real parameters.
+               m_lat=1, pdi=1, phi0=None, disp=None):
+    ''' Generate volume fraction profile for Refl1D based on real parameters.
     
-    More doctext to come.
+    The field theory is a lattice-based one, so we need to move between lattice
+    and real space. This is done using the parameters l_lat and m_lat, the 
+    lattice size and the mass of a lattice segment, respectivley. We use h_dry
+    (dry thickness) as a convenient measure of surface coverage, along with mn
+    (number average molecular weight) as the real inputs.
+    
+    Make sure your inputs for h_dry/l_lat and mn/m_lat match dimensions! 
+    Angstroms and daltons are good choices.
+    
+    This function is suitable for use as a VolumeProfile, as well as the 
+    default EndTetheredPolymer class.
     '''
     
     # calculate lattice space parameters    
     theta = h_dry/l_lat
-    r = int(mn/m_seg-.5)
+    r = int(mn/m_lat-.5)
     
     if phi0 is not None:
         # squeeze or stretch our initial guess to match the input space
@@ -563,7 +613,13 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None,
 def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
     ''' Solve SCF equations using an initial guess and lattice parameters
     
-    More doctext to come.
+    This function checks which special case self consistent field equations
+    we are using, evaluates any starting guess against a simple default, then
+    finds a solution for the equations where the lattice size is sufficiently
+    large.
+    
+    The Newton-Krylov solver really makes this one. krylov+gmres was faster
+    than the other scipy.optimize alternatives by quite a lot.
     '''
     
     sigmainput = theta/r
@@ -610,9 +666,12 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
             if disp: print "\npassed phi0 is better: layers =", layers,'\n'
     
     done = False
-    tol = 2e-6*theta
-    ratio = 1.2
+    tol = 2e-6*theta # We tolerate up to 2ppm of our polymer in the last layer
+    ratio = 1.2 # otherwise we grow it by 20%
     layers = len(phi0)
+    # if the loop sees that it can shrink 20%, it will, but it can lead to
+    # endless loops. This flag shows if it has grown before, so it knows to
+    # quit instead of shrinking
     growing = False
     
     # apparently scope rules dictate that we can change 'layers' without a
@@ -629,25 +688,30 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
             phi = abs(result.x)
             if disp: print '\nSolver exit code:',result.status,result.message
         except ShortCircuitError as e:
+            growing = False # scrub this flag so we don't quit directly (rare)
             phi = e.x
             if disp: print e
             
         if disp: print 'phi(L)/sum(phi) =',phi[-1] / theta * 1e6,'(ppm)\n'
         
         if phi[-1] > tol:
+            # if the last layer is beyond tolerance, grow the lattice
             newlayers = max(1,round(layers*(ratio-1)))
             if disp: print 'Growing undersized lattice by', newlayers
             phi0 = np.append(phi,np.linspace(phi[-1],0,num=newlayers))
             growing = True
         elif layers > MINLAT and phi[round(layers/ratio)] < tol:
+            # if the layer at 83% of the thickenss is less than the tolerance,
+            # we can shrink it, but not if it's already a small lattice, or 
+            # if we grew after the last successful call of root()
             if growing:
                 done = True
             else:
                 if disp: print 'Shrinking undersized lattice...'
                 phi0 = phi[0:round(layers/ratio)]
         else:
+            # otherwise, we are done for real
             done = True
-            phi0 = phi
             
         layers = len(phi0)
             
@@ -658,7 +722,7 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
     return phi
     
 class ShortCircuitError(Exception):
-    ''' Special Error to stop root() before a solution is found.
+    ''' Special error to stop root() before a solution is found.
     
     '''
     def __init__(self, value,x):
@@ -670,6 +734,10 @@ class ShortCircuitError(Exception):
 def _proto_callback(x,disp,layers,tol,ratio):
     ''' Special callback to stop root() before solution is found.
     
+    This kills root if the tolerances are exceeded by 4 times the tolerances
+    of the lattice resizing loop. This seems to work well empirically to 
+    restart the solver when necessary without cutting out of otherwise 
+    reasonable solver trajectories.
     '''
     if disp: print "Iterating..."
     if x[-1] > 4*tol:
@@ -679,7 +747,7 @@ def _proto_callback(x,disp,layers,tol,ratio):
 
 from scipy.special import gammaln
 
-lambda_1 = np.float64(1.0)/6.0 #always assume cubic lattice for now
+lambda_1 = np.float64(1.0)/6.0 #always assume cubic lattice (1/6) for now
 lambda_0 = 1.0-2.0*lambda_1
 lambda_array = np.array([lambda_1,lambda_0,lambda_1])
 def _fzeros(*args):
@@ -687,9 +755,9 @@ def _fzeros(*args):
 
 def SCFeqns_deVos(phi_z,chi,chi_s,theta,pdi,navgsegments,p_i,
                   disp=False,fulloutput=False):
-    ''' System of SCF equation for uniform terminally attached polymers.
+    ''' System of SCF equation for disperse terminally attached polymers.
     
-        Formatted for input to a nonlinar minimizer or solver.
+        Formatted for input to a nonlinear minimizer or solver.
     '''
     
     # let the solver go negative if it wants, or outside the limits 0..1
@@ -733,7 +801,7 @@ def SCFeqns_Cosgrove(phi_z,chi,chi_s,theta,pdi,segments,
                      disp=False,fulloutput=False):
     ''' System of SCF equation for uniform terminally attached polymers.
     
-        Formatted for input to a nonlinar minimizer or solver.
+        Formatted for input to a nonlinear minimizer or solver.
     '''
     
     # let the solver go negative if it wants, or outside the limits 0..1
