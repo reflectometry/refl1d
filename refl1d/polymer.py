@@ -474,7 +474,6 @@ class EndTetheredPolymer(Layer):
         self.m_lat = Parameter.default(m_lat, name="lattice segment mass")
         self.pdi   = Parameter.default(pdi, name="Dispersity")
         self.phi_prev = None
-        self.z_prev = None
         self.solvent = solvent
         self.polymer = polymer
         self.name = name
@@ -498,8 +497,7 @@ class EndTetheredPolymer(Layer):
                  h_dry=self.h_dry.value,l_lat=self.l_lat.value,
                  mn=self.mn.value, m_lat=self.m_lat.value, pdi=self.pdi.value,
                  phi0=self.phi_prev)
-        self.phi_prev = phi
-        self.z_prev = z
+        self.phi_prev = phi.copy()
         return phi
 
     def render(self, probe, slabs):
@@ -525,27 +523,6 @@ class EndTetheredPolymer(Layer):
         Pr, Pi = np.real(P), np.imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
     
-    def sld(self, probe):
-        '''Enables use as a "material" in context of spline layers'''
-        Mr,Mi = self.polymer.sld(probe)
-        Sr,Si = self.solvent.sld(probe)
-        M = Mr + 1j*Mi
-        S = Sr + 1j*Si
-        try: M,S = M[0],S[0]  # Temporary hack
-        except: pass
-        
-        if self.z_prev is None:
-            zmax = self.thickness.value
-            z = np.linspace(0,zmax,int(10000))
-        else:
-            z = self.z_prev
-        phi = self.profile(z) # TODO: why can't i just use self.phi_prev?
-        
-        # phi = self.phi_prev
-        P = M*phi[0] + S*(1-phi[0])
-            
-        return np.real(P), np.imag(P)
-
 from numpy import absolute as abs
 import time
 from numpy.linalg import norm
