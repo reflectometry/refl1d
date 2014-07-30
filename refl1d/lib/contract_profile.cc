@@ -3,7 +3,7 @@
 #include <iostream>
 
 #define GREEDY
-
+#define _USE_MATH_DEFINES
 #include <math.h>
 #include <assert.h>
 

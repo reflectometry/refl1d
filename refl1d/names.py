@@ -27,7 +27,8 @@ def ModelFunction(*args,**kw):
 from .experiment import Experiment, plot_sample, MixedExperiment
 from .material import SLD, Material, Compound, Mixture
 from .model import Slab, Stack
-from .polymer import PolymerBrush, VolumeProfile, layer_thickness
+from .polymer import (PolymerBrush, PolymerMushroom, EndTetheredPolymer, 
+                      VolumeProfile, layer_thickness)
 from .mono import FreeLayer, FreeInterface
 from .cheby import FreeformCheby, ChebyVF, cheby_approx, cheby_points
 from .interface import Erf
