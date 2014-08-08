@@ -460,8 +460,7 @@ class Stack(Layer):
         if(len(stack)>2 and (idx>=0 and idx < len(stack))):
             del stack._layers[idx]
         else:
-            import logging;logging.error("You cannot remove this layer. You need at least 2 layers!")
-            signal.log_message("You cannot remove this layer. You need at least 2 layers!")
+            raise ValueError("You cannot remove this layer. You need at least 2 layers!")
 
 
     def insert(self, idx, other):

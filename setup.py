@@ -23,7 +23,7 @@ except:
     from os.path import dirname, abspath, join as joinpath
     bumps_path = joinpath(dirname(dirname(abspath(__file__))),'bumps')
     sys.path.insert(0, bumps_path)
-from bumps.openmp_ext import openmp_ext
+#from bumps.openmp_ext import openmp_ext
 
 import refl1d
 
@@ -66,7 +66,7 @@ dist = setup(
         scripts = ['bin/refl1d_cli.py','bin/refl1d_gui.py'],
         ext_modules = [reflmodule_config()],
         requires = [], # ['bumps>=0.9'],
-        cmdclass = {'build_ext': openmp_ext(default=False)},
+        #cmdclass = {'build_ext': openmp_ext(default=False)},
         )
 
 # End of file

@@ -1174,6 +1174,7 @@ class PolarizedNeutronProbe(object):
         T = T.flatten()
         L = L.flatten()
         self._set_calc(T,L)
+
     oversample.__doc__ = Probe.oversample.__doc__
 
     @property

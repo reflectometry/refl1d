@@ -35,6 +35,7 @@ S1 = Experiment(sample=sample, probe=probe,
 S2 = Experiment(sample=sample, probe=probe,
                 dz=1, dA=10, step_interfaces=True,
                 name="dz=1; dA=10; step interfaces")
+
 models=[M0,M1,M2,S0,S1,S2]
 #models=[S1]
 problem = MultiFitProblem(models=models)
