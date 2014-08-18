@@ -84,6 +84,7 @@ def prepare_environment():
     #addpath(refl1d_build)
     addpath(refl1d_root)
     import_dll('refl1d.reflmodule', refl1d_build)
+    import_dll('refl1d.calc_g_zs_cex', refl1d_build)
 
     # Make sample data and models available
     os.environ['REFL1D_DATA'] = os.path.join(refl1d_root,'doc','_examples')
