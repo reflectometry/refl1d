@@ -822,9 +822,8 @@ def calc_phi_z_avg(phi_z):
 def calc_phi_z(g_ta,g_free,g_z):
     return np.sum(g_ta*np.fliplr(g_free),axis=1)/g_z
 
-from refl1d.calc_g_zs_cex import _calc_g_zs_inner
-
 def calc_g_zs(g_z,c_i,layers,segments):
+    from refl1d.calc_g_zs_cex import _calc_g_zs_inner
     
     # initialize     
 

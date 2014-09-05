@@ -357,12 +357,12 @@ you need.
 The model file (call it plot.py) will start with the following::
 
     import sys
-    from refl1d.cli import load_problem, recall_best
+    from refl1d.cli import load_problem, load_best
 
     model, store = sys.argv[1:3]
 
     problem = load_problem([model])
-    recall_best(problem, os.path.join(store, model[:-3]+".par"))
+    load_best(problem, os.path.join(store, model[:-3]+".par"))
     chisq = problem.chisq
 
     print "chisq",chisq
@@ -430,13 +430,13 @@ plotting script::
     import sys
     import pylab
     import dream.state
-    from refl1d.cli import load_problem, recall_best
+    from bumps.cli import load_problem, load_best
     from refl1d.errors import calc_errors_from_state, align_profiles
 
     model, store = sys.argv[1:3]
 
     problem = load_problem([model])
-    recall_best(problem, os.path.join(store, model[:-3]+".par"))
+    load_best(problem, os.path.join(store, model[:-3]+".par"))
 
     chisq = problem.chisq
     experiment = problem.fitness
