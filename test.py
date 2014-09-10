@@ -54,7 +54,7 @@ assert os.path.exists(os.path.join(root, 'refl1d', 'abeles.py'))
 try: import periodictable
 except: addpath(os.path.join('..','periodictable'))
 try: import bumps
-except: addpath(os.path.join('..','bumps','build/lib'+platform))
+except: addpath(os.path.join('..','bumps'))
 
 # Force a rebuild
 print("-"*70)

@@ -14,17 +14,16 @@ See :mod:`resolution` for details.
 
 import re
 import math
-import numpy
-from numpy import sqrt
+import numpy as np
 from bumps.data import parse_file
-from bumps.rebin import rebin
 
+from .rebin import rebin
 from .instrument import Pulsed
 from . import resolution
 from .probe import make_probe
 
 ## Estimated intensity vs. wavelength for liquids reflectometer
-LIQUIDS_FEATHER = numpy.array([
+LIQUIDS_FEATHER = np.array([
   (2.02555,20.6369),
   (2.29927,23.6943),
   (2.57299,23.6943),
@@ -107,9 +106,9 @@ def TOF_to_data(instrument, header, data):
     R = R[:-1]
     dR = dR[:-1]
     min_time,max_time = header.get('TOF_range',instrument.TOF_range)
-    keep = numpy.isfinite(R)&numpy.isfinite(dR)&(TOF[:-1]>=min_time)&(TOF[1:]<=max_time)
+    keep = np.isfinite(R)&np.isfinite(dR)&(TOF[:-1]>=min_time)&(TOF[1:]<=max_time)
     L,dL,R,dR = [v[keep] for v in (L,dL,R,dR)]
-    T = numpy.array([header.get('angle',header.get('T',None))],'d')
+    T = np.array([header.get('angle',header.get('T',None))],'d')
     T,dT,L,dL = instrument.resolution(L=L, dL=dL, T=T, **header)
     probe = make_probe(T=T,dT=dT,L=L,dL=dL, data=(R,dR),**header)
     return probe
@@ -256,7 +255,7 @@ INSTRUMENTS = {
 def intensity_from_spline(Lrange,dLoL,feather):
     L0,L1 = Lrange
     n = math.ceil(math.log(L1/L0)/math.log(1+dLoL))
-    L = L0*(1+dLoL)**numpy.arange(0,n)
+    L = L0*(1+dLoL)**np.arange(0,n)
     return (L[:-1]+L[1:])/2, rebin(feather[0],feather[1],L)
 
 
@@ -270,16 +269,16 @@ def boltzmann_feather(L,counts=100000,range=None):
     corresponds to the actual SNS feather.
     """
     import scipy.stats
-    y = numpy.linspace(-4,4,10)
-    G = numpy.exp(-y**2/10)
-    x = numpy.arange(12,85)
+    y = np.linspace(-4,4,10)
+    G = np.exp(-y**2/10)
+    x = np.arange(12,85)
     B = scipy.stats.boltzmann.pmf(x, 0.05, 1, loc=16)
-    BGz = numpy.convolve(B,G,mode='same')
+    BGz = np.convolve(B,G,mode='same')
     #if range is None: range = L[0],L[-1]
     #if range[0] > range[1]: range = range[::-1]
     #range = range[0]*(1-1e-15),range[1]*(1+1e-15)
-    #z = numpy.linspace(range[0],range[1],len(BGz))
-    z = numpy.linspace(2,16.5,len(BGz))  # Wavelength range for liquids
-    pL = numpy.interp(L,z,BGz,left=0,right=0)
+    #z = np.linspace(range[0],range[1],len(BGz))
+    z = np.linspace(2,16.5,len(BGz))  # Wavelength range for liquids
+    pL = np.interp(L,z,BGz,left=0,right=0)
     nL = pL/sum(pL)*counts
     return  nL

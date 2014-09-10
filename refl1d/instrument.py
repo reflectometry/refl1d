@@ -558,7 +558,7 @@ class Pulsed(object):
                 Only needed for back reflectivity measurements.
         """
         from numpy.random import poisson as pois
-        from bumps.rebin import rebin
+        from .rebin import rebin
         from .experiment import Experiment
         from .probe import ProbeSet
         T = kw.pop('T', self.T)

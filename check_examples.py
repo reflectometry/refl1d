@@ -13,7 +13,7 @@ platform = '.%s-%s'%(get_platform(),sys.version[:3])
 buildpath = os.path.abspath(os.path.join(ROOT,'build','lib'+platform))
 packages = [buildpath]
 try: import bumps
-except: packages.append(os.path.abspath(os.path.join(ROOT,'..','bumps','build','lib'+platform)))
+except: packages.append(os.path.abspath(os.path.join(ROOT,'..','bumps')))
 try: import periodictable
 except: packages.append(os.path.abspath(os.path.join(ROOT,'..','periodictable')))
 if 'PYTHONPATH' in os.environ: packages.append(os.environ['PYTHONPATH'])
@@ -62,10 +62,10 @@ examples = [
     ]
 
 def main():
-    if len(sys.argv) == 1 or not hasattr(Commands, sys.argv[1]):
-        print("usage: check_examples.py [preview|edit|chisq]")
+    if len(sys.argv) == 1 or not hasattr(Commands, sys.argv[1][2:]):
+        print("usage: check_examples.py [--preview|--edit|--chisq]")
     else:
-        command = getattr(Commands, sys.argv[1])
+        command = getattr(Commands, sys.argv[1][2:])
         for f in examples:
             print("\n"+f)
             if command(os.path.join(EXAMPLEDIR,f)) != 0:

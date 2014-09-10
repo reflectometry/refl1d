@@ -48,29 +48,23 @@ def prepare_environment():
     from distutils.util import get_platform
     platform = '.%s-%s'%(get_platform(),sys.version[:3])
 
-    sys.dont_write_bytecode = True
+    #sys.dont_write_bytecode = True
 
     # Make sure that we have a private version of mplconfig
-    mplconfig = os.path.join(os.getcwd(), '.mplconfig')
-    os.environ['MPLCONFIGDIR'] = mplconfig
-    if not os.path.exists(mplconfig): os.mkdir(mplconfig)
-    #import matplotlib
-    #matplotlib.use('Agg')
-    #print matplotlib.__file__
-    #import pylab; pylab.hold(False)
+    #mplconfig = os.path.join(os.getcwd(), '.mplconfig')
+    #os.environ['MPLCONFIGDIR'] = mplconfig
+    #if not os.path.exists(mplconfig):
+    #    os.mkdir(mplconfig)
 
     #import numpy; numpy.seterr(all='raise')
     refl1d_root = os.path.abspath(os.path.dirname(__file__))
     periodictable_root = os.path.abspath(os.path.join(refl1d_root, '..','periodictable'))
     bumps_root = os.path.abspath(os.path.join(refl1d_root, '..','bumps'))
-    bumps_build,refl1d_build = [os.path.join(v,'build','lib'+platform)
-                                for v in (bumps_root, refl1d_root)]
+    refl1d_build = os.path.join(refl1d_root,'build','lib'+platform)
 
     # add bumps and periodictable to the path
     addpath(periodictable_root)
-    #addpath(bumps_build)
     addpath(bumps_root)
-    import_dll('bumps._reduction', bumps_build)
 
     # Force a rebuild of bumps/refl1d
     import subprocess
