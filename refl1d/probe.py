@@ -1028,7 +1028,7 @@ class QProbe(Probe):
         self.back_absorption = Parameter.default(back_absorption,
                                                  name="back_absorption"+qualifier,
                                                  limits=[0,1])
-        self.theta_offset = Constant(0,name="theta_offset"+qualifier)
+        self.theta_offset = Constant(0, name="theta_offset"+qualifier)
 
         self.back_reflectivity = back_reflectivity
 
@@ -1045,7 +1045,6 @@ class QProbe(Probe):
         self.unique_L = None
         self.calc_Qo = self.Qo
         self.name = name
-
 
 def measurement_union(xs):
     """
@@ -1176,6 +1175,7 @@ class PolarizedNeutronProbe(object):
         T = T.flatten()
         L = L.flatten()
         self._set_calc(T,L)
+
     oversample.__doc__ = Probe.oversample.__doc__
 
     @property

@@ -93,6 +93,14 @@ class Microslabs(object):
         self._z_offset = 0
         self._magnetic_sections = []
 
+    @property
+    def nprobe(self):
+        return self._slabs_rho.shape[1]
+    @nprobe.setter
+    def nprobe(self, n):
+        if self.nprobe != n:
+            self._slabs_rho = numpy.empty(shape=(0,nprobe,2))
+
     def microslabs(self, thickness=0):
         """
         Return a set of microslabs for a layer of the given *thickness*.
