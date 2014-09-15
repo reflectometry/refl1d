@@ -146,6 +146,15 @@ int
 contract_mag(int n, double d[], double rho[], double irho[],
              double rhoM[], double thetaM[], double dA);
 
+void
+convolve(size_t Nin, const double xin[], const double yin[],
+         size_t N, const double x[], const double dx[], double y[]);
+
+void
+convolve_sampled(size_t Nin, const double xin[], const double yin[],
+         size_t Np, const double xp[], const double yp[],
+         size_t N, const double x[], const double dx[], double y[]);
+
 #ifdef __cplusplus
 }
 #endif

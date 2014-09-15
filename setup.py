@@ -10,7 +10,7 @@ if sys.argv[1] == 'test':
     from subprocess import call
     sys.exit(call([sys.executable, 'test.py']+sys.argv[2:]))
 
-sys.dont_write_bytecode = True
+#sys.dont_write_bytecode = True
 
 #from distutils.core import Extension
 from setuptools import setup, find_packages, Extension
@@ -32,9 +32,12 @@ packages = find_packages()
 
 # reflmodule extension
 def reflmodule_config():
-    sources = [os.path.join('refl1d','lib',f)
-               for f in ("reflmodule.cc","methods.cc","reflectivity.cc",
-                         "magnetic.cc","contract_profile.cc")]
+    S = ("reflmodule.cc","methods.cc",
+         "reflectivity.cc", "magnetic.cc",
+         "contract_profile.cc",
+         "convolve.c", "convolve_sampled.c",
+    )
+    sources = [os.path.join('refl1d','lib',f) for f in S]
     module = Extension('refl1d.reflmodule', sources=sources)
     return module
 
@@ -48,7 +51,7 @@ def SCFmodule_config():
 # installed by easy_install
 #dependency_check('numpy>=1.0', 'scipy>=0.6', 'matplotlib>=1.0', 'wx>=2.8.9')
 
-sys.dont_write_bytecode = False
+#sys.dont_write_bytecode = False
 dist = setup(
         name = 'refl1d',
         version = refl1d.__version__,

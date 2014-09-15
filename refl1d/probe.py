@@ -491,7 +491,8 @@ class Probe(object):
         """
         Apply the instrument resolution function
         """
-        return self.Q, convolve(Qin, Rin, self.Q, self.dQ)
+        R = convolve(Qin, Rin, self.Q, self.dQ)
+        return self.Q, R
 
     def apply_beam(self, calc_Q, calc_R, resolution=True):
         """

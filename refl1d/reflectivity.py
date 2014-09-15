@@ -18,11 +18,13 @@ __all__ = [ 'reflectivity', 'reflectivity_amplitude',
             'unpolarized_magnetic', 'convolve',
             ]
 
-import numpy
+import numpy as np
 from numpy import pi, sin, cos, conj
-from numpy import ascontiguousarray as _dense
-from bumps.data import convolve
 from . import reflmodule
+
+def _dense(x, dtype='d'):
+    return np.ascontiguousarray(x, dtype)
+
 
 def reflectivity(*args, **kw):
     """
@@ -91,24 +93,24 @@ def reflectivity_amplitude(kz=None,
     """
     kz = _dense(kz, 'd')
     if rho_index == None:
-        rho_index = numpy.zeros(kz.shape,'i')
+        rho_index = np.zeros(kz.shape,'i')
     else:
         rho_index = _dense(rho_index, 'i')
 
     depth = _dense(depth, 'd')
-    if numpy.isscalar(sigma):
-        sigma = sigma*numpy.ones(len(depth)-1, 'd')
+    if np.isscalar(sigma):
+        sigma = sigma*np.ones(len(depth)-1, 'd')
     else:
         sigma = _dense(sigma, 'd')
     rho = _dense(rho, 'd')
-    if numpy.isscalar(irho):
-        irho = irho * numpy.ones_like(rho)
+    if np.isscalar(irho):
+        irho = irho * np.ones_like(rho)
     else:
         irho = _dense(irho, 'd')
 
     #print depth.shape,rho.shape,irho.shape,sigma.shape
     #print depth.dtype,rho.dtype,irho.dtype,sigma.dtype
-    r = numpy.empty(kz.shape,'D')
+    r = np.empty(kz.shape,'D')
     #print "amplitude",depth,rho,kz,rho_index
     #print depth.shape, sigma.shape, rho.shape, irho.shape, kz.shape
     reflmodule._reflectivity_amplitude(depth, sigma, rho, irho, kz,
@@ -160,7 +162,7 @@ def unpolarized_magnetic(*args,**kw):
 
     See :class:`magnetic_reflectivity <refl1d.reflectivity.magnetic_reflectivity>` for details.
     """
-    return reduce(numpy.add, magnetic_reflectivity(*args,**kw))/2.
+    return reduce(np.add, magnetic_reflectivity(*args,**kw))/2.
 
 def magnetic_amplitude(kz,
                        depth,
@@ -179,27 +181,103 @@ def magnetic_amplitude(kz,
     """
     kz = _dense(kz,'d')
     if rho_index == None:
-        rho_index = numpy.zeros(kz.shape,'i')
+        rho_index = np.zeros(kz.shape,'i')
     else:
         rho_index = _dense(rho_index, 'i')
     n = len(depth)
-    if numpy.isscalar(irho):
-        irho = irho*numpy.ones(n, 'd')
-    if numpy.isscalar(rhoM):
-        rhoM = rhoM*numpy.ones(n, 'd')
-    if numpy.isscalar(thetaM):
-        thetaM = thetaM*numpy.ones(n, 'd')
-    if numpy.isscalar(sigma):
-        sigma = sigma*numpy.ones(n-1, 'd')
+    if np.isscalar(irho):
+        irho = irho*np.ones(n, 'd')
+    if np.isscalar(rhoM):
+        rhoM = rhoM*np.ones(n, 'd')
+    if np.isscalar(thetaM):
+        thetaM = thetaM*np.ones(n, 'd')
+    if np.isscalar(sigma):
+        sigma = sigma*np.ones(n-1, 'd')
 
     depth, rho, irho, rho_m, thetaM, sigma \
         = [_dense(a,'d') for a in (depth, rho, irho, rhoM, thetaM, sigma)]
     expth = cos(thetaM * pi/180.0) + 1j*sin(thetaM * pi/180.0)
     #rho,irho,rho_m = [v*1e-6 for v in rho,irho,rho_m]
-    R1,R2,R3,R4 = [numpy.empty(kz.shape,'D') for pol in (1,2,3,4)]
+    R1,R2,R3,R4 = [np.empty(kz.shape,'D') for pol in (1,2,3,4)]
     reflmodule._magnetic_amplitude(depth, sigma, rho, irho,
                                    rhoM,  expth, Aguide, kz, rho_index,
                                    R1, R2, R3, R4
                                    )
     return R1,R2,R3,R4
 
+
+def convolve(xi, yi, x, dx):
+    """
+    Apply x-dependent gaussian resolution to the theory.
+
+    Returns convolution y[k] of width dx[k] at points x[k].
+
+    The theory function is a piece-wise linear spline which does not need to
+    be uniformly sampled.  The theory calculation points *xi* should be dense
+    enough to capture the "wiggle" in the theory function, and should extend
+    beyond the ends of the data measurement points *x*. Convolution at the
+    tails is truncated and normalized to area of overlap between the resolution
+    function in case the theory does not extend far enough.
+    """
+    x = _dense(x)
+    y = np.empty_like(x)
+    reflmodule.convolve(_dense(xi), _dense(yi), x, _dense(dx), y)
+    return y
+
+
+def convolve_sampled(xi, yi, xp, yp, x, dx):
+    """
+    Apply x-dependent arbitrary resolution function to the theory.
+
+    Returns convolution y[k] of width dx[k] at points x[k].
+
+    Like :func:`convolve`, the theory *(xi,yi)* is represented as a
+    piece-wise linear spline which should extend beyond the data
+    measurement points *x*.  Instead of a gaussian resolution function,
+    resolution *(xp,yp)* is also represented as a piece-wise linear
+    spline.
+    """
+    x = _dense(x)
+    y = np.empty_like(x)
+    reflmodule.convolve_sampled(_dense(xi), _dense(yi), _dense(xp), _dense(yp),
+                                x, _dense(dx), y)
+    return y
+
+
+def test_convolve_sampled():
+    x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    y = [1, 3, 1, 2, 1, 3, 1, 2, 1, 3]
+    xp = [-1, 0, 1, 2, 3]
+    yp = [1, 4, 3, 2, 1]
+    _check_convolution("aligned", x, y, xp, yp, dx=1)
+    _check_convolution("unaligned", x, y, _dense(xp) - 0.2000003, yp, dx=1)
+    _check_convolution("wide", x, y, xp, yp, dx=2)
+    _check_convolution("super wide", x, y, xp, yp, dx=10)
+
+
+def _check_convolution(name, x, y, xp, yp, dx):
+    ystar = convolve_sampled(x, y, xp, yp, x, dx=np.ones_like(x) * dx)
+
+    xp = np.array(xp) * dx
+    step = 0.0001
+    xpfine = np.arange(xp[0], xp[-1] + step / 10, step)
+    ypfine = np.interp(xpfine, xp, yp)
+    # make sure xfine is wide enough by adding a couple of extra steps
+    # at the end
+    xfine = np.arange(x[0] + xpfine[0], x[-1] + xpfine[-1] + 2 * step, step)
+    yfine = np.interp(xfine, x, y, left=0, right=0)
+    pidx = np.searchsorted(xfine, np.array(x) + xp[0])
+    left, right = np.searchsorted(xfine, [x[0], x[-1]])
+
+    conv = []
+    for pi in pidx:
+        norm_start = max(0, left - pi)
+        norm_end = min(len(xpfine), right - pi)
+        norm = step * np.sum(ypfine[norm_start:norm_end])
+        conv.append(
+            step * np.sum(ypfine * yfine[pi:pi + len(xpfine)]) / norm)
+
+    #print("checking convolution %s"%(name,))
+    #print(" ".join("%7.4f"%yi for yi in ystar))
+    #print(" ".join("%7.4f"%yi for yi in conv))
+    assert all(abs(yi - fi) < 0.0005 for (yi, fi) in zip(ystar, conv))

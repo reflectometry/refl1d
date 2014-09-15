@@ -266,18 +266,23 @@ class Monochromatic(object):
             raise TypeError("resolution requires slits and either T or Q")
 
         L = kw.get('L',kw.get('wavelength',self.wavelength))
-        dLoL = kw.get('dLoL',self.dLoL)
-        if L is None:
-            raise TypeError("Need wavelength L to compute resolution")
-        if dLoL is None:
-            raise TypeError("Need wavelength dispersion dLoL to compute resolution")
+        if 'dL' in kw:
+            dL = kw['dL']
+        else:
+            dL = kw.get('dLoL',self.dLoL) * L
+
+        if L is None or dL is None:
+            raise TypeError("Need wavelength and wavelength dispersion to compute resolution")
 
         T = kw['T']
-        if 'slits' not in kw:
-            kw['slits'] = self.calc_slits(**kw)
-        dT = self.calc_dT(**kw)
+        if 'dT' in kw:
+            dT = kw['dT']
+        else:
+            if 'slits' not in kw:
+                kw['slits'] = self.calc_slits(**kw)
+            dT = self.calc_dT(**kw)
 
-        return T,dT,L,dLoL*L
+        return T,dT,L,dL
 
     def calc_slits(self, **kw):
         """
@@ -553,7 +558,7 @@ class Pulsed(object):
                 Only needed for back reflectivity measurements.
         """
         from numpy.random import poisson as pois
-        from bumps.rebin import rebin
+        from .rebin import rebin
         from .experiment import Experiment
         from .probe import ProbeSet
         T = kw.pop('T', self.T)

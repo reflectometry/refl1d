@@ -395,9 +395,9 @@ def MushroomProfile(z, delta=0.1, vf=1.0, sigma=1.0):
     if abs(delta) > thresh:
         mushroom_profile = mushroom_math(x,delta,vf)
     else: # we should RARELY get here
-        scale = (delta+thresh)/2.0/thresh             
-        mushroom_profile = scale*mushroom_math(x,thresh,vf)        
-        mushroom_profile += (1.0-scale)*mushroom_math(x,-thresh,vf)
+        scale = (delta+thresh)/2.0/thresh
+        mushroom_profile = (mushroom_math(x,thresh,vf) +
+                            (1.0-scale)*mushroom_math(x,-thresh,vf))
 
     try:
         # make the base connect with the profile
@@ -494,7 +494,7 @@ class EndTetheredPolymer(Layer):
 ..  [#Vincent] Vincent, B., Edwards, J., Emmett, S., & Croot, R. (1988). 
         Phase separation in dispersions of weakly-interacting particles in 
         solutions of non-adsorbing polymer. Colloids and Surfaces, 31, 267–298.
-        doi:10.1016/0166-6622(88)80200-2    
+        doi:10.1016/0166-6622(88)80200-2
 
     """
     
@@ -863,9 +863,8 @@ def calc_phi_z_avg(phi_z):
 def calc_phi_z(g_ta,g_free,g_z):
     return np.sum(g_ta*np.fliplr(g_free),axis=1)/g_z
 
-from refl1d.calc_g_zs_cex import _calc_g_zs_inner
-
 def calc_g_zs(g_z,c_i,layers,segments):
+    from refl1d.calc_g_zs_cex import _calc_g_zs_inner
     
     # initialize     
 
