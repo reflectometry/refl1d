@@ -435,30 +435,30 @@ class EndTetheredPolymer(Layer):
     Uses a numerical self-consistent field profile 
     [#Cosgrove]_ [#deVos]_ [#Sheridan]_
     
-    :Parameters:
+    **Parameters**
     
-        *chi*
+        :*chi*:
             solvent interaction parameter
-        *chi_s*
+        :*chi_s*:
             surface interaction parameter
-        *h_dry*
+        :*h_dry*:
             thickness of the neat polymer layer
-        *l_lat*
+        :*l_lat*:
             real length per lattice site
-        *mn*
+        :*mn*:
             Number average molecular weight
-        *m_lat*
+        :*m_lat*:
             real mass per lattice segment
-        *pdi*
+        :*pdi*:
             Dispersity (Polydispersity index)
-        *thickness*
+        :*thickness*:
             Slab thickness should be greater than the contour 
             length of the polymer
-        *interface*
+        :*interface*:
             should be zero
-        *material*
+        :*material*:
             the polymer material
-        *solvent*
+        :*solvent*:
             the solvent material
     
     Previous layer should not have roughness! Use a spline to simulate it. 
