@@ -12,6 +12,7 @@ Contents
 
 .. toctree::
    :maxdepth: 2
+   :includehidden:
 
    getting_started/index.rst
    tutorial/index.rst

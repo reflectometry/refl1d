@@ -6,15 +6,16 @@ Installing the application
 
 .. contents:: :local:
 
-Refl1D |version| is provided as a Windows installer or as source:
+Refl1D |version| is provided as installer or as source:
 
-	- Windows installer: :slink:`%(winexe)s`
-	- Apple installer: :slink:`%(macapp)s`
-	- Source: :slink:`%(srczip)s`
+    - Windows installer: :slink:`%(winexe)s`
+    - Apple installer: :slink:`%(macapp)s`
+    - Source: :slink:`%(srczip)s`
 
-Th Windows installer walks through the steps of setting the program up
+The installer walks through the steps of setting the program up
 to run on your machine and provides the sample data to be used in the
-tutorial.  Installers for other platforms are not yet available, and
+tutorial.  Installers are available for Windows and OS/X.  Linux must
+be installed from source, , and
 must be built from source.
 
 Building from source
@@ -29,31 +30,36 @@ may work.
 
 Our base scientific python environment contains:
 
-	- Python 2.6 (not 3.x)
-	- Matplotlib 1.0.0
-	- Numpy 1.3.0
-	- Scipy 0.7.0
-	- WxPython 2.8.10.1
-	- SetupTools 0.6c9
-	- gcc 3.4.4
-	- PyParsing 1.5.2
-	- Periodictable 1.3
+    - Python 2.6 (not 3.x)
+    - Matplotlib 1.0.0
+    - Numpy 1.3.0
+    - Scipy 0.7.0
+    - WxPython 2.8.10.1
+    - SetupTools 0.6c9
+    - gcc 3.4.4
+    - PyParsing 1.5.2
+    - Periodictable 1.3
 
 To run tests you will need:
 
-	- Nose 0.11
+    - Nose 0.11
 
 To build the HTML documentation you will need:
 
-	- Sphinx 1.0.4
-	- DocUtils 0.5
-	- Pyments 1.0
-	- Jinja2 2.5.2
-	- `MathJax <http://www.mathjax.org/download/>`_ 1.0.1
+    - Sphinx 1.0.4
+    - DocUtils 0.5
+    - Pyments 1.0
+    - Jinja2 2.5.2
 
 The PDF documentation requires a working LaTeX installation.
 
-Platform specific details for setting up your environment are given below.
+You can install directly from PyPI using pip::
+
+    pip install bumps
+
+If this fails, then follow the instructions to install from the source
+archive directly. Platform specific details for setting up your
+environment are given below.
 
 Windows
 -------
@@ -67,17 +73,17 @@ build a self contained release package.
 
 The Python(x,y) package supplies a C/C++ compiler, but the package does
 not set it as the default compiler.  To do this you will need to create
-*C:\\Python26\\Lib\\distutils\\distutils.cfg* with the following content::
+*C:\Python27\Lib\\distutils\\distutils.cfg* with the following content::
 
-	[build]
-	compiler=mingw32
+    [build]
+    compiler=mingw32
 
 Once python is prepared, you can install the periodic table package using
 the Windows console.  To start the console, click the "Start" icon on your
 task bar and select "Run...".  In the Run box, type "cmd".  Enter the
 following command in the console::
 
-	python -m easy_install periodictable
+    python -m easy_install periodictable
 
 This should install periodictable and pyparsing.
 
@@ -93,11 +99,17 @@ Now type the command to build and install Refl1D::
 
 Now change to your data directory::
 
-	cd "C:\Documents and Settings\<username>\My Documents\data"
+    cd "C:\Documents and Settings\<username>\My Documents\data"
 
 To run the program use::
 
-	python "C:\Python26\Scripts\refl1d" -h
+	python -m refl1d.main -h
+
+We have also built working versions using
+`WinPython <http://winpython.sourceforge.net/>`_,
+`Anaconda <https://store.continuum.io/cshop/anaconda/>`_,
+`Canopy <https://www.enthought.com/products/canopy/>`_,
+and from individually distributed python packages.
 
 Linux
 -----
@@ -205,8 +217,8 @@ all required packages.
 
 To build the Windows installer, you will need two more downloads:
 
-	- Visual C++ 2008 Redistributable Package (x86) 11/29/2007
-	- `Inno Setup <http://www.jrsoftware.org/isdl.php>`_ 5.3.10 QuickStart Pack
+    - Visual C++ 2008 Redistributable Package (x86) 11/29/2007
+    - `Inno Setup <http://www.jrsoftware.org/isdl.php>`_ 5.3.10 QuickStart Pack
 
 The C++ redistributable package is needed for programs compiled with the
 Microsoft Visual C++ compiler, including the standard build of the Python
@@ -226,7 +238,7 @@ With all the pieces in place, you can run through all steps of the
 build and install by changing to the top level python directory and
 typing::
 
-	python master_builder.py
+    python master_builder.py
 
 This creates the redistributable installer refl1d-<version>-win32.exe for
 Windows one level up in the directory tree.  In addition, source archives
