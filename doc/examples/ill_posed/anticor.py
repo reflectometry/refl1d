@@ -47,11 +47,13 @@ M.simulate_data(noise=5)
 problem = FitProblem(M)
 
 # This complete model script is defined in
-# :download:`mixed.py <mixed.py>`:
+# :download:`anticor.py <anticor.py>`:
 #
-# .. literalinclude:: mixed.py
+# .. literalinclude:: anticor.py
 #
 # We can test how well the fitter can recover the original model
-# by running refl1d with --random::
+# by running refl1d with --random:
 #
-#    $ refl1d mixed.py --random --store=T1 --fit=dream --burn=500 --steps=500
+# .. parsed-literal::
+#
+#    $ refl1d anticor.py --random --store=T1 --fit=dream --burn=500 --steps=500

@@ -38,6 +38,7 @@ run = imp.load_source('run', run_py)
 run.prepare_environment()
 print("== path ==")
 print("\n".join(sys.path))
+print("== end path ==")
 
 # Register the refl1d model loader
 import refl1d.fitplugin
@@ -65,7 +66,7 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest',
               #'numpydoc.numpydoc',
              ]
 #plot_formats = [('png', 120), ('pdf', 50)] # Only make 80 dpi plots
-jsmath_path = 'MathJax/MathJax.js'
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -80,7 +81,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Refl1D'
-copyright = '2006-2013, Paul Kienzle, Nikunj Patel, James Krycka'
+copyright = '2006-2014, Public domain'
+#copyright = '2006-2013, Paul Kienzle, Nikunj Patel, James Krycka'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -104,7 +106,7 @@ version = release
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_trees = ['_*','build','MathJax','plots']
+exclude_trees = ['_*','examples']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
@@ -195,7 +197,7 @@ html_use_smartypants = True
 #html_show_sphinx = True
 
 # If true, "(C) Copyright ..." is shown in the HTML footer. Default is True.
-#html_show_copyright = True
+html_show_copyright = False
 
 # If true, an OpenSearch description file will be output, and all pages will
 # contain a <link> tag referring to it.  The value of this option must be the
@@ -208,6 +210,7 @@ html_use_smartypants = True
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Refl1D'
 
+program_title = 'Refl1D: Neutron and X-Ray Reflectivity Analysis'
 
 # -- Options for LaTeX output --------------------------------------------------
 
@@ -220,8 +223,7 @@ htmlhelp_basename = 'Refl1D'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'Refl1D.tex', '1-D Reflectometry Modeling',
-   'Paul Kienzle', 'manual'),
+  ('index', 'Refl1D.tex', program_title, 'Paul Kienzle', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -275,6 +277,13 @@ slink_vars=dict(version=release, htmlroot=htmlroot,
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'refl1d', '1-D reflectometry modeling',
-     ['Paul Kienzle'], 1)
+    ('index', 'refl1d', program_title, ['Paul Kienzle'], 1)
 ]
+
+# Generate API docs
+import genmods
+genmods.make()
+
+# Generate tutorials
+import gentut
+gentut.make()

@@ -37,8 +37,11 @@ def reflmodule_config():
          "contract_profile.cc",
          "convolve.c", "convolve_sampled.c",
     )
+    Sdeps = ("erf.c","methods.h","rebin.h","rebin2D.h","reflcalc.h")
     sources = [os.path.join('refl1d','lib',f) for f in S]
-    module = Extension('refl1d.reflmodule', sources=sources)
+    depends = [os.path.join('refl1d','lib',f) for f in Sdeps]
+    module = Extension('refl1d.reflmodule',
+                       sources=sources, depends=depends)
     return module
 
 from numpy import get_include
@@ -74,7 +77,7 @@ dist = setup(
         #package_data = gui_resources.package_data(),
         scripts = ['bin/refl1d_cli.py','bin/refl1d_gui.py'],
         ext_modules = [reflmodule_config(),SCFmodule_config()],
-        requires = [], # ['bumps>=0.9'],
+        install_requires = ['bumps>=0.7.5','periodictable'],
         cmdclass = {'build_ext': openmp_ext(default=False)},
         )
 

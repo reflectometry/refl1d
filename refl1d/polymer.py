@@ -428,8 +428,7 @@ class EndTetheredPolymer(Layer):
     *mn* | Number average molecular weight
     *m_lat* | real mass per lattice segment
     *pdi* | Dispersity (Polydispersity index)
-    *thickness* | Slab thickness should be greater than the contour length
-            of the polymer
+    *thickness* | Slab thickness should be greater than the contour length of the polymer
     *interface* | should be zero
     *material* | the polymer material
     *solvent* | the solvent material
