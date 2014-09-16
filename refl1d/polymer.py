@@ -396,7 +396,7 @@ def MushroomProfile(z, delta=0.1, vf=1.0, sigma=1.0):
         mushroom_profile = mushroom_math(x,delta,vf)
     else: # we should RARELY get here
         scale = (delta+thresh)/2.0/thresh
-        mushroom_profile = (mushroom_math(x,thresh,vf) +
+        mushroom_profile = (scale*mushroom_math(x,thresh,vf) +
                             (1.0-scale)*mushroom_math(x,-thresh,vf))
 
     try:
