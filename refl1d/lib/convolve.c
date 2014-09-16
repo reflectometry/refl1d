@@ -5,6 +5,11 @@
   #define const
   #define __LITTLE_ENDIAN
   #include "erf.c"
+  #define erf _local_erf
+  #define erfc _local_erfc
+
+  double erf(double x);
+  double erfc(double x);
 #endif
 
 #include <stdio.h>
@@ -153,6 +158,8 @@ convolve_point(const double xin[], const double yin[], size_t k, size_t n,
   const double two_sigma_sq = 2. * sigma * sigma;
   double z, Glo, erflo, erfmin, y;
 
+  const double zhi , Ghi, erfhi, m ,b ;
+
   z = xo - xin[k];
   Glo = exp(-z*z/two_sigma_sq);
   erfmin = erflo = erf(-z/(SQRT2*sigma));
@@ -163,11 +170,11 @@ convolve_point(const double xin[], const double yin[], size_t k, size_t n,
     if (xin[k] == xin[k-1]) continue;
 
     /* Compute the next endpoint */
-    const double zhi = xo - xin[k];
-    const double Ghi = exp(-zhi*zhi/two_sigma_sq);
-    const double erfhi = erf(-zhi/(SQRT2*sigma));
-    const double m = (yin[k]-yin[k-1])/(xin[k]-xin[k-1]);
-    const double b = yin[k] - m * xin[k];
+    zhi = xo - xin[k];
+    Ghi = exp(-zhi*zhi/two_sigma_sq);
+    erfhi = erf(-zhi/(SQRT2*sigma));
+    m = (yin[k]-yin[k-1])/(xin[k]-xin[k-1]);
+    b = yin[k] - m * xin[k];
 
     /* Add the integrals. */
     y += 0.5*(m*xo+b)*(erfhi-erflo) - sigma/SQRT2PI*m*(Ghi-Glo);

@@ -30,21 +30,36 @@ import refl1d
 
 packages = find_packages()
 
+    
 # reflmodule extension
 def reflmodule_config():
+    import distutils.ccompiler
+    compiler = distutils.ccompiler.get_default_compiler()
+    for arg in sys.argv:
+        if arg.startswith('--compiler='):
+            _,compiler=arg.split('=')
+    if compiler == 'msvc':
+        eca=['/EHsc']
+    else:
+        eca=['']
+
     S = ("reflmodule.cc","methods.cc",
          "reflectivity.cc", "magnetic.cc",
          "contract_profile.cc",
          "convolve.c", "convolve_sampled.c",
     )
+
     sources = [os.path.join('refl1d','lib',f) for f in S]
-    module = Extension('refl1d.reflmodule', sources=sources)
+    module = Extension('refl1d.reflmodule', 
+                       sources=sources, 
+                       extra_compile_args=eca )
     return module
 
 from numpy import get_include
 # SCF extension
 def SCFmodule_config():
-    return Extension('refl1d.calc_g_zs_cex', sources=[os.path.join('refl1d','lib','calc_g_zs_cex.c')],
+    return Extension('refl1d.calc_g_zs_cex', 
+                     sources=[os.path.join('refl1d','lib','calc_g_zs_cex.c')],
                      include_dirs=[get_include()])
                      
 #TODO: write a proper dependency checker for packages which cannot be

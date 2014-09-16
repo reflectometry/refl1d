@@ -1,9 +1,7 @@
 /* This program is public domain. */
 
 /* Visual Studio 2008 is missing cstdint */
-#ifndef MISSING_STDINT
-  #include <stdint.h>
-#else
+#if defined(_MSC_VER) && _MSC_VER<=1600
   typedef signed char        int8_t;
   typedef short              int16_t;
   typedef int                int32_t;
@@ -12,7 +10,7 @@
   typedef unsigned short     uint16_t;
   typedef unsigned int       uint32_t;
   typedef unsigned long long uint64_t;
-#endif /* !MISSING_STDINT */
+#endif
 
 #include <Python.h>
 
