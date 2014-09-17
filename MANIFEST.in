@@ -13,6 +13,7 @@ include MANIFEST.in  # this file
 include master_builder.py
 include refl1d.iss
 include setup_py2exe.py
+include refl1d/lib/*.h refl1d/lib/erf.c
 
 # Delete files
 #prune this that

@@ -227,7 +227,9 @@ def build_documentation():
 
     # Delete any left over files from a previous build.
     # Create documentation in HTML and PDF format.
-    exec_cmd(MAKE+" clean html pdf", cwd=doc_dir)
+    sphinx_cmd = '"%s" -m sphinx.__init__ -b %%s -d _build/doctrees -D latex_paper_size=letter .'
+    exec_cmd(sphinx_cmd%"html", cwd=doc_dir)
+    exec_cmd(sphinx_cmd%"pdf", cwd=doc_dir)
     # Copy PDF to the html directory where the html can find it.
     if os.path.isfile(pdf):
         shutil.copy(pdf, html_dir)

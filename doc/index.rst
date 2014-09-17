@@ -2,9 +2,8 @@
    :Release: |version|
    :Date:    |today|
 
-   Printable manual: `Relf1D.pdf <Refl1D.pdf>`_
-   Windows installer: :slink:`%(winexe)s`
-   Apple installer: :slink:`%(macapp)s`
+   | Windows installer: :slink:`%(winexe)s`
+   | Apple installer: :slink:`%(macapp)s`
 
    :ref:`Index <genindex>` :ref:`Search <search>`
 
@@ -13,8 +12,9 @@ Contents
 
 .. toctree::
    :maxdepth: 2
+   :includehidden:
 
    getting_started/index.rst
-   tutorial.rst
+   tutorial/index.rst
    guide/index.rst
    api/index.rst
