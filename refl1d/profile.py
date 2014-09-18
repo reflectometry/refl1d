@@ -560,32 +560,46 @@ def build_profile(z, thickness, roughness, value):
     # TODO: Make sure it works even when z is wider than the range of offsets.
     if idx[-1] < len(z):
         idx[-1] = len(z)
-
-    # compute the results
+        
     result = numpy.empty_like(z)
-    for i,mvalue in enumerate(value):
+    if len(value) >= 30:
+        # If there are enough layers (30 on my system), quickly assign a basic profile.
+        # This prevents a lot of adding and multiplying of zeros for splines, etc.
+        # TODO: Ideally, this would be a pure numpy operation, somehow.
+        for i, mvalue in enumerate(value):
+            result[idx[i]:idx[i+1]] = mvalue
+            
+        # Then go back to any rough layers and blend properly.
+        roughness = numpy.append(roughness,inf) # len(roughness) needs to be len(value)
+        layer_iter = iter(roughness.nonzero()[0]) # nonzero returns a tuple of arrays
+        
+    else:
+        # Otherwise, there aren't enough layers to make that optimization worthwhile.
+        layer_iter = (i for i, _ in enumerate(value))
+    
+    for i in layer_iter:
         zo = z[idx[i]:idx[i+1]]
+        
         if i==0:
             lsigma = lvalue = lblend = 0
         else:
             lsigma = roughness[i-1]
             lvalue = value[i-1]
             lblend = blend(zo-offset[i],lsigma)
+        
         if i >= len(value)-1:
             rsigma = rvalue = rblend = 0
         else:
             rsigma = roughness[i]
             rvalue = value[i+1]
             rblend = blend(offset[i+1]-zo,rsigma)
-        #print "zo",i,zo
-        #print "lblend",lsigma,lblend
-        #print "rblend",rsigma,rblend
+            
         mblend = 1 - (lblend+rblend)
-        result[idx[i]:idx[i+1]] = mvalue*mblend + lvalue*lblend + rvalue*rblend
-        #result[idx[i]:idx[i+1]] = rvalue*rblend
-
+        result[idx[i]:idx[i+1]] = value[i]*mblend + lvalue*lblend + rvalue*rblend
+        
     return result
 
+sqrt2=numpy.sqrt(2.0)
 def blend(z, rough):
     """
     blend function
@@ -594,6 +608,6 @@ def blend(z, rough):
     profile you expect to find in the current profile at depth z.
     """
     if rough <= 0.0:
-        return numpy.where(numpy.greater(z, 0), 0.0, 1.0)
+        return z <= 0.0 # True/False behave as 1/0 for float * and +
     else:
-        return 0.5*( 1.0 - erf( z/( rough*numpy.sqrt(2.0) ) ) )
+        return 0.5*( 1.0 - erf( z/( rough*sqrt2 ) ) )
