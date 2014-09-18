@@ -115,7 +115,7 @@ convolve_point(const double xin[], const double yin[], size_t k, size_t n,
 {
   const double two_sigma_sq = 2. * sigma * sigma;
   double z, Glo, yGlo, y, norm;
-
+  
   z = xo - xin[k];
   Glo = exp(-z*z/two_sigma_sq);
   yGlo = yin[k]*Glo;
@@ -158,23 +158,20 @@ convolve_point(const double xin[], const double yin[], size_t k, size_t n,
   const double two_sigma_sq = 2. * sigma * sigma;
   double z, Glo, erflo, erfmin, y;
 
-  const double zhi , Ghi, erfhi, m ,b ;
-
   z = xo - xin[k];
   Glo = exp(-z*z/two_sigma_sq);
   erfmin = erflo = erf(-z/(SQRT2*sigma));
   y = 0.;
   /* printf("%5.3f: (%5.3f,%11.5g)",xo,xin[k],yin[k]); */
-  while (++k < n) {
+  while (++k < n) if (xin[k] != xin[k-1]) {
     /* No additional contribution from duplicate points. */
-    if (xin[k] == xin[k-1]) continue;
 
     /* Compute the next endpoint */
-    zhi = xo - xin[k];
-    Ghi = exp(-zhi*zhi/two_sigma_sq);
-    erfhi = erf(-zhi/(SQRT2*sigma));
-    m = (yin[k]-yin[k-1])/(xin[k]-xin[k-1]);
-    b = yin[k] - m * xin[k];
+    const double zhi = xo - xin[k];
+    const double Ghi = exp(-zhi*zhi/two_sigma_sq);
+    const double erfhi = erf(-zhi/(SQRT2*sigma));
+    const double m = (yin[k]-yin[k-1])/(xin[k]-xin[k-1]);
+    const double b = yin[k] - m * xin[k];
 
     /* Add the integrals. */
     y += 0.5*(m*xo+b)*(erfhi-erflo) - sigma/SQRT2PI*m*(Ghi-Glo);
