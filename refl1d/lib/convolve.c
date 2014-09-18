@@ -5,6 +5,11 @@
   #define const
   #define __LITTLE_ENDIAN
   #include "erf.c"
+  #define erf _local_erf
+  #define erfc _local_erfc
+
+  double erf(double x);
+  double erfc(double x);
 #endif
 
 #include <stdio.h>
@@ -110,7 +115,7 @@ convolve_point(const double xin[], const double yin[], size_t k, size_t n,
 {
   const double two_sigma_sq = 2. * sigma * sigma;
   double z, Glo, yGlo, y, norm;
-
+  
   z = xo - xin[k];
   Glo = exp(-z*z/two_sigma_sq);
   yGlo = yin[k]*Glo;
@@ -158,9 +163,8 @@ convolve_point(const double xin[], const double yin[], size_t k, size_t n,
   erfmin = erflo = erf(-z/(SQRT2*sigma));
   y = 0.;
   /* printf("%5.3f: (%5.3f,%11.5g)",xo,xin[k],yin[k]); */
-  while (++k < n) {
+  while (++k < n) if (xin[k] != xin[k-1]) {
     /* No additional contribution from duplicate points. */
-    if (xin[k] == xin[k-1]) continue;
 
     /* Compute the next endpoint */
     const double zhi = xo - xin[k];

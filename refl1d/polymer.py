@@ -6,7 +6,7 @@ Layer models for polymer systems.
 
 Analytic Self-consistent Field (SCF) Brush profile [#Zhulina]_ [#Karim]_
 
-Analytical Self-consistent Field (SCF) Mushroom Profile [#Adamuţi-Trache]_
+Analytical Self-consistent Field (SCF) Mushroom Profile [#Adamuti-Trache]_
 
 Numerical Self-consistent Field (SCF) End-Tethered Polymer Profile [#Cosgrove]_ [#deVos]_ [#Sheridan]_
 
@@ -19,7 +19,7 @@ Numerical Self-consistent Field (SCF) End-Tethered Polymer Profile [#Cosgrove]_ 
    "Comparative swelling of gels and polymer brush layers",
    Physica B 221, 331-336. `<http://dx.doi.org/10.1016/0921-4526(95)00946-9>`
    
-.. [#Adamuţi-Trache] Adamuţi-Trache, M., McMullen, W. E. & Douglas, J. F. 
+.. [#Adamuti-Trache] Adamuţi-Trache, M., McMullen, W. E. & Douglas, J. F. 
     Segmental concentration profiles of end-tethered polymers with excluded-
     volume and surface interactions. J. Chem. Phys. 105, 4798 (1996).
     
@@ -51,17 +51,25 @@ class PolymerBrush(Layer):
     r"""
     Polymer brushes in a solvent
 
-    Parameters:
-
-        *thickness* the thickness of the solvent layer
-        *interface* the roughness of the solvent surface
-        *polymer* the polymer material
-        *solvent* the solvent material or vacuum
-        *base_vf* volume fraction (%) of the polymer brush at the interface
-        *base* the thickness of the brush interface (A)
-        *length* the length of the brush above the interface (A)
-        *power* the rate of brush thinning
-        *sigma* rms brush roughness (A)
+    :Parameters:
+        *thickness* 
+            the thickness of the solvent layer
+        *interface* 
+            the roughness of the solvent surface
+        *polymer* 
+            the polymer material
+        *solvent* 
+            the solvent material or vacuum
+        *base_vf* 
+            volume fraction (%) of the polymer brush at the interface
+        *base* 
+            the thickness of the brush interface (A)
+        *length* 
+            the length of the brush above the interface (A)
+        *power* 
+            the rate of brush thinning
+        *sigma* 
+            rms brush roughness (A)
 
     The materials can either use the scattering length density directly,
     such as PDMS = SLD(0.063, 0.00006) or they can use chemical composition
@@ -169,13 +177,18 @@ class VolumeProfile(Layer):
     """
     Generic volume profile function
 
-    Parameters:
+    :Parameters:
 
-        *thickness* the thickness of the solvent layer
-        *interface* the roughness of the solvent surface
-        *material* the polymer material
-        *solvent* the solvent material
-        *profile* the profile function, suitably parameterized
+        *thickness* 
+            the thickness of the solvent layer
+        *interface* 
+            the roughness of the solvent surface
+        *material* 
+            the polymer material
+        *solvent* 
+            the solvent material
+        *profile* 
+            the profile function, suitably parameterized
 
     The materials can either use the scattering length density directly,
     such as PDMS = SLD(0.063, 0.00006) or they can use chemical composition
@@ -199,7 +212,7 @@ class VolumeProfile(Layer):
     Initial values for the function parameters can be given using name=value.
     These values can be scalars or fitting parameters.  The function will
     be called with the current parameter values as arguments.  The layer
-    thickness can be computed as :func:`layer_thickness`.
+    thickness can be computed as :func: `layer_thickness`.
 
     """
     # TODO: test that thickness(z) matches the thickness of the layer
@@ -292,18 +305,20 @@ class PolymerMushroom(Layer):
     Polymer mushrooms in a solvent (volume profile)
 
     :Parameters:
-
-    *delta* | interaction parameter
-    *vf* | not quite volume fraction (dimensionless grafting density)
-    *sigma* | convolution roughness (A)
+        *delta* | real scalar
+            interaction parameter
+        *vf* | real scalar
+            not quite volume fraction (dimensionless grafting density)
+        *sigma* | real scalar
+            convolution roughness (A)
     
     Using analytical SCF methods for gaussian chains, which are scaled
     by the radius of gyration of the equivalent free polymer as an 
-    approximation to results of renormalization group methods.[#Adamuţi-Trache]
+    approximation to results of renormalization group methods.[#Adamuti-Trache]
     
     Solutions are only strictly valid for vf << 1. 
 
-.. [#Adamuţi-Trache] Adamuţi-Trache, M., McMullen, W. E. & Douglas, J. F. 
+.. [#Adamuti-Trache] Adamuţi-Trache, M., McMullen, W. E. & Douglas, J. F. 
     Segmental concentration profiles of end-tethered polymers with 
     excluded-volume and surface interactions. J. Chem. Phys. 105, 4798 (1996).
     """
@@ -380,10 +395,9 @@ def MushroomProfile(z, delta=0.1, vf=1.0, sigma=1.0):
     if abs(delta) > thresh:
         mushroom_profile = mushroom_math(x,delta,vf)
     else: # we should RARELY get here
-        scale = (delta+thresh)/2.0/thresh             
-        mushroom_profile = scale*mushroom_math(x,thresh,vf)        
-        mushroom_profile = (mushroom_profile +
-                            (1.0-scale)*mushroom_math(x,-thresh,vf)) 
+        scale = (delta+thresh)/2.0/thresh
+        mushroom_profile = (scale*mushroom_math(x,thresh,vf) +
+                            (1.0-scale)*mushroom_math(x,-thresh,vf))
 
     try:
         # make the base connect with the profile
@@ -418,36 +432,64 @@ class EndTetheredPolymer(Layer):
     """
     Polymer end-tethered to an interface in a solvent
     
-    :Parameters:
-
-    *z* | the SLD depth array
-    *chi* | solvent interaction parameter
-    *chi_s* | surface interaction parameter
-    *h_dry* | thickness of the neat polymer layer
-    *l_lat* | real length per lattice site
-    *mn* | Number average molecular weight
-    *m_lat* | real mass per lattice segment
-    *pdi* | Dispersity (Polydispersity index)
-    *thickness* | Slab thickness should be greater than the contour length of the polymer
-    *interface* | should be zero
-    *material* | the polymer material
-    *solvent* | the solvent material
+    Uses a numerical self-consistent field profile 
+    [#Cosgrove]_ [#deVos]_ [#Sheridan]_
+    
+    **Parameters**
+    
+        :*chi*:
+            solvent interaction parameter
+        :*chi_s*:
+            surface interaction parameter
+        :*h_dry*:
+            thickness of the neat polymer layer
+        :*l_lat*:
+            real length per lattice site
+        :*mn*:
+            Number average molecular weight
+        :*m_lat*:
+            real mass per lattice segment
+        :*pdi*:
+            Dispersity (Polydispersity index)
+        :*thickness*:
+            Slab thickness should be greater than the contour 
+            length of the polymer
+        :*interface*:
+            should be zero
+        :*material*:
+            the polymer material
+        :*solvent*:
+            the solvent material
     
     Previous layer should not have roughness! Use a spline to simulate it. 
     You can put this material in the "above" slot of Freelayer.
     
-    According to [#Vincent], l_lat and m_lat should be calculated by the formulas
+    According to [#Vincent]_, l_lat and m_lat should be calculated by the 
+    formulas::
     
-    l_lat = a**2 * m / l / p_l
-    m_lat = (a * m / l)**2 / p_l
+        l_lat = a**2 * m / l / p_l
+        m_lat = (a * m / l)**2 / p_l
     
     where l is the real polymer's bond length, m is the real segment mass,
     and a is the proportionality constant between molecular weight and radius
-    of gyration at theta conditions. The lattice persistence is 
+    of gyration at theta conditions. The lattice persistence is::
     
-    p_l = 1/6*((1+1/Z)/(1-1/Z))
+        p_l = 1/6*((1+1/Z)/(1-1/Z))
     
     with coordination number Z = 6 for a cubic lattice, p_l = .233.
+        
+..  [#Cosgrove] Cosgrove, T., Heath, T., Van Lent, B., Leermakers, F. A. M., 
+        & Scheutjens, J. M. H. M. (1987). Configuration of terminally attached 
+        chains at the solid/solvent interface: self-consistent field theory and 
+        a Monte Carlo model. Macromolecules, 20(7), 1692–1696. 
+        doi:10.1021/ma00173a041
+    
+..  [#deVos] De Vos, W. M., & Leermakers, F. A. M. (2009). Modeling the 
+        structure of a polydisperse polymer brush. Polymer, 50(1), 305–316. 
+        doi:10.1016/j.polymer.2008.10.025
+    
+..  [#Sheridan] Sheridan, R. J., Beers, K. L., et. al (2014). Direct
+        observation of "surface theta" conditons. {in prep}
 
 ..  [#Vincent] Vincent, B., Edwards, J., Emmett, S., & Croot, R. (1988). 
         Phase separation in dispersions of weakly-interacting particles in 
@@ -848,7 +890,7 @@ def calc_g_zs(g_z,c_i,layers,segments):
     # FASTER: use the convolve function to partially vectorize  
 #    pg_zs=g_zs[:,0]    
 #    for r in range(1,segments):
-#        pg_zs=g_z*(c_i[0,segments-r-1]+np.convolve(pg_zs,lambda_array,'same'))
+#        pg_zs=g_z*(c_i[0,segments-r-1]+np.convolve(pg_zs,lambda_array,1))
 #        g_zs[:,r]=pg_zs
     
     # SLOW: loop outright, pulling some slicing out of the innermost loop  
@@ -881,9 +923,7 @@ def SZdist(pdi,nn):
     
     ni = np.arange(1,cutoff+1,dtype=np.float64)
     r = ni/nn
-    p_ni = exp(
-                  np.log(x/ni) - gammaln(x+1) + x*r*(np.log(x*r)/r-1)
-                  )
+    p_ni = exp(np.log(x/ni) - gammaln(x+1) + x*r*(np.log(x*r)/r-1))
     
     if any(p_ni>=1):
         raise SZerror('Schultz-Zimm calculation blew up')

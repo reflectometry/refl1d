@@ -3,6 +3,7 @@
 .mplconfig
 .project
 .pydevproject
+.spyderproject
 *.pyd
 *.pyc
 *.swp
