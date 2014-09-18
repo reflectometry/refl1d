@@ -570,8 +570,11 @@ def build_profile(z, thickness, roughness, value):
             result[idx[i]:idx[i+1]] = mvalue
             
         # Then go back to any rough layers and blend properly.
-        roughness = numpy.append(roughness,inf) # len(roughness) needs to be len(value)
-        layer_iter = iter(roughness.nonzero()[0]) # nonzero returns a tuple of arrays
+        rough_layers = roughness.nonzero()[0] # nonzero returns a tuple of arrays
+        
+        # Now make an iterable over rough layers and the immediately above,
+        # taking care not to repeat any.
+        layer_iter = set(tuple(rough_layers)+tuple(rough_layers+1))
         
     else:
         # Otherwise, there aren't enough layers to make that optimization worthwhile.
