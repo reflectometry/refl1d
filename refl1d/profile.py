@@ -63,6 +63,8 @@ import numpy
 from numpy import inf
 from bumps.util import erf
 #from scipy.special import erf
+from itertools import izip
+sqrt2=numpy.sqrt(2.0)
 
 from .reflmodule import _contract_by_area, _contract_mag
 
@@ -562,25 +564,26 @@ def build_profile(z, thickness, roughness, value):
         idx[-1] = len(z)
         
     result = numpy.empty_like(z)
-    if len(value) >= 30:
+    lenval=len(value)
+    if lenval >= 30:
         # If there are enough layers (30 on my system), quickly assign a basic profile.
         # This prevents a lot of adding and multiplying of zeros for splines, etc.
         # TODO: Ideally, this would be a pure numpy operation, somehow.
-        for i, mvalue in enumerate(value):
-            result[idx[i]:idx[i+1]] = mvalue
+        for start,stop,mvalue in izip(idx,idx[1:],value):
+            result[start:stop]=mvalue
             
         # Then go back to any rough layers and blend properly.
         rough_layers = roughness.nonzero()[0] # nonzero returns a tuple of arrays
         
         # Now make an iterable over rough layers and the immediately above,
         # taking care not to repeat any.
-        layer_iter = set(tuple(rough_layers)+tuple(rough_layers+1))
+        layer_iterator = set((rough_layers).tolist()+(rough_layers+1).tolist())
         
     else:
         # Otherwise, there aren't enough layers to make that optimization worthwhile.
-        layer_iter = (i for i, _ in enumerate(value))
+        layer_iterator = (i for i in xrange(lenval))
     
-    for i in layer_iter:
+    for i in layer_iterator:
         zo = z[idx[i]:idx[i+1]]
         
         if i==0:
@@ -590,7 +593,7 @@ def build_profile(z, thickness, roughness, value):
             lvalue = value[i-1]
             lblend = blend(zo-offset[i],lsigma)
         
-        if i >= len(value)-1:
+        if i >= lenval-1:
             rsigma = rvalue = rblend = 0
         else:
             rsigma = roughness[i]
@@ -602,7 +605,6 @@ def build_profile(z, thickness, roughness, value):
         
     return result
 
-sqrt2=numpy.sqrt(2.0)
 def blend(z, rough):
     """
     blend function
