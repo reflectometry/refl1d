@@ -54,7 +54,6 @@ from bumps.parameter import Parameter
 from .model import Layer
 from . import util
 
-
 class PolymerBrush(Layer):
     r"""
     Polymer brushes in a solvent
@@ -396,13 +395,13 @@ def MushroomProfile(z, delta=0.1, vf=1.0, sigma=1.0):
     No visual difference when delta is between +-0.001, and there's no
     floating point error until ~+-1e-14.
     '''
-
+    
     if abs(delta) > thresh:
         mushroom_profile = mushroom_math(x,delta,vf)
     else: # we should RARELY get here
-        scale = (delta+thresh)/2.0/thresh
-        mushroom_profile = (scale*mushroom_math(x,thresh,vf) +
-                            (1.0-scale)*mushroom_math(x,-thresh,vf))
+        scale = (delta+thresh)/2.0/thresh             
+        mushroom_profile = (scale*mushroom_math(x,thresh,vf) 
+                            + (1.0-scale)*mushroom_math(x,-thresh,vf))
 
     try:
         # make the base connect with the profile
@@ -420,18 +419,21 @@ def mushroom_math(x,delta=.1,vf=.1):
     delta=0 causes divide by zero error!! Compensate elsewhere.
     http://ab-initio.mit.edu/wiki/index.php/Faddeeva_Package
     '''
-    from scipy.special import erfc, erfcx
     
+    from scipy.special import erfc, erfcx
+ 
+    x_half=x/2.0
+    delta_double=2.0*delta
     return (
             (
-             erfc(x/2.0) 
-             -erfcx(2.0*(delta+x/4.0))*exp(-((x/2.0)**2)) 
+             erfc(x_half) 
+             -erfcx(delta_double+x_half)/exp(x_half*x_half)
              -erfc(x)
              + (
-                (1.0-4.0*delta*(x+2.0*delta))*erfcx(2.0*(delta+x/2.0))
-                + 4.0*delta/sqrt_pi
-               ) * exp(-(x**2))
-            ) * vf/(2.0 * delta * erfcx(2.0*delta))
+                (.25-delta*(x+delta_double))*erfcx(delta_double+x)
+                + delta/sqrt_pi
+               ) * 4.0 / exp(x*x)
+            ) * vf / (delta_double * erfcx(delta_double))
            )
 
 class EndTetheredPolymer(Layer):
@@ -662,13 +664,15 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
     else:
         raise ValueError('Invalid PDI')
     
-    starttime = time.time()   
+    starttime = time.time()
     
+    # TODO: Better initial guess for chi>.6, maybe from analytical approximant
     default_layers = round(max(MINLAT,theta/sqrt(sigmainput)))
     default_phi0 = np.linspace(sqrt(sigmainput),0,num=default_layers)
     default_phi0 = default_phi0.ravel()
 
     # Check if default guess is a better guess than input
+    using_default_phi0=True
     if phi0 is None:
         phi0 = default_phi0
         layers = default_layers
@@ -677,18 +681,22 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
         phi0 = abs(phi0)
         phi0[phi0>1.0] = 1.0
         layers = len(phi0)
-        eps = SCFeqns(phi0)
+        try:
+            eps = SCFeqns(phi0)
+        except:
+            eps = np.inf    
         default_eps = SCFeqns(default_phi0)
         if norm(eps)/sqrt(layers) > norm(default_eps)/sqrt(default_layers):
             if disp: print "\ndefault phi0 is better: layers =",default_layers,'\n'
             phi0 = default_phi0
         else:
             if disp: print "\npassed phi0 is better: layers =", layers,'\n'
+            using_default_phi0=False
     
+    jac_solve_method = 'gmres'
     done = False
     tol = 2e-6*theta # We tolerate up to 2ppm of our polymer in the last layer
     ratio = 1.2 # otherwise we grow it by 20%
-    layers = len(phi0)
     # if the loop sees that it can shrink 20%, it will, but it can lead to
     # endless loops. This flag shows if it has grown before, so it knows to
     # quit instead of shrinking
@@ -702,15 +710,35 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
     while not done:
         if disp: print "\nSolving SCF equation set..."
         try:
+            layers=len(phi0)
             result = root(SCFeqns,phi0,method='Krylov',callback=callback,
-                    options={'disp':bool(disp),
-                             'jac_options':{'method':'gmres'}})
-            phi = abs(result.x)
-            if disp: print '\nSolver exit code:',result.status,result.message
+                    options={'disp':bool(disp),'maxiter':20,
+                             'jac_options':{'method':jac_solve_method}})
+            if disp: 
+                print '\nSolver exit code:',result.status,result.message
+                
+            if result.status == 1:
+                phi = abs(result.x)
+            elif result.status == 2:
+                if not using_default_phi0:
+                    phi0 = default_phi0
+                    using_default_phi0 = True
+                    continue
+                else: 
+                    # give up and return the non-converging solution
+                    return abs(result.x)
+                
         except ShortCircuitError as e:
             growing = False # scrub this flag so we don't quit directly (rare)
             phi = e.x
             if disp: print e
+        
+        except RuntimeError as e:
+            if 'gmres is not re-entrant' == e.message:
+                jac_solve_method = 'lgmres'
+                continue
+            else:
+                raise
             
         if disp: print 'phi(L)/sum(phi) =',phi[-1] / theta * 1e6,'(ppm)\n'
         
@@ -732,8 +760,6 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
         else:
             # otherwise, we are done for real
             done = True
-            
-        layers = len(phi0)
             
     if disp:
         print "execution time:", round(time.time()-starttime,3), "s"
@@ -762,7 +788,7 @@ def _proto_callback(x,disp,layers,tol,ratio):
     if disp: print "Iterating..."
     if x[-1] > 4*tol:
         raise ShortCircuitError('Stopping, lattice too small',x)
-    elif layers > MINLAT and x[min(layers-1,round(layers/ratio))] < 4*tol:
+    elif layers > MINLAT and x[min(layers-1,round(layers/ratio))] < tol/4:
         raise ShortCircuitError('Stopping, lattice too big',x)
 
 lambda_1 = np.float64(1.0)/6.0 #always assume cubic lattice (1/6) for now
@@ -780,8 +806,9 @@ def SCFeqns_deVos(phi_z,chi,chi_s,theta,pdi,navgsegments,p_i,
     
     # let the solver go negative if it wants, or outside the limits 0..1
     phi_z = abs(phi_z.ravel())
-    if np.any(phi_z>=1):
-        return np.empty_like(phi_z).fill(np.nan)
+    penalty = (phi_z >= 1)
+    if penalty.any():
+        penalty *= phi_z-1
     phi_z_0 = 1.0 - phi_z
     
     layers = phi_z.size
@@ -813,7 +840,7 @@ def SCFeqns_deVos(phi_z,chi,chi_s,theta,pdi,navgsegments,p_i,
     phi_z_new = calc_phi_z(g_zs_ta_norm,g_zs_free_ngts_norm,g_z_norm)
     eps_z = phi_z-phi_z_new
     
-    return eps_z
+    return eps_z + penalty*np.sign(eps_z)
     
 def SCFeqns_Cosgrove(phi_z,chi,chi_s,theta,pdi,segments,
                      disp=False,fulloutput=False):
@@ -823,9 +850,10 @@ def SCFeqns_Cosgrove(phi_z,chi,chi_s,theta,pdi,segments,
     '''
     
     # let the solver go negative if it wants, or outside the limits 0..1
-    phi_z = abs(phi_z.ravel()) 
-    if np.any(phi_z>=1):
-        return np.empty_like(phi_z).fill(np.nan)
+    phi_z = abs(phi_z.ravel())
+    penalty = (phi_z >= 1)
+    if penalty.any():
+        penalty *= phi_z-1
     phi_z_0 = 1.0 - phi_z
     layers = phi_z.size
     
@@ -855,10 +883,13 @@ def SCFeqns_Cosgrove(phi_z,chi,chi_s,theta,pdi,segments,
     phi_z_new = calc_phi_z(g_ta_norm,g_free_norm,g_z_norm)
     eps_z = phi_z-phi_z_new
     
-    return eps_z
+    return eps_z + penalty*np.sign(eps_z)
 
+# This is okay to use as long as lambda_array is symmetric,
+# otherwise a slice lambda_array[::-1] is necessary
+from numpy.core.multiarray import correlate as raw_convolve
 def calc_phi_z_avg(phi_z):
-    return np.convolve(phi_z,lambda_array,'same')
+    return raw_convolve(phi_z,lambda_array,1)
     
 def calc_phi_z(g_ta,g_free,g_z):
     return np.sum(g_ta*np.fliplr(g_free),axis=1)/g_z
@@ -866,12 +897,10 @@ def calc_phi_z(g_ta,g_free,g_z):
 def calc_g_zs(g_z,c_i,layers,segments):
     from refl1d.calc_g_zs_cex import _calc_g_zs_inner
     
-    # initialize     
-
+    # initialize
     g_zs=np.empty((layers,segments),dtype=np.float64,order='F')
     
-    # choose special case 
-    
+    # choose special case
     if np.size(c_i) == 1:
         # terminally attached chains
         c_i = _fzeros(1,segments)
@@ -890,7 +919,7 @@ def calc_g_zs(g_z,c_i,layers,segments):
     # FASTER: use the convolve function to partially vectorize  
 #    pg_zs=g_zs[:,0]    
 #    for r in range(1,segments):
-#        pg_zs=g_z*(c_i[0,segments-r-1]+np.convolve(pg_zs,lambda_array,1))
+#        pg_zs=g_z*(c_i[0,segments-r-1]+raw_convolve(pg_zs,lambda_array,1))
 #        g_zs[:,r]=pg_zs
     
     # SLOW: loop outright, pulling some slicing out of the innermost loop  
@@ -923,15 +952,14 @@ def SZdist(pdi,nn):
     
     ni = np.arange(1,cutoff+1,dtype=np.float64)
     r = ni/nn
+    
     p_ni = exp(np.log(x/ni) - gammaln(x+1) + x*r*(np.log(x*r)/r-1))
     
-    if any(p_ni>=1):
+    if (p_ni>=1.0).any():
         raise SZerror('Schultz-Zimm calculation blew up')
     
     mysums = np.cumsum(p_ni)
-    keep = np.logical_and(
-        np.logical_or(np.array(range(cutoff)) < nn, p_ni >= 1.0e-6),
-        mysums < 1)
+    keep = np.logical_and(np.logical_or(r < 1.0, p_ni >= 1.0e-6), mysums < 1.0)
         
     return p_ni[keep].reshape(1,-1)
     
