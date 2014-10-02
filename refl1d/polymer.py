@@ -709,10 +709,11 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
     
     while not done:
         if disp: print "\nSolving SCF equation set..."
+        
         try:
             layers=len(phi0)
             result = root(SCFeqns,phi0,method='Krylov',callback=callback,
-                    options={'disp':bool(disp),'maxiter':20,
+                    options={'disp':bool(disp),'maxiter':10,
                              'jac_options':{'method':jac_solve_method}})
             if disp: 
                 print '\nSolver exit code:',result.status,result.message
@@ -725,16 +726,24 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
                     using_default_phi0 = True
                     continue
                 else: 
-                    # give up and return the non-converging solution
-                    return abs(result.x)
+                    raise RuntimeError("solver couldn't converge")
                 
         except ShortCircuitError as e:
             growing = False # scrub this flag so we don't quit directly (rare)
             phi = e.x
             if disp: print e
-        
+                
+        except ValueError as e:
+            if e.message == 'array must not contain infs or NaNs':
+                if not using_default_phi0:
+                    phi0 = default_phi0
+                    using_default_phi0 = True
+                    continue
+                else: 
+                    raise RuntimeError("solver couldn't converge")
+
         except RuntimeError as e:
-            if 'gmres is not re-entrant' == e.message:
+            if e.message == 'gmres is not re-entrant':
                 jac_solve_method = 'lgmres'
                 continue
             else:
@@ -804,11 +813,13 @@ def SCFeqns_deVos(phi_z,chi,chi_s,theta,pdi,navgsegments,p_i,
         Formatted for input to a nonlinear minimizer or solver.
     '''
     
-    # let the solver go negative if it wants, or outside the limits 0..1
+    # let the solver go negative if it wants
     phi_z = abs(phi_z.ravel())
-    penalty = (phi_z >= 1)
-    if penalty.any():
-        penalty *= phi_z-1
+    
+    # attempts to try fields with values greater than one are penalized
+    if (phi_z>.99999).any():
+        return np.ones_like(phi_z)*1e10
+    
     phi_z_0 = 1.0 - phi_z
     
     layers = phi_z.size
@@ -840,7 +851,7 @@ def SCFeqns_deVos(phi_z,chi,chi_s,theta,pdi,navgsegments,p_i,
     phi_z_new = calc_phi_z(g_zs_ta_norm,g_zs_free_ngts_norm,g_z_norm)
     eps_z = phi_z-phi_z_new
     
-    return eps_z + penalty*np.sign(eps_z)
+    return eps_z
     
 def SCFeqns_Cosgrove(phi_z,chi,chi_s,theta,pdi,segments,
                      disp=False,fulloutput=False):
@@ -849,11 +860,13 @@ def SCFeqns_Cosgrove(phi_z,chi,chi_s,theta,pdi,segments,
         Formatted for input to a nonlinear minimizer or solver.
     '''
     
-    # let the solver go negative if it wants, or outside the limits 0..1
+    # let the solver go negative if it wants
     phi_z = abs(phi_z.ravel())
-    penalty = (phi_z >= 1)
-    if penalty.any():
-        penalty *= phi_z-1
+    
+    # attempts to try fields with values greater than one are penalized
+    if (phi_z>.99999).any():
+        return np.ones_like(phi_z)*1e10
+    
     phi_z_0 = 1.0 - phi_z
     layers = phi_z.size
     
@@ -883,7 +896,7 @@ def SCFeqns_Cosgrove(phi_z,chi,chi_s,theta,pdi,segments,
     phi_z_new = calc_phi_z(g_ta_norm,g_free_norm,g_z_norm)
     eps_z = phi_z-phi_z_new
     
-    return eps_z + penalty*np.sign(eps_z)
+    return eps_z
 
 # This is okay to use as long as lambda_array is symmetric,
 # otherwise a slice lambda_array[::-1] is necessary
