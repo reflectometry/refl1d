@@ -37,10 +37,18 @@ Numerical Self-consistent Field (SCF) End-Tethered Polymer Profile [#Cosgrove]_ 
     of "surface theta" conditons. {in prep}
 """
 from __future__ import division
+
 __all__ = ["PolymerBrush","PolymerMushroom","EndTetheredPolymer","VolumeProfile","layer_thickness"]
+
 import inspect
+import time
+
 import numpy as np
 from numpy import real, imag, exp
+from numpy import sqrt, pi, hstack, ones_like
+from numpy import absolute as abs
+from numpy.linalg import norm
+from scipy.special import gammaln
 from bumps.parameter import Parameter
 
 from .model import Layer
@@ -374,9 +382,6 @@ class PolymerMushroom(Layer):
         Pr, Pi = np.real(P), np.imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
 
-from numpy import sqrt, pi, hstack, ones_like
-from scipy.special import erfc, erfcx
-
 def MushroomProfile(z, delta=0.1, vf=1.0, sigma=1.0):
     thickness = layer_thickness(z)
     thresh=1e-10
@@ -415,6 +420,7 @@ def mushroom_math(x,delta=.1,vf=.1):
     delta=0 causes divide by zero error!! Compensate elsewhere.
     http://ab-initio.mit.edu/wiki/index.php/Faddeeva_Package
     '''
+    from scipy.special import erfc, erfcx
     
     return (
             (
@@ -564,11 +570,6 @@ class EndTetheredPolymer(Layer):
         Pr, Pi = np.real(P), np.imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
     
-from numpy import absolute as abs
-import time
-from numpy.linalg import norm
-from scipy.optimize import  root
-
 MINLAT = 35
 
 def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None, 
@@ -639,6 +640,7 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
     The Newton-Krylov solver really makes this one. krylov+gmres was faster
     than the other scipy.optimize alternatives by quite a lot.
     '''
+    from scipy.optimize import  root
     
     sigmainput = theta/r
 
@@ -762,8 +764,6 @@ def _proto_callback(x,disp,layers,tol,ratio):
         raise ShortCircuitError('Stopping, lattice too small',x)
     elif layers > MINLAT and x[min(layers-1,round(layers/ratio))] < 4*tol:
         raise ShortCircuitError('Stopping, lattice too big',x)
-
-from scipy.special import gammaln
 
 lambda_1 = np.float64(1.0)/6.0 #always assume cubic lattice (1/6) for now
 lambda_0 = 1.0-2.0*lambda_1
