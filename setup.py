@@ -16,15 +16,6 @@ if sys.argv[1] == 'test':
 from setuptools import setup, find_packages, Extension
 #import fix_setuptools_chmod
 
-# Grab the openmp extension builder from the bumps package
-try:
-    import bumps
-except:
-    from os.path import dirname, abspath, join as joinpath
-    bumps_path = joinpath(dirname(dirname(abspath(__file__))),'bumps')
-    sys.path.insert(0, bumps_path)
-from bumps.openmp_ext import openmp_ext
-
 import refl1d
 
 
@@ -92,7 +83,6 @@ dist = setup(
         scripts = ['bin/refl1d_cli.py','bin/refl1d_gui.py'],
         ext_modules = [reflmodule_config(),SCFmodule_config()],
         install_requires = ['bumps>=0.7.5','periodictable'],
-        cmdclass = {'build_ext': openmp_ext(default=False)},
         )
 
 # End of file
