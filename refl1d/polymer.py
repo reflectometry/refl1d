@@ -648,21 +648,8 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
 
     if sigmainput >= 1:
         raise ValueError('Chains that short cannot be squeezed that high')
-    
-    if pdi==1:
-        def SCFeqns(phi):
-            return SCFeqns_Cosgrove(phi,chi,chi_s,theta,pdi,r)
-    elif pdi>1:
-        try:
-            p_i = SZdist(pdi,r)
-            def SCFeqns(phi):
-                return SCFeqns_deVos(phi,chi,chi_s,theta,pdi,r,p_i)
-        except SZerror:
-            if disp: print 'PDI below threshold of numerical stability. Defaulting to calculations of uniform polymer.'
-            def SCFeqns(phi):
-                return SCFeqns_Cosgrove(phi,chi,chi_s,theta,pdi,r)
-    else:
-        raise ValueError('Invalid PDI')
+
+    p_i = SZdist(pdi,r)
     
     starttime = time.time()
     
@@ -682,10 +669,13 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
         phi0[phi0>1.0] = 1.0
         layers = len(phi0)
         try:
-            eps = SCFeqns(phi0)
+            eps = SCFeqns(phi0,chi,chi_s,theta,r,p_i)
         except:
             eps = np.inf    
-        default_eps = SCFeqns(default_phi0)
+        try:
+            default_eps = SCFeqns(default_phi0,chi,chi_s,theta,r,p_i)
+        except:
+            default_eps = np.inf
         if norm(eps)/sqrt(layers) > norm(default_eps)/sqrt(default_layers):
             if disp: print "\ndefault phi0 is better: layers =",default_layers,'\n'
             phi0 = default_phi0
@@ -712,9 +702,11 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
         
         try:
             layers=len(phi0)
-            result = root(SCFeqns,phi0,method='Krylov',callback=callback,
-                    options={'disp':bool(disp),'maxiter':10,
-                             'jac_options':{'method':jac_solve_method}})
+            result = root(
+                SCFeqns,phi0,args=(chi,chi_s,theta,r,p_i),
+                method='Krylov',callback=callback,
+                options={'disp':bool(disp),'maxiter':10,
+                         'jac_options':{'method':jac_solve_method}})
             if disp: 
                 print '\nSolver exit code:',result.status,result.message
                 
@@ -806,9 +798,8 @@ lambda_array = np.array([lambda_1,lambda_0,lambda_1])
 def _fzeros(*args):
     return np.zeros(args,dtype=np.float64,order='F')
 
-def SCFeqns_deVos(phi_z,chi,chi_s,theta,pdi,navgsegments,p_i,
-                  disp=False,fulloutput=False):
-    ''' System of SCF equation for disperse terminally attached polymers.
+def SCFeqns(phi_z,chi,chi_s,theta,navgsegments,p_i):
+    ''' System of SCF equation for terminally attached polymers.
     
         Formatted for input to a nonlinear minimizer or solver.
     '''
@@ -826,16 +817,13 @@ def SCFeqns_deVos(phi_z,chi,chi_s,theta,pdi,navgsegments,p_i,
     cutoff = p_i.size
     sigma = theta/navgsegments
     
-    if pdi <= 1.0:
-        raise ValueError('de Vos nSCF equations only valid for disperse polymer')
-    
     # calculate all needed quantities for new g_z
     delta = _fzeros(layers)
     delta[0] = 1.0
     phi_z_avg = calc_phi_z_avg(phi_z)
     phi_z_0_avg = calc_phi_z_avg(phi_z_0)
     
-    # calculate new g_z
+    # calculate new g_z (Boltzmann weighting factors)
     g_z = phi_z_0*exp(chi*(phi_z_avg-phi_z_0_avg) + chi_s*delta)
     
     # normalize g_z for numerical stability
@@ -843,57 +831,19 @@ def SCFeqns_deVos(phi_z,chi,chi_s,theta,pdi,navgsegments,p_i,
     uavg = np.mean(u)
     g_z_norm = g_z*exp(uavg)
     
-    # calculate needed quantites for new phi_z
+    # calculate weighting factors for terminally attached chains
     g_zs_ta_norm = calc_g_zs(g_z_norm,1,layers,cutoff)
-    c_i_norm = sigma*p_i/np.sum(g_zs_ta_norm,axis=0)
+    
+    # calculate normalization constants from 1/(single chain partition fn)
+    if cutoff == navgsegments:
+        c_i_norm = sigma*p_i/np.sum(g_zs_ta_norm[:,-1]) # shortcut if uniform
+    else:
+        c_i_norm = sigma*p_i/np.sum(g_zs_ta_norm,axis=0)
+    
+    # calculate weighting factors for free chains
     g_zs_free_ngts_norm = calc_g_zs(g_z_norm,c_i_norm,layers,cutoff)
     
     phi_z_new = calc_phi_z(g_zs_ta_norm,g_zs_free_ngts_norm,g_z_norm)
-    eps_z = phi_z-phi_z_new
-    
-    return eps_z
-    
-def SCFeqns_Cosgrove(phi_z,chi,chi_s,theta,pdi,segments,
-                     disp=False,fulloutput=False):
-    ''' System of SCF equation for uniform terminally attached polymers.
-    
-        Formatted for input to a nonlinear minimizer or solver.
-    '''
-    
-    # let the solver go negative if it wants
-    phi_z = abs(phi_z.ravel())
-    
-    # attempts to try fields with values greater than one are penalized
-    if (phi_z>.99999).any():
-        return np.ones_like(phi_z)*1e10
-    
-    phi_z_0 = 1.0 - phi_z
-    layers = phi_z.size
-    
-    if pdi != 1.0 and disp:
-        print "Cosgrove nSCF assume PDI == 1"
-        
-    # calculate all needed quantities for new g_z
-    delta = _fzeros(layers)
-    delta[0] = 1.0
-    phi_z_avg = calc_phi_z_avg(phi_z)
-    phi_z_0_avg = calc_phi_z_avg(phi_z_0)
-    
-    # calculate new g_z and difference given all inputs
-    g_z = phi_z_0*exp(chi*(phi_z_avg-phi_z_0_avg)+chi_s*delta)
-    u = -np.log(g_z)
-    uavg = np.mean(u)
-    g_z_norm = g_z*exp(uavg)
-    
-    # calculate needed quantites for new phi_z
-    g_ta_norm = calc_g_zs(g_z_norm,1,layers,segments)
-    sigma = theta/segments
-    p_i = _fzeros(1,segments)
-    p_i[0,-1] = 1
-    c_i_norm = sigma*p_i/np.sum(g_ta_norm[:,segments-1])
-    g_free_norm = calc_g_zs(g_z_norm,c_i_norm,layers,segments)
-    
-    phi_z_new = calc_phi_z(g_ta_norm,g_free_norm,g_z_norm)
     eps_z = phi_z-phi_z_new
     
     return eps_z
@@ -957,7 +907,11 @@ def SZdist(pdi,nn):
     which can be caught to default to an exact uniform calculation.
     '''
     
-    if pdi <= 1.0:
+    if pdi == 1.0:
+        p_ni = _fzeros(1,nn)
+        p_ni[0,-1] = 1
+        return p_ni
+    elif pdi < 1.0:
         raise ValueError('Invalid PDI')
         
     x = 1.0/(pdi-1.0)
@@ -969,15 +923,11 @@ def SZdist(pdi,nn):
     p_ni = exp(np.log(x/ni) - gammaln(x+1) + x*r*(np.log(x*r)/r-1))
     
     if (p_ni>=1.0).any():
-        raise SZerror('Schultz-Zimm calculation blew up')
+        p_ni = _fzeros(1,nn)
+        p_ni[0,-1] = 1
+        return p_ni
     
     mysums = np.cumsum(p_ni)
     keep = np.logical_and(np.logical_or(r < 1.0, p_ni >= 1.0e-6), mysums < 1.0)
         
     return p_ni[keep].reshape(1,-1)
-    
-class SZerror(Exception):
-     def __init__(self, value):
-         self.value = value
-     def __str__(self):
-         return repr(self.value)
