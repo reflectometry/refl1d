@@ -5,7 +5,7 @@ sys.dont_write_bytecode = True
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 CLI = "%s %s/bin/refl1d_cli.py %%s %%s"%(sys.executable,ROOT)
-EXAMPLEDIR = os.path.join(ROOT,'doc','_examples')
+EXAMPLEDIR = os.path.join(ROOT,'doc','examples')
 
 # Add the build dir(s) to the system path
 from distutils.util import get_platform
@@ -34,26 +34,26 @@ class Commands(object):
 
 examples = [
     "distribution/dist-example.py",
-    "ex1/nifilm-web.py",
-    "ex1/nifilm-fit-web.py",
-    "ex1/nifilm-data-web.py",
-    "ex1/nifilm-tof-web.py",
+    "ex1/nifilm.py",
+    "ex1/nifilm-fit.py",
+    "ex1/nifilm-data.py",
+    "ex1/nifilm-tof.py",
     "freemag/pmf.py",
     "ill_posed/anticor.py",
     "ill_posed/tethered.py",
     "interface/model.py",
-    "mixed/mixed-web.py",
+    "mixed/mixed.py",
     "mixed/mixed_magnetic.py",
     #"peaks/model.py",
-    "polymer/tethered-web.py",
+    "polymer/tethered.py",
     "polymer/freeform.py",
     "profile/model.py",
-    "spinvalve/n101G-web.py",
+    "spinvalve/n101G.py",
     "spinvalve/n101G.sta",
     "staj/De2_VATR.py",
-    "superlattice/freeform-web.py",
-    "superlattice/NiTi-web.py",
-    "superlattice/PEMU-web.py",
+    "superlattice/freeform.py",
+    "superlattice/NiTi.py",
+    "superlattice/PEMU.py",
     "thick/nifilm.py",
     "TOF/du53.py",
     "xray/mlayer-lin.staj",

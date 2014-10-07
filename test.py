@@ -68,7 +68,7 @@ build_path = os.path.join('build','lib'+platform)
 addpath(build_path)
 
 # Make sample data and models available
-os.environ['REFL1D_DATA'] = os.path.join(root,'doc','_examples')
+os.environ['REFL1D_DATA'] = os.path.join(root,'doc','examples')
 
 # Set the nosetest args
 nose_args = ['-v', '--all-modules',
@@ -88,7 +88,7 @@ nose_args += sys.argv[1:]  # allow coverage arguments
 # Add targets
 nose_args += [build_path, os.path.join('tests', 'refl1d')]
 nose_args += glob('doc/g*/*.rst')
-nose_args += glob('doc/_examples/*/*.rst')
+nose_args += glob('doc/examples/*/*.rst')
 
 print("nosetests "+" ".join(nose_args))
 if not nose.run(argv=nose_args): sys.exit(1)
