@@ -575,7 +575,7 @@ class EndTetheredPolymer(Layer):
 MINLAT = 35
 
 def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None, 
-               m_lat=1, pdi=1, phi0=None, disp=None):
+               m_lat=1, pdi=1, phi0=None, disp=False):
     ''' Generate volume fraction profile for Refl1D based on real parameters.
     
     The field theory is a lattice-based one, so we need to move between lattice
@@ -653,10 +653,8 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
     
     starttime = time.time()
     
-    # TODO: Better initial guess for chi>.6, maybe from analytical approximant
-    default_layers = round(max(MINLAT,theta/sqrt(sigmainput)))
-    default_phi0 = np.linspace(sqrt(sigmainput),0,num=default_layers)
-    default_phi0 = default_phi0.ravel()
+    # TODO: Better initial guess for chi>.6t
+    default_layers, default_phi0 = default_guess(theta,sigmainput)
 
     # Check if default guess is a better guess than input
     using_default_phi0=True
@@ -717,7 +715,7 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
                     phi0 = default_phi0
                     using_default_phi0 = True
                     continue
-                else: 
+                else:
                     raise RuntimeError("solver couldn't converge")
                 
         except ShortCircuitError as e:
@@ -767,6 +765,15 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
         print "lattice size:", layers
     
     return phi
+    
+def default_guess(theta=1,sigma=.5,chi=0,chi_s=0):
+    """ Produce an initial guess for phi via analytical approximants.
+    
+    For now, a line using numbers from scaling theory
+    """
+    default_layers = round(max(MINLAT,theta/sqrt(sigma)))
+    default_phi0 = np.linspace(sqrt(sigma),0,num=default_layers)
+    return default_layers, default_phi0.ravel()
     
 class ShortCircuitError(Exception):
     ''' Special error to stop root() before a solution is found.
@@ -821,10 +828,11 @@ def SCFeqns(phi_z,chi,chi_s,theta,navgsegments,p_i):
     delta = _fzeros(layers)
     delta[0] = 1.0
     phi_z_avg = calc_phi_z_avg(phi_z)
-    phi_z_0_avg = calc_phi_z_avg(phi_z_0)
+#    phi_z_0_avg = calc_phi_z_avg(phi_z_0)
     
     # calculate new g_z (Boltzmann weighting factors)
-    g_z = phi_z_0*exp(chi*(phi_z_avg-phi_z_0_avg) + chi_s*delta)
+#    g_z = phi_z_0*exp(chi*(phi_z_avg-phi_z_0_avg) + chi_s*delta)
+    g_z = phi_z_0*exp(2*chi*phi_z_avg + delta*chi_s) #(lambda_1*chi-chi_s))
     
     # normalize g_z for numerical stability
     u = -np.log(g_z)
@@ -903,8 +911,8 @@ def SZdist(pdi,nn):
     ''' Calculate Shultz-Zimm distribution from PDI and number average DP
     
     Shultz-Zimm is a "realistic" distribution for linear polymers. Numerical
-    problems arise when the distribution gets too uniform, so we raise an error
-    which can be caught to default to an exact uniform calculation.
+    problems arise when the distribution gets too uniform, so if we find them,
+    default to an exact uniform calculation.
     '''
     
     if pdi == 1.0:
