@@ -54,6 +54,24 @@ from bumps.parameter import Parameter
 from .model import Layer
 from . import util
 
+from numpy import sqrt, pi, hstack, ones_like, fabs
+from scipy.special import erfc, erfcx, gammaln
+
+# This is okay to use as long as LAMBDA_ARRAY is symmetric,
+# otherwise a slice LAMBDA_ARRAY[::-1] is necessary
+from numpy.core.multiarray import correlate as raw_convolve
+from numpy.core import add
+from time import time
+from scipy.optimize import root
+
+LAMBDA_1 = np.float64(1.0)/6.0 #always assume cubic lattice (1/6) for now
+LAMBDA_0 = 1.0-2.0*LAMBDA_1
+LAMBDA_ARRAY = np.array([LAMBDA_1,LAMBDA_0,LAMBDA_1])
+MINLAT = 35
+
+addred = add.reduce
+norm = lambda x: sqrt(addred(x*x))
+
 class PolymerBrush(Layer):
     r"""
     Polymer brushes in a solvent
@@ -396,7 +414,7 @@ def MushroomProfile(z, delta=0.1, vf=1.0, sigma=1.0):
     floating point error until ~+-1e-14.
     '''
     
-    if abs(delta) > thresh:
+    if fabs(delta) > thresh:
         mushroom_profile = mushroom_math(x,delta,vf)
     else: # we should RARELY get here
         scale = (delta+thresh)/2.0/thresh             
@@ -571,8 +589,6 @@ class EndTetheredPolymer(Layer):
         P = M*phi + S*(1-phi)
         Pr, Pi = np.real(P), np.imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
-    
-MINLAT = 35
 
 def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None, 
                m_lat=1, pdi=1, phi0=None, disp=False):
@@ -602,7 +618,7 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None,
         if phi0_len < z_len:
             phi0 = hstack((phi0,np.zeros(z_len-phi0_len)))
         elif phi0_len > z_len:
-            phi0 = phi0[0:z_len]
+            phi0 = phi0[:z_len]
             
         # determine number of lattice layers needed
         keep = phi0/theta > 1e-6
@@ -630,7 +646,7 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None,
     zextra = z[np.logical_not(keep)]
     
     return hstack((phi,np.zeros_like(zextra)))
-    
+
 def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
     ''' Solve SCF equations using an initial guess and lattice parameters
     
@@ -651,7 +667,7 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
 
     p_i = SZdist(pdi,r)
     
-    starttime = time.time()
+    starttime = time()
     
     # TODO: Better initial guess for chi>.6t
     default_layers, default_phi0 = default_guess(theta,sigmainput)
@@ -663,7 +679,7 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
         layers = default_layers
         if disp: print '\nno guess passed, using default phi0: layers =',layers,'\n'
     else:
-        phi0 = abs(phi0)
+        phi0 = fabs(phi0)
         phi0[phi0>1.0] = 1.0
         layers = len(phi0)
         try:
@@ -709,7 +725,7 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
                 print '\nSolver exit code:',result.status,result.message
                 
             if result.status == 1:
-                phi = abs(result.x)
+                phi = fabs(result.x)
             elif result.status == 2:
                 if not using_default_phi0:
                     phi0 = default_phi0
@@ -755,17 +771,50 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
                 done = True
             else:
                 if disp: print 'Shrinking undersized lattice...'
-                phi0 = phi[0:round(layers/ratio)]
+                phi0 = phi[:round(layers/ratio)]
         else:
             # otherwise, we are done for real
             done = True
             
     if disp:
-        print "execution time:", round(time.time()-starttime,3), "s"
+        print "execution time:", round(time()-starttime,3), "s"
         print "lattice size:", layers
     
-    return phi
+    return phi    
+
+def SZdist(pdi,nn):
+    ''' Calculate Shultz-Zimm distribution from PDI and number average DP
     
+    Shultz-Zimm is a "realistic" distribution for linear polymers. Numerical
+    problems arise when the distribution gets too uniform, so if we find them,
+    default to an exact uniform calculation.
+    '''
+    
+    if pdi == 1.0:
+        p_ni = _fzeros(1,nn)
+        p_ni[0,-1] = 1
+        return p_ni
+    elif pdi < 1.0:
+        raise ValueError('Invalid PDI')
+        
+    x = 1.0/(pdi-1.0)
+    cutoff = 9000
+    
+    ni = np.arange(1,cutoff+1,dtype=np.float64)
+    r = ni/nn
+    
+    p_ni = exp(np.log(x/ni) - gammaln(x+1) + x*r*(np.log(x*r)/r-1))
+    
+    if (p_ni>=1.0).any():
+        p_ni = _fzeros(1,nn)
+        p_ni[0,-1] = 1
+        return p_ni
+    
+    mysums = np.cumsum(p_ni)
+    keep = np.logical_and(np.logical_or(r < 1.0, p_ni >= 1.0e-6), mysums < 1.0)
+        
+    return p_ni[keep].reshape(1,-1)
+
 def default_guess(theta=1,sigma=.5,chi=0,chi_s=0):
     """ Produce an initial guess for phi via analytical approximants.
     
@@ -799,12 +848,6 @@ def _proto_callback(x,disp,layers,tol,ratio):
     elif layers > MINLAT and x[min(layers-1,round(layers/ratio))] < tol/4:
         raise ShortCircuitError('Stopping, lattice too big',x)
 
-lambda_1 = np.float64(1.0)/6.0 #always assume cubic lattice (1/6) for now
-lambda_0 = 1.0-2.0*lambda_1
-lambda_array = np.array([lambda_1,lambda_0,lambda_1])
-def _fzeros(*args):
-    return np.zeros(args,dtype=np.float64,order='F')
-
 def SCFeqns(phi_z,chi,chi_s,theta,navgsegments,p_i):
     ''' System of SCF equation for terminally attached polymers.
     
@@ -812,7 +855,7 @@ def SCFeqns(phi_z,chi,chi_s,theta,navgsegments,p_i):
     '''
     
     # let the solver go negative if it wants
-    phi_z = abs(phi_z.ravel())
+    phi_z = fabs(phi_z.ravel())
     
     # attempts to try fields with values greater than one are penalized
     if (phi_z>.99999).any():
@@ -828,11 +871,9 @@ def SCFeqns(phi_z,chi,chi_s,theta,navgsegments,p_i):
     delta = _fzeros(layers)
     delta[0] = 1.0
     phi_z_avg = calc_phi_z_avg(phi_z)
-#    phi_z_0_avg = calc_phi_z_avg(phi_z_0)
     
     # calculate new g_z (Boltzmann weighting factors)
-#    g_z = phi_z_0*exp(chi*(phi_z_avg-phi_z_0_avg) + chi_s*delta)
-    g_z = phi_z_0*exp(2*chi*phi_z_avg + delta*chi_s) #(lambda_1*chi-chi_s))
+    g_z = phi_z_0*exp(2*chi*phi_z_avg + delta*chi_s) #(LAMBDA_1*chi-chi_s))
     
     # normalize g_z for numerical stability
     u = -np.log(g_z)
@@ -844,9 +885,9 @@ def SCFeqns(phi_z,chi,chi_s,theta,navgsegments,p_i):
     
     # calculate normalization constants from 1/(single chain partition fn)
     if cutoff == navgsegments:
-        c_i_norm = sigma*p_i/np.sum(g_zs_ta_norm[:,-1]) # shortcut if uniform
+        c_i_norm = sigma*p_i/addred(g_zs_ta_norm[:,-1]) # shortcut if uniform
     else:
-        c_i_norm = sigma*p_i/np.sum(g_zs_ta_norm,axis=0)
+        c_i_norm = sigma*p_i/addred(g_zs_ta_norm,axis=0)
     
     # calculate weighting factors for free chains
     g_zs_free_ngts_norm = calc_g_zs(g_z_norm,c_i_norm,layers,cutoff)
@@ -856,14 +897,14 @@ def SCFeqns(phi_z,chi,chi_s,theta,navgsegments,p_i):
     
     return eps_z
 
-# This is okay to use as long as lambda_array is symmetric,
-# otherwise a slice lambda_array[::-1] is necessary
-from numpy.core.multiarray import correlate as raw_convolve
+def _fzeros(*args):
+    return np.zeros(args,dtype=np.float64,order='F')
+
 def calc_phi_z_avg(phi_z):
-    return raw_convolve(phi_z,lambda_array,1)
+    return raw_convolve(phi_z,LAMBDA_ARRAY,1)
     
 def calc_phi_z(g_ta,g_free,g_z):
-    return np.sum(g_ta*np.fliplr(g_free),axis=1)/g_z
+    return addred(g_ta*np.fliplr(g_free),axis=1)/g_z
 
 def calc_g_zs(g_z,c_i,layers,segments):
     from refl1d.calc_g_zs_cex import _calc_g_zs_inner
@@ -885,12 +926,12 @@ def calc_g_zs(g_z,c_i,layers,segments):
     
     # FASTEST: call some custom C code identical to "SLOW" loop
         # beware, this changes g_zs _in_place!_
-    _calc_g_zs_inner(g_z,c_i,g_zs,lambda_0,lambda_1,layers,segments)
+    _calc_g_zs_inner(g_z,c_i,g_zs,LAMBDA_0,LAMBDA_1,layers,segments)
     
     # FASTER: use the convolve function to partially vectorize  
 #    pg_zs=g_zs[:,0]    
 #    for r in range(1,segments):
-#        pg_zs=g_z*(c_i[0,segments-r-1]+raw_convolve(pg_zs,lambda_array,1))
+#        pg_zs=g_z*(c_i[0,segments-r-1]+raw_convolve(pg_zs,LAMBDA_ARRAY,1))
 #        g_zs[:,r]=pg_zs
     
     # SLOW: loop outright, pulling some slicing out of the innermost loop  
@@ -898,44 +939,11 @@ def calc_g_zs(g_z,c_i,layers,segments):
 #    for r in range(1,segments):
 #        c=c_i[0,segments-r-1]
 #        z=0
-#        g_zs[z,r]=(pg_zs[z]*lambda_0+pg_zs[z+1]*lambda_1+c)*g_z[z]
+#        g_zs[z,r]=(pg_zs[z]*LAMBDA_0+pg_zs[z+1]*LAMBDA_1+c)*g_z[z]
 #        for z in range(1,(layers-1)):
-#            g_zs[z,r]=(pg_zs[z-1]*lambda_1+pg_zs[z]*lambda_0+pg_zs[z+1]*lambda_1+c)*g_z[z]
+#            g_zs[z,r]=(pg_zs[z-1]*LAMBDA_1+pg_zs[z]*LAMBDA_0+pg_zs[z+1]*LAMBDA_1+c)*g_z[z]
 #        z=layers-1
-#        g_zs[z,r]=(pg_zs[z]*lambda_0+pg_zs[z-1]*lambda_1+c)*g_z[z]
+#        g_zs[z,r]=(pg_zs[z]*LAMBDA_0+pg_zs[z-1]*LAMBDA_1+c)*g_z[z]
 #        pg_zs=g_zs[:,r]
                
     return g_zs
-    
-def SZdist(pdi,nn):
-    ''' Calculate Shultz-Zimm distribution from PDI and number average DP
-    
-    Shultz-Zimm is a "realistic" distribution for linear polymers. Numerical
-    problems arise when the distribution gets too uniform, so if we find them,
-    default to an exact uniform calculation.
-    '''
-    
-    if pdi == 1.0:
-        p_ni = _fzeros(1,nn)
-        p_ni[0,-1] = 1
-        return p_ni
-    elif pdi < 1.0:
-        raise ValueError('Invalid PDI')
-        
-    x = 1.0/(pdi-1.0)
-    cutoff = 9000
-    
-    ni = np.arange(1,cutoff+1,dtype=np.float64)
-    r = ni/nn
-    
-    p_ni = exp(np.log(x/ni) - gammaln(x+1) + x*r*(np.log(x*r)/r-1))
-    
-    if (p_ni>=1.0).any():
-        p_ni = _fzeros(1,nn)
-        p_ni[0,-1] = 1
-        return p_ni
-    
-    mysums = np.cumsum(p_ni)
-    keep = np.logical_and(np.logical_or(r < 1.0, p_ni >= 1.0e-6), mysums < 1.0)
-        
-    return p_ni[keep].reshape(1,-1)
