@@ -44,6 +44,7 @@ import inspect
 import time
 
 import numpy as np
+from collections import OrderedDict
 from numpy import real, imag, exp
 from numpy import sqrt, pi, hstack, ones_like
 from numpy import absolute as abs
@@ -66,7 +67,7 @@ from scipy.optimize import root
 
 LAMBDA_1 = np.float64(1.0)/6.0 #always assume cubic lattice (1/6) for now
 LAMBDA_0 = 1.0-2.0*LAMBDA_1
-LAMBDA_ARRAY = np.array([LAMBDA_1,LAMBDA_0,LAMBDA_1])
+LAMBDA_ARRAY = np.asarray([LAMBDA_1,LAMBDA_0,LAMBDA_1])
 MINLAT = 35
 
 addred = add.reduce
@@ -407,12 +408,13 @@ def MushroomProfile(z, delta=0.1, vf=1.0, sigma=1.0):
     Rg = (thickness-base) / 4.0 # profile ends by ~4 RG, so we can tether these
     keep = (z-base) >= 0.0    
     x = (z[keep] - base) / Rg
-    '''
+    
+    """
     mushroom_profile_math has a divide by zero problem at delta=0.
     Fix it by weighted average of the profile above and below a threshold.
     No visual difference when delta is between +-0.001, and there's no
     floating point error until ~+-1e-14.
-    '''
+    """
     
     if fabs(delta) > thresh:
         mushroom_profile = mushroom_math(x,delta,vf)
@@ -432,14 +434,14 @@ def MushroomProfile(z, delta=0.1, vf=1.0, sigma=1.0):
 
 sqrt_pi=sqrt(pi)
 def mushroom_math(x,delta=.1,vf=.1):
-    '''
+    """
     new method, rewrite for numerical stability at high delta
     delta=0 causes divide by zero error!! Compensate elsewhere.
     http://ab-initio.mit.edu/wiki/index.php/Faddeeva_Package
-    '''
+    """
     
     from scipy.special import erfc, erfcx
- 
+
     x_half=x/2.0
     delta_double=2.0*delta
     return (
@@ -560,11 +562,21 @@ class EndTetheredPolymer(Layer):
                 }
                 
     def profile(self, z):
-        phi = SCFprofile(z, chi=self.chi.value, chi_s=self.chi_s.value, 
-                 h_dry=self.h_dry.value,l_lat=self.l_lat.value,
-                 mn=self.mn.value, m_lat=self.m_lat.value, pdi=self.pdi.value,
-                 phi0=self.phi_prev)
-        self.phi_prev = phi.copy()
+        SCFparams = dict(chi=self.chi.value, chi_s=self.chi_s.value, 
+             h_dry=self.h_dry.value,l_lat=self.l_lat.value, mn=self.mn.value, 
+             m_lat=self.m_lat.value, pdi=self.pdi.value)
+        # If the SCF parameters are exactly equal to the ones that generated
+        # the previous solution, just return the previous solution
+        if (self.prev['params'] == SCFparams 
+            and np.array_equal(z,self.prev['z'])):
+                return self.prev['phi']
+            
+        phi = SCFprofile(z, **SCFparams)
+                
+        # Save copy of phi so it doesn't mutate unexpectedly
+        self.prev['phi'] = phi.copy()
+        self.prev['z'] = z
+        self.prev['params'] = SCFparams
         return phi
 
     def render(self, probe, slabs):
@@ -591,8 +603,8 @@ class EndTetheredPolymer(Layer):
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
 
 def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None, 
-               m_lat=1, pdi=1, phi0=None, disp=False):
-    ''' Generate volume fraction profile for Refl1D based on real parameters.
+               m_lat=1, pdi=1, disp=False):
+    """ Generate volume fraction profile for Refl1D based on real parameters.
     
     The field theory is a lattice-based one, so we need to move between lattice
     and real space. This is done using the parameters l_lat and m_lat, the 
@@ -605,34 +617,17 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None,
     
     This function is suitable for use as a VolumeProfile, as well as the 
     default EndTetheredPolymer class.
-    '''
+    """
     
     # calculate lattice space parameters    
     theta = h_dry/l_lat
     r = int(mn/m_lat-.5)
     
-    if phi0 is not None:
-        # squeeze or stretch our initial guess to match the input space
-        phi0_len = len(phi0)
-        z_len = len(z)
-        if phi0_len < z_len:
-            phi0 = hstack((phi0,np.zeros(z_len-phi0_len)))
-        elif phi0_len > z_len:
-            phi0 = phi0[:z_len]
-            
-        # determine number of lattice layers needed
-        keep = phi0/theta > 1e-6
-        z_end = z[keep].max()
-        layers = round(z_end/l_lat-0.5)
-        z_end = l_lat*(layers+.5) # match rounding exactly
-        
-        # convert initial guess to lattice space
-        z_lat = np.linspace(l_lat/2,z_end,num=layers)
-        phi0 = np.interp(z_lat,z,phi0)
+    # pull an inital guess out of the cache    
+    phi0 = phi0_cache(chi,chi_s,pdi,theta,r,disp)
 
     # solve the self consistent field equations    
-    phi_lat = SCFsolve(chi=chi,chi_s=chi_s,pdi=pdi,
-                     theta=theta,r=r,disp=disp,phi0=phi0)
+    phi_lat = SCFsolve(chi,chi_s,pdi,theta,r,disp,phi0)
     if disp: print "lattice segments: ", r
     
     # re-dimensionalize the solution
@@ -646,9 +641,100 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None,
     zextra = z[np.logical_not(keep)]
     
     return hstack((phi,np.zeros_like(zextra)))
+    
+
+def phi0_cache(chi,chi_s,pdi,theta,r,disp=False,cache=OrderedDict()):
+    """Scale and round the parameters, then return a memoized result.
+    
+    Using an OrderedDict (because I want to prune keys FIFO)
+    """
+    # prime the cache with a known easy solution
+    if not cache: 
+        cache[(0,0,0,1,.1)] = SCFsolve(theta=10,r=100)
+        
+    # Try to keep the parameters between 0 and 1. Factors are arbitrary.
+    scaled_parameters = (chi,chi_s*3,pdi-1,theta/r*10,r/1000)
+    
+    # round them to actually a rather large number of digits
+    rounded_parameters = tuple(round(p,5) for p in scaled_parameters)
+    
+    if rounded_parameters in cache:
+        return cache[rounded_parameters]
+    
+    # On a miss, generate the result by walking from the closest in cache
+    
+    # Numpy setup
+    rp_array = np.asarray(rounded_parameters)
+    cp = cache.keys()
+    cp_array = np.asarray(cp)
+    
+    # Calculate "nearest" cached solution
+    deltas = rp_array - cp_array # Parameter space displacement vectors
+    norms = sqrt(addred(deltas*deltas,axis=1)) # and their magnitudes
+    closest_index = norms.argmin()
+    
+    # Organize closest point data for later use
+    closest_delta = deltas[closest_index]
+    closest_cp = cp[closest_index]
+    closest_cp_array = np.asarray(closest_cp)
+    phi0 = cache[closest_cp]
+    
+    """
+    We must walk from the previously cached point to the desired region.
+    This is goes from step=0 (cached) and step=1 (finish), where the step=0
+    is implicit above. We try the full step first, so that this function only
+    calls SCFsolve one extra time during normal cache misses.
+    
+    The solver may not converge if the step size is too big. In that case,
+    we retry with half the step size. This should find the edge of the basin
+    of attraction for the solution eventually. On successful steps we increase
+    stepsize slightly to accelerate after getting stuck.
+    """
+    
+    step = 1.0 # Fractional distance between cached and requested
+    dstep = 1.0 # Step size increment
+    flag = True
+    while flag:
+        
+        if step >= 1.0: # end on 1.0 exactly every time
+            step = 1.0
+            flag = False
+
+        current_p = closest_cp_array + step*closest_delta
+        p_tup = tuple(round(p,5) for p in current_p)
+
+        # between adaptive stepping and rounding, it's not obvious if each
+        # step is cached, so checking is probably cheaper than try/except
+        if p_tup in cache:
+            phi0 = cache[p_tup]
+            dstep *= 1.05
+            step += dstep
+        else:
+            parameters = (p_tup[0], p_tup[1]*(1/3), p_tup[2]+1, 
+                          p_tup[3]*p_tup[4]*100, p_tup[4]*1000)
+            try:
+                phi0 = SCFsolve(*parameters,phi0=phi0)
+                cache[p_tup] = phi0
+                dstep *= 1.05
+                step += dstep
+            except RuntimeError as e:
+                if e.message != "solver couldn't converge":
+                    raise
+                else:
+                    flag = True # Reset this so we don't quit if step=1.0 fails
+                    dstep *= .5
+                    step -= dstep
+    
+    # keep the cache from consuming all things
+    if len(cache)>9000:
+        for i in xrange(1000):
+            cache.popitem(last=False)
+        
+    return phi0
+
 
 def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
-    ''' Solve SCF equations using an initial guess and lattice parameters
+    """ Solve SCF equations using an initial guess and lattice parameters
     
     This function checks which special case self consistent field equations
     we are using, evaluates any starting guess against a simple default, then
@@ -657,12 +743,13 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
     
     The Newton-Krylov solver really makes this one. krylov+gmres was faster
     than the other scipy.optimize alternatives by quite a lot.
-    '''
-    from scipy.optimize import  root
+    """
     
-    sigmainput = theta/r
+    from scipy.optimize import root
+    
+    sigma = theta/r
 
-    if sigmainput >= 1:
+    if sigma >= 1:
         raise ValueError('Chains that short cannot be squeezed that high')
 
     p_i = SZdist(pdi,r)
@@ -670,7 +757,7 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
     starttime = time()
     
     # TODO: Better initial guess for chi>.6t
-    default_layers, default_phi0 = default_guess(theta,sigmainput)
+    default_layers, default_phi0 = default_guess(theta,sigma)
 
     # Check if default guess is a better guess than input
     using_default_phi0=True
@@ -683,11 +770,11 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
         phi0[phi0>1.0] = 1.0
         layers = len(phi0)
         try:
-            eps = SCFeqns(phi0,chi,chi_s,theta,r,p_i)
+            eps = SCFeqns(phi0,chi,chi_s,sigma,r,p_i)
         except:
             eps = np.inf    
         try:
-            default_eps = SCFeqns(default_phi0,chi,chi_s,theta,r,p_i)
+            default_eps = SCFeqns(default_phi0,chi,chi_s,sigma,r,p_i)
         except:
             default_eps = np.inf
         if norm(eps)/sqrt(layers) > norm(default_eps)/sqrt(default_layers):
@@ -717,9 +804,9 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
         try:
             layers=len(phi0)
             result = root(
-                SCFeqns,phi0,args=(chi,chi_s,theta,r,p_i),
+                SCFeqns,phi0,args=(chi,chi_s,sigma,r,p_i),
                 method='Krylov',callback=callback,
-                options={'disp':bool(disp),'maxiter':10,
+                options={'disp':bool(disp),'maxiter':20,
                          'jac_options':{'method':jac_solve_method}})
             if disp: 
                 print '\nSolver exit code:',result.status,result.message
@@ -783,12 +870,12 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
     return phi    
 
 def SZdist(pdi,nn):
-    ''' Calculate Shultz-Zimm distribution from PDI and number average DP
+    """ Calculate Shultz-Zimm distribution from PDI and number average DP
     
     Shultz-Zimm is a "realistic" distribution for linear polymers. Numerical
     problems arise when the distribution gets too uniform, so if we find them,
     default to an exact uniform calculation.
-    '''
+    """
     
     if pdi == 1.0:
         p_ni = _fzeros(1,nn)
@@ -825,9 +912,9 @@ def default_guess(theta=1,sigma=.5,chi=0,chi_s=0):
     return default_layers, default_phi0.ravel()
     
 class ShortCircuitError(Exception):
-    ''' Special error to stop root() before a solution is found.
+    """ Special error to stop root() before a solution is found.
     
-    '''
+    """
     def __init__(self, value,x):
          self.value = value
          self.x = x
@@ -835,24 +922,24 @@ class ShortCircuitError(Exception):
          return repr(self.value)
          
 def _proto_callback(x,disp,layers,tol,ratio):
-    ''' Special callback to stop root() before solution is found.
+    """ Special callback to stop root() before solution is found.
     
     This kills root if the tolerances are exceeded by 4 times the tolerances
     of the lattice resizing loop. This seems to work well empirically to 
     restart the solver when necessary without cutting out of otherwise 
     reasonable solver trajectories.
-    '''
+    """
     if disp: print "Iterating..."
     if x[-1] > 4*tol:
         raise ShortCircuitError('Stopping, lattice too small',x)
     elif layers > MINLAT and x[min(layers-1,round(layers/ratio))] < tol/4:
         raise ShortCircuitError('Stopping, lattice too big',x)
 
-def SCFeqns(phi_z,chi,chi_s,theta,navgsegments,p_i):
-    ''' System of SCF equation for terminally attached polymers.
+def SCFeqns(phi_z,chi,chi_s,sigma,navgsegments,p_i):
+    """ System of SCF equation for terminally attached polymers.
     
         Formatted for input to a nonlinear minimizer or solver.
-    '''
+    """
     
     # let the solver go negative if it wants
     phi_z = fabs(phi_z.ravel())
@@ -865,7 +952,6 @@ def SCFeqns(phi_z,chi,chi_s,theta,navgsegments,p_i):
     
     layers = phi_z.size
     cutoff = p_i.size
-    sigma = theta/navgsegments
     
     # calculate all needed quantities for new g_z
     delta = _fzeros(layers)
