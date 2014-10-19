@@ -36,6 +36,7 @@ Numerical Self-consistent Field (SCF) End-Tethered Polymer Profile [#Cosgrove]_ 
 .. [#Sheridan] Sheridan, R. J., Beers, K. L., et. al (2014). Direct observation
     of "surface theta" conditons. {in prep}
 """
+
 from __future__ import division
 
 __all__ = ["PolymerBrush","PolymerMushroom","EndTetheredPolymer","VolumeProfile","layer_thickness"]
@@ -44,34 +45,32 @@ import inspect
 import time
 
 import numpy as np
-from collections import OrderedDict
-from numpy import real, imag, exp
-from numpy import sqrt, pi, hstack, ones_like
-from numpy import absolute as abs
-from numpy.linalg import norm
-from scipy.special import gammaln
-from bumps.parameter import Parameter
 
+from bumps.parameter import Parameter
 from .model import Layer
 from . import util
+from time import time
 
-from numpy import sqrt, pi, hstack, ones_like, fabs
-from scipy.special import erfc, erfcx, gammaln
+try:
+    from collections import OrderedDict
+except ImportError:
+    OrderedDict = dict
+    
+from numpy import real, imag, exp, sqrt, pi, hstack, ones_like, fabs
 
 # This is okay to use as long as LAMBDA_ARRAY is symmetric,
 # otherwise a slice LAMBDA_ARRAY[::-1] is necessary
 from numpy.core.multiarray import correlate as raw_convolve
+
 from numpy.core import add
-from time import time
-from scipy.optimize import root
+addred = add.reduce
+def norm(x): return sqrt(addred(x*x))
 
 LAMBDA_1 = np.float64(1.0)/6.0 #always assume cubic lattice (1/6) for now
 LAMBDA_0 = 1.0-2.0*LAMBDA_1
 LAMBDA_ARRAY = np.asarray([LAMBDA_1,LAMBDA_0,LAMBDA_1])
 MINLAT = 35
-
-addred = add.reduce
-norm = lambda x: sqrt(addred(x*x))
+SQRT_PI=sqrt(pi)
 
 class PolymerBrush(Layer):
     r"""
@@ -432,7 +431,6 @@ def MushroomProfile(z, delta=0.1, vf=1.0, sigma=1.0):
         
     return hstack((base_profile, mushroom_profile))
 
-sqrt_pi=sqrt(pi)
 def mushroom_math(x,delta=.1,vf=.1):
     """
     new method, rewrite for numerical stability at high delta
@@ -441,7 +439,7 @@ def mushroom_math(x,delta=.1,vf=.1):
     """
     
     from scipy.special import erfc, erfcx
-
+    
     x_half=x/2.0
     delta_double=2.0*delta
     return (
@@ -451,7 +449,7 @@ def mushroom_math(x,delta=.1,vf=.1):
              -erfc(x)
              + (
                 (.25-delta*(x+delta_double))*erfcx(delta_double+x)
-                + delta/sqrt_pi
+                + delta/SQRT_PI
                ) * 4.0 / exp(x*x)
             ) * vf / (delta_double * erfcx(delta_double))
            )
@@ -876,6 +874,8 @@ def SZdist(pdi,nn):
     problems arise when the distribution gets too uniform, so if we find them,
     default to an exact uniform calculation.
     """
+    
+    from scipy.special import gammaln
     
     if pdi == 1.0:
         p_ni = _fzeros(1,nn)
