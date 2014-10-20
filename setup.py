@@ -48,9 +48,9 @@ def reflmodule_config():
                        extra_compile_args=eca )
     return module
 
-from numpy import get_include
 # SCF extension
 def SCFmodule_config():
+    from numpy import get_include
     return Extension('refl1d.calc_g_zs_cex', 
                      sources=[os.path.join('refl1d','lib','calc_g_zs_cex.c')],
                      include_dirs=[get_include()])
