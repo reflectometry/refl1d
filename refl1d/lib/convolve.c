@@ -5,11 +5,6 @@
   #define const
   #define __LITTLE_ENDIAN
   #include "erf.c"
-  #define erf _local_erf
-  #define erfc _local_erfc
-
-  double erf(double x);
-  double erfc(double x);
 #endif
 
 #include <stdio.h>

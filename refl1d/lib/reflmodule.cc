@@ -111,12 +111,6 @@ static PyMethodDef methods[] = {
 	 METH_VARARGS,
 	 "convolve_sampled(xi,yi,xp,yp,x,dx,y): compute convolution with sampled\ndistribution of width dx[k] at points x[k], returned in y[k]"},
 
-	{"erf",
-	 Perf,
-	 METH_VARARGS,
-	 "erf(data, result): get the erf of a set of data points"},
-
-
 	{"rebin_uint8",
 	 &Prebin<uint8_t>,
 	 METH_VARARGS,

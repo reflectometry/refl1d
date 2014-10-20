@@ -10,6 +10,12 @@
  * ====================================================
  */
 
+#define erf _local_erf 
+#define erfc _local_erfc 
+double _local_erf(double x); 
+double _local_erfc(double x); 
+
+
 /* double erf(double x)
  * double erfc(double x)
  *			     x

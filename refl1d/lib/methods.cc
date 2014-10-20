@@ -268,29 +268,3 @@ PyObject* Pconvolve_sampled(PyObject *obj, PyObject *args)
 }
 
 
-PyObject* Perf(PyObject*obj,PyObject*args)
-{
-  PyObject *data_obj, *result_obj;
-  const double *data;
-  double *result;
-  Py_ssize_t ndata, nresult;
-
-  if (!PyArg_ParseTuple(args, "OO:erf",
-			&data_obj, &result_obj))
-    return NULL;
-  INVECTOR(data_obj,data, ndata);
-  OUTVECTOR(result_obj, result, nresult);
-  if (ndata != nresult) {
-#ifndef BROKEN_EXCEPTIONS
-    PyErr_SetString(PyExc_ValueError, "len(data) != nresult");
-#endif
-    return NULL;
-  }
-  #ifdef _OPENMP
-  #pragma omp parallel for
-  #endif
-  for(int i=0; i < ndata; i++) result[i] = erf(data[i]);
-  return Py_BuildValue("");
-}
-
-
