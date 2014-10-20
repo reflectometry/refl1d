@@ -653,8 +653,8 @@ def phi0_cache(chi,chi_s,pdi,theta,r,disp=False,cache=OrderedDict()):
     # Try to keep the parameters between 0 and 1. Factors are arbitrary.
     scaled_parameters = (chi,chi_s*3,pdi-1,theta/r*10,r/1000)
     
-    # round them to actually a rather large number of digits
-    rounded_parameters = tuple(round(p,5) for p in scaled_parameters)
+    # round them to a reasonable number of digits
+    rounded_parameters = tuple(round(p,3) for p in scaled_parameters)
     
     if rounded_parameters in cache:
         return cache[rounded_parameters]
@@ -699,7 +699,7 @@ def phi0_cache(chi,chi_s,pdi,theta,r,disp=False,cache=OrderedDict()):
             flag = False
 
         current_p = closest_cp_array + step*closest_delta
-        p_tup = tuple(round(p,5) for p in current_p)
+        p_tup = tuple(round(p,3) for p in current_p)
 
         # between adaptive stepping and rounding, it's not obvious if each
         # step is cached, so checking is probably cheaper than try/except
@@ -711,7 +711,7 @@ def phi0_cache(chi,chi_s,pdi,theta,r,disp=False,cache=OrderedDict()):
             parameters = (p_tup[0], p_tup[1]*(1/3), p_tup[2]+1, 
                           p_tup[3]*p_tup[4]*100, p_tup[4]*1000)
             try:
-                phi0 = SCFsolve(*parameters,phi0=phi0)
+                phi0 = SCFsolve(*parameters,phi0=phi0,disp=disp)
                 cache[p_tup] = phi0
                 dstep *= 1.05
                 step += dstep
