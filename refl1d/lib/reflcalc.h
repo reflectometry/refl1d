@@ -109,11 +109,25 @@ Q of a given step size in order to reach 0.001 on a gaussian of width dQ
   typedef double Cplx;
 #endif
 
+#ifndef erf
+#define erf _local_erf
+#endif
+
+#ifndef erfc
+#define erfc _local_erfc
+#endif
+
  // Inclusion from C
 #ifdef __cplusplus
     extern "C" {
 #endif
 
+
+double 
+erf(double x);
+
+double 
+erfc(double x);
 
 void
 reflectivity_amplitude(const int layers,
