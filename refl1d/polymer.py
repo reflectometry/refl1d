@@ -744,33 +744,20 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
     
     starttime = time()
     
-    # TODO: Better initial guess for chi>.6t
+    # TODO: Better initial guess for chi>.6
     default_layers, default_phi0 = default_guess(theta,sigma)
 
-    # Check if default guess is a better guess than input
-    using_default_phi0=True
     if phi0 is None:
+        using_default_phi0=True
         phi0 = default_phi0
         layers = default_layers
         if disp: print '\nno guess passed, using default phi0: layers =',layers,'\n'
     else:
+        using_default_phi0=False
         phi0 = fabs(phi0)
-        phi0[phi0>1.0] = 1.0
+        phi0[phi0>.99999] = .99999
         layers = len(phi0)
-        try:
-            eps = SCFeqns(phi0,chi,chi_s,sigma,r,p_i)
-        except:
-            eps = np.inf    
-        try:
-            default_eps = SCFeqns(default_phi0,chi,chi_s,sigma,r,p_i)
-        except:
-            default_eps = np.inf
-        if norm(eps)/sqrt(layers) > norm(default_eps)/sqrt(default_layers):
-            if disp: print "\ndefault phi0 is better: layers =",default_layers,'\n'
-            phi0 = default_phi0
-        else:
-            if disp: print "\npassed phi0 is better: layers =", layers,'\n'
-            using_default_phi0=False
+        if disp: print "\nphi0 guess passed: layers =", layers,'\n'
     
     jac_solve_method = 'gmres'
     done = False
