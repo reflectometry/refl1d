@@ -970,26 +970,37 @@ def calc_phi_z(g_ta,g_free,g_z):
     return addred(g_ta*np.fliplr(g_free),axis=1)/g_z
 
 def calc_g_zs(g_z,c_i,layers,segments):
-    from refl1d.calc_g_zs_cex import _calc_g_zs_inner
+    from refl1d.calc_g_zs_cex import (_calc_g_zs,_calc_g_zs_uniform)
     
     # initialize
     g_zs=np.empty((layers,segments),dtype=np.float64,order='F')
     
     # choose special case
     if np.size(c_i) == 1:
-        # terminally attached chains
-        c_i = _fzeros(1,segments)
+        # terminally attached ends
         g_zs[:,0] = _fzeros(layers)
         g_zs[0,0] = g_z[0]
+        _calc_g_zs_uniform(g_z,g_zs,LAMBDA_0,LAMBDA_1,layers,segments)
+
     else:
-        # free chains
+        # free ends
         g_zs[:,0] = c_i[0,segments-1]*g_z
+        _calc_g_zs(g_z,c_i,g_zs,LAMBDA_0,LAMBDA_1,layers,segments)
     
-    # inner loops
+    # Older versions of inner loops
+    
+#    if np.size(c_i)==1:
+#        c_i = _fzeros(1,segments)
+#        g_zs[:,0] = _fzeros(layers)
+#        g_zs[0,0] = g_z[0]
+#    else:
+#        # free chains
+#        g_zs[:,0] = c_i[0,segments-1]*g_z
+#    
+#    pg_zs=g_zs[:,0] 
     
     # FASTEST: call some custom C code identical to "SLOW" loop
-        # beware, this changes g_zs _in_place!_
-    _calc_g_zs_inner(g_z,c_i,g_zs,LAMBDA_0,LAMBDA_1,layers,segments)
+#    _calc_g_zs_explicit(g_z,c_i,g_zs,LAMBDA_0,LAMBDA_1,layers,segments)
     
     # FASTER: use the convolve function to partially vectorize  
 #    pg_zs=g_zs[:,0]    
@@ -998,7 +1009,6 @@ def calc_g_zs(g_z,c_i,layers,segments):
 #        g_zs[:,r]=pg_zs
     
     # SLOW: loop outright, pulling some slicing out of the innermost loop  
-#    pg_zs=g_zs[:,0] 
 #    for r in range(1,segments):
 #        c=c_i[0,segments-r-1]
 #        z=0
