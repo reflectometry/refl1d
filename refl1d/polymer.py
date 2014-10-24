@@ -49,7 +49,6 @@ from __future__ import division
 __all__ = ["PolymerBrush","PolymerMushroom","EndTetheredPolymer","VolumeProfile","layer_thickness"]
 
 import inspect
-import time
 
 import numpy as np
 
@@ -607,11 +606,12 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None,
     
     # calculate lattice space parameters    
     theta = h_dry/l_lat
-    r = int(mn/m_lat-.5)
+    segments = mn/m_lat
     
     # solve the self consistent field equations using the cache
-    phi_lat = SCFcache(chi,chi_s,pdi,theta,r,disp)
-    if disp: print "lattice segments: ", r
+    if disp: print "\n=====Begin calculations=====\n"
+    phi_lat = SCFcache(chi,chi_s,pdi,theta,segments,disp)
+    if disp: print "lattice segments: ", segments,"\n============================\n"
     
     # re-dimensionalize the solution
     layers = len(phi_lat)
@@ -626,28 +626,34 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None,
     return hstack((phi,np.zeros_like(zextra)))
     
 
-def SCFcache(chi,chi_s,pdi,theta,r,disp=False,cache=OrderedDict()):
+def SCFcache(chi,chi_s,pdi,theta,segments,disp=False,cache=OrderedDict()):
     """Scale and round the parameters, then return a memoized result.
     
     Using an OrderedDict (because I want to prune keys FIFO)
     """
     # prime the cache with a known easy solution
     if not cache: 
-        cache[(0,0,0,1,.1)] = SCFsolve(theta=10,r=100)
+        cache[(0,0,0,1,.1)] = SCFsolve(theta=10,segments=100)
         
     # Try to keep the parameters between 0 and 1. Factors are arbitrary.
-    scaled_parameters = (chi,chi_s*3,pdi-1,theta/r*10,r/1000)
+    scaled_parameters = (chi,chi_s*3,pdi-1,theta/segments*10,segments/1000)
     
     # round them to a reasonable number of digits
-    rounded_parameters = tuple(round(p,3) for p in scaled_parameters)
+    digits = 4 # 3 is faster but can prevent convergence for extreme cases
+    rounded_parameters = tuple(round(p,digits) for p in scaled_parameters)
     p_array = np.asarray(rounded_parameters)
     
     if rounded_parameters in cache:
         # on a hit, walk from the hit to the requested parameters
+        
+        # Organize cached point data for later use
         closest_cp = rounded_parameters
         closest_cp_array = np.asarray(closest_cp)
         closest_delta = p_array - closest_cp_array
         phi0 = cache[rounded_parameters]
+        if disp:
+            print "Cache hit, walking from:", closest_cp_array
+            print "to:", p_array
     else:
         # On a miss, generate the result by walking from the closest in cache
         
@@ -661,10 +667,13 @@ def SCFcache(chi,chi_s,pdi,theta,r,disp=False,cache=OrderedDict()):
         closest_index = norms.argmin()
         
         # Organize closest point data for later use
-        closest_delta = deltas[closest_index]
         closest_cp = cp[closest_index]
         closest_cp_array = np.asarray(closest_cp)
+        closest_delta = deltas[closest_index]
         phi0 = cache[closest_cp]
+        if disp:
+            print "Cache miss, walking from nearest:", closest_cp_array
+            print "to:", p_array
     
     """
     We must walk from the previously cached point to the desired region.
@@ -688,7 +697,7 @@ def SCFcache(chi,chi_s,pdi,theta,r,disp=False,cache=OrderedDict()):
     dstep = 1.0 # Step size increment
     flag = True
     while flag:
-        
+        if disp: print 'Parameter step is', step
         if step >= 1.0: # end on 1.0 exactly every time
             step = 1.0
             flag = False
@@ -696,7 +705,7 @@ def SCFcache(chi,chi_s,pdi,theta,r,disp=False,cache=OrderedDict()):
         # conditional parameter space vector math because, "why risk floating point error"
         current_p = closest_cp_array + step*closest_delta if flag else p_array
         p_tup = tuple(p for p in current_p)
-        rp_tup = tuple(round(p,3) for p in p_tup)
+        rp_tup = tuple(round(p,digits) for p in p_tup)
 
         if rp_tup in cache:
             phi0 = cache[rp_tup]
@@ -725,15 +734,16 @@ def SCFcache(chi,chi_s,pdi,theta,r,disp=False,cache=OrderedDict()):
     
     # keep the cache from consuming all things
     if len(cache)>9000:
+        if disp: print 'pruning cache'
         for i in xrange(1000):
             cache.popitem(last=False)
         
     return phi
 
 
-def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
-    """
-    Solve SCF equations using an initial guess and lattice parameters
+def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,segments=None,
+             disp=False,phi0=None):
+    """ Solve SCF equations using an initial guess and lattice parameters
     
     This function checks which special case self consistent field equations
     we are using, evaluates any starting guess against a simple default, then
@@ -746,43 +756,43 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
     
     from scipy.optimize import root
     
-    sigma = theta/r
+    sigma = theta/segments
 
     if sigma >= 1:
         raise ValueError('Chains that short cannot be squeezed that high')
-
-    p_i = SZdist(pdi,r)
     
     starttime = time()
     
-    # TODO: Better initial guess for chi>.6
-    default_layers, default_phi0 = default_guess(theta,sigma)
-
+    p_i = SZdist(pdi,segments)
+    
     if phi0 is None:
-        using_default_phi0=True
-        phi0 = default_phi0
-        layers = default_layers
+        # TODO: Better initial guess for chi>.6
+        layers, phi0 = default_guess(theta,sigma)
         if disp: print '\nno guess passed, using default phi0: layers =',layers,'\n'
     else:
-        using_default_phi0=False
         phi0 = fabs(phi0)
         phi0[phi0>.99999] = .99999
         layers = len(phi0)
         if disp: print "\nphi0 guess passed: layers =", layers,'\n'
     
-    jac_solve_method = 'gmres'
-    done = False
-    tol = 2e-6*theta # We tolerate up to 2ppm of our polymer in the last layer
-    ratio = 1.2 # otherwise we grow it by 20%
-    # if the loop sees that it can shrink 20%, it will, but it can lead to
-    # endless loops. This flag shows if it has grown before, so it knows to
-    # quit instead of shrinking
-    growing = False
+    # Loop resizing variables
     
+    # We tolerate up to 2ppm of our polymer in the last layer,
+    tol = 2e-6*theta
+    # otherwise we grow it by 20%.
+    ratio = 1.2
+    # if the loop sees that it can shrink 20%, it will, but it can lead to
+    # endless shrink/grow loops. This flag shows if it has grown before, so it
+    # knows to quit instead of shrinking.
+    growing = False
     # apparently scope rules dictate that we can change 'layers' without a
-    # redefinition of this callback, so i got rid of the one in the while block    
+    # redefinition of this callback, so I got rid of one in the loop.
     def callback(x,*args,**kwargs): 
         _proto_callback(x,disp,layers,tol,ratio)
+    
+    # other loop variables        
+    jac_solve_method = 'gmres'
+    done = False
     
     while not done:
         if disp: print "\nSolving SCF equation set..."
@@ -790,7 +800,7 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
         try:
             layers=len(phi0)
             result = root(
-                SCFeqns,phi0,args=(chi,chi_s,sigma,r,p_i),
+                SCFeqns,phi0,args=(chi,chi_s,sigma,segments,p_i),
                 method='Krylov',callback=callback,
                 options={'disp':bool(disp),'maxiter':20,
                          'jac_options':{'method':jac_solve_method}})
@@ -798,31 +808,28 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
                 print '\nSolver exit code:',result.status,result.message
                 
             if result.status == 1:
+                # success! carry on to resize logic.
                 phi = fabs(result.x)
             elif result.status == 2:
-                if not using_default_phi0:
-                    phi0 = default_phi0
-                    using_default_phi0 = True
-                    continue
-                else:
-                    raise RuntimeError("solver couldn't converge")
+                raise RuntimeError("solver couldn't converge")
                 
         except ShortCircuitError as e:
+            # dumping out to resize since we've exceeded resize tol by 4x
             growing = False # scrub this flag so we don't quit directly (rare)
-            phi = e.x
+            phi = fabs(e.x)
             if disp: print e
                 
         except ValueError as e:
             if e.message == 'array must not contain infs or NaNs':
-                if not using_default_phi0:
-                    phi0 = default_phi0
-                    using_default_phi0 = True
-                    continue
-                else: 
-                    raise RuntimeError("solver couldn't converge")
+                # TODO: Handle this error better.
+                raise
+            else:
+                raise
 
         except RuntimeError as e:
             if e.message == 'gmres is not re-entrant':
+                # Threads are racing to use gmres. Lose the race and use
+                # something slower but thread-safe.
                 jac_solve_method = 'lgmres'
                 continue
             else:
@@ -866,7 +873,8 @@ def SZdist(pdi,nn):
     from scipy.special import gammaln
     
     if pdi == 1.0:
-        p_ni = _fzeros(1,nn)
+        # NOTE: rounding here allows nn to be a double in the rest of the logic
+        p_ni = _fzeros(1,round(nn))
         p_ni[0,-1] = 1
         return p_ni
     elif pdi < 1.0:
@@ -881,7 +889,8 @@ def SZdist(pdi,nn):
     p_ni = exp(np.log(x/ni) - gammaln(x+1) + x*r*(np.log(x*r)/r-1))
     
     if (p_ni>=1.0).any():
-        p_ni = _fzeros(1,nn)
+        # NOTE: rounding here allows nn to be a double in the rest of the logic
+        p_ni = _fzeros(1,round(nn))
         p_ni[0,-1] = 1
         return p_ni
     
@@ -933,8 +942,11 @@ def SCFeqns(phi_z,chi,chi_s,sigma,navgsegments,p_i):
     phi_z = fabs(phi_z.ravel())
     
     # attempts to try fields with values greater than one are penalized
-    if (phi_z>.99999).any():
-        return np.ones_like(phi_z)*1e10
+    toomuch = phi_z>.99999
+    penalty = 0.0
+    if toomuch.any():
+        penalty = np.where(toomuch,1e10*(phi_z-.99999),0)
+        phi_z[toomuch] = .99999
     
     phi_z_0 = 1.0 - phi_z
     
@@ -958,8 +970,8 @@ def SCFeqns(phi_z,chi,chi_s,sigma,navgsegments,p_i):
     g_zs_ta_norm = calc_g_zs(g_z_norm,1,layers,cutoff)
     
     # calculate normalization constants from 1/(single chain partition fn)
-    if cutoff == navgsegments:
-        c_i_norm = sigma*p_i/addred(g_zs_ta_norm[:,-1]) # shortcut if uniform
+    if cutoff == round(navgsegments): # if uniform,
+        c_i_norm = sigma*p_i/addred(g_zs_ta_norm[:,-1]) # take a shortcut!
     else:
         c_i_norm = sigma*p_i/addred(g_zs_ta_norm,axis=0)
     
@@ -969,7 +981,7 @@ def SCFeqns(phi_z,chi,chi_s,sigma,navgsegments,p_i):
     phi_z_new = calc_phi_z(g_zs_ta_norm,g_zs_free_ngts_norm,g_z_norm)
     eps_z = phi_z-phi_z_new
     
-    return eps_z
+    return eps_z+penalty
 
 def _fzeros(*args):
     return np.zeros(args,dtype=np.float64,order='F')
