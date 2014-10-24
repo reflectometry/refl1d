@@ -609,11 +609,8 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None,
     theta = h_dry/l_lat
     r = int(mn/m_lat-.5)
     
-    # pull an inital guess out of the cache    
-    phi0 = phi0_cache(chi,chi_s,pdi,theta,r,disp)
-
-    # solve the self consistent field equations    
-    phi_lat = SCFsolve(chi,chi_s,pdi,theta,r,disp,phi0)
+    # solve the self consistent field equations using the cache
+    phi_lat = SCFcache(chi,chi_s,pdi,theta,r,disp)
     if disp: print "lattice segments: ", r
     
     # re-dimensionalize the solution
@@ -629,9 +626,8 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None,
     return hstack((phi,np.zeros_like(zextra)))
     
 
-def phi0_cache(chi,chi_s,pdi,theta,r,disp=False,cache=OrderedDict()):
-    """
-    Scale and round the parameters, then return a memoized result.
+def SCFcache(chi,chi_s,pdi,theta,r,disp=False,cache=OrderedDict()):
+    """Scale and round the parameters, then return a memoized result.
     
     Using an OrderedDict (because I want to prune keys FIFO)
     """
@@ -644,38 +640,48 @@ def phi0_cache(chi,chi_s,pdi,theta,r,disp=False,cache=OrderedDict()):
     
     # round them to a reasonable number of digits
     rounded_parameters = tuple(round(p,3) for p in scaled_parameters)
+    p_array = np.asarray(rounded_parameters)
     
     if rounded_parameters in cache:
-        return cache[rounded_parameters]
-    
-    # On a miss, generate the result by walking from the closest in cache
-    
-    # Numpy setup
-    rp_array = np.asarray(rounded_parameters)
-    cp = cache.keys()
-    cp_array = np.asarray(cp)
-    
-    # Calculate "nearest" cached solution
-    deltas = rp_array - cp_array # Parameter space displacement vectors
-    norms = sqrt(addred(deltas*deltas,axis=1)) # and their magnitudes
-    closest_index = norms.argmin()
-    
-    # Organize closest point data for later use
-    closest_delta = deltas[closest_index]
-    closest_cp = cp[closest_index]
-    closest_cp_array = np.asarray(closest_cp)
-    phi0 = cache[closest_cp]
+        # on a hit, walk from the hit to the requested parameters
+        closest_cp = rounded_parameters
+        closest_cp_array = np.asarray(closest_cp)
+        closest_delta = p_array - closest_cp_array
+        phi0 = cache[rounded_parameters]
+    else:
+        # On a miss, generate the result by walking from the closest in cache
+        
+        # Numpy setup
+        cp = cache.keys()
+        cp_array = np.asarray(cp)
+        
+        # Calculate "nearest" cached solution
+        deltas = p_array - cp_array # Parameter space displacement vectors
+        norms = sqrt(addred(deltas*deltas,axis=1)) # and their magnitudes
+        closest_index = norms.argmin()
+        
+        # Organize closest point data for later use
+        closest_delta = deltas[closest_index]
+        closest_cp = cp[closest_index]
+        closest_cp_array = np.asarray(closest_cp)
+        phi0 = cache[closest_cp]
     
     """
     We must walk from the previously cached point to the desired region.
     This is goes from step=0 (cached) and step=1 (finish), where the step=0
     is implicit above. We try the full step first, so that this function only
-    calls SCFsolve one extra time during normal cache misses.
+    calls SCFsolve one time during normal cache misses.
     
     The solver may not converge if the step size is too big. In that case,
     we retry with half the step size. This should find the edge of the basin
     of attraction for the solution eventually. On successful steps we increase
     stepsize slightly to accelerate after getting stuck.
+    
+    The cache keys and values intentionally don't exactly "match". The exact
+    parameter tuple is always fed to the solver, and the returned field is
+    associated with the rounded parameter tuple. This doesn't appear to cause
+    any problems, but allows us to return an exact result at the end with no
+    further calls to SCFsolve.
     """
     
     step = 1.0 # Fractional distance between cached and requested
@@ -687,37 +693,42 @@ def phi0_cache(chi,chi_s,pdi,theta,r,disp=False,cache=OrderedDict()):
             step = 1.0
             flag = False
 
-        current_p = closest_cp_array + step*closest_delta
-        p_tup = tuple(round(p,3) for p in current_p)
+        # conditional parameter space vector math because, "why risk floating point error"
+        current_p = closest_cp_array + step*closest_delta if flag else p_array
+        p_tup = tuple(p for p in current_p)
+        rp_tup = tuple(round(p,3) for p in p_tup)
 
-        # between adaptive stepping and rounding, it's not obvious if each
-        # step is cached, so checking is probably cheaper than try/except
-        if p_tup in cache:
-            phi0 = cache[p_tup]
-            dstep *= 1.05
-            step += dstep
-        else:
-            parameters = (p_tup[0], p_tup[1]*(1/3), p_tup[2]+1, 
-                          p_tup[3]*p_tup[4]*100, p_tup[4]*1000)
-            try:
-                phi0 = SCFsolve(*parameters,phi0=phi0,disp=disp)
-                cache[p_tup] = phi0
+        if rp_tup in cache:
+            phi0 = cache[rp_tup]
+            if flag:
                 dstep *= 1.05
                 step += dstep
-            except RuntimeError as e:
-                if e.message != "solver couldn't converge":
-                    raise
-                else:
-                    flag = True # Reset this so we don't quit if step=1.0 fails
-                    dstep *= .5
-                    step -= dstep
+                continue
+        
+        parameters = (p_tup[0], p_tup[1]*(1/3), p_tup[2]+1, 
+                      p_tup[3]*p_tup[4]*100, p_tup[4]*1000)
+        try:
+            phi0 = SCFsolve(*parameters,phi0=phi0,disp=disp)
+            cache[rp_tup] = phi0
+            if flag: 
+                dstep *= 1.05
+                step += dstep
+            else: 
+                phi = phi0
+        except RuntimeError as e:
+            if e.message != "solver couldn't converge":
+                raise
+            else:
+                flag = True # Reset this so we don't quit if step=1.0 fails
+                dstep *= .5
+                step -= dstep
     
     # keep the cache from consuming all things
     if len(cache)>9000:
         for i in xrange(1000):
             cache.popitem(last=False)
         
-    return phi0
+    return phi
 
 
 def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
