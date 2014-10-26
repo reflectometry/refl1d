@@ -62,7 +62,6 @@ using one energy so we only show the first column.
 import numpy
 from numpy import inf, nan, isnan
 from scipy.special import erf
-from itertools import izip
 sqrt2=numpy.sqrt(2.0)
 
 class Microslabs(object):
@@ -567,38 +566,29 @@ def build_profile(z, thickness, roughness, value):
     *value*      profile being computed
     *max_rough*  limit the roughness to a fraction of the layer thickness
     """
-
+    # Quickly assign a profile ignoring any roughness
+    result = value[numpy.searchsorted(numpy.cumsum(thickness[:-1]), z)]
+        
+    # Then go back to any rough layers and blend properly.
+    if not roughness.any(): return result
+    rough_layers = roughness.nonzero()[0] # nonzero returns a tuple of arrays
+    
+    # Make an iterable over rough layers and layers immediately above them,
+    # taking care not to repeat any.
+    rough_layers = set((rough_layers).tolist()+(rough_layers+1).tolist())
+    
     # Find interface depths
     offset = numpy.hstack( (-inf, 0, numpy.cumsum(thickness[1:-1]), inf) )
-
+        
     # gives the layer boundaries in terms of the index of the z
     idx = numpy.searchsorted(z, offset)
+    
     # TODO: The following hack makes sure the final z value is calculated.
     # TODO: Make sure it works even when z is wider than the range of offsets.
     if idx[-1] < len(z):
         idx[-1] = len(z)
         
-    result = numpy.empty_like(z)
-    lenval=len(value)
-    if lenval >= 30:
-        # If there are enough layers (30 on my system), quickly assign a basic profile.
-        # This prevents a lot of adding and multiplying of zeros for splines, etc.
-        # TODO: Ideally, this would be a pure numpy operation, somehow.
-        for start,stop,mvalue in izip(idx,idx[1:],value):
-            result[start:stop]=mvalue
-            
-        # Then go back to any rough layers and blend properly.
-        rough_layers = roughness.nonzero()[0] # nonzero returns a tuple of arrays
-        
-        # Now make an iterable over rough layers and the immediately above,
-        # taking care not to repeat any.
-        layer_iterator = set((rough_layers).tolist()+(rough_layers+1).tolist())
-        
-    else:
-        # Otherwise, there aren't enough layers to make that optimization worthwhile.
-        layer_iterator = xrange(lenval)
-    
-    for i in layer_iterator:
+    for i in rough_layers:
         zo = z[idx[i]:idx[i+1]]
         
         if i==0:
@@ -608,7 +598,7 @@ def build_profile(z, thickness, roughness, value):
             lvalue = value[i-1]
             lblend = blend(zo-offset[i],lsigma)
         
-        if i >= lenval-1:
+        if i >= len(value)-1:
             rsigma = rvalue = rblend = 0
         else:
             rsigma = roughness[i]
