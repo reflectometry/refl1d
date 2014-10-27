@@ -98,7 +98,7 @@ C * Converted to subroutine from GEPORE.f
       int I,L,STEP;
 
 //    variables calculating S1, S3, COSH and SINH
-      double KSQREL;
+      double KSQPREL,KSQMREL;
       double EPA, EMA, COSB, SINB, LOGH;
       Cplx S1,S3,COSHS1,COSHS3,SINHS1,SINHS3;
 
@@ -110,9 +110,10 @@ C * Converted to subroutine from GEPORE.f
       Cplx C1,C2,C3,C4;
 
 //    variables for translating resulting B into a signal
+      Cplx SCI,SS,CC;
       Cplx W11,W12,W21,W22,V11,V12,V21,V22;
+      Cplx ZIP,ZIM,ZSP,ZSM,X,YPP,YMM,YPM,YMP;
       Cplx DETW;
-      Cplx ZI,ZS,X,Y,SCI,SS,CC;
 
 //    constants
       const Cplx CR(1.0,0.0);
@@ -187,13 +188,14 @@ C later in the calculation when we divide by DETW.
 
 //    Changing the target KZ is equivalent to subtracting the fronting
 //    medium SLD.
-      KSQREL = KZ*KZ + PI4*RHO[L];
+      KSQPREL = KZ*KZ + PI4*(RHO[L]+RHOM[L]);
+      KSQMREL = KZ*KZ + PI4*(RHO[L]-RHOM[L]);
 //    Process the loop once for each interior layer, either from
 //    front to back or back to front.
       for (I=1; I < N-1; I++) {
         L = L+STEP;
-        S1 = sqrt(PI4*(RHO[L]+RHOM[L])-KSQREL - CI*PI4*IRHO[L]);
-        S3 = sqrt(PI4*(RHO[L]-RHOM[L])-KSQREL - CI*PI4*IRHO[L]);
+        S1 = sqrt(PI4*(RHO[L]+RHOM[L])-KSQPREL - CI*PI4*IRHO[L]);
+        S3 = sqrt(PI4*(RHO[L]-RHOM[L])-KSQMREL - CI*PI4*IRHO[L]);
 
 //    Factor out H=exp(max(abs(real([S1,S3])))*D(L)) from the matrix
         if (fabs(S1.real()) > fabs(S3.real()))
@@ -296,9 +298,9 @@ LOGH=0;
 
 //    Rotate polarization axis to lab frame (angle AGUIDE)
 //    Note: reusing A instead of creating CST
-      CC = cos(-AGUIDE/2.*PI/180.); CC *= CC;
-      SS = sin(-AGUIDE/2.*PI/180.); SS *= SS;
-      SCI = CI*cos(-AGUIDE/2.*PI/180.)*sin(-AGUIDE/2*PI/180.);
+      CC = cos(-AGUIDE/2.*PI/180.);
+      SS = sin(-AGUIDE/2.*PI/180.);
+      SCI = CI*CC*SS; CC *= CC; SS *= SS;
       A11 = CC*B11 + SS*B22 + SCI*(B12-B21);
       A12 = CC*B12 + SS*B21 + SCI*(B11-B22);
       A21 = CC*B21 + SS*B12 + SCI*(B22-B11);
@@ -328,23 +330,28 @@ LOGH=0;
 //    Note: this does not take into account magnetic fronting/backing
 //    media --- use gepore.f directly for a more complete solution
       L=L+STEP;
-      ZS=CI*sqrt(KSQREL-PI4*RHO[L] + CI*PI4*IRHO[L]);
-      ZI=CI*fabs(KZ);
+      ZSP=CI*sqrt(KSQPREL-PI4*(RHO[L]+RHOM[L]) + CI*PI4*IRHO[L]);
+      ZSM=CI*sqrt(KSQMREL-PI4*(RHO[L]-RHOM[L]) + CI*PI4*IRHO[L]);
+      ZIP=CI*fabs(KZ);
+      ZIM=CI*fabs(KZ);
 
       X=-1.;
-      Y=ZI*ZS;
+      YPP=ZIP*ZSP;
+      YMM=ZIM*ZSM;
+      YPM=ZIP*ZSM;
+      YMP=ZIM*ZSP;
 
 //    W below is U and V is -V of printed versions
 
-      V11=ZS*A11+X*A31+Y*A13-ZI*A33;
-      V12=ZS*A12+X*A32+Y*A14-ZI*A34;
-      V21=ZS*A21+X*A41+Y*A23-ZI*A43;
-      V22=ZS*A22+X*A42+Y*A24-ZI*A44;
+      V11=ZSP*A11+X*A31+YPP*A13-ZIP*A33;
+      V12=ZSP*A12+X*A32+YMP*A14-ZIM*A34;
+      V21=ZSM*A21+X*A41+YPM*A23-ZIP*A43;
+      V22=ZSM*A22+X*A42+YMM*A24-ZIM*A44;
 
-      W11=ZS*A11+X*A31-Y*A13+ZI*A33;
-      W12=ZS*A12+X*A32-Y*A14+ZI*A34;
-      W21=ZS*A21+X*A41-Y*A23+ZI*A43;
-      W22=ZS*A22+X*A42-Y*A24+ZI*A44;
+      W11=ZSP*A11+X*A31-YPP*A13+ZIP*A33;
+      W12=ZSP*A12+X*A32-YMP*A14+ZIM*A34;
+      W21=ZSM*A21+X*A41-YPM*A23+ZIP*A43;
+      W22=ZSM*A22+X*A42-YMM*A24+ZIM*A44;
 
       DETW=W22*W11-W12*W21;
 
