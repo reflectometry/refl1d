@@ -927,9 +927,9 @@ def _proto_callback(x,disp,layers,tol,ratio):
     reasonable solver trajectories.
     """
     if disp: print "Iterating..."
-    if x[-1] > 4*tol:
+    if abs(x[-1]) > 4*tol:
         raise ShortCircuitError('Stopping, lattice too small',x)
-    elif layers > MINLAT and x[min(layers-1,round(layers/ratio))] < tol/4:
+    elif layers > MINLAT and abs(x[min(layers-1,round(layers/ratio))]) < tol/4:
         raise ShortCircuitError('Stopping, lattice too big',x)
 
 def SCFeqns(phi_z,chi,chi_s,sigma,navgsegments,p_i):
