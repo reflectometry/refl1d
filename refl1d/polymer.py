@@ -792,9 +792,8 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,segments=None,
     
     # other loop variables        
     jac_solve_method = 'gmres'
-    done = False
     
-    while not done:
+    while True:
         if disp: print "\nSolving SCF equation set..."
         
         try:
@@ -802,7 +801,7 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,segments=None,
             result = root(
                 SCFeqns,phi0,args=(chi,chi_s,sigma,segments,p_i),
                 method='Krylov',callback=callback,
-                options={'disp':bool(disp),'maxiter':20,
+                options={'disp':bool(disp),'maxiter':10,
                          'jac_options':{'method':jac_solve_method}})
             if disp: 
                 print '\nSolver exit code:',result.status,result.message
@@ -815,14 +814,14 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,segments=None,
                 
         except ShortCircuitError as e:
             # dumping out to resize since we've exceeded resize tol by 4x
-            growing = False # scrub this flag so we don't quit directly (rare)
+            growing = False # scrub this flag so we don't quit directly
             phi = fabs(e.x)
             if disp: print e
                 
         except ValueError as e:
             if e.message == 'array must not contain infs or NaNs':
                 # TODO: Handle this error better.
-                raise
+                raise RuntimeError("solver couldn't converge")
             else:
                 raise
 
@@ -843,18 +842,17 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,segments=None,
             if disp: print 'Growing undersized lattice by', newlayers
             phi0 = np.append(phi,np.linspace(phi[-1],0,num=newlayers))
             growing = True
-        elif layers > MINLAT and phi[round(layers/ratio)] < tol:
+        elif (not growing
+              and layers > MINLAT
+              and phi[round(layers/ratio)] < tol):
             # if the layer at 83% of the thickenss is less than the tolerance,
             # we can shrink it, but not if it's already a small lattice, or 
             # if we grew after the last successful call of root()
-            if growing:
-                done = True
-            else:
-                if disp: print 'Shrinking undersized lattice...'
-                phi0 = phi[:round(layers/ratio)]
+            if disp: print 'Shrinking oversized lattice...'
+            phi0 = phi[:round(layers/ratio)]
         else:
             # otherwise, we are done for real
-            done = True
+            break
             
     if disp:
         print "execution time:", round(time()-starttime,3), "s"
@@ -943,10 +941,11 @@ def SCFeqns(phi_z,chi,chi_s,sigma,navgsegments,p_i):
     
     # attempts to try fields with values greater than one are penalized
     toomuch = phi_z>.99999
-    penalty = 0.0
     if toomuch.any():
-        penalty = np.where(toomuch,1e10*(phi_z-.99999),0)
+        penalty = np.where(toomuch,1e5*(phi_z-.99999),0)
         phi_z[toomuch] = .99999
+    else:
+        penalty = 0.0
     
     phi_z_0 = 1.0 - phi_z
     
@@ -963,7 +962,7 @@ def SCFeqns(phi_z,chi,chi_s,sigma,navgsegments,p_i):
     
     # normalize g_z for numerical stability
     u = -np.log(g_z)
-    uavg = np.mean(u)
+    uavg = addred(u)/layers
     g_z_norm = g_z*exp(uavg)
     
     # calculate weighting factors for terminally attached chains
@@ -978,10 +977,26 @@ def SCFeqns(phi_z,chi,chi_s,sigma,navgsegments,p_i):
     # calculate weighting factors for free chains
     g_zs_free_ngts_norm = calc_g_zs(g_z_norm,c_i_norm,layers,cutoff)
     
+    # calculate new polymer density field
     phi_z_new = calc_phi_z(g_zs_ta_norm,g_zs_free_ngts_norm,g_z_norm)
-    eps_z = phi_z-phi_z_new
     
-    return eps_z+penalty
+    # Handle float overflows only if they show themselves
+    if np.isnan(phi_z_new).any():
+        maxfloat=_getmax(g_zs_ta_norm.dtype.type)
+        g_zs_ta_norm[np.isinf(g_zs_ta_norm)]=maxfloat
+        g_zs_free_ngts_norm[np.isinf(g_zs_free_ngts_norm)]=maxfloat
+        phi_z_new = calc_phi_z(g_zs_ta_norm,g_zs_free_ngts_norm,g_z_norm)
+        
+    return phi_z - phi_z_new + penalty
+
+def _getmax(t, seen_t={}):
+    try:
+        return seen_t[t]
+    except KeyError:
+        from numpy.core import getlimits
+        fmax = getlimits.finfo(t).max
+        seen_t[t]=fmax
+        return fmax
 
 def _fzeros(*args):
     return np.zeros(args,dtype=np.float64,order='F')
