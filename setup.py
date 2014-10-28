@@ -32,7 +32,7 @@ def reflmodule_config():
     if compiler == 'msvc':
         eca=['/EHsc']
     else:
-        eca=['']
+        eca=None
 
     S = ("reflmodule.cc","methods.cc",
          "reflectivity.cc", "magnetic.cc",
