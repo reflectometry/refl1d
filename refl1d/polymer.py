@@ -75,7 +75,7 @@ def norm(x): return sqrt(addred(x*x))
 LAMBDA_1 = np.float64(1.0)/6.0 #always assume cubic lattice (1/6) for now
 LAMBDA_0 = 1.0-2.0*LAMBDA_1
 LAMBDA_ARRAY = np.asarray([LAMBDA_1,LAMBDA_0,LAMBDA_1])
-MINLAT = 35
+MINLAT = 25
 SQRT_PI=sqrt(pi)
 
 class PolymerBrush(Layer):
@@ -637,11 +637,11 @@ def SCFcache(chi,chi_s,pdi,theta,segments,disp=False,cache=OrderedDict()):
         
     # Try to keep the parameters between 0 and 1. Factors are arbitrary.
     scaled_parameters = (chi,chi_s*3,pdi-1,theta/segments*10,segments/1000)
+    p_array = np.asarray(scaled_parameters)
     
     # round them to a reasonable number of digits
     digits = 4 # 3 is faster but can prevent convergence for extreme cases
     rounded_parameters = tuple(round(p,digits) for p in scaled_parameters)
-    p_array = np.asarray(rounded_parameters)
     
     if rounded_parameters in cache:
         # on a hit, walk from the hit to the requested parameters
@@ -705,6 +705,7 @@ def SCFcache(chi,chi_s,pdi,theta,segments,disp=False,cache=OrderedDict()):
         # conditional parameter space vector math because, "why risk floating point error"
         current_p = closest_cp_array + step*closest_delta if flag else p_array
         p_tup = tuple(p for p in current_p)
+        if disp: print 'current parameters:',p_tup
         rp_tup = tuple(round(p,digits) for p in p_tup)
 
         if rp_tup in cache:
@@ -781,10 +782,7 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,segments=None,
     tol = 2e-6*theta
     # otherwise we grow it by 20%.
     ratio = 1.2
-    # if the loop sees that it can shrink 20%, it will, but it can lead to
-    # endless shrink/grow loops. This flag shows if it has grown before, so it
-    # knows to quit instead of shrinking.
-    growing = False
+    
     # apparently scope rules dictate that we can change 'layers' without a
     # redefinition of this callback, so I got rid of one in the loop.
     def callback(x,*args,**kwargs): 
@@ -801,7 +799,7 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,segments=None,
             result = root(
                 SCFeqns,phi0,args=(chi,chi_s,sigma,segments,p_i),
                 method='Krylov',callback=callback,
-                options={'disp':bool(disp),'maxiter':10,
+                options={'disp':bool(disp),'maxiter':15,
                          'jac_options':{'method':jac_solve_method}})
             if disp: 
                 print '\nSolver exit code:',result.status,result.message
@@ -814,7 +812,6 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,segments=None,
                 
         except ShortCircuitError as e:
             # dumping out to resize since we've exceeded resize tol by 4x
-            growing = False # scrub this flag so we don't quit directly
             phi = fabs(e.x)
             if disp: print e
                 
@@ -841,22 +838,17 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,segments=None,
             newlayers = max(1,round(layers*(ratio-1)))
             if disp: print 'Growing undersized lattice by', newlayers
             phi0 = np.append(phi,np.linspace(phi[-1],0,num=newlayers))
-            growing = True
-        elif (not growing
-              and layers > MINLAT
-              and phi[round(layers/ratio)] < tol):
-            # if the layer at 83% of the thickenss is less than the tolerance,
-            # we can shrink it, but not if it's already a small lattice, or 
-            # if we grew after the last successful call of root()
-            if disp: print 'Shrinking oversized lattice...'
-            phi0 = phi[:round(layers/ratio)]
         else:
             # otherwise, we are done for real
             break
-            
+    
+    # chop off extra layers
+    chop = addred(phi.cumsum()<theta-tol*.1)
+    phi = phi[:max(MINLAT,chop)]
+    
     if disp:
         print "execution time:", round(time()-starttime,3), "s"
-        print "lattice size:", layers
+        print "lattice size:", len(phi)
     
     return phi    
 
@@ -927,8 +919,6 @@ def _proto_callback(x,disp,layers,tol,ratio):
     if disp: print "Iterating..."
     if abs(x[-1]) > 4*tol:
         raise ShortCircuitError('Stopping, lattice too small',x)
-    elif layers > MINLAT and abs(x[min(layers-1,round(layers/ratio))]) < tol/4:
-        raise ShortCircuitError('Stopping, lattice too big',x)
 
 def SCFeqns(phi_z,chi,chi_s,sigma,navgsegments,p_i):
     """ System of SCF equation for terminally attached polymers.
