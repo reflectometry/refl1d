@@ -57,10 +57,7 @@ from .model import Layer
 from . import util
 from time import time
 
-try:
-    from collections import OrderedDict
-except ImportError:
-    OrderedDict = dict
+from collections import OrderedDict
     
 from numpy import real, imag, exp, sqrt, pi, hstack, ones_like, fabs
 
@@ -633,7 +630,7 @@ def SCFcache(chi,chi_s,pdi,theta,segments,disp=False,cache=OrderedDict()):
     """
     # prime the cache with a known easy solution
     if not cache: 
-        cache[(0,0,0,1,.1)] = SCFsolve(theta=10,segments=100)
+        cache[(0,0,0,.2,.2)] = SCFsolve(theta=10,segments=100)
         
     # Try to keep the parameters between 0 and 1. Factors are arbitrary.
     scaled_parameters = (chi,chi_s*3,pdi-1,theta/segments*2,segments/500)
@@ -658,12 +655,7 @@ def SCFcache(chi,chi_s,pdi,theta,segments,disp=False,cache=OrderedDict()):
     closest_cp = cp[closest_index]
     closest_cp_array = np.asarray(closest_cp)
     closest_delta = deltas[closest_index]
-    phi0 = cache[closest_cp]
-
-#    try:
-#        cache.move_to_end(closest_cp) # only for python_version > 3.2
-#    except AttributeError:
-    del cache[closest_cp]
+    phi0 = cache.pop(closest_cp) # pop and assign to shift the key to the end
     cache[closest_cp] = phi0
     
     if disp:
@@ -838,13 +830,18 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,segments=None,
     
     return phi    
 
-def SZdist(pdi,nn):
+def SZdist(pdi,nn,cache=OrderedDict()):
     """ Calculate Shultz-Zimm distribution from PDI and number average DP
     
     Shultz-Zimm is a "realistic" distribution for linear polymers. Numerical
     problems arise when the distribution gets too uniform, so if we find them,
     default to an exact uniform calculation.
     """
+    args = pdi,nn
+    if args in cache:
+        p_ni = cache.pop(args)
+        cache[args] = p_ni
+        return p_ni
     
     from scipy.special import gammaln
     
@@ -852,28 +849,33 @@ def SZdist(pdi,nn):
         # NOTE: rounding here allows nn to be a double in the rest of the logic
         p_ni = _fzeros(1,round(nn))
         p_ni[0,-1] = 1
-        return p_ni
     elif pdi < 1.0:
         raise ValueError('Invalid PDI')
+    else:
+        x = 1.0/(pdi-1.0)
+        cutoff = 9000
         
-    x = 1.0/(pdi-1.0)
-    cutoff = 9000
-    
-    ni = np.arange(1,cutoff+1,dtype=np.float64)
-    r = ni/nn
-    
-    p_ni = exp(np.log(x/ni) - gammaln(x+1) + x*r*(np.log(x*r)/r-1))
+        ni = np.arange(1,cutoff+1,dtype=np.float64)
+        r = ni/nn
+        
+        p_ni = exp(np.log(x/ni) - gammaln(x+1) + x*r*(np.log(x*r)/r-1))
     
     if (p_ni>=1.0).any():
         # NOTE: rounding here allows nn to be a double in the rest of the logic
         p_ni = _fzeros(1,round(nn))
         p_ni[0,-1] = 1
-        return p_ni
+    else:
+        mysums = np.cumsum(p_ni)
+        keep = np.logical_and(np.logical_or(r < 1.0, p_ni >= 1.0e-6), mysums < 1.0)
+        p_ni = p_ni[keep].reshape(1,-1)
     
-    mysums = np.cumsum(p_ni)
-    keep = np.logical_and(np.logical_or(r < 1.0, p_ni >= 1.0e-6), mysums < 1.0)
-        
-    return p_ni[keep].reshape(1,-1)
+    cache[args]=p_ni
+    
+    if len(cache)>9000:
+        for i in xrange(1000):
+            cache.popitem(last=False)
+    
+    return p_ni
 
 def default_guess(theta=1,sigma=.5,chi=0,chi_s=0):
     """ Produce an initial guess for phi via analytical approximants.
