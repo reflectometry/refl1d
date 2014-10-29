@@ -815,14 +815,15 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,segments=None,
             # if the last layer is beyond tolerance, grow the lattice
             newlayers = max(1,round(layers*(ratio-1)))
             if disp: print 'Growing undersized lattice by', newlayers
-            phi0 = np.append(phi,np.linspace(phi[-1],0,num=newlayers))
+            phi0 = hstack((phi,np.linspace(phi[-1],0,num=newlayers)))
         else:
             # otherwise, we are done for real
             break
     
     # chop off extra layers
-    chop = addred(phi.cumsum()<theta-tol*.1)
+    chop = addred(phi>tol)+1
     phi = phi[:max(MINLAT,chop)]
+    if disp: print 'phi(L)/sum(phi) =',phi[-1] / theta * 1e6,'(ppm)\n'
     
     if disp:
         print "execution time:", round(time()-starttime,3), "s"
