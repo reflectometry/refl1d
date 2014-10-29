@@ -697,7 +697,7 @@ def SCFcache(chi,chi_s,pdi,theta,segments,disp=False,cache=OrderedDict()):
             print 'current parameters:',p_tup
         
         parameters = (p_tup[0], p_tup[1]*(1/3), p_tup[2]+1, 
-                      p_tup[3]*p_tup[4]*100, p_tup[4]*1000)
+                      p_tup[3]*p_tup[4]*250, p_tup[4]*500)
         try:
             phi0 = SCFsolve(*parameters,phi0=phi0,disp=disp)
             cache[p_tup] = phi0
@@ -966,7 +966,8 @@ def SCFeqns(phi_z,chi,chi_s,sigma,navgsegments,p_i):
         g_zs_free_ngts_norm[np.isinf(g_zs_free_ngts_norm)]=maxfloat
         phi_z_new = calc_phi_z(g_zs_ta_norm,g_zs_free_ngts_norm,g_z_norm)
         
-    return phi_z - phi_z_new + penalty
+    eps_z = phi_z - phi_z_new
+    return eps_z + penalty*np.sign(eps_z)
 
 def _getmax(t, seen_t={}):
     try:
