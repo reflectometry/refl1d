@@ -61,7 +61,7 @@ def twinx(ax=None):
 
     Warning: This is a function to simulate the pylab.twinx in WX
     """
-    if ax == None:
+    if ax is None:
         return None
 
     ax2 = ax.figure.add_axes( ax.get_position(), sharex=ax, frameon=False )

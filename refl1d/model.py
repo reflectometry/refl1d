@@ -147,13 +147,13 @@ class Layer(object): # Abstract base class
         c = copy(self)
         # Only set values if they are not None so that defaults
         # carry over from the copied layer
-        if thickness != None:
+        if thickness is not None:
             c.thickness = Par.default(thickness, limits=(0,inf),
                                       name=self.name+" thickness")
-        if interface != None:
+        if interface is not None:
             c.interface = Par.default(interface, limits=(0,inf),
                                       name=self.name+" interface")
-        if magnetism != None:
+        if magnetism is not None:
             c.magnetism = magnetism
         return c
 
@@ -401,8 +401,8 @@ class Stack(Layer):
             return self, idx
 
         if isinstance(idx, slice):
-            start = (self, 0) if idx.start == None else self._lookup(idx.start)
-            stop = (self, len(self)) if idx.stop == None else self._lookup(idx.stop)
+            start = (self, 0) if idx.start is None else self._lookup(idx.start)
+            stop = (self, len(self)) if idx.stop is None else self._lookup(idx.stop)
             if start[0] != stop[0]:
                 raise IndexError("start and and stop of sample slice must be in the same stack")
             return start[0],slice(start[1],stop[1],idx.step)

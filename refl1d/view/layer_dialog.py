@@ -200,7 +200,7 @@ class LayerEditorDialog(wx.Dialog):
         pass
 
     def set_stack(self, stack):
-        if stack == None: return
+        if stack is None: return
         self.stack = stack
         self.set_layer(self.layer_num)
 

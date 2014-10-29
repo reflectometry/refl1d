@@ -71,7 +71,7 @@ class Molecule(object):
     def __init__(self, name, formula, cell_volume=None, density=None, charge=0):
         # Fill in density or cell_volume
         M = pt.formula(formula, natural_density=density)
-        if cell_volume != None:
+        if cell_volume is not None:
             M.density = 1e24*M.molecular_mass/cell_volume if cell_volume>0 else 0
             #print name, M.molecular_mass, cell_volume, M.density
         else:

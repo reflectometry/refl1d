@@ -222,7 +222,7 @@ class GareflModel(object):
         Return a probe for an individual garefl model.
         """
         data = [self._getdata(k, xs) for xs in range(4)]
-        if any(d!=None for d in data[1:]):
+        if any(d is not None for d in data[1:]):
             probe = PolarizedNeutronQProbe(xs=data)
         else:
             probe = data[0]

@@ -92,7 +92,7 @@ def reflectivity_amplitude(kz=None,
     This function does not compute any instrument resolution corrections.
     """
     kz = _dense(kz, 'd')
-    if rho_index == None:
+    if rho_index is None:
         rho_index = np.zeros(kz.shape,'i')
     else:
         rho_index = _dense(rho_index, 'i')
@@ -180,7 +180,7 @@ def magnetic_amplitude(kz,
     See :class:`magnetic_reflectivity <refl1d.reflectivity.magnetic_reflectivity>` for details.
     """
     kz = _dense(kz,'d')
-    if rho_index == None:
+    if rho_index is None:
         rho_index = np.zeros(kz.shape,'i')
     else:
         rho_index = _dense(rho_index, 'i')

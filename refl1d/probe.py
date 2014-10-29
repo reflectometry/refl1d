@@ -229,9 +229,9 @@ class Probe(object):
         format.  Call probe.log10_to_linear() after loading this data to
         convert it to linear for subsequent display and fitting.
         """
-        if self.Ro != None:
+        if self.Ro is not None:
             self.Ro = 10**self.Ro
-            if self.dR != None:
+            if self.dR is not None:
                 self.dR = self.Ro * self.dR * log(10)
             self.R = self.Ro
 
@@ -315,7 +315,7 @@ class Probe(object):
 
         The default is to write Q,R,dR data.
         """
-        if header == None:
+        if header is None:
             header = "# %s\n"%' '.join(columns)
         with open(filename,'w') as fid:
             fid.write(header)
@@ -556,7 +556,7 @@ class Probe(object):
         fid = open(filename,"w")
         fid.write("# intensity: %.15g\n# background: %.15g\n"
                   % (self.intensity.value, self.background.value))
-        if getattr(self,'R',None) != None:
+        if getattr(self,'R',None) is not None:
             A = numpy.array((self.Q,self.dQ,self.R,self.dR, R, fresnel(self.Q)))
             fid.write("# %17s %20s %20s %20s %20s %20s\n"
                       %("Q (1/A)","dQ (1/A)", "R", "dR", "theory", "fresnel"))
@@ -930,7 +930,7 @@ class ProbeSet(Probe):
         for p,th in self.parts(theory): p.plot_residuals(theory=th, **kw)
     plot_residuals.__doc__ = Probe.plot_residuals.__doc__
     def parts(self, theory):
-        if theory == None:
+        if theory is None:
             for p in self.probes:
                 yield p,None
         else:

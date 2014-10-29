@@ -27,7 +27,7 @@ def plot_sample(sample, instrument=None, roughness_limit=0):
     """
     Quick plot of a reflectivity sample and the corresponding reflectivity.
     """
-    if instrument == None:
+    if instrument is None:
         from .probe import NeutronProbe
         probe = NeutronProbe(T=numpy.arange(0,5,0.05), L=5)
     else:

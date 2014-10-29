@@ -108,7 +108,7 @@ class MplPage(Page):
         pass
     def _get_axes(self, x, y):
         ax = self._find_axes(x, y)
-        if ax == None:
+        if ax is None:
             ax = self._new_axes(x,y)
         return ax
     def marker(self, x=None, y=None, **kw):

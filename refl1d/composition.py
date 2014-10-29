@@ -26,7 +26,7 @@ class CompositionSpace(Layer):
     def __init__(self, solvent=air, thickness=0, name=None):
         self.parts = []
         self.solvent = solvent
-        if name == None: name="solvent "+solvent.name
+        if name is None: name="solvent "+solvent.name
         self.name = name
         self.thickness = Par.default(thickness, limits=(0,inf),
                                    name=name+" thickness")

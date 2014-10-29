@@ -46,7 +46,7 @@ def refl(kz, depth, rho, irho=0, sigma=0, rho_index=None):
     sigma = sigma*ones(m-1,'d') if isscalar(sigma) else asarray(sigma,'d')
 
     # Repeat rho,irho columns as needed
-    if rho_index != None:
+    if rho_index is not None:
         rho = rho[rho_index, :]
         irho = irho[rho_index, :]
     elif len(rho.shape) == 1:

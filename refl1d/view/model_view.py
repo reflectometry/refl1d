@@ -79,7 +79,7 @@ class ModelView(wx.Panel):
         # Status bar
         frame = self.GetTopLevelParent()
         self.statusbar = frame.GetStatusBar()
-        if self.statusbar == None:
+        if self.statusbar is None:
             self.statusbar = frame.CreateStatusBar()
         status_update = lambda msg: self.statusbar.SetStatusText(msg)
 
