@@ -545,7 +545,7 @@ class EndTetheredPolymer(Layer):
         return SCFprofile(z, chi=self.chi.value, chi_s=self.chi_s.value, 
              h_dry=self.h_dry.value,l_lat=self.l_lat.value, mn=self.mn.value, 
              m_lat=self.m_lat.value, pdi=self.pdi.value)
-        
+
     def render(self, probe, slabs):
         thickness = self.thickness.value
         Pw,Pz = slabs.microslabs(thickness)
@@ -926,11 +926,11 @@ def SCFeqns(phi_z,chi,chi_s,sigma,navgsegments,p_i):
     g_z_norm = g_z*exp(uavg)
     
     # calculate weighting factors for terminally attached chains
-    g_zs_ta_norm = calc_g_zs(g_z_norm,1,layers,cutoff)
+    g_zs_ta_norm = calc_g_zs(g_z_norm,0,layers,cutoff)
     
     # calculate normalization constants from 1/(single chain partition fn)
     if cutoff == round(navgsegments): # if uniform,
-        c_i_norm = sigma*p_i/addred(g_zs_ta_norm[:,-1]) # take a shortcut!
+        c_i_norm = sigma/addred(g_zs_ta_norm[:,-1]) # take a shortcut!
     else:
         c_i_norm = sigma*p_i/addred(g_zs_ta_norm,axis=0)
     
@@ -976,14 +976,18 @@ def calc_g_zs(g_z,c_i,layers,segments):
     
     # choose special case
     if np.size(c_i) == 1:
-        # terminally attached ends
-        g_zs[:,0] = _fzeros(layers)
-        g_zs[0,0] = g_z[0]
+        if c_i:
+            # uniform chains
+            g_zs[:,0] = c_i*g_z
+        else:
+            # terminally attached ends
+            g_zs[:,0] = 0.0
+            g_zs[0,0] = g_z[0]
         _calc_g_zs_uniform(g_z,g_zs,LAMBDA_0,LAMBDA_1,layers,segments)
 
     else:
         # free ends
-        g_zs[:,0] = c_i[0,segments-1]*g_z
+        g_zs[:,0] = c_i[0,-1]*g_z
         _calc_g_zs(g_z,c_i,g_zs,LAMBDA_0,LAMBDA_1,layers,segments)
     
     # Older versions of inner loops
