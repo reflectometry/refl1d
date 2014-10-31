@@ -599,14 +599,10 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None,
     # re-dimensionalize the solution
     layers = len(phi_lat)
     z_end = l_lat*(layers+.5)
-    keep = z<=z_end
-    z_lat = np.linspace(l_lat/2,z_end,num=layers)
-    phi = np.interp(z[keep],z_lat,phi_lat)
+    z_lat = np.linspace(l_lat*.5,z_end,num=layers)
+    phi = np.interp(z,z_lat,phi_lat,right=0.0)
 
-    # fill in the end with zeros
-    zextra = z[np.logical_not(keep)]
-    
-    return hstack((phi,np.zeros_like(zextra)))
+    return phi
     
 
 def SCFcache(chi,chi_s,pdi,theta,segments,disp=False,cache=OrderedDict()):
