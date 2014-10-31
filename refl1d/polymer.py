@@ -598,8 +598,8 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None,
     
     # re-dimensionalize the solution
     layers = len(phi_lat)
-    z_end = l_lat*(layers+.5)
-    z_lat = np.linspace(l_lat*.5,z_end,num=layers)
+    z_end = l_lat*(layers)
+    z_lat = np.linspace(0,z_end,num=layers)
     phi = np.interp(z,z_lat,phi_lat,right=0.0)
 
     return phi
