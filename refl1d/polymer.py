@@ -523,7 +523,6 @@ class EndTetheredPolymer(Layer):
         self.mn    = Parameter.default(mn, name="Num. Avg. MW")
         self.m_lat = Parameter.default(m_lat, name="lattice segment mass")
         self.pdi   = Parameter.default(pdi, name="Dispersity")
-        self.phi_prev = None
         self.solvent = solvent
         self.polymer = polymer
         self.name = name
@@ -543,23 +542,10 @@ class EndTetheredPolymer(Layer):
                 }
                 
     def profile(self, z):
-        SCFparams = dict(chi=self.chi.value, chi_s=self.chi_s.value, 
+        return SCFprofile(z, chi=self.chi.value, chi_s=self.chi_s.value, 
              h_dry=self.h_dry.value,l_lat=self.l_lat.value, mn=self.mn.value, 
              m_lat=self.m_lat.value, pdi=self.pdi.value)
-        # If the SCF parameters are exactly equal to the ones that generated
-        # the previous solution, just return the previous solution
-        if (self.prev['params'] == SCFparams 
-            and np.array_equal(z,self.prev['z'])):
-                return self.prev['phi']
-            
-        phi = SCFprofile(z, **SCFparams)
-                
-        # Save copy of phi so it doesn't mutate unexpectedly
-        self.prev['phi'] = phi.copy()
-        self.prev['z'] = z
-        self.prev['params'] = SCFparams
-        return phi
-
+        
     def render(self, probe, slabs):
         thickness = self.thickness.value
         Pw,Pz = slabs.microslabs(thickness)
