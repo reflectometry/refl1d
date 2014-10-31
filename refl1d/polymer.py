@@ -745,8 +745,8 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,segments=None,
     
     # apparently scope rules dictate that we can change 'layers' without a
     # redefinition of this callback, so I got rid of one in the loop.
-    def callback(x,*args,**kwargs): 
-        _proto_callback(x,disp,layers,tol,ratio)
+    def callback(x,fx): 
+        short_circuit_callback(x,tol)
     
     # other loop variables        
     jac_solve_method = 'gmres'
@@ -879,7 +879,7 @@ class ShortCircuitError(Exception):
     def __str__(self):
          return repr(self.value)
          
-def _proto_callback(x,disp,layers,tol,ratio):
+def short_circuit_callback(x,tol):
     """ Special callback to stop root() before solution is found.
     
     This kills root if the tolerances are exceeded by 4 times the tolerances
@@ -887,7 +887,6 @@ def _proto_callback(x,disp,layers,tol,ratio):
     restart the solver when necessary without cutting out of otherwise 
     reasonable solver trajectories.
     """
-    if disp: print "Iterating..."
     if abs(x[-1]) > 4*tol:
         raise ShortCircuitError('Stopping, lattice too small',x)
 
