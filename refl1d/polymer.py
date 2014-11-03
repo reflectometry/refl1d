@@ -59,7 +59,7 @@ from time import time
 
 from collections import OrderedDict
     
-from numpy import real, imag, exp, sqrt, pi, hstack, ones_like, fabs
+from numpy import real, imag, exp, log, sqrt, pi, hstack, ones_like, fabs
 
 # This is okay to use as long as LAMBDA_ARRAY is symmetric,
 # otherwise a slice LAMBDA_ARRAY[::-1] is necessary
@@ -67,7 +67,6 @@ from numpy.core.multiarray import correlate as raw_convolve
 
 from numpy.core import add
 addred = add.reduce
-def norm(x): return sqrt(addred(x*x))
 
 LAMBDA_1 = np.float64(1.0)/6.0 #always assume cubic lattice (1/6) for now
 LAMBDA_0 = 1.0-2.0*LAMBDA_1
@@ -590,33 +589,33 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None,
     # calculate lattice space parameters    
     theta = h_dry/l_lat
     segments = mn/m_lat
+    sigma = theta/segments
     
     # solve the self consistent field equations using the cache
     if disp: print "\n=====Begin calculations=====\n"
-    phi_lat = SCFcache(chi,chi_s,pdi,theta,segments,disp)
+    phi_lat = SCFcache(chi,chi_s,pdi,sigma,segments,disp)
     if disp: print "lattice segments: ", segments,"\n============================\n"
     
     # re-dimensionalize the solution
     layers = len(phi_lat)
     z_end = l_lat*(layers)
-    z_lat = np.linspace(0,z_end,num=layers)
+    z_lat = np.linspace(0.0,z_end,num=layers)
     phi = np.interp(z,z_lat,phi_lat,right=0.0)
 
     return phi
     
 
-def SCFcache(chi,chi_s,pdi,theta,segments,disp=False,cache=OrderedDict()):
+def SCFcache(chi,chi_s,pdi,sigma,segments,disp=False,cache=OrderedDict()):
     """Return a memoized SCF result by walking from a previous solution.
     
     Using an OrderedDict (because I want to prune keys FIFO)
     """
     # prime the cache with a known easy solution
     if not cache: 
-        cache[(0,0,0,.2,.2)] = SCFsolve(theta=10,segments=100)
+        cache[(0,0,0,.1,.2)] = SCFsolve(sigma=.1,segments=100)
         
     # Try to keep the parameters between 0 and 1. Factors are arbitrary.
-    scaled_parameters = (chi,chi_s*3,pdi-1,theta/segments*2,segments/500)
-    p_array = np.asarray(scaled_parameters)
+    scaled_parameters = (chi,chi_s*3,pdi-1,sigma,segments/500)
     
     # longshot, but return a cached result if we hit it
     if scaled_parameters in cache: 
@@ -627,6 +626,7 @@ def SCFcache(chi,chi_s,pdi,theta,segments,disp=False,cache=OrderedDict()):
     # Numpy setup
     cp = cache.keys()
     cp_array = np.asarray(cp)
+    p_array = np.asarray(scaled_parameters)
     
     # Calculate "nearest" cached solution
     deltas = p_array - cp_array # Parameter space displacement vectors
@@ -679,7 +679,7 @@ def SCFcache(chi,chi_s,pdi,theta,segments,disp=False,cache=OrderedDict()):
             print 'current parameters:',p_tup
         
         parameters = (p_tup[0], p_tup[1]*(1/3), p_tup[2]+1, 
-                      p_tup[3]*p_tup[4]*250, p_tup[4]*500)
+                      p_tup[3], p_tup[4]*500)
         try:
             phi0 = SCFsolve(*parameters,phi0=phi0,disp=disp)
             cache[p_tup] = phi0
@@ -702,7 +702,7 @@ def SCFcache(chi,chi_s,pdi,theta,segments,disp=False,cache=OrderedDict()):
     return phi0
 
 
-def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,segments=None,
+def SCFsolve(chi=0,chi_s=0,pdi=1,sigma=None,segments=None,
              disp=False,phi0=None):
     """ Solve SCF equations using an initial guess and lattice parameters
     
@@ -716,8 +716,6 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,segments=None,
     """
     
     from scipy.optimize import root
-    
-    sigma = theta/segments
 
     if sigma >= 1:
         raise ValueError('Chains that short cannot be squeezed that high')
@@ -728,7 +726,7 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,segments=None,
     
     if phi0 is None:
         # TODO: Better initial guess for chi>.6
-        layers, phi0 = default_guess(theta,sigma)
+        layers, phi0 = default_guess(segments,sigma)
         if disp: print '\nno guess passed, using default phi0: layers =',layers,'\n'
     else:
         phi0 = fabs(phi0)
@@ -739,6 +737,7 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,segments=None,
     # Loop resizing variables
     
     # We tolerate up to 2ppm of our polymer in the last layer,
+    theta = sigma*segments
     tol = 2e-6*theta
     # otherwise we grow it by 20%.
     ratio = 1.2
@@ -828,10 +827,10 @@ def SZdist(pdi,nn,cache=OrderedDict()):
     
     from scipy.special import gammaln
     
+    uniform = False
+    
     if pdi == 1.0:
-        # NOTE: rounding here allows nn to be a double in the rest of the logic
-        p_ni = _fzeros(1,round(nn))
-        p_ni[0,-1] = 1
+        uniform = True
     elif pdi < 1.0:
         raise ValueError('Invalid PDI')
     else:
@@ -840,10 +839,11 @@ def SZdist(pdi,nn,cache=OrderedDict()):
         
         ni = np.arange(1,cutoff+1,dtype=np.float64)
         r = ni/nn
+        xr = x*r
         
-        p_ni = exp(np.log(x/ni) - gammaln(x+1) + x*r*(np.log(x*r)/r-1))
+        p_ni = exp(log(x/ni) - gammaln(x+1) + xr*(log(xr)/r-1))
     
-    if (p_ni>=1.0).any():
+    if uniform or (p_ni>1.0).any():
         # NOTE: rounding here allows nn to be a double in the rest of the logic
         p_ni = _fzeros(1,round(nn))
         p_ni[0,-1] = 1
@@ -860,14 +860,15 @@ def SZdist(pdi,nn,cache=OrderedDict()):
     
     return p_ni
 
-def default_guess(theta=1,sigma=.5,chi=0,chi_s=0):
+def default_guess(segments=100,sigma=.5,chi=0,chi_s=0):
     """ Produce an initial guess for phi via analytical approximants.
     
     For now, a line using numbers from scaling theory
     """
-    default_layers = round(max(MINLAT,theta/sqrt(sigma)))
-    default_phi0 = np.linspace(sqrt(sigma),0,num=default_layers)
-    return default_layers, default_phi0.ravel()
+    ss=sqrt(sigma)
+    default_layers = round(max(MINLAT,segments*ss))
+    default_phi0 = np.linspace(ss,0,num=default_layers)
+    return default_layers, default_phi0
     
 class ShortCircuitError(Exception):
     """ Special error to stop root() before a solution is found.
@@ -897,7 +898,7 @@ def SCFeqns(phi_z,chi,chi_s,sigma,navgsegments,p_i):
     """
     
     # let the solver go negative if it wants
-    phi_z = fabs(phi_z.ravel())
+    phi_z = fabs(phi_z)
     
     # attempts to try fields with values greater than one are penalized
     toomuch = phi_z>.99999
@@ -906,8 +907,6 @@ def SCFeqns(phi_z,chi,chi_s,sigma,navgsegments,p_i):
         phi_z[toomuch] = .99999
     else:
         penalty = 0.0
-    
-    phi_z_0 = 1.0 - phi_z
     
     layers = phi_z.size
     cutoff = p_i.size
@@ -918,10 +917,10 @@ def SCFeqns(phi_z,chi,chi_s,sigma,navgsegments,p_i):
     phi_z_avg = calc_phi_z_avg(phi_z)
     
     # calculate new g_z (Boltzmann weighting factors)
-    g_z = phi_z_0*exp(2*chi*phi_z_avg + delta*chi_s) #(LAMBDA_1*chi-chi_s))
+    g_z = (1.0 - phi_z)*exp(2*chi*phi_z_avg + delta*chi_s)
     
     # normalize g_z for numerical stability
-    u = -np.log(g_z)
+    u = -log(g_z)
     uavg = addred(u)/layers
     g_z_norm = g_z*exp(uavg)
     
