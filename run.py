@@ -66,11 +66,9 @@ def prepare_environment():
     addpath(periodictable_root)
     addpath(bumps_root)
 
-    # Force a rebuild of bumps/refl1d
+    # Force a rebuild of bumps and refl1d
     import subprocess
     with open(os.devnull, 'w') as devnull:
-        with cd(bumps_root):
-            subprocess.call((sys.executable, "setup.py", "build"), shell=False, stdout=devnull)
         with cd(refl1d_root):
             subprocess.call((sys.executable, "setup.py", "build"), shell=False, stdout=devnull)
 
@@ -82,6 +80,8 @@ def prepare_environment():
 
     # Make sample data and models available
     os.environ['REFL1D_DATA'] = os.path.join(refl1d_root,'doc','_examples')
+
+    #print "\n".join(sys.path)
 
 if __name__ == "__main__":
     import multiprocessing

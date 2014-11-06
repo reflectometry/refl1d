@@ -1,8 +1,16 @@
+2014-11-05 R0.7.7
+=================
+
+* add end-tethered and mushroom models for polymers
+* support magnetic incident and substrate media
+* support Microsoft Visual C compiler
+* allow stop after a maximum amount of time (useful in batch queues)
+* add entropy calculator
+
 2014-05-30 R0.7.6
 =================
 
 * add levenberg-marquardt to available fitting engines
-* load reflpak magnetic .sta files
 
 2014-05-01 R0.7.5
 =================
@@ -37,8 +45,8 @@
 2013-05-07 R0.7.1
 =================
 
-* simplify constrast variation fits with free variables shared between models
-* add FASTA sequence reader with support for labile hydrogen substition
+* simplify contrast variation fits with free variables shared between models
+* add FASTA sequence reader with support for labile hydrogen substitution
 * redo magnetic profiles so magnetism is a property of nuclear layers
 * use material name or layer number to reference model layers
 * fix density calculations for natural density

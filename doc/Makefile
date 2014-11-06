@@ -37,7 +37,7 @@ help:
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 
 clean:
-	-$(RMDIR) $(BUILDDIR) api tutorial
+	-rm -r $(BUILDDIR) api tutorial
 
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
