@@ -6,16 +6,24 @@ Installing the application
 
 .. contents:: :local:
 
-Refl1D |version| is provided as installer or as source:
+Recent versions of the Refl1D application are available for windows and mac
+from `<http://www.ncnr.nist.gov/reflpak>`_. The installer walks through the
+steps of setting the program up to run on your machine and provides the
+sample data used in the tutorial.
 
+Linux users will need to install from using pip::
+
+    pip install refl1d
+
+Note that the binary versions will lag the release version until the release
+process is automated.  Windows and Mac users may want to install using pip as
+well to get the version with the latest
+`changes <https://github.com/reflectometry/refl1d/blob/master/CHANGES.rst>`_.
+
+..
     - Windows installer: :slink:`%(winexe)s`
     - Apple installer: :slink:`%(macapp)s`
     - Source: :slink:`%(srczip)s`
-
-The installer walks through the steps of setting the program up
-to run on your machine and provides the sample data to be used in the
-tutorial.  Installers are available for Windows and OS/X.  Linux must
-be installed from source.
 
 Installing from source
 ======================
@@ -46,11 +54,7 @@ using pip::
 
 This will install refl1d, bumps and periodictable.
 
-You run the program by typing:
-
-    refl1d
-
-On Windows, you may need to use:
+You can run the program by typing:
 
     python -m refl1d.main
 
@@ -66,7 +70,7 @@ There are several options for setting up a python environment on windows:
   - `WinPython <http://winpython.sourceforge.net/>`_,
   - `Anaconda <https://store.continuum.io/cshop/anaconda/>`_,
   - `Canopy <https://www.enthought.com/products/canopy/>`_, or
-  - `python.org <https://www.python.org/>`.
+  - `python.org <https://www.python.org/>`_.
 
 Python(X,Y) is easiest as of this writing, since it contains all the required
 packages. You can select "Full Install" for convenience, or you can select
@@ -112,11 +116,8 @@ For OS/X you have a few options for setting up a python distribution:
 
   - `Anaconda <https://store.continuum.io/cshop/anaconda>`_,
   - `Canopy <https://www.enthought.com/products/canopy>`_,
-  - `MacPorts <https://www.macports.org>`, or
-  - `python.org <https://www.python.org>`.
-
-For Anaconda, you will need to download and install wxPython separately,
-but otherwise it provides a complete environment.
+  - `MacPorts <https://www.macports.org>`_, or
+  - `python.org <https://www.python.org>`_.
 
 To run the interactive interface on OS/X you will need to use::
 
