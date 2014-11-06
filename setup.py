@@ -12,27 +12,35 @@ if sys.argv[1] == 'test':
 
 #sys.dont_write_bytecode = True
 
-#from distutils.core import Extension
-from setuptools import setup, find_packages, Extension
-#import fix_setuptools_chmod
+#from distutils.core import setup, Extension
+from setuptools import setup, Extension
 
-import refl1d
+packages = ['refl1d', 'refl1d.view']
 
+version = None
+for line in open(os.path.join("refl1d","__init__.py")):
+    if "__version__" in line:
+        version = line.split('"')[1]
+#print("Version: "+version)
 
-packages = find_packages()
+print Extension.__module__
 
     
 # reflmodule extension
 def reflmodule_config():
-    import distutils.ccompiler
-    compiler = distutils.ccompiler.get_default_compiler()
-    for arg in sys.argv:
-        if arg.startswith('--compiler='):
-            _,compiler=arg.split('=')
-    if compiler == 'msvc':
-        eca=['/EHsc']
-    else:
-        eca=None
+    extra_compile_args = None
+    if sys.platform == "darwin":
+        os.environ['CXX'] = 'c++'
+    if os.name == 'nt':
+        # Note: This could be done by extending the build_ext class instead
+        # http://stackoverflow.com/a/5192738
+        import distutils.ccompiler
+        compiler = distutils.ccompiler.get_default_compiler()
+        for arg in sys.argv:
+            if arg.startswith('--compiler='):
+                _,compiler = arg.split('=')
+        if compiler == 'msvc':
+            extra_compile_args = ['/EHsc']
 
     S = ("reflmodule.cc","methods.cc",
          "reflectivity.cc", "magnetic.cc",
@@ -44,14 +52,15 @@ def reflmodule_config():
     sources = [os.path.join('refl1d','lib',f) for f in S]
     depends = [os.path.join('refl1d','lib',f) for f in Sdeps]
     module = Extension('refl1d.reflmodule',
-                       sources=sources, depends=depends, 
-                       extra_compile_args=eca )
+                       sources=sources, depends=depends,
+                       extra_compile_args=extra_compile_args,
+                       )
     return module
 
 # SCF extension
 def SCFmodule_config():
     from numpy import get_include
-    return Extension('refl1d.calc_g_zs_cex', 
+    return Extension('refl1d.calc_g_zs_cex',
                      sources=[os.path.join('refl1d','lib','calc_g_zs_cex.c')],
                      include_dirs=[get_include()])
                      
@@ -62,12 +71,12 @@ def SCFmodule_config():
 #sys.dont_write_bytecode = False
 dist = setup(
         name = 'refl1d',
-        version = refl1d.__version__,
+        version = version,
         author='Paul Kienzle',
         author_email='pkienzle@nist.gov',
         url='http://www.reflectometry.org/danse/model1d.html',
         description='1-D reflectometry modelling',
-        long_description=open('README.txt').read(),
+        long_description=open('README.rst').read(),
         classifiers=[
             'Development Status :: 4 - Beta',
             'Environment :: Console',
