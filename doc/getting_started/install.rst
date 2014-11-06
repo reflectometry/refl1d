@@ -54,7 +54,7 @@ On Windows, you may need to use:
 
     python -m refl1d.main
 
-If this fails, then follow the instructions in `contributing`_ to install
+If this fails, then follow the instructions in :ref:`contributing` to install
 from the source archive directly.
 
 Windows

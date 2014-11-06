@@ -4,25 +4,26 @@
 """
 Layer models for polymer systems.
 
-Analytic Self-consistent Field (SCF) Brush profile [#Zhulina]_ [#Karim]_
+Analytic Self-consistent Field (SCF) Brush profile\ [#Zhulina]_\ [#Karim]_
 
-Analytical Self-consistent Field (SCF) Mushroom Profile [#Adamuti-Trache]_
+Analytical Self-consistent Field (SCF) Mushroom Profile\ [#Adamuti-Trache]_
 
-Numerical Self-consistent Field (SCF) End-Tethered Polymer Profile [#Cosgrove]_ [#deVos]_ [#Sheridan]_
+Numerical Self-consistent Field (SCF) End-Tethered Polymer
+Profile\ [#Cosgrove]_\ [#deVos]_\ [#Sheridan]_
 
 
 .. [#Zhulina] Zhulina, EB; Borisov, OV; Pryamitsyn, VA; Birshtein, TM (1991)
-   "Coil-Globule Type Transitions in Polymers. 1. Collapse of Layers
-   of Grafted Polymer Chains", Macromolecules 24, 140-149.
+    "Coil-Globule Type Transitions in Polymers. 1. Collapse of Layers
+    of Grafted Polymer Chains", Macromolecules 24, 140-149.
 
 .. [#Karim] Karim, A; Douglas, JF; Horkay, F; Fetters, LJ; Satija, SK (1996)
-   "Comparative swelling of gels and polymer brush layers",
-   Physica B 221, 331-336. `<http://dx.doi.org/10.1016/0921-4526(95)00946-9>`
+    "Comparative swelling of gels and polymer brush layers",
+    Physica B 221, 331-336. doi:10.1016/0921-4526(95)00946-9
    
-.. [#Adamuti-Trache] Adamuţi-Trache, M., McMullen, W. E. & Douglas, J. F. 
-    Segmental concentration profiles of end-tethered polymers with excluded-
-    volume and surface interactions. J. Chem. Phys. 105, 4798 (1996).
-    
+.. [#Adamuti-Trache] Adamuţi-Trache, M., McMullen, W. E. & Douglas, J. F.
+    Segmental concentration profiles of end-tethered polymers with
+    excluded-volume and surface interactions. J. Chem. Phys. 105, 4798 (1996).
+
 .. [#Cosgrove] Cosgrove, T., Heath, T., Van Lent, B., Leermakers, F. A. M., 
     & Scheutjens, J. M. H. M. (1987). Configuration of terminally attached 
     chains at the solid/solvent interface: self-consistent field theory and 
@@ -34,7 +35,13 @@ Numerical Self-consistent Field (SCF) End-Tethered Polymer Profile [#Cosgrove]_ 
     doi:10.1016/j.polymer.2008.10.025
     
 .. [#Sheridan] Sheridan, R. J., Beers, K. L., et. al (2014). Direct observation
-    of "surface theta" conditons. {in prep}
+    of "surface theta" conditions. [in prep]
+
+..  [#Vincent] Vincent, B., Edwards, J., Emmett, S., & Croot, R. (1988).
+    Phase separation in dispersions of weakly-interacting particles in
+    solutions of non-adsorbing polymer. Colloids and Surfaces, 31, 267–298.
+    doi:10.1016/0166-6622(88)80200-2
+
 """
 
 from __future__ import division
@@ -339,13 +346,9 @@ class PolymerMushroom(Layer):
     
     Using analytical SCF methods for gaussian chains, which are scaled
     by the radius of gyration of the equivalent free polymer as an 
-    approximation to results of renormalization group methods.[#Adamuti-Trache]
+    approximation to results of renormalization group methods.\ [#Adamuti-Trache]_
     
     Solutions are only strictly valid for vf << 1. 
-
-.. [#Adamuti-Trache] Adamuţi-Trache, M., McMullen, W. E. & Douglas, J. F. 
-    Segmental concentration profiles of end-tethered polymers with 
-    excluded-volume and surface interactions. J. Chem. Phys. 105, 4798 (1996).
     """
     
     def __init__(self, thickness=0, interface=0, name="shroom",
@@ -455,11 +458,10 @@ def mushroom_math(x,delta=.1,vf=.1):
            )
 
 class EndTetheredPolymer(Layer):
-    """
+    r"""
     Polymer end-tethered to an interface in a solvent
     
-    Uses a numerical self-consistent field profile 
-    [#Cosgrove]_ [#deVos]_ [#Sheridan]_
+    Uses a numerical self-consistent field profile.\ [#Cosgrove]_\ [#deVos]_\ [#Sheridan]_
     
     **Parameters**
     
@@ -488,40 +490,25 @@ class EndTetheredPolymer(Layer):
             the solvent material
     
     Previous layer should not have roughness! Use a spline to simulate it. 
-    You can put this material in the "above" slot of Freelayer.
+    You can put this material in the *above* slot of :class:`refl1d.freeform.FreeLayer`.
     
-    According to [#Vincent]_, l_lat and m_lat should be calculated by the 
-    formulas::
-    
-        l_lat = a**2 * m / l / p_l
-        m_lat = (a * m / l)**2 / p_l
-    
-    where l is the real polymer's bond length, m is the real segment mass,
-    and a is the proportionality constant between molecular weight and radius
-    of gyration at theta conditions. The lattice persistence is::
-    
-        p_l = 1/6*((1+1/Z)/(1-1/Z))
-    
-    with coordination number Z = 6 for a cubic lattice, p_l = .233.
-        
-..  [#Cosgrove] Cosgrove, T., Heath, T., Van Lent, B., Leermakers, F. A. M., 
-        & Scheutjens, J. M. H. M. (1987). Configuration of terminally attached 
-        chains at the solid/solvent interface: self-consistent field theory and 
-        a Monte Carlo model. Macromolecules, 20(7), 1692–1696. 
-        doi:10.1021/ma00173a041
-    
-..  [#deVos] De Vos, W. M., & Leermakers, F. A. M. (2009). Modeling the 
-        structure of a polydisperse polymer brush. Polymer, 50(1), 305–316. 
-        doi:10.1016/j.polymer.2008.10.025
-    
-..  [#Sheridan] Sheridan, R. J., Beers, K. L., et. al (2014). Direct
-        observation of "surface theta" conditons. {in prep}
+    According to [#Vincent]_, $l_\rm{lat}$ and $m_\rm{lat}$ should be
+    calculated by the formulas:
 
-..  [#Vincent] Vincent, B., Edwards, J., Emmett, S., & Croot, R. (1988). 
-        Phase separation in dispersions of weakly-interacting particles in 
-        solutions of non-adsorbing polymer. Colloids and Surfaces, 31, 267–298.
-        doi:10.1016/0166-6622(88)80200-2
+    .. math::
+    
+        l_{\rm{lat}} &=& \frac{a^2 m/l}{p_l} \\
+        m_{\rm{lat}} &=& \frac{(a m/l)^2}{p_l}
+    
+    where $l$ is the real polymer's bond length, $m$ is the real segment mass,
+    and $a$ is the proportionality constant between molecular weight and radius
+    of gyration at theta conditions. The lattice persistence, $p_l$, is:
 
+    .. math::
+    
+        p_l = \frac16 \frac{1+1/Z}{1-1/Z}
+    
+    with coordination number $Z = 6$ for a cubic lattice, $p_l = .233$.
     """
     
     def __init__(self, thickness=0, interface=0, name="EndTetheredPolymer",
@@ -602,7 +589,8 @@ class EndTetheredPolymer(Layer):
 
 def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None, 
                m_lat=1, pdi=1, disp=False):
-    """ Generate volume fraction profile for Refl1D based on real parameters.
+    """
+    Generate volume fraction profile for Refl1D based on real parameters.
     
     The field theory is a lattice-based one, so we need to move between lattice
     and real space. This is done using the parameters l_lat and m_lat, the 
@@ -642,7 +630,8 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None,
     
 
 def phi0_cache(chi,chi_s,pdi,theta,r,disp=False,cache=OrderedDict()):
-    """Scale and round the parameters, then return a memoized result.
+    """
+    Scale and round the parameters, then return a memoized result.
     
     Using an OrderedDict (because I want to prune keys FIFO)
     """
@@ -732,7 +721,8 @@ def phi0_cache(chi,chi_s,pdi,theta,r,disp=False,cache=OrderedDict()):
 
 
 def SCFsolve(chi=0,chi_s=0,pdi=1,theta=None,r=None,disp=False,phi0=None):
-    """ Solve SCF equations using an initial guess and lattice parameters
+    """
+    Solve SCF equations using an initial guess and lattice parameters
     
     This function checks which special case self consistent field equations
     we are using, evaluates any starting guess against a simple default, then

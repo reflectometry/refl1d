@@ -73,7 +73,7 @@ dist = setup(
         author='Paul Kienzle',
         author_email='pkienzle@nist.gov',
         url='http://www.reflectometry.org/danse/model1d.html',
-        description='1-D reflectometry modelling',
+        description='1-D reflectometry modeling',
         long_description=open('README.rst').read(),
         classifiers=[
             'Development Status :: 4 - Beta',
