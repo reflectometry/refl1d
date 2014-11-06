@@ -20,7 +20,8 @@ __all__ = [ 'reflectivity', 'reflectivity_amplitude',
 
 import numpy as np
 from numpy import pi, sin, cos, conj
-from . import reflmodule
+# delay load so doc build doesn't require compilation
+#from . import reflmodule
 
 def _dense(x, dtype='d'):
     return np.ascontiguousarray(x, dtype)
@@ -91,6 +92,8 @@ def reflectivity_amplitude(kz=None,
 
     This function does not compute any instrument resolution corrections.
     """
+    from . import reflmodule
+
     kz = _dense(kz, 'd')
     if rho_index is None:
         rho_index = np.zeros(kz.shape,'i')
@@ -179,6 +182,8 @@ def magnetic_amplitude(kz,
 
     See :class:`magnetic_reflectivity <refl1d.reflectivity.magnetic_reflectivity>` for details.
     """
+    from . import reflmodule
+
     kz = _dense(kz,'d')
     if rho_index is None:
         rho_index = np.zeros(kz.shape,'i')
@@ -219,6 +224,8 @@ def convolve(xi, yi, x, dx):
     tails is truncated and normalized to area of overlap between the resolution
     function in case the theory does not extend far enough.
     """
+    from . import reflmodule
+
     x = _dense(x)
     y = np.empty_like(x)
     reflmodule.convolve(_dense(xi), _dense(yi), x, _dense(dx), y)
@@ -237,6 +244,8 @@ def convolve_sampled(xi, yi, xp, yp, x, dx):
     resolution *(xp,yp)* is also represented as a piece-wise linear
     spline.
     """
+    from . import reflmodule
+
     x = _dense(x)
     y = np.empty_like(x)
     reflmodule.convolve_sampled(_dense(xi), _dense(yi), _dense(xp), _dense(yp),

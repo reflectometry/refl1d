@@ -63,8 +63,6 @@ import numpy
 from numpy import inf
 from scipy.special import erf
 
-from .reflmodule import _contract_by_area, _contract_mag
-
 class Microslabs(object):
     """
     Manage the micro slab representation of a model.
@@ -308,6 +306,8 @@ class Microslabs(object):
         #print "z_offset", self._z_offset
 
     def _contract_magnetic(self, dA):
+        from .reflmodule import _contract_mag
+
         # TODO: do we want to use common boundaries for all lambda?
         # TODO: don't throw away other wavelengths
         if dA is None: return
@@ -326,6 +326,8 @@ class Microslabs(object):
         #print "final sld after contract",rho[n-1],self.rho[0][n-1],n
 
     def _contract_profile(self, dA):
+        from .reflmodule import _contract_by_area
+
         # TODO: do we want to use common boundaries for all lambda?
         # TODO: don't throw away other wavelengths
         if dA is None: return

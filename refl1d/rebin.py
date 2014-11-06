@@ -6,9 +6,6 @@ __all__ = ["bin_edges", "logbin_edges", "rebin", "rebin2d"]
 
 import numpy as np
 
-from . import reflmodule as _cmodule
-
-
 def bin_edges(C):
     r"""
     Construct bin edges *E* from equally spaced bin centers *C*.
@@ -95,6 +92,8 @@ def rebin(x, I, xo, Io=None, dtype=np.float64):
     The algorithm uses truncation so total intensity will be down on
     average by half the total number of bins.
     """
+    from . import reflmodule as _cmodule
+
     # Coerce axes to float arrays
     x, xo = _input(x, dtype='d'), _input(xo, dtype='d')
     shape_in = np.array([x.shape[0] - 1])
@@ -160,6 +159,8 @@ def rebin2d(x, y, I, xo, yo, Io=None, dtype=None):
     TypeError.  This will allow you to rebin the slices of an appropriately
     ordered matrix without making copies.
     """
+    from . import reflmodule as _cmodule
+
     # Coerce axes to float arrays
     x, y, xo, yo = [_input(v, dtype='d') for v in (x, y, xo, yo)]
     shape_in = np.array([x.shape[0] - 1, y.shape[0] - 1])
