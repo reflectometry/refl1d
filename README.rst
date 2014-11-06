@@ -19,5 +19,5 @@ more completely describes the uncertain and correlations between parameters.
 Fitting is done in parallel, either using python multiprocessing on a
 multicore machine, or using MPI for running on a cluster.
 
-See `https://github.com/reflectometry/refl1d/blob/master/CHANGES.rst`_ for
+See `<https://github.com/reflectometry/refl1d/blob/master/CHANGES.rst>`_ for
 details on recent changes.
