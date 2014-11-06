@@ -23,8 +23,6 @@ for line in open(os.path.join("refl1d","__init__.py")):
         version = line.split('"')[1]
 #print("Version: "+version)
 
-print Extension.__module__
-
     
 # reflmodule extension
 def reflmodule_config():
