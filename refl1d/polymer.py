@@ -57,7 +57,11 @@ from .model import Layer
 from . import util
 from time import time
 
-from collections import OrderedDict
+try:
+    from collections import OrderedDict
+except ImportError:
+    class OrderedDict(dict):
+        def popitem(self,*args,**kw): return dict.popitem(self,*args)
     
 from numpy import real, imag, exp, log, sqrt, pi, hstack, ones_like, fabs
 

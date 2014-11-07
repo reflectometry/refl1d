@@ -11,7 +11,11 @@ haven't changed since that version.
 
 from __future__ import division, print_function
 import numpy as np
-from collections import OrderedDict
+try:
+    from collections import OrderedDict
+except ImportError:
+    class OrderedDict(dict):
+        def popitem(self,*args,**kw): return dict.popitem(self,*args)
 from refl1d.names import Material
 from refl1d.polymer import (PolymerBrush, PolymerMushroom, EndTetheredPolymer,
                             SCFprofile, SCFcache, SCFsolve, SCFeqns, SZdist,
@@ -426,6 +430,13 @@ def SCFcache_test():
     sigma = .1
     navgsegments = 95.5
     pdi = 1.2
+    try:
+        from collections import OrderedDict
+        flag=True
+    except ImportError:
+        class OrderedDict(dict):
+            def popitem(self,*args,**kw): return dict.popitem(self,*args)
+        flag=False
     cache = OrderedDict()
     data = np.array((
          7.68622748e-01,   7.38403430e-01,   7.24406743e-01,
@@ -444,13 +455,14 @@ def SCFcache_test():
     assert cache
     
     # check that cache is reordered on hits and misses
-    cache_keys = cache.keys()
-    oldest_key = cache_keys[0]
-    newest_key = cache_keys[-1]
-    SCFcache(0,0,1,.1,100,False,cache)
-    assert oldest_key == cache.keys()[-1]
-    SCFcache(chi,chi_s,pdi+.1,sigma,navgsegments,False,cache)
-    assert newest_key == cache.keys()[-2]
+    if flag:
+        cache_keys = cache.keys()
+        oldest_key = cache_keys[0]
+        newest_key = cache_keys[-1]
+        SCFcache(0,0,1,.1,100,False,cache)
+        assert oldest_key == cache.keys()[-1]
+        SCFcache(chi,chi_s,pdi+.1,sigma,navgsegments,False,cache)
+        assert newest_key == cache.keys()[-2]
     
 
 long_profile = np.array((
