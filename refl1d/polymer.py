@@ -346,11 +346,11 @@ class PolymerMushroom(Layer):
     Solutions are only strictly valid for vf << 1. 
     """
     
-    def __init__(self, thickness=0, interface=0, name="shroom",
+    def __init__(self, thickness=0, interface=0, name="Mushroom",
                  polymer=None, solvent=None, sigma=0,
                  vf=0, delta=0):
-        self.thickness = Parameter.default(thickness, name="shroom thickness")
-        self.interface = Parameter.default(interface, name="shroom interface")
+        self.thickness = Parameter.default(thickness, name="Mushroom thickness")
+        self.interface = Parameter.default(interface, name="Mushroom interface")
         self.delta = Parameter.default(delta, name="delta")
         self.vf = Parameter.default(vf, name="vf")
         self.sigma = Parameter.default(sigma, name="sigma")
@@ -619,7 +619,9 @@ def SCFcache(chi,chi_s,pdi,sigma,segments,disp=False,cache=OrderedDict()):
     
     # longshot, but return a cached result if we hit it
     if scaled_parameters in cache: 
-        return cache[scaled_parameters]
+        phi = cache.pop(scaled_parameters) # pop and assign to shift the key
+        cache[scaled_parameters] = phi     # to the end as "recently used"
+        return phi
     
     # Generate the result by walking from the closest in cache: O(len(cache))
     
@@ -637,7 +639,7 @@ def SCFcache(chi,chi_s,pdi,sigma,segments,disp=False,cache=OrderedDict()):
     closest_cp = cp[closest_index]
     closest_cp_array = np.asarray(closest_cp)
     closest_delta = deltas[closest_index]
-    phi0 = cache.pop(closest_cp) # pop and assign to shift the key to the end
+    phi0 = cache.pop(closest_cp) # pop and assign to save recently used keys
     cache[closest_cp] = phi0
     
     if disp:
