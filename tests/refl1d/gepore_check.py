@@ -16,6 +16,29 @@ def Rplot(Qz, R, format):
         if (R>1e-8).any():
             pylab.semilogy(Qz, abs(xs)**2, format, label=name)
     pylab.legend()
+    
+def rplot(Qz, R, format):
+    import pylab
+    pylab.hold(True)
+    pylab.figure()
+    for name,xs in zip(('++','+-','-+','--'),R):
+        rr = xs.real
+        if (rr>1e-8).any():
+            pylab.plot(Qz, rr, format, label=name + 'r')
+    pylab.legend()
+    pylab.figure()
+    for name,xs in zip(('++','+-','-+','--'),R):
+        ri = xs.imag
+        if (ri>1e-8).any():
+            pylab.plot(Qz, ri, format, label=name + 'i')
+    pylab.legend()
+    
+    pylab.figure()
+    for name,xs in zip(('++','+-','-+','--'),R):
+        phi = np.arctan2(xs.imag, xs.real)
+        if (ri>1e-8).any():
+            pylab.plot(Qz, phi, format, label=name + 'i')
+    pylab.legend()
 
 def compare(name, layers, Aguide):
     depth, rho, rhoM, thetaM = list(zip(*layers))
@@ -23,7 +46,7 @@ def compare(name, layers, Aguide):
     NL = len(rho)-2
     NC = 1
     QS = 0.001
-    DQ = 0.001
+    DQ = 0.0001
     NQ = 300
     EPS = Aguide
     ROSUP = rho[-1] + rhoM[-1]
@@ -81,6 +104,22 @@ def compare(name, layers, Aguide):
     assert np.linalg.norm((R[2]-Rmp)/Rmp) < 1e-13, "fail -+ %s"%name
     assert np.linalg.norm((R[3]-Rmm)/Rmm) < 1e-13, "fail -- %s"%name
 
+def compare_phase(name, layers, Aguide):
+    depth, rho, rhoM, thetaM = list(zip(*layers))
+    NL = len(rho)-2
+    NC = 1
+    QS = 0.001
+    DQ = 0.0001
+    NQ = 300
+    EPS = Aguide
+    Qz = np.arange(NQ)*DQ+QS
+    #Rplot(Qz, [Rpp, Rpm, Rmp, Rmm], '-'); import pylab; pylab.show(); return
+
+    kz = Qz[::4]/2
+    R = refl(kz, depth, rho, 0, rhoM, thetaM, 0, Aguide)
+
+    rplot(2*kz, R, '-'); import pylab; pylab.show(); return
+
 def simple():
     Aguide = 270
     layers = [
@@ -120,10 +159,10 @@ def magsurf():
     Aguide = 270
     layers = [
         # depth rho rhoM thetaM
-        [ 0, 2.1, 0.0, 270],
-        [10, 4.5, 0.0, 270],
-        #[ 0, 0.0, 0.0, 270],
-        [50, 8.0, 5.0, 270],
+        [ 0, 0.0, 0.0, 270],
+        [200, 4.0, 1.0, 0.01],
+        [200, 2.0, 1.0, 270],
+        [200, 4.0, 0.0, 270],
         ]
     return "magnetic surface", layers, Aguide
 
