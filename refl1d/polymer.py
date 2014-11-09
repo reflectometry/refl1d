@@ -44,7 +44,7 @@ Profile\ [#Cosgrove]_\ [#deVos]_\ [#Sheridan]_
 
 """
 
-from __future__ import division
+from __future__ import division, print_function, unicode_literals
 
 __all__ = ["PolymerBrush","PolymerMushroom","EndTetheredPolymer","VolumeProfile","layer_thickness"]
 
@@ -261,10 +261,10 @@ class VolumeProfile(Layer):
 
         # Query profile function for the list of arguments
         vars = inspect.getargspec(profile)[0]
-        #print "vars",vars
+        #print("vars",vars)
         if inspect.ismethod(profile): vars = vars[1:]  # Chop self
         vars = vars[1:]  # Chop z
-        #print vars
+        #print(vars)
         unused = [k for k in kw.keys() if k not in vars]
         if len(unused) > 0:
             raise TypeError("Profile got unexpected keyword argument '%s'"%unused[0])
@@ -295,7 +295,7 @@ class VolumeProfile(Layer):
         Pw,Pz = slabs.microslabs(self.thickness.value)
         if len(Pw)== 0: return
         kw = dict((k,getattr(self,k).value) for k in self._parameters)
-        #print kw
+        #print(kw)
         phi = self.profile(Pz,**kw)
         try:
             if phi.shape != Pz.shape: raise Exception
@@ -596,9 +596,9 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None,
     sigma = theta/segments
     
     # solve the self consistent field equations using the cache
-    if disp: print "\n=====Begin calculations=====\n"
+    if disp: print("\n=====Begin calculations=====\n")
     phi_lat = SCFcache(chi,chi_s,pdi,sigma,segments,disp)
-    if disp: print "lattice segments: ", segments,"\n============================\n"
+    if disp: print("lattice segments: ", segments,"\n============================\n")
     
     # re-dimensionalize the solution
     layers = len(phi_lat)
@@ -647,8 +647,8 @@ def SCFcache(chi,chi_s,pdi,sigma,segments,disp=False,cache=OrderedDict()):
     cache[closest_cp] = phi0
     
     if disp:
-        print "Walking from nearest:", closest_cp_array
-        print "to:", p_array
+        print("Walking from nearest:", closest_cp_array)
+        print("to:", p_array)
     
     """
     We must walk from the previously cached point to the desired region.
@@ -681,8 +681,8 @@ def SCFcache(chi,chi_s,pdi,sigma,segments,disp=False,cache=OrderedDict()):
         p_tup = tuple(p for p in current_p)
         
         if disp: 
-            print 'Parameter step is', step
-            print 'current parameters:',p_tup
+            print('Parameter step is', step)
+            print('current parameters:', p_tup)
         
         parameters = (p_tup[0], p_tup[1]*(1/3), p_tup[2]+1, 
                       p_tup[3], p_tup[4]*500)
@@ -701,8 +701,8 @@ def SCFcache(chi,chi_s,pdi,sigma,segments,disp=False,cache=OrderedDict()):
     
     # keep the cache from consuming all things
     if len(cache)>1000:
-        if disp: print 'pruning cache'
-        for i in xrange(100):
+        if disp: print('pruning cache')
+        for i in range(100):
             cache.popitem(last=False)
         
     return phi0
@@ -733,12 +733,12 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,sigma=None,segments=None,
     if phi0 is None:
         # TODO: Better initial guess for chi>.6
         layers, phi0 = default_guess(segments,sigma)
-        if disp: print '\nno guess passed, using default phi0: layers =',layers,'\n'
+        if disp: print('\nno guess passed, using default phi0: layers =',layers,'\n')
     else:
         phi0 = fabs(phi0)
         phi0[phi0>.99999] = .99999
         layers = len(phi0)
-        if disp: print "\nphi0 guess passed: layers =", layers,'\n'
+        if disp: print("\nphi0 guess passed: layers =", layers,'\n')
     
     # Loop resizing variables
     
@@ -757,7 +757,7 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,sigma=None,segments=None,
     jac_solve_method = 'gmres'
     
     while True:
-        if disp: print "\nSolving SCF equation set..."
+        if disp: print("\nSolving SCF equation set...")
         
         try:
             layers=len(phi0)
@@ -767,7 +767,7 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,sigma=None,segments=None,
                 options={'disp':bool(disp),'maxiter':15,
                          'jac_options':{'method':jac_solve_method}})
             if disp: 
-                print '\nSolver exit code:',result.status,result.message
+                print('\nSolver exit code:',result.status,result.message)
                 
             if result.status == 1:
                 # success! carry on to resize logic.
@@ -778,7 +778,7 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,sigma=None,segments=None,
         except ShortCircuitError as e:
             # dumping out to resize since we've exceeded resize tol by 4x
             phi = fabs(e.x)
-            if disp: print e
+            if disp: print(e)
                 
         except ValueError as e:
             if e.message == 'array must not contain infs or NaNs':
@@ -796,12 +796,12 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,sigma=None,segments=None,
             else:
                 raise
             
-        if disp: print 'phi(L)/sum(phi) =',phi[-1] / theta * 1e6,'(ppm)\n'
+        if disp: print('phi(L)/sum(phi) =',phi[-1] / theta * 1e6,'(ppm)\n')
         
         if phi[-1] > tol:
             # if the last layer is beyond tolerance, grow the lattice
             newlayers = max(1,round(layers*(ratio-1)))
-            if disp: print 'Growing undersized lattice by', newlayers
+            if disp: print('Growing undersized lattice by', newlayers)
             phi0 = hstack((phi,np.linspace(phi[-1],0,num=newlayers)))
         else:
             # otherwise, we are done for real
@@ -810,11 +810,11 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,sigma=None,segments=None,
     # chop off extra layers
     chop = addred(phi>tol)+1
     phi = phi[:max(MINLAT,chop)]
-    if disp: print 'phi(L)/sum(phi) =',phi[-1] / theta * 1e6,'(ppm)\n'
+    if disp: print('phi(L)/sum(phi) =',phi[-1] / theta * 1e6,'(ppm)\n')
     
     if disp:
-        print "execution time:", round(time()-starttime,3), "s"
-        print "lattice size:", len(phi)
+        print("execution time:", round(time()-starttime,3), "s")
+        print("lattice size:", len(phi))
     
     return phi    
 
@@ -861,7 +861,7 @@ def SZdist(pdi,nn,cache=OrderedDict()):
     cache[args]=p_ni
     
     if len(cache)>9000:
-        for i in xrange(1000):
+        for i in range(1000):
             cache.popitem(last=False)
     
     return p_ni
