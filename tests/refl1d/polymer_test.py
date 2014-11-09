@@ -392,7 +392,7 @@ def SCFsolve_test():
         assert False, 'should not arrive here'
     except RuntimeError as e:
         if e.message != "solver couldn't converge":
-            assert False, 'should not arrive here'
+            raise
     
     phi0 = np.array((
          7.68622748e-01,   7.38403430e-01,   7.24406743e-01,
