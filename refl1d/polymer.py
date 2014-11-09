@@ -74,7 +74,7 @@ addred = add.reduce
 
 LAMBDA_1 = np.float64(1.0)/6.0 #always assume cubic lattice (1/6) for now
 LAMBDA_0 = 1.0-2.0*LAMBDA_1
-LAMBDA_ARRAY = np.asarray([LAMBDA_1,LAMBDA_0,LAMBDA_1])
+LAMBDA_ARRAY = np.array([LAMBDA_1,LAMBDA_0,LAMBDA_1])
 MINLAT = 25
 SQRT_PI=sqrt(pi)
 
@@ -627,21 +627,21 @@ def SCFcache(chi,chi_s,pdi,sigma,segments,disp=False,cache=OrderedDict()):
         cache[scaled_parameters] = phi     # to the end as "recently used"
         return phi
     
-    # Generate the result by walking from the closest in cache: O(len(cache))
+    # Find the closest parameters in the cache: O(len(cache))
     
     # Numpy setup
-    cp = cache.keys()
-    cp_array = np.asarray(cp)
-    p_array = np.asarray(scaled_parameters)
+    cached_parameters = list(cache)
+    cp_array = np.array(cached_parameters)
+    p_array = np.array(scaled_parameters)
     
-    # Calculate "nearest" cached solution
+    # Calculate distances to all cached parameters
     deltas = p_array - cp_array # Parameter space displacement vectors
     norms = sqrt(addred(deltas*deltas,axis=1)) # and their magnitudes
     closest_index = norms.argmin()
     
     # Organize closest point data for later use
-    closest_cp = cp[closest_index]
-    closest_cp_array = np.asarray(closest_cp)
+    closest_cp = cached_parameters[closest_index]
+    closest_cp_array = cp_array[closest_index]
     closest_delta = deltas[closest_index]
     phi0 = cache.pop(closest_cp) # pop and assign to save recently used keys
     cache[closest_cp] = phi0
@@ -677,8 +677,10 @@ def SCFcache(chi,chi_s,pdi,sigma,segments,disp=False,cache=OrderedDict()):
             flag = False
 
         # conditional math because, "why risk floating point error"
-        current_p = closest_cp_array + step*closest_delta if flag else p_array
-        p_tup = tuple(p for p in current_p)
+        if flag:
+            p_tup = tuple(closest_cp_array + step*closest_delta)
+        else:
+            p_tup = scaled_parameters
         
         if disp: 
             print('Parameter step is', step)
@@ -726,7 +728,7 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,sigma=None,segments=None,
     if sigma >= 1:
         raise ValueError('Chains that short cannot be squeezed that high')
     
-    starttime = time()
+    if disp: starttime = time()
     
     p_i = SZdist(pdi,segments)
     
