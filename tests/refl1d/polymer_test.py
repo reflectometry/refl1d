@@ -11,11 +11,7 @@ haven't changed since that version.
 
 from __future__ import division, print_function
 import numpy as np
-try:
-    from collections import OrderedDict
-except ImportError:
-    class OrderedDict(dict):
-        def popitem(self,*args,**kw): return dict.popitem(self,*args)
+
 from refl1d.names import Material
 from refl1d.polymer import (PolymerBrush, PolymerMushroom, EndTetheredPolymer,
                             SCFprofile, SCFcache, SCFsolve, SCFeqns, SZdist,
