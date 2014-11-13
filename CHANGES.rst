@@ -1,3 +1,9 @@
+**************
+Change History
+**************
+
+Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
+
 2014-11-05 R0.7.7
 =================
 
