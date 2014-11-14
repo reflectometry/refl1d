@@ -8,13 +8,39 @@ from numpy import radians
 from bumps.util import pushdir
 from refl1d.reflectivity import magnetic_amplitude as refl
 
+H2K = 2.91451e-5
+B2SLD = 2.31929e-06
+
 def Rplot(Qz, R, format):
     import pylab
     pylab.hold(True)
+    for name,xs in zip(('--','+-','-+','++'),R):
+        Rxs = abs(xs)**2
+        if (Rxs>1e-8).any():
+            pylab.semilogy(Qz, Rxs, format, label=name)
+    pylab.legend()
+    
+def rplot(Qz, R, format):
+    import pylab
+    pylab.hold(True)
+    pylab.figure()
     for name,xs in zip(('++','+-','-+','--'),R):
-        R = abs(xs)**2
-        if (R>1e-8).any():
-            pylab.semilogy(Qz, abs(xs)**2, format, label=name)
+        rr = xs.real
+        if (rr>1e-8).any():
+            pylab.plot(Qz, rr, format, label=name + 'r')
+    pylab.legend()
+    pylab.figure()
+    for name,xs in zip(('++','+-','-+','--'),R):
+        ri = xs.imag
+        if (ri>1e-8).any():
+            pylab.plot(Qz, ri, format, label=name + 'i')
+    pylab.legend()
+    
+    pylab.figure()
+    for name,xs in zip(('++','+-','-+','--'),R):
+        phi = np.arctan2(xs.imag, xs.real)
+        if (ri>1e-8).any():
+            pylab.plot(Qz, phi, format, label=name + 'i')
     pylab.legend()
 
 def compare(name, layers, Aguide):
@@ -23,7 +49,7 @@ def compare(name, layers, Aguide):
     NL = len(rho)-2
     NC = 1
     QS = 0.001
-    DQ = 0.001
+    DQ = 0.0001
     NQ = 300
     EPS = Aguide
     ROSUP = rho[-1] + rhoM[-1]
@@ -35,10 +61,10 @@ def compare(name, layers, Aguide):
     gepore = joinpath(path, 'gepore')
     header = joinpath(path, 'inpt.d')
     layers = joinpath(path, 'tro.d')
-    rp_real = joinpath(path, 'rrem.d')
-    rp_imag = joinpath(path, 'rimm.d')
-    rm_real = joinpath(path, 'rrep.d')
-    rm_imag = joinpath(path, 'rimp.d')
+    rm_real = joinpath(path, 'rrem.d')
+    rm_imag = joinpath(path, 'rimm.d')
+    rp_real = joinpath(path, 'rrep.d')
+    rp_imag = joinpath(path, 'rimp.d')
 
     if not exists(gepore):
         gepore_source = joinpath(dirname(__file__), '..','..','refl1d','lib','gepore.f')
@@ -63,7 +89,7 @@ def compare(name, layers, Aguide):
                 raise RuntimeError("Could not run gepore")
         rp = np.loadtxt(rp_real).T[1] + 1j*np.loadtxt(rp_imag).T[1]
         rm = np.loadtxt(rm_real).T[1] + 1j*np.loadtxt(rm_imag).T[1]
-        if IP == 0.0:
+        if IP == 1.0:
             Rpp, Rpm = rp, rm
         else:
             Rmp, Rmm = rp, rm
@@ -74,21 +100,37 @@ def compare(name, layers, Aguide):
     kz = Qz[::4]/2
     R = refl(kz, depth, rho, 0, rhoM, thetaM, 0, Aguide)
 
-    Rplot(Qz, [Rpp, Rpm, Rmp, Rmm], '-'); Rplot(2*kz, R, '.'); import pylab; pylab.show(); return
-
+    Rplot(Qz, [Rmm, Rpm, Rmp, Rpp], '-'); Rplot(2*kz, R, '.'); import pylab; pylab.show(); return
+    
     assert np.linalg.norm((R[0]-Rpp)/Rpp) < 1e-13, "fail ++ %s"%name
     assert np.linalg.norm((R[1]-Rpm)/Rpm) < 1e-13, "fail +- %s"%name
     assert np.linalg.norm((R[2]-Rmp)/Rmp) < 1e-13, "fail -+ %s"%name
     assert np.linalg.norm((R[3]-Rmm)/Rmm) < 1e-13, "fail -- %s"%name
 
+def compare_phase(name, layers, Aguide):
+    depth, rho, rhoM, thetaM = list(zip(*layers))
+    NL = len(rho)-2
+    NC = 1
+    QS = 0.001
+    DQ = 0.0001
+    NQ = 300
+    EPS = Aguide
+    Qz = np.arange(NQ)*DQ+QS
+    #Rplot(Qz, [Rpp, Rpm, Rmp, Rmm], '-'); import pylab; pylab.show(); return
+
+    kz = Qz[::4]/2
+    R = refl(kz, depth, rho, 0, rhoM, thetaM, 0, Aguide)
+
+    rplot(2*kz, R, '-'); import pylab; pylab.show(); return
+
 def simple():
     Aguide = 270
     layers = [
         # depth rho rhoM thetaM
-        [ 0, 2.1, 0.0, 270],
-        [50, 8.0, 5.0, 270],
-        [10, 4.5, 0.0, 270],
         [ 0, 0.0, 0.0, 270],
+        [200, 4.0, 1.0, 359.9],
+        [200, 2.0, 1.0, 270],
+        [ 0, 4.0, 0.0, 270],
     ]
     return "Si-Fe-Au-Air", layers, Aguide
 
@@ -120,19 +162,42 @@ def magsurf():
     Aguide = 270
     layers = [
         # depth rho rhoM thetaM
-        [ 0, 2.1, 0.0, 270],
-        [10, 4.5, 0.0, 270],
-        #[ 0, 0.0, 0.0, 270],
-        [50, 8.0, 5.0, 270],
+        [ 0, 0.0, 0.0, 270],
+        [200, 4.0, 1.0, 0.01],
+        [200, 2.0, 1.0, 270],
+        [200, 4.0, 0.0, 270],
         ]
     return "magnetic surface", layers, Aguide
+    
+def Yaohua_example():
+    Aguide = 270
+    layers = [
+        # depth rho rhoM thetaM
+        [ 0, 0.0, B2SLD * 0.4 * 1e6, 270],
+        [ 200, 4.0, B2SLD * 0.4 * 1e6 + 1.0, 0.0001],
+        [ 200, 2.0, B2SLD * 0.4 * 1e6 + 1.0, 270],
+        [ 0, 4.0, B2SLD * 0.4 * 1e6, 270 ],
+        ]
+    return "Yaohua example", layers, Aguide
+    
+def bad_Yaohua_example():
+    Aguide = 270
+    layers = [
+        # depth rho rhoM thetaM
+        [ 0, 0.0, 0.0, 270],
+        [ 200, 4.0, 1.0, 0.0001],
+        [ 200, 2.0, 1.0, 270],
+        [ 0, 4.0, 0.0, 270 ],
+        ]
+    return "Yaohua example", layers, Aguide 
 
 def demo():
     """run demo"""
     #compare(*simple())
     #compare(*twist())
     #compare(*magsub())
-    compare(*magsurf())
+    #compare(*magsurf())
+    compare(*Yaohua_example())
 
 if __name__ == "__main__":
     demo()
