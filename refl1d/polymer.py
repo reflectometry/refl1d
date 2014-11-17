@@ -846,22 +846,37 @@ def SZdist(pdi,nn,cache=OrderedDict()):
         raise ValueError('Invalid PDI')
     else:
         x = 1.0/(pdi-1.0)
-        cutoff = 9000
+        # Calculate the distribution in chunks so we don't waste CPU time
+        chunk = 256
+        p_ni_list = []
+        pdi_underflow = False
         
-        ni = np.arange(1,cutoff+1,dtype=np.float64)
-        r = ni/nn
-        xr = x*r
-        
-        p_ni = exp(log(x/ni) - gammaln(x+1) + xr*(log(xr)/r-1))
-    
-    if uniform or (p_ni>1.0).any():
+        for i in range(max(1,int((100*nn)/chunk))):
+            ni = np.arange(chunk*i+1,chunk*(i+1)+1,dtype=np.float64)
+            r = ni/nn
+            xr = x*r
+            
+            p_ni = exp(log(x/ni) - gammaln(x+1) + xr*(log(xr)/r-1))
+            
+            pdi_underflow = (p_ni>=1.0).any() # catch "too small PDI"
+            if pdi_underflow: break # and break out to uniform calculation
+            
+            # Stop calculating when species account for less than 1ppm
+            keep = (r < 1.0) | (p_ni >= 1e-6)
+            if keep.all():
+                p_ni_list.append(p_ni)
+            else:
+                p_ni_list.append(p_ni[keep])
+                break
+        else: # Belongs to the for loop. Executes if no break statement runs.
+            raise RuntimeError('SZdist overflow')
+            
+    if uniform or pdi_underflow:
         # NOTE: rounding here allows nn to be a double in the rest of the logic
         p_ni = np.zeros((1,round(nn)))
         p_ni[0,-1] = 1.0
     else:
-        mysums = np.cumsum(p_ni)
-        keep = np.logical_and(np.logical_or(r < 1.0, p_ni >= 1.0e-6), mysums < 1.0)
-        p_ni = p_ni[keep].reshape(1,-1)
+        p_ni = hstack(p_ni_list).reshape(1,-1)
     
     cache[args]=p_ni
     
