@@ -17,7 +17,9 @@ def Rplot(Qz, R, format):
     for name,xs in zip(('--','+-','-+','++'),R):
         Rxs = abs(xs)**2
         if (Rxs>1e-8).any():
-            pylab.semilogy(Qz, Rxs, format, label=name)
+            pylab.plot(Qz, Rxs, format, label=name)
+    pylab.xlabel('$Q_z = 2k_{z0}$', size='large')
+    pylab.ylabel('R')
     pylab.legend()
     
 def rplot(Qz, R, format):
@@ -171,16 +173,17 @@ def magsurf():
     
 def Yaohua_example():
     Aguide = 270
+    rhoB = B2SLD * 0.4 * 1e6
     layers = [
         # depth rho rhoM thetaM
-        [ 0, 0.0, B2SLD * 0.4 * 1e6, 270],
-        [ 200, 4.0, B2SLD * 0.4 * 1e6 + 1.0, 0.0001],
-        [ 200, 2.0, B2SLD * 0.4 * 1e6 + 1.0, 270],
-        [ 0, 4.0, B2SLD * 0.4 * 1e6, 270 ],
+        [ 0, 0.0, rhoB, 270],
+        [ 200, 4.0, rhoB + 1.0, np.arctan2(-rhoB, 1.0)],
+        [ 200, 2.0, rhoB + 1.0, 270],
+        [ 0, 4.0, rhoB, 270 ],
         ]
     return "Yaohua example", layers, Aguide
     
-def bad_Yaohua_example():
+def zf_Yaohua_example():
     Aguide = 270
     layers = [
         # depth rho rhoM thetaM
