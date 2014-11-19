@@ -690,7 +690,7 @@ def SCFcache(chi,chi_s,pdi,sigma,segments,disp=False,cache=OrderedDict()):
             print('Parameter step is', step)
             print('current parameters:', p_tup)
         
-        parameters = (p_tup[0], p_tup[1]*(1/3), p_tup[2]+1, 
+        parameters = (p_tup[0], p_tup[1]/3, p_tup[2]+1, 
                       p_tup[3], p_tup[4]*500)
         try:
             phi0 = SCFsolve(*parameters,phi0=phi0,disp=disp)
@@ -991,8 +991,6 @@ def calc_phi_z(g_ta,g_free,g_z):
     return addred(g_ta*np.fliplr(g_free),axis=1)/g_z
 
 def calc_g_zs(g_z,c_i,layers,segments):
-    from refl1d.calc_g_zs_cex import (_calc_g_zs,_calc_g_zs_uniform)
-    
     # initialize
     g_zs=np.empty((layers,segments),dtype=np.float64,order='F')
     
@@ -1005,11 +1003,13 @@ def calc_g_zs(g_z,c_i,layers,segments):
             # terminally attached ends
             g_zs[:,0] = 0.0
             g_zs[0,0] = g_z[0]
+        from refl1d.calc_g_zs_cex import _calc_g_zs_uniform
         _calc_g_zs_uniform(g_z,g_zs,LAMBDA_0,LAMBDA_1,layers,segments)
 
     else:
         # free ends
         g_zs[:,0] = c_i[0,-1]*g_z
+        from refl1d.calc_g_zs_cex import _calc_g_zs
         _calc_g_zs(g_z,c_i,g_zs,LAMBDA_0,LAMBDA_1,layers,segments)
     
     # Older versions of inner loops
@@ -1023,7 +1023,7 @@ def calc_g_zs(g_z,c_i,layers,segments):
 #        g_zs[:,0] = c_i[0,segments-1]*g_z
     
     # FASTEST: call some custom C code identical to "SLOW" loop
-#    _calc_g_zs_explicit(g_z,c_i,g_zs,LAMBDA_0,LAMBDA_1,layers,segments)
+#    _calc_g_zs_pointers(g_z,c_i,g_zs,LAMBDA_0,LAMBDA_1,layers,segments)
     
     # FASTER: use the convolve function to partially vectorize  
 #    pg_zs=g_zs[:,0]    
