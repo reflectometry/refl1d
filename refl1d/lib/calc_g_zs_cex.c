@@ -195,8 +195,60 @@ static PyMethodDef calc_g_zs_cex_methods[] =
     {NULL, NULL, 0, NULL}
 };
 
+/*
 void initcalc_g_zs_cex(void)
 {
     (void)Py_InitModule("calc_g_zs_cex", calc_g_zs_cex_methods);
     import_array();
 }
+*/
+
+#define MODULE_DOC "calc_g_zs C Extension"
+#define MODULE_NAME "calc_g_zs_cex"
+#define MODULE_INIT2 initcalc_g_zs_cex
+#define MODULE_INIT3 PyInit_calc_g_zs_cex
+#define MODULE_METHODS calc_g_zs_cex_methods
+
+/* ==== boilerplate python 2/3 interface bootstrap ==== */
+
+#if defined(WIN32) && !defined(__MINGW32__)
+    #define DLL_EXPORT __declspec(dllexport)
+#else
+    #define DLL_EXPORT
+#endif
+
+#if PY_MAJOR_VERSION >= 3
+
+  DLL_EXPORT PyMODINIT_FUNC MODULE_INIT3(void)
+  {
+    PyObject* blah;
+    static struct PyModuleDef moduledef = {
+      PyModuleDef_HEAD_INIT,
+      MODULE_NAME,         /* m_name */
+      MODULE_DOC,          /* m_doc */
+      -1,                  /* m_size */
+      MODULE_METHODS,      /* m_methods */
+      NULL,                /* m_reload */
+      NULL,                /* m_traverse */
+      NULL,                /* m_clear */
+      NULL,                /* m_free */
+    };
+    blah = PyModule_Create(&moduledef);
+    import_array();
+    return blah;
+  }
+
+#else /* PY_MAJOR_VERSION >= 3 */
+
+  DLL_EXPORT PyMODINIT_FUNC MODULE_INIT2(void)
+  {
+    Py_InitModule4(MODULE_NAME,
+		 MODULE_METHODS,
+		 MODULE_DOC,
+		 0,
+		 PYTHON_API_VERSION
+		 );
+    import_array();
+  }
+
+#endif /* PY_MAJOR_VERSION >= 3 */

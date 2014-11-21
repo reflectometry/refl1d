@@ -372,8 +372,8 @@ class PolymerMushroom(Layer):
                 }
                 
     def profile(self, z):
-        delta, sigma, vf, thickness \
-            = [p.value for p in self.delta, self.sigma, self.vf, self.thickness]
+        delta, sigma, vf, thickness = [p.value for p in (
+                self.delta, self.sigma, self.vf, self.thickness)]
 
         return smear(z, MushroomProfile(z, delta, vf, sigma), sigma)
 
@@ -698,7 +698,14 @@ def SCFcache(chi,chi_s,pdi,sigma,segments,disp=False,cache=OrderedDict()):
             dstep *= 1.05
             step += dstep
         except RuntimeError as e:
-            if e.message != "solver couldn't converge":
+            if hasattr(e,'message'):
+                message=e.message
+            elif hasattr(e,'args'):
+                message=e.args[0]
+            else:
+                raise
+                
+            if message != "solver couldn't converge":
                 raise
             else:
                 flag = True # Reset this so we don't quit if step=1.0 fails
@@ -717,7 +724,7 @@ def SCFcache(chi,chi_s,pdi,sigma,segments,disp=False,cache=OrderedDict()):
 
 
 def SCFsolve(chi=0,chi_s=0,pdi=1,sigma=None,segments=None,
-             disp=False,phi0=None):
+             disp=False,phi0=None,maxiter=15):
     """Solve SCF equations using an initial guess and lattice parameters
     
     This function finds a solution for the equations where the lattice size
@@ -768,7 +775,7 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,sigma=None,segments=None,
             result = root(
                 SCFeqns,phi0,args=(chi,chi_s,sigma,segments,p_i),
                 method='Krylov',callback=callback,
-                options={'disp':bool(disp),'maxiter':15,
+                options={'disp':bool(disp),'maxiter':maxiter,
                          'jac_options':{'method':jac_solve_method}})
             if disp: 
                 print('Solver exit code:',result.status,result.message)
@@ -782,17 +789,30 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,sigma=None,segments=None,
         except ShortCircuitError as e:
             # dumping out to resize since we've exceeded resize tol by 4x
             phi = fabs(e.x)
-            if disp: print(e.message)
+            if disp: print(e.value)
                 
         except ValueError as e:
-            if e.message == 'array must not contain infs or NaNs':
+            if hasattr(e,'message'):
+                message=e.message
+            elif hasattr(e,'args'):
+                message=e.args[0]
+            else:
+                raise
+                
+            if message == 'array must not contain infs or NaNs':
                 # TODO: Handle this error better. Caused by double overflows.
                 raise #RuntimeError("solver couldn't converge")
             else:
                 raise
 
         except RuntimeError as e:
-            if e.message == 'gmres is not re-entrant':
+            if hasattr(e,'message'):
+                message=e.message
+            elif hasattr(e,'args'):
+                message=e.args[0]
+            else:
+                raise
+            if message == 'gmres is not re-entrant':
                 # Threads are racing to use gmres. Lose the race and use
                 # something slower but thread-safe.
                 jac_solve_method = 'lgmres'

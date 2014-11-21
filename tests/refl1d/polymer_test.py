@@ -391,7 +391,13 @@ def SCFsolve_test():
         SCFsolve(chi,chi_s,pdi,sigma,navgsegments)
         assert False, 'should not arrive here'
     except RuntimeError as e:
-        if e.message != "solver couldn't converge":
+        if hasattr(e,'message'):
+            message=e.message
+        elif hasattr(e,'args'):
+            message=e.args[0]
+        else:
+            raise
+        if message != "solver couldn't converge":
             raise
     
     phi0 = np.array((
@@ -452,13 +458,13 @@ def SCFcache_test():
     
     # check that cache is reordered on hits and misses
     if flag:
-        cache_keys = cache.keys()
+        cache_keys = list(cache)
         oldest_key = cache_keys[0]
         newest_key = cache_keys[-1]
         SCFcache(0,0,1,.1,100,False,cache)
-        assert oldest_key == cache.keys()[-1]
+        assert oldest_key == list(cache)[-1]
         SCFcache(chi,chi_s,pdi+.1,sigma,navgsegments,False,cache)
-        assert newest_key == cache.keys()[-2]
+        assert newest_key == list(cache)[-2]
     
 
 long_profile = np.array((
