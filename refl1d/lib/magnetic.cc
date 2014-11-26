@@ -402,6 +402,17 @@ magnetic_amplitude(const int layers,
             Aguide,KZ[i],Ra[i],Rb[i],Rc[i],Rd[i]);
     }
   } else {
+    ip = 1; // plus polarization
+    //ip = 0; // minus polarization
+    #ifdef _OPENMP
+    #pragma omp parallel for
+    #endif
+    for (int i=0; i < points; i++) {
+      const int offset = layers*(rho_index != NULL?rho_index[i]:0);
+      Cr4xa(layers,d,sigma,ip,rho+offset,irho+offset,rhoM,u1,u3,
+            Aguide,KZ[i],Ra[i],Rb[i],dummy1,dummy2);
+    }
+    //ip = 1; // plus polarization
     ip = 0; // minus polarization
     #ifdef _OPENMP
     #pragma omp parallel for
@@ -409,17 +420,7 @@ magnetic_amplitude(const int layers,
     for (int i=0; i < points; i++) {
       const int offset = layers*(rho_index != NULL?rho_index[i]:0);
       Cr4xa(layers,d,sigma,ip,rho+offset,irho+offset,rhoM,u1,u3,
-            Aguide,KZ[i],Ra[i],dummy1,Rc[i],dummy2);
-    }
-    
-    ip = 1; // plus polarization
-    #ifdef _OPENMP
-    #pragma omp parallel for
-    #endif
-    for (int i=0; i < points; i++) {
-      const int offset = layers*(rho_index != NULL?rho_index[i]:0);
-      Cr4xa(layers,d,sigma,ip,rho+offset,irho+offset,rhoM,u1,u3,
-            Aguide,KZ[i],dummy1,Rb[i],dummy2,Rd[i]);
+            Aguide,KZ[i],dummy1,dummy2,Rc[i],Rd[i]);
     }
   }
 }
