@@ -10,6 +10,29 @@ from refl1d.reflectivity import magnetic_amplitude as refl
 
 H2K = 2.91451e-5
 B2SLD = 2.31929e-06
+GEPORE_SRC = 'gepore_zeeman.f'
+
+def add_H(spec, H=0.0, theta_H=0.0, phi_H=0.0):
+    comment, layers, Aguide = spec
+    new_layers = []
+    for layer in layers:
+        thickness, sld_n, sld_m, theta_m = layer
+        sld_m_z = 0.0 # by Maxwell's equations, H_demag = mz so we'll just cancel it here
+        sld_m_x = sld_m * np.cos(theta_m*np.pi/180.0)
+        sld_m_y = sld_m * np.sin(theta_m*np.pi/180.0)
+        sld_h = B2SLD * 1.0e6 * H
+        sld_h_z = sld_h * np.sin(phi_H * np.pi/180.0)
+        sld_h_x = sld_h * np.cos(phi_H * np.pi/180.0)*np.cos(theta_H*np.pi/180.0)
+        sld_h_y = sld_h * np.cos(phi_H * np.pi/180.0)*np.sin(theta_H*np.pi/180.0)
+        sld_b_x = sld_h_x + sld_m_x
+        sld_b_y = sld_h_y + sld_m_y
+        sld_b_z = sld_h_z + sld_m_z
+        sld_b = np.sqrt((sld_b_z)**2 + (sld_b_y)**2 + (sld_b_x)**2)
+        theta_b = np.arctan2(sld_b_y, sld_b_x)
+        phi_b = np.arcsin(sld_b_z/sld_b)
+        new_layer = [thickness, sld_n, sld_b, theta_b] # , phi_b]
+        new_layers.append(new_layer)
+    return comment, new_layers, Aguide
 
 def Rplot(Qz, R, format):
     import pylab
@@ -69,8 +92,8 @@ def compare(name, layers, Aguide):
     rp_imag = joinpath(path, 'rimp.d')
 
     if not exists(gepore):
-        gepore_source = joinpath(dirname(__file__), '..','..','refl1d','lib','gepore.f')
-        status = os.system('gfortran -O2 -o %s %s'%(gepore,gepore_source))
+        gepore_source = joinpath(dirname(__file__), '..','..','refl1d','lib',GEPORE_SRC)
+        status = os.system('fort77 -O2 -o %s %s'%(gepore,gepore_source))
         if status != 0:
             raise RuntimeError("Could not compile %r"%gepore_source)
         if not exists(gepore):
@@ -86,7 +109,7 @@ def compare(name, layers, Aguide):
                       %(NL,NC,QS,DQ,NQ,radians(EPS),IP,1-IP,
                         1e-6*ROINP,1e-6*ROINM,1e-6*ROSUP,1e-6*ROSUM))
         with pushdir(path):
-            status = os.system('./gepore >/dev/null')
+            status = os.system('./gepore') # >/dev/null')
             if status != 0:
                 raise RuntimeError("Could not run gepore")
         rp = np.loadtxt(rp_real).T[1] + 1j*np.loadtxt(rp_imag).T[1]
@@ -176,10 +199,10 @@ def Yaohua_example():
     rhoB = B2SLD * 0.4 * 1e6
     layers = [
         # depth rho rhoM thetaM
-        [ 0, 0.0, rhoB, 270],
-        [ 200, 4.0, rhoB + 1.0, np.arctan2(-rhoB, 1.0)],
-        [ 200, 2.0, rhoB + 1.0, 270],
-        [ 0, 4.0, rhoB, 270 ],
+        [ 0, 0.0, rhoB, 90],
+        [ 200, 4.0, rhoB + 1.0, np.arctan2(rhoB, 1.0)],
+        [ 200, 2.0, rhoB + 1.0, 90],
+        [ 0, 4.0, rhoB, 90 ],
         ]
     return "Yaohua example", layers, Aguide
     
@@ -187,20 +210,23 @@ def zf_Yaohua_example():
     Aguide = 270
     layers = [
         # depth rho rhoM thetaM
-        [ 0, 0.0, 0.0, 270],
+        [ 0, 0.0, 0.0, 90],
         [ 200, 4.0, 1.0, 0.0001],
-        [ 200, 2.0, 1.0, 270],
-        [ 0, 4.0, 0.0, 270 ],
+        [ 200, 2.0, 1.0, 90],
+        [ 0, 4.0, 0.0, 90 ],
         ]
     return "Yaohua example", layers, Aguide 
 
 def demo():
     """run demo"""
+    import pylab
     #compare(*simple())
     #compare(*twist())
     #compare(*magsub())
     #compare(*magsurf())
-    compare(*Yaohua_example())
+    compare(*zf_Yaohua_example())
+    pylab.figure()
+    compare(*add_H(zf_Yaohua_example(), 0.4, 90, 0))
 
 if __name__ == "__main__":
     demo()

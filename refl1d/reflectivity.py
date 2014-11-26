@@ -173,6 +173,7 @@ def magnetic_amplitude(kz,
                        irho=0,
                        rhoM=0,
                        thetaM=0,
+                       phiM=0,
                        sigma=0,
                        Aguide=-90.0,
                        rho_index=None,
@@ -196,16 +197,23 @@ def magnetic_amplitude(kz,
         rhoM = rhoM*np.ones(n, 'd')
     if np.isscalar(thetaM):
         thetaM = thetaM*np.ones(n, 'd')
+    if np.isscalar(phiM):
+        phiM = phiM*np.ones(n, 'd')
     if np.isscalar(sigma):
         sigma = sigma*np.ones(n-1, 'd')
 
-    depth, rho, irho, rhoM, thetaM, sigma \
-        = [_dense(a,'d') for a in (depth, rho, irho, rhoM, thetaM, sigma)]
-    expth = cos(thetaM * pi/180.0) + 1j*sin(thetaM * pi/180.0)
+    depth, rho, irho, rhoM, thetaM, phiM, sigma \
+        = [_dense(a,'d') for a in (depth, rho, irho, rhoM, thetaM, phiM, sigma)]
+    thetaM *= pi/180.0
+    phiM *= pi/180.0
+    u1 = (1 + cos(thetaM) + 1j*sin(thetaM)*cos(phiM) - sin(thetaM)*sin(phiM)) / \
+         (1 + cos(thetaM) - 1j*sin(thetaM)*cos(phiM) + sin(thetaM)*sin(phiM)) 
+    u3 = (-1 + cos(thetaM) + 1j*sin(thetaM)*cos(phiM) - sin(thetaM)*sin(phiM)) / \
+         (-1 + cos(thetaM) - 1j*sin(thetaM)*cos(phiM) + sin(thetaM)*sin(phiM)) 
     #rho,irho,rhoM = [v*1e-6 for v in rho,irho,rhoM]
     R1,R2,R3,R4 = [np.empty(kz.shape,'D') for pol in (1,2,3,4)]
     reflmodule._magnetic_amplitude(depth, sigma, rho, irho,
-                                   rhoM,  expth, Aguide, kz, rho_index,
+                                   rhoM, u1, u3, Aguide, kz, rho_index,
                                    R1, R2, R3, R4
                                    )
     return R1,R2,R3,R4

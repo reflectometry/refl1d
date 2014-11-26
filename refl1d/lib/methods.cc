@@ -19,18 +19,18 @@ typedef int Py_ssize_t;
 PyObject* Pmagnetic_amplitude(PyObject*obj,PyObject*args)
 {
   PyObject *kz_obj,*rho_index_obj,*r1_obj,*r2_obj,*r3_obj,*r4_obj,
-    *d_obj,*sigma_obj,*rho_obj,*irho_obj, *rhom_obj, *expth_obj;
+    *d_obj,*sigma_obj,*rho_obj,*irho_obj, *rhom_obj, *u1_obj, *u3_obj;
   Py_ssize_t nkz, nrho_index, nr1, nr2, nr3, nr4,
-    nd, nsigma, nrho, nirho, nrhom, nexpth;
+    nd, nsigma, nrho, nirho, nrhom, nu1, nu3;
   const double *kz, *d, *sigma, *rho, *irho, *rhom;
-  const Cplx *expth;
+  const Cplx *u1, *u3;
   const int *rho_index;
   double Aguide;
   Cplx *r1, *r2, *r3, *r4;
 
-  if (!PyArg_ParseTuple(args, "OOOOOOdOOOOOO:magnetic_reflectivity",
+  if (!PyArg_ParseTuple(args, "OOOOOOOdOOOOOO:magnetic_reflectivity",
       &d_obj, &sigma_obj,
-      &rho_obj, &irho_obj, &rhom_obj,&expth_obj,
+      &rho_obj, &irho_obj, &rhom_obj,&u1_obj, &u3_obj,
       &Aguide,&kz_obj,&rho_index_obj,
       &r1_obj,&r2_obj,&r3_obj,&r4_obj))
     return NULL;
@@ -39,18 +39,19 @@ PyObject* Pmagnetic_amplitude(PyObject*obj,PyObject*args)
   INVECTOR(rho_obj,rho,nrho);
   INVECTOR(irho_obj,irho,nirho);
   INVECTOR(rhom_obj,rhom,nrhom);
-  INVECTOR(expth_obj,expth,nexpth);
+  INVECTOR(u1_obj,u1,nu1);
+  INVECTOR(u3_obj,u3,nu3);
   INVECTOR(kz_obj,kz,nkz);
   INVECTOR(rho_index_obj, rho_index, nrho_index);
   OUTVECTOR(r1_obj,r1,nr1);
   OUTVECTOR(r2_obj,r2,nr2);
   OUTVECTOR(r3_obj,r3,nr3);
   OUTVECTOR(r4_obj,r4,nr4);
-  if (nd != nrho || nd != nirho || nd != nrhom || nd != nexpth || nd != nsigma+1) {
+  if (nd != nrho || nd != nirho || nd != nrhom || nd != nu1 || nd != nu3 || nd != nsigma+1) {
     //printf("%ld %ld %ld %ld %ld %ld\n",
-    //    long(nd), long(nsigma), long(nrho), long(nirho), long(nrhom), long(nexpth));
+    //    long(nd), long(nsigma), long(nrho), long(nirho), long(nrhom), long(nu1));
 #ifndef BROKEN_EXCEPTIONS
-    PyErr_SetString(PyExc_ValueError, "d,sigma,rho,irho,rhom,expth have different lengths");
+    PyErr_SetString(PyExc_ValueError, "d,sigma,rho,irho,rhom,u1,u3 have different lengths");
 #endif
     return NULL;
   }
@@ -62,7 +63,7 @@ PyObject* Pmagnetic_amplitude(PyObject*obj,PyObject*args)
 #endif
     return NULL;
   }
-  magnetic_amplitude((int)nd, d, sigma, rho, irho, rhom, expth,
+  magnetic_amplitude((int)nd, d, sigma, rho, irho, rhom, u1, u3,
                      Aguide, (int)nkz, kz, rho_index, r1, r2, r3, r4);
   return Py_BuildValue("");
 }
