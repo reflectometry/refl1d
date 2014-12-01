@@ -29,7 +29,9 @@ def add_H(spec, H=0.0, theta_H=0.0, phi_H=0.0):
         sld_b_z = sld_h_z + sld_m_z
         sld_b = np.sqrt((sld_b_z)**2 + (sld_b_y)**2 + (sld_b_x)**2)
         theta_b = np.arctan2(sld_b_y, sld_b_x)
+        theta_b = np.mod(theta_b, 2.0*np.pi)
         phi_b = np.arcsin(sld_b_z/sld_b)
+        phi_b = np.mod(phi_b, np.pi)
         new_layer = [thickness, sld_n, sld_b, theta_b*180.0/np.pi] # , phi_b]
         new_layers.append(new_layer)
     return comment, new_layers, Aguide
@@ -198,10 +200,10 @@ def NSF_example():
     Aguide = 270
     layers = [
         # depth rho rhoM thetaM
-        [ 0, 0.0, 0.0, 90],
-        [200, 4.0, 1.0, 90],
-        [200, 2.0, 1.0, 90],
-        [200, 4.0, 0.0, 90],
+        [ 0, 0.0, 0.0, 270],
+        [200, 4.0, 1.0, 270],
+        [200, 2.0, 1.0, 270],
+        [200, 4.0, 0.0, 270],
         ]
     return "non spin flip", layers, Aguide
     
@@ -221,10 +223,10 @@ def zf_Yaohua_example():
     Aguide = 270
     layers = [
         # depth rho rhoM thetaM
-        [ 0, 0.0, 0.0, 90],
+        [ 0, 0.0, 0.0, 270],
         [ 200, 4.0, 1.0, 0.0001],
-        [ 200, 2.0, 1.0, 90],
-        [ 0, 4.0, 0.0, 90 ],
+        [ 200, 2.0, 1.0, 270],
+        [ 0, 4.0, 0.0, 270],
         ]
     return "Yaohua example", layers, Aguide 
 
