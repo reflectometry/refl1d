@@ -13,10 +13,15 @@ B2SLD = 2.31929e-06
 GEPORE_SRC = 'gepore_zeeman.f'
 
 def add_H(spec, H=0.0, theta_H=0.0, phi_H=0.0):
+    """ Take H (vector) as input and add H to 4piM:
+    In the parametrization of the Chatterji chapter, 
+    phi_H is (90 - AGUIDE), and theta_H = 0
+    """
     comment, layers, Aguide = spec
     new_layers = []
     for layer in layers:
-        thickness, sld_n, sld_m, theta_m = layer
+        thickness, sld_n, sld_m, theta_m, phi_m = layer
+        # we read phi_m, but it must be zero so we don't use it.
         sld_m_x = sld_m * np.cos(theta_m*np.pi/180.0) # phi_m = 0
         sld_m_y = sld_m * np.sin(theta_m*np.pi/180.0) # phi_m = 0
         sld_m_z = 0.0 # by Maxwell's equations, H_demag = mz so we'll just cancel it here
@@ -31,8 +36,8 @@ def add_H(spec, H=0.0, theta_H=0.0, phi_H=0.0):
         theta_b = np.arctan2(sld_b_y, sld_b_x)
         theta_b = np.mod(theta_b, 2.0*np.pi)
         phi_b = np.arcsin(sld_b_z/sld_b)
-        phi_b = np.mod(phi_b, np.pi)
-        new_layer = [thickness, sld_n, sld_b, theta_b*180.0/np.pi] # , phi_b]
+        phi_b = np.mod(phi_b, 2.0*np.pi)
+        new_layer = [thickness, sld_n, sld_b, theta_b*180.0/np.pi, phi_b*180.0/np.pi]
         new_layers.append(new_layer)
     return comment, new_layers, Aguide
 
@@ -43,7 +48,7 @@ def Rplot(Qz, R, format):
         Rxs = abs(xs)**2
         if (Rxs>1e-8).any():
             pylab.plot(Qz, Rxs, format, label=name)
-    pylab.xlabel('$Q_z = 2k_{z0}$', size='large')
+    pylab.xlabel('$2k_{z0}$', size='large')
     pylab.ylabel('R')
     pylab.legend()
     
@@ -71,7 +76,7 @@ def rplot(Qz, R, format):
     pylab.legend()
 
 def compare(name, layers, Aguide):
-    depth, rho, rhoM, thetaM = list(zip(*layers))
+    depth, rho, rhoM, thetaM, phiM = list(zip(*layers))
 
     NL = len(rho)-2
     NC = 1
@@ -153,57 +158,57 @@ def compare_phase(name, layers, Aguide):
 def simple():
     Aguide = 270
     layers = [
-        # depth rho rhoM thetaM
-        [ 0, 0.0, 0.0, 270],
-        [200, 4.0, 1.0, 359.9],
-        [200, 2.0, 1.0, 270],
-        [ 0, 4.0, 0.0, 270],
+        # depth rho rhoM thetaM phiM
+        [ 0, 0.0, 0.0, 270, 0],
+        [200, 4.0, 1.0, 359.9, 0.0],
+        [200, 2.0, 1.0, 270, 0.0],
+        [ 0, 4.0, 0.0, 270, 0.0],
     ]
     return "Si-Fe-Au-Air", layers, Aguide
 
 def twist():
     Aguide = 270
     layers = [
-        # depth rho rhoM thetaM
-        [ 0, 2.1, 0.0, 270],
-        [20, 8.0, 5.0, 270],
-        [20, 8.0, 5.0, 220],
-        [20, 8.0, 5.0, 180],
-        [10, 4.5, 0.0, 270],
-        [ 0, 0.0, 0.0, 270],
+        # depth rho rhoM thetaM phiM
+        [ 0, 2.1, 0.0, 270, 0.0],
+        [20, 8.0, 5.0, 270, 0.0],
+        [20, 8.0, 5.0, 220, 0.0],
+        [20, 8.0, 5.0, 180, 0.0],
+        [10, 4.5, 0.0, 270, 0.0],
+        [ 0, 0.0, 0.0, 270, 0.0],
         ]
     return "twist", layers, Aguide
 
 def magsub():
     Aguide = 270
     layers = [
-        # depth rho rhoM thetaM
-        [50, 8.0, 5.0, 270],
-        [ 0, 2.1, 0.0, 270],
-        [10, 4.5, 0.0, 270],
-        [ 0, 0.0, 0.0, 270],
+        # depth rho rhoM thetaM phiM
+        [50, 8.0, 5.0, 270, 0.0],
+        [ 0, 2.1, 0.0, 270, 0.0],
+        [10, 4.5, 0.0, 270, 0.0],
+        [ 0, 0.0, 0.0, 270, 0.0],
         ]
     return "magnetic substrate", layers, Aguide
 
 def magsurf():
     Aguide = 270
     layers = [
-        # depth rho rhoM thetaM
-        [ 0, 0.0, 0.0, 270],
-        [200, 4.0, 1.0, 0.01],
-        [200, 2.0, 1.0, 270],
-        [200, 4.0, 0.0, 270],
+        # depth rho rhoM thetaM phiM
+        [ 0, 0.0, 0.0, 270, 0.0],
+        [200, 4.0, 1.0, 0.01, 0.0],
+        [200, 2.0, 1.0, 270, 0.0],
+        [200, 4.0, 0.0, 270, 0.0],
         ]
     return "magnetic surface", layers, Aguide
 
 def NSF_example():
     Aguide = 270
     layers = [
-        # depth rho rhoM thetaM
-        [ 0, 0.0, 0.0, 270],
-        [200, 4.0, 1.0, 270],
-        [200, 2.0, 1.0, 270],
-        [200, 4.0, 0.0, 270],
+        # depth rho rhoM thetaM phiM
+        [ 0, 0.0, 0.0, 270, 0.0],
+        [200, 4.0, 1.0, 270, 0.0],
+        [200, 2.0, 1.0, 270, 0.0],
+        [200, 4.0, 0.0, 270, 0.0],
         ]
     return "non spin flip", layers, Aguide
     
@@ -211,22 +216,22 @@ def Yaohua_example():
     Aguide = 270
     rhoB = B2SLD * 0.4 * 1e6
     layers = [
-        # depth rho rhoM thetaM
-        [ 0, 0.0, rhoB, 90],
-        [ 200, 4.0, rhoB + 1.0, np.arctan2(rhoB, 1.0)],
-        [ 200, 2.0, rhoB + 1.0, 90],
-        [ 0, 4.0, rhoB, 90 ],
+        # depth rho rhoM thetaM phiM
+        [ 0, 0.0, rhoB, 90, 0.0],
+        [ 200, 4.0, rhoB + 1.0, np.arctan2(rhoB, 1.0), 0.0],
+        [ 200, 2.0, rhoB + 1.0, 90, 0.0],
+        [ 0, 4.0, rhoB, 90 , 0.0],
         ]
     return "Yaohua example", layers, Aguide
     
 def zf_Yaohua_example():
     Aguide = 270
     layers = [
-        # depth rho rhoM thetaM
-        [ 0, 0.0, 0.0, 270],
-        [ 200, 4.0, 1.0, 0.0001],
-        [ 200, 2.0, 1.0, 270],
-        [ 0, 4.0, 0.0, 270],
+        # depth rho rhoM thetaM phiM
+        [ 0, 0.0, 0.0, 90, 0.0],
+        [ 200, 4.0, 1.0, 0.0001, 0.0],
+        [ 200, 2.0, 1.0, 90, 0.0],
+        [ 0, 4.0, 0.0, 90, 0.0],
         ]
     return "Yaohua example", layers, Aguide 
 
@@ -240,7 +245,7 @@ def demo():
     pylab.figure()
     compare(*zf_Yaohua_example())
     pylab.figure()
-    compare(*add_H(zf_Yaohua_example(), 0.05, 90, 0)) # 500 Gauss
+    compare(*add_H(zf_Yaohua_example(), 0.4, 90, 0)) # 4000 Gauss
     pylab.figure()
     compare(*NSF_example())
     pylab.figure()
