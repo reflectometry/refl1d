@@ -64,6 +64,7 @@ sample[5].magnetism.interface_above.range(0,10)
 
 instrument = NCNR.NG1(slits_at_Tlo=0.1)
 probe = instrument.load_magnetic("n101Gc1.reflA")
+zeeman = instrument.load_magnetic("n101Gc1.reflA", H=0.6, title='zeeman')
 
 # We are going to compare the calculated reflectivity given two different
 # step sizes on the profile.  Steps of *dz=0.3* are good enough for this
@@ -79,4 +80,5 @@ probe = instrument.load_magnetic("n101Gc1.reflA")
 
 experiment = Experiment(probe=probe, sample=sample, dz=0.3, dA=None)
 experiment2 = Experiment(probe=probe, sample=sample, dz=2, dA=None)
-problem = FitProblem([experiment,experiment2])
+experiment3 = Experiment(probe=zeeman, sample=sample, dz=0.3, dA=None)
+problem = FitProblem([experiment,experiment3])

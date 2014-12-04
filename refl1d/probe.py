@@ -39,7 +39,6 @@ See :ref:`data-guide` for details.
 
 from __future__ import with_statement, division
 import os
-import warn
 
 import numpy
 from numpy import sqrt, pi, inf, sign, log
