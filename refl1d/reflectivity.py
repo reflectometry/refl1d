@@ -19,7 +19,7 @@ __all__ = [ 'reflectivity', 'reflectivity_amplitude',
             ]
 
 import numpy as np
-from numpy import pi, sin, cos, conj
+from numpy import pi, sin, cos, conj, radians
 # delay load so doc build doesn't require compilation
 #from . import reflmodule
 
@@ -167,15 +167,17 @@ def unpolarized_magnetic(*args,**kw):
     """
     return reduce(np.add, magnetic_reflectivity(*args,**kw))/2.
 
+B2SLD = 2.31929  # Scattering factor for B field 1e-6/
+
 def magnetic_amplitude(kz,
                        depth,
                        rho,
                        irho=0,
                        rhoM=0,
                        thetaM=0,
-                       phiM=0,
                        sigma=0,
-                       Aguide=-90.0,
+                       Aguide=-90,
+                       H=0,
                        rho_index=None,
                        ):
     """
@@ -197,25 +199,47 @@ def magnetic_amplitude(kz,
         rhoM = rhoM*np.ones(n, 'd')
     if np.isscalar(thetaM):
         thetaM = thetaM*np.ones(n, 'd')
-    if np.isscalar(phiM):
-        phiM = phiM*np.ones(n, 'd')
     if np.isscalar(sigma):
         sigma = sigma*np.ones(n-1, 'd')
 
-    depth, rho, irho, rhoM, thetaM, phiM, sigma \
-        = [_dense(a,'d') for a in (depth, rho, irho, rhoM, thetaM, phiM, sigma)]
-    thetaM *= pi/180.0
-    phiM *= pi/180.0
-    u1 = (1 + cos(thetaM) + 1j*sin(thetaM)*cos(phiM) - sin(thetaM)*sin(phiM)) / \
-         (1 + cos(thetaM) - 1j*sin(thetaM)*cos(phiM) + sin(thetaM)*sin(phiM)) 
-    u3 = (-1 + cos(thetaM) + 1j*sin(thetaM)*cos(phiM) - sin(thetaM)*sin(phiM)) / \
-         (-1 + cos(thetaM) - 1j*sin(thetaM)*cos(phiM) + sin(thetaM)*sin(phiM)) 
+    depth, rho, irho, rhoM, thetaM, sigma \
+        = [_dense(a,'d') for a in (depth, rho, irho, rhoM, thetaM, sigma)]
+
+    thetaM = radians(thetaM)
+    if H != 0: # Adjust sample B field if the applied field is non-trivial
+        # Note: commented out effects of non-zero phiH
+        thetaH = radians(360 - Aguide)
+        #phiH = radians(phiH)
+        sld_h = B2SLD * H
+        sld_h_x = sld_h * np.cos(thetaH)
+        sld_h_y = sld_h * np.sin(thetaH) #*np.cos(phiH)
+        #sld_h_z = sld_h * np.sin(phiH)**2
+        sld_m_x = rhoM * np.cos(thetaM)
+        sld_m_y = rhoM * np.sin(thetaM)
+        #sld_m_z = 0.0 # by Maxwell's equations, H_demag = mz so we'll just cancel it here
+        sld_b_x = sld_h_x + sld_m_x
+        sld_b_y = sld_h_y + sld_m_y
+        #sld_b_z = sld_h_z + sld_m_z
+        #rhoB = np.sqrt(sld_b_x**2 + sld_b_y**2 + sld_b_z)
+        rhoB = np.sqrt(sld_b_x**2 + sld_b_y**2)
+        #phiB = np.arcsin(sld_b_z/rhoB)
+        #thetaB = np.arctan2(sld_b_y, sld_b_x)
+        cos_thetaB, sin_thetaB = sld_b_x/rhoB, sld_b_y/rhoB
+    else:
+        cos_thetaB, sin_thetaB = cos(thetaM), sin(thetaM)
+        rhoB = rhoM
+
+    # hat_p is the unit vector -sin(phi) + 1j*cos(phi)
+    #hat_p_sin_theta = (sin(phiB) - 1j*cos(phiB)) * sin_theta
+    hat_p_sin_thetaB = -1j * sin_thetaB
+    u1 = ( 1 + cos_thetaB - hat_p_sin_thetaB) / ( 1 + cos_thetaB + hat_p_sin_thetaB)
+    u3 = (-1 + cos_thetaB - hat_p_sin_thetaB) / (-1 + cos_thetaB + hat_p_sin_thetaB)
     #rho,irho,rhoM = [v*1e-6 for v in rho,irho,rhoM]
+
     R1,R2,R3,R4 = [np.empty(kz.shape,'D') for pol in (1,2,3,4)]
     reflmodule._magnetic_amplitude(depth, sigma, rho, irho,
-                                   rhoM, u1, u3, Aguide, kz, rho_index,
-                                   R1, R2, R3, R4
-                                   )
+                                   rhoB, u1, u3, Aguide, kz, rho_index,
+                                   R1, R2, R3, R4)
     return R1,R2,R3,R4
 
 
