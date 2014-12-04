@@ -1,3 +1,4 @@
+# coding=utf-8
 # This program is in the public domain
 # Author: Paul Kienzle
 r"""
@@ -38,6 +39,7 @@ See :ref:`data-guide` for details.
 
 from __future__ import with_statement, division
 import os
+import warn
 
 import numpy
 from numpy import sqrt, pi, inf, sign, log
@@ -1092,12 +1094,16 @@ class PolarizedNeutronProbe(object):
     Polarized neutron probe
 
     *xs* (4 x NeutronProbe) is a sequence pp, pm, mp and mm.
-    *Aguide* (degrees) is the angle of the guide field
+
+    *Aguide* (degrees) is the angle of the applied field relative
+    to the plane of the sample, with angle 270º in the plane of the sample.
+
+    *H* (tesla) is the magnitude of the applied field
     """
     view = None  # Default to Probe.view so only need to change in one place
     substrate = surface = None
     polarized = True
-    def __init__(self, xs=None, name=None, Aguide=270):
+    def __init__(self, xs=None, name=None, Aguide=270, H=0):
         self.xs = xs
 
         self.name = name if name is not None else self.xs[0].name
@@ -1106,6 +1112,7 @@ class PolarizedNeutronProbe(object):
         self._set_calc(self.T, self.L)
         self._check()
         self.Aguide = Aguide
+        self.H = H
 
     @property
     def pp(self): return self.xs[3]
@@ -1382,10 +1389,10 @@ def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
 
 class PolarizedNeutronQProbe(PolarizedNeutronProbe):
     polarized = True
-    def __init__(self, xs=None, name=None, Aguide=270):
+    def __init__(self, xs=None, name=None, Aguide=270, H=0):
         self.xs = xs
         self.Q, self.dQ = Qmeasurement_union(xs)
         self._check()
         self.name = name if name is not None else xs[0].name
         self.Aguide = Aguide
-
+        self.H = H

@@ -338,8 +338,9 @@ class Experiment(ExperimentBase):
             if slabs.ismagnetic:
                 rhoM, thetaM = slabs.rhoM, slabs.thetaM
                 Aguide = self.probe.Aguide
+                H = self.probe.H
                 calc_r = reflmag(-calc_q/2, depth=w, rho=rho[0], irho=irho[0],
-                                 rhoM=rhoM, thetaM=thetaM, Aguide=Aguide)
+                                 rhoM=rhoM, thetaM=thetaM, Aguide=Aguide, H=H)
             else:
                 calc_r = reflamp(-calc_q/2, depth=w, rho=rho, irho=irho,
                                  sigma=sigma)
