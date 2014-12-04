@@ -27,7 +27,7 @@ def add_H(layers, H=0.0, theta_H=0.0, phi_H=0.0):
         sld_h = B2SLD * 1.0e6 * H        
         sld_h_x = sld_h * np.cos(theta_H * np.pi/180.0)
         sld_h_y = sld_h * np.sin(theta_H*np.pi/180.0)*np.cos(phi_H*np.pi/180.0)
-        sld_h_z = sld_h * np.sin(phi_H * np.pi/180.0)*np.sin(phi_H*np.pi/180.0)
+        sld_h_z = sld_h * np.sin(theta_H*np.pi/180.0)*np.sin(phi_H*np.pi/180.0)
         sld_b_x = sld_h_x + sld_m_x
         sld_b_y = sld_h_y + sld_m_y
         sld_b_z = sld_h_z + sld_m_z
