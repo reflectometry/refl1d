@@ -167,7 +167,7 @@ def unpolarized_magnetic(*args,**kw):
     """
     return reduce(np.add, magnetic_reflectivity(*args,**kw))/2.
 
-B2SLD = 2.31929  # Scattering factor for B field 1e-6/
+B2SLD = 2.31604654  # Scattering factor for B field 1e-6/
 
 def magnetic_amplitude(kz,
                        depth,
@@ -208,7 +208,7 @@ def magnetic_amplitude(kz,
     thetaM = radians(thetaM)
     if H != 0: # Adjust sample B field if the applied field is non-trivial
         # Note: commented out effects of non-zero phiH
-        phiH = radians(Aguide - 270)
+        phiH = radians(Aguide - 270.0)
         #thetaH = radians(phiH)
         thetaH = np.pi/2.0
         sld_h = B2SLD * H
@@ -222,19 +222,23 @@ def magnetic_amplitude(kz,
         sld_b_y = sld_h_y + sld_m_y
         sld_b_z = sld_h_z + sld_m_z
         rhoB = np.sqrt(sld_b_x**2 + sld_b_y**2 + sld_b_z**2)
-        #rhoB = np.sqrt(sld_b_x**2 + sld_b_y**2)
-        phiB = np.arcsin(sld_b_z/rhoB)
-        thetaB = np.arctan2(sld_b_y, sld_b_x)
+        #phiB = np.arcsin(sld_b_z/rhoB)
+        #phiB = np.mod(phiB, 2.0*np.pi)
+        #thetaB = np.arctan2(sld_b_y, sld_b_x)
+        #thetaB = np.mod(thetaB, 2.0*np.pi)
     else:
         rhoB, thetaB, phiB = rhoM, thetaM, 0.0
 
-    cos_thetaB, sin_thetaB = cos(thetaB), sin(thetaB)
-    cos_phiB, sin_phiB = cos(phiB), sin(phiB)
+    #cos_thetaB, sin_thetaB = cos(thetaB), sin(thetaB)
+    #cos_phiB, sin_phiB = cos(phiB), sin(phiB)
     
-    u1 = ( 1 + cos_thetaB + 1j*sin_thetaB*cos_phiB - sin_thetaB*sin_phiB) / \
-         ( 1 + cos_thetaB - 1j*sin_thetaB*cos_phiB + sin_thetaB*sin_phiB) 
-    u3 = (-1 + cos_thetaB + 1j*sin_thetaB*cos_phiB - sin_thetaB*sin_phiB) / \
-         (-1 + cos_thetaB - 1j*sin_thetaB*cos_phiB + sin_thetaB*sin_phiB)
+    u1 = ( rhoB + sld_b_x + 1j*sld_b_y - sld_b_z ) / ( rhoB + sld_b_x - 1j*sld_b_y + sld_b_z )
+    u3 = (-rhoB + sld_b_x + 1j*sld_b_y - sld_b_z ) / (-rhoB + sld_b_x - 1j*sld_b_y + sld_b_z )
+    
+    #u1 = ( 1 + cos_thetaB + 1j*sin_thetaB*cos_phiB - sin_thetaB*sin_phiB) / \
+    #     ( 1 + cos_thetaB - 1j*sin_thetaB*cos_phiB + sin_thetaB*sin_phiB) 
+    #u3 = (-1 + cos_thetaB + 1j*sin_thetaB*cos_phiB - sin_thetaB*sin_phiB) / \
+    #     (-1 + cos_thetaB - 1j*sin_thetaB*cos_phiB + sin_thetaB*sin_phiB)
     ######
     # Alternative parametrization with minor speed improvement:
     #
