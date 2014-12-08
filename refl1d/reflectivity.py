@@ -206,11 +206,9 @@ def magnetic_amplitude(kz,
         = [_dense(a,'d') for a in (depth, rho, irho, rhoM, thetaM, sigma)]
 
     thetaM = radians(thetaM)
-    if H != 0: # Adjust sample B field if the applied field is non-trivial
-        # Note: commented out effects of non-zero phiH
-        phiH = radians(Aguide - 270.0)
-        #thetaH = radians(phiH)
-        thetaH = np.pi/2.0
+    phiH = radians(Aguide - 270.0)
+    thetaH = np.pi/2.0
+    if (H!=0):
         sld_h = B2SLD * H
         sld_h_x = sld_h * np.cos(thetaH)
         sld_h_y = sld_h * np.sin(thetaH) * np.cos(phiH)
@@ -222,30 +220,13 @@ def magnetic_amplitude(kz,
         sld_b_y = sld_h_y + sld_m_y
         sld_b_z = sld_h_z + sld_m_z
         rhoB = np.sqrt(sld_b_x**2 + sld_b_y**2 + sld_b_z**2)
-        #phiB = np.arcsin(sld_b_z/rhoB)
-        #phiB = np.mod(phiB, 2.0*np.pi)
-        #thetaB = np.arctan2(sld_b_y, sld_b_x)
-        #thetaB = np.mod(thetaB, 2.0*np.pi)
+  
+        u1 = ( rhoB + sld_b_x + 1j*sld_b_y - sld_b_z ) / ( rhoB + sld_b_x - 1j*sld_b_y + sld_b_z )
+        u3 = (-rhoB + sld_b_x + 1j*sld_b_y - sld_b_z ) / (-rhoB + sld_b_x - 1j*sld_b_y + sld_b_z )
     else:
-        rhoB, thetaB, phiB = rhoM, thetaM, 0.0
-
-    #cos_thetaB, sin_thetaB = cos(thetaB), sin(thetaB)
-    #cos_phiB, sin_phiB = cos(phiB), sin(phiB)
-    
-    u1 = ( rhoB + sld_b_x + 1j*sld_b_y - sld_b_z ) / ( rhoB + sld_b_x - 1j*sld_b_y + sld_b_z )
-    u3 = (-rhoB + sld_b_x + 1j*sld_b_y - sld_b_z ) / (-rhoB + sld_b_x - 1j*sld_b_y + sld_b_z )
-    
-    #u1 = ( 1 + cos_thetaB + 1j*sin_thetaB*cos_phiB - sin_thetaB*sin_phiB) / \
-    #     ( 1 + cos_thetaB - 1j*sin_thetaB*cos_phiB + sin_thetaB*sin_phiB) 
-    #u3 = (-1 + cos_thetaB + 1j*sin_thetaB*cos_phiB - sin_thetaB*sin_phiB) / \
-    #     (-1 + cos_thetaB - 1j*sin_thetaB*cos_phiB + sin_thetaB*sin_phiB)
-    ######
-    # Alternative parametrization with minor speed improvement:
-    #
-    # hat_p is the unit vector -sin(phi) + 1j*cos(phi)
-    #hat_p_sin_theta = (sin(phiB) - 1j*cos(phiB)) * sin_theta
-    #u1 = ( 1 + cos_thetaB - hat_p_sin_thetaB) / ( 1 + cos_thetaB + hat_p_sin_thetaB)
-    #u3 = (-1 + cos_thetaB - hat_p_sin_thetaB) / (-1 + cos_thetaB + hat_p_sin_thetaB)
+        u1 = np.cos(thetaM) + 1j*sin(thetaM)
+        u3 = -u1
+        rhoB = rhoM
 
     R1,R2,R3,R4 = [np.empty(kz.shape,'D') for pol in (1,2,3,4)]
     reflmodule._magnetic_amplitude(depth, sigma, rho, irho,
