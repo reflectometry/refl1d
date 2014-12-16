@@ -228,6 +228,16 @@ def zf_Yaohua_example():
         ]
     return "Yaohua example", layers, Aguide 
 
+def Chuck_test():
+    Aguide = 270
+    layers = [
+        # depth rho rhoM thetaM phiM
+        [ 0, 2.0, 2.0, 90.0, 0.0],
+        [ 500, 6.0, 4.0, 0.0001, 0.0],
+        [ 0, 5.0, 0.0, 90, 0.0],
+    ]
+    return "Chuck example", layers, Aguide
+    
 def demo():
     """run demo"""
     import pylab
@@ -243,6 +253,8 @@ def demo():
     compare(*NSF_example())
     pylab.figure()
     compare(*NSF_example(), H=1.0) # 1 tesla
+    pylab.figure()
+    compare(*Chuck_test(), H=0.0000001) # 0ish field, but magnetic front
     pylab.show()
 
 if __name__ == "__main__":
