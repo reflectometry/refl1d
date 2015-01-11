@@ -127,7 +127,7 @@ void
 magnetic_amplitude(const int layers,
                    const double d[], const double sigma[],
                    const double rho[], const double irho[],
-                   const double rhoM[], const Cplx expth[],
+                   const double rhoM[], const Cplx u1[], const Cplx u3[],
                    const double Aguide,
                    const int points,
                    const double kz[], const int rho_offset[],

@@ -84,7 +84,7 @@ static PyMethodDef methods[] = {
 	{"_magnetic_amplitude",
 	 Pmagnetic_amplitude,
 	 METH_VARARGS,
-	 "_magnetic_amplitude(d,sigma,rho,irho,rhoM,expth,Q,rho_offset,R1,R2,R3,R4): compute amplitude putting it into vector R of len(Q)"},
+	 "_magnetic_amplitude(d,sigma,rho,irho,rhoM,u1,u3,Aguide,Q,rho_offset,R1,R2,R3,R4): compute amplitude putting it into vector R of len(Q)"},
 
 	{"_contract_by_area",
          Pcontract_by_area,

@@ -9,8 +9,9 @@
 
 extern "C" void
 Cr4xa(const int &N, const double D[], const double SIGMA[],
+      const int &IP,
       const double RHO[], const double IRHO[],
-      const double RHOM[],  const Cplx EXPTH[],
+      const double RHOM[], const Cplx U1[], const Cplx U3[],
       const double &AGUIDE, const double &KZ,
       Cplx &YA, Cplx &YB, Cplx &YC, Cplx &YD)
 
@@ -48,8 +49,9 @@ C D(N) is the layer depth in angstroms
 C S(N) is the complex scattering length density in number density units
 C    S(k) = RHO(k) - 0.5i MU(k)/LAMBDA
 C P(N) is the magnetic scattering length density in number density units
-C EXPTH(N) is the magnetic scattering vector
-C    EXPTH(k) = exp(1i P(k)), where P(k) is the angle in radians
+C U1[N] is U(1) from gepore.f
+C U3[N] is U(3) from gepore.f
+C
 C A,B,C,D is the result for the ++, -+, +- and -- cross sections
 C
 C Notes:
@@ -79,6 +81,10 @@ C will be attributed to in-plane moments perpendicular to the neutron.
 
 
 C $Log$
+C Modification 2014/11/25 Brian Maranville
+C specifying polarization state of incoming beam
+C to allow for Felcher effect
+C 
 C Revision 1.1  2005/08/02 00:18:24  pkienzle
 C initial release
 C
@@ -98,11 +104,12 @@ C * Converted to subroutine from GEPORE.f
       int I,L,STEP;
 
 //    variables calculating S1, S3, COSH and SINH
-      double KSQPREL,KSQMREL;
+      double E0;
       double EPA, EMA, COSB, SINB, LOGH;
       Cplx S1,S3,COSHS1,COSHS3,SINHS1,SINHS3;
 
 //    completely unrolled matrices for B=A*B update
+      Cplx DELTA,U1L,U3L;
       Cplx A11,A12,A13,A14,A21,A22,A23,A24;
       Cplx A31,A32,A33,A34,A41,A42,A43,A44;
       Cplx B11,B12,B13,B14,B21,B22,B23,B24;
@@ -188,14 +195,23 @@ C later in the calculation when we divide by DETW.
 
 //    Changing the target KZ is equivalent to subtracting the fronting
 //    medium SLD.
-      KSQPREL = KZ*KZ + PI4*(RHO[L]+RHOM[L]);
-      KSQMREL = KZ*KZ + PI4*(RHO[L]-RHOM[L]);
+      if (IP > 0) {
+        // IP = 1 specifies polarization of the incident beam I+
+        E0 = KZ*KZ + PI4*(RHO[L]+RHOM[L]);
+      } else {
+        // IP = 0 specifies polarization of the incident beam I-
+        E0 = KZ*KZ + PI4*(RHO[L]-RHOM[L]);
+      }
+      ZIP=CI*sqrt(E0-PI4*(RHO[L]+RHOM[L]) + CI*PI4*IRHO[L]);
+      ZIM=CI*sqrt(E0-PI4*(RHO[L]-RHOM[L]) + CI*PI4*IRHO[L]);
 //    Process the loop once for each interior layer, either from
 //    front to back or back to front.
       for (I=1; I < N-1; I++) {
         L = L+STEP;
-        S1 = sqrt(PI4*(RHO[L]+RHOM[L])-KSQPREL - CI*PI4*IRHO[L]);
-        S3 = sqrt(PI4*(RHO[L]-RHOM[L])-KSQMREL - CI*PI4*IRHO[L]);
+        S1 = sqrt(PI4*(RHO[L]+RHOM[L])-E0 - CI*PI4*IRHO[L]);
+        S3 = sqrt(PI4*(RHO[L]-RHOM[L])-E0 - CI*PI4*IRHO[L]);
+        U1L = U1[L];
+        U3L = U3[L];
 
 //    Factor out H=exp(max(abs(real([S1,S3])))*D(L)) from the matrix
         if (fabs(S1.real()) > fabs(S3.real()))
@@ -222,27 +238,29 @@ LOGH=0;
         COSHS3 = (EPA+EMA)*COSB + CI*((EPA-EMA)*SINB);
         SINHS3 = (EPA-EMA)*COSB + CI*((EPA+EMA)*SINB);
 
-//    Generate A using a factor of 0.25 since we are using
+//    Use DELTA instead of 2*DELTA because we are generating
 //    2*cosh/H and 2*sinh/H rather than cosh/H and sinh/H
-        A11=0.25*(COSHS1+COSHS3);
-        A21=0.25*(COSHS1-COSHS3);
-        A31=0.25*(SINHS1*S1+SINHS3*S3);
-        A41=0.25*(SINHS1*S1-SINHS3*S3);
-        A13=0.25*(SINHS1/S1+SINHS3/S3);
-        A23=0.25*(SINHS1/S1-SINHS3/S3);
-        A32=A41*conj(EXPTH[L]);
-        A14=A23*conj(EXPTH[L]);
-        A12=A21*conj(EXPTH[L]);
-        A41=A41*EXPTH[L];
-        A23=A23*EXPTH[L];
-        A21=A21*EXPTH[L];
-        A43=A21;
-        A34=A12;
-        A22=A11;
+        DELTA = 0.5/(U3L - U1L);
+        A11=DELTA*(U3L*COSHS1-U1L*COSHS3);
+        A21=DELTA*U1L*U3L*(COSHS1-COSHS3);
+        A31=DELTA*(U3L*SINHS1*S1-U1L*SINHS3*S3);
+        A41=DELTA*U1L*U3L*(SINHS1*S1-SINHS3*S3);
+        
+        A12=-DELTA*(COSHS1-COSHS3);
+        A22=-DELTA*(U1L*COSHS1-U3L*COSHS3);
+        A32=-DELTA*(SINHS1*S1-SINHS3*S3);
+        A42=-DELTA*(U1L*SINHS1*S1-U3L*SINHS3*S3);
+        
+        
+        A13=DELTA*(U3L*SINHS1/S1-U1L*SINHS3/S3);
+        A23=DELTA*U1L*U3L*(SINHS1/S1-SINHS3/S3);
         A33=A11;
-        A44=A11;
-        A24=A13;
-        A42=A31;
+        A43=A21;
+        
+        A14=-DELTA*(SINHS1/S1-SINHS3/S3);
+        A24=-DELTA*(U1L*SINHS1/S1-U3L*SINHS3/S3);
+        A34=A12;
+        A44=A22;
 
 #if 0
         std::cout << "cr4x A1:"<<A11<<" "<<A12<<" "<<A13<<" "<<A14<<std::endl;
@@ -330,10 +348,9 @@ LOGH=0;
 //    Note: this does not take into account magnetic fronting/backing
 //    media --- use gepore.f directly for a more complete solution
       L=L+STEP;
-      ZSP=CI*sqrt(KSQPREL-PI4*(RHO[L]+RHOM[L]) + CI*PI4*IRHO[L]);
-      ZSM=CI*sqrt(KSQMREL-PI4*(RHO[L]-RHOM[L]) + CI*PI4*IRHO[L]);
-      ZIP=CI*fabs(KZ);
-      ZIM=CI*fabs(KZ);
+      ZSP=CI*sqrt(E0-PI4*(RHO[L]+RHOM[L]) + CI*PI4*IRHO[L]);
+      ZSM=CI*sqrt(E0-PI4*(RHO[L]-RHOM[L]) + CI*PI4*IRHO[L]);
+//    looking for ZIP and ZIM?  They have been moved to the top of the loop.      
 
       X=-1.;
       YPP=ZIP*ZSP;
@@ -367,18 +384,44 @@ extern "C" void
 magnetic_amplitude(const int layers,
                       const double d[], const double sigma[],
                       const double rho[], const double irho[],
-                      const double rhoM[], const Cplx expth[],
+                      const double rhoM[], const Cplx u1[], const Cplx u3[],
                       const double Aguide,
                       const int points, const double KZ[], const int rho_index[],
                       Cplx Ra[], Cplx Rb[], Cplx Rc[], Cplx Rd[])
 {
-  #ifdef _OPENMP
-  #pragma omp parallel for
-  #endif
-  for (int i=0; i < points; i++) {
-    const int offset = layers*(rho_index != NULL?rho_index[i]:0);
-    Cr4xa(layers,d,sigma,rho+offset,irho+offset,rhoM,expth,
-          Aguide,KZ[i],Ra[i],Rb[i],Rc[i],Rd[i]);
+  Cplx dummy1,dummy2;
+  int ip;
+  if (rhoM[0] == 0.0 && rhoM[layers-1] == 0.0) {
+    ip = 1; // calculations for I+ and I- are the same in the fronting and backing.
+    #ifdef _OPENMP
+    #pragma omp parallel for
+    #endif
+    for (int i=0; i < points; i++) {
+      const int offset = layers*(rho_index != NULL?rho_index[i]:0);
+      Cr4xa(layers,d,sigma,ip,rho+offset,irho+offset,rhoM,u1,u3,
+            Aguide,KZ[i],Ra[i],Rb[i],Rc[i],Rd[i]);
+    }
+  } else {
+    ip = 1; // plus polarization
+    //ip = 0; // minus polarization
+    #ifdef _OPENMP
+    #pragma omp parallel for
+    #endif
+    for (int i=0; i < points; i++) {
+      const int offset = layers*(rho_index != NULL?rho_index[i]:0);
+      Cr4xa(layers,d,sigma,ip,rho+offset,irho+offset,rhoM,u1,u3,
+            Aguide,KZ[i],Ra[i],Rb[i],dummy1,dummy2);
+    }
+    //ip = 1; // plus polarization
+    ip = 0; // minus polarization
+    #ifdef _OPENMP
+    #pragma omp parallel for
+    #endif
+    for (int i=0; i < points; i++) {
+      const int offset = layers*(rho_index != NULL?rho_index[i]:0);
+      Cr4xa(layers,d,sigma,ip,rho+offset,irho+offset,rhoM,u1,u3,
+            Aguide,KZ[i],dummy1,dummy2,Rc[i],Rd[i]);
+    }
   }
 }
 
