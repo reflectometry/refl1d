@@ -101,15 +101,17 @@ C * Converted to subroutine from GEPORE.f
 */
 
 //     paramters
-      int I,L,STEP;
+      int I,L,LP,STEP;
 
-//    variables calculating S1, S3, COSH and SINH
+//    variables calculating S1, S3, and exponents
       double E0;
-      double EPA, EMA, COSB, SINB, LOGH;
-      Cplx S1,S3,COSHS1,COSHS3,SINHS1,SINHS3;
+      Cplx S1L,S3L,S1LP,S3LP,ES1L,ES3L,ENS1L,ENS3L,ES1LP,ES3LP,ENS1LP,ENS3LP;
+      Cplx FS1S1, FS3S1, FS1S3, FS3S3;
 
 //    completely unrolled matrices for B=A*B update
-      Cplx DELTA,U1L,U3L;
+      Cplx DELTA,GL,GLP,BL,BLP, SSWAP;
+      Cplx DBG, DBB, DGB, DGG; // deltas
+      Cplx Z;
       Cplx A11,A12,A13,A14,A21,A22,A23,A24;
       Cplx A31,A32,A33,A34,A41,A42,A43,A44;
       Cplx B11,B12,B13,B14,B21,B22,B23,B24;
@@ -117,16 +119,12 @@ C * Converted to subroutine from GEPORE.f
       Cplx C1,C2,C3,C4;
 
 //    variables for translating resulting B into a signal
-      Cplx SCI,SS,CC;
-      Cplx W11,W12,W21,W22,V11,V12,V21,V22;
-      Cplx ZIP,ZIM,ZSP,ZSM,X,YPP,YMM,YPM,YMP;
       Cplx DETW;
 
 //    constants
       const Cplx CR(1.0,0.0);
       const Cplx CI(0.0,1.0);
       const double PI4=12.566370614359172e-6;
-      const double PI=3.1415926535897932284626;
 //    Check for KZ near zero.  If KZ < 0, reverse the indices
       if (KZ<=-1.e-10) {
          L=N-1;
@@ -141,39 +139,6 @@ C * Converted to subroutine from GEPORE.f
          YD = -1.;
          return;
       }
-
-/*
-C Given
-C   C+ = cosh(D*S1) + cosh(D*S3)
-C   C- = cosh(D*S1) - cosh(D*S3)
-C   S*+ = S1*sinh(D*S1) + S3*sinh(D*S3)
-C   S*- = S1*sinh(D*S1) - S3*sinh(D*S3)
-C   S/+ = sinh(D*S1)/S1 + sinh(D*S3)/S3
-C   S/- = sinh(D*S1)/S1 - sinh(D*S3)/S3
-C   pth = e^(j pi theta/180)
-C   mth = e^(-j pi theta/180)
-C   S1 = sqrt(Qc^2 + mQc^2 - j pi (8 mu/lambda) - (Q^2 + fronting Qc^2))/2
-C   S3 = sqrt(Qc^2 - mQc^2 - j pi (8 mu/lambda) - (Q^2 + fronting Qc^2))/2
-C   Qc^2 = 16 pi rho
-C   H = max(abs(real(S1)),abs(real(S3)))
-C   D, theta, mu, Qc^2 and mQc^2 are the parameters for layer L
-C
-C Construct the following matrix A(L)
-C
-C                /    C+  mthC-      S/+ mthS/- \
-C               |                                |
-C               |  pthC-     C+   pthS/-    S/+  |
-C   A(L)= 0.5/H*|                                |
-C               |     S*+ mthS*-     C+  mthC-   |
-C               |                                |
-C                \ pthS*-    S*+  pthC-     C+  /
-C
-C Multiply A by existing layers B=A(L)*A(L-1)*...A(1)*I
-C Use the factor of 0.5 to keep diagonals as close to 1 as possible
-C Use the factor of H to avoid cancellation errors in e.g., C-, which
-C for large D would otherwise approach Inf-Inf.  These factors cancel
-C later in the calculation when we divide by DETW.
-*/
 
 //     B = I
       B11=Cplx(1.0,0.0);
@@ -202,72 +167,131 @@ C later in the calculation when we divide by DETW.
         // IP = 0 specifies polarization of the incident beam I-
         E0 = KZ*KZ + PI4*(RHO[L]-RHOM[L]);
       }
-      ZIP=CI*sqrt(E0-PI4*(RHO[L]+RHOM[L]) + CI*PI4*IRHO[L]);
-      ZIM=CI*sqrt(E0-PI4*(RHO[L]-RHOM[L]) + CI*PI4*IRHO[L]);
+      
+      Z = 0.0;
+      
+      if (N>1) {
+        // chi in layer 1
+        LP = L + STEP;
+        S1L = -sqrt(CR*PI4*(RHO[L]+RHOM[L])-E0 + CI*PI4*IRHO[L]);
+        S3L = -sqrt(CR*PI4*(RHO[L]-RHOM[L])-E0 + CI*PI4*IRHO[L]);
+        S1LP = -sqrt(CR*PI4*(RHO[LP]+RHOM[LP])-E0 + CI*PI4*IRHO[LP]);
+        S3LP = -sqrt(CR*PI4*(RHO[LP]-RHOM[LP])-E0 + CI*PI4*IRHO[LP]);
+
+        if (abs(U1[LP]) <= 1.0) {
+            // then Bz >= 0
+            BLP = U1[LP];
+            GLP = 1.0/U3[LP];
+        } else {
+            // then Bz < 0: flip!
+            BLP = U3[LP];
+            GLP = 1.0/U1[LP];
+            SSWAP = S1LP;
+            S1LP = S3LP;
+            S3LP = SSWAP; // swap S3 and S1
+        }
+        
+        DELTA = 0.5*CR / (1.0 - (BLP*GLP));
+        
+        FS1S1 = S1L/S1LP;
+        FS1S3 = S1L/S3LP;
+        FS3S1 = S3L/S1LP;
+        FS3S3 = S3L/S3LP;
+         
+        B11 = DELTA *   1.0 * (1.0 + FS1S1);
+        B12 = DELTA *   1.0 * (1.0 - FS1S1);
+        B13 = DELTA *  -GLP * (1.0 + FS3S1);
+        B14 = DELTA *  -GLP * (1.0 - FS3S1);
+        
+        B21 = DELTA *   1.0 * (1.0 - FS1S1);
+        B22 = DELTA *   1.0 * (1.0 + FS1S1);
+        B23 = DELTA *  -GLP * (1.0 - FS3S1);
+        B24 = DELTA *  -GLP * (1.0 + FS3S1);
+        
+        B31 = DELTA *  -BLP * (1.0 + FS1S3);
+        B32 = DELTA *  -BLP * (1.0 - FS1S3);
+        B33 = DELTA *   1.0 * (1.0 + FS3S3);
+        B34 = DELTA *   1.0 * (1.0 - FS3S3);
+        
+        B41 = DELTA *  -BLP * (1.0 - FS1S3);
+        B42 = DELTA *  -BLP * (1.0 + FS1S3);
+        B43 = DELTA *   1.0 * (1.0 - FS3S3);
+        B44 = DELTA *   1.0 * (1.0 + FS3S3);
+        
+        Z += D[LP];
+        L = LP;
+      }
+      
 //    Process the loop once for each interior layer, either from
 //    front to back or back to front.
       for (I=1; I < N-1; I++) {
-        L = L+STEP;
-        S1 = sqrt(PI4*(RHO[L]+RHOM[L])-E0 - CI*PI4*IRHO[L]);
-        S3 = sqrt(PI4*(RHO[L]-RHOM[L])-E0 - CI*PI4*IRHO[L]);
-        U1L = U1[L];
-        U3L = U3[L];
-
-//    Factor out H=exp(max(abs(real([S1,S3])))*D(L)) from the matrix
-        if (fabs(S1.real()) > fabs(S3.real()))
-          LOGH = fabs(S1.real())*D[L];
-        else
-          LOGH = fabs(S3.real())*D[L];
-LOGH=0;
-
-//    Calculate 2*COSH/H and 2*SINH/H for D*S1
-        X    = S1*D[L];
-        EPA  = exp(X.real()-LOGH);
-        EMA  = exp(-X.real()-LOGH);
-        SINB = sin(X.imag());
-        COSB = cos(X.imag());
-        COSHS1 = (EPA+EMA)*COSB + CI*((EPA-EMA)*SINB);
-        SINHS1 = (EPA-EMA)*COSB + CI*((EPA+EMA)*SINB);
-
-//    Calculate 2*COSH/H and 2*SINH/H for D*S3
-        X    = S3*D[L];
-        EPA  = exp(X.real()-LOGH);
-        EMA  = exp(-X.real()-LOGH);
-        SINB = sin(X.imag());
-        COSB = cos(X.imag());
-        COSHS3 = (EPA+EMA)*COSB + CI*((EPA-EMA)*SINB);
-        SINHS3 = (EPA-EMA)*COSB + CI*((EPA+EMA)*SINB);
-
-//    Use DELTA instead of 2*DELTA because we are generating
-//    2*cosh/H and 2*sinh/H rather than cosh/H and sinh/H
-        DELTA = 0.5/(U3L - U1L);
-        A11=DELTA*(U3L*COSHS1-U1L*COSHS3);
-        A21=DELTA*U1L*U3L*(COSHS1-COSHS3);
-        A31=DELTA*(U3L*SINHS1*S1-U1L*SINHS3*S3);
-        A41=DELTA*U1L*U3L*(SINHS1*S1-SINHS3*S3);
-        
-        A12=-DELTA*(COSHS1-COSHS3);
-        A22=-DELTA*(U1L*COSHS1-U3L*COSHS3);
-        A32=-DELTA*(SINHS1*S1-SINHS3*S3);
-        A42=-DELTA*(U1L*SINHS1*S1-U3L*SINHS3*S3);
+        LP = L + STEP;
+        S1L = S1LP; // copy from the layer before
+        S3L = S3LP; //
+        GL = GLP;
+        BL = BLP;
+        S1LP = -CR*sqrt(CR*PI4*(RHO[LP]+RHOM[LP])-E0 + CI*PI4*IRHO[LP]);
+        S3LP = -CR*sqrt(CR*PI4*(RHO[LP]-RHOM[LP])-E0 + CI*PI4*IRHO[LP]);
+        if (abs(U1[LP]) <= 1.0) {
+            // then Bz >= 0
+            BLP = U1[LP];
+            GLP = 1.0/U3[LP];
+        } else {
+            // then Bz < 0: flip!
+            BLP = U3[LP];
+            GLP = 1.0/U1[LP];
+            SSWAP = S1LP;
+            S1LP = S3LP;
+            S3LP = SSWAP; // swap S3 and S1
+        }
         
         
-        A13=DELTA*(U3L*SINHS1/S1-U1L*SINHS3/S3);
-        A23=DELTA*U1L*U3L*(SINHS1/S1-SINHS3/S3);
-        A33=A11;
-        A43=A21;
-        
-        A14=-DELTA*(SINHS1/S1-SINHS3/S3);
-        A24=-DELTA*(U1L*SINHS1/S1-U3L*SINHS3/S3);
-        A34=A12;
-        A44=A22;
+        DELTA = 0.5*CR / (1.0 - (BLP*GLP));
+        DBB = (BL - BLP) * DELTA; // multiply by delta here?
+        DBG = (1.0 - BL*GLP) * DELTA;
+        DGB = (1.0 - GL*BLP) * DELTA;
+        DGG = (GL - GLP) * DELTA;
 
-#if 0
-        std::cout << "cr4x A1:"<<A11<<" "<<A12<<" "<<A13<<" "<<A14<<std::endl;
-        std::cout << "cr4x A2:"<<A21<<" "<<A22<<" "<<A23<<" "<<A24<<std::endl;
-        std::cout << "cr4x A3:"<<A31<<" "<<A32<<" "<<A33<<" "<<A34<<std::endl;
-        std::cout << "cr4x A4:"<<A41<<" "<<A42<<" "<<A43<<" "<<A44<<std::endl;
-#endif
+        ES1L = exp(S1L*Z);
+        ENS1L = CR / ES1L;
+        ES1LP = exp(S1LP*Z);
+        ENS1LP = CR / ES1LP;
+        ES3L = exp(S3L*Z);
+        ENS3L = CR / ES3L;
+        ES3LP = exp(S3LP*Z);
+        ENS3LP = CR / ES3LP;
+        
+        FS1S1 = S1L/S1LP;
+        FS1S3 = S1L/S3LP;
+        FS3S1 = S3L/S1LP;
+        FS3S3 = S3L/S3LP;
+        
+        A11 = A22 = DBG * (1.0 + FS1S1);
+        A11 *= ES1L * ENS1LP;
+        A22 *= ENS1L * ES1LP;
+        A12 = A21 = DBG * (1.0 - FS1S1);
+        A12 *= ENS1L * ENS1LP;
+        A21 *= ES1L  * ES1LP;
+        A13 = A24 = DGG * (1.0 + FS3S1);
+        A13 *= ES3L  * ENS1LP;
+        A24 *= ENS3L * ES1LP;
+        A14 = A23 = DGG * (1.0 - FS3S1);
+        A14 *= ENS3L * ENS1LP;
+        A23 *= ES3L  * ES1LP;
+        
+        A31 = A42 = DBB * (1.0 + FS1S3);
+        A31 *= ES1L * ENS3LP;
+        A42 *= ENS1L * ES3LP;
+        A32 = A41 = DBB * (1.0 - FS1S3);
+        A32 *= ENS1L * ENS3LP;
+        A41 *= ES1L  * ES3LP;
+        A33 = A44 = DGB * (1.0 + FS3S3);
+        A33 *= ES3L * ENS3LP;
+        A44 *= ENS3L * ES3LP;
+        A34 = A43 = DGB * (1.0 - FS3S3);
+        A34 *= ENS3L * ENS3LP;
+        A43 *= ES3L * ES3LP;
+
 
 //    Matrix update B=A*B
         C1=A11*B11+A12*B21+A13*B31+A14*B41;
@@ -305,78 +329,19 @@ LOGH=0;
         B24=C2;
         B34=C3;
         B44=C4;
+        
+        Z += D[LP];
+        L = LP;
       }
 //    Done computing B = A(N)*...*A(2)*A(1)*I
-#if 0
-        std::cout << "cr4x B1:"<<B11<<" "<<B12<<" "<<B13<<" "<<B14<<std::endl;
-        std::cout << "cr4x B2:"<<B21<<" "<<B22<<" "<<B23<<" "<<B24<<std::endl;
-        std::cout << "cr4x B3:"<<B31<<" "<<B32<<" "<<B33<<" "<<B34<<std::endl;
-        std::cout << "cr4x B4:"<<B41<<" "<<B42<<" "<<B43<<" "<<B44<<std::endl;
-#endif
 
-//    Rotate polarization axis to lab frame (angle AGUIDE)
-//    Note: reusing A instead of creating CST
-      CC = cos(-AGUIDE/2.*PI/180.);
-      SS = sin(-AGUIDE/2.*PI/180.);
-      SCI = CI*CC*SS; CC *= CC; SS *= SS;
-      A11 = CC*B11 + SS*B22 + SCI*(B12-B21);
-      A12 = CC*B12 + SS*B21 + SCI*(B11-B22);
-      A21 = CC*B21 + SS*B12 + SCI*(B22-B11);
-      A22 = CC*B22 + SS*B11 + SCI*(B21-B12);
-      A13 = CC*B13 + SS*B24 + SCI*(B14-B23);
-      A14 = CC*B14 + SS*B23 + SCI*(B13-B24);
-      A23 = CC*B23 + SS*B14 + SCI*(B24-B13);
-      A24 = CC*B24 + SS*B13 + SCI*(B23-B14);
-      A31 = CC*B31 + SS*B42 + SCI*(B32-B41);
-      A32 = CC*B32 + SS*B41 + SCI*(B31-B42);
-      A41 = CC*B41 + SS*B32 + SCI*(B42-B31);
-      A42 = CC*B42 + SS*B31 + SCI*(B41-B32);
-      A33 = CC*B33 + SS*B44 + SCI*(B34-B43);
-      A34 = CC*B34 + SS*B43 + SCI*(B33-B44);
-      A43 = CC*B43 + SS*B34 + SCI*(B44-B33);
-      A44 = CC*B44 + SS*B33 + SCI*(B43-B34);
-
-#if 0
-        std::cout << "cr4x A1:"<<A11<<" "<<A12<<" "<<A13<<" "<<A14<<std::endl;
-        std::cout << "cr4x A2:"<<A21<<" "<<A22<<" "<<A23<<" "<<A24<<std::endl;
-        std::cout << "cr4x A3:"<<A31<<" "<<A32<<" "<<A33<<" "<<A34<<std::endl;
-        std::cout << "cr4x A4:"<<A41<<" "<<A42<<" "<<A43<<" "<<A44<<std::endl;
-#endif
-
-//    Use corrected versions of X,Y,ZI, and ZS to account for effect
-//    of incident and substrate media
-//    Note: this does not take into account magnetic fronting/backing
-//    media --- use gepore.f directly for a more complete solution
-      L=L+STEP;
-      ZSP=CI*sqrt(E0-PI4*(RHO[L]+RHOM[L]) + CI*PI4*IRHO[L]);
-      ZSM=CI*sqrt(E0-PI4*(RHO[L]-RHOM[L]) + CI*PI4*IRHO[L]);
-//    looking for ZIP and ZIM?  They have been moved to the top of the loop.      
-
-      X=-1.;
-      YPP=ZIP*ZSP;
-      YMM=ZIM*ZSM;
-      YPM=ZIP*ZSM;
-      YMP=ZIM*ZSP;
-
-//    W below is U and V is -V of printed versions
-
-      V11=ZSP*A11+X*A31+YPP*A13-ZIP*A33;
-      V12=ZSP*A12+X*A32+YMP*A14-ZIM*A34;
-      V21=ZSM*A21+X*A41+YPM*A23-ZIP*A43;
-      V22=ZSM*A22+X*A42+YMM*A24-ZIM*A44;
-
-      W11=ZSP*A11+X*A31-YPP*A13+ZIP*A33;
-      W12=ZSP*A12+X*A32-YMP*A14+ZIM*A34;
-      W21=ZSM*A21+X*A41-YPM*A23+ZIP*A43;
-      W22=ZSM*A22+X*A42-YMM*A24+ZIM*A44;
-
-      DETW=W22*W11-W12*W21;
+      DETW=(B44*B22-B24*B42);
 
 //    Calculate reflectivity coefficients specified by POLSTAT
-      YA = (V21*W12-V11*W22)/DETW;
-      YB = (V11*W21-V21*W11)/DETW;
-      YC = (V22*W12-V12*W22)/DETW;
-      YD = (V12*W21-V22*W11)/DETW;
+      YA = (B24*B41-B21*B44)/DETW;
+      YB = (B21*B42-B41*B22)/DETW;
+      YC = (B24*B43-B23*B44)/DETW;
+      YD = (B23*B42-B43*B22)/DETW;
 
 }
 
@@ -403,7 +368,6 @@ magnetic_amplitude(const int layers,
     }
   } else {
     ip = 1; // plus polarization
-    //ip = 0; // minus polarization
     #ifdef _OPENMP
     #pragma omp parallel for
     #endif
@@ -412,7 +376,6 @@ magnetic_amplitude(const int layers,
       Cr4xa(layers,d,sigma,ip,rho+offset,irho+offset,rhoM,u1,u3,
             Aguide,KZ[i],Ra[i],Rb[i],dummy1,dummy2);
     }
-    //ip = 1; // plus polarization
     ip = 0; // minus polarization
     #ifdef _OPENMP
     #pragma omp parallel for

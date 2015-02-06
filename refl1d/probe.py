@@ -1110,9 +1110,9 @@ class PolarizedNeutronProbe(object):
             = measurement_union(xs)
         self._set_calc(self.T, self.L)
         self._check()
-        self.Aguide = Aguide
         self.H = H
-
+        self.Aguide = Parameter.default(Aguide,name="Aguide "+self.name,
+                                            limits=[-360,360])
     @property
     def pp(self): return self.xs[3]
     @property
@@ -1125,7 +1125,7 @@ class PolarizedNeutronProbe(object):
     def parameters(self):
         mm,mp,pm,pp = [(xsi.parameters() if xsi else None)
                        for xsi in self.xs]
-        return {'pp':pp, 'pm':pm, 'mp':mp, 'mm':mm}
+        return {'pp':pp, 'pm':pm, 'mp':mp, 'mm':mm, 'Aguide': self.Aguide}
 
     def resynth_data(self):
         for p in self.xs:
