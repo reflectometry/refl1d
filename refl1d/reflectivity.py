@@ -179,6 +179,7 @@ def magnetic_amplitude(kz,
                        Aguide=-90,
                        H=0,
                        rho_index=None,
+                       rotate_B=True,
                        ):
     """
     Returns the complex magnetic reflectivity waveform.
@@ -186,7 +187,8 @@ def magnetic_amplitude(kz,
     See :class:`magnetic_reflectivity <refl1d.reflectivity.magnetic_reflectivity>` for details.
     """
     from . import reflmodule
-
+    
+    EPS = np.finfo('f').tiny # not 1e-20 # epsilon offset for divisions.
     kz = _dense(kz,'d')
     if rho_index is None:
         rho_index = np.zeros(kz.shape,'i')
@@ -208,9 +210,10 @@ def magnetic_amplitude(kz,
     thetaM = radians(thetaM)
     phiH = radians(Aguide - 270.0)
     thetaH = np.pi/2.0
-    if (H!=0):
+    #if (H!=0):
+    if True:
         sld_h = B2SLD * H
-        sld_h_x = sld_h * np.cos(thetaH)
+        sld_h_x = sld_h * np.cos(thetaH) # zero
         sld_h_y = sld_h * np.sin(thetaH) * np.cos(phiH)
         sld_h_z = sld_h * np.sin(thetaH) * np.sin(phiH)
         sld_m_x = rhoM * np.cos(thetaM)
@@ -220,14 +223,34 @@ def magnetic_amplitude(kz,
         sld_b_y = sld_h_y + sld_m_y
         sld_b_z = sld_h_z + sld_m_z
         rhoB = np.sqrt(sld_b_x**2 + sld_b_y**2 + sld_b_z**2)
-  
-        u1 = ( rhoB + sld_b_x + 1j*sld_b_y - sld_b_z ) / ( rhoB + sld_b_x - 1j*sld_b_y + sld_b_z )
-        u3 = (-rhoB + sld_b_x + 1j*sld_b_y - sld_b_z ) / (-rhoB + sld_b_x - 1j*sld_b_y + sld_b_z )
-    else:
-        u1 = np.cos(thetaM) + 1j*sin(thetaM)
-        u3 = -u1
-        rhoB = rhoM
-
+        
+        if rotate_B:
+            # rotate the B vector instead of the transfer matrix!
+            #
+            # First, rotate the B vector about the x axis:
+            new_by = sld_b_z * sin(radians(Aguide)) + sld_b_y * cos(radians(Aguide))
+            new_bz = sld_b_z * cos(radians(Aguide)) - sld_b_y * sin(radians(Aguide))
+            sld_b_y, sld_b_z = new_by, new_bz
+            # Then, don't rotate the transfer matrix
+            Aguide = 0.0
+            
+        # add epsilon to y, to avoid divide by zero errors?
+        u1_num = ( rhoB + sld_b_x + 1j*sld_b_y - sld_b_z )
+        u1_den = ( rhoB + sld_b_x - 1j*sld_b_y + sld_b_z )
+        u3_num = (-rhoB + sld_b_x + 1j*sld_b_y - sld_b_z ) 
+        u3_den = (-rhoB + sld_b_x - 1j*sld_b_y + sld_b_z )
+        
+        u1_den[u1_den == 0] = EPS
+        u3_den[u3_den == 0] = EPS
+        
+        u1 = u1_num/u1_den
+        u3 = u3_num/u3_den
+        
+#    else:
+#        u1 = np.cos(thetaM) + 1j*sin(thetaM)
+#        u3 = -u1
+#        rhoB = rhoM
+    
     R1,R2,R3,R4 = [np.empty(kz.shape,'D') for pol in (1,2,3,4)]
     reflmodule._magnetic_amplitude(depth, sigma, rho, irho,
                                    rhoB, u1, u3, Aguide, kz, rho_index,
