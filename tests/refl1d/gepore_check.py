@@ -42,7 +42,7 @@ def add_H(layers, H=0.0, theta_H=0.0, phi_H=0.0):
 
 def gepore(layers, QS, DQ, NQ, EPS, H):
     #if H != 0:
-    layers = add_H(layers, H, 360-EPS, 0)
+    layers = add_H(layers, H, 90, EPS-270)
     depth, rho, rhoM, thetaM, phiM = list(zip(*layers))
 
     NL = len(rho)-2
@@ -233,7 +233,8 @@ def Chuck_test():
     layers = [
         # depth rho rhoM thetaM phiM
         [ 0, 2.0, 2.0, 90.0, 0.0],
-        [ 500, 6.0, 4.0, 0.0001, 0.0],
+        [ 250, 6.0, 4.0, 0.0001, 0.0],
+        [ 250, 6.0, 4.0, 0.0001, 0.0],
         [ 0, 5.0, 0.0, 90, 0.0],
     ]
     return "Chuck example", layers, Aguide

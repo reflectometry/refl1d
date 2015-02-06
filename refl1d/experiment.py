@@ -337,7 +337,7 @@ class Experiment(ExperimentBase):
             #print("calc Q", self.probe.calc_Q)
             if slabs.ismagnetic:
                 rhoM, thetaM = slabs.rhoM, slabs.thetaM
-                Aguide = self.probe.Aguide
+                Aguide = self.probe.Aguide.value
                 H = self.probe.H
                 calc_r = reflmag(-calc_q/2, depth=w, rho=rho[0], irho=irho[0],
                                  rhoM=rhoM, thetaM=thetaM, Aguide=Aguide, H=H)
