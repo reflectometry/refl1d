@@ -174,10 +174,10 @@ C * Converted to subroutine from GEPORE.f
       if (N>1) {
         // chi in layer 1
         LP = L + STEP;
-        S1L = -sqrt(CR*PI4*(RHO[L]+RHOM[L])-E0 - CI*PI4*fabs(IRHO[L]));
-        S3L = -sqrt(CR*PI4*(RHO[L]-RHOM[L])-E0 - CI*PI4*fabs(IRHO[L]));
-        S1LP = -sqrt(CR*PI4*(RHO[LP]+RHOM[LP])-E0 - CI*PI4*fabs(IRHO[LP]));
-        S3LP = -sqrt(CR*PI4*(RHO[LP]-RHOM[LP])-E0 - CI*PI4*fabs(IRHO[LP]));
+        S1L = sqrt(CR*PI4*(RHO[L]+RHOM[L])-E0 + CI*PI4*fabs(IRHO[L]));
+        S3L = sqrt(CR*PI4*(RHO[L]-RHOM[L])-E0 + CI*PI4*fabs(IRHO[L]));
+        S1LP = sqrt(CR*PI4*(RHO[LP]+RHOM[LP])-E0 + CI*PI4*fabs(IRHO[LP]));
+        S3LP = sqrt(CR*PI4*(RHO[LP]-RHOM[LP])-E0 + CI*PI4*fabs(IRHO[LP]));
 
         if (abs(U1[LP]) <= 1.0) {
             // then Bz >= 0
@@ -234,8 +234,8 @@ C * Converted to subroutine from GEPORE.f
         S3L = S3LP; //
         GL = GLP;
         BL = BLP;
-        S1LP = -sqrt(CR*PI4*(RHO[LP]+RHOM[LP])-E0 - CI*PI4*fabs(IRHO[LP]));
-        S3LP = -sqrt(CR*PI4*(RHO[LP]-RHOM[LP])-E0 - CI*PI4*fabs(IRHO[LP]));
+        S1LP = sqrt(CR*PI4*(RHO[LP]+RHOM[LP])-E0 - CI*PI4*fabs(IRHO[LP]));
+        S3LP = sqrt(CR*PI4*(RHO[LP]-RHOM[LP])-E0 - CI*PI4*fabs(IRHO[LP]));
         if (abs(U1[LP]) <= 1.0) {
             // then Bz >= 0
             BLP = U1[LP];
