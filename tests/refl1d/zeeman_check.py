@@ -134,8 +134,8 @@ def rplot(Qz, R, format):
 def compare(name, layers, Aguide=270, H=0):
 
     QS = 0.001
-    DQ = 0.0001
-    NQ = 500
+    DQ = 0.0002
+    NQ = 250
     # Rgepore = gepore(layers, QS, DQ, NQ, Aguide, H)
 
     Qz = np.arange(NQ)*DQ+QS

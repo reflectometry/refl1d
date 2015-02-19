@@ -117,7 +117,7 @@ C * Converted to subroutine from GEPORE.f
       Cplx B11,B12,B13,B14,B21,B22,B23,B24;
       Cplx B31,B32,B33,B34,B41,B42,B43,B44;
       Cplx C1,C2,C3,C4;
-      bool subcrit_plus = false, subcrit_minus = false; 
+      //bool subcrit_plus = false, subcrit_minus = false; 
 
 //    variables for translating resulting B into a signal
       Cplx DETW;
@@ -141,23 +141,6 @@ C * Converted to subroutine from GEPORE.f
          return;
       }
 
-//     B = I
-      B11=Cplx(1.0,0.0);
-      B12=Cplx(0.0,0.0);
-      B13=Cplx(0.0,0.0);
-      B14=Cplx(0.0,0.0);
-      B21=Cplx(0.0,0.0);
-      B22=Cplx(1.0,0.0);
-      B23=Cplx(0.0,0.0);
-      B24=Cplx(0.0,0.0);
-      B31=Cplx(0.0,0.0);
-      B32=Cplx(0.0,0.0);
-      B33=Cplx(1.0,0.0);
-      B34=Cplx(0.0,0.0);
-      B41=Cplx(0.0,0.0);
-      B42=Cplx(0.0,0.0);
-      B43=Cplx(0.0,0.0);
-      B44=Cplx(1.0,0.0);
 
 //    Changing the target KZ is equivalent to subtracting the fronting
 //    medium SLD.
@@ -192,8 +175,8 @@ C * Converted to subroutine from GEPORE.f
             S3LP = SSWAP; // swap S3 and S1
         }
         
-        subcrit_plus = (PI4*(RHO[L]+RHOM[L]) > E0);
-        subcrit_minus = (PI4*(RHO[L]-RHOM[L]) > E0);
+        //subcrit_plus = (PI4*(RHO[L]+RHOM[L]) > E0);
+        //subcrit_minus = (PI4*(RHO[L]-RHOM[L]) > E0);
         
         DELTA = 0.5*CR / (1.0 - (BLP*GLP));
         
@@ -237,10 +220,12 @@ C * Converted to subroutine from GEPORE.f
         S1LP = -sqrt(CR*PI4*(RHO[LP]+RHOM[LP])-E0 - CI*PI4*fabs(IRHO[LP]));
         S3LP = -sqrt(CR*PI4*(RHO[LP]-RHOM[LP])-E0 - CI*PI4*fabs(IRHO[LP]));
         if (abs(U1[LP]) <= 1.0) {
+            //std::cout << "not flipped: " << LP << ", " << U1[LP] << "\n";
             // then Bz >= 0
             BLP = U1[LP];
             GLP = 1.0/U3[LP];
         } else {
+            //std::cout << "flipped: " << LP << ", " << U1[LP] << "\n";
             // then Bz < 0: flip!
             BLP = U3[LP];
             GLP = 1.0/U1[LP];
