@@ -157,11 +157,22 @@ C * Converted to subroutine from GEPORE.f
       if (N>1) {
         // chi in layer 1
         LP = L + STEP;
-        S1L = -sqrt(CR*PI4*(RHO[L]+RHOM[L])-E0 - CI*PI4*fabs(IRHO[L]));
-        S3L = -sqrt(CR*PI4*(RHO[L]-RHOM[L])-E0 - CI*PI4*fabs(IRHO[L]));
-        S1LP = -sqrt(CR*PI4*(RHO[LP]+RHOM[LP])-E0 - CI*PI4*fabs(IRHO[LP]));
-        S3LP = -sqrt(CR*PI4*(RHO[LP]-RHOM[LP])-E0 - CI*PI4*fabs(IRHO[LP]));
+        S1L = -sqrt(CR*PI4*(RHO[L]+RHOM[L])-E0 + CI*PI4*fabs(IRHO[L]));
+        S3L = -sqrt(CR*PI4*(RHO[L]-RHOM[L])-E0 + CI*PI4*fabs(IRHO[L]));
+        S1LP = -sqrt(CR*PI4*(RHO[LP]+RHOM[LP])-E0 + CI*PI4*fabs(IRHO[LP]));
+        S3LP = -sqrt(CR*PI4*(RHO[LP]-RHOM[LP])-E0 + CI*PI4*fabs(IRHO[LP]));
 
+
+        if (abs(U1[L]) <= 1.0) {
+            // then Bz >= 0
+            // BL and GL are zero in the fronting.
+        } else {
+            // then Bz < 0: flip!
+            SSWAP = S1L;
+            S1L = S3L;
+            S3L = SSWAP; // swap S3 and S1
+        }
+        
         if (abs(U1[LP]) <= 1.0) {
             // then Bz >= 0
             BLP = U1[LP];
@@ -217,15 +228,13 @@ C * Converted to subroutine from GEPORE.f
         S3L = S3LP; //
         GL = GLP;
         BL = BLP;
-        S1LP = -sqrt(CR*PI4*(RHO[LP]+RHOM[LP])-E0 - CI*PI4*fabs(IRHO[LP]));
-        S3LP = -sqrt(CR*PI4*(RHO[LP]-RHOM[LP])-E0 - CI*PI4*fabs(IRHO[LP]));
+        S1LP = -sqrt(CR*PI4*(RHO[LP]+RHOM[LP])-E0 + CI*PI4*fabs(IRHO[LP]));
+        S3LP = -sqrt(CR*PI4*(RHO[LP]-RHOM[LP])-E0 + CI*PI4*fabs(IRHO[LP]));
         if (abs(U1[LP]) <= 1.0) {
-            //std::cout << "not flipped: " << LP << ", " << U1[LP] << "\n";
             // then Bz >= 0
             BLP = U1[LP];
             GLP = 1.0/U3[LP];
         } else {
-            //std::cout << "flipped: " << LP << ", " << U1[LP] << "\n";
             // then Bz < 0: flip!
             BLP = U3[LP];
             GLP = 1.0/U1[LP];
@@ -233,6 +242,7 @@ C * Converted to subroutine from GEPORE.f
             S1LP = S3LP;
             S3LP = SSWAP; // swap S3 and S1
         }
+        
         
         
         DELTA = 0.5*CR / (1.0 - (BLP*GLP));

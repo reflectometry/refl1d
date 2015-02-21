@@ -93,7 +93,7 @@ def gepore(layers, QS, DQ, NQ, EPS, H):
 
 def magnetic_cc(layers, kz, Aguide, H):
     depth, rho, rhoM, thetaM, phiM = list(zip(*layers))
-    R = refl(kz, depth, rho, 0, rhoM, thetaM, 0, Aguide, H, rotate_B=True)
+    R = refl(kz, depth, rho, 0, rhoM, thetaM, 0, Aguide, H, rotate_M=True)
     return R
 
 def Rplot(Qz, R, format):
@@ -134,8 +134,8 @@ def rplot(Qz, R, format):
 def compare(name, layers, Aguide=270, H=0):
 
     QS = 0.001
-    DQ = 0.0002
-    NQ = 250
+    DQ = 0.0001
+    NQ = 500
     # Rgepore = gepore(layers, QS, DQ, NQ, Aguide, H)
 
     Qz = np.arange(NQ)*DQ+QS
@@ -200,10 +200,10 @@ def NSF_example():
     Aguide = 270.0
     layers = [
         # depth rho rhoM thetaM phiM
-        [ 0, 0.0, 0.0, 90, 0.0],
+        [ 0, 0.0, 1e-6, 90, 0.0],
         [200, 4.0, 1.0, 90, 0.0],
         [200, 2.0, 1.0, 90, 0.0],
-        [200, 4.0, 0.0, 90, 0.0],
+        [200, 4.0, 1e-6, 90, 0.0],
         ]
     return "non spin flip", layers, Aguide
     
