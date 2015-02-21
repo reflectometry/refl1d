@@ -179,7 +179,7 @@ def magnetic_amplitude(kz,
                        Aguide=-90,
                        H=0,
                        rho_index=None,
-                       rotate_B=True,
+                       rotate_M=True,
                        ):
     """
     Returns the complex magnetic reflectivity waveform.
@@ -209,67 +209,47 @@ def magnetic_amplitude(kz,
 
     thetaM = radians(thetaM)
     phiH = radians(Aguide - 270.0)
-    thetaH = np.pi/2.0
-    #if (H!=0):
+    thetaH = np.pi/2.0 # by convention, H is in y-z plane so theta = pi/2
     
-    ###########
-    # using the alternate parametrization from Chatterji page 452:
-    # phi = polar angle from sample z axis
-    # theta = projected angle in x-y plane
-    if True:
-        sld_h = B2SLD * H
-        sld_m_x = rhoM * np.cos(thetaM)
-        sld_m_y = rhoM * np.sin(thetaM)
-        sld_m_z = 0.0 # by Maxwell's equations, H_demag = mz so we'll just cancel it here
-        if rotate_B:
-            # rotate the M vector instead of the transfer matrix!
-            # First, rotate the B vector about the x axis:
-            new_my = sld_m_z * sin(radians(Aguide)) + sld_m_y * cos(radians(Aguide))
-            new_mz = sld_m_z * cos(radians(Aguide)) - sld_m_y * sin(radians(Aguide))
-            sld_m_y, sld_m_z = new_my, new_mz
-            sld_h_x = sld_h_y = 0.0
-            sld_h_z = sld_h
-            # Then, don't rotate the transfer matrix
-            Aguide = 0.0
-        else:        
-            sld_h_x = sld_h * np.cos(thetaH) # zero
-            sld_h_y = sld_h * np.sin(thetaH) * np.cos(phiH)
-            sld_h_z = sld_h * np.sin(thetaH) * np.sin(phiH)
+    sld_h = B2SLD * H
+    sld_m_x = rhoM * np.cos(thetaM)
+    sld_m_y = rhoM * np.sin(thetaM)
+    sld_m_z = 0.0 # by Maxwell's equations, H_demag = mz so we'll just cancel it here
+    # The purpose of AGUIDE is to rotate the z-axis of the sample coordinate
+    # system so that it is aligned with the quantization axis z, defined to be
+    # the direction of the magnetic field outside the sample.
+    if rotate_M:
+        # rotate the M vector instead of the transfer matrix!
+        # First, rotate the M vector about the x axis:
+        new_my = sld_m_z * sin(radians(Aguide)) + sld_m_y * cos(radians(Aguide))
+        new_mz = sld_m_z * cos(radians(Aguide)) - sld_m_y * sin(radians(Aguide))
+        sld_m_y, sld_m_z = new_my, new_mz
+        sld_h_x = sld_h_y = 0.0
+        sld_h_z = sld_h
+        # Then, don't rotate the transfer matrix
+        Aguide = 0.0
+    else:        
+        sld_h_x = sld_h * np.cos(thetaH) # zero
+        sld_h_y = sld_h * np.sin(thetaH) * np.cos(phiH)
+        sld_h_z = sld_h * np.sin(thetaH) * np.sin(phiH)
+    
+    sld_b_x = sld_h_x + sld_m_x
+    sld_b_y = sld_h_y + sld_m_y
+    sld_b_z = sld_h_z + sld_m_z
+    sld_b = np.sqrt(sld_b_x**2 + sld_b_y**2 + sld_b_z**2)
         
-        sld_b_x = sld_h_x + sld_m_x
-        sld_b_y = sld_h_y + sld_m_y
-        sld_b_z = sld_h_z + sld_m_z
-        sld_b = np.sqrt(sld_b_x**2 + sld_b_y**2 + sld_b_z**2)
-        
-#        if rotate_B:
-#            # rotate the B vector instead of the transfer matrix!
-#            #
-#            # First, rotate the B vector about the x axis:
-#            new_by = sld_b_z * sin(radians(Aguide)) + sld_b_y * cos(radians(Aguide))
-#            new_bz = sld_b_z * cos(radians(Aguide)) - sld_b_y * sin(radians(Aguide))
-#            sld_b_y, sld_b_z = new_by, new_bz
-#            # Then, don't rotate the transfer matrix
-#            Aguide = 0.0
-            
-        # add epsilon to y, to avoid divide by zero errors?
-        u1_num = ( sld_b + sld_b_x + 1j*sld_b_y - sld_b_z )
-        u1_den = ( sld_b + sld_b_x - 1j*sld_b_y + sld_b_z )
-        u3_num = (-sld_b + sld_b_x + 1j*sld_b_y - sld_b_z ) 
-        u3_den = (-sld_b + sld_b_x - 1j*sld_b_y + sld_b_z )
-        
-        u1_den[u1_den == 0] = EPS
-        u3_den[u3_den == 0] = -EPS
-        
-        u1 = u1_num/u1_den
-        u3 = u3_num/u3_den
-        
-        print "u1: ", u1
-        print "u3: ", u3
-        
-#    else:
-#        u1 = np.cos(thetaM) + 1j*sin(thetaM)
-#        u3 = -u1
-#        rhoB = rhoM
+    # add epsilon to y, to avoid divide by zero errors?
+    u1_num = ( sld_b + sld_b_x + 1j*sld_b_y - sld_b_z )
+    u1_den = ( sld_b + sld_b_x - 1j*sld_b_y + sld_b_z )
+    u3_num = (-sld_b + sld_b_x + 1j*sld_b_y - sld_b_z ) 
+    u3_den = (-sld_b + sld_b_x - 1j*sld_b_y + sld_b_z )
+    
+    # avoid divide-by-zero:
+    u1_den[u1_den == 0] = EPS 
+    u3_den[u3_den == 0] = EPS
+    
+    u1 = u1_num/u1_den
+    u3 = u3_num/u3_den
     
     R1,R2,R3,R4 = [np.empty(kz.shape,'D') for pol in (1,2,3,4)]
     reflmodule._magnetic_amplitude(depth, sigma, rho, irho,
