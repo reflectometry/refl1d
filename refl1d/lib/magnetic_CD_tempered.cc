@@ -188,6 +188,8 @@ C * Converted to subroutine from GEPORE.f
             // BL and GL are zero in the fronting.
         } else {
             // then Bz < 0: flip!
+            // This is probably impossible, since Bz defines the +z direction
+            // in the fronting medium, but just in case...
             SSWAP = S1L;
             S1L = S3L;
             S3L = SSWAP; // swap S3 and S1
