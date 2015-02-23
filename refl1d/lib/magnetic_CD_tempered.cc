@@ -148,7 +148,7 @@ C * Converted to subroutine from GEPORE.f
         // IP = 1 specifies polarization of the incident beam I+
         E0 = KZ*KZ + PI4*(RHO[L]+RHOM[L]);
       } else {
-        // IP = 0 specifies polarization of the incident beam I-
+        // IP = -1 specifies polarization of the incident beam I-
         E0 = KZ*KZ + PI4*(RHO[L]-RHOM[L]);
       }
       
@@ -157,10 +157,30 @@ C * Converted to subroutine from GEPORE.f
       if (N>1) {
         // chi in layer 1
         LP = L + STEP;
-        S1L = -sqrt(CR*PI4*(RHO[L]+RHOM[L])-E0 + CI*PI4*fabs(IRHO[L]));
-        S3L = -sqrt(CR*PI4*(RHO[L]-RHOM[L])-E0 + CI*PI4*fabs(IRHO[L]));
-        S1LP = -sqrt(CR*PI4*(RHO[LP]+RHOM[LP])-E0 + CI*PI4*fabs(IRHO[LP]));
-        S3LP = -sqrt(CR*PI4*(RHO[LP]-RHOM[LP])-E0 + CI*PI4*fabs(IRHO[LP]));
+        // Branch selection:  the -sqrt below for S1 and S3 will be 
+        //     +Imag for KZ > Kcrit, 
+        //     -Real for KZ < Kcrit
+        // which covers the S1, S3 waves allowed by the boundary conditions in the 
+        // fronting and backing medium:
+        // either traveling forward (+Imag) or decaying exponentially forward (-Real).
+        // The decaying exponential only occurs for the transmitted forward wave in the backing: 
+        // the root +iKz is automatically chosen for the incident wave in the fronting.
+        // 
+        // In the fronting, the -S1 and -S3 waves are either traveling waves backward (-Imag) 
+        // or decaying along the -z reflection direction (-Real) * (-z) = (+Real*z).
+        // NB: This decaying reflection only occurs when the reflected wave is below Kcrit
+        // while the incident wave is above Kcrit, so it only happens for spin-flip from 
+        // minus to plus (lower to higher potential energy) and the observed R-+ will 
+        // actually be zero at large distances from the interface.
+        // 
+        // In the backing, the -S1 and -S3 waves are explicitly set to be zero amplitude
+        // by the boundary conditions (neutrons only incident in the fronting medium - no 
+        // source of neutrons below).
+        // 
+        S1L = -sqrt(Cplx(PI4*(RHO[L]+RHOM[L])-E0, -PI4*fabs(IRHO[L])));
+        S3L = -sqrt(Cplx(PI4*(RHO[L]-RHOM[L])-E0, -PI4*fabs(IRHO[L])));
+        S1LP = -sqrt(Cplx(PI4*(RHO[LP]+RHOM[LP])-E0, -PI4*fabs(IRHO[LP])));
+        S3LP = -sqrt(Cplx(PI4*(RHO[LP]-RHOM[LP])-E0, -PI4*fabs(IRHO[LP])));
 
 
         if (abs(U1[L]) <= 1.0) {
@@ -185,9 +205,6 @@ C * Converted to subroutine from GEPORE.f
             S1LP = S3LP;
             S3LP = SSWAP; // swap S3 and S1
         }
-        
-        //subcrit_plus = (PI4*(RHO[L]+RHOM[L]) > E0);
-        //subcrit_minus = (PI4*(RHO[L]-RHOM[L]) > E0);
         
         DELTA = 0.5*CR / (1.0 - (BLP*GLP));
         
@@ -228,8 +245,8 @@ C * Converted to subroutine from GEPORE.f
         S3L = S3LP; //
         GL = GLP;
         BL = BLP;
-        S1LP = -sqrt(CR*PI4*(RHO[LP]+RHOM[LP])-E0 + CI*PI4*fabs(IRHO[LP]));
-        S3LP = -sqrt(CR*PI4*(RHO[LP]-RHOM[LP])-E0 + CI*PI4*fabs(IRHO[LP]));
+        S1LP = -sqrt(Cplx(PI4*(RHO[LP]+RHOM[LP])-E0, -PI4*fabs(IRHO[LP])));
+        S3LP = -sqrt(Cplx(PI4*(RHO[LP]-RHOM[LP])-E0, -PI4*fabs(IRHO[LP])));
         if (abs(U1[LP]) <= 1.0) {
             // then Bz >= 0
             BLP = U1[LP];
@@ -341,9 +358,6 @@ C * Converted to subroutine from GEPORE.f
       YB = (B21*B42-B41*B22)/DETW; // +-
       YC = (B24*B43-B23*B44)/DETW; // -+ 
       YD = (B23*B42-B43*B22)/DETW; // --
-      
-      //if (subcrit_plus) { YA = YC = 0.0; }; // forbidden reflection
-      //if (subcrit_minus) { YB = YD = 0.0; }; 
 
 }
 
@@ -378,7 +392,7 @@ magnetic_amplitude(const int layers,
       Cr4xa(layers,d,sigma,ip,rho+offset,irho+offset,rhoM,u1,u3,
             Aguide,KZ[i],Ra[i],Rb[i],dummy1,dummy2);
     }
-    ip = 0; // minus polarization
+    ip = -1; // minus polarization
     #ifdef _OPENMP
     #pragma omp parallel for
     #endif
