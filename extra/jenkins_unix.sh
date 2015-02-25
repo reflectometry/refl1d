@@ -1,6 +1,8 @@
 #!/bin/sh
 
 # should be testing python 2.6, 2.7, 3.3, 3.4
+# To set up python 3 environment:
+# sudo apt-get install python3 python3-numpy python3-scipy python3-matplotlib python3-pip python3-nose python3-sphinx
 PYTHON=${PYTHON:-python}
 export PYTHON
 set -x
@@ -11,16 +13,21 @@ set -x
 # etc.), but that is a project for a different day.
 #$PYTHON -m pip install --no-deps -t external https://github.com/bumps/bumps/tarball/master
 #$PYTHON -m pip install --no-deps -t external https://github.com/pkienzle/periodictable/tarball/master
-git clone https://github.com/bumps/bumps.git
-git clone https://github.com/pkienzle/periodictable.git
+rm -rf external
+(cd external && git clone https://github.com/bumps/bumps.git)
+(cd external && git clone https://github.com/pkienzle/periodictable.git)
 
-PYTHONPATH=$WORKSPACE/bumps:$WORKSPACE/periodictable:$PYTHONPATH
+PYTHONPATH=$WORKSPACE/external/bumps:$WORKSPACE/external/periodictable:$PYTHONPATH
 export PYTHONPATH
 
+echo $PYTHONPATH
+# build and test
 $PYTHON setup.py build
 $PYTHON test.py
 
-# check that the docs build
+exit
 $PYTHON check_examples.py --chisq
+
+# check that the docs build
 (cd doc && make html pdf)
 cp doc/_build/latex/Refl1D.pdf .
