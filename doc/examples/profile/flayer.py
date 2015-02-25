@@ -130,7 +130,7 @@ class FunctionalMagnetism(BaseMagnetism):
         P = self.profile(Pz,**kw)
         try: rhoM, thetaM = P
         except: rhoM, thetaM = P, Pz*0
-        rhoM, thetaM = [asarray(v) for v in rhoM,thetaM]
+        rhoM, thetaM = [asarray(v) for v in (rhoM,thetaM)]
         if rhoM.shape != Pz.shape or thetaM.shape != Pz.shape:
             raise TypeError("profile function '%s' did not return array rhoM(z)"
                             %self.profile.__name__)
