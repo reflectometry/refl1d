@@ -25,8 +25,6 @@ echo $PYTHONPATH
 # build and test
 $PYTHON setup.py build
 $PYTHON test.py
-
-exit
 $PYTHON check_examples.py --chisq
 
 # check that the docs build
