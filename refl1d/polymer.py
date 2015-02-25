@@ -20,7 +20,7 @@ Profile\ [#Cosgrove]_\ [#deVos]_\ [#Sheridan]_
     "Comparative swelling of gels and polymer brush layers",
     Physica B 221, 331-336. doi:10.1016/0921-4526(95)00946-9
    
-.. [#Adamuti-Trache] Adamuţi-Trache, M., McMullen, W. E. & Douglas, J. F.
+.. [#Adamuti-Trache] Adamuţi-Trache, M., McMullen, W. E. & Douglas, J. F.
     Segmental concentration profiles of end-tethered polymers with
     excluded-volume and surface interactions. J. Chem. Phys. 105, 4798 (1996).
 
@@ -490,13 +490,15 @@ class EndTetheredPolymer(Layer):
     
     Previous layer should not have roughness! Use a spline to simulate it. 
     
-    According to [#Vincent]_, $l_\rm{lat}$ and $m_\rm{lat}$ should be
+    According to [#Vincent]_, $l_\text{lat}$ and $m_\text{lat}$ should be
     calculated by the formulas:
 
     .. math::
-    
-        l_{\rm{lat}} &=& \frac{a^2 m/l}{p_l} \\
-        m_{\rm{lat}} &=& \frac{(a m/l)^2}{p_l}
+
+    \begin{eqnarray}
+        l_\text{lat} &=& \frac{a^2 m/l}{p_l} \\
+        m_\text{lat} &=& \frac{(a m/l)^2}{p_l}
+    \end{eqnarray}
     
     where $l$ is the real polymer's bond length, $m$ is the real segment mass,
     and $a$ is the ratio between molecular weight and radius of gyration at
