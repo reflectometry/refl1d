@@ -9,10 +9,12 @@ set -x
 # A true bleeding edge build would also install the latest versions of
 # the various dependent packages (numpy, scipy, numdifftools, pyparsing,
 # etc.), but that is a project for a different day.
-$PYTHON -m pip install --no-deps -t external https://github.com/bumps/bumps/tarball/master
-$PYTHON -m pip install --no-deps -t external https://github.com/pkienzle/periodictable/tarball/master
+#$PYTHON -m pip install --no-deps -t external https://github.com/bumps/bumps/tarball/master
+#$PYTHON -m pip install --no-deps -t external https://github.com/pkienzle/periodictable/tarball/master
+git clone https://github.com/bumps/bumps.git
+git clone https://github.com/pkienzle/periodictable.git
 
-PYTHONPATH=$WORKSPACE/external:$PYTHONPATH
+PYTHONPATH=$WORKSPACE/bumps:$WORKSPACE/periodictable:$PYTHONPATH
 export PYTHONPATH
 
 $PYTHON setup.py build
