@@ -23,10 +23,10 @@ export PYTHONPATH
 
 echo $PYTHONPATH
 # build and test
-$PYTHON setup.py build
-$PYTHON test.py
-$PYTHON check_examples.py --chisq
+$PYTHON setup.py build  || exit 1
+$PYTHON test.py || exit 1
+$PYTHON check_examples.py --chisq || exit 1
 
 # check that the docs build
-(cd doc && make html pdf)
-cp doc/_build/latex/Refl1D.pdf .
+(cd doc && make html pdf) || exit 1
+cp doc/_build/latex/Refl1D.pdf . || exit 1

@@ -80,8 +80,8 @@ nose_args = ['-v', '--all-modules',
 
 
 # exclude gui subdirectory if wx is not available
-try: import wx
-except ImportError: nose_args.append('-eview')
+try: import wxversion
+except: nose_args.append('-eview')
 
 nose_args += sys.argv[1:]  # allow coverage arguments
 

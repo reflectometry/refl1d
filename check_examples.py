@@ -69,6 +69,6 @@ def main():
         for f in examples:
             print("\n"+f)
             status = command(os.path.join(EXAMPLEDIR,f))
-            if status != 0: sys.exit(status)
+            if status != 0: sys.exit(1)
 
 if __name__ == "__main__": main()
