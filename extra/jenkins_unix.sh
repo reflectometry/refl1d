@@ -14,6 +14,7 @@ set -x
 #$PYTHON -m pip install --no-deps -t external https://github.com/bumps/bumps/tarball/master
 #$PYTHON -m pip install --no-deps -t external https://github.com/pkienzle/periodictable/tarball/master
 rm -rf external
+mkdir external
 (cd external && git clone https://github.com/bumps/bumps.git)
 (cd external && git clone https://github.com/pkienzle/periodictable.git)
 
