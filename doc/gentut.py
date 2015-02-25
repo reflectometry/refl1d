@@ -45,6 +45,8 @@ def weave(source, target):
     if not exists(target):
         makedirs(target)
     for f in glob(joinpath(source,'*')):
+        if f.endswith('__pycache__') or f.endswith('pyc'):
+            continue # skip precompiled python files
         #print "processing",f
         if f.endswith(".py") and ispylit(f):
             rstfile = joinpath(target, basename(f).replace('.py','.rst'))
