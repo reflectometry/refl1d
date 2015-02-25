@@ -68,8 +68,7 @@ def main():
         command = getattr(Commands, sys.argv[1][2:])
         for f in examples:
             print("\n"+f)
-            if command(os.path.join(EXAMPLEDIR,f)) != 0:
-                #break
-                pass
+            status = command(os.path.join(EXAMPLEDIR,f))
+            if status != 0: sys.exit(status)
 
 if __name__ == "__main__": main()
