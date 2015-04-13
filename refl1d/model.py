@@ -303,7 +303,7 @@ class Stack(Layer):
         for i,layer in enumerate(self._layers):
             # Trigger start of a magnetic layer
             if layer.magnetism:
-                if magnetism: 
+                if magnetism:
                     raise IndexError("magnetic layer %s overlap"%magnetism)
                 magnetism = layer.magnetism
                 #import sys; print >>sys.stderr,"magnetism",magnetism
@@ -322,7 +322,7 @@ class Stack(Layer):
                            if magnetism.interface_above 
                            else slabs.surface_sigma)
                 w = (slabs.thickness() - magnetism.dead_above.value) - anchor
-                magnetism.render(probe, slabs, thickness=w, anchor=anchor, 
+                magnetism.render(probe, slabs, thickness=w, anchor=anchor,
                                  sigma=(s_below, s_above))
                 magnetism = None
 
