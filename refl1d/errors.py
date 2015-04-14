@@ -12,12 +12,12 @@ __all__ = ['reload_errors', 'run_errors',
            'show_errors', 'show_profiles', 'show_residuals',
            ]
 
-import numpy
-from bumps.plotutil import next_color, dhsv, plot_quantiles
+import numpy as np
+from bumps.plotutil import next_color, dhsv, plot_quantiles, form_quantiles
 from bumps.errplot import reload_errors
 
-#_CONTOURS = [68, 95, 100]
-_CONTOURS = [57, 68, 83, 95, 100]
+#_CONTOURS = [84, 95, 100]
+_CONTOURS = [57, 68, 84, 95, 100]
 
 def run_errors(**kw):
     """
@@ -25,13 +25,13 @@ def run_errors(**kw):
 
     The model directory should contain a fake model align.py with:
 
-        from refl1d.names import *
+        from refl1d.errors import run_errors
         run_errors(model="", store="", align='auto')
 
     If you are using the command line then you should be able to type the
     following at the command prompt to generate the plots:
 
-        $ refl1d align.py <model>.py <store> [<align>] [1|2|n]
+        $ refl1d align.py <model>.py <store> [<align>] [0|1|2|n]
 
     If you are using the GUI, you will have to set model, store and
     align directly in align.py each time you run.
@@ -44,7 +44,8 @@ def run_errors(**kw):
 
     You can plot the profiles and residuals on one plot by setting plots to 1,
     on two separate plots by setting plots to 2, or each curve on its own
-    plot by setting plots to n. Output is saved in <store>/<model>-err#.png.
+    plot by setting plots to n. Plots are saved in <store>/<model>-err#.png.
+    If plots is 0, then no plots are created.
 
     Additional parameters include:
 
@@ -80,7 +81,8 @@ def run_errors(**kw):
         #print align, align_str, len(sys.argv), sys.argv
 
     if not load['store'] or not load['model']: _usage()
-    show['save'] = os.path.join(load['store'],load['model'][:-3])
+    if show['save'] is None:
+        show['save'] = os.path.join(load['store'],load['model'][:-3])
 
     print("loading... this may take awhile")
     errors = reload_errors(**load)
@@ -161,7 +163,7 @@ def calc_errors(problem, points):
     # Find Q
     def residQ(m):
         if m.probe.polarized:
-            return numpy.hstack([xs.Q
+            return np.hstack([xs.Q
                                  for xs in m.probe.xs
                                  if xs is not None])
         else:
@@ -177,7 +179,7 @@ def calc_errors(problem, points):
             D = m.residuals()
             residuals[m].append(D+0)
             slabs_i = [L.thickness.value for L in m.sample[1:-1]]
-            slabs[m].append(numpy.array(slabs_i))
+            slabs[m].append(np.array(slabs_i))
             if m.ismagnetic:
                 z,rho,irho,rhoM,thetaM = m.magnetic_profile()
                 profiles[m].append((z+0,rho+0,irho+0,rhoM+0,thetaM+0))
@@ -190,7 +192,7 @@ def calc_errors(problem, points):
         record_point()
 
     # Turn residuals into arrays
-    residuals = dict((k,numpy.asarray(v).T) for k,v in residuals.items())
+    residuals = dict((k,np.asarray(v).T) for k,v in residuals.items())
     return profiles, slabs, Q, residuals
 
 def align_profiles(profiles, slabs, align):
@@ -229,7 +231,10 @@ def show_errors(errors, contours=_CONTOURS, npoints=200,
     """
     import pylab
 
-    if plots==1: # Subplots for profiles/residuals
+    if plots==0: # Don't create plots, just save the data
+        _save_profile_data(errors, contours=contours, npoints=npoints, align=align)
+        _save_residual_data(errors, contours=contours)
+    elif plots==1: # Subplots for profiles/residuals
         pylab.subplot(211)
         show_profiles(errors, contours=contours, npoints=npoints, align=align)
         pylab.subplot(212)
@@ -258,24 +263,17 @@ def show_errors(errors, contours=_CONTOURS, npoints=200,
             fignum += 1
 
 def show_profiles(errors, align, contours, npoints):
-    import pylab
     profiles, slabs, _, _ = errors
     if align is not None:
         profiles = align_profiles(profiles, slabs, align)
 
     if contours:
-        magnetic = _profiles_contour(profiles, contours, npoints)
+        _profiles_contour(profiles, contours, npoints)
     else:
-        magnetic = _profiles_overplot(profiles)
-    pylab.xlabel('z (A)')
-    if magnetic:
-        pylab.ylabel('rho (1/A^2)')
-    else:
-        pylab.ylabel('rho/rhoM (1/A^2)')
+        _profiles_overplot(profiles)
 
 
 def show_residuals(errors, contours):
-    import pylab
     _, _, Q, residuals = errors
 
     if False and contours:
@@ -283,69 +281,107 @@ def show_residuals(errors, contours):
     else:
         _residuals_overplot(Q, residuals)
 
-    pylab.xlabel('Q (1/A)')
-    pylab.ylabel('Residuals')
+
+def _save_profile_data(errors, align, contours, npoints):
+    profiles, slabs, _, _ = errors
+    if align is not None:
+        profiles = align_profiles(profiles, slabs, align)
+    for p in profiles.values():
+        # Find limits of all profiles
+        z = np.hstack([line[0] for line in p])
+        zp = np.linspace(np.min(z), np.max(z), npoints)
+        # Interpolate rho on common z
+        rho = np.vstack([np.interp(zp, L[0], L[1]) for L in p])
+        q = form_quantiles(rho, contours)
+        data = np.vstack((zp, rho[0], np.reshape(q,(-1,q.shape[2]))))
+        if len(p[0]) > 3:
+            rhoM = np.vstack([np.interp(zp, L[0], L[3]) for L in p])
+            q = form_quantiles(rho, contours)
+            data = np.vstack((zp, rhoM[0], np.reshape(q,(-1,q.shape[2]))))
+    raise NotImplementedError
+
+def _save_residual_data(errors, contours):
+    _, _, Q, residuals = errors
+    shift = 0
+    for m,r in residuals.items():
+        q = form_quantiles(r.T, contours)
+        # TODO: needs R, dR as well.
+        data = np.vstack((Q[m], r[:,0], np.reshape(q,(-1,q.shape[2]))))
+    raise NotImplementedError
+
 
 # ===== Plotting functions =====
+
+def _profiles_labels(magnetic):
+    import pylab
+    pylab.xlabel('z (A)')
+    if magnetic:
+        pylab.ylabel('rho (1/A^2)')
+    else:
+        pylab.ylabel('rho,rhoM (1/A^2)')
 
 def _profiles_overplot(profiles):
     import pylab
 
     alpha = 0.1
-    magnetic = False
+    any_magnetic = False
     for p in profiles.values():
         if len(p[0]) == 3:
-            color = next_color()
+            rho_color = next_color()
             for z,rho,_ in p[1:]:
-                pylab.plot(z,rho,'-',hold=True,color=color,alpha=alpha)
+                pylab.plot(z, rho, '-', hold=True, color=rho_color, alpha=alpha)
             # Plot best
             z,rho,_ = p[0]
-            pylab.plot(z,rho,'-',color=dhsv(color,dv=-0.2), hold=True)
+            pylab.plot(z, rho, '-', color=dhsv(rho_color,dv=-0.2), hold=True)
         else:
-            magnetic = True
+            any_magnetic = True
             rho_color = next_color()
             rhoM_color = next_color()
             for z, rho,_,rhoM,_ in p[1:]:
-                pylab.plot(z,rho,'-',hold=True,color=rho_color,alpha=alpha)
-                pylab.plot(z,rhoM,'-',hold=True,color=rhoM_color,alpha=alpha)
+                pylab.plot(z, rho, '-', hold=True, color=rho_color, alpha=alpha)
+                pylab.plot(z, rhoM, '-', hold=True, color=rhoM_color, alpha=alpha)
             # Plot best
             z,rho,_,rhoM,_ = p[0]
-            pylab.plot(z,rho,'-',color=dhsv(rho_color,dv=-0.2), hold=True)
-            pylab.plot(z,rhoM,'-',color=dhsv(rhoM_color,dv=-0.2), hold=True)
-    return magnetic
+            pylab.plot(z, rho, '-', color=dhsv(rho_color,dv=-0.2), hold=True)
+            pylab.plot(z, rhoM, '-', color=dhsv(rhoM_color,dv=-0.2), hold=True)
+    _profiles_labels(any_magnetic)
 
 def _profiles_contour(profiles, contours=_CONTOURS, npoints=200):
     import pylab
 
-    magnetic = False
+    any_magnetic = False
     for p in profiles.values():
         # Find limits of all profiles
-        z = numpy.hstack([line[0] for line in p])
-        zp = numpy.linspace(numpy.min(z), numpy.max(z), npoints)
+        z = np.hstack([line[0] for line in p])
+        zp = np.linspace(np.min(z), np.max(z), npoints)
         if len(p[0]) == 3:
-            color = next_color()
+            rho_color = next_color()
             # Interpolate rho on common z
-            rho = numpy.vstack([numpy.interp(zp, zi, rhoi) for zi,rhoi,_ in p])
+            rho = np.vstack([np.interp(zp, L[0], L[1]) for L in p])
             # Plot the quantiles
-            plot_quantiles(zp, rho, contours, color)
+            plot_quantiles(zp, rho, contours, rho_color)
             # Plot the best
-            z,rho,_ = p[0]
-            pylab.plot(z,rho,'-',color=dhsv(color,dv=-0.2), hold=True) # best
+            pylab.plot(zp, rho[0], '-', color=dhsv(rho_color,dv=-0.2), hold=True)
         else:
-            magnetic = True
+            any_magnetic = True
             rho_color = next_color()
             rhoM_color = next_color()
             # Interpolate rho, rhoM on common z
-            rho = numpy.vstack([numpy.interp(zp, L[0], L[1]) for L in p])
-            rhoM = numpy.vstack([numpy.interp(zp, L[0], L[3]) for L in p])
+            rho = np.vstack([np.interp(zp, L[0], L[1]) for L in p])
+            rhoM = np.vstack([np.interp(zp, L[0], L[3]) for L in p])
             # Plot the quantiles
             plot_quantiles(zp, rho, contours, rho_color)
             plot_quantiles(zp, rhoM, contours, rhoM_color)
             # Plot the best
-            z,rho,_,rhoM,_ = p[0]
-            pylab.plot(z,rho,'-',color=dhsv(rho_color,dv=-0.2), hold=True)
-            pylab.plot(z,rhoM,'-',color=dhsv(rhoM_color,dv=-0.2), hold=True)
-    return magnetic
+            pylab.plot(zp,rho[0], '-', color=dhsv(rho_color,dv=-0.2), hold=True)
+            pylab.plot(zp,rhoM[0], '-', color=dhsv(rhoM_color,dv=-0.2), hold=True)
+    _profiles_labels(any_magnetic)
+
+def _residuals_labels():
+    import pylab
+
+    pylab.xlabel('Q (1/A)')
+    pylab.ylabel('Residuals')
 
 def _residuals_overplot(Q, residuals):
     import pylab
@@ -358,6 +394,7 @@ def _residuals_overplot(Q, residuals):
         pylab.plot(Q[m], shift+r[:,0],'.', markersize=1,
                    color=dhsv(color,dv=-0.2), hold=True) # best
         shift += 5
+    _residuals_labels()
 
 def _residuals_contour(Q, residuals, contours=_CONTOURS):
     import pylab
@@ -368,10 +405,9 @@ def _residuals_contour(Q, residuals, contours=_CONTOURS):
         pylab.plot(Q[m], shift+r[:,0],'.', markersize=1,
                    color=dhsv(color,dv=-0.2), hold=True) # best
         shift += 5
+    _residuals_labels()
 
 # ==== Helper functions =====
-
-
 
 def _align_profile_set(profiles, slabs, align):
     """
@@ -395,7 +431,7 @@ def _align_profile_pair(z1,r1,t1_offset,z2,r2,t2,align):
     if align == 'auto':
         # Assume z1,z2 have the same step size
         n2 = len(r2)
-        idx = numpy.argmax(numpy.correlate(r1,r2,'full'))
+        idx = np.argmax(np.correlate(r1,r2,'full'))
         if idx < n2:
             offset = z2[(n2-1)-idx] - z1[0]
         else:
@@ -413,6 +449,6 @@ def _find_offset(v, align):
     -1.5 to specify the middle of the final layer.
     """
     idx = int(align)
-    offset = numpy.sum(v[:idx]) + (align-idx)*v[idx]
+    offset = np.sum(v[:idx]) + (align-idx)*v[idx]
     #print offset, idx, v[:idx], align
     return offset
