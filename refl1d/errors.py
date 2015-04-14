@@ -16,8 +16,9 @@ import numpy as np
 from bumps.plotutil import next_color, dhsv, plot_quantiles, form_quantiles
 from bumps.errplot import reload_errors
 
-#_CONTOURS = [84, 95, 100]
-_CONTOURS = [57, 68, 84, 95, 100]
+#_CONTOURS = [68, 95, 100]
+#_CONTOURS = [57, 68, 84, 95, 100]
+_CONTOURS = [68, 95]
 
 def run_errors(**kw):
     """
@@ -60,7 +61,7 @@ def run_errors(**kw):
     import os, sys
     import pylab
 
-    load = {'model': None, 'store': None, 'nshown': 50, 'random': False}
+    load = {'model': None, 'store': None, 'nshown': 50, 'random': True}
     show = {'align': 'auto', 'plots': 2,
             'contours': _CONTOURS, 'npoints': 400,
             'save': None}
@@ -89,7 +90,7 @@ def run_errors(**kw):
     print("showing...")
     show_errors(errors, **show)
     pylab.show()
-    raise KeyboardInterrupt()
+    raise KeyboardInterrupt()  # Force refl1d to terminate
 
 def _usage():
     print(run_errors.__doc__)
@@ -232,8 +233,9 @@ def show_errors(errors, contours=_CONTOURS, npoints=200,
     import pylab
 
     if plots==0: # Don't create plots, just save the data
-        _save_profile_data(errors, contours=contours, npoints=npoints, align=align)
-        _save_residual_data(errors, contours=contours)
+        _save_profile_data(errors, contours=contours, npoints=npoints,
+                           align=align, save=save)
+        _save_residual_data(errors, contours=contours, save=save)
     elif plots==1: # Subplots for profiles/residuals
         pylab.subplot(211)
         show_profiles(errors, contours=contours, npoints=npoints, align=align)
@@ -282,32 +284,44 @@ def show_residuals(errors, contours):
         _residuals_overplot(Q, residuals)
 
 
-def _save_profile_data(errors, align, contours, npoints):
+def _save_profile_data(errors, align, contours, npoints, save):
     profiles, slabs, _, _ = errors
     if align is not None:
         profiles = align_profiles(profiles, slabs, align)
-    for p in profiles.values():
+    k = 1
+    for title, p in sorted((m.name, p) for m,p in profiles.items()):
         # Find limits of all profiles
         z = np.hstack([line[0] for line in p])
         zp = np.linspace(np.min(z), np.max(z), npoints)
         # Interpolate rho on common z
         rho = np.vstack([np.interp(zp, L[0], L[1]) for L in p])
-        q = form_quantiles(rho, contours)
+        p, q = form_quantiles(rho, contours)
         data = np.vstack((zp, rho[0], np.reshape(q,(-1,q.shape[2]))))
+        columns = ["z", "best"] + list("%g%%"%v for v in 100*p.flatten())
+        _write_file(save+"_rho_contour%d.dat"%k, data, title, columns)
         if len(p[0]) > 3:
             rhoM = np.vstack([np.interp(zp, L[0], L[3]) for L in p])
-            q = form_quantiles(rho, contours)
+            p, q = form_quantiles(rhoM, contours)
             data = np.vstack((zp, rhoM[0], np.reshape(q,(-1,q.shape[2]))))
-    raise NotImplementedError
+            _write_file(save+"_rhoM_contour%d.dat"%k, data, title, columns)
+        k += 1
 
-def _save_residual_data(errors, contours):
+def _save_residual_data(errors, contours, save):
     _, _, Q, residuals = errors
-    shift = 0
-    for m,r in residuals.items():
-        q = form_quantiles(r.T, contours)
-        # TODO: needs R, dR as well.
-        data = np.vstack((Q[m], r[:,0], np.reshape(q,(-1,q.shape[2]))))
-    raise NotImplementedError
+    k = 1
+    for title, x, r in sorted((m.name, Q[m], v) for m,v in residuals.items()):
+        p, q = form_quantiles(r.T, contours)
+        # TODO: should have columns for R, dR as well.
+        data = np.vstack((x, r[:,0], np.reshape(q,(-1,q.shape[2]))))
+        columns = ["q", "best"] + list("%g%%"%v for v in 100*p.flatten())
+        _write_file(save+"_resid_contour%d.dat"%k, data, title, columns)
+        k += 1
+
+def _write_file(path, data, title, columns):
+    with open(path, "wt") as fid:
+        fid.write("# "+title+"\n")
+        fid.write("# "+" ".join(columns)+"\n")
+        np.savetxt(fid, data.T)
 
 
 # ===== Plotting functions =====
