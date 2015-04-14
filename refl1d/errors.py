@@ -260,7 +260,7 @@ def show_errors(errors, contours=_CONTOURS, npoints=200,
         for m in residuals.keys():
             pylab.figure()
             show_residuals( errors=(None, None, {m:Q[m]}, {m:residuals[m]}),
-                            contour=contours )
+                            contours=contours )
             if save: pylab.savefig(save+"-err%d.png"%fignum)
             fignum += 1
 
