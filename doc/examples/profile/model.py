@@ -90,7 +90,8 @@ sample['sin'].magnetism.z1.range(0,100)
 sample['sin'].magnetism.z2.range(0,100)
 
 T = numpy.linspace(0, 5, 100)
-xs = [NeutronProbe(T=T, dT=0.01, L=4.75, dL=0.0475) for _ in range(4)]
+xs = [NeutronProbe(T=T, dT=0.01, L=4.75, dL=0.0475, name=name)
+      for name in ("--","-+","+-","++")]
 probe = PolarizedNeutronProbe(xs)
 M = Experiment(probe=probe, sample=sample, dz=0.1)
 with seed(1): M.simulate_data(5)

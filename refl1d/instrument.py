@@ -44,11 +44,12 @@ All instrument parameters can be specified when constructing the probe,
 replacing the defaults that are associated with the instrument.  For
 example, to include sample broadening effects in the resolution:
 
-    >>> probe2 = geometry.probe(Q=Q, data=(R,dR), sample_broadening=0.1)
+    >>> probe2 = geometry.probe(Q=Q, data=(R,dR), sample_broadening=0.1,
+    ...    name="probe2")
 
 For magnetic systems a polarized beam probe is needed::
 
-    >>> magnetic_probe = geometry.magnetic_probe(T=numpy.linspace(0,5,100))
+    >>> magnetic_probe = geometry.magnetic_probe(T=numpy.linspace(0,5,100),)
 
 The string representation of the geometry prints a multi-line
 description of the default instrument configuration:
@@ -245,7 +246,9 @@ class Monochromatic(object):
         *slits_at_Tlo*, *Tlo*, *Thi*, *slits_below*, and *slits_above*
         to define the angular divergence.
         """
-        probes = [self.probe(**kw) for _ in range(4)]
+        base_name = kw.pop("name", "")
+        probes = [self.probe(name=base_name+xs, **kw)
+                  for xs in ("--","-+","+-","++")]
         probe = PolarizedNeutronProbe(probes, Aguide=Aguide)
         if shared_beam:
             probe.shared_beam()  # Share the beam parameters by default
