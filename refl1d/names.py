@@ -12,7 +12,7 @@ small scripts.
 """
 
 import sys
-import numpy
+import numpy as np
 from periodictable import elements, formula
 from bumps.parameter import Parameter, FreeVariables
 from bumps import pmath
@@ -32,8 +32,8 @@ from .polymer import (PolymerBrush, PolymerMushroom, EndTetheredPolymer,
 from .mono import FreeLayer, FreeInterface
 from .cheby import FreeformCheby, ChebyVF, cheby_approx, cheby_points
 from .interface import Erf
-from .probe import (Probe, ProbeSet, NeutronProbe, XrayProbe,
-                    PolarizedNeutronProbe, QProbe, PolarizedNeutronQProbe)
+from .probe import (Probe, ProbeSet, XrayProbe, NeutronProbe, QProbe,
+                    PolarizedNeutronProbe, PolarizedQProbe)
 from .stajconvert import load_mlayer, save_mlayer
 from . import ncnrdata as NCNR, snsdata as SNS
 from .instrument import Monochromatic, Pulsed
@@ -47,3 +47,8 @@ from .support import sample_data
 # both of them create elements.
 # Python doesn't allow "from .module import *"
 from refl1d.materialdb import *
+
+
+# Deprecated names
+PolarizedNeutronQProbe = PolarizedQProbe
+numpy = np

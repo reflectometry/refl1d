@@ -345,12 +345,16 @@ class Experiment(ExperimentBase):
                 calc_r = reflamp(-calc_q/2, depth=w, rho=rho, irho=irho,
                                  sigma=sigma)
             if False and numpy.isnan(calc_r).any():
-                print("w %s",w)
+                print("w",w)
                 print("rho",rho)
                 print("irho",irho)
+                if slabs.ismagnetic:
+                    print("rhoM",rhoM)
+                    print("thetaM",thetaM)
+                    print("Aguide",Aguide,"H",H)
                 print("sigma",sigma)
                 print("kz",self.probe.calc_Q/2)
-                print("R",abs(calc_r**2))
+                print("R",abs(numpy.asarray(calc_r)**2))
                 pars = parameter.unique(self.parameters())
                 fitted = parameter.varying(pars)
                 print(parameter.summarize(fitted))
