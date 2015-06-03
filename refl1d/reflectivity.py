@@ -236,20 +236,22 @@ def magnetic_amplitude(kz,
     sld_b_x = sld_h_x + sld_m_x
     sld_b_y = sld_h_y + sld_m_y
     sld_b_z = sld_h_z + sld_m_z
-    sld_b = np.sqrt(sld_b_x**2 + sld_b_y**2 + sld_b_z**2)
-        
+
+    # avoid divide-by-zero:
+    sld_b_x += EPS*(sld_b_x==0)
+    sld_b_y += EPS*(sld_b_y==0)
+
     # add epsilon to y, to avoid divide by zero errors?
+    sld_b = np.sqrt(sld_b_x**2 + sld_b_y**2 + sld_b_z**2)
     u1_num = ( sld_b + sld_b_x + 1j*sld_b_y - sld_b_z )
     u1_den = ( sld_b + sld_b_x - 1j*sld_b_y + sld_b_z )
     u3_num = (-sld_b + sld_b_x + 1j*sld_b_y - sld_b_z ) 
     u3_den = (-sld_b + sld_b_x - 1j*sld_b_y + sld_b_z )
     
-    # avoid divide-by-zero:
-    u1_den[u1_den == 0] = EPS 
-    u3_den[u3_den == 0] = EPS
-    
     u1 = u1_num/u1_den
     u3 = u3_num/u3_den
+    #print "u1",u1
+    #print "u3",u3
     
     R1,R2,R3,R4 = [np.empty(kz.shape,'D') for pol in (1,2,3,4)]
     reflmodule._magnetic_amplitude(depth, sigma, rho, irho,

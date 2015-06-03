@@ -7,6 +7,8 @@
 #include <cmath>
 #include "reflcalc.h"
 
+#define MINIMAL_RHO_M 1e-2  // in units of 1e-6/A^2
+
 
 extern "C" void
 Cr4xa(const int &N, const double D[], const double SIGMA[],
@@ -372,7 +374,7 @@ magnetic_amplitude(const int layers,
 {
   Cplx dummy1,dummy2;
   int ip;
-  if (rhoM[0] == 0.0 && rhoM[layers-1] == 0.0) {
+  if (fabs(rhoM[0]) <= MINIMAL_RHO_M && fabs(rhoM[layers-1]) <= MINIMAL_RHO_M) {
     ip = 1; // calculations for I+ and I- are the same in the fronting and backing.
     #ifdef _OPENMP
     #pragma omp parallel for
