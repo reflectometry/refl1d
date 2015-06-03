@@ -4,6 +4,7 @@
 #include <fstream>
 #include <complex>
 #include <cstdlib>
+#include <cmath>
 #include "reflcalc.h"
 
 
@@ -153,7 +154,6 @@ C * Converted to subroutine from GEPORE.f
       }
       
       Z = 0.0;
-      
       if (N>1) {
         // chi in layer 1
         LP = L + STEP;
@@ -181,7 +181,6 @@ C * Converted to subroutine from GEPORE.f
         S3L = -sqrt(Cplx(PI4*(RHO[L]-RHOM[L])-E0, -PI4*fabs(IRHO[L])));
         S1LP = -sqrt(Cplx(PI4*(RHO[LP]+RHOM[LP])-E0, -PI4*fabs(IRHO[LP])));
         S3LP = -sqrt(Cplx(PI4*(RHO[LP]-RHOM[LP])-E0, -PI4*fabs(IRHO[LP])));
-
 
         if (abs(U1[L]) <= 1.0) {
             // then Bz >= 0
@@ -261,9 +260,7 @@ C * Converted to subroutine from GEPORE.f
             S1LP = S3LP;
             S3LP = SSWAP; // swap S3 and S1
         }
-        
-        
-        
+
         DELTA = 0.5*CR / (1.0 - (BLP*GLP));
         DBB = (BL - BLP) * DELTA; // multiply by delta here?
         DBG = (1.0 - BL*GLP) * DELTA;
@@ -283,7 +280,7 @@ C * Converted to subroutine from GEPORE.f
         FS1S3 = S1L/S3LP;
         FS3S1 = S3L/S1LP;
         FS3S3 = S3L/S3LP;
-        
+
         A11 = A22 = DBG * (1.0 + FS1S1);
         A11 *= ES1L * ENS1LP;
         A22 *= ENS1L * ES1LP;
@@ -347,13 +344,14 @@ C * Converted to subroutine from GEPORE.f
         B24=C2;
         B34=C3;
         B44=C4;
-        
+
         Z += D[LP];
         L = LP;
       }
 //    Done computing B = A(N)*...*A(2)*A(1)*I
 
       DETW=(B44*B22-B24*B42);
+
 
 //    Calculate reflectivity coefficients specified by POLSTAT
       YA = (B24*B41-B21*B44)/DETW; // ++ 
