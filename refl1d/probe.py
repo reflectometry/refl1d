@@ -1057,7 +1057,7 @@ def measurement_union(xs):
     TL = set()
     for x in xs:
         if x is not None:
-            TL = TL | set(zip(x.T,x.dT,x.L,x.dL))
+            TL |= set(zip(x.T,x.dT,x.L,x.dL))
     T,dT,L,dL = zip(*[item for item in TL])
     T,dT,L,dL = [numpy.asarray(v) for v in (T,dT,L,dL)]
 
@@ -1079,13 +1079,10 @@ def Qmeasurement_union(xs):
     Qset = set()
     for x in xs:
         if x is not None:
-            Qset = Qset | set(zip(x.Q,x.dQ))
-    Q,dQ = [numpy.array(sorted(v))
-            for v in zip(*[w for w in Qset])]
-    idx = numpy.argsort(Q)
-    Q,dQ = Q[idx],dQ[idx]
+            Qset |= set(zip(x.Q,x.dQ))
+    Q,dQ = [numpy.array(v) for v in zip(*sorted(Qset))]
     if abs(Q[1:] - Q[:-1]).any() < 1e-14:
-        raise ValueError("Q is not unique")
+        raise ValueError("Q values differ by less than 1e-14")
     return Q, dQ
 
 class PolarizedNeutronProbe(object):
@@ -1186,22 +1183,19 @@ class PolarizedNeutronProbe(object):
 
     @property
     def calc_Q(self):
-        # All calc_Q should be the same, so return the first one
-        for x in self.xs:
-            if x is not None:
-                return x.calc_Q
-        raise RuntimeError("No polarization cross sections")
+        return self.calc_Qo
 
     def _set_calc(self, T, L):
-        """
-        Propagate setting of calc_Q to the individual cross sections.
-        """
-        # Set all xs to have the same calc_Q
-        for x in self.xs:
-            if x is not None:
-                x._set_calc(T,L)
+        # TODO: shouldn't clone code from probe
+        Q = TL2Q(T=T, L=L)
+
+        idx = numpy.argsort(Q)
+        self.calc_T = T[idx]
+        self.calc_L = L[idx]
+        self.calc_Qo = Q[idx]
+
         # Only keep the scattering factors that you need
-        self.unique_L = numpy.unique(L)
+        self.unique_L = numpy.unique(self.calc_L)
         self._L_idx = numpy.searchsorted(self.unique_L, L)
 
     def apply_beam(self, Q, R, resolution=True):
@@ -1390,13 +1384,14 @@ class PolarizedQProbe(PolarizedNeutronProbe):
     polarized = True
     def __init__(self, xs=None, name=None, Aguide=270, H=0):
         self.xs = xs
-        self.Q, self.dQ = Qmeasurement_union(xs)
         self._check()
         self.name = name if name is not None else xs[0].name
         self.unique_L = None
         self.Aguide = Parameter.default(Aguide,name="Aguide "+self.name,
                                         limits=[-360,360])
         self.H = H
+        self.Q, self.dQ = Qmeasurement_union(xs)
+        self.calc_Qo = self.Q
 
 # Deprecated old long name
 PolarizedNeutronQProbe = PolarizedQProbe
