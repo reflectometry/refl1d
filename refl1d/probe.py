@@ -1100,7 +1100,7 @@ class PolarizedNeutronProbe(object):
     substrate = surface = None
     polarized = True
     def __init__(self, xs=None, name=None, Aguide=270, H=0):
-        self.xs = xs
+        self._xs = xs
 
         self.name = name if name is not None else self.xs[0].name
         self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
@@ -1111,9 +1111,11 @@ class PolarizedNeutronProbe(object):
         self.Aguide = Parameter.default(Aguide, name="Aguide "+self.name,
                                             limits=[-360,360])
     @property
+    def xs(self): return self._xs  # Don't let user replace xs
+    @property
     def pp(self): return self.xs[3]
     @property
-    def pm(self): return self.xs[1]
+    def pm(self): return self.xs[2]
     @property
     def mp(self): return self.xs[1]
     @property
