@@ -234,7 +234,7 @@ class Monochromatic(object):
         kw.setdefault('radiation',self.radiation)
         return make_probe(**kw)
 
-    def magnetic_probe(self, Aguide=270, shared_beam=True, **kw):
+    def magnetic_probe(self, Aguide=270, shared_beam=True, H=0, **kw):
         """
         Simulate a polarized measurement probe.
 
@@ -249,7 +249,7 @@ class Monochromatic(object):
         base_name = kw.pop("name", "")
         probes = [self.probe(name=base_name+xs, **kw)
                   for xs in ("--","-+","+-","++")]
-        probe = PolarizedNeutronProbe(probes, Aguide=Aguide)
+        probe = PolarizedNeutronProbe(probes, Aguide=Aguide, H=H)
         if shared_beam:
             probe.shared_beam()  # Share the beam parameters by default
         return probe
