@@ -37,7 +37,7 @@
 #define MyAppGUIFileName "refl1d_gui.exe"
 #define MyIconFileName "bumps.ico"
 #define MyIconPath = "refl1d-data\refl1d.ico"
-#define MyReadmeFileName "README.txt"
+#define MyReadmeFileName "README.rst"
 #define MyLicenseFileName "LICENSE.txt"
 #define Space " "
 ; Use updated version string if present in the include file.  It is expected that the Refl1D

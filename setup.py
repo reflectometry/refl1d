@@ -37,8 +37,8 @@ def reflmodule_config():
         for arg in sys.argv:
             if arg.startswith('--compiler='):
                 _,compiler = arg.split('=')
-        if compiler == 'msvc':
-            extra_compile_args = ['/EHsc']
+        #if compiler == 'msvc':
+        #    extra_compile_args = ['/EHsc']
 
     S = ("reflmodule.cc","methods.cc",
          "reflectivity.cc", "magnetic.cc",

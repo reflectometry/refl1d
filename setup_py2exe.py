@@ -64,10 +64,12 @@ if len(sys.argv) == 1:
 platform = '.%s-%s' % (get_platform(), sys.version[:3])
 packages = [
     os.path.abspath('../periodictable'),
-    os.path.abspath('../bumps/build/lib'+platform),
+    os.path.abspath('../bumps'),
+    #os.path.abspath('../bumps/build/lib'+platform),
     os.path.abspath('build/lib'+platform),
 ]
 sys.path = packages + sys.path
+print("=== Python Path ===\n"+"\n".join(sys.path))
 
 #import wx  # May need this to force wx to be included
 import matplotlib
@@ -176,7 +178,7 @@ data_files = []
 
 # Add resource files that need to reside in the same directory as the image.
 data_files.append( ('.', [os.path.join('.', 'LICENSE.txt')]) )
-data_files.append( ('.', [os.path.join('.', 'README.txt')]) )
+data_files.append( ('.', [os.path.join('.', 'README.rst')]) )
 data_files.append( ('.', [os.path.join('.', 'bin', 'refl1d_launch.bat')]) )
 
 # Add application specific data files from the refl1d\refl1d-data folder.
