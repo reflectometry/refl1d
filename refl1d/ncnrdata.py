@@ -73,6 +73,7 @@ def load(filename, instrument=None, **kw):
     header,data = parse_ncnr_file(filename)
     header.update(filename=filename,**kw) # calling parameters override what's in the file.
     Q,R,dR = data
+    header.pop('Q', None)  # if columns are preceded by # Q R dR
     probe = instrument.probe(Q=Q, data=(R,dR), **header)
     probe.title = header['title'] if 'title' in header else filename
     probe.date = header['date'] if 'date' in header else "unknown"
