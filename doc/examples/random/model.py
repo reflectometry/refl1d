@@ -70,6 +70,9 @@ interfaces = [min(sample[i].thickness.value if i>0 else np.inf,
               for i in range(n+1)]
 for L,w in zip(sample[:n+1], interfaces):
     L.interface.value = 1+np.random.exponential(w/7)
+    # Update the fit range if interface is excessively broad
+    if L.interface.value > 200:
+        L.interface.range(0, 2*L.interface.value)
 
 # Finally, generate some data with noise.
 
