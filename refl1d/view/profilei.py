@@ -162,7 +162,9 @@ class ProfileInteractor(object):
     @safecall
     def set_layer(self, z):
         """Make layer containing z the active layer."""
-        self.layer_num = numpy.searchsorted(self.boundary, z)-1
+        # Note: sample_layer needs layer_num to be an int, rather than a
+        # numpy int64, since it tests for int vs. string vs. material.
+        self.layer_num = int(numpy.searchsorted(self.boundary, z) - 1)
         layer = self.sample_layer(self.layer_num)
 
         # Reset the interface markers
