@@ -73,9 +73,8 @@ class FunctionalProfile(Layer):
     def render(self, probe, slabs):
         Pw,Pz = slabs.microslabs(self.thickness.value)
         if len(Pw)== 0: return
-        kw = dict((k,getattr(self,k).value) for k in self._parameters)
         #print kw
-        phi = asarray(self.profile(Pz,**kw))
+        phi = asarray(self.profile(Pz,**self._fpars()))
         if phi.shape != Pz.shape:
             raise TypeError("profile function '%s' did not return array phi(z)"
                             %self.profile.__name__)
@@ -84,6 +83,15 @@ class FunctionalProfile(Layer):
         slabs.extend(rho = [real(phi)], irho = [imag(phi)], w = Pw)
         #slabs.interface(self.interface.value)
 
+    def start(self):
+        return self.profile([0.], **self._fpars())[0]
+
+    def end(self):
+        return self.profile([self.thickness.value], **self._fpars())[0]
+
+    def _fpars(self):
+        kw = dict((k,getattr(self,k).value) for k in self._parameters)
+        return  kw
 
 
 class FunctionalMagnetism(BaseMagnetism):
@@ -140,6 +148,16 @@ class FunctionalMagnetism(BaseMagnetism):
         slabs.add_magnetism(anchor=anchor,
                             w=Pw,rhoM=rhoM,thetaM=thetaM,
                             sigma=sigma)
+
+    def start(self):
+        return self.profile([0.], **self._fpars())[0]
+
+    def end(self):
+        return self.profile([self.thickness.value], **self._fpars())[0]
+
+    def _fpars(self):
+        kw = dict((k,getattr(self,k).value) for k in self._parameters)
+        return  kw
 
     def __repr__(self):
         return "FunctionalMagnetism(%s)"%self.name
