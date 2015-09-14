@@ -83,6 +83,8 @@ class FunctionalProfile(Layer):
         Pw,Pz = slabs.microslabs(self.thickness.value)
         if len(Pw)== 0: return
         #print kw
+        # TODO: always return rho, irho from profile function
+        # return value may be a constant for rho or irho
         phi = asarray(self.profile(Pz,**self._fpars()))
         if phi.shape != Pz.shape:
             raise TypeError("profile function '%s' did not return array phi(z)"
@@ -163,6 +165,8 @@ Need layer.magnetism.set_anchor(stack,layer) to compute magnetic thickness.")
         if len(Pw)== 0: return
         kw = dict((k,getattr(self,k).value) for k in self._parameters)
         P = self.profile(Pz,**kw)
+        # TODO: always return rhoM, thetaM from profile function
+        # rhoM or thetaM may be constant
         try: rhoM, thetaM = P
         except: rhoM, thetaM = P, Pz*0
         rhoM, thetaM = [asarray(v) for v in (rhoM,thetaM)]
@@ -217,9 +221,10 @@ class _LayerLimit(BaseParameter):
 
     @property
     def value(self):
-        z = self.flayer.thickness.value if self.isend else 0.
-        P = self.flayer.profile(asarray([z]), **self.flayer._fpars())
-        return real(P[0]) if self.isrho else imag(P[0])
+        z = asarray([0., self.flayer.thickness.value])
+        P = self.flayer.profile(asarray(z), **self.flayer._fpars())
+        index = 1 if self.isend else 0
+        return real(P[index]) if self.isrho else imag(P[index])
 
     def __repr__(self):
         return repr(self.flayer) + self._tag
@@ -238,11 +243,17 @@ class _MagnetismLimit(BaseParameter):
 
     @property
     def value(self):
-        z = self.flayer._calc_thickness() if self.isend else 0.
-        P = self.flayer.profile(asarray([z]), **self.flayer._fpars())
+        zmax = self.flayer._calc_thickness()
+        # TODO: fix interface
+        # awkward: calculating mid-point so that we don't accidentally
+        # interpret a two value return value as rhoM, thetaM instead of
+        # rhoM, [0., 0.]
+        z = asarray([0., 0.5*zmax, zmax])
+        P = self.flayer.profile(z, **self.flayer._fpars())
         try: rhoM, thetaM = P   # Returns rhoM and thetaM
-        except: rhoM, thetaM = P, [0.]  # Returns rhoM only
-        return rhoM[0] if self.isrhoM else thetaM[0]
+        except: rhoM, thetaM = P, [0., 0., 0.]  # Returns rhoM only
+        index = 2 if self.isend else 0
+        return rhoM[index] if self.isrhoM else thetaM[index]
 
     def __repr__(self):
         return repr(self.flayer) + self._tag
