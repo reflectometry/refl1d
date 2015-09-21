@@ -29,19 +29,19 @@ pythonX.Y check_examples.py --chisq
 (cd ../bumps && git log)
 git log
 
-(4) update version number and requirements
+(4) build the docs
+
+# even though this should happen automatically in jenkins we
+# do the builds by hand to make sure they are error free.
+(cd doc && make clean html pdf)
+
+(5) update version number and requirements
 
 vi refl1d/__init__.py
 vi setup.py
 vi rtd-requirements
 git commit -a -m "R X.Y.Z"
 git push
-
-(5) build the docs
-
-# even though this should happen automatically in jenkins we
-# do the builds by hand to make sure they are error free.
-(cd doc && make clean html pdf)
 
 (6) build the binaries for windows and mac
 
