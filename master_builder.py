@@ -81,16 +81,19 @@ if os.name == "nt":
     INNO   = SYSBIN+r"\Inno Setup 5\ISCC.exe"  # command line operation
 
     if not os.path.exists(GIT):
-        print("missing git: "+GIT+" --- source will not be updated", file=sys.stderr)
+        print("missing git: "+GIT+" --- source will not be updated",
+              file=sys.stderr)
     if not os.path.exists(INNO):
-        print("missing inno setup: "+INNO+" --- installer will not be built", file=sys.stderr)
+        print("missing inno setup: "+INNO+" --- installer will not be built",
+              file=sys.stderr)
 
     # Put PYTHON in the environment and add the python directory and its
     # corresponding script directory (for nose, sphinx, pip, etc) to the path.
     PYTHONDIR = os.path.dirname(os.path.abspath(PYTHON))
-    SCRIPTDIR = os.path.join(PYTHONDIR,'Scripts')
-    LATEXDIR = 'C:/Program Files/MikTeX 2.9/miktex/bin/x64'
-    os.environ['PATH'] = ";".join((PYTHONDIR,SCRIPTDIR,LATEXDIR,os.environ['PATH']))
+    SCRIPTDIR = os.path.join(PYTHONDIR, 'Scripts')
+    #LATEXDIR = 'C:/Program Files/MikTeX 2.9/miktex/bin/x64'
+    LATEXDIR = 'z:/miktex/miktex/bin'  # Portable miktex distribution
+    os.environ['PATH'] = ";".join((PYTHONDIR, SCRIPTDIR, LATEXDIR, os.environ['PATH']))
     os.environ['PYTHON'] = "/".join(PYTHON.split("\\"))
     #os.environ['GIT_SSH'] = r"C:\Program Files (x86)\PuTTY\plink.exe"
     MAKE = r"C:\mingw\bin\mingw32-make"
@@ -223,15 +226,15 @@ def build_documentation():
     "build the documentation"
     print("Running the Sphinx utility to build documentation ...\n")
     doc_dir = os.path.join(REFL_DIR, "doc")
-    latex_dir = os.path.join(doc_dir, "_build", "latex")
     html_dir = os.path.join(doc_dir, "_build", "html")
+    latex_dir = os.path.join(doc_dir, "_build", "latex")
     pdf = os.path.join(latex_dir, APP_NAME+".pdf")
 
     # Delete any left over files from a previous build.
     # Create documentation in HTML and PDF format.
     sphinx_cmd = '"%s" -m sphinx.__init__ -b %%s -d _build/doctrees -D latex_paper_size=letter . %%s'%PYTHON
     exec_cmd(sphinx_cmd%("html", html_dir), cwd=doc_dir)
-    if True: # build pdf as well
+    if True:  # build pdf as well
         exec_cmd(sphinx_cmd%("latex", latex_dir), cwd=doc_dir)
         exec_cmd("pdflatex %s.tex"%APP_NAME, cwd=latex_dir)
         exec_cmd("pdflatex %s.tex"%APP_NAME, cwd=latex_dir)
