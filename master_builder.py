@@ -60,6 +60,7 @@ from __future__ import print_function
 
 import os
 import sys
+import glob
 import shutil
 import subprocess
 from distutils.util import get_platform
@@ -72,6 +73,7 @@ GIT="git"
 MAKE="make"
 
 # Windows commands to run utilities
+PYTHON = sys.executable
 if os.name == "nt":
     SYSBIN=r"C:\Program Files (x86)"
     if not os.path.exists(SYSBIN): SYSBIN=r"C:\Program Files"
@@ -85,7 +87,6 @@ if os.name == "nt":
 
     # Put PYTHON in the environment and add the python directory and its
     # corresponding script directory (for nose, sphinx, pip, etc) to the path.
-    PYTHON = sys.executable
     PYTHONDIR = os.path.dirname(os.path.abspath(PYTHON))
     SCRIPTDIR = os.path.join(PYTHONDIR,'Scripts')
     LATEXDIR = 'C:/Program Files/MikTeX 2.9/miktex/bin/x64'
@@ -96,9 +97,10 @@ if os.name == "nt":
     #MAKE = r"make.bat"
 else:
     # Support for wx in virtualenv on mac
-    PYTHON = os.path.join(sys.real_prefix,'bin','python')
-    os.environ['PYTHON'] = PYTHON
-    os.environ['PYTHONHOME'] = sys.prefix
+    if hasattr(sys, "real_prefix"):
+        PYTHON = os.path.join(sys.real_prefix,'bin','python')
+        os.environ['PYTHON'] = PYTHON
+        os.environ['PYTHONHOME'] = sys.prefix
 
 # Name of the package
 PKG_NAME = "refl1d"
@@ -227,12 +229,21 @@ def build_documentation():
 
     # Delete any left over files from a previous build.
     # Create documentation in HTML and PDF format.
-    sphinx_cmd = '"%s" -m sphinx.__init__ -b %%s -d _build/doctrees -D latex_paper_size=letter .'
-    exec_cmd(sphinx_cmd%"html", cwd=doc_dir)
-    exec_cmd(sphinx_cmd%"pdf", cwd=doc_dir)
-    # Copy PDF to the html directory where the html can find it.
-    if os.path.isfile(pdf):
-        shutil.copy(pdf, html_dir)
+    print("docdir",doc_dir)
+    exec_cmd("ls", cwd=doc_dir)
+    sphinx_cmd = '"%s" -m sphinx.__init__ -b %%s -d _build/doctrees -D latex_paper_size=letter . %%s'%PYTHON
+    exec_cmd(sphinx_cmd%("html", html_dir), cwd=doc_dir)
+    if True: # build pdf as well
+        exec_cmd(sphinx_cmd%("latex", latex_dir), cwd=doc_dir)
+        exec_cmd("pdflatex %s.tex"%APP_NAME, cwd=latex_dir)
+        exec_cmd("pdflatex %s.tex"%APP_NAME, cwd=latex_dir)
+        exec_cmd("pdflatex %s.tex"%APP_NAME, cwd=latex_dir)
+        exec_cmd("makeindex -s python.ist %s.idx"%APP_NAME, cwd=latex_dir)
+        exec_cmd("pdflatex %s.tex"%APP_NAME, cwd=latex_dir)
+        exec_cmd("pdflatex %s.tex"%APP_NAME, cwd=latex_dir)
+        # Copy PDF to the html directory where the html can find it.
+        if os.path.isfile(pdf):
+            shutil.copy(pdf, html_dir)
 
 
 def create_windows_exe():
