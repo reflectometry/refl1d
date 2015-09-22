@@ -129,13 +129,14 @@ class PolymerBrush(Layer):
     def __init__(self, thickness=0, interface=0, name="brush",
                  polymer=None, solvent=None, base_vf=None,
                  base=None, length=None, power=None, sigma=None):
-        self.thickness = Parameter.default(thickness, name="brush thickness")
-        self.interface = Parameter.default(interface, name="brush interface")
-        self.base_vf = Parameter.default(base_vf, name="base_vf")
-        self.base = Parameter.default(base, name="base")
-        self.length = Parameter.default(length, name="length")
-        self.power = Parameter.default(power, name="power")
-        self.sigma = Parameter.default(sigma, name="sigma")
+        prefix = name + " "
+        self.thickness = Parameter.default(thickness, name=prefix+"thickness")
+        self.interface = Parameter.default(interface, name=prefix+"interface")
+        self.base_vf = Parameter.default(base_vf, name=prefix+"base_vf")
+        self.base = Parameter.default(base, name=prefix+"base")
+        self.length = Parameter.default(length, name=prefix+"length")
+        self.power = Parameter.default(power, name=prefix+"power")
+        self.sigma = Parameter.default(sigma, name=prefix+"sigma")
         self.solvent = solvent
         self.polymer = polymer
         self.name = name

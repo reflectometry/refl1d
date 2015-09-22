@@ -12,12 +12,12 @@ from numpy import asarray, isscalar, empty, ones, ones_like
 from numpy import sqrt, exp, pi
 
 def refl(kz, depth, rho, irho=0, sigma=0, rho_index=None):
-    """
+    r"""
     Reflectometry as a function of kz for a set of slabs.
 
     :Parameters:
         *kz* : float[n] | inv angstrom
-            Scattering vector $2*\pi*\sin(\theta)/\lambda$. This is $Q_z/2$.
+            Scattering vector $2\pi\sin(\theta)/\lambda$. This is $\tfrac12 Q_z$.
         *depth* :  float[m] | |Ang|
             thickness of each layer.  The thickness of the incident medium
             and substrate are ignored.

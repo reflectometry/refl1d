@@ -42,7 +42,7 @@ def add_H(layers, H=0.0, theta_H=0.0, phi_H=0.0):
 
 def gepore(layers, QS, DQ, NQ, EPS, H):
     #if H != 0:
-    layers = add_H(layers, H, 90, EPS-270)
+    layers = add_H(layers, H, 360-EPS, 0)
     depth, rho, rhoM, thetaM, phiM = list(zip(*layers))
 
     NL = len(rho)-2
@@ -93,13 +93,14 @@ def gepore(layers, QS, DQ, NQ, EPS, H):
 
 def magnetic_cc(layers, kz, Aguide, H):
     depth, rho, rhoM, thetaM, phiM = list(zip(*layers))
-    R = refl(kz, depth, rho, 0, rhoM, thetaM, 0, Aguide, H)
+    R = refl(kz, depth, rho, 0, rhoM, thetaM, 0, Aguide, H, rotate_M=True)
     return R
 
 def Rplot(Qz, R, format):
     import pylab
     pylab.hold(True)
-    for name,xs in zip(('--','+-','-+','++'),R):
+    for name,xs in zip(('++','+-','-+','--'),R):
+    #for name,xs in zip(('--','-+','+-','++'),R):
         Rxs = abs(xs)**2
         if (Rxs>1e-8).any():
             pylab.plot(Qz, Rxs, format, label=name)
@@ -134,14 +135,15 @@ def compare(name, layers, Aguide=270, H=0):
 
     QS = 0.001
     DQ = 0.0001
-    NQ = 300
-    Rgepore = gepore(layers, QS, DQ, NQ, Aguide, H)
+    NQ = 500
+    # Rgepore = gepore(layers, QS, DQ, NQ, Aguide, H)
 
     Qz = np.arange(NQ)*DQ+QS
-    kz = Qz[::4]/2
+    kz = Qz[::2]/2
     Rrefl1d = magnetic_cc(layers, kz, Aguide, H)
 
-    Rplot(Qz, Rgepore, '-'); Rplot(2*kz, Rrefl1d, '.'); import pylab; pylab.show(); return
+    #Rplot(Qz, Rgepore, '-'); 
+    Rplot(2*kz, Rrefl1d, '-'); import pylab; pylab.show(); return kz, Rrefl1d
 
     assert np.linalg.norm((R[0]-Rpp)/Rpp) < 1e-13, "fail ++ %s"%name
     assert np.linalg.norm((R[1]-Rpm)/Rpm) < 1e-13, "fail +- %s"%name
@@ -195,18 +197,18 @@ def magsurf():
     return "magnetic surface", layers, Aguide
 
 def NSF_example():
-    Aguide = 270
+    Aguide = 270.0
     layers = [
         # depth rho rhoM thetaM phiM
-        [ 0, 0.0, 0.0, 270, 0.0],
-        [200, 4.0, 1.0, 270, 0.0],
-        [200, 2.0, 1.0, 270, 0.0],
-        [200, 4.0, 0.0, 270, 0.0],
+        [ 0, 0.0, 1e-6, 90, 0.0],
+        [200, 4.0, 1.0, 90, 0.0],
+        [200, 2.0, 1.0, 90, 0.0],
+        [200, 4.0, 1e-6, 90, 0.0],
         ]
     return "non spin flip", layers, Aguide
     
 def Yaohua_example():
-    Aguide = 270
+    Aguide = 270.0
     rhoB = B2SLD * 0.4 * 1e6
     layers = [
         # depth rho rhoM thetaM phiM
@@ -218,7 +220,7 @@ def Yaohua_example():
     return "Yaohua example", layers, Aguide
     
 def zf_Yaohua_example():
-    Aguide = 270
+    Aguide = 270.0
     layers = [
         # depth rho rhoM thetaM phiM
         [ 0, 0.0, 0.0, 90, 0.0],
@@ -229,15 +231,26 @@ def zf_Yaohua_example():
     return "Yaohua example", layers, Aguide 
 
 def Chuck_test():
-    Aguide = 270
+    Aguide = 270.0
     layers = [
         # depth rho rhoM thetaM phiM
         [ 0, 2.0, 2.0, 90.0, 0.0],
-        [ 250, 6.0, 4.0, 0.0001, 0.0],
-        [ 250, 6.0, 4.0, 0.0001, 0.0],
-        [ 0, 5.0, 0.0, 90, 0.0],
+        [ 200, 6.0, 4.0, 0.0001, 0.0],
+        [ 300, 6.0, 4.0, 0.0001, 0.0],
+        [ 0, 5.0, 0.0001, 90, 0.0],
     ]
     return "Chuck example", layers, Aguide
+
+def Kirby_test():
+    Aguide = 5.0
+    layers = [
+        # depth rho rhoM thetaM phiM
+        [ 0, 0.0, 0.0, 90, 0.0],
+        [ 50, 4.0, 0, 0.001, 0.0],
+        [ 825, 9.06, 1.46, 0.0001, 22],
+        [ 0, 2.07, 0.0001, 90, 0.0],
+    ]
+    return "Kirby example", layers, Aguide
     
 def demo():
     """run demo"""
@@ -247,16 +260,24 @@ def demo():
     #compare(*magsub())
     #compare(*magsurf())
     pylab.figure()
-    compare(*zf_Yaohua_example())
+    compare(*zf_Yaohua_example(), H=0.0005) # 5 Gauss
     pylab.figure()
     compare(*zf_Yaohua_example(), H=0.4) # 4000 gauss
     pylab.figure()
-    compare(*NSF_example())
+    compare(*NSF_example(), H=0.00005) # Earth's field, 0.5G
     pylab.figure()
     compare(*NSF_example(), H=1.0) # 1 tesla
     pylab.figure()
-    compare(*Chuck_test(), H=0.0000001) # 0ish field, but magnetic front
+    compare(*Chuck_test(), H=0) # zeroish field, but magnetic front
     pylab.show()
+
+def write_Chuck_result():
+    kz, R = compare(*Chuck_test(), H=0) # zeroish field, but magnetic front
+    np.savetxt('Rmm.txt', np.vstack((2*kz, np.abs(R[3])**2)).T,  delimiter="\t")
+    np.savetxt('Rmp.txt', np.vstack((2*kz, np.abs(R[2])**2)).T,  delimiter="\t")
+    np.savetxt('Rpm.txt', np.vstack((2*kz, np.abs(R[1])**2)).T,  delimiter="\t")
+    np.savetxt('Rpp.txt', np.vstack((2*kz, np.abs(R[0])**2)).T,  delimiter="\t")
+
 
 if __name__ == "__main__":
     demo()

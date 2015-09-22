@@ -5,8 +5,9 @@ plateau = silicon(0,5) | MagneticSlab(nickel(1000,200),rhoM=3) | air
 valley = silicon(0,5) | air
 
 T = numpy.linspace(0, 2, 200)
-up, down = [NeutronProbe(T=T, dT=0.01, L=4.75, dL=0.0475) for _ in (1,2)]
-probe = PolarizedNeutronProbe(xs=[up,None,None,down])
+up, down = [NeutronProbe(T=T, dT=0.01, L=4.75, dL=0.0475, name="name")
+            for name in ("up","down")]
+probe = PolarizedNeutronProbe(xs=[down,None,None,up])
 
 M = MixedExperiment(samples=[plateau,valley], probe=probe, ratio=[1,1])
 M.simulate_data(5)

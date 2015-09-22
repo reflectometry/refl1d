@@ -19,7 +19,7 @@ __all__ = [ 'reflectivity', 'reflectivity_amplitude',
             ]
 
 import numpy as np
-from numpy import pi, sin, cos, conj
+from numpy import pi, sin, cos, conj, radians
 # delay load so doc build doesn't require compilation
 #from . import reflmodule
 
@@ -167,6 +167,8 @@ def unpolarized_magnetic(*args,**kw):
     """
     return reduce(np.add, magnetic_reflectivity(*args,**kw))/2.
 
+B2SLD = 2.31604654  # Scattering factor for B field 1e-6/
+
 def magnetic_amplitude(kz,
                        depth,
                        rho,
@@ -174,8 +176,10 @@ def magnetic_amplitude(kz,
                        rhoM=0,
                        thetaM=0,
                        sigma=0,
-                       Aguide=-90.0,
+                       Aguide=-90,
+                       H=0,
                        rho_index=None,
+                       rotate_M=True,
                        ):
     """
     Returns the complex magnetic reflectivity waveform.
@@ -183,7 +187,8 @@ def magnetic_amplitude(kz,
     See :class:`magnetic_reflectivity <refl1d.reflectivity.magnetic_reflectivity>` for details.
     """
     from . import reflmodule
-
+    
+    EPS = np.finfo('f').tiny # not 1e-20 # epsilon offset for divisions.
     kz = _dense(kz,'d')
     if rho_index is None:
         rho_index = np.zeros(kz.shape,'i')
@@ -201,13 +206,57 @@ def magnetic_amplitude(kz,
 
     depth, rho, irho, rhoM, thetaM, sigma \
         = [_dense(a,'d') for a in (depth, rho, irho, rhoM, thetaM, sigma)]
-    expth = cos(thetaM * pi/180.0) + 1j*sin(thetaM * pi/180.0)
-    #rho,irho,rhoM = [v*1e-6 for v in rho,irho,rhoM]
+
+    thetaM = radians(thetaM)
+    phiH = radians(Aguide - 270.0)
+    thetaH = np.pi/2.0 # by convention, H is in y-z plane so theta = pi/2
+    
+    sld_h = B2SLD * H
+    sld_m_x = rhoM * np.cos(thetaM)
+    sld_m_y = rhoM * np.sin(thetaM)
+    sld_m_z = 0.0 # by Maxwell's equations, H_demag = mz so we'll just cancel it here
+    # The purpose of AGUIDE is to rotate the z-axis of the sample coordinate
+    # system so that it is aligned with the quantization axis z, defined to be
+    # the direction of the magnetic field outside the sample.
+    if rotate_M:
+        # rotate the M vector instead of the transfer matrix!
+        # First, rotate the M vector about the x axis:
+        new_my = sld_m_z * sin(radians(Aguide)) + sld_m_y * cos(radians(Aguide))
+        new_mz = sld_m_z * cos(radians(Aguide)) - sld_m_y * sin(radians(Aguide))
+        sld_m_y, sld_m_z = new_my, new_mz
+        sld_h_x = sld_h_y = 0.0
+        sld_h_z = sld_h
+        # Then, don't rotate the transfer matrix
+        Aguide = 0.0
+    else:        
+        sld_h_x = sld_h * np.cos(thetaH) # zero
+        sld_h_y = sld_h * np.sin(thetaH) * np.cos(phiH)
+        sld_h_z = sld_h * np.sin(thetaH) * np.sin(phiH)
+    
+    sld_b_x = sld_h_x + sld_m_x
+    sld_b_y = sld_h_y + sld_m_y
+    sld_b_z = sld_h_z + sld_m_z
+
+    # avoid divide-by-zero:
+    sld_b_x += EPS*(sld_b_x==0)
+    sld_b_y += EPS*(sld_b_y==0)
+
+    # add epsilon to y, to avoid divide by zero errors?
+    sld_b = np.sqrt(sld_b_x**2 + sld_b_y**2 + sld_b_z**2)
+    u1_num = ( sld_b + sld_b_x + 1j*sld_b_y - sld_b_z )
+    u1_den = ( sld_b + sld_b_x - 1j*sld_b_y + sld_b_z )
+    u3_num = (-sld_b + sld_b_x + 1j*sld_b_y - sld_b_z ) 
+    u3_den = (-sld_b + sld_b_x - 1j*sld_b_y + sld_b_z )
+    
+    u1 = u1_num/u1_den
+    u3 = u3_num/u3_den
+    #print "u1",u1
+    #print "u3",u3
+    
     R1,R2,R3,R4 = [np.empty(kz.shape,'D') for pol in (1,2,3,4)]
     reflmodule._magnetic_amplitude(depth, sigma, rho, irho,
-                                   rhoM,  expth, Aguide, kz, rho_index,
-                                   R1, R2, R3, R4
-                                   )
+                                   sld_b, u1, u3, Aguide, kz, rho_index,
+                                   R1, R2, R3, R4)
     return R1,R2,R3,R4
 
 

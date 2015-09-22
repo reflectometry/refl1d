@@ -229,8 +229,6 @@ def build_documentation():
 
     # Delete any left over files from a previous build.
     # Create documentation in HTML and PDF format.
-    print("docdir",doc_dir)
-    exec_cmd("ls", cwd=doc_dir)
     sphinx_cmd = '"%s" -m sphinx.__init__ -b %%s -d _build/doctrees -D latex_paper_size=letter . %%s'%PYTHON
     exec_cmd(sphinx_cmd%("html", html_dir), cwd=doc_dir)
     if True: # build pdf as well

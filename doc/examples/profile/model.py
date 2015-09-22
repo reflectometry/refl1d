@@ -75,10 +75,20 @@ def mag(z, z1, z2, M1, M2, M3):
         return ret
     return v2()
 
+flayer = FP(100, 0, name="sin", profile=nuc, period=10, phase=0.2,
+            magnetism=FM(profile=mag, M1=1, M2=4, M3=5, z1=10, z2=40))
+
 sample = (silicon(0,5)
-          | FP(100,0,name="sin",profile=nuc, period=10, phase=0.2,
-               magnetism=FM(profile=mag, M1=1, M2=4, M3=5, z1=10, z2=40))
+          | flayer
+          | flayer.end(35, 15, magnetism=flayer.magnetism.end)
           | air)
+
+# Need to be able to compute the thickness of the functional magnetic
+# layer, which unfortunately requires the layer stack and the index
+# into the layer stack, which can be the layer number in the stack,
+# the layer name, or if there are multiple layers with the same name,
+# the (layer name, k), where the magnetism is attached to the kth layer.
+flayer.magnetism.set_anchor(sample, 'sin')
 
 sample['sin'].period.range(0,100)
 sample['sin'].phase.range(0,1)
@@ -90,7 +100,8 @@ sample['sin'].magnetism.z1.range(0,100)
 sample['sin'].magnetism.z2.range(0,100)
 
 T = numpy.linspace(0, 5, 100)
-xs = [NeutronProbe(T=T, dT=0.01, L=4.75, dL=0.0475) for _ in range(4)]
+xs = [NeutronProbe(T=T, dT=0.01, L=4.75, dL=0.0475, name=name)
+      for name in ("--","-+","+-","++")]
 probe = PolarizedNeutronProbe(xs)
 M = Experiment(probe=probe, sample=sample, dz=0.1)
 with seed(1): M.simulate_data(5)
