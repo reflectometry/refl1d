@@ -4,6 +4,7 @@ import os
 
 import numpy as np
 from numpy import radians
+import pylab
 
 from bumps.util import pushdir
 from refl1d.reflectivity import magnetic_amplitude as refl
@@ -31,9 +32,14 @@ def add_H(layers, H=0.0, AGUIDE=270.0):
         sld_b_y = sld_h_y + sld_m_y
         sld_b_z = sld_h_z + sld_m_z
         sld_b = np.sqrt((sld_b_z)**2 + (sld_b_y)**2 + (sld_b_x)**2)
-        theta_b = np.arctan2(sld_b_y, sld_b_x)
-        theta_b = np.mod(theta_b, 2.0*np.pi)
-        phi_b = np.arcsin(sld_b_z/sld_b)
+        #this was wrong:
+        #theta_b = np.arctan2(sld_b_y, sld_b_x)
+        theta_b = np.arccos(sld_b_x/sld_b)
+        #this didn't hurt anything but is also unneeded:
+        #theta_b = np.mod(theta_b, 2.0*np.pi)
+        #this wasn't even close to correct:
+        #phi_b = np.arcsin(sld_b_z/sld_b)
+        phi_b = np.arctan2(sld_b_z, sld_b_y)
         phi_b = np.mod(phi_b, 2.0*np.pi)
         new_layer = [thickness, sld_n, sld_b, theta_b*180.0/np.pi, phi_b*180.0/np.pi]
         new_layers.append(new_layer)
@@ -42,6 +48,7 @@ def add_H(layers, H=0.0, AGUIDE=270.0):
 def gepore(layers, QS, DQ, NQ, EPS, H):
     #if H != 0:
     layers = add_H(layers, H, AGUIDE=EPS)
+    #layers = add_H(layers, H, EPS-270, 0)
     depth, rho, rhoM, thetaM, phiM = list(zip(*layers))
 
     NL = len(rho)-2
@@ -70,8 +77,8 @@ def gepore(layers, QS, DQ, NQ, EPS, H):
             raise RuntimeError("No gepore created in %r"%gepore)
 
     with open(layers, 'w') as fid:
-        for T,BN,PN,THE in list(zip(depth,rho,rhoM,thetaM))[1:-1]:
-            fid.write('%f %e %e %f %f\n'%(T,1e-6*BN,1e-6*PN,radians(THE),0.0))
+        for T,BN,PN,THE,PHI in list(zip(depth,rho,rhoM,thetaM,phiM))[1:-1]:
+            fid.write('%f %e %e %f %f\n'%(T,1e-6*BN,1e-6*PN,radians(THE),radians(PHI)))
 
     for IP in (0.0, 1.0):
         with open(header, 'w') as fid:
@@ -95,20 +102,22 @@ def magnetic_cc(layers, kz, Aguide, H):
     R = refl(kz, depth, rho, 0, rhoM, thetaM, 0, Aguide, H, rotate_M=True)
     return R
 
-def Rplot(Qz, R, format):
-    import pylab
+def Rplot(title, Qz, R, format, dataset):
+    """plot reflectivity"""
     pylab.hold(True)
     for name,xs in zip(('++','+-','-+','--'),R):
     #for name,xs in zip(('--','-+','+-','++'),R):
         Rxs = abs(xs)**2
         if (Rxs>1e-8).any():
-            pylab.plot(Qz, Rxs, format, label=name)
+            pylab.plot(Qz, Rxs, format, label=name+dataset)
     pylab.xlabel('$2k_{z0}$', size='large')
     pylab.ylabel('R')
     pylab.legend()
+    pylab.yscale('log')
+    pylab.title(title)
 
 def rplot(Qz, R, format):
-    import pylab
+    """plot real and imaginary"""
     pylab.hold(True)
     pylab.figure()
     for name,xs in zip(('++','+-','-+','--'),R):
@@ -130,19 +139,36 @@ def rplot(Qz, R, format):
             pylab.plot(Qz, phi, format, label=name + 'i')
     pylab.legend()
 
+def profile_plot(layers):
+    dz, rho, rhoM, thetaM, phiM = np.asarray(layers).T
+    z = np.cumsum([np.hstack((-dz[0],dz))])
+    rho, rhoM, thetaM = [np.hstack((v[0],v)) for v in rho, rhoM, thetaM]
+    pylab.step(z, rho, label='rho')
+    pylab.step(z, rhoM, label='rhoM', hold=True)
+    pylab.step(z, thetaM*2*np.pi/360., label='thetaM', hold=True)
+    pylab.legend()
+
+
 def compare(name, layers, Aguide=270, H=0):
 
     QS = 0.001
-    DQ = 0.0001
-    NQ = 500
+    DQ = 0.0002
+    NQ = 300
     Rgepore = gepore(layers, QS, DQ, NQ, Aguide, H)
-    
+
     Qz = np.arange(NQ)*DQ+QS
-    kz = Qz[::2]/2
+    kz = Qz/2
     Rrefl1d = magnetic_cc(layers, kz, Aguide, H)
 
-    Rplot(Qz, Rgepore, '+'); 
-    Rplot(2*kz, Rrefl1d, '-'); import pylab; pylab.show(); return kz, Rrefl1d
+    pylab.subplot(211)
+    title = "%s H=%g"%(name, H)
+    Rplot(title, Qz, Rgepore, '-', "gepore")
+    Rplot(title, 2*kz, Rrefl1d, '-.', "refl1d")
+
+    pylab.subplot(212)
+    profile_plot(layers)
+    
+    return kz, Rrefl1d
 
     assert np.linalg.norm((R[0]-Rpp)/Rpp) < 1e-13, "fail ++ %s"%name
     assert np.linalg.norm((R[1]-Rpm)/Rpm) < 1e-13, "fail +- %s"%name
@@ -199,9 +225,9 @@ def NSF_example():
     Aguide = 270.0
     layers = [
         # depth rho rhoM thetaM phiM
-        [ 0, 0.0, 1e-6, 90, 0.0],
-        [200, 4.0, 1.0, 90, 0.0],
-        [200, 2.0, 1.0, 90, 0.0],
+        [  0, 0.0, 1e-6, 90, 0.0],
+        [200, 4.0, 1.0,  90, 0.0],
+        [200, 2.0, 1.0,  90, 0.0],
         [200, 4.0, 1e-6, 90, 0.0],
         ]
     return "non spin flip", layers, Aguide
@@ -211,69 +237,94 @@ def Yaohua_example():
     rhoB = B2SLD * 0.4 * 1e6
     layers = [
         # depth rho rhoM thetaM phiM
-        [ 0, 0.0, rhoB, 90, 0.0],
+        [   0, 0.0, rhoB,       90, 0.0],
         [ 200, 4.0, rhoB + 1.0, np.degrees(np.arctan2(rhoB, 1.0)), 0.0],
         [ 200, 2.0, rhoB + 1.0, 90, 0.0],
-        [ 0, 4.0, rhoB, 90 , 0.0],
+        [   0, 4.0, rhoB,       90 , 0.0],
         ]
     return "Yaohua example", layers, Aguide
     
 def zf_Yaohua_example():
     Aguide = 270.0
     layers = [
-        # depth rho rhoM thetaM phiM
-        [ 0, 0.0, 0.0, 90, 0.0],
+        # depth rho rhoM thetaM  phiM
+        [ 100, 0.0, 0.0, 90,     0.0],
         [ 200, 4.0, 1.0, 0.0001, 0.0],
-        [ 200, 2.0, 1.0, 90, 0.0],
-        [ 0, 4.0, 0.0, 90, 0.0],
+        [ 323, 2.0, 2.0, 90,     0.0],
+        [ 100, 4.0, 0.0, 90,     0.0],
         ]
-    return "Yaohua example", layers, Aguide 
+    return "Yaohua example zf", layers, Aguide
 
-def Chuck_test():
+def Chuck_example():
     Aguide = 270.0
     layers = [
-        # depth rho rhoM thetaM phiM
-        [ 0, 2.0, 2.0, 90.0, 0.0],
-        [ 200, 6.0, 4.0, 0.0001, 0.0],
-        [ 300, 6.0, 4.0, 0.0001, 0.0],
-        [ 0, 5.0, 0.0001, 90, 0.0],
+        # depth rho rhoM thetaM    phiM
+        [   0, 2.0, 2.0,    90.0,   0.0],
+        [ 200, 6.0, 4.0,    0.0001, 0.0],
+        [ 300, 6.0, 4.0,    0.0001, 0.0],
+        [   0, 5.0, 0.0001, 90,     0.0],
     ]
     return "Chuck example", layers, Aguide
 
-def Kirby_test():
-    Aguide = 5.0
+def Kirby_example():
+    Aguide = 0 # 5
     layers = [
         # depth rho rhoM thetaM phiM
-        [ 0, 0.0, 0.0, 90, 0.0],
-        [ 50, 4.0, 0, 0.001, 0.0],
-        [ 825, 9.06, 1.46, 0.0001, 0],
-        [ 0, 2.07, 0.0001, 90, 0.0],
+        [ 0,    0.0,    0.0,     90, 0.0],
+        [ 50,   4.0,    0.0,  0.001, 0.0],
+        [ 825, 9.06,   1.12, 0.0001, 0.0],
+        [ 0,   2.07, 0.0001,     90, 0.0],
     ]
     return "Kirby example", layers, Aguide
-    
+
+def zeeman_paper_example():
+    Aguide = 6.52298771199324
+    layers = [
+        # depth rho rhoM thetaM phiM
+        [ 0,   0.0, 0.0, 270., 0.0],
+        [ 219.2, 4.109, 1.334e-5, 270., 0.0],
+        [ 672.26,  7.991, 1.121, 270., 0.0],
+        [ 0, 2.07, 0.0, 270., 0.0],
+    ]
+    return "zeeman paper", layers, Aguide
+
+
+def _random_model(Nlayers=10, seed=None):
+    if seed is None: seed = np.random.randint(1000000)
+    np.random.seed(seed)
+    dz = np.random.rand(Nlayers)*2000./Nlayers
+    dz[0] = dz[-1] = 100.0
+    rho = 8*(np.random.rand(Nlayers) - 0.1)
+    rhoM = 2*np.random.rand(Nlayers)
+    thetaM = 90. * np.random.rand(Nlayers)
+    thetaM[-1] = thetaM[0] = 90.0
+    rhoM[0] = rhoM[-1] = 0.
+    phiM = np.zeros_like(dz)
+    layers = np.vstack((dz, rho, rhoM, thetaM, phiM)).T.tolist()
+    Aguide = np.random.rand()*360.
+    #Aguide = 273.
+    return "random(%d)"%seed, layers, Aguide
+
 def demo():
     """run demo"""
-    import pylab
-    #compare(*simple())
-    #compare(*twist())
-    #compare(*magsub())
-    #compare(*magsurf())
-    pylab.figure()
-    compare(*zf_Yaohua_example(), H=0.0005) # 5 Gauss
-    pylab.figure()
-    compare(*zf_Yaohua_example(), H=0.4) # 4000 gauss
-    pylab.figure()
-    compare(*NSF_example(), H=0.00005) # Earth's field, 0.5G
-    pylab.figure()
-    compare(*NSF_example(), H=1.0) # 1 tesla
-    pylab.figure()
-    compare(*Chuck_test(), H=0) # zeroish field, but magnetic front
-    pylab.figure()
-    compare(*Kirby_test(), H=0.000244)
+    #pylab.figure(); compare(*simple())
+    #pylab.figure(); compare(*twist())
+    #pylab.figure(); compare(*magsub())
+    #pylab.figure(); compare(*magsurf())
+    pylab.figure(); compare(*zf_Yaohua_example(), H=0.4) # 4000 gauss
+    pylab.figure(); compare(*zf_Yaohua_example(), H=0.0005) # 5 Gauss
+    pylab.figure(); compare(*Kirby_example(), H=0.244)
+    #pylab.figure(); compare(*NSF_example(), H=0.00005) # Earth's field, 0.5G
+    #pylab.figure(); compare(*NSF_example(), H=1.0) # 1 tesla
+    #pylab.figure(); compare(*Chuck_example(), H=0) # zeroish field, but magnetic front
+    #pylab.figure(); compare(*_random_model(), H=0)
+    pylab.figure(); compare(*_random_model(), H=np.random.rand()*2)
+    #pylab.figure(); compare(*_random_model(seed=998543), H=2)
     pylab.show()
 
+
 def write_Chuck_result():
-    kz, R = compare(*Chuck_test(), H=0) # zeroish field, but magnetic front
+    kz, R = compare(*Chuck_example(), H=0) # zeroish field, but magnetic front
     np.savetxt('Rmm.txt', np.vstack((2*kz, np.abs(R[3])**2)).T,  delimiter="\t")
     np.savetxt('Rmp.txt', np.vstack((2*kz, np.abs(R[2])**2)).T,  delimiter="\t")
     np.savetxt('Rpm.txt', np.vstack((2*kz, np.abs(R[1])**2)).T,  delimiter="\t")
