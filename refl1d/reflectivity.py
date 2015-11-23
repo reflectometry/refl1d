@@ -228,7 +228,8 @@ def magnetic_amplitude(kz,
         sld_h_z = sld_h
         # Then, don't rotate the transfer matrix
         Aguide = 0.0
-    else:        
+    else: 
+        raise NotImplementedError       
         sld_h_x = sld_h * np.cos(thetaH) # zero
         sld_h_y = sld_h * np.sin(thetaH) * np.cos(phiH)
         sld_h_z = sld_h * np.sin(thetaH) * np.sin(phiH)
@@ -238,8 +239,8 @@ def magnetic_amplitude(kz,
     sld_b_z = sld_h_z + sld_m_z
 
     # avoid divide-by-zero:
-    sld_b_x += EPS*(sld_b_x==0)
-    sld_b_y += EPS*(sld_b_y==0)
+    #sld_b_x += EPS*(sld_b_x==0)
+    #sld_b_y += EPS*(sld_b_y==0)
 
     # add epsilon to y, to avoid divide by zero errors?
     sld_b = np.sqrt(sld_b_x**2 + sld_b_y**2 + sld_b_z**2)
@@ -248,6 +249,8 @@ def magnetic_amplitude(kz,
     u3_num = (-sld_b + sld_b_x + 1j*sld_b_y - sld_b_z ) 
     u3_den = (-sld_b + sld_b_x - 1j*sld_b_y + sld_b_z )
     
+    u1_den += EPS * (u1_den==0)
+    u3_den += EPS * (u3_den==0)
     u1 = u1_num/u1_den
     u3 = u3_num/u3_den
     #print "u1",u1

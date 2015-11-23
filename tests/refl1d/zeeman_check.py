@@ -12,10 +12,8 @@ H2K = 2.91451e-5
 B2SLD = 2.31929e-06
 GEPORE_SRC = 'gepore_zeeman.f'
 
-def add_H(layers, H=0.0, theta_H=0.0, phi_H=0.0):
+def add_H(layers, H=0.0, AGUIDE=270.0):
     """ Take H (vector) as input and add H to 4piM:
-    In the parametrization of the Chatterji chapter, 
-    phi_H is (90 - AGUIDE), and theta_H = 0
     """
     new_layers = []
     for layer in layers:
@@ -25,9 +23,10 @@ def add_H(layers, H=0.0, theta_H=0.0, phi_H=0.0):
         sld_m_y = sld_m * np.sin(theta_m*np.pi/180.0) # phi_m = 0
         sld_m_z = 0.0 # by Maxwell's equations, H_demag = mz so we'll just cancel it here
         sld_h = B2SLD * 1.0e6 * H        
-        sld_h_x = sld_h * np.cos(theta_H * np.pi/180.0)
-        sld_h_y = sld_h * np.sin(theta_H*np.pi/180.0)*np.cos(phi_H*np.pi/180.0)
-        sld_h_z = sld_h * np.sin(theta_H*np.pi/180.0)*np.sin(phi_H*np.pi/180.0)
+        # this code was completely wrong except for the case AGUIDE=270
+        sld_h_x = 0 # by definition, H is along the z,lab direction and x,lab = x,sam so Hx,sam must = 0
+        sld_h_y = -sld_h * np.sin(AGUIDE*np.pi/180.0)
+        sld_h_z =  sld_h * np.cos(AGUIDE*np.pi/180.0)
         sld_b_x = sld_h_x + sld_m_x
         sld_b_y = sld_h_y + sld_m_y
         sld_b_z = sld_h_z + sld_m_z
@@ -42,7 +41,7 @@ def add_H(layers, H=0.0, theta_H=0.0, phi_H=0.0):
 
 def gepore(layers, QS, DQ, NQ, EPS, H):
     #if H != 0:
-    layers = add_H(layers, H, 360-EPS, 0)
+    layers = add_H(layers, H, AGUIDE=EPS)
     depth, rho, rhoM, thetaM, phiM = list(zip(*layers))
 
     NL = len(rho)-2
@@ -136,13 +135,13 @@ def compare(name, layers, Aguide=270, H=0):
     QS = 0.001
     DQ = 0.0001
     NQ = 500
-    # Rgepore = gepore(layers, QS, DQ, NQ, Aguide, H)
-
+    Rgepore = gepore(layers, QS, DQ, NQ, Aguide, H)
+    
     Qz = np.arange(NQ)*DQ+QS
     kz = Qz[::2]/2
     Rrefl1d = magnetic_cc(layers, kz, Aguide, H)
 
-    #Rplot(Qz, Rgepore, '-'); 
+    Rplot(Qz, Rgepore, '+'); 
     Rplot(2*kz, Rrefl1d, '-'); import pylab; pylab.show(); return kz, Rrefl1d
 
     assert np.linalg.norm((R[0]-Rpp)/Rpp) < 1e-13, "fail ++ %s"%name
@@ -247,7 +246,7 @@ def Kirby_test():
         # depth rho rhoM thetaM phiM
         [ 0, 0.0, 0.0, 90, 0.0],
         [ 50, 4.0, 0, 0.001, 0.0],
-        [ 825, 9.06, 1.46, 0.0001, 22],
+        [ 825, 9.06, 1.46, 0.0001, 0],
         [ 0, 2.07, 0.0001, 90, 0.0],
     ]
     return "Kirby example", layers, Aguide
@@ -269,6 +268,8 @@ def demo():
     compare(*NSF_example(), H=1.0) # 1 tesla
     pylab.figure()
     compare(*Chuck_test(), H=0) # zeroish field, but magnetic front
+    pylab.figure()
+    compare(*Kirby_test(), H=0.000244)
     pylab.show()
 
 def write_Chuck_result():
