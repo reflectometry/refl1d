@@ -49,14 +49,14 @@ def gepore(layers, QS, DQ, NQ, EPS, H):
     #if H != 0:
     layers = add_H(layers, H, AGUIDE=EPS)
     #layers = add_H(layers, H, EPS-270, 0)
-    depth, rho, rhoM, thetaM, phiM = list(zip(*layers))
+    depth, rho, rhoB, thetaB, phiB = list(zip(*layers))
 
     NL = len(rho)-2
     NC = 1
-    ROSUP = rho[-1] + rhoM[-1]
-    ROSUM = rho[-1] - rhoM[-1]
-    ROINP = rho[0]  +  rhoM[0]
-    ROINM = rho[0]  -  rhoM[0]
+    ROSUP = rho[-1] + rhoB[-1]
+    ROSUM = rho[-1] - rhoB[-1]
+    ROINP = rho[0]  +  rhoB[0]
+    ROINM = rho[0]  -  rhoB[0]
 
     path = tempfile.gettempdir()
     header = joinpath(path, 'inpt.d')
@@ -77,7 +77,7 @@ def gepore(layers, QS, DQ, NQ, EPS, H):
             raise RuntimeError("No gepore created in %r"%gepore)
 
     with open(layers, 'w') as fid:
-        for T,BN,PN,THE,PHI in list(zip(depth,rho,rhoM,thetaM,phiM))[1:-1]:
+        for T,BN,PN,THE,PHI in list(zip(depth,rho,rhoB,thetaB,phiB))[1:-1]:
             fid.write('%f %e %e %f %f\n'%(T,1e-6*BN,1e-6*PN,radians(THE),radians(PHI)))
 
     for IP in (0.0, 1.0):
