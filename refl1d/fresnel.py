@@ -40,7 +40,7 @@ class Fresnel:
         rho_Qm = 1e-6*((self.Vrho-self.rho) + 1j*self.Virho)
         #print "fresnel",rho_Qp.shape,rho_Qm.shape,Q.shape
 
-        rho = choose(Q<0, (rho_Qm,rho_Qp))
+        rho = choose(Q<0, (rho_Qp,rho_Qm))
         kz = abs(Q)/2
         f = sqrt(kz**2 - 4*pi*rho)  # fresnel coefficient
 
@@ -71,8 +71,8 @@ def test():
     fresnel = Fresnel(rho=rho, irho=irho, Vrho=Vrho, Virho=Virho, sigma=sigma)
 
     Mw = [0,0]
-    Mrho = [[rho,Vrho]]
-    Mirho = [[irho,Virho]]
+    Mrho = [[Vrho,rho]]
+    Mirho = [[Virho,irho]]
     Msigma = [sigma]
 
     Q = numpy.linspace(-0.1,0.1,11,'d')
