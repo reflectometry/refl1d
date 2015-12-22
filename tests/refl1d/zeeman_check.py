@@ -142,7 +142,7 @@ def rplot(Qz, R, format):
 def profile_plot(layers):
     dz, rho, rhoM, thetaM, phiM = np.asarray(layers).T
     z = np.cumsum([np.hstack((-dz[0],dz))])
-    rho, rhoM, thetaM = [np.hstack((v[0],v)) for v in rho, rhoM, thetaM]
+    rho, rhoM, thetaM = [np.hstack((v[0],v)) for v in (rho, rhoM, thetaM)]
     pylab.step(z, rho, label='rho')
     pylab.step(z, rhoM, label='rhoM', hold=True)
     pylab.step(z, thetaM*2*np.pi/360., label='thetaM', hold=True)
