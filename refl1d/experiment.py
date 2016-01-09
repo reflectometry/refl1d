@@ -37,6 +37,9 @@ def plot_sample(sample, instrument=None, roughness_limit=0):
     experiment.plot()
 
 class ExperimentBase(object):
+    def reflectivity(self, resolution=True, interpolation=1):
+        raise NotImplementedError()
+
     def format_parameters(self):
         p = self.parameters()
         print(parameter.format(p))
@@ -118,14 +121,15 @@ class ExperimentBase(object):
     def plot_reflectivity(self, show_resolution=False,
                           view=None, plot_shift=None):
 
-        QR = self.reflectivity()
+        n = self.interpolation
+        QR = self.reflectivity(interpolation=n)
         self.probe.plot(theory=QR,
                         substrate=self._substrate, surface=self._surface,
                         view=view, plot_shift=plot_shift)
 
         if show_resolution:
             import pylab
-            QR = self.reflectivity(resolution=False)
+            QR = self.reflectivity(resolution=False, interpolation=n)
             if self.probe.polarized:
                 # Should be four pairs
                 for Q,R in QR:
@@ -229,6 +233,10 @@ class ExperimentBase(object):
         theory = self.reflectivity()
         self.probe.save(filename=basename+"-refl.dat", theory=theory,
                         substrate=self._substrate, surface=self._surface)
+        if self.interpolation > 0:
+            theory = self.reflectivity(interpolation=self.interpolation)
+            self.probe.save(filename=basename+"-refl-interp.dat",
+                            theory=theory)
 
 
 
@@ -277,11 +285,15 @@ class Experiment(ExperimentBase):
     than *dA*.  A *dA* of 10 gives coarse slabs.  If *dA* is not provided
     then each profile step forms its own slab.  The *dA* condition will
     also apply to the slab approximation to the interfaces.
+
+    *interpolation* indicates the number of points to plot in between
+    existing points.
     """
     profile_shift = 0
     def __init__(self, sample=None, probe=None, name=None,
                  roughness_limit=0, dz=None, dA=None,
-                 step_interfaces=False, smoothness=None):
+                 step_interfaces=False, smoothness=None,
+                 interpolation=0):
         # Note: smoothness ignored
         self.sample = sample
         self._substrate=self.sample[0].material
@@ -294,6 +306,7 @@ class Experiment(ExperimentBase):
         self.dz = dz
         self.dA = dA
         self.step_interfaces = step_interfaces
+        self.interpolation = interpolation
         self._slabs = profile.Microslabs(len(probe.unique_L) if probe.unique_L is not None else 1, dz=dz)
         self._probe_cache = material.ProbeCache(probe)
         self._cache = {}  # Cache calculated profiles/reflectivities
@@ -377,19 +390,20 @@ class Experiment(ExperimentBase):
             self._cache[key] = self.probe.Q, r
         return self._cache[key]
 
-    def reflectivity(self, resolution=True):
+    def reflectivity(self, resolution=True, interpolation=0):
         """
         Calculate predicted reflectivity.
 
         If *resolution* is true include resolution effects.
         """
-        key = ('reflectivity',resolution)
+        key = ('reflectivity', resolution, interpolation)
         if key not in self._cache:
             Q, r = self._reflamp()
             R = _amplitude_to_magnitude(r,
                                         ismagnetic=self.ismagnetic,
                                         polarized=self.probe.polarized)
-            res = self.probe.apply_beam(Q, R, resolution=resolution)
+            res = self.probe.apply_beam(Q, R, resolution=resolution,
+                                        interpolation=interpolation)
             self._cache[key] = res
         return self._cache[key]
 
@@ -524,13 +538,14 @@ class MixedExperiment(ExperimentBase):
     using composite.parts[i] for the various samples.
     """
     def __init__(self, samples=None, ratio=None, probe=None,
-                 name=None, coherent=False, **kw):
+                 name=None, coherent=False, interpolation=0, **kw):
         self.samples = samples
         self.probe = probe
         self.ratio = [parameter.Parameter.default(r, name="ratio %d"%i)
                       for i,r in enumerate(ratio)]
         self.parts = [Experiment(s,probe,**kw) for s in samples]
         self.coherent = coherent
+        self.interpolation = interpolation
         self._substrate=self.samples[0][0].material
         self._surface=self.samples[0][-1].material
         self._cache = {}
@@ -585,7 +600,7 @@ class MixedExperiment(ExperimentBase):
         return self._cache[key]
 
 
-    def reflectivity(self, resolution=True):
+    def reflectivity(self, resolution=True, interpolation=0):
         """
         Calculate predicted reflectivity.
 
@@ -594,8 +609,11 @@ class MixedExperiment(ExperimentBase):
         sum will be used, otherwise the incoherent sum will be used.
 
         If *resolution* is true include resolution effects.
+
+        *interpolation* is the number of theory points to show between data
+        points.
         """
-        key = ('reflectivity',resolution)
+        key = ('reflectivity',resolution,interpolation)
         if key not in self._cache:
             Q, r = self._reflamp()
 
@@ -620,7 +638,8 @@ class MixedExperiment(ExperimentBase):
                 R = numpy.sum(R,axis=0)
 
             # Apply resolution
-            res = self.probe.apply_beam(Q, R, resolution=resolution)
+            res = self.probe.apply_beam(Q, R, resolution=resolution,
+                                        interpolation=0)
             self._cache[key] = res
         return self._cache[key]
 
