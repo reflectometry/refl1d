@@ -1108,13 +1108,16 @@ class PolarizedNeutronProbe(object):
     def __init__(self, xs=None, name=None, Aguide=270, H=0):
         self._xs = xs
 
-        self.name = name if name is not None else self.xs[0].name
+        if name is None and self.xs[0] is not None:
+            name = self.xs[0].name
+        self.name = name
         self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
             = measurement_union(xs)
         self._set_calc(self.T, self.L)
         self._check()
-        self.H = Parameter.default(H, name="H "+self.name)
-        self.Aguide = Parameter.default(Aguide, name="Aguide "+self.name,
+        spec = " "+name if name else ""
+        self.H = Parameter.default(H, name="H"+spec)
+        self.Aguide = Parameter.default(Aguide, name="Aguide"+spec,
                                             limits=[-360,360])
     @property
     def xs(self): return self._xs  # Don't let user replace xs
