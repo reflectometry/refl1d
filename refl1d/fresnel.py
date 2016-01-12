@@ -33,16 +33,19 @@ class Fresnel:
         """
         Compute the Fresnel reflectivity at the given Q/wavelength.
         """
-        # If Q < 0, then we are going from substrate into incident medium.
-        # In that case we must negate the change in scattering length density
-        # and ignore the absorption.
-        rho_Qp = 1e-6*((self.rho-self.Vrho) + 1j*self.irho)
-        rho_Qm = 1e-6*((self.Vrho-self.rho) + 1j*self.Virho)
+        # Below we have the change in refractive index for entering through
+        # the surface (delta_rho_Qp for Q positive), and through the substrate
+        # (delta_rho_Qm for Q negative).  For Q negative we must negate the
+        # change in scattering length density and ignore the absorption,
+        # which should be handled by measuring the intensity through the
+        # substrate, and therefore be corrected during reduction.
+        delta_rho_Qp = 1e-6*((self.rho-self.Vrho) + 1j*self.irho)
+        delta_rho_Qm = 1e-6*((self.Vrho-self.rho) + 1j*self.Virho)
         #print "fresnel",rho_Qp.shape,rho_Qm.shape,Q.shape
 
-        rho = choose(Q<0, (rho_Qm,rho_Qp))
+        delta_rho = choose(Q<0, (delta_rho_Qp, delta_rho_Qm))
         kz = abs(Q)/2
-        f = sqrt(kz**2 - 4*pi*rho)  # fresnel coefficient
+        f = sqrt(kz**2 - 4*pi*delta_rho)  # fresnel coefficient
 
         # Compute reflectivity amplitude, with adjustment for roughness
         amp = (kz-f)/(kz+f) * exp(-2*self.sigma**2*kz*f)
@@ -71,11 +74,11 @@ def test():
     fresnel = Fresnel(rho=rho, irho=irho, Vrho=Vrho, Virho=Virho, sigma=sigma)
 
     Mw = [0,0]
-    Mrho = [[rho,Vrho]]
-    Mirho = [[irho,Virho]]
+    Mrho = [[Vrho,rho]]
+    Mirho = [[Virho,irho]]
     Msigma = [sigma]
 
-    Q = numpy.linspace(-0.1,0.1,11,'d')
+    Q = numpy.linspace(-0.1,0.1,101,'d')
     Rf = fresnel(Q)
     rm = abeles.refl(Q/2, depth=Mw, rho=Mrho, irho=Mirho, sigma=Msigma)
     Rm = abs(rm)**2
