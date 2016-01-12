@@ -16,21 +16,22 @@ def refl(kz, depth, rho, irho=0, sigma=0, rho_index=None):
     Reflectometry as a function of kz for a set of slabs.
 
     :Parameters:
-        *kz* : float[n] | inv angstrom
-            Scattering vector $2\pi\sin(\theta)/\lambda$. This is $\tfrac12 Q_z$.
-        *depth* :  float[m] | |Ang|
-            thickness of each layer.  The thickness of the incident medium
-            and substrate are ignored.
-        *rho*, *irho* :  float[n,k] | |1e-6/Ang^2|
-            real and imaginary scattering length density for each layer for each kz
-            Note: absorption cross section mu = 2 irho/lambda
-        *sigma* : float[m-1] | |Ang|
-            interfacial roughness.  This is the roughness between a layer
-            and the subsequent layer.  There is no interface associated
-            with the substrate.  The sigma array should have at least m-1
-            entries, though it may have m with the last entry ignored.
-        *rho_index* : int[m]
-            index into rho vector for each kz
+
+    *kz* : float[n] | |1/Ang|
+        Scattering vector $2\pi\sin(\theta)/\lambda$. This is $\tfrac12 Q_z$.
+    *depth* :  float[m] | |Ang|
+        thickness of each layer.  The thickness of the incident medium
+        and substrate are ignored.
+    *rho*, *irho* :  float[n,k] | |1e-6/Ang^2|
+        real and imaginary scattering length density for each layer for each kz
+        Note: absorption cross section mu = 2 irho/lambda
+    *sigma* : float[m-1] | |Ang|
+        interfacial roughness.  This is the roughness between a layer
+        and the subsequent layer.  There is no interface associated
+        with the substrate.  The sigma array should have at least m-1
+        entries, though it may have m with the last entry ignored.
+    *rho_index* : int[m]
+        index into rho vector for each kz
 
     Slabs are ordered with the surface SLD at index 0 and substrate at
     index -1, or reversed if kz < 0.
