@@ -488,14 +488,15 @@ class Probe(object):
         L = numpy.hstack((self.L,L.flatten()))
         self._set_calc(T,L)
 
-    def _apply_resolution(self, Qin, Rin):
+    def _apply_resolution(self, Qin, Rin, interpolation):
         """
         Apply the instrument resolution function
         """
-        R = convolve(Qin, Rin, self.Q, self.dQ)
-        return self.Q, R
+        Q, dQ = _interpolate_Q(self.Q, self.dQ, interpolation)
+        R = convolve(Qin, Rin, Q, dQ)
+        return Q, R
 
-    def apply_beam(self, calc_Q, calc_R, resolution=True):
+    def apply_beam(self, calc_Q, calc_R, resolution=True, interpolation=0):
         """
         Apply factors such as beam intensity, background, backabsorption,
         resolution to the data.
@@ -514,7 +515,7 @@ class Probe(object):
         if calc_Q[-1] < calc_Q[0]:
             calc_Q, calc_R = [v[::-1] for v in (calc_Q, calc_R)]
         if resolution:
-            Q,R = self._apply_resolution(calc_Q, calc_R)
+            Q,R = self._apply_resolution(calc_Q, calc_R, interpolation)
         else:
             # Given that the target Q points should be in the set of
             # calculated Q values, interp will give us the
@@ -523,9 +524,10 @@ class Probe(object):
             # Q values.  The cost of doing so is going to be n log n
             # in the size of Q, which is a bit pricey, but let's see
             # if it is a problem before optimizing.
-            Q,R = self.Q, numpy.interp(self.Q, calc_Q, calc_R)
+            Q, dQ = _interpolate_Q(self.Q, self.dQ, interpolation)
+            Q, R = self.Q, numpy.interp(Q, calc_Q, calc_R)
         R = self.intensity.value*R + self.background.value
-        return Q,R
+        return Q, R
 
     def fresnel(self, substrate=None, surface=None):
         """
@@ -553,11 +555,16 @@ class Probe(object):
         Save the data and theory to a file.
         """
         fresnel = self.fresnel(substrate, surface)
-        _, R = theory
+        Q, R = theory
         fid = open(filename,"w")
         fid.write("# intensity: %.15g\n# background: %.15g\n"
                   % (self.intensity.value, self.background.value))
-        if getattr(self,'R',None) is not None:
+        if len(Q) != len(self.Q):
+            # Saving interpolated data
+            A = numpy.array((Q,R,fresnel(Q)))
+            fid.write("# %17s %20s %20s\n"
+                      %("Q (1/A)", "theory", "fresnel"))
+        elif getattr(self,'R',None) is not None:
             A = numpy.array((self.Q,self.dQ,self.R,self.dR, R, fresnel(self.Q)))
             fid.write("# %17s %20s %20s %20s %20s %20s\n"
                       %("Q (1/A)","dQ (1/A)", "R", "dR", "theory", "fresnel"))
@@ -648,7 +655,6 @@ class Probe(object):
 
         where $I$ is the intensity and $B$ is the background.
         """
-        import pylab
         if substrate is None and surface is None:
             raise TypeError("Fresnel-normalized reflectivity needs substrate or surface")
         F = self.fresnel(substrate=substrate,surface=surface)
@@ -708,7 +714,7 @@ class Probe(object):
         if theory is not None:
             Q,R = theory
             Q, dQ, R, dR = correct(Q, 0, R, 0)
-            pylab.plot(Q, R,
+            pylab.plot(Q, R, '-',
                        color=c['dark'], transform=trans,
                        label=self.label(prefix=label,
                                         gloss='theory',
@@ -890,7 +896,7 @@ class ProbeSet(Probe):
         result = [p.scattering_factors(material, density) for p in self.probes]
         return [numpy.hstack(v) for v in zip(*result)]
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
-    def apply_beam(self, calc_Q, calc_R, resolution=True, **kw):
+    def apply_beam(self, calc_Q, calc_R, interpolation=0, **kw):
         result = [p.apply_beam(calc_Q, calc_R, **kw) for p in self.probes]
         Q,R = [numpy.hstack(v) for v in zip(*result)]
         return Q,R
@@ -1201,12 +1207,12 @@ class PolarizedNeutronProbe(object):
         self.unique_L = numpy.unique(self.calc_L)
         self._L_idx = numpy.searchsorted(self.unique_L, L)
 
-    def apply_beam(self, Q, R, resolution=True):
+    def apply_beam(self, Q, R, resolution=True, interpolation=0):
         """
         Apply factors such as beam intensity, background, backabsorption,
         and footprint to the data.
         """
-        return [(xs.apply_beam(Q,Ri,resolution) if xs else None)
+        return [(xs.apply_beam(Q,Ri,resolution,interpolation) if xs else None)
                 for xs,Ri in zip(self.xs,R)]
 
     def fresnel(self, *args, **kw):
@@ -1382,6 +1388,23 @@ def spin_asymmetry(Qp,Rp,dRp,Qm,Rm,dRm):
     else:
         return Qp, v, None
 
+
+
+def _interpolate_Q(Q, dQ, n):
+    """
+    Helper function to interpolate between data points.
+
+    *n* is the number of points to show between existing points.
+    """
+    if n > 0:
+        # Extend the Q-range by one point on either side
+        Q = numpy.hstack((0.5*(Q[0]-Q[1]), Q, 0.5*(3.*Q[-1]-Q[-2])))
+        dQ = numpy.hstack((0.5*(dQ[0]-dQ[1]), dQ, 0.5*(3.*dQ[-1]-dQ[-2])))
+        index = numpy.arange(0, len(Q), dtype='d')
+        subindex = numpy.arange(0, (n+1)*(len(Q)-1)+1, dtype='d')/(n+1.)
+        Q = numpy.interp(subindex, index, Q)
+        dQ = numpy.interp(subindex, index, dQ)
+    return Q, dQ
 
 class PolarizedQProbe(PolarizedNeutronProbe):
     polarized = True
