@@ -159,6 +159,8 @@ class GareflExperiment(Experiment):
                 self._cache[key] = Q,R
         return self._cache[key]
 
+    def output_model(self):
+        self.model.output_model()
 
 class GareflModel(object):
     def __init__(self, path):
@@ -261,6 +263,13 @@ class GareflModel(object):
     def get_penalty(self):
         #print "penalty",self.dll.ex_get_penalty(self.models),self.par_values()
         return self.dll.ex_get_penalty(self.models)
+
+    @trace
+    def output_model(self):
+        """
+        Run the output_model function
+        """
+        return self.dll.ex_output_model(self.models)
 
     @trace
     def par_names(self):
