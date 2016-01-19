@@ -99,6 +99,7 @@ class GareflExperiment(Experiment):
         self._substrate = SLD(name='substrate',rho=0)
         self._surface = SLD(name='surface',rho=0)
         self._name = None
+        self.interpolation = 0
 
     def parameters(self):
         return self._pars
@@ -141,7 +142,7 @@ class GareflExperiment(Experiment):
         """
         raise NotImplementedError("amplitude not yet available from garefl")
 
-    def reflectivity(self, resolution=True):
+    def reflectivity(self, resolution=True, interpolation=0):
         """
         Calculate predicted reflectivity.
         """
