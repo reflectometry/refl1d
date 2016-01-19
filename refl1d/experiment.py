@@ -37,7 +37,7 @@ def plot_sample(sample, instrument=None, roughness_limit=0):
     experiment.plot()
 
 class ExperimentBase(object):
-    def reflectivity(self, resolution=True, interpolation=1):
+    def reflectivity(self, resolution=True, interpolation=0):
         raise NotImplementedError()
 
     def format_parameters(self):
@@ -174,7 +174,7 @@ class ExperimentBase(object):
 
     def save(self, basename):
         self.save_profile(basename)
-        self.save_staj(basename)
+        #self.save_staj(basename)
         self.save_refl(basename)
 
     def save_profile(self, basename):
