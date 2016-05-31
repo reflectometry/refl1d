@@ -33,7 +33,7 @@ from .mono import FreeLayer, FreeInterface
 from .cheby import FreeformCheby, ChebyVF, cheby_approx, cheby_points
 from .interface import Erf
 from .probe import (Probe, ProbeSet, XrayProbe, NeutronProbe, QProbe,
-                    PolarizedNeutronProbe, PolarizedQProbe)
+                    PolarizedNeutronProbe, PolarizedQProbe, load4)
 from .stajconvert import load_mlayer, save_mlayer
 from . import ncnrdata as NCNR, snsdata as SNS
 from .instrument import Monochromatic, Pulsed

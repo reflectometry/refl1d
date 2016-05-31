@@ -54,13 +54,11 @@ See :mod:`instrument <refl1d.instrument>` for details.
 """
 
 import os
-import numpy
-from numpy import inf, pi
 
 from bumps.data import parse_file
 
 from .instrument import Monochromatic
-from .probe import PolarizedNeutronProbe, make_probe
+from .probe import PolarizedNeutronProbe
 
 def load(filename, instrument=None, **kw):
     """

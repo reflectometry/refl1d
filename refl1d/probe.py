@@ -46,6 +46,7 @@ from numpy import sqrt, pi, inf, sign, log
 from periodictable import nsf, xsf
 from bumps.parameter import Parameter, Constant
 from bumps.plotutil import coordinated_colors, auto_shift
+from bumps.data import parse_multi, strip_quotes
 
 from . import fresnel
 from .material import Vacuum
@@ -1017,6 +1018,66 @@ class ProbeSet(Probe):
                       back_absorption=Po.back_absorption,
                       back_reflectivity=Po.back_reflectivity)
 
+
+def load4(filename, keysep=":", sep=None, comment="#", name=None,
+          intensity=1, background=0, back_absorption=1,
+          back_reflectivity=False, Aguide=270, H=0,
+          ):
+    """
+    Load in four column data Q, R, dR, dQ.
+
+    The file is loaded with *bumps.data.parse_multi*.  *keysep*
+    defaults to ':' so that header data looks like JSON key: value
+    pairs.  *sep* is None so that the data uses white-space separated
+    columns.  *comment* is the standard '#' comment character, used
+    for "# key: value" lines, for commenting out data lines using
+    "#number number number number", and for adding comments after
+    individual data lines.  The parser isn't very sophisticated, so
+    be nice.
+
+    *intensity* is the overall beam intensity, *background* is the
+    overall background level, and *back_absorption* is the relative
+    intensity of data measured at negative Q compared to positive Q
+    data.  These can be values or a bumps *Parameter* objects.
+
+    *back_reflectivity* is True if reflectivity was measured through
+    the substrate.  This allows you to arange the model from substrate
+    to surface regardless of whether you are measuring through the
+    substrate or reflecting off the surface.
+
+    *Aguide* and *H* are parameters for polarized beam measurements
+    indicating the magnitude and direction of the applied field.
+
+    Polarized data is represented using a multi-section data file,
+    with blank lines separating each section.  Each section must
+    have a polarization keyword, with value "++", "+-", "-+" or "--".
+    """
+    data = parse_multi(filename, keysep=keysep, sep=sep, comment=comment)
+    def _as_Qprobe(data):
+        Q, R, dR, dQ = data[1]
+        probe = QProbe(
+            Q, dQ, data=(R, dR),
+            name=name,
+            filename=filename,
+            intensity=intensity,
+            background=background,
+            back_absorption=back_absorption,
+            back_reflectivity=back_reflectivity,
+        )
+        return probe
+    if len(data) == 1:
+        probe = _as_Qprobe(data[0])
+    else:
+        data_by_xs = dict((strip_quotes(d[0]["polarization"]), _as_Qprobe(d))
+                          for d in data)
+        if not set(data_by_xs.keys()) <= set('-- -+ +- ++'.split()):
+            raise ValueError("Unknown cross sections in: "
+                             + ", ".join(sorted(data_by_xs.keys())))
+        xs = [data_by_xs.get(xs, None) for xs in ('--', '-+', '+-', '++')]
+        probe = PolarizedQProbe(xs, Aguide=Aguide, H=H)
+    return probe
+
+
 class QProbe(Probe):
     """
     A pure Q,R probe
@@ -1025,9 +1086,11 @@ class QProbe(Probe):
     scattering length density based on wavelength, or adjusting for
     alignment errors.
     """
-    def __init__(self, Q, dQ, data=None, name=None,
+    def __init__(self, Q, dQ, data=None, name=None, filename=None,
                  intensity=1, background=0, back_absorption=1,
                  back_reflectivity=False):
+        if not name and filename:
+            name = os.path.splitext(os.path.basename(filename))[0]
         qualifier = " "+name if name is not None else ""
         self.intensity = Parameter.default(intensity,name="intensity"+qualifier)
         self.background = Parameter.default(background,name="background"+qualifier,
