@@ -1,6 +1,6 @@
 ; -- refl1d.iss -- an Inno Setup Script for Refl1D
 ; This script is used by the Inno Setup Compiler to build a Windows XP
-; installer/uninstaller for the DANSE Reflectometry application named Refl1D.
+; installer/uninstaller for the Reflectometry application named Refl1D.
 ; The script is written to explicitly allow multiple versions of the
 ; application to be installed simulaneously in separate subdirectories such
 ; as "Refl1D 0.5.0", "Refl1D 0.7.2", and "Refl1D 1.0" under a group directory.
@@ -12,15 +12,15 @@
 ; DefaultGroupName, and output file name.
 
 ; By default, when installing Refl1D:
-; - The destination folder will be "C:\Program Files\DANSE\Refl1D x.y.z"
+; - The destination folder will be "C:\Program Files\Refl1D x.y.z"
 ; - A desktop icon will be created with the label "Refl1D x.y.z"
 ; - A quickstart icon is optional
-; - A start menu folder will be created with the name DANSE -> Refl1D x.y.z
+; - A start menu folder will be created with the name Refl1D x.y.z
 ; By default, when uninstalling Refl1D x.y.z
 ; - The uninstall can be initiated from either the:
-;   * Start menu via DANSE -> Refl1D x.y.z -> Uninstall Refl1D
+;   * Start menu via Refl1D x.y.z -> Uninstall Refl1D
 ;   * Start menu via Control Panel - > Add or Remove Programs -> Refl1D x.y.z
-; - It will not delete the C:\Program Files\DANSE\Refl1D x.y.z folder if it
+; - It will not delete the C:\Program Files\Refl1D x.y.z folder if it
 ;   contains any user created files
 ; - It will delete any desktop or quickstart icons for Refl1D that were
 ;   created on installation
@@ -29,7 +29,6 @@
 ; with the Preprocessor add-on selected to support use of #define statements.
 #define MyAppName "Refl1D"
 #define MyAppNameLowercase "refl1d"
-#define MyGroupFolderName "DANSE"
 #define MyAppPublisher "NIST & University of Maryland"
 #define MyAppURL "http://www.reflectometry.org/danse/"
 ; Use a batch file to launch refl1d.exe to setup a custom environment.
@@ -43,10 +42,7 @@
 ; Use updated version string if present in the include file.  It is expected that the Refl1D
 ; build script will create this file using the application's internal version string to create
 ; a define statement in the format shown below.
-#define MyAppVersion "0.0.0"
-#ifexist "iss-version"
-    #include "iss-version"
-#endif
+#define MyAppVersion VERSION
 
 [Setup]
 ; Make the AppName string unique so that other versions of the program can be installed simultaniously.
@@ -56,8 +52,8 @@ AppVerName={#MyAppName}{#Space}{#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 ChangesAssociations=yes
 ; If you do not want a space in folder names, omit {#Space} or replace it with a hyphen char, etc.
-DefaultDirName={pf}\{#MyGroupFolderName}\{#MyAppName}{#Space}{#MyAppVersion}
-DefaultGroupName={#MyGroupFolderName}\{#MyAppName}{#Space}{#MyAppVersion}
+DefaultDirName={pf}\{#MyAppName}{#Space}{#MyAppVersion}
+DefaultGroupName={#MyAppName}{#Space}{#MyAppVersion}
 Compression=lzma/max
 SolidCompression=yes
 DisableProgramGroupPage=yes
@@ -78,6 +74,18 @@ AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 
+
+#if ARCH == "x64"
+  #define VCRedistTargetDir "amd64_Microsoft.VC90.CRT_1fc8b3b9a1e18e3b_9.0.30729.*"
+  #define VCRedistBinary "vcredist_x64.exe"
+  ArchitecturesInstallIn64BitMode=x64
+  ArchitecturesAllowed=x64
+#else
+  #define VCRedistTargetDir "x86_Microsoft.VC90.CRT_1fc8b3b9a1e18e3b_9.0.30729.*"
+  #define VCRedistBinary "vcredist_x32.exe"
+#endif
+
+
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
@@ -91,9 +99,14 @@ Source: "dist\doc\examples\*"; DestDir: "{userdocs}\{#MyAppName}\examples"; Flag
 ; The following Pascal function checks for the presence of the VC++ 2008 DLL folder on the target system
 ; to determine if the VC++ 2008 Redistributable kit needs to be installed.
 [Code]
-function InstallVC90CRT(): Boolean;
+function InstallVCRedist(): Boolean;
+var
+  FindRec: TFindRec;
 begin
-    Result := not DirExists('C:\WINDOWS\WinSxS\x86_Microsoft.VC90.CRT_1fc8b3b9a1e18e3b_9.0.21022.8_x-ww_d08d0375');
+    Result := not FindFirst(ExpandConstant('{win}\WinSxS\{#VCRedistTargetDir}'), FindRec)
+    if not Result then begin
+        FindClose(FindRec);
+    end;
 end;
 
 [Tasks]
@@ -134,7 +147,7 @@ Filename: "{app}\{#MyReadmeFileName}"; Description: "Read Release Notes"; Verb: 
 ; - for silent install with progress bar use: "/qb"
 ; - for silent install with progress bar but disallow cancellation of operation use: "/qb!"
 ; Note that we do not use the postinstall flag as this would display a checkbox and thus require the user to decide what to do.
-Filename: "{app}\vcredist_x86.exe"; Parameters: "/qb!"; WorkingDir: "{tmp}"; StatusMsg: "Installing Microsoft Visual C++ 2008 Redistributable Package ..."; Check: InstallVC90CRT(); Flags: skipifdoesntexist waituntilterminated
+Filename: "{app}\{#VCRedistBinary}"; Parameters: "/qb!"; WorkingDir: "{tmp}"; StatusMsg: "Installing Microsoft Visual C++ 2008 Redistributable Package ..."; Check: InstallVCRedist(); Flags: skipifdoesntexist waituntilterminated
 
 [UninstallDelete]
 ; Delete directories and files that are dynamically created by the application (i.e. at runtime).

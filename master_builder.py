@@ -266,17 +266,13 @@ def create_windows_installer(version=None):
     print("Running Inno Setup Compiler to create Win32 "
           "installer/uninstaller ...\n")
 
-    # First create an include file to convey the application's version
-    # information to the Inno Setup compiler.
-    f = open(os.path.join(REFL_DIR, "iss-version"), "w")
-    f.write('#define MyAppVersion "%s"\n'%version)  # version must be quoted
-    f.close()
-
     # Run the Inno Setup Compiler to create a Win32 installer/uninstaller.
     # Override the output specification in <PKG_NAME>.iss to put the executable
     # and the manifest file in the top-level directory.
     #if not os.path.exists(INSTALLER_DIR):  os.mkdir(INSTALLER_DIR)
-    exec_cmd('"%s" /Q /O%s %s.iss' %(INNO, INSTALLER_DIR, PKG_NAME), cwd=REFL_DIR)
+    arch = "x64" if sys.maxsize > 2**32 else "x86"
+    exec_cmd([INNO, "/Q", "/O"+INSTALLER_DIR, "/DVERSION="+version, "/DARCH="+arch, PKG_NAME+".iss"],
+             cwd=REFL_DIR)
 
 
 def run_tests():
@@ -457,7 +453,11 @@ def exec_cmd(command, cwd=None):
     """Runs the specified command in a subprocess."""
 
     shell = os.name != 'nt'
-    print("%s$ %s" % (os.getcwd(), command))
+    if isinstance(command, list):
+        command_str = " ".join('"%s"' % p if ' ' in p else p for p in command)
+    else:
+        command_str = command
+    print("%s$ %s" % (os.getcwd(), command_str))
     result = subprocess.call(command, shell=shell, cwd=cwd)
     if result != 0:
         sys.exit(result)

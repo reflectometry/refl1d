@@ -85,91 +85,54 @@ version = refl1d.__version__
 # file in the image directory) when wxPython is included so that the Windows XP
 # theme is used when rendering wx widgets.  The manifest must be matched to the
 # version of Python that is being used.
-#
-# Create a manifest for use with Python 2.5 on Windows XP or Vista.  It is
-# adapted from the Python manifest file (C:\Python25\pythonw.exe.manifest).
 
-manifest_for_python25 = """
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-<assemblyIdentity
-    version="1.0.0.0"
-    processorArchitecture="x86"
-    name="%(prog)s"
-    type="win32"
-/>
-<description>%(prog)s</description>
-<dependency>
-    <dependentAssembly>
-        <assemblyIdentity
+is_64bits = sys.maxsize > 2**32
+arch = "amd64" if is_64bits else "x86"
+manifest = """
+    <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+      <assemblyIdentity
+        version="5.0.0.0"
+        processorArchitecture="%(arch)s"
+        name="SasView"
+        type="win32">
+      </assemblyIdentity>
+      <description>SasView</description>
+      <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
+        <security>
+          <requestedPrivileges>
+            <requestedExecutionLevel
+              level="asInvoker"
+              uiAccess="false">
+            </requestedExecutionLevel>
+          </requestedPrivileges>
+        </security>
+      </trustInfo>
+      <dependency>
+        <dependentAssembly>
+          <assemblyIdentity
+            type="win32"
+            name="Microsoft.VC90.CRT"
+            version="9.0.21022.8"
+            processorArchitecture="%(arch)s"
+            publicKeyToken="1fc8b3b9a1e18e3b">
+          </assemblyIdentity>
+        </dependentAssembly>
+      </dependency>
+      <dependency>
+        <dependentAssembly>
+          <assemblyIdentity
             type="win32"
             name="Microsoft.Windows.Common-Controls"
             version="6.0.0.0"
-            processorArchitecture="X86"
+            processorArchitecture="%(arch)s"
             publicKeyToken="6595b64144ccf1df"
-            language="*"
-        />
-    </dependentAssembly>
-</dependency>
-</assembly>
-"""
-
-# Create a manifest for use with Python 2.6 or 2.7 on Windows XP or Vista.
-
-manifest_for_python26 = """
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-  <assemblyIdentity
-    version="5.0.0.0"
-    processorArchitecture="x86"
-    name="%(prog)s"
-    type="win32">
-  </assemblyIdentity>
-  <description>%(prog)s</description>
-  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
-    <security>
-      <requestedPrivileges>
-        <requestedExecutionLevel
-          level="asInvoker"
-          uiAccess="false">
-        </requestedExecutionLevel>
-      </requestedPrivileges>
-    </security>
-  </trustInfo>
-  <dependency>
-    <dependentAssembly>
-      <assemblyIdentity
-        type="win32"
-        name="Microsoft.VC90.CRT"
-        version="9.0.21022.8"
-        processorArchitecture="x86"
-        publicKeyToken="1fc8b3b9a1e18e3b">
-      </assemblyIdentity>
-    </dependentAssembly>
-  </dependency>
-  <dependency>
-    <dependentAssembly>
-      <assemblyIdentity
-        type="win32"
-        name="Microsoft.Windows.Common-Controls"
-        version="6.0.0.0"
-        processorArchitecture="x86"
-        publicKeyToken="6595b64144ccf1df"
-        language="*">
-      </assemblyIdentity>
-    </dependentAssembly>
-  </dependency>
-</assembly>
-"""
-
-# Select the appropriate manifest to use.
-if sys.version_info >= (3, 0) or sys.version_info < (2, 5):
-    print("*** This script only works with Python 2.5, 2.6, or 2.7.")
-    sys.exit()
-elif sys.version_info >= (2, 6):
-    manifest = manifest_for_python26
-elif sys.version_info >= (2, 5):
-    manifest = manifest_for_python25
+            language="*">
+          </assemblyIdentity>
+        </dependentAssembly>
+      </dependency>
+    </assembly>
+    """%{'arch': arch}
 
 # Create a list of all files to include along side the executable being built
 # in the dist directory tree.  Each element of the data_files list is a tuple
@@ -220,9 +183,9 @@ if os.path.isfile(pdf):
 # however, Python 2.6 and 2.7 require the msvcr90.dll but they do not bundle it
 # with the Python26 or Python27 package.  Thus, for Python 2.6 and later, the
 # appropriate dll must be present on the target system at runtime.
-if sys.version_info >= (2, 6):
-    pypath = os.path.dirname(sys.executable)
-    data_files.append( ('.', [os.path.join(pypath, 'vcredist_x86.exe')]) )
+pypath = os.path.dirname(sys.executable)
+vcredist = 'vcredist_%s.exe'%("x64" if is_64bits else "x32")
+data_files.append( ('.', [os.path.join(pypath, vcredist)]) )
 
 # Specify required packages to bundle in the executable image.
 packages = ['numpy', 'scipy', 'matplotlib', 'pytz', 'pyparsing',
@@ -301,6 +264,7 @@ clientGUI = Target(
 # When the application is run in windows mode, it will create a GUI application
 # window and no console window will be provided.  Output to stderr will be
 # written to <app-image-name>.log.
+bundle = 3 if is_64bits else 1
 setup(
       console=[clientCLI],
       windows=[clientGUI],
@@ -313,7 +277,7 @@ setup(
                    'optimize': 0,     # no byte-code optimization
                    'dist_dir': "dist",# where to put py2exe results
                    'xref': False,     # display cross reference (as html doc)
-                   'bundle_files': 1, # bundle python25.dll in library.zip
+                   'bundle_files': bundle, # bundle python25.dll in library.zip
                          }
               },
       # Since we are building two exe's, do not put the shared library in each
