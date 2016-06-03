@@ -140,9 +140,10 @@ manifest = """
 data_files = []
 
 # Add resource files that need to reside in the same directory as the image.
-data_files.append( ('.', [os.path.join('.', 'LICENSE.txt')]) )
-data_files.append( ('.', [os.path.join('.', 'README.rst')]) )
-data_files.append( ('.', [os.path.join('.', 'bin', 'refl1d_launch.bat')]) )
+data_files.append( ('.', [os.path.join(here, 'LICENSE.txt')]) )
+data_files.append( ('.', [os.path.join(here, 'README.rst')]) )
+data_files.append( ('.', [os.path.join(here, 'bin', 'refl1d_launch.bat')]) )
+data_files.append( ('.', [os.path.join(here, 'extra', 'refl1d.ico')]) )
 
 # Add application specific data files from the refl1d\refl1d-data folder.
 data_files += bumps.data_files()
@@ -236,7 +237,7 @@ class Target():
         self.__dict__.update(kw)
         self.version = version
 
-ICON_FILE = os.path.join(os.path.abspath(os.path.dirname(bumps.__file__)),'gui', 'resources', 'bumps.ico')
+ICON_FILE = os.path.join(here, 'extra', 'refl1d.ico')
 clientCLI = Target(
     name = 'Refl1D',
     description = 'Refl1D CLI application',

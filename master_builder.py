@@ -160,7 +160,9 @@ BUMPS_NEW = '"%s" clone -b bumps-split https://github.com/reflectometry/bumps.gi
 REFL_NEW = '"%s" clone https://github.com/reflectometry/refl1d.git'%GIT
 REPO_UPDATE = '"%s" pull'%GIT
 
-INSTALLER_DIR = os.path.join(REFL_DIR, 'dist')
+# Note: can't put target files in the dist directory since all files in dist
+# are being collected and stored in the bundle.
+INSTALLER_DIR = REFL_DIR
 
 
 def get_version():
@@ -269,7 +271,8 @@ def create_windows_installer(version=None):
     # Run the Inno Setup Compiler to create a Win32 installer/uninstaller.
     # Override the output specification in <PKG_NAME>.iss to put the executable
     # and the manifest file in the top-level directory.
-    #if not os.path.exists(INSTALLER_DIR):  os.mkdir(INSTALLER_DIR)
+    if not os.path.exists(INSTALLER_DIR):
+        os.mkdir(INSTALLER_DIR)
     arch = "x64" if sys.maxsize > 2**32 else "x86"
     exec_cmd([INNO, "/Q", "/O"+INSTALLER_DIR, "/DVERSION="+version, "/DARCH="+arch, PKG_NAME+".iss"],
              cwd=REFL_DIR)

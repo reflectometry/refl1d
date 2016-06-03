@@ -42,7 +42,7 @@ def import_dll(module, build_path):
 
     # build_path comes from context
     path = joinpath(build_path, *module.split('.'))+ext
-    print(" ".join(("importing", module, "from", path)))
+    #print(" ".join(("importing", module, "from", path)))
     mod = imp.load_dynamic(module, path)
 
     # make sure module can be imported from package
