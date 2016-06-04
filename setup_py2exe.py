@@ -188,23 +188,23 @@ pypath = os.path.dirname(sys.executable)
 vcredist = 'vcredist_%s.exe'%("x64" if is_64bits else "x32")
 data_files.append( ('.', [os.path.join(pypath, vcredist)]) )
 
+# numpy depends on some DLLs that are not being pulled in automatically
+# anaconda license says that the redistribution of the Intel MKL libraries
+# is permitted (https://docs.continuum.io/anaconda/eula, 2016-06-03).
+libdir = os.path.join(pypath, 'Library', 'bin')
+missing_libs = ['libiomp5md', 'mkl_core', 'mkl_def']
+data_files.append(('.', [os.path.join(libdir, k+'.dll') for k in missing_libs]))
+
+
 # Specify required packages to bundle in the executable image.
-packages = ['numpy', 'scipy', 'matplotlib', 'pytz', 'pyparsing',
-            'periodictable', 'refl1d.names', 'bumps', 'wx',
-            'wx.py.path',
-            ]
+packages = [
+    'numpy', 'scipy', 'matplotlib', 'pytz', 'pyparsing',
+    'periodictable', 'refl1d.names', 'bumps', 'wx',
+    'wx.py.path',
+    ]
 
 # Specify files to include in the executable image.
-includes = []
-
-dll_includes = glob.glob(os.path.join(os.path.dirname(numpy.core.__file__),'*.dll'))
-# Intel compiler dlls for new numpy releases
-#dll_includes += [ 'libifcoremd.dll', 'libmmd.dll', 'svml_dispmd.dll', 'libiomp5md.dll' ]
-#includes += ['numpy.core.'+os.path.basename(f)[:-4] for f in dll_includes]
-#data_files += [('.', dll_includes)]
-
-# non-system dlls that didn't get picked up by standard build
-dll_includes += ['gdiplus.dll', 'mfc90.dll']
+includes = [ ]
 
 
 # Specify files to exclude from the executable image.
@@ -269,20 +269,22 @@ bundle = 3 if is_64bits else 1
 setup(
       console=[clientCLI],
       windows=[clientGUI],
-      options={'py2exe': {
-                   'packages': packages,
-                   'includes': includes,
-                   'excludes': excludes,
-                   'dll_excludes': dll_excludes,
-                   'compressed': 1,   # standard compression
-                   'optimize': 0,     # no byte-code optimization
-                   'dist_dir': "dist",# where to put py2exe results
-                   'xref': False,     # display cross reference (as html doc)
-                   'bundle_files': bundle, # bundle python25.dll in library.zip
-                         }
-              },
+      options={
+          'py2exe': {
+              'packages': packages,
+              'includes': includes,
+              'excludes': excludes,
+              'dll_excludes': dll_excludes,
+              'compressed': 1,   # standard compression
+              'optimize': 0,     # no byte-code optimization
+              'dist_dir': "dist",# where to put py2exe results
+              'xref': False,     # display cross reference (as html doc)
+              'bundle_files': bundle, # bundle python25.dll in library.zip
+              'custom_boot_script': 'py2exe_boot.py',
+          }
+      },
       # Since we are building two exe's, do not put the shared library in each
       # of them.  Instead create a single, separate library.zip file.
       ### zipfile=None,               # bundle library.zip in exe
       data_files=data_files,          # list of files to copy to dist directory
-     )
+)

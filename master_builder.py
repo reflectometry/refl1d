@@ -77,7 +77,7 @@ PYTHON = sys.executable
 if os.name == "nt":
     SYSBIN=r"C:\Program Files (x86)"
     if not os.path.exists(SYSBIN): SYSBIN=r"C:\Program Files"
-    GIT = SYSBIN+r"\Git\bin\git.exe"
+    GIT = SYSBIN+r"\Git\mingw64\bin\git.exe"
     INNO   = SYSBIN+r"\Inno Setup 5\ISCC.exe"  # command line operation
 
     if not os.path.exists(GIT):
@@ -156,8 +156,9 @@ paths = [BUMPS_LIB, REFL_LIB, PERIODICTABLE_DIR]
 sys.path  = paths + sys.path
 os.environ['PYTHONPATH'] = os.pathsep.join(paths)
 
-BUMPS_NEW = '"%s" clone -b bumps-split https://github.com/reflectometry/bumps.git'%GIT
+BUMPS_NEW = '"%s" clone https://github.com/bumps/bumps.git'%GIT
 REFL_NEW = '"%s" clone https://github.com/reflectometry/refl1d.git'%GIT
+PERIODICTABLE_NEW = '"%s" clone https://github.com/pkienzle/periodictable.git'%GIT
 REPO_UPDATE = '"%s" pull'%GIT
 
 # Note: can't put target files in the dist directory since all files in dist
@@ -188,9 +189,11 @@ def checkout_code():
         return
 
     if RUN_DIR == TOP_DIR:
+        exec_cmd(PERIODICTABLE_NEW, cwd=TOP_DIR)
         exec_cmd(BUMPS_NEW, cwd=TOP_DIR)
         exec_cmd(REFL_NEW, cwd=TOP_DIR)
     else:
+        exec_cmd(REPO_UPDATE, cwd=PERIODICTABLE_DIR)
         exec_cmd(REPO_UPDATE, cwd=BUMPS_DIR)
         exec_cmd(REPO_UPDATE, cwd=REFL_DIR)
 
