@@ -39,6 +39,7 @@ See :ref:`data-guide` for details.
 
 from __future__ import with_statement, division
 import os
+import json
 
 import numpy
 from numpy import sqrt, pi, inf, sign, log
@@ -50,7 +51,7 @@ from bumps.data import parse_multi, strip_quotes
 
 from . import fresnel
 from .material import Vacuum
-from .resolution import QL2T, TL2Q, dTdL2dQ
+from .resolution import QL2T, QT2L, TL2Q, dQdL2dT, dQdT2dL, dTdL2dQ
 from .stitch import stitch
 from .reflectivity import convolve
 
@@ -106,7 +107,9 @@ class Probe(object):
         *background* : float or Parameter
            Constant background
         *back_absorption* : float or Parameter
-           Absorption through the substrate relative to beam intensity
+           Absorption through the substrate relative to beam intensity.
+           A value of 1.0 means complete transmission; a value of 0.0
+           means complete absorption.
         *theta_offset* : float or Parameter
            Offset of the sample from perfect alignment
         *back_reflectivity* : True or False
@@ -1022,6 +1025,8 @@ class ProbeSet(Probe):
 def load4(filename, keysep=":", sep=None, comment="#", name=None,
           intensity=1, background=0, back_absorption=1,
           back_reflectivity=False, Aguide=270, H=0,
+          theta_offset=0, sample_broadening=0,
+          L=None, dLoL=None, T=None, dT=None,
           ):
     """
     Load in four column data Q, R, dR, dQ.
@@ -1041,9 +1046,35 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     data.  These can be values or a bumps *Parameter* objects.
 
     *back_reflectivity* is True if reflectivity was measured through
-    the substrate.  This allows you to arange the model from substrate
+    the substrate.  This allows you to arrange the model from substrate
     to surface regardless of whether you are measuring through the
     substrate or reflecting off the surface.
+
+    *theta_offset* indicates sample alignment.  In order to use theta
+    offset you need to be able to convert from Q to wavelength and angle
+    by providing values for the wavelength or the angle, and the associated
+    resolution.
+
+    For monochromatic sources you can supply *L*, *dLoL* when you call *load4*,
+    or you can store it in the header of the file::
+
+        # wavelength: 4.75
+        # wavelength_resolution: 0.02
+
+    For time of flight sources, angle is fixed and wavelength is
+    varying, so you can supply *T*, *dT* in degrees when you call *load4*,
+    or you can store it in the header of the file::
+
+        # angle: 2
+        # angular_resolution: 0.2
+
+    If both angle and wavelength are varying in the data, you can specify
+    a separate value for each point, such the following::
+
+        # wavelength: [1, 1.2, 1.5, 2.0, ...]
+        # wavelegnth_resolution: [0.02, 0.02, 0.02, ...]
+
+    *sample_broadening* adds to the angular_resolution.
 
     *Aguide* and *H* are parameters for polarized beam measurements
     indicating the magnitude and direction of the applied field.
@@ -1055,16 +1086,63 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     data = parse_multi(filename, keysep=keysep, sep=sep, comment=comment)
     def _as_Qprobe(data):
         Q, R, dR, dQ = data[1]
-        probe = QProbe(
-            Q, dQ, data=(R, dR),
-            name=name,
-            filename=filename,
-            intensity=intensity,
-            background=background,
-            back_absorption=back_absorption,
-            back_reflectivity=back_reflectivity,
-        )
+
+        # Get wavelength from header if it is not provided as an argument
+        data_L = data_T = None
+        if L is not None:
+            data_L = L
+        elif 'wavelength' in data[0]:
+            data_L = json.loads(data[0]['wavelength'])
+        if T is not None:
+            data_T = T
+        elif 'angle' in data[0]:
+            data_T = json.loads(data[0]['angle'])
+
+        if data_L is not None:
+            if dLoL is not None:
+                data_dLoL = dLoL
+            elif 'wavelength_resolution' in data[0]:
+                data_dLoL = json.loads(data[0]['wavelength_resolution'])
+            else:
+                raise ValueError("Need wavelength resolution to determine dT")
+            data_dL = data_dLoL * data_L
+            data_T = QL2T(Q, data_L)
+            data_dT = dQdL2dT(Q, dQ, data_L, data_dL)
+        elif data_T is not None:
+            if dT is not None:
+                data_dT = dT
+            elif 'angular_resolution' in data[0]:
+                data_dT = json.loads(data[0]['angular_resolution'])
+            else:
+                raise ValueError("Need angular resolution to determine dL")
+            data_L = QT2L(Q, data_T)
+            data_dL = dQdT2dL(Q, dQ, data_T, data_dT)
+
+        if data_L is not None:
+            probe = Probe(
+                T=data_T, dT=data_dT + sample_broadening,
+                L=data_L, dL=data_dL,
+                data=(R, dR),
+                name=name,
+                filename=filename,
+                intensity=intensity,
+                background=background,
+                back_absorption=back_absorption,
+                theta_offset=theta_offset,
+                back_reflectivity=back_reflectivity,
+            )
+        else:
+            probe = QProbe(
+                Q, dQ, data=(R, dR),
+                name=name,
+                filename=filename,
+                intensity=intensity,
+                background=background,
+                back_absorption=back_absorption,
+                back_reflectivity=back_reflectivity,
+            )
         return probe
+
     if len(data) == 1:
         probe = _as_Qprobe(data[0])
     else:
@@ -1074,7 +1152,11 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
             raise ValueError("Unknown cross sections in: "
                              + ", ".join(sorted(data_by_xs.keys())))
         xs = [data_by_xs.get(xs, None) for xs in ('--', '-+', '+-', '++')]
-        probe = PolarizedQProbe(xs, Aguide=Aguide, H=H)
+
+        if all(isinstance(d, Probe) for d in xs if d is not None):
+            probe = PolarizedNeutronProbe(xs, Aguide=Aguide, H=H)
+        else:
+            probe = PolarizedQProbe(xs, Aguide=Aguide, H=H)
     return probe
 
 
