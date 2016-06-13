@@ -60,24 +60,29 @@ from bumps.data import parse_file
 from .instrument import Monochromatic
 from .probe import PolarizedNeutronProbe
 
+
 def load(filename, instrument=None, **kw):
     """
     Return a probe for NCNR data.
 
     Keyword arguments are as specified Monochromatic instruments.
     """
-    if filename is None: return None
-    if instrument is None: instrument=Monochromatic()
-    header,data = parse_ncnr_file(filename)
-    header.update(filename=filename,**kw) # calling parameters override what's in the file.
-    Q,R,dR = data
+    if filename is None:
+        return None
+    if instrument is None:
+        instrument = Monochromatic()
+    header, data = parse_ncnr_file(filename)
+    # calling parameters override what's in the file.
+    header.update(filename=filename, **kw)
+    Q, R, dR = data
     header.pop('Q', None)  # if columns are preceded by # Q R dR
-    probe = instrument.probe(Q=Q, data=(R,dR), **header)
+    probe = instrument.probe(Q=Q, data=(R, dR), **header)
     probe.title = header['title'] if 'title' in header else filename
     probe.date = header['date'] if 'date' in header else "unknown"
     probe.instrument = (header['instrument'] if 'instrument' in header
                         else instrument.instrument)
     return probe
+
 
 def load_magnetic(filename, Aguide=270, H=0, shared_beam=True, **kw):
     """
@@ -95,7 +100,8 @@ def load_magnetic(filename, Aguide=270, H=0, shared_beam=True, **kw):
         individual cross sections.
 
     Other keyword arguments are for the individual cross section loaders
-    as specified in :class:`instrument.Monochromatic <refl1d.instrument.Monochromatic>`.
+    as specified in
+    :class:`instrument.Monochromatic <refl1d.instrument.Monochromatic>`.
 
     The data sets should are the base filename with an additional character
     corresponding to the spin state::
@@ -118,11 +124,12 @@ def load_magnetic(filename, Aguide=270, H=0, shared_beam=True, **kw):
     """
     probes = [load(v, **kw) for v in find_xsec(filename)]
     if all(p is None for p in probes):
-        raise IOError("Data set has no magnetic cross sections: '%s'"%filename)
+        raise IOError("Data set has no magnetic cross sections: %r" % filename)
     probe = PolarizedNeutronProbe(probes, Aguide=Aguide, H=H)
     if shared_beam:
         probe.shared_beam()  # Share the beam parameters by default
     return probe
+
 
 def find_xsec(filename):
     """
@@ -134,16 +141,22 @@ def find_xsec(filename):
     # Check if it is a string.  If not, assume it is a length 4 tuple
     try:
         filename + 's'
-    except:
+    except Exception:
         return filename
 
     if filename[-1] in 'abcdABCD':
         filename = filename[:-1]
+
     def check(a):
-        if os.path.exists(filename+a): return filename+a
-        elif os.path.exists(filename+a.lower()): return filename+a.lower()
-        else: return None
-    return (check('A'),check('B'),check('C'),check('D'))
+        if os.path.exists(filename+a):
+            return filename+a
+        elif os.path.exists(filename+a.lower()):
+            return filename+a.lower()
+        else:
+            return None
+
+    return check('A'), check('B'), check('C'), check('D')
+
 
 def parse_ncnr_file(filename):
     """
@@ -164,25 +177,31 @@ def parse_ncnr_file(filename):
     # Fill in instrument parameters, if not available from the file
     if 'instrument' in header and header['instrument'] in INSTRUMENTS:
         instrument = INSTRUMENTS[header['instrument']]
-        header.setdefault('radiation',instrument.radiation)
-        header.setdefault('wavelength',str(instrument.wavelength))
-        header.setdefault('dLoL',str(instrument.dLoL))
-        header.setdefault('d_s1',str(instrument.d_s1))
-        header.setdefault('d_s2',str(instrument.d_s2))
+        header.setdefault('radiation', instrument.radiation)
+        header.setdefault('wavelength', str(instrument.wavelength))
+        header.setdefault('dLoL', str(instrument.dLoL))
+        header.setdefault('d_s1', str(instrument.d_s1))
+        header.setdefault('d_s2', str(instrument.d_s2))
 
-    if 'columns' in header: header['columns'] = header['columns'].split()
-    for key in ('wavelength','dLoL','d_s1','d_s2'):
-        if key in header: header[key] = float(header[key])
+    if 'columns' in header:
+        header['columns'] = header['columns'].split()
+    for key in ('wavelength', 'dLoL', 'd_s1', 'd_s2'):
+        if key in header:
+            header[key] = float(header[key])
 
     return header, data
+
 
 class NCNRData(object):
     def readfile(self, filename):
         return parse_ncnr_file(filename)
+
     def load(self, filename, **kw):
         return load(filename, instrument=self, **kw)
+
     def load_magnetic(self, filename, **kw):
         return load_magnetic(filename, instrument=self, **kw)
+
 
 class MAGIK(NCNRData, Monochromatic):
     """
@@ -195,6 +214,7 @@ class MAGIK(NCNRData, Monochromatic):
     d_s1 = 1321. + 438.
     d_s2 = 1321. - 991.
 
+
 class PBR(NCNRData, Monochromatic):
     """
     Instrument definition for NCNR PBR reflectometer.
@@ -206,7 +226,8 @@ class PBR(NCNRData, Monochromatic):
     d_s1 = 1835
     d_s2 = 343
     d_s3 = 380
-    d_s4 = 1015 
+    d_s4 = 1015
+
 
 class NG7(NCNRData, Monochromatic):
     """
@@ -219,6 +240,7 @@ class NG7(NCNRData, Monochromatic):
     d_s2 = 275.   # TODO: check this number
     d_s1 = d_s2 + 1350.
     d_detector = 2000.
+
 
 class XRay(NCNRData, Monochromatic):
     """
@@ -250,6 +272,7 @@ class XRay(NCNRData, Monochromatic):
     d_s3 = 175.0
     d_detector = None
 
+
 class ANDR(NCNRData, Monochromatic):
     """
     Instrument definition for NCNR AND/R diffractometer/reflectometer.
@@ -260,6 +283,7 @@ class ANDR(NCNRData, Monochromatic):
     dLoL = 0.009
     d_s1 = 230.0 + 1856.0
     d_s2 = 230.0
+
 
 class NG1(NCNRData, Monochromatic):
     """
