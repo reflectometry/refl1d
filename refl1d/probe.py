@@ -1115,8 +1115,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
             else:
                 raise ValueError("Need wavelength resolution to determine dT")
             data_dL = data_dLoL * data_L
-            data_T = QL2T(Q, data_L)
-            data_dT = dQdL2dT(Q, dQ, data_L, data_dL)
+            data_T, data_dT = dQdL2dT(Q, dQ, data_L, data_dL)
         elif data_T is not None:
             if dT is not None:
                 data_dT = dT
