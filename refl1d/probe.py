@@ -51,7 +51,7 @@ from bumps.data import parse_multi, strip_quotes
 
 from . import fresnel
 from .material import Vacuum
-from .resolution import QL2T, QT2L, TL2Q, dQdL2dT, dQdT2dL, dTdL2dQ
+from .resolution import QL2T, QT2L, TL2Q, dQdL2dT, dQdT2dLoL, dTdL2dQ
 from .stitch import stitch
 from .reflectivity import convolve
 
@@ -1116,7 +1116,8 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
             else:
                 raise ValueError("Need angular resolution to determine dL")
             data_L = QT2L(Q, data_T)
-            data_dL = dQdT2dL(Q, dQ, data_T, data_dT)
+            data_dLoL = dQdT2dLoL(Q, dQ, data_T, data_dT)
+            data_dL = data_dLoL * data_L
 
         if data_L is not None:
             probe = Probe(

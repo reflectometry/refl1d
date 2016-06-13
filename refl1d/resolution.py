@@ -20,6 +20,20 @@ def QL2T(Q=None,L=None):
     Q,L = asarray(Q,'d'), asarray(L,'d')
     return degrees(asin(abs(Q) * L / (4*pi)))
 
+def QT2L(Q=None, T=None):
+    r"""
+    Compute wavelength from $Q$ and angle.
+
+    .. math::
+
+        \lambda = 4 \pi \sin( \theta )/Q
+
+    Returns $\lambda$\ |Ang|.
+    """
+    Q, T = asarray(Q, 'd'), radians(asarray(T, 'd'))
+    return 4 * pi * sin(T) / Q
+
+
 def TL2Q(T=None,L=None):
     r"""
     Compute $Q$ from angle and wavelength.
