@@ -11,6 +11,8 @@ import os
 import sys
 import shutil
 
+import macholib_patch
+
 import py2app # @UnresolvedImport @UnusedImport except on mac
 from distutils.core import setup
 from distutils.util import get_platform

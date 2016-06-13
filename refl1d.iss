@@ -151,7 +151,7 @@ Filename: "{app}\{#VCRedistBinary}"; Parameters: "/qb!"; WorkingDir: "{tmp}"; St
 
 [UninstallDelete]
 ; Delete directories and files that are dynamically created by the application (i.e. at runtime).
-Type: filesandordirs; Name: "{localappdata}\refl1d-mpl-{#MyAppVersion}"
+Type: filesandordirs; Name: "{localappdata}\Refl1D-{#MyAppVersion}"
 Type: files; Name: "{app}\*.exe.log"
 ; The following is a workaround for the case where the application is installed and uninstalled but the
 ;{app} directory is not deleted because it has user files.  Then the application is installed into the

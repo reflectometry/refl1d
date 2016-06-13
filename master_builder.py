@@ -252,12 +252,18 @@ def build_documentation():
             shutil.copy(pdf, html_dir)
 
 
-def create_windows_exe():
-    "create the standalone windows executable"
-    if os.name != 'nt': return
-    print("Using py2exe to create a Win32 executable ...\n")
+def create_binary():
+    "create the standalone executable (windows or mac, depending)"
+    if sys.platform == 'darwin':
+        print("Using py2app to create a Mac OS X app...\n")
+        exec_cmd("%s setup_py2app.py"%PYTHON, cwd=REFL_DIR)
 
-    exec_cmd("%s setup_py2exe.py"%PYTHON, cwd=REFL_DIR)
+    elif os.name == 'nt':
+        print("Using py2exe to create a Win32 executable ...\n")
+        exec_cmd("%s setup_py2exe.py"%PYTHON, cwd=REFL_DIR)
+
+    else:
+        print("No binary build for %s %s\n" % (sys.platform, os.name))
 
 
 def create_windows_installer(version=None):
@@ -475,7 +481,7 @@ BUILD_POINTS = [
   ('test', run_tests),
   ('docs', build_documentation),  # Needed by windows installer
   ('zip', create_archive),
-  ('exe', create_windows_exe),
+  ('exe', create_binary),
   ('installer', create_windows_installer),
 ]
 

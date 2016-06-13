@@ -2,13 +2,14 @@
 """
 Run bumps with refl1d plugin
 """
+from . import __version__
 
 def setup_bumps():
     """
     Install the refl1d plugin into bumps, but don't run main.
     """
     import bumps.cli
-    bumps.cli.set_mplconfig(appdatadir='Refl1D')
+    bumps.cli.set_mplconfig(appdatadir='Refl1D-'+__version__)
     from . import fitplugin
     bumps.cli.install_plugin(fitplugin)
 
