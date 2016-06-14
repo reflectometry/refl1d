@@ -80,7 +80,8 @@ def QRL_to_data(instrument, header, data):
         probe = instrument.probe(L=L, dL=dL, T=T, data=(R,dR),
                                  **header)
     else:
-        T,dT = resolution.dQdL2dT(Q[0],dQ[0],L[0],dL[0])
+        T = resolution.QL2T(Q[0], L[0])
+        dT = resolution.dQdL2dT(Q[0],dQ[0],L[0],dL[0])
         probe = make_probe(T=T,dT=dT,L=L,dL=dL, data=(R,dR),
                            **header)
     return probe
