@@ -109,7 +109,7 @@ def dQdL2dT(Q, dQ, L, dL):
     Q,dQ = asarray(Q,'d'),asarray(dQ,'d')
     T = QL2T(Q,L)
     dT = degrees( sqrt( (sigma2FWHM(dQ)/Q)**2 - (dL/L)**2) * tan(radians(T)) )
-    return T,dT
+    return dT
 
 
 Plancks_constant=6.62618e-27 # Planck constant (erg*sec)
