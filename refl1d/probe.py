@@ -52,6 +52,7 @@ from bumps.data import parse_multi, strip_quotes
 from . import fresnel
 from .material import Vacuum
 from .resolution import QL2T, QT2L, TL2Q, dQdL2dT, dQdT2dLoL, dTdL2dQ
+from .resolution import sigma2FWHM, FWHM2sigma
 from .stitch import stitch
 from .reflectivity import convolve
 
@@ -1035,7 +1036,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
           intensity=1, background=0, back_absorption=1,
           back_reflectivity=False, Aguide=270, H=0,
           theta_offset=0, sample_broadening=0,
-          L=None, dLoL=None, T=None, dT=None,
+          L=None, dL=None, T=None, dT=None,
           ):
     """
     Load in four column data Q, R, dR, dQ.
@@ -1067,15 +1068,15 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     For monochromatic sources you can supply *L*, *dLoL* when you call *load4*,
     or you can store it in the header of the file::
 
-        # wavelength: 4.75
-        # wavelength_resolution: 0.02
+        # wavelength: 4.75  # Ang
+        # wavelength_resolution: 0.02  # Ang (1-sigma)
 
     For time of flight sources, angle is fixed and wavelength is
     varying, so you can supply *T*, *dT* in degrees when you call *load4*,
     or you can store it in the header of the file::
 
-        # angle: 2
-        # angular_resolution: 0.2
+        # angle: 2  # degrees
+        # angular_resolution: 0.2  # degrees (1-sigma)
 
     If both angle and wavelength are varying in the data, you can specify
     a separate value for each point, such the following::
@@ -1083,7 +1084,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
         # wavelength: [1, 1.2, 1.5, 2.0, ...]
         # wavelegnth_resolution: [0.02, 0.02, 0.02, ...]
 
-    *sample_broadening* adds to the angular_resolution.
+    *sample_broadening* in degrees (1-sigma) adds to the angular_resolution.
 
     *Aguide* and *H* are parameters for polarized beam measurements
     indicating the magnitude and direction of the applied field.
@@ -1095,6 +1096,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     data = parse_multi(filename, keysep=keysep, sep=sep, comment=comment)
     def _as_Qprobe(data):
         Q, R, dR, dQ = data[1]
+        dQ = sigma2FWHM(dQ)
 
         # Get wavelength from header if it is not provided as an argument
         data_L = data_T = None
@@ -1108,14 +1110,15 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
             data_T = json.loads(data[0]['angle'])
 
         if data_L is not None:
-            if dLoL is not None:
-                data_dLoL = dLoL
+            if dL is not None:
+                data_dL = dL
             elif 'wavelength_resolution' in data[0]:
-                data_dLoL = json.loads(data[0]['wavelength_resolution'])
+                data_dL = json.loads(data[0]['wavelength_resolution'])
             else:
                 raise ValueError("Need wavelength resolution to determine dT")
-            data_dL = data_dLoL * data_L
-            data_T, data_dT = dQdL2dT(Q, dQ, data_L, data_dL)
+            data_dL = sigma2FWHM(data_dL)
+            data_T = QL2T(Q, data_L)
+            data_dT = dQdL2dT(Q, dQ, data_L, data_dL)
         elif data_T is not None:
             if dT is not None:
                 data_dT = dT
@@ -1123,13 +1126,14 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
                 data_dT = json.loads(data[0]['angular_resolution'])
             else:
                 raise ValueError("Need angular resolution to determine dL")
+            data_dT = sigma2FWHM(data_dT)
             data_L = QT2L(Q, data_T)
             data_dLoL = dQdT2dLoL(Q, dQ, data_T, data_dT)
             data_dL = data_dLoL * data_L
 
         if data_L is not None:
             probe = Probe(
-                T=data_T, dT=data_dT + sample_broadening,
+                T=data_T, dT=data_dT + sigma2FWHM(sample_broadening),
                 L=data_L, dL=data_dL,
                 data=(R, dR),
                 name=name,

@@ -7,6 +7,7 @@ from numpy import pi, sqrt, log, degrees, radians, cos, sin, tan
 from numpy import arcsin as asin, ceil
 from numpy import ones_like, arange, isscalar, asarray, hstack
 
+
 def QL2T(Q=None,L=None):
     r"""
     Compute angle from $Q$ and wavelength.
@@ -19,6 +20,7 @@ def QL2T(Q=None,L=None):
     """
     Q,L = asarray(Q,'d'), asarray(L,'d')
     return degrees(asin(abs(Q) * L / (4*pi)))
+
 
 def QT2L(Q=None, T=None):
     r"""
@@ -47,9 +49,12 @@ def TL2Q(T=None,L=None):
     T,L = radians(asarray(T,'d')), asarray(L,'d')
     return 4 * pi * sin(T) / L
 
+
 _FWHM_scale = sqrt(log(256))
 def FWHM2sigma(s):
     return s/_FWHM_scale
+
+
 def sigma2FWHM(s):
     return s*_FWHM_scale
 
@@ -72,6 +77,7 @@ def dTdL2dQ(T=None, dT=None, L=None, dL=None):
 
     #sqrt((dL/L)**2+(radians(dT)/tan(radians(T)))**2)*probe.Q
     return FWHM2sigma(dQ)
+
 
 def dQdT2dLoL(Q, dQ, T, dT):
     r"""
@@ -97,7 +103,7 @@ def dQdL2dT(Q, dQ, L, dL):
     *Q*, *dQ* |1/Ang|  $Q$ and 1-\ $\sigma$ $Q$ resolution
     *L*, *dL* |deg| angle and FWHM angular divergence
 
-    Returns FWHM $\theta, \Delta\theta$
+    Returns FWHM \Delta\theta$
     """
     L,dL = asarray(L,'d'),asarray(dL,'d')
     Q,dQ = asarray(Q,'d'),asarray(dQ,'d')
@@ -140,6 +146,7 @@ def bins(low, high, dLoL):
     L = (edges[:-1]+edges[1:])/2
     return L
 
+
 def binwidths(L):
     r"""
     Determine the wavelength dispersion from bin centers *L*.
@@ -162,6 +169,7 @@ def binwidths(L):
         dLoL = L[0]/L[1] - 1
     dL = 2*dLoL/(2+dLoL)*L
     return dL
+
 
 def binedges(L):
     r"""
@@ -215,6 +223,7 @@ def binedges(L):
         last = 1./(1+dLoL)
     E = L*2/(2+dLoL)
     return hstack((E,E[-1]*last))
+
 
 def divergence(T=None, slits=None, distance=None,
                sample_width=1e10, sample_broadening=0):
@@ -301,6 +310,7 @@ def divergence(T=None, slits=None, distance=None,
         dT[idx] = degrees(0.5*(s1[idx] + sample_s[idx])/d1)
 
     return dT + sample_broadening
+
 
 def slit_widths(T=None,slits_at_Tlo=None,Tlo=90,Thi=90,
                   slits_below=None, slits_above=None):
@@ -395,6 +405,7 @@ def resolution(Q=None,s=None,d=None,L=None,dLoL=None,Tlo=None,Thi=None,
     Q,dQ = Qresolution(L, dLoL*L, T, dT)
     return FWHM2sigma(dQ)
 
+
 def demo():
     import pylab
     from numpy import linspace, exp, real, conj, sin, radians
@@ -417,6 +428,7 @@ def demo():
 
     pylab.show()
 
+
 def demo2():
     import numpy,pylab
     Q,R,dR = numpy.loadtxt('ga128.refl.mce').T
@@ -425,7 +437,6 @@ def demo2():
     pylab.grid(True)
     pylab.semilogy(Q,R,',b')
     pylab.show()
-
 
 
 if __name__ == "__main__":
