@@ -1037,8 +1037,9 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
           back_reflectivity=False, Aguide=270, H=0,
           theta_offset=0, sample_broadening=0,
           L=None, dL=None, T=None, dT=None,
+          FWHM=False,
           ):
-    """
+    r"""
     Load in four column data Q, R, dR, dQ.
 
     The file is loaded with *bumps.data.parse_multi*.  *keysep*
@@ -1082,9 +1083,9 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     a separate value for each point, such the following::
 
         # wavelength: [1, 1.2, 1.5, 2.0, ...]
-        # wavelegnth_resolution: [0.02, 0.02, 0.02, ...]
+        # wavelength_resolution: [0.02, 0.02, 0.02, ...]
 
-    *sample_broadening* in degrees (1-sigma) adds to the angular_resolution.
+    *sample_broadening* in degrees (1-\ $\sigma$) adds to the angular_resolution.
 
     *Aguide* and *H* are parameters for polarized beam measurements
     indicating the magnitude and direction of the applied field.
@@ -1092,10 +1093,15 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     Polarized data is represented using a multi-section data file,
     with blank lines separating each section.  Each section must
     have a polarization keyword, with value "++", "+-", "-+" or "--".
+
+    *FWHM* is True if dQ, dT, dL are given as FWHM rather than 1-\ $\sigma$.
+    *dR* is always 1-\ $\sigma$.
     """
     data = parse_multi(filename, keysep=keysep, sep=sep, comment=comment)
     def _as_Qprobe(data):
-        Q, R, dR, dQ = data[1] # dQ is in sigma, not FWHM
+        Q, R, dR, dQ = data[1]
+        if FWHM: # dQ defaults to 1-sigma, if FWHM is not True
+            dQ = FWHM2sigma(dQ)
 
         # Get wavelength from header if it is not provided as an argument
         data_L = data_T = None
@@ -1115,7 +1121,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
                 data_dL = json.loads(data[0]['wavelength_resolution'])
             else:
                 raise ValueError("Need wavelength resolution to determine dT")
-            data_dL = sigma2FWHM(data_dL)
+            data_dL = sigma2FWHM(data_dL) if not FWHM else data_dL
             data_T = QL2T(Q, data_L)
             data_dT = dQdL2dT(Q, dQ, data_L, data_dL)
         elif data_T is not None:
@@ -1125,14 +1131,16 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
                 data_dT = json.loads(data[0]['angular_resolution'])
             else:
                 raise ValueError("Need angular resolution to determine dL")
-            data_dT = sigma2FWHM(data_dT)
+            data_dT = sigma2FWHM(data_dT) if not FWHM else data_dT
             data_L = QT2L(Q, data_T)
             data_dLoL = dQdT2dLoL(Q, dQ, data_T, data_dT)
             data_dL = data_dLoL * data_L
 
         if data_L is not None:
+            data_dT += (sigma2FWHM(sample_broadening)
+                        if not FWHM else sample_broadening)
             probe = Probe(
-                T=data_T, dT=data_dT + sigma2FWHM(sample_broadening),
+                T=data_T, dT=data_dT,
                 L=data_L, dL=data_dL,
                 data=(R, dR),
                 name=name,
