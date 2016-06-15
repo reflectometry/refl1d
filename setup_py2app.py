@@ -13,7 +13,7 @@ import shutil
 
 import macholib_patch
 
-import py2app # @UnresolvedImport @UnusedImport except on mac
+import py2app
 from distutils.core import setup
 from distutils.util import get_platform
 
@@ -83,10 +83,6 @@ py2app_opt = dict(argv_emulation=True,
                   optimize=2)
 options = dict(py2app=py2app_opt,)
 
-PRODUCT = NAME+" "+VERSION
-PRODUCTDASH = NAME+"-"+VERSION
-APP="dist/%s.app"%PRODUCT
-DMG="dist/%s.dmg"%PRODUCTDASH
 def build_app():
     setup(
           data_files = DATA_FILES,
@@ -97,15 +93,5 @@ def build_app():
     # Add cli interface to the app directory
     os.system('cp -p extra/appbin/* "dist/%s.app"'%NAME)
 
-def build_dmg():
-    """DMG builder; should include docs"""
-    # Remove previous build if it is still sitting there
-    if os.path.exists(APP): shutil.rmtree(APP)
-    if os.path.exists(DMG): os.unlink(DMG)
-    os.rename("dist/%s.app"%NAME, APP)
-    os.system('cd dist && ../extra/dmgpack.sh "%s" "%s.app" ../doc/_build/html ../doc/examples'%(PRODUCTDASH,PRODUCT))
-    os.system('chmod a+r "%s"'%DMG)
-
 if __name__ == "__main__":
     build_app()
-    build_dmg()

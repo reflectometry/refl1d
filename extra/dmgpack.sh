@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash
 
 # dmgpack volume [file|dir]+
 #
@@ -22,7 +22,7 @@
 #    http://developer.apple.com/sdk/index.html
 
 test $# -lt 2 && echo "usage: $0 diskname [file|dir]+" && exit 1
-#set -x
+set -x
 NAME="${1%.dmg}" ; shift
 DISK=/tmp/dmgpack$$.dmg
 COMPRESSED="$NAME.dmg"

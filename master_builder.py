@@ -266,12 +266,28 @@ def create_binary():
         print("No binary build for %s %s\n" % (sys.platform, os.name))
 
 
-def create_windows_installer(version=None):
+def create_installer(version=None):
+    if not version:
+        version = PKG_VERSION
+    if not os.path.exists(INSTALLER_DIR):
+        os.mkdir(INSTALLER_DIR)
+    if sys.platform == 'darwin':
+        _create_osx_installer(version)
+    elif os.name == 'nt':
+        _create_windows_installer(version)
+    else:
+        print("No installer for %r"%sys.platform)
+
+def _create_osx_installer(version):
+    "create mac dmg"
+    print("Running command to create the dmg")
+    exec_cmd([PYTHON, "extra/build_dmg.py", APP_NAME, PKG_VERSION],
+             cwd=REFL_DIR)
+
+def _create_windows_installer(version):
     "create the windows installer"
-    if os.name != 'nt': return
     if not os.path.exists(INNO):
         print("missing INNO --- no installer")
-    if not version: version = PKG_VERSION
     # Run the Inno Setup Compiler to create a Win32 installer/uninstaller for
     # the application.
     print("Running Inno Setup Compiler to create Win32 "
@@ -280,10 +296,9 @@ def create_windows_installer(version=None):
     # Run the Inno Setup Compiler to create a Win32 installer/uninstaller.
     # Override the output specification in <PKG_NAME>.iss to put the executable
     # and the manifest file in the top-level directory.
-    if not os.path.exists(INSTALLER_DIR):
-        os.mkdir(INSTALLER_DIR)
     arch = "x64" if sys.maxsize > 2**32 else "x86"
-    exec_cmd([INNO, "/Q", "/O"+INSTALLER_DIR, "/DVERSION="+version, "/DARCH="+arch, PKG_NAME+".iss"],
+    exec_cmd([INNO, "/Q", "/O"+INSTALLER_DIR,
+              "/DVERSION="+version, "/DARCH="+arch, PKG_NAME+".iss"],
              cwd=REFL_DIR)
 
 
@@ -464,11 +479,12 @@ def check_dependencies():
 def exec_cmd(command, cwd=None):
     """Runs the specified command in a subprocess."""
 
-    shell = os.name != 'nt'
     if isinstance(command, list):
         command_str = " ".join('"%s"' % p if ' ' in p else p for p in command)
+        shell = os.name == 'nt'
     else:
         command_str = command
+        shell = True
     print("%s$ %s" % (os.getcwd(), command_str))
     result = subprocess.call(command, shell=shell, cwd=cwd)
     if result != 0:
@@ -482,7 +498,7 @@ BUILD_POINTS = [
   ('docs', build_documentation),  # Needed by windows installer
   ('zip', create_archive),
   ('exe', create_binary),
-  ('installer', create_windows_installer),
+  ('installer', create_installer),
 ]
 
 
