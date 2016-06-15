@@ -827,7 +827,7 @@ def SCFsolve(chi=0,chi_s=0,pdi=1,sigma=None,segments=None,
         
         if phi[-1] > tol:
             # if the last layer is beyond tolerance, grow the lattice
-            newlayers = max(1,round(len(phi0)*ratio))
+            newlayers = max(1,int(round(len(phi0)*ratio)))
             if disp: print('Growing undersized lattice by', newlayers)
             phi0 = hstack((phi,np.linspace(phi[-1],0,num=newlayers)))
         else:
@@ -896,7 +896,7 @@ def SZdist(pdi,nn,cache=OrderedDict()):
             
     if uniform or pdi_underflow:
         # NOTE: rounding here allows nn to be a double in the rest of the logic
-        p_ni = np.zeros((1,round(nn)))
+        p_ni = np.zeros((1,int(round(nn))))
         p_ni[0,-1] = 1.0
     else:
         p_ni = hstack(p_ni_list).reshape(1,-1)
@@ -915,7 +915,7 @@ def default_guess(segments=100,sigma=.5,chi=0,chi_s=0):
     For now, a line using numbers from scaling theory
     """
     ss=sqrt(sigma)
-    default_layers = round(max(MINLAT,segments*ss))
+    default_layers = int(round(max(MINLAT,segments*ss)))
     default_phi0 = np.linspace(ss,0,num=default_layers)
     return default_layers, default_phi0
     
@@ -1038,7 +1038,7 @@ def calc_g_zs(g_z,c_i,layers,segments):
     # Older versions of inner loops
     
 #    if np.size(c_i)==1:
-#        c_i = np.zeros((1,round(segments)))
+#        c_i = np.zeros((1,int(round(segments))))
 #        g_zs[:,0] = 0.0
 #        g_zs[0,0] = g_z[0]
 #    else:

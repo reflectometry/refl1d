@@ -15,6 +15,7 @@ Usage:
 import os, sys, subprocess
 from glob import glob
 import nose
+#import warnings; warnings.filterwarnings("error", module="numpy.core.numeric")
 
 from distutils.util import get_platform
 platform = '.%s-%s'%(get_platform(),sys.version[:3])

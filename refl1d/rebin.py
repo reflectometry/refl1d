@@ -267,8 +267,8 @@ def _check_uniform_2d(x, y):
     z = np.array([y], 'd') * np.array([x], 'd').T
     xedges = np.concatenate([(0,), np.cumsum(x)])
     yedges = np.concatenate([(0,), np.cumsum(y)])
-    nx = np.round(xedges[-1])
-    ny = np.round(yedges[-1])
+    nx = int(np.round(xedges[-1]))
+    ny = int(np.round(yedges[-1]))
     ox = np.arange(nx + 1)
     oy = np.arange(ny + 1)
     target = np.ones([nx, ny], 'd')
