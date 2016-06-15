@@ -86,53 +86,58 @@ version = refl1d.__version__
 # theme is used when rendering wx widgets.  The manifest must be matched to the
 # version of Python that is being used.
 
-is_64bits = sys.maxsize > 2**32
-arch = "amd64" if is_64bits else "x86"
-manifest = """
-    <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-    <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+manifest_template = """
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <assemblyIdentity
+    version="%(version)s"
+    processorArchitecture="%(arch)s"
+    name="%(appname)s"
+    type="win32">
+  </assemblyIdentity>
+  <description>Refl1D</description>
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
+    <security>
+      <requestedPrivileges>
+        <requestedExecutionLevel
+          level="asInvoker"
+          uiAccess="false">
+        </requestedExecutionLevel>
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+  <dependency>
+    <dependentAssembly>
       <assemblyIdentity
-        version="5.0.0.0"
+        type="win32"
+        name="Microsoft.VC90.CRT"
+        version="9.0.21022.8"
         processorArchitecture="%(arch)s"
-        name="SasView"
-        type="win32">
+        publicKeyToken="1fc8b3b9a1e18e3b">
       </assemblyIdentity>
-      <description>SasView</description>
-      <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
-        <security>
-          <requestedPrivileges>
-            <requestedExecutionLevel
-              level="asInvoker"
-              uiAccess="false">
-            </requestedExecutionLevel>
-          </requestedPrivileges>
-        </security>
-      </trustInfo>
-      <dependency>
-        <dependentAssembly>
-          <assemblyIdentity
-            type="win32"
-            name="Microsoft.VC90.CRT"
-            version="9.0.21022.8"
-            processorArchitecture="%(arch)s"
-            publicKeyToken="1fc8b3b9a1e18e3b">
-          </assemblyIdentity>
-        </dependentAssembly>
-      </dependency>
-      <dependency>
-        <dependentAssembly>
-          <assemblyIdentity
-            type="win32"
-            name="Microsoft.Windows.Common-Controls"
-            version="6.0.0.0"
-            processorArchitecture="%(arch)s"
-            publicKeyToken="6595b64144ccf1df"
-            language="*">
-          </assemblyIdentity>
-        </dependentAssembly>
-      </dependency>
-    </assembly>
-    """%{'arch': arch}
+    </dependentAssembly>
+  </dependency>
+  <dependency>
+    <dependentAssembly>
+      <assemblyIdentity
+        type="win32"
+        name="Microsoft.Windows.Common-Controls"
+        version="6.0.0.0"
+        processorArchitecture="%(arch)s"
+        publicKeyToken="6595b64144ccf1df"
+        language="*">
+      </assemblyIdentity>
+    </dependentAssembly>
+  </dependency>
+</assembly>
+"""
+is_64bits = sys.maxsize > 2**32
+manifest_properties = {
+    "arch": "amd64" if is_64bits else "x86",
+    "appname": "Refl1d",
+    "version": "5.0.0.0",
+}
+manifest = manifest_template % manifest_properties
 
 # Create a list of all files to include along side the executable being built
 # in the dist directory tree.  Each element of the data_files list is a tuple
@@ -201,6 +206,7 @@ packages = [
     'numpy', 'scipy', 'matplotlib', 'pytz', 'pyparsing',
     'periodictable', 'refl1d.names', 'bumps', 'wx',
     'wx.py.path',
+    'IPython', 'pyreadline',
     ]
 
 # Specify files to include in the executable image.

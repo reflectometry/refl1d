@@ -49,13 +49,8 @@ git push
 # Note: don't use anaconda to build release version unless we update all
 # web pages to say "built with anaconda"; as convenient as it is, we don't
 # want to run afoul of license agreements by missing a page.
-[windows]
+[windows, mac]
 python master_builder.py
-#python setup_py2exe.py
-
-[mac]
-python setup_py2app.py
-
 
 (7) tag release
 

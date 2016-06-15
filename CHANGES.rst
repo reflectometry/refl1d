@@ -4,6 +4,13 @@ Change History
 
 Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 
+2016-06-15 R0.7.8a2
+===================
+
+* load 4-column data: Q, R, dR, dQ, with dQ using 1-sigma resolution
+* support Zeeman/Felcher effect for spin-flip in large applied fields
+* fix Fresnel calculation
+
 2014-11-05 R0.7.7
 =================
 
