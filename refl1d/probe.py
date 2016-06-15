@@ -1095,8 +1095,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     """
     data = parse_multi(filename, keysep=keysep, sep=sep, comment=comment)
     def _as_Qprobe(data):
-        Q, R, dR, dQ = data[1]
-        dQ = sigma2FWHM(dQ)
+        Q, R, dR, dQ = data[1] # dQ is in sigma, not FWHM
 
         # Get wavelength from header if it is not provided as an argument
         data_L = data_T = None
