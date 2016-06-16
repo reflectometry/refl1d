@@ -5,10 +5,11 @@
 #include <complex>
 #include <cstdlib>
 #include <cmath>
+#include <limits>
 #include "reflcalc.h"
 
 #define MINIMAL_RHO_M 1e-2  // in units of 1e-6/A^2
-
+const double EPS = std::numeric_limits<double>::epsilon();
 
 extern "C" void
 Cr4xa(const int &N, const double D[], const double SIGMA[],
@@ -179,10 +180,10 @@ C * Converted to subroutine from GEPORE.f
         // by the boundary conditions (neutrons only incident in the fronting medium - no 
         // source of neutrons below).
         // 
-        S1L = -sqrt(Cplx(PI4*(RHO[L]+RHOM[L])-E0, -PI4*fabs(IRHO[L])));
-        S3L = -sqrt(Cplx(PI4*(RHO[L]-RHOM[L])-E0, -PI4*fabs(IRHO[L])));
-        S1LP = -sqrt(Cplx(PI4*(RHO[LP]+RHOM[LP])-E0, -PI4*fabs(IRHO[LP])));
-        S3LP = -sqrt(Cplx(PI4*(RHO[LP]-RHOM[LP])-E0, -PI4*fabs(IRHO[LP])));
+        S1L = -sqrt(Cplx(PI4*(RHO[L]+RHOM[L])-E0, -PI4*(fabs(IRHO[L])+EPS)));
+        S3L = -sqrt(Cplx(PI4*(RHO[L]-RHOM[L])-E0, -PI4*(fabs(IRHO[L])+EPS)));
+        S1LP = -sqrt(Cplx(PI4*(RHO[LP]+RHOM[LP])-E0, -PI4*(fabs(IRHO[LP])+EPS)));
+        S3LP = -sqrt(Cplx(PI4*(RHO[LP]-RHOM[LP])-E0, -PI4*(fabs(IRHO[LP])+EPS)));
 
         if (abs(U1[L]) <= 1.0) {
             // then Bz >= 0
