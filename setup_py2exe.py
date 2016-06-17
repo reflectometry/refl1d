@@ -204,9 +204,8 @@ data_files.append(('.', [os.path.join(libdir, k+'.dll') for k in missing_libs]))
 # Specify required packages to bundle in the executable image.
 packages = [
     'numpy', 'scipy', 'matplotlib', 'pytz', 'pyparsing',
-    'periodictable', 'refl1d.names', 'bumps', 'wx',
-    'wx.py.path',
-    'IPython', 'pyreadline',
+    'periodictable', 'bumps', 'refl1d', 'refl1d.names', 'refl1d.errors',
+    'wx', 'wx.py.path', 'IPython', 'pyreadline',
     ]
 
 # Specify files to include in the executable image.
