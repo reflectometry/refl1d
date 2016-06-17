@@ -142,20 +142,25 @@ class DataView(wx.Panel):
         if self._need_redraw:
             #print "-redraw"
             self.redraw()
+
     def get_state(self):
         return self.problem
+
     def set_state(self, state):
         self.set_model(state)
 
     def set_model(self, model):
+        # print ">>>>>>> refl1d data set model"
         self.problem = model
         self.redraw(reset=True)
 
     def update_model(self, model):
+        # print ">>>>>>> refl1d data update model"
         if self.problem == model:
             self.redraw()
 
     def update_parameters(self, model):
+        # print ">>>>>>> refl1d data update parameters"
         if self.problem == model:
             self.redraw()
     # =============================

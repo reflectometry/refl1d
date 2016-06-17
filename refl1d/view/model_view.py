@@ -92,7 +92,7 @@ class ModelView(wx.Panel):
         #self.canvas.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.canvas.SetFocus())
 
         self.model = None
-        self._need_set_model = self._need_redraw = False
+        self._need_interactors = self._need_redraw = False
         self.Bind(wx.EVT_SHOW, self.OnShow)
 
     def OnContextMenu(self,event):
@@ -114,55 +114,55 @@ class ModelView(wx.Panel):
         return False
 
     def OnProfileSelect(self, event):
-        self.set_profile(*self.profiles[event.GetInt()])
+        self._set_profile(*self.profiles[event.GetInt()])
 
     # ==== Model view interface ===
     def OnShow(self, event):
-        if not event.Show: return
+        if not event.Show:
+            return
         #print "showing profile"
-        if self._need_set_model:
-            #print "-set model"
-            self.set_model(self.model)
-        elif self._need_redraw:
-            #print "-redraw"
-            self.profile.redraw()
-        event.Skip()
+        if self._need_redraw:
+            self.redraw(reset_interactors=False, reset_limits=True)
+        #event.Skip()
+
     def get_state(self):
         return self.model
+
     def set_state(self, state):
         self.set_model(state)
 
     def set_model(self, model):
+        # print ">>>>>>> refl1d profile set model"
         self.model = model
-        if not self.IsShown():
-            self._need_set_model = True
-        else:
-            self._need_set_model = self._need_redraw = False
-            self._set_model()
+        self.redraw(reset_interactors=True, reset_limits=True)
 
     def update_model(self, model):
-        #print "profile update model"
-        if self.model != model: return
-
-        if not IS_MAC and not self.IsShown():
-            self._need_set_model = True
-        else:
-            self._need_set_model = self._need_redraw = False
-            self._set_model()
+        # print ">>>>>>> refl1d profile update model"
+        if self.model == model:
+            self.redraw(reset_interactors=False, reset_limits=True)
 
     def update_parameters(self, model):
-        #print "profile update parameters"
-        if self.model != model: return
+        # print ">>>>>>> refl1d profile update parameters"
+        if self.model == model:
+            self.redraw(reset_interactors=False, reset_limits=False)
 
-        if not IS_MAC and not self.IsShown():
+    def redraw(self, reset_interactors=False, reset_limits=False):
+        if reset_interactors:
+            self._need_interactors = True
+
+        if not self.IsShown():
             self._need_redraw = True
-        else:
-            self._need_redraw = False
-            self.profile.redraw()
-    # =============================================
+            return
 
-    def _set_model(self):
-        """Initialize model by profile."""
+        if self._need_interactors:
+            self._create_interactors()
+            self._set_profile(*self.profiles[0])
+            self._need_interactors = False
+
+        self.profile.redraw(reset_limits=reset_limits)
+
+    # =============================================
+    def _create_interactors(self):
         self.profiles = []
         def add_profiles(name, exp, idx):
             if isinstance(exp,MixedExperiment):
@@ -189,13 +189,7 @@ class ModelView(wx.Panel):
             self.profile_selector_label.Hide()
             self.profile_selector.Hide()
 
-        self.set_profile(*self.profiles[0])
-
-        # update the figure
-        self.profile.redraw(reset_limits=True)
-
-
-    def set_profile(self, name, experiment, idx):
+    def _set_profile(self, name, experiment, idx):
         # Turn the model into a user interface
         # It is the responsibility of the party that is indicating
         # that a redraw is necessary to clear the precalculated
