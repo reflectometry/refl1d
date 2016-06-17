@@ -41,9 +41,9 @@ if len(sys.argv) == 1:
 
 
 # TODO: Combine with setup-py2exe so that consistency is easier.
-packages = ['numpy', 'scipy', 'matplotlib', 'pytz', 'periodictable', 
-            'bumps', 'refl1d', 'IPython', 'wx']
-includes = ['readline']
+packages = []
+includes = ['readline', 'IPython', 'numpy', 'scipy', 'matplotlib', 'pytz', 'wx',
+            'periodictable', 'bumps', 'refl1d']
 excludes = ['Tkinter', 'PyQt4', '_ssl', '_tkagg', 'numpy.distutils.test']
 PACKAGE_DATA = {}
 
