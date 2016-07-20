@@ -139,10 +139,10 @@ class ExperimentBase(object):
                 pylab.plot(Q,R,':g',hold=True)
 
 
-    def plot(self, plot_shift=None, profile_shift=None):
+    def plot(self, plot_shift=None, profile_shift=None, view=None):
         import pylab
         pylab.subplot(211)
-        self.plot_reflectivity(plot_shift=plot_shift)
+        self.plot_reflectivity(plot_shift=plot_shift, view=view)
         pylab.subplot(212)
         self.plot_profile(plot_shift=profile_shift)
 
