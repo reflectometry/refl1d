@@ -1173,10 +1173,10 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
                              + ", ".join(sorted(data_by_xs.keys())))
         xs = [data_by_xs.get(xs, None) for xs in ('--', '-+', '+-', '++')]
 
-        if all(isinstance(d, Probe) for d in xs if d is not None):
-            probe = PolarizedNeutronProbe(xs, Aguide=Aguide, H=H)
-        else:
+        if any(isinstance(d, QProbe) for d in xs if d is not None):
             probe = PolarizedQProbe(xs, Aguide=Aguide, H=H)
+        else:
+            probe = PolarizedNeutronProbe(xs, Aguide=Aguide, H=H)
     return probe
 
 
