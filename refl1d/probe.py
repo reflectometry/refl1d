@@ -1120,7 +1120,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
             elif 'wavelength_resolution' in data[0]:
                 data_dL = json.loads(data[0]['wavelength_resolution'])
             else:
-                raise ValueError("Need wavelength resolution to determine dT")
+                raise ValueError("Need wavelength_resolution to determine dT")
             data_dL = sigma2FWHM(data_dL) if not FWHM else data_dL
             data_T = QL2T(Q, data_L)
             data_dT = dQdL2dT(Q, dQ, data_L, data_dL)
@@ -1130,7 +1130,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
             elif 'angular_resolution' in data[0]:
                 data_dT = json.loads(data[0]['angular_resolution'])
             else:
-                raise ValueError("Need angular resolution to determine dL")
+                raise ValueError("Need angular_resolution to determine dL")
             data_dT = sigma2FWHM(data_dT) if not FWHM else data_dT
             data_L = QT2L(Q, data_T)
             data_dLoL = dQdT2dLoL(Q, dQ, data_T, data_dT)
