@@ -234,7 +234,7 @@ class Microslabs(object):
     @property
     def surface_sigma(self):
         "sigma above the surface (which is not part of sigma)"
-        return self._slabs[self._num_slabs-1,1]
+        return self._slabs[self._num_slabs-1,1] if self._num_slabs>0 else 0.
 
     @property
     def rho(self):
