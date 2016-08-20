@@ -4,7 +4,7 @@ Change History
 
 Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 
-2016-08-05 v0.7.9a1
+2016-08-05 v0.7.9a2
 ===================
 
 * support magnetic substrate
