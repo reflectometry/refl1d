@@ -389,9 +389,9 @@ def test():
     # Beta casein results checked against Duncan McGillivray's spreadsheet
     # beta casein 23561.9 23880.9 30872.9  1.27 12614 11.55  1.68  2.75
     s = Sequence("beta casein", beta_casein)
-    assert abs(s.Dmass-23880.9) < 0.1
+    assert abs(s.D.mass-23880.9) < 0.1
     #print "density",s.mass/avogadro_number/s.cell_volume*1e24
-    assert abs(s.mass/avogadro_number/s.cell_volume*1e24 - 1.267) < 0.01
+    assert abs(s.natural.mass/avogadro_number/s.cell_volume*1e24 - 1.267) < 0.01
     assert abs(s.D_sld-2.75) < 0.01
 
     # Check that X-ray sld is independent of isotope
@@ -422,4 +422,5 @@ def main():
               (seq.name, seq.natural.mass, seq.H_sld, seq.D_sld, 100*concentration, mixture_sld))
 
 if __name__=="__main__":
-    main()
+    #main()
+    fasta_table()
