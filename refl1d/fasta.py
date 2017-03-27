@@ -50,45 +50,46 @@ class Molecule(object):
     Attributes
     ==========
 
-    *formula* is the original tritiated formula.  You can retrieve the hydrogenated or
-    deuterated forms using :fun:`isotope_substitution` with *formula*, periodictable.T
+    *formula* is the original tritiated formula.  You can create the hydrogenated or
+    deuterated forms using::
+    
+        from periodictable import H, D, T, fast
+        hydrogenated = isotope_substitution
+    :fun:`isotope_substitution(M.formula, ` with *formula*, T
     and periodictable.H or periodictable.D.
 
     *D2Omatch* is the % D2O in H2O required to contrast match the molecule, including
     the the proton swapping effect.
 
-    *sld*/*Hsld*/*Dsld* are the the scattering length densities of the molecule with tritium
-    replaced by naturally occurring H/D ratios, pure H[1] and pure H[2] respectively.
-
-    *mass*/*Hmass*/*Dmass* are the masses the three conditions.
+    *natural*/*H*/*D* are the formulae with tritium replaced by naturally occurring D/H ratio, 
+    by pure H and by pure D respectively.  *sld*/*H_sld*/*D_sld* are the corresponding slds.
+    *mass* and *density* are available as *H.mass* and *H.density*, etc.
 
     *charge* is the charge on the molecule
 
     *cell_volume* is the estimated cell volume for the molecule
-
-    *density* is the estimated molecule density
     """
-    def __init__(self, name, formula, cell_volume=None, density=None, charge=0):
+    def __init__(self, name, formula, cell_volume=None, natural_density=None, charge=0):
+        M = pt.formula(formula, natural_density=natural_density)
+
         # Fill in density or cell_volume
-        M = pt.formula(formula, natural_density=density)
         if cell_volume is not None:
             M.density = 1e24*M.molecular_mass/cell_volume if cell_volume>0 else 0
-            #print name, M.molecular_mass, cell_volume, M.density
         else:
             cell_volume = 1e24*M.molecular_mass/M.density
 
-        Hnatural = isotope_substitution(M, pt.T, pt.H)
-        H = isotope_substitution(M, pt.T, pt.H[1])
-        D = isotope_substitution(M, pt.T, pt.D)
-
+        self.cell_volume = cell_volume
         self.name = name
         self.formula = M
-        self.cell_volume = cell_volume
-        self.sld = pt.neutron_sld(Hnatural, wavelength=5)[0]
-        self.Hsld = pt.neutron_sld(H, wavelength=5)[0]
-        self.Dsld = pt.neutron_sld(D, wavelength=5)[0]
-        self.mass, self.Hmass, self.Dmass = Hnatural.mass, H.mass, D.mass
-        self.D2Omatch = D2Omatch(self.Hsld, self.Dsld)
+        self.natural = isotope_substitution(M, pt.T, pt.H)
+        self.H = isotope_substitution(M, pt.T, pt.H[1])
+        self.D = isotope_substitution(M, pt.T, pt.D)
+
+        self.sld = pt.neutron_sld(self.natural, wavelength=5)[0]
+        self.H_sld = pt.neutron_sld(self.H, wavelength=5)[0]
+        self.D_sld = pt.neutron_sld(self.D, wavelength=5)[0]
+                
+        self.D2Omatch = D2Omatch(self.H_sld, self.D_sld)
         self.charge = charge
 
     def D2Osld (self, volume_fraction=1., D2O_fraction=0.):
@@ -96,7 +97,7 @@ class Molecule(object):
         Neutron SLD of the molecule in a %D2O solvent.
         """
         solvent_sld = D2O_fraction*D2O_SLD + (1-D2O_fraction)*H2O_SLD
-        solute_sld = D2O_fraction*self.Dsld + (1-D2O_fraction)*self.Hsld
+        solute_sld = D2O_fraction*self.D_sld + (1-D2O_fraction)*self.H_sld
         return volume_fraction*solute_sld + (1-volume_fraction)*solvent_sld
 
 class Sequence(Molecule):
@@ -150,12 +151,12 @@ class Sequence(Molecule):
 H2O_SLD = pt.neutron_sld(pt.formula("H2O@0.9982"),wavelength=5)[0]
 D2O_SLD = pt.neutron_sld(pt.formula("D2O@0.9982"),wavelength=5)[0]
 
-def D2Omatch(Hsld,Dsld):
+def D2Omatch(H_sld, D_sld):
     """
     Find the D2O% concentration of solvent such that neutron SLD of the
     material matches the neutron SLD of the solvent.
 
-    *Hsld*, *Dsld* are the SLDs for the hydrogenated and deuterated forms 
+    *H_sld*, *D_sld* are the SLDs for the hydrogenated and deuterated forms 
     of the material respectively, where *D* includes all the labile protons 
     swapped for deuterons.  Water SLD is calculated at 20 C.
 
@@ -167,7 +168,7 @@ def D2Omatch(Hsld,Dsld):
     # %SLD(Dsample) + (1-%)SLD(Hsample) = %SLD(D2O) + (1-%)SLD(H2O)
     # %(SLD(Dsample) - SLD(Hsample) + SLD(H2O) - SLD(D2O)) = SLD(H2O) - SLD(Hsample)
     # % = 100*(SLD(H2O) - SLD(Hsample)) / (SLD(Dsample) - SLD(Hsample) + SLD(H2O) - SLD(D2O))
-    return 100*(H2O_SLD - Hsld) / (Dsld - Hsld + H2O_SLD - D2O_SLD) 
+    return 100*(H2O_SLD - H_sld) / (D_sld - H_sld + H2O_SLD - D2O_SLD) 
 
 def read_fasta(fp):
     """
@@ -198,6 +199,7 @@ def isotope_substitution(formula, source, target, portion=1):
  
     *portion* is the proportion of source which is substituted for target.
     """
+    # Note: formula.atoms creates a new structure each time
     atoms = formula.atoms
     if source in atoms:
         mass = formula.mass
@@ -375,10 +377,10 @@ def fasta_table():
     for v in rows:
         protons = sum(num*el.number for el,num in v.formula.atoms.items())
         electrons = protons - v.charge
-        Xsld = pt.xray_sld(v.formula, wavelength=pt.Cu.K_alpha)
+        xray_sld = pt.xray_sld(v.formula, wavelength=pt.Cu.K_alpha)
         print("%20s %7.1f %7.1f %7.1f %5.2f %5d %5.2f %5.2f %5.2f %5.1f"%(
-            v.name, v.Hmass, v.Dmass, v.cell_volume, v.formula.density,
-            electrons, Xsld[0], v.Hsld, v.Dsld, v.D2Omatch)) 
+            v.name, v.H.mass, v.D.mass, v.cell_volume, v.natural.density,
+            electrons, xray_sld[0], v.H_sld, v.D_sld, v.D2Omatch)) 
 
 beta_casein = "RELEELNVPGEIVESLSSSEESITRINKKIEKFQSEEQQQTEDELQDKIHPFAQTQSLVYPFPGPIPNSLPQNIPPLTQTPVVVPPFLQPEVMGVSKVKEAMAPKHKEMPFPKYPVEPFTESQSLTLTDVENLHLPLPLLQSWMHQPHQPLPPTVMFPPQSVLSLSQSKVLPVPQKAVPYPQRDMPIQAFLLYQEPVLGPVRGPFPIIV"
 
@@ -390,14 +392,34 @@ def test():
     assert abs(s.Dmass-23880.9) < 0.1
     #print "density",s.mass/avogadro_number/s.cell_volume*1e24
     assert abs(s.mass/avogadro_number/s.cell_volume*1e24 - 1.267) < 0.01
-    assert abs(s.Dsld-2.75) < 0.01
+    assert abs(s.D_sld-2.75) < 0.01
 
     # Check that X-ray sld is independent of isotope
     H = isotope_substitution(s.formula, pt.T, pt.H)
     D = isotope_substitution(s.formula, pt.T, pt.D)
-    Hsld, Dsld = pt.xray_sld(H,wavelength=1.54), pt.xray_sld(D,wavelength=1.54)
-    #print Hsld, Dsld
-    assert abs(Hsld[0]-Dsld[0]) < 1e-10
+    H_sld, D_sld = pt.xray_sld(H,wavelength=1.54), pt.xray_sld(D,wavelength=1.54)
+    #print H_sld, D_sld
+    assert abs(H_sld[0] - D_sld[0]) < 1e-10
+
+def main():
+    import sys
+    import os
+    if len(sys.argv) == 1 or sys.argv[1] in ('-h', '--help', '-?'):
+        print("usage: python -m periodictable.fasta file|sequence [%D]")
+        sys.exit(1)
+    if os.path.exists(sys.argv[1]):
+        seq_list = Sequence.loadall(sys.argv[1])
+    else:
+        seq_list = [Sequence("", sys.argv[1])]
+    if len(sys.argv) > 2:
+        concentration = 0.01*float(sys.argv[2])
+    else:
+        concentration = 0.50
+
+    for seq in seq_list:
+        mixture_sld = seq.H_sld*(1-concentration) + seq.D_sld*concentration
+        print("%s mass:%.1f H-sld: %.3f  D-sld: %.3f  D[%g%%]-sld: %.3f" %
+              (seq.name, seq.natural.mass, seq.H_sld, seq.D_sld, 100*concentration, mixture_sld))
 
 if __name__=="__main__":
-    fasta_table()
+    main()
