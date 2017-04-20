@@ -308,8 +308,9 @@ class Stack(Layer):
                 magnetism = layer.magnetism
                 #import sys; print >>sys.stderr,"magnetism",magnetism
                 anchor = slabs.thickness() + magnetism.dead_below.value
-                s_below = (magnetism.interface_below.value
-                           if magnetism.interface_below 
+                s_below = (nan if i == 0
+                           else magnetism.interface_below.value
+                           if magnetism.interface_below
                            else slabs.surface_sigma)
                 end_layer = i + magnetism.extent - 1
 

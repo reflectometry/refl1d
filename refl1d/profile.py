@@ -60,7 +60,7 @@ using one energy so we only show the first column.
 """
 
 import numpy
-from numpy import inf
+from numpy import inf, nan, isnan
 from scipy.special import erf
 
 class Microslabs(object):
@@ -233,8 +233,8 @@ class Microslabs(object):
         return self._slabs[:self._num_slabs-1,1]
     @property
     def surface_sigma(self):
-        "sigma above the surface (which is not part of sigma)"
-        return self._slabs[self._num_slabs-1,1]
+        "roughness for the current top layer, or nan if substrate"
+        return self._slabs[self._num_slabs-1,1] if self._num_slabs>0 else nan
 
     @property
     def rho(self):
@@ -466,12 +466,21 @@ class Microslabs(object):
         #print "sigmas",sigmas
         # Splice the blocks together with rhoM_gap=0 and
         # thetaM_gap=(thetaM_below+thetaM_above)/2.
-        slices = [[[0],[0],[blocks[0][2,0]]]]
+        # slices = [(thickness,rhoM,thetaM), (thickness, rhoM, thetaM), ...]
+        # initialize slices with the magnetism of the substrate, which will
+        # be [thickness=0, rhoM=0, thetaM=first thetaM] unless substrate
+        # magnetism has been specified
+        substrate_magnetism = isnan(sigmas[0][0])
+        if substrate_magnetism:
+            slices = [[[], [], []]]
+        else:
+            slices = [[[0],[0],[blocks[0][2,0]]]]
         interfaces = []
         sigma = None
         pos = 0
         for i,B in enumerate(blocks):
-            w = offsets[i] - pos
+            anchor = offsets[i]
+            w = anchor - pos
             if w >= self.dz: # Big gap, so need spacer
                 # Target average theta between blocks.
                 if i == 0:
@@ -482,21 +491,25 @@ class Microslabs(object):
                     interfaces.append(sigmas[i-1][1])
                 slices.append([[w],[0],[thetaM]])
                 interfaces.append(sigmas[i][0])
-            elif w >= -1e-6: # Small gap, so add it to the start of the next block
+            elif w >= -1e-6:
+                # Small gap, so add it to the start of the next block
                 B[0,0] += w
+                anchor -= w
                 if i == 0:
-                    interfaces.append(sigmas[0][0])
+                    if not substrate_magnetism:
+                        interfaces.append(sigmas[0][0])
                 else:
                     # Use interface_above between blocks which are connected,
                     # ignoring interface_below.
                     interfaces.append(sigmas[i-1][1])
-            else: # negative gap should never happen
+            else:
+                # negative gap should never happen
                 raise ValueError("Overlapping magnetic layers at %d"%i)
             slices.append(B)
             nslabs = len(B[0,:])
             interfaces.extend([0]*(nslabs-1))
             width = numpy.sum(B[0,:])
-            pos = offsets[i] + width
+            pos = anchor + width
 
         # Add the final slice
         w = self.thickness() - pos
@@ -506,6 +519,7 @@ class Microslabs(object):
 
         wM,rhoM,thetaM = [numpy.hstack(v) for v in zip(*slices)]
         sigmaM = numpy.array(interfaces)
+        #print "result", wM, rhoM, thetaM, sigmaM
         return wM,rhoM,thetaM,sigmaM
 
     def _build_smooth_profile(self, dz):

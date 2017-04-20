@@ -1037,7 +1037,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
           back_reflectivity=False, Aguide=270, H=0,
           theta_offset=0, sample_broadening=0,
           L=None, dL=None, T=None, dT=None,
-          FWHM=False,
+          FWHM=False, radiation=None,
           ):
     r"""
     Load in four column data Q, R, dR, dQ.
@@ -1096,12 +1096,30 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
 
     *FWHM* is True if dQ, dT, dL are given as FWHM rather than 1-\ $\sigma$.
     *dR* is always 1-\ $\sigma$.
+
+    *radiation* is 'xray' or 'neutron', depending on whether X-ray or
+    neutron scattering length density calculator should be used for
+    determining the scattering length density of a material.
     """
     data = parse_multi(filename, keysep=keysep, sep=sep, comment=comment)
     def _as_Qprobe(data):
         Q, R, dR, dQ = data[1]
         if FWHM: # dQ defaults to 1-sigma, if FWHM is not True
             dQ = FWHM2sigma(dQ)
+
+        # support calculation of sld from material based on radiation type
+        if radiation is not None:
+            data_radiation = radiation
+        elif 'radiation' in data[0]:
+            data_radiation = json.loads(data[0]['radiation'])
+        else:
+            data_radiation = None
+        if data_radiation == 'xray':
+            make_probe = XrayProbe
+        elif data_radiation == 'neutron':
+            make_probe = NeutronProbe
+        else:
+            make_probe = Probe
 
         # Get wavelength from header if it is not provided as an argument
         data_L = data_T = None
@@ -1113,7 +1131,6 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
             data_T = T
         elif 'angle' in data[0]:
             data_T = json.loads(data[0]['angle'])
-
         if data_L is not None:
             if dL is not None:
                 data_dL = dL
@@ -1139,7 +1156,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
         if data_L is not None:
             data_dT += (sigma2FWHM(sample_broadening)
                         if not FWHM else sample_broadening)
-            probe = Probe(
+            probe = make_probe(
                 T=data_T, dT=data_dT,
                 L=data_L, dL=data_dL,
                 data=(R, dR),

@@ -29,7 +29,7 @@ if sys.frozen == "windows_exe":
             self._alert(0, text)
 
         def write(self, text):
-            if self._file is None and self._error is None:
+            if self._file is None:
                 from StringIO import StringIO
                 self._file = StringIO()
                 import atexit
