@@ -2,7 +2,7 @@
 # Author: Paul Kienzle
 
 """
-Scattering length density profile.
+Scattering length density profile.        """"""
 
 In order to render a reflectometry model, the theory function calculator
 renders each layer in the model for each energy in the probe.  For slab
@@ -433,6 +433,7 @@ class Microslabs(object):
         return z,rho,irho,rhoM,thetaM
 
     def _render_magnetic(self):
+
         """
         Render nuclear and magnetic profiles on common slab boundaries.
 
@@ -513,8 +514,8 @@ class Microslabs(object):
         right = thickness + max(10,self.sigma[-1]*3)
         z = numpy.arange(left,right+dz,dz)
         # Only show the first wavelength
-        rho  = build_profile(z, self.w, self.sigma, self.rho[0])
         irho = build_profile(z, self.w, self.sigma, self.irho[0])
+        rho  = build_profile(z, self.w, self.sigma, self.rho[0])
         return z,rho,irho
 
 
@@ -554,40 +555,80 @@ def build_profile(z, thickness, roughness, value):
 
     # Find interface depths
     offset = numpy.hstack( (-inf, 0, numpy.cumsum(thickness[1:-1]), inf) )
-
     # gives the layer boundaries in terms of the index of the z
     idx = numpy.searchsorted(z, offset)
     # TODO: The following hack makes sure the final z value is calculated.
     # TODO: Make sure it works even when z is wider than the range of offsets.
-    if idx[-1] < len(z):
+    if idx[-1] < len(z): # how is this possible? Because searchsorted(z, inf) should return len(z)
         idx[-1] = len(z)
 
     # compute the results
-    result = numpy.empty_like(z)
-    for i,mvalue in enumerate(value):
-        zo = z[idx[i]:idx[i+1]]
-        if i==0:
-            lsigma = lvalue = lblend = 0
-        else:
-            lsigma = roughness[i-1]
-            lvalue = value[i-1]
-            lblend = blend(zo-offset[i],lsigma)
-        if i >= len(value)-1:
-            rsigma = rvalue = rblend = 0
-        else:
-            rsigma = roughness[i]
-            rvalue = value[i+1]
-            rblend = blend(offset[i+1]-zo,rsigma)
-        #print "zo",i,zo
-        #print "lblend",lsigma,lblend
-        #print "rblend",rsigma,rblend
-        mblend = 1 - (lblend+rblend)
-        result[idx[i]:idx[i+1]] = mvalue*mblend + lvalue*lblend + rvalue*rblend
-        #result[idx[i]:idx[i+1]] = rvalue*rblend
+    result = numpy.zeros((len(roughness),len(z)))
+    #print offset
 
-    return result
+    for roughNum, rough in enumerate(roughness):
+        valDifference = value[roughNum+1]- value[roughNum]
+        #print "roughness: ", roughNum, " has a valDifference of ", valDifference, "which is ", value[roughNum+1], "- ", value[roughNum]
 
-def blend(z, rough):
+        result[roughNum] = blend(z, rough, offset[roughNum+1])*valDifference
+
+
+    result[0]+= value[0]
+
+
+
+        #print(taken)
+    #return result[1]
+    return sum(result)
+
+# def showPlot(z, taken, fignum):
+#     from matplotlib import pyplot as plt
+#     from matplotlib.widgets import RadioButtons
+#     plt.figure(fignum)
+#     plt.clf()
+#     for yValArr, bleh in enumerate(taken):
+#
+#         yHeight = numpy.ones((len(bleh),3))/10*yValArr
+#
+#         #print "y height: ", yHeight
+#         plt.scatter(z, bleh, s = 20, c= cValue(yValArr), edgecolors = 'face', alpha = .8)
+#         plt.plot(z, bleh, c=cValue(yValArr))
+#
+#     tot = plt.scatter(z,sum(taken[:]), c = 'white', alpha = .8)
+#     import matplotlib.patches as mpatches
+#
+#     purple = mpatches.Patch(color = 'purple', label = 'Layer 0')
+#     yellow = mpatches.Patch(color = 'yellow', label = 'Layer 1')
+#     blue = mpatches.Patch(color = 'blue', label = 'Layer 2')
+#     black = mpatches.Patch(color = 'black', label = 'Layer 3')
+#     red = mpatches.Patch(color = 'red', label = 'Layer 4')
+#     magenta = mpatches.Patch(color = 'magenta', label = 'Layer 5')
+#     orange = mpatches.Patch(color = 'orange', label = 'Layer 6')
+#     # plt.scatter(z, sum(result[:]))
+#     plt.legend(handles = [purple, yellow, blue, black, red, magenta, orange])
+#     plt.show()
+
+def plotLayer(layer, fignum):
+    pass
+
+def cValue(yValArr):
+
+    if yValArr == 0:
+        return 'purple'
+    if yValArr == 1:
+        return 'yellow'
+    if yValArr == 2:
+        return 'blue'
+    if yValArr == 3:
+        return 'black'
+    if yValArr ==4:
+        return 'red'
+    if yValArr == 5:
+        return 'magenta'
+    if yValArr == 6:
+        return 'orange'
+
+def blend(z, rough, offset):
     """
     blend function
 
@@ -595,6 +636,6 @@ def blend(z, rough):
     profile you expect to find in the current profile at depth z.
     """
     if rough <= 0.0:
-        return numpy.where(numpy.greater(z, 0), 0.0, 1.0)
+        return numpy.where(numpy.greater(z, 0), 0.0, 1.0) #fix this
     else:
-        return 0.5*( 1.0 - erf( z/( rough*numpy.sqrt(2.0) ) ) )
+        return 0.5*( erf( (z-offset)/( rough*numpy.sqrt(2.0) ) ) +1)
