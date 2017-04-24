@@ -353,7 +353,7 @@ class Experiment(ExperimentBase):
                 Aguide = self.probe.Aguide.value
                 H = self.probe.H.value
                 calc_r = reflmag(-calc_q/2, depth=w, rho=rho[0], irho=irho[0],
-                                 rhoM=rhoM, thetaM=thetaM, Aguide=Aguide, H=H)
+                                 rhoM=rhoM, thetaM=thetaM, Aguide=Aguide, H=H, sigma=sigma)
             else:
                 calc_r = reflamp(-calc_q/2, depth=w, rho=rho, irho=irho,
                                  sigma=sigma)

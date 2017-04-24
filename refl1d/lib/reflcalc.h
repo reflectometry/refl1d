@@ -142,7 +142,7 @@ contract_by_area(int n, double d[], double sigma[],
                  double rho[], double irho[], double dA);
 
 int
-contract_mag(int n, double d[], double rho[], double irho[],
+contract_mag(int n, double d[], double sigma[], double rho[], double irho[],
              double rhoM[], double thetaM[], double dA);
 
 void

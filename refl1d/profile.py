@@ -311,18 +311,19 @@ class Microslabs(object):
         # TODO: do we want to use common boundaries for all lambda?
         # TODO: don't throw away other wavelengths
         if dA is None: return
-        w,rho,irho,rhoM,thetaM = \
+        w,sigma,rho,irho,rhoM,thetaM = \
             [numpy.ascontiguousarray(v,'d')
-             for v in (self.w,self.rho[0],self.irho[0],self.rhoM, self.thetaM)]
+             for v in (self.w,self.sigma,self.rho[0],self.irho[0],self.rhoM, self.thetaM)]
         #print "final sld before contract",rho[-1]
-        n = _contract_mag(w,rho,irho,rhoM,thetaM,dA)
+        n = _contract_mag(w,sigma,rho,irho,rhoM,thetaM,dA)
         self._num_slabs = n
         self.w[:] = w[:n]
         self.rho[0][:] = rho[:n]
         self.irho[0][:] = irho[:n]
         self.rhoM = rhoM[:n]
         self.thetaM = thetaM[:n]
-        self.sigma[:] = 0
+        self.sigma[:] = sigma[:n-1]
+        #self.sigma[:] = 0
         #print "final sld after contract",rho[n-1],self.rho[0][n-1],n
 
     def _contract_profile(self, dA):

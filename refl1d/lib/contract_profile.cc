@@ -119,7 +119,7 @@ contract_by_area(int n, double d[], double sigma[],
 
 extern "C"
 int
-contract_mag(int n, double d[],
+contract_mag(int n, double d[], double sigma[],
              double rho[], double irho[],
              double rhoM[], double thetaM[],
              double dA)
@@ -156,8 +156,8 @@ contract_mag(int n, double d[],
       thetaMarea += d[i]*thetaM[i]*weight;
       weighted_dz += d[i]*weight;
 
-      /* If no more slices break immediately */
-      if (++i == n) break;
+      /* If no more slices or sigma != 0, break immediately */
+      if (++i == n || sigma[i-1] != 0.) break;
 
       /* If next slice exceeds limit then break */
       if (rho[i] < rholo) rholo = rho[i];
@@ -189,6 +189,7 @@ contract_mag(int n, double d[],
       irho[newi] = irhoarea / dz;
       rhoM[newi] = rhoMarea / weighted_dz;
       thetaM[newi] = thetaMarea / weighted_dz;
+      sigma[newi] = sigma[i-1];
     } /* First layer uses substrate values */
     newi++;
   }

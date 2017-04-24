@@ -149,27 +149,28 @@ PyObject* Pcontract_by_area(PyObject*obj,PyObject*args)
 
 PyObject* Pcontract_mag(PyObject*obj,PyObject*args)
 {
-  PyObject *d_obj,*rho_obj,*irho_obj,*rhoM_obj,*thetaM_obj;
-  Py_ssize_t nd, nrho, nirho, nrhoM, nthetaM;
-  double *d, *rho, *irho, *rhoM, *thetaM;
+  PyObject *d_obj,*rho_obj,*irho_obj,*rhoM_obj,*thetaM_obj,*sigma_obj;
+  Py_ssize_t nd, nrho, nirho, nrhoM, nthetaM, nsigma;
+  double *d, *sigma, *rho, *irho, *rhoM, *thetaM;
   double dA;
 
-  if (!PyArg_ParseTuple(args, "OOOOOd:contract_mag",
-      &d_obj,&rho_obj,&irho_obj,&rhoM_obj,&thetaM_obj,&dA))
+  if (!PyArg_ParseTuple(args, "OOOOOOd:contract_mag",
+      &d_obj,&sigma_obj,&rho_obj,&irho_obj,&rhoM_obj,&thetaM_obj,&dA))
     return NULL;
   INVECTOR(d_obj,d,nd);
+  INVECTOR(sigma_obj,sigma,nsigma);
   INVECTOR(rho_obj,rho,nrho);
   INVECTOR(irho_obj,irho,nirho);
   INVECTOR(rhoM_obj,rhoM,nrhoM);
   INVECTOR(thetaM_obj,thetaM,nthetaM);
   // interfaces should be one shorter than layers
-  if (nd != nrho || nd != nirho || nd != nrhoM || nd != nthetaM) {
+  if (nd != nrho || nd != nirho || nd != nrhoM || nd != nthetaM || nd != nsigma+1) {
 #ifndef BROKEN_EXCEPTIONS
-    PyErr_SetString(PyExc_ValueError, "d,rho,irho,rhoM,thetaM have different lengths");
+    PyErr_SetString(PyExc_ValueError, "d,rho,irho,rhoM,thetaM,sigma have different lengths");
 #endif
     return NULL;
   }
-  int newlen = contract_mag((int)nd, d, rho, irho, rhoM, thetaM, dA);
+  int newlen = contract_mag((int)nd, d, sigma, rho, irho, rhoM, thetaM, dA);
   return Py_BuildValue("i",newlen);
 }
 
