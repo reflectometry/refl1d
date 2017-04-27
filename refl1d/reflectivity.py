@@ -13,10 +13,10 @@ from six.moves import reduce
 
 #__doc__ = "Fundamental reflectivity calculations"
 __author__ = "Paul Kienzle"
-__all__ = [ 'reflectivity', 'reflectivity_amplitude',
-            'magnetic_reflectivity', 'magnetic_amplitude',
-            'unpolarized_magnetic', 'convolve',
-            ]
+__all__ = ['reflectivity', 'reflectivity_amplitude',
+           'magnetic_reflectivity', 'magnetic_amplitude',
+           'unpolarized_magnetic', 'convolve',
+          ]
 
 import numpy as np
 from numpy import pi, sin, cos, conj, radians
@@ -39,7 +39,7 @@ def reflectivity(*args, **kw):
             Interface roughness between the current layer and the next.
             The final layer is ignored.  This may be a scalar for fixed
             roughness on every layer, or None if there is no roughness.
-        *rho*, *irho* : float[N] OR float[N,K] | |1e-6/Ang^2|
+        *rho*, *irho* : float[N] OR float[N, K] | |1e-6/Ang^2|
             Real and imaginary scattering length density.  Use multiple
             columns when you have kz-dependent scattering length densities,
             and set rho_offset to select the appropriate one.  Data should
@@ -55,7 +55,7 @@ def reflectivity(*args, **kw):
 
     This function does not compute any instrument resolution corrections.
     """
-    r = reflectivity_amplitude(*args,**kw)
+    r = reflectivity_amplitude(*args, **kw)
     return (r*conj(r)).real
 
 def reflectivity_amplitude(kz=None,
@@ -64,7 +64,7 @@ def reflectivity_amplitude(kz=None,
                            irho=0,
                            sigma=0,
                            rho_index=None,
-                           ):
+                          ):
     r"""
     Calculate reflectivity amplitude $r(k_z)$ from slab model.
 
@@ -76,7 +76,7 @@ def reflectivity_amplitude(kz=None,
             Interface roughness between the current layer and the next.
             The final layer is ignored.  This may be a scalar for fixed
             roughness on every layer, or None if there is no roughness.
-        *rho*, *irho* = 0: float[N] OR float[N,K] | |1e-6/Ang^2|
+        *rho*, *irho* = 0: float[N] OR float[N, K] | |1e-6/Ang^2|
             Real and imaginary scattering length density.  Use multiple
             columns when you have kz-dependent scattering length densities,
             and set *rho_index* to select amongst them.  Data should be
@@ -96,7 +96,7 @@ def reflectivity_amplitude(kz=None,
 
     kz = _dense(kz, 'd')
     if rho_index is None:
-        rho_index = np.zeros(kz.shape,'i')
+        rho_index = np.zeros(kz.shape, 'i')
     else:
         rho_index = _dense(rho_index, 'i')
 
@@ -111,22 +111,22 @@ def reflectivity_amplitude(kz=None,
     else:
         irho = _dense(irho, 'd')
 
-    #print depth.shape,rho.shape,irho.shape,sigma.shape
-    #print depth.dtype,rho.dtype,irho.dtype,sigma.dtype
-    r = np.empty(kz.shape,'D')
-    #print "amplitude",depth,rho,kz,rho_index
+    #print depth.shape, rho.shape, irho.shape, sigma.shape
+    #print depth.dtype, rho.dtype, irho.dtype, sigma.dtype
+    r = np.empty(kz.shape, 'D')
+    #print "amplitude", depth, rho, kz, rho_index
     #print depth.shape, sigma.shape, rho.shape, irho.shape, kz.shape
     reflmodule._reflectivity_amplitude(depth, sigma, rho, irho, kz,
                                        rho_index, r)
     return r
 
 
-def magnetic_reflectivity(*args,**kw):
+def magnetic_reflectivity(*args, **kw):
     """
     Magnetic reflectivity for slab models.
 
     Returns the expected values for the four polarization cross
-    sections (++,+-,-+,--).
+    sections (++, +-, -+, --).
     Return reflectivity R^2 from slab model with sharp interfaces.
     returns reflectivities.
 
@@ -137,35 +137,39 @@ def magnetic_reflectivity(*args,**kw):
     depth (|Ang|)
         thickness of the individual layers (incident and substrate
         depths are ignored)
-    rho (microNb)
+    rho (|1e-6/Ang^2|)
         Scattering length density.
-    mu (microNb)
+    irho (|1e-6/Ang^2|)
         absorption. Defaults to 0.
-    wavelength (|Ang|)
-        Incident wavelength (only affects absorption).  May be a vector.
-        Defaults to 1.
     rho_m (microNb)
         Magnetic scattering length density correction.
     theta_m (degrees)
         Angle of the magnetism within the layer.
+    sigma (|Ang|)
+        Interface roughness between the current layer and the next.
+        The final layer is ignored.  This may be a scalar for fixed
+        roughness on every layer, or None if there is no roughness.
+    wavelength (|Ang|)
+        Incident wavelength (only affects absorption).  May be a vector.
+        Defaults to 1.
     Aguide (degrees)
         Angle of the guide field; -90 is the usual case
 
-    This function does not compute any instrument resolution corrections
-    or interface diffusion
+    This function does not compute any instrument resolution corrections.
+    Interface diffusion, if present, uses the Nevot-Croce approximation.
 
     Use magnetic_amplitude to return the complex waveform.
     """
-    r = magnetic_amplitude(*args,**kw)
+    r = magnetic_amplitude(*args, **kw)
     return [(z*z.conj()).real for z in r]
 
-def unpolarized_magnetic(*args,**kw):
+def unpolarized_magnetic(*args, **kw):
     """
     Returns the average of magnetic reflectivity for all cross-sections.
 
     See :class:`magnetic_reflectivity <refl1d.reflectivity.magnetic_reflectivity>` for details.
     """
-    return reduce(np.add, magnetic_reflectivity(*args,**kw))/2.
+    return reduce(np.add, magnetic_reflectivity(*args, **kw))/2.
 
 B2SLD = 2.31604654  # Scattering factor for B field 1e-6/
 
@@ -180,18 +184,18 @@ def magnetic_amplitude(kz,
                        H=0,
                        rho_index=None,
                        rotate_M=True,
-                       ):
+                      ):
     """
     Returns the complex magnetic reflectivity waveform.
 
     See :class:`magnetic_reflectivity <refl1d.reflectivity.magnetic_reflectivity>` for details.
     """
     from . import reflmodule
-    
+
     EPS = np.finfo('f').tiny # not 1e-20 # epsilon offset for divisions.
-    kz = _dense(kz,'d')
+    kz = _dense(kz, 'd')
     if rho_index is None:
-        rho_index = np.zeros(kz.shape,'i')
+        rho_index = np.zeros(kz.shape, 'i')
     else:
         rho_index = _dense(rho_index, 'i')
     n = len(depth)
@@ -205,12 +209,12 @@ def magnetic_amplitude(kz,
         sigma = sigma*np.ones(n-1, 'd')
 
     depth, rho, irho, rhoM, thetaM, sigma \
-        = [_dense(a,'d') for a in (depth, rho, irho, rhoM, thetaM, sigma)]
+        = [_dense(a, 'd') for a in (depth, rho, irho, rhoM, thetaM, sigma)]
 
     thetaM = radians(thetaM)
     phiH = radians(Aguide - 270.0)
     thetaH = np.pi/2.0 # by convention, H is in y-z plane so theta = pi/2
-    
+
     sld_h = B2SLD * H
     sld_m_x = rhoM * np.cos(thetaM)
     sld_m_y = rhoM * np.sin(thetaM)
@@ -228,37 +232,36 @@ def magnetic_amplitude(kz,
         sld_h_z = sld_h
         # Then, don't rotate the transfer matrix
         Aguide = 0.0
-    else:        
+    else:
         sld_h_x = sld_h * np.cos(thetaH) # zero
         sld_h_y = sld_h * np.sin(thetaH) * np.cos(phiH)
         sld_h_z = sld_h * np.sin(thetaH) * np.sin(phiH)
-    
+
     sld_b_x = sld_h_x + sld_m_x
     sld_b_y = sld_h_y + sld_m_y
     sld_b_z = sld_h_z + sld_m_z
 
     # avoid divide-by-zero:
-    sld_b_x += EPS*(sld_b_x==0)
-    sld_b_y += EPS*(sld_b_y==0)
+    sld_b_x += EPS * (sld_b_x == 0)
+    sld_b_y += EPS * (sld_b_y == 0)
 
     # add epsilon to y, to avoid divide by zero errors?
     sld_b = np.sqrt(sld_b_x**2 + sld_b_y**2 + sld_b_z**2)
-    u1_num = ( sld_b + sld_b_x + 1j*sld_b_y - sld_b_z )
-    u1_den = ( sld_b + sld_b_x - 1j*sld_b_y + sld_b_z )
-    u3_num = (-sld_b + sld_b_x + 1j*sld_b_y - sld_b_z ) 
-    u3_den = (-sld_b + sld_b_x - 1j*sld_b_y + sld_b_z )
-    
+    u1_num = (+sld_b + sld_b_x + 1j*sld_b_y - sld_b_z)
+    u1_den = (+sld_b + sld_b_x - 1j*sld_b_y + sld_b_z)
+    u3_num = (-sld_b + sld_b_x + 1j*sld_b_y - sld_b_z)
+    u3_den = (-sld_b + sld_b_x - 1j*sld_b_y + sld_b_z)
+
     u1 = u1_num/u1_den
     u3 = u3_num/u3_den
-    #print "u1",u1
-    #print "u3",u3
-    
-    R1,R2,R3,R4 = [np.empty(kz.shape,'D') for pol in (1,2,3,4)]
+    #print "u1", u1
+    #print "u3", u3
+
+    R1, R2, R3, R4 = [np.empty(kz.shape, 'D') for pol in (1, 2, 3, 4)]
     reflmodule._magnetic_amplitude(depth, sigma, rho, irho,
                                    sld_b, u1, u3, Aguide, kz, rho_index,
                                    R1, R2, R3, R4)
-    return R1,R2,R3,R4
-
+    return R1, R2, R3, R4
 
 def convolve(xi, yi, x, dx):
     """
@@ -287,10 +290,10 @@ def convolve_sampled(xi, yi, xp, yp, x, dx):
 
     Returns convolution y[k] of width dx[k] at points x[k].
 
-    Like :func:`convolve`, the theory *(xi,yi)* is represented as a
+    Like :func:`convolve`, the theory *(xi, yi)* is represented as a
     piece-wise linear spline which should extend beyond the data
     measurement points *x*.  Instead of a gaussian resolution function,
-    resolution *(xp,yp)* is also represented as a piece-wise linear
+    resolution *(xp, yp)* is also represented as a piece-wise linear
     spline.
     """
     from . import reflmodule
@@ -335,7 +338,7 @@ def _check_convolution(name, x, y, xp, yp, dx):
         conv.append(
             step * np.sum(ypfine * yfine[pi:pi + len(xpfine)]) / norm)
 
-    #print("checking convolution %s"%(name,))
+    #print("checking convolution %s"%(name, ))
     #print(" ".join("%7.4f"%yi for yi in ystar))
     #print(" ".join("%7.4f"%yi for yi in conv))
     assert all(abs(yi - fi) < 0.0005 for (yi, fi) in zip(ystar, conv))

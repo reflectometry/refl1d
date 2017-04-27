@@ -13,7 +13,8 @@ varying parameter.  Multi-parameter dispersion models are not available.
 
 import numpy
 from bumps.parameter import Parameter
-from refl1d.experiment import ExperimentBase
+
+from .experiment import ExperimentBase
 
 class Weights(object):
     """
@@ -37,7 +38,7 @@ class Weights(object):
     The vector *edges* contains the bin edges for the distribution.  The
     function *cdf* returns the cumulative density function at the edges.
     The *cdf* function must implement the scipy.stats interface, with
-    function signature f(x,a1,a2,...,loc=0,scale=1).  The list *args*
+    function signature f(x, a1, a2, ..., loc=0, scale=1).  The list *args*
     defines the arguments a1, a2, etc.  The underlying parameters are
     available as args[i].  Similarly, *loc* and *scale* define the
     distribution center and width.  Use *truncated=False* if you want
@@ -57,15 +58,17 @@ class Weights(object):
 
     """
     def __init__(self, edges=None, cdf=None,
-                 args=[], loc=None, scale=None, truncated=True):
+                 args=(), loc=None, scale=None, truncated=True):
         self.edges = numpy.asarray(edges)
         self.cdf = cdf
         self.truncated = truncated
         self.loc = Parameter.default(loc)
         self.scale = Parameter.default(scale)
         self.args = [Parameter.default(a) for a in args]
+
     def parameters(self):
-        return {'args':self.args,'loc':self.loc,'scale':self.scale}
+        return {'args': self.args, 'loc': self.loc, 'scale': self.scale}
+
     def __iter__(self):
         # Find weights and normalize the sum to 1
         centers = (self.edges[:-1]+self.edges[1:])/2
@@ -74,7 +77,7 @@ class Weights(object):
         args = [p.value for p in self.args]
         cumulative_weights = self.cdf(self.edges, *args, loc=loc, scale=scale)
         if not self.truncated:
-            cumulative_weights[0],cumulative_weights[-1] = 0,1
+            cumulative_weights[0], cumulative_weights[-1] = 0, 1
         relative_weights = cumulative_weights[1:] - cumulative_weights[:-1]
         total_weight = numpy.sum(relative_weights)
         if total_weight == 0:
@@ -105,20 +108,22 @@ class DistributionExperiment(ExperimentBase):
         self.experiment = experiment
         self.probe = self.experiment.probe
         self.coherent = coherent
-        self._substrate=self.experiment.sample[0].material
-        self._surface=self.experiment.sample[-1].material
+        self._substrate = self.experiment.sample[0].material
+        self._surface = self.experiment.sample[-1].material
         self._cache = {}  # Cache calculated profiles/reflectivities
         self._name = None
+
     def parameters(self):
         return {'distribution':self.distribution.parameters(),
                 'experiment':self.experiment.parameters(),
-                }
+               }
+
     def reflectivity(self, resolution=True):
-        key = "reflectivity",resolution
+        key = "reflectivity", resolution
         if key not in self._cache:
             calc_R = 0
-            for x,w in self.distribution:
-                if w>0:
+            for x, w in self.distribution:
+                if w > 0:
                     self.P.value = x
                     self.experiment.update()
                     Qx, Rx = self.experiment._reflamp()
@@ -128,16 +133,16 @@ class DistributionExperiment(ExperimentBase):
                         calc_R += w*abs(Rx)**2
             if self.coherent:
                 calc_R = abs(calc_R)**2
-            Q,R = self.probe.apply_beam(Qx, calc_R, resolution=resolution)
-            self._cache[key] = Q,R
+            Q, R = self.probe.apply_beam(Qx, calc_R, resolution=resolution)
+            self._cache[key] = Q, R
         return self._cache[key]
 
     def _max_P(self):
-        x,w = zip(*self.distribution)
+        x, w = zip(*self.distribution)
         idx = numpy.argmax(w)
         return x[idx]
 
-    def smooth_profile(self,dz=1):
+    def smooth_profile(self, dz=1):
         """
         Compute a density profile for the material
         """
@@ -165,16 +170,16 @@ class DistributionExperiment(ExperimentBase):
 
     def plot_profile(self):
         import pylab
-        z,rho,irho = self.step_profile()
-        pylab.plot(z,rho,'-g',z,irho,'-b')
-        z,rho,irho = self.smooth_profile()
-        pylab.plot(z,rho,':g',z,irho,':b')
-        pylab.legend(['rho','irho'])
+        z, rho, irho = self.step_profile()
+        pylab.plot(z, rho, '-g', z, irho, '-b')
+        z, rho, irho = self.smooth_profile()
+        pylab.plot(z, rho, ':g', z, irho, ':b')
+        pylab.legend(['rho', 'irho'])
 
     def plot_weights(self):
         import pylab
-        x,w = zip(*self.distribution)
-        pylab.stem(x,100*numpy.array(w))
+        x, w = zip(*self.distribution)
+        pylab.stem(x, 100*numpy.array(w))
         pylab.title('Weight distribution')
         pylab.xlabel(self.P.name)
         pylab.ylabel('Percentage')

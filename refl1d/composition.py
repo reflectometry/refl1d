@@ -13,6 +13,7 @@ INCOMPLETE UNUSED UNTESTED CODE
 import numpy
 from numpy import inf
 from bumps.parameter import Parameter as Par
+
 from .model import Layer
 from .materialdb import air
 
@@ -26,24 +27,30 @@ class CompositionSpace(Layer):
     def __init__(self, solvent=air, thickness=0, name=None):
         self.parts = []
         self.solvent = solvent
-        if name is None: name="solvent "+solvent.name
+        if name is None:
+            name = "solvent "+solvent.name
         self.name = name
-        self.thickness = Par.default(thickness, limits=(0,inf),
-                                   name=name+" thickness")
+        self.thickness = Par.default(thickness, limits=(0, inf),
+                                     name=name+" thickness")
+
     def parameters(self):
         return {'solvent':self.solvent.parameters(),
                 'parts':[p.parameters() for p in self.parts],
-                }
+               }
 
     def add(self, part=None):
         self.parts.append(part)
+
     # Array style interface to the parts
     def __getitem__(self, n):
         return self.parts[n]
+
     def __delitem__(self, n):
         del self.parts[n]
+
     def __setitem__(self, n, part):
         self.parts[n] = part
+
     def plot_volume_fraction(self, ax):
         """
         Composition space items have a plotting routine for showing the
@@ -58,11 +65,11 @@ class CompositionSpace(Layer):
         # Accumulate the parts
         for p in self.parts:
             f = p.profile(z)
-            ax.plot(z,f,label=p.name)
+            ax.plot(z, f, label=p.name)
             volume_total += f
 
         # Remainder is solvent
-        ax.plot(z,1-volume_total,label=self.solvent.name)
+        ax.plot(z, 1-volume_total, label=self.solvent.name)
 
     # Render a profile
     def render(self, probe, slabs):
@@ -70,43 +77,45 @@ class CompositionSpace(Layer):
         z = arange(slabs.dz/2, self.thickness.value, slabs.dz)
 
         # Storage for the sub-totals
-        n,k = len(z), slabs.nprobe
-        rho_total = numpy.zeros((n,k))
-        mu_total = numpy.zeros((n,k))
+        n, k = len(z), slabs.nprobe
+        rho_total = numpy.zeros((n, k))
+        mu_total = numpy.zeros((n, k))
         volume_total = numpy.zeros_like(z)
 
         # Accumulate the parts
         for p in self.parts:
-            f, rho, mu = p.f_sld(probe,z)
+            f, rho, mu = p.f_sld(probe, z)
             rho_total += rho
             mu_total += mu
             volume_total += f
 
         # Remainder is solvent
-        rho,mu = probe.sld(self.solvent)
+        rho, mu = probe.sld(self.solvent)
         rho_total += rho*(1-volume_total)
         mu_total += mu*(1-volume_total)
 
         # Add to model
         w = slabs.dz * numpy.ones(z.shape)
-        slabs.extend(w=w,rho=rho_total,mu=mu_total)
+        slabs.extend(w=w, rho=rho_total, mu=mu_total)
 
 class Part(object):
     def __init__(self, material, profile, fraction=1):
         self.material = material
         self.profile = profile
-        self.fraction = Par.default(fraction, limits=(0,1),
-                                  name=self.material.name+" fraction")
+        self.fraction = Par.default(fraction, limits=(0, 1),
+                                    name=self.material.name+" fraction")
+
     def parameters(self):
         return {'material':self.material.parameters(),
                 'profile':self.profile.parameters(),
                 'fraction':self.fraction,
-                }
+               }
+
     def f_sld(self, probe, z):
         # Note: combining f and sld because there my be some
         # composites such as oriented proteins for which the
         # sld and volume change at the same time.
-        rho,mu = probe.sld(self.material)
+        rho, mu = probe.sld(self.material)
         f = fraction.value*self.profile(z)
         return f, rho*f, mu*f
 
@@ -132,16 +141,18 @@ class Gaussian(object):
     properties of the profile.
     """
     def __init__(self, center=0, width=0, sigma=1, name="gauss"):
-        self.center = Par.default(center, limits=(-inf,inf),
-                                name=name + " center")
-        self.width = Par.default(width, limits=(0,inf),
-                               name=name + " width")
-        self.stretch = Par.default(sigma, limits=(0,inf),
-                                 name=name + " sigma")
+        self.center = Par.default(center, limits=(-inf, inf),
+                                  name=name + " center")
+        self.width = Par.default(width, limits=(0, inf),
+                                 name=name + " width")
+        self.stretch = Par.default(sigma, limits=(0, inf),
+                                   name=name + " sigma")
+
     def parameters(self):
         return {'center':self.center, 'width':self.width, 'sigma':self.sigma}
+
     def __call__(self, z):
-        mu,sigma,w = self.center.value, self.sigma.value, self.width.value/2
+        mu, sigma, w = self.center.value, self.sigma.value, self.width.value/2
         if w <= 0:
             result = exp(-0.5*((z-mu)/sigma)**2)
         else:

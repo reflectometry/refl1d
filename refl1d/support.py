@@ -11,7 +11,6 @@ def get_data_path():
     """
     Locate the examples directory.
     """
-
     # Check for data path in the environment
     key = 'REFL1D_DATA'
     if key in os.environ:
@@ -23,8 +22,8 @@ def get_data_path():
     # Check for data next to the package.
     try:
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        return os.path.join(root,'doc/examples')
-    except:
+        return os.path.join(root, 'doc/examples')
+    except Exception:
         raise RuntimeError("Could not find sample data")
 
 
@@ -32,12 +31,12 @@ _REGISTRY = {
     # List the example datasets that are needed for demos and doctests.
     # Each line looks like:
     #
-    #     'dataset': ['subdirectory','filename'],
+    #     'dataset': ['subdirectory', 'filename'],
     #
-    'spin_valve01.refl': ['spinvalve','spin_valve01.refl'],
-    'chale207.refl': ['polymer','10ndt001.refl'],
-    '10ndt001.refl': ['polymer','10ndt001.refl'],
-    'lha03_255G.refl': ['spinvalve','n101Gc1.refl'],
+    'spin_valve01.refl': ['spinvalve', 'spin_valve01.refl'],
+    'chale207.refl': ['polymer', '10ndt001.refl'],
+    '10ndt001.refl': ['polymer', '10ndt001.refl'],
+    'lha03_255G.refl': ['spinvalve', 'n101Gc1.refl'],
     }
 def sample_data(file):
     examples = get_data_path()
