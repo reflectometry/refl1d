@@ -27,13 +27,13 @@ numpy.random.seed(5)
 # shrink either layer down to zero and preserve chisq, so the parameter
 # values will not dip much below the roughness at the ends of the layer.
 
-sample = silicon(0,5) | nickel(100,10) | nickel(100,10) | air
+sample = silicon(0, 5) | nickel(100, 10) | nickel(100, 10) | air
 
-sample[0].interface.range(0,20)
-sample[1].interface.range(0,20)
-sample[2].interface.range(0,20)
-sample[1].thickness.range(0,400)
-sample[2].thickness.range(0,400)
+sample[0].interface.range(0, 20)
+sample[1].interface.range(0, 20)
+sample[2].interface.range(0, 20)
+sample[1].thickness.range(0, 400)
+sample[2].thickness.range(0, 400)
 
 # Define the probe and simulate data with 5% noise.
 

@@ -21,13 +21,14 @@ from bumps.fitproblem import FitProblem
 
 # Deprecated
 from bumps.fitproblem import MultiFitProblem
-def ModelFunction(*args,**kw):
+def ModelFunction(*args, **kw):
     raise NotImplementedError("ModelFunction no longer supported --- use PDF instead")
 
 from .experiment import Experiment, plot_sample, MixedExperiment
+from .flayer import FunctionalProfile, FunctionalMagnetism
 from .material import SLD, Material, Compound, Mixture
 from .model import Slab, Stack
-from .polymer import (PolymerBrush, PolymerMushroom, EndTetheredPolymer, 
+from .polymer import (PolymerBrush, PolymerMushroom, EndTetheredPolymer,
                       VolumeProfile, layer_thickness)
 from .mono import FreeLayer, FreeInterface
 from .cheby import FreeformCheby, ChebyVF, cheby_approx, cheby_points

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # This program is in the public domain
 # Author: Andrew Nelson
 """
@@ -22,18 +23,19 @@ from .resolution import FWHM2sigma
 def _load_dat(f):
     """
     Loads a Platypus dataset from file. This will normally be Q, R, dR, dQ.
-    Q - Momentum transfer, Å**-1
-    R - Reflectivity
-    dR - uncertainty in reflectivity (1 sigma)
-    dQ - FWHM of Gaussian resolution kernel.
 
-    Parameters
-    ----------
+    | Q - Momentum transfer, Å**-1
+    | R - Reflectivity
+    | dR - uncertainty in reflectivity (1 sigma)
+    | dQ - FWHM of Gaussian resolution kernel.
+
+    **Parameters**
+
     f : file-handle or string
         File to load the dataset from.
 
-    Returns
-    -------
+    **Returns**
+
     (filename, name, data) - str, str, tuple of np.ndarray
     """
 
@@ -47,14 +49,13 @@ def _load_dat(f):
         header_lines = 0
         for i, line in enumerate(fh):
             try:
-                nums = [float(tok) for tok in
-                        re.split('\s|,', line)
+                nums = [float(tok) for tok in re.split(r'\s|,', line)
                         if len(tok)]
-                if len(nums) >= 2:
-                    header_lines = i
-                    break
             except ValueError:
                 continue
+            if len(nums) >= 2:
+                header_lines = i
+                break
 
     data = np.loadtxt(f, unpack=True, skiprows=header_lines)
 
@@ -68,13 +69,13 @@ def load(filename, instrument=None, **kw):
     """
     Return a probe for ANSTO data.
 
-    Parameters
-    ----------
+    **Parameters**
+
     f : file-handle or string
         File to load the dataset from.
 
-    Returns
-    -------
+    **Returns**
+
     probe : probe.QProbe
     """
     fname, name, data = _load_dat(filename)

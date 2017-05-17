@@ -1,7 +1,10 @@
+# Random model
+# ============
+#
 # Generate a completely random film on Si to test fitting.
 #
-# For example, the following generates a random film with three layers:  
-#  
+# For example, the following generates a random film with three layers::
+#
 #   refl1d model.py 3 --preview
 #
 # The model can also accept a noise level and a random number seed.
@@ -31,27 +34,43 @@
 
 from refl1d.names import *
 
-n = int(sys.argv[1]) if len(sys.argv)>1 else 2
-noise = float(sys.argv[2]) if len(sys.argv)>2 else 3.
-seed = int(sys.argv[3]) if len(sys.argv)>3 else np.random.randint(1,9999)
+# Process command line arguments to the model
+
+n = int(sys.argv[1]) if len(sys.argv) > 1 else 2
+noise = float(sys.argv[2]) if len(sys.argv) > 2 else 3.
+seed = int(sys.argv[3]) if len(sys.argv) > 3 else np.random.randint(1, 9999)
+
+# Set the seed for the random number generator.  Later we will print the
+# seed, even if it was not set explicitly, so that interesting profiles
+# can be regenerated.
 
 np.random.seed(seed)
 
-materials = [SLD("L%d"%i,rho=1) for i in range(1,n+1)]
-layers = [L(100,5) for L in materials]
-sample = silicon(0,5) | layers | air
+# Set up a model with the desired number of layers.  We will set the layer
+# thickness and interfaces later.
 
-sample[0].interface.range(0,200)
+materials = [SLD("L%d"%i, rho=1) for i in range(1, n+1)]
+layers = [L(100, 5) for L in materials]
+sample = silicon(0, 5) | layers | air
+
+# Set unlimited parameter ranges on those layers.
+
+sample[0].interface.range(0, 200)
 for L in layers:
-    L.material.rho.range(-2,10)
-    L.thickness.range(0,1000)
-    L.interface.range(0,200)
+    L.material.rho.range(-2, 10)
+    L.thickness.range(0, 1000)
+    L.interface.range(0, 200)
+
+# Define the Q values at which to evaluate the model
 
 T = numpy.linspace(0.1, 5, 100)
 probe = NeutronProbe(T=T, dT=0.01, L=4.75, dL=0.0475)
-
 M = Experiment(probe=probe, sample=sample)
 problem = FitProblem(M)
+
+# Set random values for rho.  This also sets thickness and interfaces, but
+# these will be ignored.
+
 problem.randomize()
 
 # Generate layer thicknesses, with film thickness of about 400, but lots of
@@ -59,16 +78,16 @@ problem.randomize()
 # can work.  Exponential distribution isn't suitable for single layer systems
 
 for L in layers:
-    L.thickness.value = (min(np.random.exponential(400./np.sqrt(n)),950)
-                         if n>1 else np.random.uniform(5,950))
+    L.thickness.value = (min(np.random.exponential(400./np.sqrt(n)), 950)
+                         if n > 1 else np.random.uniform(5, 950))
 
 # Set interface limits based on neighbouring layer thickness, with substrate
 # and surface having infinite thickness.  Choose an interface of at least 1 A
 
-interfaces = [min(sample[i].thickness.value if i>0 else np.inf,
-                  sample[i+1].thickness.value if i<n else np.inf)
+interfaces = [min(sample[i].thickness.value if i > 0 else np.inf,
+                  sample[i+1].thickness.value if i < n else np.inf)
               for i in range(n+1)]
-for L,w in zip(sample[:n+1], interfaces):
+for L, w in zip(sample[:n+1], interfaces):
     L.interface.value = 1+np.random.exponential(w/7)
     # Update the fit range if interface is excessively broad
     if L.interface.value > 200:
