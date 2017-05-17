@@ -16,3 +16,8 @@ complex models with many constraints relatively easily.
    mixed/readme.rst
    superlattice/readme.rst
    staj/readme.rst
+   four_column/model.rst
+   ill_posed/anticor.rst
+   profile/model.rst
+   random/model.rst
+   spinvalve/n101G.rst

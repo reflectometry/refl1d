@@ -19,6 +19,7 @@ to the many fine tutorials that exist on the web.
     nifilm-data.rst
     nifilm-fit.rst
     nifilm-back.rst
+    nifilm-mixture.rst
 
 .. :
     I would like to use include rather than toctree, but I don't know how to

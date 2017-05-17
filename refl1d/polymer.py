@@ -159,8 +159,8 @@ class PolymerBrush(Layer):
 
     def profile(self, z):
         base_vf, base, length, power, sigma \
-            = [p.value for p in (self.base_vf, self.base,
-                                 self.length, self.power, self.sigma)]
+            = [p.value for p in (self.base_vf, self.base, self.length,
+                                 self.power, self.sigma)]
         base_vf /= 100. # % to fraction
         L0 = base  # if base < thickness else thickness
         L1 = base+length # if base+length < thickness else thickness-L0
@@ -256,7 +256,8 @@ class VolumeProfile(Layer):
     # TODO: test that thickness(z) matches the thickness of the layer
     def __init__(self, thickness=0, interface=0, name="VolumeProfile",
                  material=None, solvent=None, profile=None, **kw):
-        if interface != 0: raise NotImplementedError("interface not yet supported")
+        if interface != 0:
+            raise NotImplementedError("interface not yet supported")
         if profile is None or material is None or solvent is None:
             raise TypeError("Need polymer, solvent and profile")
         self.name = name
@@ -279,7 +280,8 @@ class VolumeProfile(Layer):
                 if k in ('thickness', 'interface', 'polymer', 'solvent', 'profile')]
         if len(dups) > 0:
             raise TypeError("Profile has conflicting argument '%s'"%dups[0])
-        for k in vars: kw.setdefault(k, 0)
+        for k in vars:
+            kw.setdefault(k, 0)
         for k, v in kw.items():
             setattr(self, k, Parameter.default(v, name=k))
 
@@ -384,8 +386,8 @@ class PolymerMushroom(Layer):
                }
 
     def profile(self, z):
-        delta, sigma, vf, thickness = [p.value for p in (
-                self.delta, self.sigma, self.vf, self.thickness)]
+        delta, sigma, vf, thickness \
+            = [p.value for p in (self.delta, self.sigma, self.vf, self.thickness)]
 
         return smear(z, MushroomProfile(z, delta, vf, sigma), sigma)
 
@@ -398,7 +400,8 @@ class PolymerMushroom(Layer):
         # at thickness = 0.  "Clip to boundary" range handling will at
         # least allow this point to be found.
         # TODO: consider using this behaviour on all layer types.
-        if len(Pw) == 0: return
+        if len(Pw) == 0:
+            return
 
         Mr, Mi = self.polymer.sld(probe)
         Sr, Si = self.solvent.sld(probe)
@@ -478,28 +481,28 @@ class EndTetheredPolymer(Layer):
 
     **Parameters**
 
-        :*chi*:
+        *chi*
             solvent interaction parameter
-        :*chi_s*:
+        *chi_s*
             surface interaction parameter
-        :*h_dry*:
+        *h_dry*
             thickness of the neat polymer layer
-        :*l_lat*:
+        *l_lat*
             real length per lattice site
-        :*mn*:
+        *mn*
             Number average molecular weight
-        :*m_lat*:
+        *m_lat*
             real mass per lattice segment
-        :*pdi*:
+        *pdi*
             Dispersity (Polydispersity index)
-        :*thickness*:
+        *thickness*
             Slab thickness should be greater than the contour
             length of the polymer
-        :*interface*:
+        *interface*
             should be zero
-        :*material*:
+        *material*
             the polymer material
-        :*solvent*:
+        *solvent*
             the solvent material
 
     Previous layer should not have roughness! Use a spline to simulate it.
@@ -509,10 +512,8 @@ class EndTetheredPolymer(Layer):
 
     .. math::
 
-    \begin{eqnarray}
         l_\text{lat} &=& \frac{a^2 m/l}{p_l} \\
         m_\text{lat} &=& \frac{(a m/l)^2}{p_l}
-    \end{eqnarray}
 
     where $l$ is the real polymer's bond length, $m$ is the real segment mass,
     and $a$ is the ratio between molecular weight and radius of gyration at
@@ -574,7 +575,8 @@ class EndTetheredPolymer(Layer):
         # at thickness = 0.  "Clip to boundary" range handling will at
         # least allow this point to be found.
         # TODO: consider using this behaviour on all layer types.
-        if len(Pw) == 0: return
+        if len(Pw) == 0:
+            return
 
         Mr, Mi = self.polymer.sld(probe)
         Sr, Si = self.solvent.sld(probe)
@@ -852,12 +854,14 @@ def SCFsolve(chi=0, chi_s=0, pdi=1, sigma=None, segments=None,
             else:
                 raise
 
-        if disp: print('phi(M)/sum(phi) =', phi[-1] / theta * 1e6, '(ppm)')
+        if disp:
+            print('phi(M)/sum(phi) =', phi[-1] / theta * 1e6, '(ppm)')
 
         if phi[-1] > tol:
             # if the last layer is beyond tolerance, grow the lattice
             newlayers = max(1, int(round(len(phi0)*ratio)))
-            if disp: print('Growing undersized lattice by', newlayers)
+            if disp:
+                print('Growing undersized lattice by', newlayers)
             phi0 = hstack((phi, np.linspace(phi[-1], 0, num=newlayers)))
         else:
             # otherwise, we are done for real
