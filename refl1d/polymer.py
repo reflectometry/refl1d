@@ -270,7 +270,8 @@ class VolumeProfile(Layer):
         # Query profile function for the list of arguments
         vars = inspect.getargspec(profile)[0]
         #print("vars", vars)
-        if inspect.ismethod(profile): vars = vars[1:]  # Chop self
+        if inspect.ismethod(profile):
+            vars = vars[1:]  # Chop self
         vars = vars[1:]  # Chop z
         #print(vars)
         unused = [k for k in kw.keys() if k not in vars]
