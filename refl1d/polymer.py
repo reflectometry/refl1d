@@ -513,8 +513,9 @@ class EndTetheredPolymer(Layer):
 
     .. math::
 
-        l_\text{lat} &=& \frac{a^2 m/l}{p_l} \\
-        m_\text{lat} &=& \frac{(a m/l)^2}{p_l}
+        l_\text{lat} &= \frac{a^2 m/l}{p_l}
+
+        m_\text{lat} &= \frac{(a m/l)^2}{p_l}
 
     where $l$ is the real polymer's bond length, $m$ is the real segment mass,
     and $a$ is the ratio between molecular weight and radius of gyration at
