@@ -24,7 +24,7 @@ def _load_dat(f):
     """
     Loads a Platypus dataset from file. This will normally be Q, R, dR, dQ.
 
-    | Q - Momentum transfer, Å**-1
+    | Q - Momentum transfer, Angstrom**-1
     | R - Reflectivity
     | dR - uncertainty in reflectivity (1 sigma)
     | dQ - FWHM of Gaussian resolution kernel.
