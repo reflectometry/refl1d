@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # This program is in the public domain
 # Author: Andrew Nelson
 """
@@ -24,7 +23,7 @@ def _load_dat(f):
     """
     Loads a Platypus dataset from file. This will normally be Q, R, dR, dQ.
 
-    | Q - Momentum transfer, Å**-1
+    | Q - Momentum transfer |1/Ang|
     | R - Reflectivity
     | dR - uncertainty in reflectivity (1 sigma)
     | dQ - FWHM of Gaussian resolution kernel.
