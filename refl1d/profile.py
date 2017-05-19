@@ -1,8 +1,7 @@
 # This program is public domain
 # Author: Paul Kienzle
-
-"""
-Scattering length density profile.        """"""
+r"""
+Scattering length density profile.
 
 In order to render a reflectometry model, the theory function calculator
 renders each layer in the model for each energy in the probe.  For slab
@@ -19,9 +18,9 @@ silicon to gold in 20 |Ang| with 2 |Ang| steps.
 
 First define the profile, and put in the substrate:
 
-    >>> S = Microslabs(nprobe=1,dz=2)
+    >>> S = Microslabs(nprobe=1, dz=2)
     >>> S.clear()
-    >>> S.append(w=0,rho=2.07)
+    >>> S.append(w=0, rho=2.07)
 
 Next add the interface.  This uses :meth:`microslabs` to select
 the points at which the interface is evaluated, much like you
@@ -33,7 +32,7 @@ a smaller number of variable width slabs, but :meth:`contract_profile`
 serves the same purpose with less work on your part.
 
     >>> from numpy import tanh
-    >>> Pw,Pz = S.microslabs(20)
+    >>> Pw, Pz = S.microslabs(20)
     >>> print("widths = %s ..."%(" ".join("%g"%v for v in Pw[:5])))
     widths = 2 2 2 2 2 ...
     >>> print("centers = %s ..."%(" ".join("%g"%v for v in Pz[:5])))
@@ -45,17 +44,17 @@ Finally, add the incident medium and see the results.  Note that *rho*
 is a matrix, with one column for each incident energy.  We are only
 using one energy so we only show the first column.
 
-    >>> S.append(w=0,rho=4.5)
+    >>> S.append(w=0, rho=4.5)
     >>> print("width = %s ..."%(" ".join("%g"%v for v in S.w[:5])))
     width = 0 2 2 2 2 ...
-    >>> print("rho = %s ..."%(" ".join("%.2f"%v for v in S.rho[0,:5])))
+    >>> print("rho = %s ..."%(" ".join("%.2f"%v for v in S.rho[0, :5])))
     rho = 2.07 2.13 2.21 2.36 2.63 ...
 
  Since *irho* and *sigma* were not specified, they will be zero.
 
     >>> print("sigma = %s ..."%(" ".join("%g"%v for v in S.sigma[:5])))
     sigma = 0 0 0 0 0 ...
-    >>> print("irho = %s ..."%(" ".join("%g"%v for v in S.irho[0,:5])))
+    >>> print("irho = %s ..."%(" ".join("%g"%v for v in S.irho[0, :5])))
     irho = 0 0 0 0 0 ...
 """
 
@@ -84,8 +83,8 @@ class Microslabs(object):
         # _slabs contains the 1D objects w, sigma of len n
         # _slabs_rho contains 2D objects rho, irho, with one for each wavelength
         # _slabs_mag contains 1D objects w, sigma, rho, theta of length nmag
-        self._slabs = numpy.empty(shape=(0,2))
-        self._slabs_rho = numpy.empty(shape=(0,nprobe,2))
+        self._slabs = numpy.empty(shape=(0, 2))
+        self._slabs_rho = numpy.empty(shape=(0, nprobe, 2))
         self.dz = dz
         self._z_offset = 0
         self._magnetic_sections = []
@@ -112,7 +111,7 @@ class Microslabs(object):
         """
         # TODO: force dz onto a common boundary to avoid remeshing
         # in the smooth profile function
-        edges = numpy.arange(0,thickness+self.dz,self.dz, dtype='d')
+        edges = numpy.arange(0, thickness+self.dz, self.dz, dtype='d')
         edges[-1] = thickness
         centers = (edges[1:] + edges[:-1])/2
         widths = edges[1:] - edges[:-1]
@@ -142,15 +141,15 @@ class Microslabs(object):
         repeats = count-1
         end = len(self)
         length = end-start
-        fromidx = slice(start,end)
-        toidx = slice(end,end+repeats*length)
+        fromidx = slice(start, end)
+        toidx = slice(end, end+repeats*length)
         self._reserve(repeats*length)
-        self._slabs[toidx] = numpy.tile(self._slabs[fromidx],[repeats,1])
-        self._slabs_rho[toidx] = numpy.tile(self._slabs_rho[fromidx],[repeats,1,1])
+        self._slabs[toidx] = numpy.tile(self._slabs[fromidx], [repeats, 1])
+        self._slabs_rho[toidx] = numpy.tile(self._slabs_rho[fromidx], [repeats, 1, 1])
         self._num_slabs += repeats*length
 
         # Replace interface on the top
-        self._slabs[self._num_slabs-1,1] = interface
+        self._slabs[self._num_slabs-1, 1] = interface
 
         if self._magnetic_sections:
             raise NotImplementedError("Repeated magnetic layers not implemented")
@@ -159,7 +158,7 @@ class Microslabs(object):
         """
         Reserve space for at least *nadd* slabs.
         """
-        ns,nl,_ = self._slabs_rho.shape
+        ns, nl, _ = self._slabs_rho.shape
         if ns < self._num_slabs + nadd:
             new_ns = self._num_slabs + nadd + 50
             self._slabs = self._slabs.copy()
@@ -175,31 +174,32 @@ class Microslabs(object):
         self._reserve(nadd)
         idx = slice(self._num_slabs, self._num_slabs+nadd)
         self._num_slabs += nadd
-        self._slabs[idx,0] = w
-        self._slabs[idx,1] = sigma
-        self._slabs_rho[idx,:,0] = numpy.asarray(rho).T
-        self._slabs_rho[idx,:,1] = numpy.asarray(irho).T
+        self._slabs[idx, 0] = w
+        self._slabs[idx, 1] = sigma
+        self._slabs_rho[idx, :, 0] = numpy.asarray(rho).T
+        self._slabs_rho[idx, :, 1] = numpy.asarray(irho).T
 
     def append(self, w=0, sigma=0, rho=0, irho=0):
         """
         Extend the micro slab model with a single layer.
         """
-        #self.extend(w=[w],sigma=[sigma],rho=[rho],irho=[irho])
+        #self.extend(w=[w], sigma=[sigma], rho=[rho], irho=[irho])
         #return
         self._reserve(1)
-        self._slabs[self._num_slabs,0] = w
-        self._slabs[self._num_slabs,1] = sigma
-        self._slabs_rho[self._num_slabs,:,0] = rho
-        self._slabs_rho[self._num_slabs,:,1] = irho
+        self._slabs[self._num_slabs, 0] = w
+        self._slabs[self._num_slabs, 1] = sigma
+        self._slabs_rho[self._num_slabs, :, 0] = rho
+        self._slabs_rho[self._num_slabs, :, 1] = irho
         self._num_slabs += 1
 
     def add_magnetism(self, anchor, w, rhoM=0, thetaM=270., sigma=0):
         """
         Add magnetic layers.
         """
-        w = numpy.asarray(w,'d')
-        if numpy.isscalar(sigma): sigma = (sigma,sigma)
-        self._magnetic_sections.append((numpy.vstack((w,rhoM,thetaM)),
+        w = numpy.asarray(w, 'd')
+        if numpy.isscalar(sigma):
+            sigma = (sigma, sigma)
+        self._magnetic_sections.append((numpy.vstack((w, rhoM, thetaM)),
                                         anchor, sigma))
 
     def thickness(self):
@@ -210,7 +210,7 @@ class Microslabs(object):
         surface layers.  Normally these will be zero, but the contract
         profile operation may result in large values for either.
         """
-        return numpy.sum(self._slabs[1:self._num_slabs,0])
+        return numpy.sum(self._slabs[1:self._num_slabs, 0])
 
     def interface(self, I):
         """
@@ -220,31 +220,31 @@ class Microslabs(object):
         """
         raise NotImplementedError('special interfaces not yet supported')
         # TODO: check that Nevot-Croce works between microslab sections
-        self.extend(w = 0, sigma=I, rho = self.rho[-1], irho = self.irho[-1])
+        self.extend(w=0, sigma=I, rho=self.rho[-1], irho=self.irho[-1])
 
     @property
     def w(self):
         "Thickness (A)"
-        return self._slabs[:self._num_slabs,0]
+        return self._slabs[:self._num_slabs, 0]
 
     @property
     def sigma(self):
         "rms roughness (A)"
-        return self._slabs[:self._num_slabs-1,1]
+        return self._slabs[:self._num_slabs-1, 1]
     @property
     def surface_sigma(self):
         "roughness for the current top layer, or nan if substrate"
-        return self._slabs[self._num_slabs-1,1] if self._num_slabs>0 else nan
+        return self._slabs[self._num_slabs-1, 1] if self._num_slabs > 0 else nan
 
     @property
     def rho(self):
         "Scattering length density (10^-6 number density)"
-        return self._slabs_rho[:self._num_slabs,:,0].T
+        return self._slabs_rho[:self._num_slabs, :, 0].T
 
     @property
     def irho(self):
         "Absorption (10^-6 number density)"
-        return self._slabs_rho[:self._num_slabs,:,1].T
+        return self._slabs_rho[:self._num_slabs, :, 1].T
 
     @property
     def ismagnetic(self):
@@ -310,12 +310,13 @@ class Microslabs(object):
 
         # TODO: do we want to use common boundaries for all lambda?
         # TODO: don't throw away other wavelengths
-        if dA is None: return
-        w,sigma,rho,irho,rhoM,thetaM = \
-            [numpy.ascontiguousarray(v,'d')
-             for v in (self.w,self.sigma,self.rho[0],self.irho[0],self.rhoM, self.thetaM)]
-        #print "final sld before contract",rho[-1]
-        n = _contract_mag(w,sigma,rho,irho,rhoM,thetaM,dA)
+        if dA is None:
+            return
+        w, sigma, rho, irho, rhoM, thetaM = \
+            [numpy.ascontiguousarray(v, 'd')
+             for v in (self.w, self.sigma, self.rho[0], self.irho[0], self.rhoM, self.thetaM)]
+        #print "final sld before contract", rho[-1]
+        n = _contract_mag(w, sigma, rho, irho, rhoM, thetaM, dA)
         self._num_slabs = n
         self.w[:] = w[:n]
         self.rho[0][:] = rho[:n]
@@ -324,25 +325,26 @@ class Microslabs(object):
         self.thetaM = thetaM[:n]
         self.sigma[:] = sigma[:n-1]
         #self.sigma[:] = 0
-        #print "final sld after contract",rho[n-1],self.rho[0][n-1],n
+        #print "final sld after contract", rho[n-1], self.rho[0][n-1], n
 
     def _contract_profile(self, dA):
         from .reflmodule import _contract_by_area
 
         # TODO: do we want to use common boundaries for all lambda?
         # TODO: don't throw away other wavelengths
-        if dA is None: return
-        w,sigma,rho,irho = \
-            [numpy.ascontiguousarray(v,'d')
-             for v in (self.w,self.sigma,self.rho[0],self.irho[0])]
-        #print "final sld before contract",rho[-1]
-        n = _contract_by_area(w,sigma,rho,irho,dA)
+        if dA is None:
+            return
+        w, sigma, rho, irho = \
+            [numpy.ascontiguousarray(v, 'd')
+             for v in (self.w, self.sigma, self.rho[0], self.irho[0])]
+        #print "final sld before contract", rho[-1]
+        n = _contract_by_area(w, sigma, rho, irho, dA)
         self._num_slabs = n
         self.w[:] = w[:n]
-        self.rho[0,:] = rho[:n]
-        self.irho[0,:] = irho[:n]
+        self.rho[0, :] = rho[:n]
+        self.irho[0, :] = irho[:n]
         self.sigma[:] = sigma[:n-1]
-        #print "final sld after contract",rho[n-1],self.rho[0][n-1],n
+        #print "final sld after contract", rho[n-1], self.rho[0][n-1], n
 
     def _DEAD_apply_smoothness(self, dA, smoothness=0.3):
         """
@@ -365,10 +367,10 @@ class Microslabs(object):
         if dA is None or smoothness == 0: return
         #TODO: refine this so that it can look forward as well as back
         #TODO: also need to avoid changing explicit sigma=0...
-        w,sigma,rho,irho = self.w,self.sigma,self.rho[0],self.irho[0]
+        w, sigma, rho, irho = self.w, self.sigma, self.rho[0], self.irho[0]
         step = (abs(numpy.diff(rho)) + abs(numpy.diff(irho)))
         step[:-1] *= w[1:-1]  # compute dA of step; substrate uses w=1
-        idx = numpy.nonzero(sigma==0)[0]
+        idx = numpy.nonzero(sigma == 0)[0]
         fix = step[idx] < 3*dA
         sigma[idx[fix]] = w[idx[fix]]*smoothness
 
@@ -378,7 +380,7 @@ class Microslabs(object):
 
         *limit* is the number of times sigma has to fit in the layers
         on either side of the interface.  The returned sigma is
-        truncated to min(wlo,whi)/*limit* where wlo is the thickness
+        truncated to min(wlo, whi)/*limit* where wlo is the thickness
         of the layer below the interface, and whi is the  thickness above
         the interface.  A *limit* value of 0 returns the original sigma.
 
@@ -401,15 +403,15 @@ class Microslabs(object):
 
         Nevot-Croce interfaces are not represented.
         """
-        rho = numpy.vstack([self.rho[0,:]]*2).T.flatten()
-        irho = numpy.vstack([self.irho[0,:]]*2).T.flatten()
+        rho = numpy.vstack([self.rho[0, :]]*2).T.flatten()
+        irho = numpy.vstack([self.irho[0, :]]*2).T.flatten()
         if len(self.w) > 2:
             ws = numpy.cumsum(self.w[1:-1])
-            z = numpy.vstack([numpy.hstack([-10,0,ws]),
-                              numpy.hstack([0,ws,ws[-1]+10])]).T.flatten()
+            z = numpy.vstack([numpy.hstack([-10, 0, ws]),
+                              numpy.hstack([0, ws, ws[-1]+10])]).T.flatten()
         else:
-            z = numpy.array([-10,0,0,10])
-        return z+self._z_offset,rho,irho
+            z = numpy.array([-10, 0, 0, 10])
+        return z+self._z_offset, rho, irho
 
     def smooth_profile(self, dz=1):
         """
@@ -421,17 +423,17 @@ class Microslabs(object):
 
         The returned profile has uniform step size *dz*.
         """
-        z,rho,irho = self._build_smooth_profile(dz=dz)
-        return z+self._z_offset,rho,irho
+        z, rho, irho = self._build_smooth_profile(dz=dz)
+        return z+self._z_offset, rho, irho
 
     def magnetic_profile(self):
         """
         Return a profile representation of the magnetic microslab structure.
         """
-        z,rho,irho = self.step_profile()
+        z, rho, irho = self.step_profile()
         rhoM = numpy.vstack([self.rhoM]*2).T.flatten()
         thetaM = numpy.vstack([self.thetaM]*2).T.flatten()
-        return z,rho,irho,rhoM,thetaM
+        return z, rho, irho, rhoM, thetaM
 
     def _render_magnetic(self):
 
@@ -462,12 +464,12 @@ class Microslabs(object):
         # Find the magnetic blocks
         blocks, offsets, sigmas = zip(*self._magnetic_sections)
 
-        #print "blocks",blocks
-        #print "offsets",offsets
-        #print "sigmas",sigmas
+        #print "blocks", blocks
+        #print "offsets", offsets
+        #print "sigmas", sigmas
         # Splice the blocks together with rhoM_gap=0 and
         # thetaM_gap=(thetaM_below+thetaM_above)/2.
-        # slices = [(thickness,rhoM,thetaM), (thickness, rhoM, thetaM), ...]
+        # slices = [(thickness, rhoM, thetaM), (thickness, rhoM, thetaM), ...]
         # initialize slices with the magnetism of the substrate, which will
         # be [thickness=0, rhoM=0, thetaM=first thetaM] unless substrate
         # magnetism has been specified
@@ -475,26 +477,26 @@ class Microslabs(object):
         if substrate_magnetism:
             slices = [[[], [], []]]
         else:
-            slices = [[[0],[0],[blocks[0][2,0]]]]
+            slices = [[[0], [0], [blocks[0][2, 0]]]]
         interfaces = []
         sigma = None
         pos = 0
-        for i,B in enumerate(blocks):
+        for i, B in enumerate(blocks):
             anchor = offsets[i]
             w = anchor - pos
             if w >= self.dz: # Big gap, so need spacer
                 # Target average theta between blocks.
                 if i == 0:
-                    thetaM = B[2,0]
+                    thetaM = B[2, 0]
                     interfaces.append(0)
                 else:
-                    thetaM = (B[2,0] + blocks[i-1][2,-1])/2.
+                    thetaM = (B[2, 0] + blocks[i-1][2, -1])/2.
                     interfaces.append(sigmas[i-1][1])
-                slices.append([[w],[0],[thetaM]])
+                slices.append([[w], [0], [thetaM]])
                 interfaces.append(sigmas[i][0])
             elif w >= -1e-6:
                 # Small gap, so add it to the start of the next block
-                B[0,0] += w
+                B[0, 0] += w
                 anchor -= w
                 if i == 0:
                     if not substrate_magnetism:
@@ -507,31 +509,31 @@ class Microslabs(object):
                 # negative gap should never happen
                 raise ValueError("Overlapping magnetic layers at %d"%i)
             slices.append(B)
-            nslabs = len(B[0,:])
+            nslabs = len(B[0, :])
             interfaces.extend([0]*(nslabs-1))
-            width = numpy.sum(B[0,:])
+            width = numpy.sum(B[0, :])
             pos = anchor + width
 
         # Add the final slice
         w = self.thickness() - pos
-        theta = blocks[-1][2,-1]
-        slices.append([[w],[0],[theta]])
+        theta = blocks[-1][2, -1]
+        slices.append([[w], [0], [theta]])
         interfaces.append(sigmas[-1][1])
 
-        wM,rhoM,thetaM = [numpy.hstack(v) for v in zip(*slices)]
+        wM, rhoM, thetaM = [numpy.hstack(v) for v in zip(*slices)]
         sigmaM = numpy.array(interfaces)
         #print "result", wM, rhoM, thetaM, sigmaM
-        return wM,rhoM,thetaM,sigmaM
+        return wM, rhoM, thetaM, sigmaM
 
     def _build_smooth_profile(self, dz):
         thickness = self.thickness()
-        left  = 0 - max(10,self.sigma[0]*3)
-        right = thickness + max(10,self.sigma[-1]*3)
-        z = numpy.arange(left,right+dz,dz)
+        left = 0 - max(10, self.sigma[0]*3)
+        right = thickness + max(10, self.sigma[-1]*3)
+        z = numpy.arange(left, right+dz, dz)
         # Only show the first wavelength
         irho = build_profile(z, self.w, self.sigma, self.irho[0])
-        rho  = build_profile(z, self.w, self.sigma, self.rho[0])
-        return z,rho,irho
+        rho = build_profile(z, self.w, self.sigma, self.rho[0])
+        return z, rho, irho
 
 
 def compute_limited_sigma(thickness, roughness, limit):
@@ -539,11 +541,11 @@ def compute_limited_sigma(thickness, roughness, limit):
     # of the first and last layers interfaces is limited only by the
     # depth of the first and last layers.  We must check explicitly for
     # a pure substrate system since that has no limits on roughness.
-    if limit > 0 and len(thickness)>2:
-        s = numpy.min((thickness[:-1],thickness[1:]),axis=0)/limit
-        s[ 0] = thickness[ 1]/limit
+    if limit > 0 and len(thickness) > 2:
+        s = numpy.min((thickness[:-1], thickness[1:]), axis=0)/limit
+        s[+0] = thickness[+1]/limit
         s[-1] = thickness[-2]/limit
-        roughness = numpy.where(roughness<s,roughness,s)
+        roughness = numpy.where(roughness < s, roughness, s)
     return roughness
 
 
@@ -551,7 +553,6 @@ def build_mag_profile(z, d, v, blends):
     """
     Convert magnetic segments to a smooth profile.
     """
-
     # TODO this could be faster since we don't need to blend initially.
     s = 0*z
     v = build_profile(z, d, s, v)
@@ -569,7 +570,7 @@ def build_profile(z, thickness, roughness, value):
     """
 
     # Find interface depths
-    offset = numpy.hstack( (-inf, 0, numpy.cumsum(thickness[1:-1]), inf) )
+    offset = numpy.hstack((-inf, 0, numpy.cumsum(thickness[1:-1]), inf))
     # gives the layer boundaries in terms of the index of the z
     idx = numpy.searchsorted(z, offset)
     # TODO: The following hack makes sure the final z value is calculated.
@@ -578,7 +579,7 @@ def build_profile(z, thickness, roughness, value):
         idx[-1] = len(z)
 
     # compute the results
-    result = numpy.zeros((len(roughness),len(z)))
+    result = numpy.zeros((len(roughness), len(z)))
     #print offset
 
     for roughNum, rough in enumerate(roughness):
@@ -587,10 +588,7 @@ def build_profile(z, thickness, roughness, value):
 
         result[roughNum] = blend(z, rough, offset[roughNum+1])*valDifference
 
-
-    result[0]+= value[0]
-
-
+    result[0] += value[0]
 
         #print(taken)
     #return result[1]
@@ -603,13 +601,13 @@ def build_profile(z, thickness, roughness, value):
 #     plt.clf()
 #     for yValArr, bleh in enumerate(taken):
 #
-#         yHeight = numpy.ones((len(bleh),3))/10*yValArr
+#         yHeight = numpy.ones((len(bleh), 3))/10*yValArr
 #
 #         #print "y height: ", yHeight
 #         plt.scatter(z, bleh, s = 20, c= cValue(yValArr), edgecolors = 'face', alpha = .8)
 #         plt.plot(z, bleh, c=cValue(yValArr))
 #
-#     tot = plt.scatter(z,sum(taken[:]), c = 'white', alpha = .8)
+#     tot = plt.scatter(z, sum(taken[:]), c = 'white', alpha = .8)
 #     import matplotlib.patches as mpatches
 #
 #     purple = mpatches.Patch(color = 'purple', label = 'Layer 0')
@@ -627,7 +625,6 @@ def plotLayer(layer, fignum):
     pass
 
 def cValue(yValArr):
-
     if yValArr == 0:
         return 'purple'
     if yValArr == 1:
@@ -636,7 +633,7 @@ def cValue(yValArr):
         return 'blue'
     if yValArr == 3:
         return 'black'
-    if yValArr ==4:
+    if yValArr == 4:
         return 'red'
     if yValArr == 5:
         return 'magenta'
@@ -653,4 +650,4 @@ def blend(z, rough, offset):
     if rough <= 0.0:
         return numpy.where(numpy.greater(z, 0), 0.0, 1.0) #fix this
     else:
-        return 0.5*( erf( (z-offset)/( rough*numpy.sqrt(2.0) ) ) +1)
+        return 0.5*(erf((z-offset)/(rough*numpy.sqrt(2.0)))+1)

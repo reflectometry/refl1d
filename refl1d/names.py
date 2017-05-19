@@ -13,21 +13,18 @@ small scripts.
 
 import sys
 import numpy as np
+
 from periodictable import elements, formula
 from bumps.parameter import Parameter, FreeVariables
 from bumps import pmath
 from bumps.pdfwrapper import PDF
 from bumps.fitproblem import FitProblem
-
-# Deprecated
-from bumps.fitproblem import MultiFitProblem
-def ModelFunction(*args,**kw):
-    raise NotImplementedError("ModelFunction no longer supported --- use PDF instead")
+from bumps.fitproblem import MultiFitProblem  # deprecated
 
 from .experiment import Experiment, plot_sample, MixedExperiment
 from .material import SLD, Material, Compound, Mixture
 from .model import Slab, Stack
-from .polymer import (PolymerBrush, PolymerMushroom, EndTetheredPolymer, 
+from .polymer import (PolymerBrush, PolymerMushroom, EndTetheredPolymer,
                       VolumeProfile, layer_thickness)
 from .mono import FreeLayer, FreeInterface
 from .cheby import FreeformCheby, ChebyVF, cheby_approx, cheby_points
@@ -46,9 +43,11 @@ from .support import sample_data
 # confusion if the user also does "from periodictable import *" since
 # both of them create elements.
 # Python doesn't allow "from .module import *"
-from refl1d.materialdb import *
-
+from .materialdb import *
 
 # Deprecated names
+def ModelFunction(*args, **kw):
+    raise NotImplementedError("ModelFunction no longer supported --- use PDF instead")
+
 PolarizedNeutronQProbe = PolarizedQProbe
 numpy = np

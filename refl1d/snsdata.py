@@ -24,24 +24,24 @@ from .probe import make_probe
 
 ## Estimated intensity vs. wavelength for liquids reflectometer
 LIQUIDS_FEATHER = np.array([
-  (2.02555,20.6369),
-  (2.29927,23.6943),
-  (2.57299,23.6943),
-  (2.87409,21.1146),
-  (3.22993,15.5732),
-  (3.58577,12.8981),
-  (4.07847,9.4586),
-  (4.5438,6.59236),
-  (5.11861,4.68153),
-  (5.7208,3.05732),
-  (6.37774,1.91083),
-  (7.19891,1.24204),
-  (8.04745,0.955414),
-  (9.06022,0.573248),
-  (10.1825,0.477707),
-  (11.4142,0.382166),
-  (12.8102,0.191083),
-  (14.3431,0.286624),
+    (2.02555, 20.6369),
+    (2.29927, 23.6943),
+    (2.57299, 23.6943),
+    (2.87409, 21.1146),
+    (3.22993, 15.5732),
+    (3.58577, 12.8981),
+    (4.07847, 9.4586),
+    (4.5438, 6.59236),
+    (5.11861, 4.68153),
+    (5.7208, 3.05732),
+    (6.37774, 1.91083),
+    (7.19891, 1.24204),
+    (8.04745, 0.955414),
+    (9.06022, 0.573248),
+    (10.1825, 0.477707),
+    (11.4142, 0.382166),
+    (12.8102, 0.191083),
+    (14.3431, 0.286624),
 ]).T
 
 
@@ -49,14 +49,15 @@ def load(filename, instrument=None, **kw):
     """
     Return a probe for SNS data.
     """
-    if instrument is None: instrument=Pulsed()
-    header,data = parse_sns_file(filename)
+    if instrument is None:
+        instrument=Pulsed()
+    header, data = parse_sns_file(filename)
     header.update(**kw) # calling parameters override what's in the file.
-    #print "\n".join(k+":"+str(v) for k,v in header.items())
+    #print "\n".join(k+":"+str(v) for k, v in header.items())
     # Guess what kind of data we have
-    if has_columns(header, ('Q','dQ','R','dR','L')):
+    if has_columns(header, ('Q', 'dQ', 'R', 'dR', 'L')):
         probe = QRL_to_data(instrument, header, data)
-    elif has_columns(header, ('time_of_flight','data','Sigma')):
+    elif has_columns(header, ('time_of_flight', 'data', 'Sigma')):
         probe = TOF_to_data(instrument, header, data)
     else:
         raise IOError("Unknown columns: "+", ".join(header['columns']))
@@ -66,23 +67,23 @@ def load(filename, instrument=None, **kw):
     return probe
 
 def has_columns(header, v):
-    return (len(header['columns'])==len(v)
-            and all(ci==si for ci,si in zip(header['columns'],v)))
+    return (len(header['columns']) == len(v)
+            and all(ci == si for ci, si in zip(header['columns'], v)))
 
 def QRL_to_data(instrument, header, data):
     """
-    Convert data to T,L,R
+    Convert data to T, L, R
     """
-    Q,dQ,R,dR,L = data
+    Q, dQ, R, dR, L = data
     dL = resolution.binwidths(L)
     if 'angle' in header and 'slits_at_Tlo' in header:
-        T = header.pop('angle',header.pop('T',None))
-        probe = instrument.probe(L=L, dL=dL, T=T, data=(R,dR),
+        T = header.pop('angle', header.pop('T', None))
+        probe = instrument.probe(L=L, dL=dL, T=T, data=(R, dR),
                                  **header)
     else:
         T = resolution.QL2T(Q[0], L[0])
-        dT = resolution.dQdL2dT(Q[0],dQ[0],L[0],dL[0])
-        probe = make_probe(T=T,dT=dT,L=L,dL=dL, data=(R,dR),
+        dT = resolution.dQdL2dT(Q[0], dQ[0], L[0], dL[0])
+        probe = make_probe(T=T, dT=dT, L=L, dL=dL, data=(R, dR),
                            **header)
     return probe
 
@@ -106,12 +107,15 @@ def TOF_to_data(instrument, header, data):
     dL = (Ledge[1:]-Ledge[:-1])/2.35   # FWHM is 2.35 sigma
     R = R[:-1]
     dR = dR[:-1]
-    min_time,max_time = header.get('TOF_range',instrument.TOF_range)
-    keep = np.isfinite(R)&np.isfinite(dR)&(TOF[:-1]>=min_time)&(TOF[1:]<=max_time)
-    L,dL,R,dR = [v[keep] for v in (L,dL,R,dR)]
-    T = np.array([header.get('angle',header.get('T',None))],'d')
-    T,dT,L,dL = instrument.resolution(L=L, dL=dL, T=T, **header)
-    probe = make_probe(T=T,dT=dT,L=L,dL=dL, data=(R,dR),**header)
+    min_time, max_time = header.get('TOF_range', instrument.TOF_range)
+    keep = (np.isfinite(R)
+            & np.isfinite(dR)
+            & (TOF[:-1] >= min_time)
+            & (TOF[1:] <= max_time))
+    L, dL, R, dR = [v[keep] for v in (L, dL, R, dR)]
+    T = np.array([header.get('angle', header.get('T', None))], 'd')
+    T, dT, L, dL = instrument.resolution(L=L, dL=dL, T=T, **header)
+    probe = make_probe(T=T, dT=dT, L=L, dL=dL, data=(R, dR), **header)
     return probe
 
 def parse_sns_file(filename):
@@ -125,7 +129,7 @@ def parse_sns_file(filename):
     header = {}
 
     # guess instrument from file name
-    original_file = raw_header.get('F','unknown')
+    original_file = raw_header.get('F', 'unknown')
     if 'REF_L' in original_file:
         instrument = 'Liquids'
     elif 'REF_M' in original_file:
@@ -143,27 +147,27 @@ def parse_sns_file(filename):
         header['d_s2'] = instrument.d_s2
 
     # Date-time field for the file
-    header['date'] = raw_header.get('D','')
+    header['date'] = raw_header.get('D', '')
 
     # Column names and units
     columnpat = re.compile(r'(?P<name>\w+)[(](?P<units>[^)]*)[)]')
-    columns,units = zip(*columnpat.findall(raw_header.get('L','')))
+    columns, units = zip(*columnpat.findall(raw_header.get('L', '')))
     header['columns'] = columns
     header['units'] = units
 
     # extra information like title, angle, etc.
     commentpat = re.compile(r'(?P<name>.*)\s*:\s*(?P<value>.*)\s*\n')
-    comments = dict(commentpat.findall(raw_header.get('C','')))
-    header['title'] = comments.get('Title','')
-    header['description'] = comments.get('Notes','')
+    comments = dict(commentpat.findall(raw_header.get('C', '')))
+    header['title'] = comments.get('Title', '')
+    header['description'] = comments.get('Notes', '')
 
     # parse values of the form "Long Name: (value, 'units')" in comments
-    valuepat = re.compile(r"[(]\s*(?P<value>.*)\s*,\s*'(?P<units>.*)'\s*[)]")
+    valuepat = re.compile(r"[(]\s*(?P<value>.*)\s*, \s*'(?P<units>.*)'\s*[)]")
     def parse_value(valstr):
         d = valuepat.match(valstr).groupdict()
-        return float(d['value']),d['units']
+        return float(d['value']), d['units']
     if 'Detector Angle' in comments:
-        header['angle'],_ = parse_value(comments['Detector Angle'])
+        header['angle'], _ = parse_value(comments['Detector Angle'])
 
     return header, data
 
@@ -189,7 +193,8 @@ def write_file(filename, probe, original=None, date=None,
 
     parts = []
     if original is None: original = filename
-    if date is None:     date = dt.strftime ( dt.now(), '%Y-%m-%d %H:%M:%S')
+    if date is None:
+        date = dt.strftime ( dt.now(), '%Y-%m-%d %H:%M:%S')
     parts.append('#F '+original)
     parts.append('#D '+date)
     if run is not None:
@@ -206,7 +211,7 @@ def write_file(filename, probe, original=None, date=None,
     parts.append('#L Q(1/A) dQ(1/A) R() dR() L(A)')
     parts.append('')
     header = "\n".join(parts)
-    probe.write_data(filename, columns=['Q','dQ','R','dR','L'],
+    probe.write_data(filename, columns=['Q', 'dQ', 'R', 'dR', 'L'],
                      header=header)
 
 
@@ -222,15 +227,15 @@ class Liquids(SNSData, Pulsed):
     instrument = "Liquids"
     radiation = "neutron"
     feather = LIQUIDS_FEATHER
-    wavelength = 2.,15.
-    #wavelength = 0.5,5
-    #wavelength = 5.5,10
-    #wavelength = 10.5,15
+    wavelength = 2., 15.
+    #wavelength = 0.5, 5
+    #wavelength = 5.5, 10
+    #wavelength = 10.5, 15
     dLoL = 0.02
     d_s1 = 230.0 + 1856.0
     d_s2 = 230.0
     d_moderator = 14.850 # moderator to detector distance
-    TOF_range = (6000,60000)
+    TOF_range = (6000, 60000)
 
 class Magnetic(SNSData, Pulsed):
     """
@@ -238,7 +243,7 @@ class Magnetic(SNSData, Pulsed):
     """
     instrument = "Magnetic"
     radiation = "neutron"
-    wavelength = 1.8,14
+    wavelength = 1.8, 14
     dLoL = 0.02
     d_s1 = 75*2.54
     d_s2 = 14*2.54
@@ -249,18 +254,16 @@ INSTRUMENTS = {
     'Magnetic': Magnetic,
     }
 
-
-
 # ===== utils ==============
 
-def intensity_from_spline(Lrange,dLoL,feather):
-    L0,L1 = Lrange
+def intensity_from_spline(Lrange, dLoL, feather):
+    L0, L1 = Lrange
     n = math.ceil(math.log(L1/L0)/math.log(1+dLoL))
-    L = L0*(1+dLoL)**np.arange(0,n)
-    return (L[:-1]+L[1:])/2, rebin(feather[0],feather[1],L)
+    L = L0*(1+dLoL)**np.arange(0, n)
+    return (L[:-1]+L[1:])/2, rebin(feather[0], feather[1], L)
 
 
-def boltzmann_feather(L,counts=100000,range=None):
+def boltzmann_feather(L, counts=100000, range=None):
     """
     Return expected intensity as a function of wavelength given the TOF
     feather range and the total number of counts.
@@ -270,16 +273,16 @@ def boltzmann_feather(L,counts=100000,range=None):
     corresponds to the actual SNS feather.
     """
     import scipy.stats
-    y = np.linspace(-4,4,10)
+    y = np.linspace(-4, 4, 10)
     G = np.exp(-y**2/10)
-    x = np.arange(12,85)
+    x = np.arange(12, 85)
     B = scipy.stats.boltzmann.pmf(x, 0.05, 1, loc=16)
-    BGz = np.convolve(B,G,mode='same')
-    #if range is None: range = L[0],L[-1]
+    BGz = np.convolve(B, G, mode='same')
+    #if range is None: range = L[0], L[-1]
     #if range[0] > range[1]: range = range[::-1]
-    #range = range[0]*(1-1e-15),range[1]*(1+1e-15)
-    #z = np.linspace(range[0],range[1],len(BGz))
-    z = np.linspace(2,16.5,len(BGz))  # Wavelength range for liquids
-    pL = np.interp(L,z,BGz,left=0,right=0)
+    #range = range[0]*(1-1e-15), range[1]*(1+1e-15)
+    #z = np.linspace(range[0], range[1], len(BGz))
+    z = np.linspace(2, 16.5, len(BGz))  # Wavelength range for liquids
+    pL = np.interp(L, z, BGz, left=0, right=0)
     nL = pL/sum(pL)*counts
     return  nL

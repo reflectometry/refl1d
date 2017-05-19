@@ -1,6 +1,6 @@
 # This program is public domain
 # Author: Paul Kienzle
-"""
+r"""
 Magnetic modeling for 1-D reflectometry.
 
 ** Deprecated ** use magnetism to set magnetism on a nuclear layer
@@ -41,6 +41,8 @@ uncertainty plot produced when both parameters are fit.
 Magnetism support is split into two parts: describing the layers
 and anchoring them to the structure.
 """
+from __future__ import print_function
+
 import numpy
 from numpy import inf
 from bumps.parameter import Parameter
@@ -58,9 +60,9 @@ class MagneticLayer(Layer):
                  interface_below=None, interface_above=None,
                  name="magnetic"):
         self.stack = Stack(stack)
-        self.dead_below = Parameter.default(dead_below, limits=(0,inf),
+        self.dead_below = Parameter.default(dead_below, limits=(0, inf),
                                             name=name+" dead below")
-        self.dead_above = Parameter.default(dead_above, limits=(0,inf),
+        self.dead_above = Parameter.default(dead_above, limits=(0, inf),
                                             name=name+" dead above")
         self.interface_below = interface_below
         self.interface_above = interface_above
@@ -71,7 +73,7 @@ class MagneticLayer(Layer):
                 'dead_above':self.dead_above,
                 'interface_below':self.interface_below,
                 'interface_above':self.interface_above,
-                }    
+               }
     @property
     def thickness(self):
         """Thickness of the magnetic region"""
@@ -111,7 +113,7 @@ class MagneticSlab(MagneticLayer):
     def __init__(self, stack, rhoM=0, thetaM=270, name="magnetic", **kw):
         MagneticLayer.__init__(self, stack=stack, name=name, **kw)
         self.rhoM = Parameter.default(rhoM, name=name+" SLD")
-        self.thetaM = Parameter.default(thetaM, limits=(0,360),
+        self.thetaM = Parameter.default(thetaM, limits=(0, 360),
                                         name=name+" angle")
 
     def parameters(self):
@@ -129,31 +131,31 @@ class MagneticSlab(MagneticLayer):
     def __str__(self):
         return "magnetic(%g)"%self.rhoM.value
     def __repr__(self):
-        return ("Magnetic(rhoM=%g,thetaM=%g)"
-                %(self.rhoM.value,self.thetaM.value))
+        return ("Magnetic(rhoM=%g, thetaM=%g)"
+                %(self.rhoM.value, self.thetaM.value))
 
 class MagneticStack(MagneticLayer):
     """
     Magnetic slabs within a magnetic layer.
     """
-    def __init__(self, stack, weight=[], rhoM=[], thetaM=[270], interfaceM=[0],
+    def __init__(self, stack, weight=(), rhoM=(), thetaM=(270,), interfaceM=(0),
                  name="mag. stack", **kw):
         if (len(thetaM) != 1 and len(thetaM) != len(weight)
-            and len(rhoM) != 1 and len(rhoM) != len(weight)
-            and len(interfaceM) != 1 and len(interfaceM) != len(weight)-1):
+                and len(rhoM) != 1 and len(rhoM) != len(weight)
+                and len(interfaceM) != 1 and len(interfaceM) != len(weight)-1):
             raise ValueError("Must have one rhoM, thetaM and intefaceM for each layer")
         if interfaceM != [0]:
             raise NotImplementedError("Doesn't support magnetic roughness")
 
         MagneticLayer.__init__(self, stack=stack, name=name, **kw)
         self.weight = [Parameter.default(v, name=name+" weight[%d]"%i)
-                       for i,v in enumerate(weight)]
+                       for i, v in enumerate(weight)]
         self.rhoM = [Parameter.default(v, name=name+" rhoM[%d]"%i)
-                     for i,v in enumerate(rhoM)]
+                     for i, v in enumerate(rhoM)]
         self.thetaM = [Parameter.default(v, name=name+" angle[%d]"%i)
-                       for i,v in enumerate(thetaM)]
+                       for i, v in enumerate(thetaM)]
         self.interfaceM = [Parameter.default(v, name=name+" interface[%d]"%i)
-                           for i,v in enumerate(interfaceM)]
+                           for i, v in enumerate(interfaceM)]
 
     def parameters(self):
         parameters = MagneticLayer.parameters(self)
@@ -170,12 +172,15 @@ class MagneticStack(MagneticLayer):
         rhoM = [p.value for p in self.rhoM]
         thetaM = [p.value for p in self.thetaM]
         sigmaM = [p.value for p in self.interfaceM]
-        if len(rhoM) == 1: rhoM = [rhoM[0]]*len(w)
-        if len(thetaM) == 1: thetaM = [thetaM[0]]*len(w)
-        if len(sigmaM) == 1: sigmaM = [sigmaM[0]]*(len(w)-1)
+        if len(rhoM) == 1:
+            rhoM = [rhoM[0]]*len(w)
+        if len(thetaM) == 1:
+            thetaM = [thetaM[0]]*len(w)
+        if len(sigmaM) == 1:
+            sigmaM = [sigmaM[0]]*(len(w)-1)
 
         slabs.add_magnetism(anchor=anchor,
-                            w=w,rhoM=rhoM,thetaM=thetaM,
+                            w=w, rhoM=rhoM, thetaM=thetaM,
                             sigma=sigma)
 
     def __str__(self):
@@ -189,14 +194,13 @@ class MagneticTwist(MagneticLayer):
     Linear change in magnetism throughout layer.
     """
     magnetic = True
-    def __init__(self, stack,
-                 rhoM=[0,0], thetaM=[270,270],
+    def __init__(self, stack, rhoM=(0, 0), thetaM=(270, 270),
                  name="twist", **kw):
         MagneticLayer.__init__(self, stack=stack, name=name, **kw)
         self.rhoM = [Parameter.default(v, name=name+" rhoM[%d]"%i)
-                     for i,v in enumerate(rhoM)]
+                     for i, v in enumerate(rhoM)]
         self.thetaM = [Parameter.default(v, name=name+" angle[%d]"%i)
-                       for i,v in enumerate(thetaM)]
+                       for i, v in enumerate(thetaM)]
 
     def parameters(self):
         parameters = MagneticLayer.parameters(self)
@@ -205,17 +209,17 @@ class MagneticTwist(MagneticLayer):
 
     def render(self, probe, slabs):
         anchor, sigma = self.render_stack(probe, slabs)
-        w,z = slabs.microslabs(self.thicknessM)
+        w, z = slabs.microslabs(self.thicknessM)
         rhoM = numpy.linspace(self.rhoM[0].value,
-                              self.rhoM[1].value,len(z))
+                              self.rhoM[1].value, len(z))
         thetaM = numpy.linspace(self.thetaM[0].value,
-                                self.thetaM[1].value,len(z))
+                                self.thetaM[1].value, len(z))
         slabs.add_magnetism(anchor=anchor,
-                            w=w,rhoM=rhoM,thetaM=thetaM,
+                            w=w, rhoM=rhoM, thetaM=thetaM,
                             sigma=sigma)
 
     def __str__(self):
-        return "twist(%g->%g)"%(self.rhoM[0].value,self.rhoM[1].value)
+        return "twist(%g->%g)"%(self.rhoM[0].value, self.rhoM[1].value)
     def __repr__(self):
         return "MagneticTwist"
 
@@ -225,18 +229,19 @@ class FreeMagnetic(MagneticLayer):
     Linear change in magnetism throughout layer.
     """
     magnetic = True
-    def __init__(self, stack, z = [], rhoM = [], thetaM = [],
+    def __init__(self, stack, z=(), rhoM=(), thetaM=(),
                  name="freemag", **kw):
         MagneticLayer.__init__(self, stack=stack, name=name, **kw)
-        def parvec(vector,name,limits):
-            return [Parameter.default(p,name=name+"[%d]"%i,limits=limits)
-                    for i,p in enumerate(vector)]
+        def parvec(vector, name, limits):
+            return [Parameter.default(p, name=name+"[%d]"%i, limits=limits)
+                    for i, p in enumerate(vector)]
         self.rhoM, self.thetaM, self.z \
-            = [parvec(v,name+" "+part,limits)
-               for v,part,limits in zip((rhoM, thetaM, z),
-                                        ('rhoM', 'angle', 'z'),
-                                        ((0,inf),(0,360),(0,1))
-                                        )]
+            = [parvec(v, name+" "+part, limits)
+               for v, part, limits
+               in zip((rhoM, thetaM, z),
+                      ('rhoM', 'angle', 'z'),
+                      ((0, inf), (0, 360), (0, 1)))
+              ]
         if len(self.z) != len(self.rhoM):
             raise ValueError("must have number of intervals dz one less than rhoM")
         if len(self.thetaM) > 0 and len(self.rhoM) != len(self.thetaM):
@@ -249,8 +254,8 @@ class FreeMagnetic(MagneticLayer):
 
     def profile(self, Pz):
         thickness = self.thickness.value
-        mbelow,tbelow = 0,(self.thetaM[0].value if self.thetaM else 270)
-        mabove,tabove = 0,(self.thetaM[-1].value if self.thetaM else 270)
+        mbelow, tbelow = 0, (self.thetaM[0].value if self.thetaM else 270)
+        mabove, tabove = 0, (self.thetaM[-1].value if self.thetaM else 270)
         z = numpy.sort([0]+[p.value for p in self.z]+[1])*thickness
 
         rhoM = numpy.hstack((mbelow, [p.value for p in self.rhoM], mabove))
@@ -258,28 +263,29 @@ class FreeMagnetic(MagneticLayer):
 
         if numpy.any(numpy.isnan(PrhoM)):
             print("in mono")
-            print("z %s"%str(z))
-            print("p %s"%str([p.value for p in self.z]))
+            print("z %s" % str(z))
+            print("p %s" % str([p.value for p in self.z]))
 
 
-        if len(self.thetaM)>1:
+        if len(self.thetaM) > 1:
             thetaM = numpy.hstack((tbelow, [p.value for p in self.thetaM], tabove))
             PthetaM = monospline(z, thetaM, Pz)
-        elif len(self.thetaM)==1:
+        elif len(self.thetaM) == 1:
             PthetaM = self.thetaM.value * numpy.ones_like(PrhoM)
         else:
             PthetaM = 270*numpy.ones_like(PrhoM)
-        return PrhoM,PthetaM
+        return PrhoM, PthetaM
 
     def render(self, probe, slabs):
         anchor, sigma = self.render_stack(probe, slabs)
-        Pw,Pz = slabs.microslabs(self.thicknessM)
-        rhoM,thetaM = self.profile(Pz)
+        Pw, Pz = slabs.microslabs(self.thicknessM)
+        rhoM, thetaM = self.profile(Pz)
         slabs.add_magnetism(anchor=anchor,
-                            w=Pw,rhoM=rhoM,thetaM=thetaM,
+                            w=Pw, rhoM=rhoM, thetaM=thetaM,
                             sigma=sigma)
 
     def __str__(self):
         return "freemag(%d)"%(len(self.rhoM))
+
     def __repr__(self):
         return "FreeMagnetic"
