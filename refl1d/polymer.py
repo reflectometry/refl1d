@@ -942,7 +942,7 @@ def SCFeqns(phi_z, chi, chi_s, sigma, n_avg, p_i, phi_b=0):
 def calc_phi_z(g_z, n_avg, sigma, phi_b, u_z_avg=0, p_i=None):
     if p_i is None:
         segments = n_avg
-        uniform = 1
+        uniform = True
     else:
         segments = p_i.size
         uniform = segments == round(n_avg)
@@ -995,21 +995,24 @@ def compose(g_zs, g_zs_ngts, g_z):
 
 
 class Propagator(object):
-    PYONLY = False
+    cex = None
 
     def __init__(self, g_z, segments):
         self.g_z = g_z
         self.shape = int(g_z.size), int(segments)
+        
+        # keep all future instances from retrying this test
+        if self.cex is not None:
+            return
 
         try:
-            if not self.PYONLY:
-                import refl1d.calc_g_zs_cex as cex
-                self.cex = cex
+            import refl1d.calc_g_zs_cex as cex
+            Propagator.cex = cex
         except ImportError:
             import warnings
             warnings.warn('Could not load C extension for EndTetheredPolymer. Continuing with slower NumPy code.\n'
                           'Try rebuilding refl1d to remove this warning and speed things up!')
-            Propagator.PYONLY = True  # keep all future instances from retrying this test
+            Propagator.cex = False
 
     def ta(self):
         # terminally attached beginnings
@@ -1052,20 +1055,20 @@ class Propagator(object):
         return np.empty(self.shape, order='F')
 
     def _calc_g_zs(self, g_z, c_i, g_zs):
-        if self.PYONLY:
+        if self.cex:
+            self.cex._calc_g_zs(g_z, c_i, g_zs, LAMBDA_0, LAMBDA_1, *self.shape)
+        else:
             pg_zs = g_zs[:, 0]
             segment_iterator = enumerate(c_i[::-1])
             next(segment_iterator)
             for r, c in segment_iterator:
                 g_zs[:, r] = pg_zs = (correlate(pg_zs, LAMBDA_ARRAY, 1) + c) * g_z
-        else:
-            self.cex._calc_g_zs(g_z, c_i, g_zs, LAMBDA_0, LAMBDA_1, *self.shape)
 
     def _calc_g_zs_uniform(self, g_z, g_zs):
-        if self.PYONLY:
+        if self.cex:
+            self.cex._calc_g_zs_uniform(g_z, g_zs, LAMBDA_0, LAMBDA_1, *self.shape)
+        else:
             segments = g_zs.shape[1]
             pg_zs = g_zs[:, 0]
             for r in range(1, segments):
                 g_zs[:, r] = pg_zs = correlate(pg_zs, LAMBDA_ARRAY, 1) * g_z
-        else:
-            self.cex._calc_g_zs_uniform(g_z, g_zs, LAMBDA_0, LAMBDA_1, *self.shape)
