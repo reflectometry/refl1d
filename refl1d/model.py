@@ -681,10 +681,8 @@ class Slab(Layer):
         slabs.append(rho=rho, irho=irho, w=w, sigma=sigma)
 
     def __str__(self):
-        if self.thickness.value > 0:
-            return str(self.material)
-        else:
-            return str(self.material)
+        return self.name
+        #return str(self.material)
 
     def __repr__(self):
         return "Slab("+repr(self.material)+")"

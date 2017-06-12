@@ -1,11 +1,116 @@
 // This program is public domain.
 
+// Force DEBUG mode with assertions tested.
+//#ifdef NDEBUG
+//#undef NDEBUG
+//#endif
+
 #include <iostream>
 
 #define GREEDY
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <assert.h>
+
+#define Z_EPS 1e-6
+
+typedef double FullLayer[6];
+extern "C"
+int
+align_magnetic(int nlayers, double d[], double sigma[], double rho[], double irho[],
+               int nlayersM, double dM[], double sigmaM[], double rhoM[], double thetaM[],
+               double output_flat[])
+{
+  // ignoring thickness d on the first and last layers
+  // ignoring interface width sigma on the last layer
+  // making sure there are at least two layers
+  assert(nlayers>1);
+  assert(nlayersM>1);
+
+  FullLayer *output = (FullLayer *)output_flat;
+  int magnetic = 0; // current magnetic layer index
+  int nuclear = 0; // current nuclear layer index
+  double z = 0.; // current interface depth
+  double next_z = 0.; // next nuclear interface
+  double next_zM = 0.; // next magnetic interface
+  int active = 3; // active interfaces, active&0x1 for nuclear, active&0x2 for magnetic
+  int k = 0;  // current output layer index
+  while (1) { // repeat over all nuclear/magnetic layers
+    assert(nuclear < nlayers);
+    assert(magnetic < nlayersM);
+    //printf("%d: %d %d %g %g %g\n", k, nuclear, magnetic, z, next_z, next_zM);
+    //printf("%g %g %g %g\n", rho[nuclear], irho[nuclear], rhoM[magnetic], thetaM[magnetic]);
+    //printf("%g %g %g %g\n", d[nuclear], sigma[nuclear], dM[magnetic], sigmaM[magnetic]);
+
+    // Set the scattering strength using the current parameters
+    output[k][2] = rho[nuclear];
+    output[k][3] = irho[nuclear];
+    output[k][4] = rhoM[magnetic];
+    output[k][5] = thetaM[magnetic];
+
+    // Check if we are at the last layer for both nuclear and magnetic
+    // If so set thickness and interface width to zero.  We are doing a
+    // center of the loop exit in order to make sure that the final layer
+    // is added.
+    if (magnetic == nlayersM-1 && nuclear == nlayers-1) {
+      output[k][0] = 0.;
+      output[k][1] = 0.;
+      k++;
+      break;
+    }
+
+    // Determine if we are adding the nuclear or the magnetic interface next,
+    // or possibly both.  The order of the conditions is important.
+    //
+    // Note: the final value for next_z/next_zM is not defined.  Rather than
+    // checking if we are on the last layer we simply add the value of the
+    // last thickness to z, which may be 0, nan, inf, or anything else.  This
+    // doesn't affect the algorithm since we don't look at next_z when we are
+    // on the final nuclear layer or next_zM when we are on the final magnetic
+    // layer.
+    //
+    // Note: averaging nearly aligned interfaces can lead to negative thickness
+    // Consider nuc = [1-a, 0, 1] and mag = [1+a, 1, 1] for 2a < Z_EPS.
+    // On the first step we set next_z to 1-a, next_zM to 1+a and z to the
+    // average of 1-a and 1+a, which is 1.  On the second step next_z is
+    // still 1-a, so the thickness next_z - z = -a. Since a is tiny we can just
+    // pretend that -a == zero by setting thickness to fmax(next_z - z, 0.0).
+    //
+    if (nuclear == nlayers-1) {
+      // No more nuclear layers... play out the remaining magnetic layers.
+      output[k][0] = fmax(next_zM - z, 0.0);
+      output[k][1] = sigmaM[magnetic];
+      next_zM += dM[++magnetic];
+    } else if (magnetic == nlayersM-1) {
+      // No more magnetic layers... play out the remaining nuclear layers.
+      output[k][0] = fmax(next_z - z, 0.0);
+      output[k][1] = sigma[nuclear];
+      next_z += d[++nuclear];
+    } else if (fabs(next_z - next_zM) < Z_EPS && fabs(sigma[nuclear]-sigmaM[magnetic]) < Z_EPS) {
+      // Matching nuclear/magnetic boundary, with almost identical interfaces.
+      // Increment both nuclear and magnetic layers.
+      output[k][0] = fmax(0.5*(next_z + next_zM) - z, 0.0);
+      output[k][1] = 0.5*(sigma[nuclear] + sigmaM[magnetic]);
+      next_z += d[++nuclear];
+      next_zM += dM[++magnetic];
+    } else if (next_zM < next_z) {
+      // Magnetic boundary comes before nuclear boundary, so increment magnetic.
+      output[k][0] = fmax(next_zM - z, 0.0);
+      output[k][1] = sigmaM[magnetic];
+      next_zM += dM[++magnetic];
+    } else {
+      // Nuclear boundary comes before magnetic boundary
+      // OR nuclear and magnetic boundaries match but interfaces are different.
+      // so increment nuclear.
+      output[k][0] = fmax(next_z - z, 0.0);
+      output[k][1] = sigma[nuclear];
+      next_z += d[++nuclear];
+    }
+    z += output[k][0];
+    k++;
+  }
+  return k;
+}
 
 extern "C"
 int

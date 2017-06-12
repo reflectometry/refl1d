@@ -321,7 +321,7 @@ class Experiment(ExperimentBase):
     profile_shift = 0
     def __init__(self, sample=None, probe=None, name=None,
                  roughness_limit=0, dz=None, dA=None,
-                 step_interfaces=False, smoothness=None,
+                 step_interfaces=None, smoothness=None,
                  interpolation=0):
         # Note: smoothness ignored
         self.sample = sample
@@ -331,7 +331,7 @@ class Experiment(ExperimentBase):
         self.roughness_limit = roughness_limit
         if dz is None:
             dz = nice((2*pi/probe.Q.max())/10)
-            if dz > 5: dz = 5
+            dz = min(dz, 5.0)
         self.dz = dz
         self.dA = dA
         self.step_interfaces = step_interfaces
@@ -344,13 +344,16 @@ class Experiment(ExperimentBase):
 
     @property
     def ismagnetic(self):
+        """True if experiment contains magnetic materials"""
         slabs = self._render_slabs()
         return slabs.ismagnetic
 
     def parameters(self):
-        return {'sample':self.sample.parameters(),
-                'probe':self.probe.parameters(),
-               }
+        """Fittable parameters to sample and probe"""
+        return {
+            'sample':self.sample.parameters(),
+            'probe':self.probe.parameters(),
+            }
 
     def _render_slabs(self):
         """
@@ -383,7 +386,8 @@ class Experiment(ExperimentBase):
                 Aguide = self.probe.Aguide.value
                 H = self.probe.H.value
                 calc_r = reflmag(-calc_q/2, depth=w, rho=rho[0], irho=irho[0],
-                                 rhoM=rhoM, thetaM=thetaM, Aguide=Aguide, H=H, sigma=sigma)
+                                 rhoM=rhoM, thetaM=thetaM, Aguide=Aguide, H=H,
+                                 sigma=sigma)
             else:
                 calc_r = reflamp(-calc_q/2, depth=w, rho=rho, irho=irho,
                                  sigma=sigma)
@@ -476,14 +480,14 @@ class Experiment(ExperimentBase):
         return (slabs.w, numpy.hstack((slabs.sigma, 0)),
                 slabs.rho[0], slabs.irho[0])
 
-    def magnetic_profile(self):
+    def magnetic_profile(self, dz=0.1):
         """
         Return the nuclear and magnetic scattering potential for the sample.
         """
         key = 'magnetic_profile'
         if key not in self._cache:
             slabs = self._render_slabs()
-            prof = slabs.magnetic_profile()
+            prof = slabs.magnetic_profile(dz=dz)
             self._cache[key] = prof
         return self._cache[key]
 

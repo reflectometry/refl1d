@@ -134,6 +134,11 @@ magnetic_amplitude(const int layers,
                    Cplx Ra[], Cplx Rb[], Cplx Rc[], Cplx Rd[]);
 
 int
+align_magnetic(int nlayers, double d[], double sigma[], double rho[], double irho[],
+               int nlayersM, double dM[], double sigmaM[], double rhoM[], double thetaM[],
+               double output[]);
+
+int
 contract_by_step(int n, double d[], double sigma[],
                  double rho[], double irho[], double dh);
 

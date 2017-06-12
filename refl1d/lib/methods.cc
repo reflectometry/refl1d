@@ -28,7 +28,7 @@ PyObject* Pmagnetic_amplitude(PyObject*obj,PyObject*args)
   double Aguide;
   Cplx *r1, *r2, *r3, *r4;
 
-  if (!PyArg_ParseTuple(args, "OOOOOOOdOOOOOO:magnetic_reflectivity",
+  if (!PyArg_ParseTuple(args, "OOOOOOOdOOOOOO:magnetic_amplitude",
       &d_obj, &sigma_obj,
       &rho_obj, &irho_obj, &rhom_obj,&u1_obj, &u3_obj,
       &Aguide,&kz_obj,&rho_index_obj,
@@ -120,7 +120,52 @@ PyObject* Preflectivity_amplitude(PyObject*obj,PyObject*args)
   return Py_BuildValue("");
 }
 
+PyObject* Palign_magnetic(PyObject *obj, PyObject *args)
+{
+  PyObject *d_obj,*rho_obj,*irho_obj,*sigma_obj;
+  PyObject *dM_obj,*rhoM_obj,*thetaM_obj,*sigmaM_obj;
+  PyObject *output_obj;
+  Py_ssize_t nd, nrho, nirho, nsigma;
+  Py_ssize_t ndM, nrhoM, nthetaM, nsigmaM;
+  Py_ssize_t noutput;
+  double *d, *sigma, *rho, *irho;
+  double *dM, *sigmaM, *rhoM, *thetaM;
+  double *output;
 
+  if (!PyArg_ParseTuple(args, "OOOOOOOOO:align_magnetic",
+      &d_obj,&sigma_obj,&rho_obj,&irho_obj,
+      &dM_obj,&sigmaM_obj,&rhoM_obj,&thetaM_obj,
+      &output_obj))
+    return NULL;
+  INVECTOR(d_obj,d,nd);
+  INVECTOR(sigma_obj,sigma,nsigma);
+  INVECTOR(rho_obj,rho,nrho);
+  INVECTOR(irho_obj,irho,nirho);
+  INVECTOR(dM_obj,dM,ndM);
+  INVECTOR(sigmaM_obj,sigmaM,nsigmaM);
+  INVECTOR(rhoM_obj,rhoM,nrhoM);
+  INVECTOR(thetaM_obj,thetaM,nthetaM);
+  OUTVECTOR(output_obj,output,noutput);
+
+  // interfaces should be one shorter than layers
+  if (nd != nrho || nd != nirho || nd-1 != nsigma) {
+#ifndef BROKEN_EXCEPTIONS
+    PyErr_SetString(PyExc_ValueError, "d,sigma,rho,irho have different lengths");
+#endif
+    return NULL;
+  }
+  if (ndM != nrhoM || ndM != nthetaM || ndM-1 != nsigmaM) {
+#ifndef BROKEN_EXCEPTIONS
+    PyErr_SetString(PyExc_ValueError, "dM,sigmaM,rhoM,thetaM have different lengths");
+#endif
+    return NULL;
+  }
+
+  int newlen = align_magnetic((int)nd, d, sigma, rho, irho,
+                              (int)ndM, dM, sigmaM, rhoM, thetaM,
+                              output);
+  return Py_BuildValue("i",newlen);
+}
 
 PyObject* Pcontract_by_area(PyObject*obj,PyObject*args)
 {
@@ -268,5 +313,3 @@ PyObject* Pconvolve_sampled(PyObject *obj, PyObject *args)
   convolve_sampled(nxi,xi,yi,nxp,xp,yp,nx,x,dx,y);
   return Py_BuildValue("");
 }
-
-
