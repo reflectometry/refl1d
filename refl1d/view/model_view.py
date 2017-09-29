@@ -245,6 +245,12 @@ class ModelView(wx.Panel):
         backend_wx call this function. KEEP it
         """
         return None
+        
+    def GetTitle(self):
+        """
+        backend_wx calls this function.
+        """
+        return self.title
 
     def OnPanelFrameClose(self, evt):
         """
