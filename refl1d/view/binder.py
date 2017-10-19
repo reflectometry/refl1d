@@ -280,7 +280,7 @@ class BindArtist:
         #self.canvas.draw()
         #draw_now(self.canvas)
         # TODO: sort by zorder of axes then by zorder within axes
-        self._artists.sort(cmp=lambda x,y: cmp(y.zorder,x.zorder))
+        self._artists.sort(key=lambda x: x.zorder, reverse=True)
         # print "search"," ".join([str(h) for h in self._artists])
 
         found = Selection()
