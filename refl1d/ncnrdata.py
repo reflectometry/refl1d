@@ -236,9 +236,9 @@ class NG7(NCNRData, Monochromatic):
     instrument = "NG-7"
     radiation = "neutron"
     wavelength = 4.768
-    dLoL = 0.025  # 4% FWHM wavelength spread
-    d_s2 = 275.  # TODO: check this number
-    d_s1 = d_s2 + 1350.
+    dLoL = 0.025  # 2.5% FWHM wavelength spread
+    d_s2 = 222.25
+    d_s1 = 1722.25
     d_detector = 2000.
 
 
