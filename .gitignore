@@ -12,7 +12,10 @@
 /build/
 /dist/
 /refl1d.egg-info/
+/EGG-INFO
 /doc/_build/
 /doc/api/
 /doc/tutorial/
-refl1d-*-win32*.*
+/refl1d-*
+/bumps-*
+/Refl1D.pdf
