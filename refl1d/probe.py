@@ -690,7 +690,6 @@ class Probe(object):
                    plot_shift=None, **kw):
         import pylab
         c = coordinated_colors()
-        isheld = pylab.ishold()
         plot_shift = plot_shift if plot_shift is not None else Probe.plot_shift
         trans = auto_shift(plot_shift)
         if hasattr(self, 'R') and self.R is not None:
@@ -700,7 +699,6 @@ class Probe(object):
                            label=self.label(prefix=label,
                                             gloss='data',
                                             suffix=suffix))
-            pylab.hold(True)
         if theory is not None:
             Q, R = theory
             Q, dQ, R, dR = correct(Q, 0, R, 0)
@@ -709,7 +707,6 @@ class Probe(object):
                        label=self.label(prefix=label,
                                         gloss='theory',
                                         suffix=suffix))
-        pylab.hold(isheld)
         pylab.xlabel('Q (inv Angstroms)')
         pylab.ylabel(ylabel)
         #pylab.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
@@ -744,7 +741,6 @@ class Probe(object):
         raise NotImplementedError
         import pylab
         c = coordinated_colors()
-        isheld = pylab.ishold()
         if substrate is None and surface is None:
             raise TypeError("FFT reflectivity needs substrate or surface")
         F = self.fresnel(substrate=substrate, surface=surface)
@@ -761,7 +757,6 @@ class Probe(object):
                        label=self.label(prefix=label,
                                         gloss='data',
                                         suffix=suffix))
-            pylab.hold(True)
         if theory is not None:
             Q, R = theory
             signal = numpy.interp(T, Q, R/F(Q))
@@ -771,7 +766,6 @@ class Probe(object):
                        label=self.label(prefix=label,
                                         gloss='theory',
                                         suffix=suffix))
-        pylab.hold(isheld)
         pylab.xlabel('w (A)')
         if substrate is None:
             name = "air:%s" % surface.name
@@ -911,11 +905,8 @@ class ProbeSet(Probe):
 
     def plot(self, theory=None, **kw):
         import pylab
-        ishold = pylab.ishold()
         for p, th in self.parts(theory):
             p.plot(theory=th, **kw)
-            pylab.hold(True)
-        pylab.hold(ishold)
     plot.__doc__ = Probe.plot.__doc__
 
     def plot_resolution(self, **kw):
@@ -1511,7 +1502,6 @@ class PolarizedNeutronProbe(object):
 
         plot_shift = plot_shift if plot_shift is not None else Probe.plot_shift
         trans = auto_shift(plot_shift)
-        isheld = pylab.ishold()
         pp, mm = self.pp, self.mm
         c = coordinated_colors()
         if hasattr(pp, 'R'):
@@ -1526,7 +1516,6 @@ class PolarizedNeutronProbe(object):
                            label=pp.label(prefix=label, gloss='data'),
                            transform=trans,
                            color=c['light'])
-            pylab.hold(True)
         if theory is not None:
             mm, mp, pm, pp = theory
             Q, SA, _ = spin_asymmetry(pp[0], pp[1], None, mm[0], mm[1], None)
@@ -1534,7 +1523,6 @@ class PolarizedNeutronProbe(object):
                        label=self.pp.label(prefix=label, gloss='theory'),
                        transform=trans,
                        color=c['dark'])
-        pylab.hold(isheld)
         pylab.xlabel(r'Q (\AA^{-1})')
         pylab.ylabel(r'spin asymmetry $(R^{++} -\, R^{--}) / (R^{++} +\, R^{--})$')
         pylab.legend(numpoints=1)
@@ -1542,7 +1530,6 @@ class PolarizedNeutronProbe(object):
     def _xs_plot(self, plotter, theory=None, **kwargs):
         import pylab
         # Plot available cross sections
-        isheld = pylab.ishold()
         if theory is None:
             theory = (None, None, None, None)
         for x_data, x_th, suffix in zip(self.xs, theory,
@@ -1550,8 +1537,6 @@ class PolarizedNeutronProbe(object):
             if x_data is not None:
                 fn = getattr(x_data, plotter)
                 fn(theory=x_th, suffix=suffix, **kwargs)
-                pylab.hold(True)
-        if not isheld: pylab.hold(False)
 
 def spin_asymmetry(Qp, Rp, dRp, Qm, Rm, dRm):
     r"""

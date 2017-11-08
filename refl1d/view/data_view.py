@@ -221,7 +221,6 @@ class DataView(wx.Panel):
                         if hasattr(p.fitness, 'reflectivity'):
                             p.fitness.plot_reflectivity(view=self.view,
                                                         plot_shift=shift)
-                            pylab.hold(True)
                             if self._cancel_calculate or p.fitness.is_reset(): break
                     if self._cancel_calculate \
                         or self.problem.active_model.fitness.is_reset(): continue

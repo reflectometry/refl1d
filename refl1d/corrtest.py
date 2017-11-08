@@ -47,7 +47,7 @@ def plot_transform(self, theory=None, substrate=None, surround=None):
     if theory is not None:
         Q, R = theory
         A = abs(numpy.fft.fft(numpy.interp(T, self.Q, self.R/F)))
-        pylab.plot(T, A, hold=True)
+        pylab.plot(T, A)
     pylab.xlabel('z (Angstroms)')
     if substrate is None:
         name = "air:%s"%(surround.name)
@@ -67,7 +67,7 @@ def plot_deriv(self, theory=None):
     if theory is not None:
         Q, R = theory
         dth = deriv(Q, R)
-        pylab.plot(Q, dth*scale, hold=True)
+        pylab.plot(Q, dth*scale)
     #pylab.plot(Q, (sign(d)-sign(dth))/2)
     pylab.xlabel('Q (inv Angstroms)')
     pylab.ylabel('R\' (100 Q)^4')

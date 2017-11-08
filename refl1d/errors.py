@@ -354,21 +354,21 @@ def _profiles_overplot(profiles):
         if len(p[0]) == 3:
             rho_color = next_color()
             for z, rho, _ in p[1:]:
-                pylab.plot(z, rho, '-', hold=True, color=rho_color, alpha=alpha)
+                pylab.plot(z, rho, '-', color=rho_color, alpha=alpha)
             # Plot best
             z, rho, _ = p[0]
-            pylab.plot(z, rho, '-', color=dhsv(rho_color, dv=-0.2), hold=True)
+            pylab.plot(z, rho, '-', color=dhsv(rho_color, dv=-0.2))
         else:
             any_magnetic = True
             rho_color = next_color()
             rhoM_color = next_color()
             for z, rho, _, rhoM, _ in p[1:]:
-                pylab.plot(z, rho, '-', hold=True, color=rho_color, alpha=alpha)
-                pylab.plot(z, rhoM, '-', hold=True, color=rhoM_color, alpha=alpha)
+                pylab.plot(z, rho, '-', color=rho_color, alpha=alpha)
+                pylab.plot(z, rhoM, '-', color=rhoM_color, alpha=alpha)
             # Plot best
             z, rho, _, rhoM, _ = p[0]
-            pylab.plot(z, rho, '-', color=dhsv(rho_color, dv=-0.2), hold=True)
-            pylab.plot(z, rhoM, '-', color=dhsv(rhoM_color, dv=-0.2), hold=True)
+            pylab.plot(z, rho, '-', color=dhsv(rho_color, dv=-0.2))
+            pylab.plot(z, rhoM, '-', color=dhsv(rhoM_color, dv=-0.2))
     _profiles_labels(any_magnetic)
 
 def _profiles_contour(profiles, contours=_CONTOURS, npoints=200):
@@ -386,7 +386,7 @@ def _profiles_contour(profiles, contours=_CONTOURS, npoints=200):
             # Plot the quantiles
             plot_quantiles(zp, rho, contours, rho_color)
             # Plot the best
-            pylab.plot(zp, rho[0], '-', color=dhsv(rho_color, dv=-0.2), hold=True)
+            pylab.plot(zp, rho[0], '-', color=dhsv(rho_color, dv=-0.2))
         else:
             any_magnetic = True
             rho_color = next_color()
@@ -398,8 +398,8 @@ def _profiles_contour(profiles, contours=_CONTOURS, npoints=200):
             plot_quantiles(zp, rho, contours, rho_color)
             plot_quantiles(zp, rhoM, contours, rhoM_color)
             # Plot the best
-            pylab.plot(zp, rho[0], '-', color=dhsv(rho_color, dv=-0.2), hold=True)
-            pylab.plot(zp, rhoM[0], '-', color=dhsv(rhoM_color, dv=-0.2), hold=True)
+            pylab.plot(zp, rho[0], '-', color=dhsv(rho_color, dv=-0.2))
+            pylab.plot(zp, rhoM[0], '-', color=dhsv(rhoM_color, dv=-0.2))
     _profiles_labels(any_magnetic)
 
 def _residuals_labels():
@@ -415,9 +415,9 @@ def _residuals_overplot(Q, residuals):
     for m, r in residuals.items():
         color = next_color()
         pylab.plot(Q[m], shift+r[:, 1:], '.', markersize=1,
-                   color=color, alpha=alpha, hold=True)
+                   color=color, alpha=alpha)
         pylab.plot(Q[m], shift+r[:, 0], '.', markersize=1,
-                   color=dhsv(color, dv=-0.2), hold=True) # best
+                   color=dhsv(color, dv=-0.2)) # best
         shift += 5
     _residuals_labels()
 
@@ -428,7 +428,7 @@ def _residuals_contour(Q, residuals, contours=_CONTOURS):
         color = next_color()
         plot_quantiles(Q[m], shift+r.T, contours, color)
         pylab.plot(Q[m], shift+r[:, 0], '.', markersize=1,
-                   color=dhsv(color, dv=-0.2), hold=True) # best
+                   color=dhsv(color, dv=-0.2)) # best
         shift += 5
     _residuals_labels()
 

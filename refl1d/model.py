@@ -333,6 +333,7 @@ class Stack(Layer):
 
 
     def _plot(self, dz=1, roughness_limit=0):
+        # TODO: unused?
         import pylab
         from . import profile, material, probe
         neutron_probe = probe.NeutronProbe(T=numpy.arange(0, 5, 100), L=5.)
@@ -346,7 +347,7 @@ class Stack(Layer):
         z, rho, irho = slabs.step_profile()
         pylab.plot(z, rho, '-g', z, irho, '-b')
         z, rho, irho = slabs.smooth_profile(dz=1, roughness_limit=roughness_limit)
-        pylab.plot(z, rho, ':g', z, irho, ':b', hold=True)
+        pylab.plot(z, rho, ':g', z, irho, ':b')
         pylab.legend(['rho', 'irho'])
         pylab.xlabel('depth (A)')
         pylab.ylabel('SLD (10^6 inv A**2)')
@@ -360,7 +361,7 @@ class Stack(Layer):
         z, rho, irho = slabs.step_profile()
         pylab.plot(z, rho, '-g', z, irho, '-b')
         z, rho, irho = slabs.smooth_profile(dz=1, roughness_limit=roughness_limit)
-        pylab.plot(z, rho, ':g', z, irho, ':b', hold=True)
+        pylab.plot(z, rho, ':g', z, irho, ':b')
         pylab.legend(['rho', 'irho'])
         pylab.xlabel('depth (A)')
         pylab.ylabel('SLD (10^6 inv A**2)')

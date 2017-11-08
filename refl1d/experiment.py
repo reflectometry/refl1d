@@ -158,10 +158,10 @@ class ExperimentBase(object):
             if self.probe.polarized:
                 # Should be four pairs
                 for Q, R in QR:
-                    pylab.plot(Q, R, ':g', hold=True)
+                    pylab.plot(Q, R, ':g')
             else:
                 Q, R = QR
-                pylab.plot(Q, R, ':g', hold=True)
+                pylab.plot(Q, R, ':g')
 
     def plot(self, plot_shift=None, profile_shift=None, view=None):
         import pylab
@@ -525,20 +525,20 @@ class Experiment(ExperimentBase):
             z, rho, irho, rhoM, thetaM = self.magnetic_profile()
             #rhoM_net = rhoM*numpy.cos(numpy.radians(thetaM))
             pylab.plot(z, rho, transform=trans)
-            pylab.plot(z, irho, hold=True, transform=trans)
-            pylab.plot(z, rhoM, hold=True, transform=trans)
+            pylab.plot(z, irho, transform=trans)
+            pylab.plot(z, rhoM, transform=trans)
             pylab.xlabel('depth (A)')
             pylab.ylabel('SLD (10^6 / A**2)')
             pylab.legend(['rho', 'irho', 'rhoM'])
             if (abs(thetaM-thetaM[0]) > 1e-3).any():
                 ax = pylab.twinx()
-                pylab.plot(z, thetaM, ':k', hold=True, axes=ax, transform=trans)
+                pylab.plot(z, thetaM, ':k', axes=ax, transform=trans)
                 pylab.ylabel('magnetic angle (degrees)')
         else:
             z, rho, irho = self.step_profile()
             pylab.plot(z, rho, ':g', z, irho, ':b', transform=trans)
             z, rho, irho = self.smooth_profile()
-            pylab.plot(z, rho, '-g', z, irho, '-b', hold=True, transform=trans)
+            pylab.plot(z, rho, '-g', z, irho, '-b', transform=trans)
             pylab.legend(['rho', 'irho'])
             pylab.xlabel('depth (A)')
             pylab.ylabel('SLD (10^6 / A**2)')
@@ -682,11 +682,8 @@ class MixedExperiment(ExperimentBase):
         import pylab
         f = numpy.array([r.value for r in self.ratio], 'd')
         f /= numpy.sum(f)
-        held = pylab.hold()
         for p in self.parts:
             p.plot_profile(plot_shift=plot_shift)
-            pylab.hold(True)
-        pylab.hold(held)
 
     def save_profile(self, basename):
         for i, p in enumerate(self.parts):
