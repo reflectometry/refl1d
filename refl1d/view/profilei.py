@@ -1,6 +1,7 @@
 """
 Reflectometry profile interactor.
 """
+from __future__ import division, print_function
 
 import math
 import numpy
@@ -62,6 +63,7 @@ class ProfileInteractor(object):
         # Theta needs a separate axis, we put these two axes into a figure
         self.axes.set_xlabel( r'$\rm{z}/\AA$' )
         self.ismagnetic = experiment.sample.ismagnetic
+        self.isstep = experiment.step_interfaces
         if self.ismagnetic:
             self.axes.set_ylabel( r'$\rm{SLD}\ \rho,\  \rho_i,\  \rho_M\ /\ 10^{-6} \AA^{-2}$')
             self.theta_axes.set_ylabel(r'$\rm{Magnetic\ Angle}\ \theta_M\ /\ ^\circ$')
@@ -188,7 +190,7 @@ class ProfileInteractor(object):
 
     def update_profile(self):
         if self.ismagnetic:
-            z,rho,rhoI,rhoM,thetaM = self.experiment.magnetic_profile()
+            z,rho,rhoI,rhoM,thetaM = self.experiment.magnetic_smooth_profile()
             self.hrhoM.set_data(z,rhoM)
             self.hthetaM.set_data(z,thetaM)
         else:

@@ -1,6 +1,5 @@
 # This program is in the public domain
 # Author: Paul Kienzle
-
 """
 Experiment definition
 
@@ -216,8 +215,8 @@ class ExperimentBase(object):
         # Slabs
         A = numpy.array(self.magnetic_slabs())
         fid = open(basename+"-slabs.dat", "w")
-        fid.write("# %17s %20s %20s %20s %20s\n"
-                  %("thickness (A)", "rho (1e-6/A^2)", "irho (1e-6/A^2)",
+        fid.write("# %17s %20s %20s %20s %20s %20s\n"
+                  %("thickness (A)", "interface (A)", "rho (1e-6/A^2)", "irho (1e-6/A^2)",
                     "rhoM (1e-6/A^2)", "theta (degrees)"))
         numpy.savetxt(fid, A.T, fmt="%20.15g")
         fid.close()
@@ -364,8 +363,8 @@ class Experiment(ExperimentBase):
             self._slabs.clear()
             self.sample.render(self._probe_cache, self._slabs)
             self._slabs.finalize(step_interfaces=self.step_interfaces,
-                                 dA=self.dA,
-                                 roughness_limit=self.roughness_limit)
+                                 dA=self.dA)
+                                 #roughness_limit=self.roughness_limit)
             self._cache[key] = True
         return self._slabs
 
@@ -480,21 +479,32 @@ class Experiment(ExperimentBase):
         return (slabs.w, numpy.hstack((slabs.sigma, 0)),
                 slabs.rho[0], slabs.irho[0])
 
-    def magnetic_profile(self, dz=0.1):
+    def magnetic_smooth_profile(self, dz=0.1):
         """
         Return the nuclear and magnetic scattering potential for the sample.
         """
-        key = 'magnetic_profile'
+        key = 'magnetic_smooth_profile'
         if key not in self._cache:
             slabs = self._render_slabs()
-            prof = slabs.magnetic_profile(dz=dz)
+            prof = slabs.magnetic_smooth_profile(dz=dz)
+            self._cache[key] = prof
+        return self._cache[key]
+
+    def magnetic_step_profile(self):
+        """
+        Return the nuclear and magnetic scattering potential for the sample.
+        """
+        key = 'magnetic_step_profile'
+        if key not in self._cache:
+            slabs = self._render_slabs()
+            prof = slabs.magnetic_step_profile()
             self._cache[key] = prof
         return self._cache[key]
 
     def magnetic_slabs(self):
         slabs = self._render_slabs()
-        return (slabs.w, slabs.rho[0], slabs.irho[0],
-                slabs.rhoM, slabs.thetaM)
+        return (slabs.w, numpy.hstack((slabs.sigma, 0)),
+                slabs.rho[0], slabs.irho[0], slabs.rhoM, slabs.thetaM)
 
     def save_staj(self, basename):
         from .stajconvert import save_mlayer
@@ -522,21 +532,32 @@ class Experiment(ExperimentBase):
         plot_shift = plot_shift if plot_shift is not None else Experiment.profile_shift
         trans = auto_shift(plot_shift)
         if self.ismagnetic:
-            z, rho, irho, rhoM, thetaM = self.magnetic_profile()
+            if not self.step_interfaces:
+                z, rho, irho, rhoM, thetaM = self.magnetic_step_profile()
+                #rhoM_net = rhoM*numpy.cos(numpy.radians(thetaM))
+                pylab.plot(z, rho, ':g', transform=trans)
+                pylab.plot(z, irho, ':b', transform=trans)
+                pylab.plot(z, rhoM, ':r', transform=trans)
+                if (abs(thetaM-thetaM[0]) > 1e-3).any():
+                    ax = pylab.twinx()
+                    pylab.plot(z, thetaM, ':k', axes=ax, transform=trans)
+                    pylab.ylabel('magnetic angle (degrees)')
+            z, rho, irho, rhoM, thetaM = self.magnetic_smooth_profile()
             #rhoM_net = rhoM*numpy.cos(numpy.radians(thetaM))
-            pylab.plot(z, rho, transform=trans)
-            pylab.plot(z, irho, transform=trans)
-            pylab.plot(z, rhoM, transform=trans)
+            pylab.plot(z, rho, '-g', transform=trans)
+            pylab.plot(z, irho, '-b', transform=trans)
+            pylab.plot(z, rhoM, '-r', transform=trans)
+            if (abs(thetaM-thetaM[0]) > 1e-3).any():
+                ax = pylab.twinx()
+                pylab.plot(z, thetaM, '-k', axes=ax, transform=trans)
+                pylab.ylabel('magnetic angle (degrees)')
             pylab.xlabel('depth (A)')
             pylab.ylabel('SLD (10^6 / A**2)')
             pylab.legend(['rho', 'irho', 'rhoM'])
-            if (abs(thetaM-thetaM[0]) > 1e-3).any():
-                ax = pylab.twinx()
-                pylab.plot(z, thetaM, ':k', axes=ax, transform=trans)
-                pylab.ylabel('magnetic angle (degrees)')
         else:
-            z, rho, irho = self.step_profile()
-            pylab.plot(z, rho, ':g', z, irho, ':b', transform=trans)
+            if not self.step_interfaces:
+                z, rho, irho = self.step_profile()
+                pylab.plot(z, rho, ':g', z, irho, ':b', transform=trans)
             z, rho, irho = self.smooth_profile()
             pylab.plot(z, rho, '-g', z, irho, '-b', transform=trans)
             pylab.legend(['rho', 'irho'])

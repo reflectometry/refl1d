@@ -9,7 +9,6 @@ the two.
 __all__ = ["data_view", "model_view", "new_model", "calc_errors", "show_errors"]
 
 import numpy
-from bumps.fitproblem import FitProblem
 
 from . import names as refl
 from .errors import calc_errors, show_errors
@@ -31,7 +30,7 @@ def load_model(filename):
         return problem
     elif filename.endswith('.staj') or filename.endswith('.sta'):
         from .stajconvert import load_mlayer
-        return FitProblem(load_mlayer(filename))
+        return refl.FitProblem(load_mlayer(filename))
         #fit_all(problem.fitness, pmp=20)
     else:
         return None

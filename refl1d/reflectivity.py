@@ -9,6 +9,8 @@ spin polarization cross sections [++, +-, -+, --].  The function
 unpolarized_magnetic returns the expected magnitude for a measurement
 of the magnetic scattering using an unpolarized beam.
 """
+from __future__ import print_function
+
 from six.moves import reduce
 
 #__doc__ = "Fundamental reflectivity calculations"
@@ -210,6 +212,8 @@ def magnetic_amplitude(kz,
 
     depth, rho, irho, rhoM, thetaM, sigma \
         = [_dense(a, 'd') for a in (depth, rho, irho, rhoM, thetaM, sigma)]
+    #np.set_printoptions(linewidth=1000)
+    #print(np.vstack((depth, np.hstack((sigma, np.nan)), rho, irho, rhoM, thetaM)).T)
 
     thetaM = radians(thetaM)
     phiH = radians(Aguide - 270.0)
