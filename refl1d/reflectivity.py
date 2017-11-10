@@ -185,7 +185,6 @@ def magnetic_amplitude(kz,
                        Aguide=-90,
                        H=0,
                        rho_index=None,
-                       rotate_M=True,
                       ):
     """
     Returns the complex magnetic reflectivity waveform.
@@ -210,10 +209,31 @@ def magnetic_amplitude(kz,
     if np.isscalar(sigma):
         sigma = sigma*np.ones(n-1, 'd')
 
-    depth, rho, irho, rhoM, thetaM, sigma \
-        = [_dense(a, 'd') for a in (depth, rho, irho, rhoM, thetaM, sigma)]
+    depth, rho, irho, sigma = [_dense(a, 'd') for a in (depth, rho, irho, sigma)]
     #np.set_printoptions(linewidth=1000)
     #print(np.vstack((depth, np.hstack((sigma, np.nan)), rho, irho, rhoM, thetaM)).T)
+
+    sld_b, u1, u3 = calculate_u1_u3(H, rhoM, thetaM, Aguide)
+
+    R1, R2, R3, R4 = [np.empty(kz.shape, 'D') for pol in (1, 2, 3, 4)]
+    reflmodule._magnetic_amplitude(depth, sigma, rho, irho,
+                                   sld_b, u1, u3, Aguide, kz, rho_index,
+                                   R1, R2, R3, R4)
+    return R1, R2, R3, R4
+
+def calculate_u1_u3(H, rhoM, thetaM, Aguide):
+    from . import reflmodule
+
+    rhoM, thetaM = _dense(rhoM, 'd'), _dense(thetaM, 'd')
+    n = len(rhoM)
+    u1, u3 = np.empty(n, 'D'), np.empty(n, 'D')
+    sld_b = np.empty(n, 'd')
+    reflmodule._calculate_u1_u3(H, rhoM, thetaM, Aguide, sld_b, u1, u3)
+
+    return sld_b, u1, u3
+
+def calculate_u1_u3_py(H, rhoM, thetaM, Aguide):
+    rotate_M = True
 
     thetaM = radians(thetaM)
     phiH = radians(Aguide - 270.0)
@@ -260,12 +280,7 @@ def magnetic_amplitude(kz,
     u3 = u3_num/u3_den
     #print "u1", u1
     #print "u3", u3
-
-    R1, R2, R3, R4 = [np.empty(kz.shape, 'D') for pol in (1, 2, 3, 4)]
-    reflmodule._magnetic_amplitude(depth, sigma, rho, irho,
-                                   sld_b, u1, u3, Aguide, kz, rho_index,
-                                   R1, R2, R3, R4)
-    return R1, R2, R3, R4
+    return sld_b, u1, u3
 
 def convolve(xi, yi, x, dx):
     """

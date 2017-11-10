@@ -14,7 +14,7 @@ const double B2SLD = 2.31604654;  // Scattering factor for B field 1e-6
 
 extern "C" void
 calculate_U1_U3(const double H,
-                      double &rhoM,
+                double &rhoM,
                 const double thetaM,
                 const double Aguide,
                 Cplx &U1, Cplx &U3

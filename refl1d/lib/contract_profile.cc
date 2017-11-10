@@ -33,7 +33,7 @@ align_magnetic(int nlayers, double d[], double sigma[], double rho[], double irh
   double z = 0.; // current interface depth
   double next_z = 0.; // next nuclear interface
   double next_zM = 0.; // next magnetic interface
-  int active = 3; // active interfaces, active&0x1 for nuclear, active&0x2 for magnetic
+  //int active = 3; // active interfaces, active&0x1 for nuclear, active&0x2 for magnetic
   int k = 0;  // current output layer index
   while (1) { // repeat over all nuclear/magnetic layers
     assert(nuclear < nlayers);

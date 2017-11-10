@@ -16,6 +16,43 @@ typedef int Py_ssize_t;
 #undef BROKEN_EXCEPTIONS
 
 
+PyObject* Pcalculate_u1_u3(PyObject*obj,PyObject*args)
+{
+  PyObject *rhom_obj, *thetam_obj, *sldb_obj, *u1_obj, *u3_obj;
+  Py_ssize_t nrhom, nthetam, nsldb, nu1, nu3;
+  const double *rhom, *thetam;
+  double *sldb;
+  Cplx *u1, *u3;
+  double H, Aguide;
+
+  if (!PyArg_ParseTuple(args, "dOOdOOO:calculate_u1_u3",
+      &H, &rhom_obj, &thetam_obj, &Aguide, &sldb_obj, &u1_obj, &u3_obj))
+    return NULL;
+  INVECTOR(rhom_obj,rhom,nrhom);
+  INVECTOR(thetam_obj,thetam,nthetam);
+  OUTVECTOR(sldb_obj,sldb,nsldb);
+  OUTVECTOR(u1_obj,u1,nu1);
+  OUTVECTOR(u3_obj,u3,nu3);
+  if (nrhom != nthetam || nrhom != nsldb || nrhom != nu1 || nrhom != nu3) {
+    //printf("%ld %ld %ld %ld %ld %ld\n",
+    //    long(nd), long(nsigma), long(nrho), long(nirho), long(nrhom), long(nu1));
+#ifndef BROKEN_EXCEPTIONS
+    PyErr_SetString(PyExc_ValueError, "rhom,thetam,sldb,u1,u3 have different lengths");
+#endif
+    return NULL;
+  }
+
+  for (size_t i=0; i<nrhom; i++) {
+    sldb[i] = rhom[i];
+    calculate_U1_U3(H, sldb[i], thetam[i], Aguide, u1[i], u3[i]);
+    //sldb[i] = fabs(sldb[i]);
+  }
+
+  return Py_BuildValue("");
+}
+
+
+
 PyObject* Pmagnetic_amplitude(PyObject*obj,PyObject*args)
 {
   PyObject *kz_obj,*rho_index_obj,*r1_obj,*r2_obj,*r3_obj,*r4_obj,
