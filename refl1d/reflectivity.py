@@ -193,7 +193,6 @@ def magnetic_amplitude(kz,
     """
     from . import reflmodule
 
-    EPS = np.finfo('f').tiny # not 1e-20 # epsilon offset for divisions.
     kz = _dense(kz, 'd')
     if rho_index is None:
         rho_index = np.zeros(kz.shape, 'i')
@@ -209,6 +208,8 @@ def magnetic_amplitude(kz,
     if np.isscalar(sigma):
         sigma = sigma*np.ones(n-1, 'd')
 
+    #kz = -kz
+    #depth, rho, irho, sigma, rhoM, thetaM = [v[::-1] for v in (depth, rho, irho, sigma, rhoM, thetaM)]
     depth, rho, irho, sigma = [_dense(a, 'd') for a in (depth, rho, irho, sigma)]
     #np.set_printoptions(linewidth=1000)
     #print(np.vstack((depth, np.hstack((sigma, np.nan)), rho, irho, rhoM, thetaM)).T)
@@ -224,7 +225,7 @@ def magnetic_amplitude(kz,
 def calculate_u1_u3(H, rhoM, thetaM, Aguide):
     from . import reflmodule
 
-    rhoM, thetaM = _dense(rhoM, 'd'), _dense(thetaM, 'd')
+    rhoM, thetaM = _dense(rhoM, 'd'), _dense(np.radians(thetaM), 'd')
     n = len(rhoM)
     u1, u3 = np.empty(n, 'D'), np.empty(n, 'D')
     sld_b = np.empty(n, 'd')
@@ -235,6 +236,7 @@ def calculate_u1_u3(H, rhoM, thetaM, Aguide):
 def calculate_u1_u3_py(H, rhoM, thetaM, Aguide):
     rotate_M = True
 
+    EPS = np.finfo('f').tiny # not 1e-20 # epsilon offset for divisions.
     thetaM = radians(thetaM)
     phiH = radians(Aguide - 270.0)
     thetaH = np.pi/2.0 # by convention, H is in y-z plane so theta = pi/2

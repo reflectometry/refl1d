@@ -12,6 +12,7 @@
 const double EPS = std::numeric_limits<double>::epsilon();
 const double B2SLD = 2.31604654;  // Scattering factor for B field 1e-6
 
+// TODO: thetaM in radians but Aguide in degrees!!!
 extern "C" void
 calculate_U1_U3(const double H,
                 double &rhoM,
@@ -158,7 +159,7 @@ C * Converted to subroutine from GEPORE.f
 */
 
 //     paramters
-      int I,L,LP,STEP;
+      int I,L,LP,STEP,SIGMA_OFFSET;
 
 //    variables calculating S1, S3, and exponents
       double E0, SIGMAL;
@@ -187,9 +188,11 @@ C * Converted to subroutine from GEPORE.f
       if (KZ<=-1.e-10) {
          L=N-1;
          STEP=-1;
+         SIGMA_OFFSET=-1;
       } else if (KZ>=1.e-10) {
          L=0;
          STEP=1;
+         SIGMA_OFFSET=0;
       } else {
          YA = -1.;
          YB = 0.;
@@ -237,7 +240,7 @@ C * Converted to subroutine from GEPORE.f
         S3L = -sqrt(Cplx(PI4*(RHO[L]-RHOM[L])-E0, -PI4*(fabs(IRHO[L])+EPS)));
         S1LP = -sqrt(Cplx(PI4*(RHO[LP]+RHOM[LP])-E0, -PI4*(fabs(IRHO[LP])+EPS)));
         S3LP = -sqrt(Cplx(PI4*(RHO[LP]-RHOM[LP])-E0, -PI4*(fabs(IRHO[LP])+EPS)));
-        SIGMAL = SIGMA[L];
+        SIGMAL = SIGMA[L+SIGMA_OFFSET];
 
         if (abs(U1[L]) <= 1.0) {
             // then Bz >= 0
@@ -305,7 +308,7 @@ C * Converted to subroutine from GEPORE.f
         BL = BLP;
         S1LP = -sqrt(Cplx(PI4*(RHO[LP]+RHOM[LP])-E0, -PI4*(fabs(IRHO[LP])+EPS)));
         S3LP = -sqrt(Cplx(PI4*(RHO[LP]-RHOM[LP])-E0, -PI4*(fabs(IRHO[LP])+EPS)));
-        SIGMAL = SIGMA[L];
+        SIGMAL = SIGMA[L+SIGMA_OFFSET];
 
         if (abs(U1[LP]) <= 1.0) {
             // then Bz >= 0
