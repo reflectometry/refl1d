@@ -9,8 +9,8 @@
 
 #define GREEDY
 #define _USE_MATH_DEFINES
-#include <math.h>
-#include <assert.h>
+#include <cmath>
+#include <cassert>
 
 #define Z_EPS 1e-6
 
@@ -78,31 +78,31 @@ align_magnetic(int nlayers, double d[], double sigma[], double rho[], double irh
     //
     if (nuclear == nlayers-1) {
       // No more nuclear layers... play out the remaining magnetic layers.
-      output[k][0] = fmax(next_zM - z, 0.0);
+      output[k][0] = std::max(next_zM - z, 0.0);
       output[k][1] = sigmaM[magnetic];
       next_zM += dM[++magnetic];
     } else if (magnetic == nlayersM-1) {
       // No more magnetic layers... play out the remaining nuclear layers.
-      output[k][0] = fmax(next_z - z, 0.0);
+      output[k][0] = std::max(next_z - z, 0.0);
       output[k][1] = sigma[nuclear];
       next_z += d[++nuclear];
     } else if (fabs(next_z - next_zM) < Z_EPS && fabs(sigma[nuclear]-sigmaM[magnetic]) < Z_EPS) {
       // Matching nuclear/magnetic boundary, with almost identical interfaces.
       // Increment both nuclear and magnetic layers.
-      output[k][0] = fmax(0.5*(next_z + next_zM) - z, 0.0);
+      output[k][0] = std::max(0.5*(next_z + next_zM) - z, 0.0);
       output[k][1] = 0.5*(sigma[nuclear] + sigmaM[magnetic]);
       next_z += d[++nuclear];
       next_zM += dM[++magnetic];
     } else if (next_zM < next_z) {
       // Magnetic boundary comes before nuclear boundary, so increment magnetic.
-      output[k][0] = fmax(next_zM - z, 0.0);
+      output[k][0] = std::max(next_zM - z, 0.0);
       output[k][1] = sigmaM[magnetic];
       next_zM += dM[++magnetic];
     } else {
       // Nuclear boundary comes before magnetic boundary
       // OR nuclear and magnetic boundaries match but interfaces are different.
       // so increment nuclear.
-      output[k][0] = fmax(next_z - z, 0.0);
+      output[k][0] = std::max(next_z - z, 0.0);
       output[k][1] = sigma[nuclear];
       next_z += d[++nuclear];
     }

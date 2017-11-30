@@ -8,6 +8,10 @@
 #include <limits>
 #include "reflcalc.h"
 
+#ifndef M_PI
+#define M_PI 3.141592653589793
+#endif
+
 #define MINIMAL_RHO_M 1e-2  // in units of 1e-6/A^2
 const double EPS = std::numeric_limits<double>::epsilon();
 const double B2SLD = 2.31604654;  // Scattering factor for B field 1e-6
