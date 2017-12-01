@@ -14,6 +14,7 @@ if sys.argv[1] == 'test':
 
 #from distutils.core import setup, Extension
 from setuptools import setup, Extension
+from distutils.command.build_ext import build_ext
 
 packages = ['refl1d', 'refl1d.view']
 
@@ -23,22 +24,24 @@ for line in open(os.path.join("refl1d", "__init__.py")):
         version = line.split('"')[1]
 #print("Version: "+version)
 
+extra_compile_args =  {'msvc': ['/EHsc']}
+extra_link_args =  {}
+
+class build_ext_subclass(build_ext):
+    def build_extensions(self):
+        c = self.compiler.compiler_type
+        if c in extra_compile_args:
+           for e in self.extensions:
+               e.extra_compile_args = extra_compile_args[c]
+        if c in extra_link_args:
+            for e in self.extensions:
+                e.extra_link_args = extra_link_args[c]
+        build_ext.build_extensions(self)
 
 # reflmodule extension
 def reflmodule_config():
-    extra_compile_args = None
     if sys.platform == "darwin":
         os.environ['CXX'] = 'c++'
-    if os.name == 'nt':
-        # Note: This could be done by extending the build_ext class instead
-        # http://stackoverflow.com/a/5192738
-        import distutils.ccompiler
-        compiler = distutils.ccompiler.get_default_compiler()
-        for arg in sys.argv:
-            if arg.startswith('--compiler='):
-                _, compiler = arg.split('=')
-        #if compiler == 'msvc':
-        #    extra_compile_args = ['/EHsc']
 
     S = ("reflmodule.cc", "methods.cc",
          "reflectivity.cc", "magnetic.cc",
@@ -50,9 +53,9 @@ def reflmodule_config():
     sources = [os.path.join('refl1d', 'lib', f) for f in S]
     depends = [os.path.join('refl1d', 'lib', f) for f in Sdeps]
     module = Extension('refl1d.reflmodule',
-                       sources=sources, depends=depends,
-                       extra_compile_args=extra_compile_args,
-                      )
+                       sources=sources,
+                       depends=depends,
+                       )
     return module
 
 # SCF extension
@@ -68,8 +71,8 @@ def SCFmodule_config():
 
 #sys.dont_write_bytecode = False
 dist = setup(
-    name='refl1d',
-    version=version,
+    name = 'refl1d',
+    version = version,
     author='Paul Kienzle',
     author_email='pkienzle@nist.gov',
     url='http://www.reflectometry.org/danse/model1d.html',
@@ -85,11 +88,12 @@ dist = setup(
         'Topic :: Scientific/Engineering :: Chemistry',
         'Topic :: Scientific/Engineering :: Physics',
         ],
-    packages=packages,
-    #package_data=gui_resources.package_data(),
-    scripts=['bin/refl1d_cli.py', 'bin/refl1d_gui.py'],
-    ext_modules=[reflmodule_config(), SCFmodule_config()],
-    install_requires=['bumps>=0.7.5', 'periodictable'],
+    packages = packages,
+    #package_data = gui_resources.package_data(),
+    scripts = ['bin/refl1d_cli.py', 'bin/refl1d_gui.py'],
+    ext_modules = [reflmodule_config(), SCFmodule_config()],
+    install_requires = ['bumps>=0.7.5', 'periodictable'],
+    cmdclass = {'build_ext': build_ext_subclass},
     )
 
 # End of file
