@@ -4,6 +4,14 @@ Change History
 
 Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 
+2017-12-01 v0.8
+===============
+
+* incoherent cross sections now calculated as total minus coherent
+* make sure displayed chisq is consistent with negative log likelihood
+* allow blending across multiple interfaces
+* allow Nevot-Croce calculations for magnetic models
+
 2016-08-05 v0.7.9a2
 ===================
 
