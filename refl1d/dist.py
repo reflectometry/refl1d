@@ -118,8 +118,8 @@ class DistributionExperiment(ExperimentBase):
                 'experiment':self.experiment.parameters(),
                }
 
-    def reflectivity(self, resolution=True):
-        key = "reflectivity", resolution
+    def reflectivity(self, resolution=True, interpolation=0):
+        key = ("reflectivity", resolution, interpolation)
         if key not in self._cache:
             calc_R = 0
             for x, w in self.distribution:
@@ -133,7 +133,9 @@ class DistributionExperiment(ExperimentBase):
                         calc_R += w*abs(Rx)**2
             if self.coherent:
                 calc_R = abs(calc_R)**2
-            Q, R = self.probe.apply_beam(Qx, calc_R, resolution=resolution)
+            Q, R = self.probe.apply_beam(Qx, calc_R,
+                                         resolution=resolution,
+                                         interpolation=interpolation)
             self._cache[key] = Q, R
         return self._cache[key]
 
@@ -168,12 +170,15 @@ class DistributionExperiment(ExperimentBase):
             self._cache[key] = self.experiment.step_profile()
         return self._cache[key]
 
-    def plot_profile(self):
+    def plot_profile(self, plot_shift=0.):
         import pylab
+        from bumps.plotutil import auto_shift
+
+        trans = auto_shift(plot_shift)
         z, rho, irho = self.step_profile()
-        pylab.plot(z, rho, '-g', z, irho, '-b')
+        pylab.plot(z, rho, '-g', z, irho, '-b', transform=trans)
         z, rho, irho = self.smooth_profile()
-        pylab.plot(z, rho, ':g', z, irho, ':b')
+        pylab.plot(z, rho, ':g', z, irho, ':b', transform=trans)
         pylab.legend(['rho', 'irho'])
 
     def plot_weights(self):

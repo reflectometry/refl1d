@@ -11,11 +11,13 @@ s_high = s_mid*3
 interface_below, interface_above = s_high, s_low
 #interface_below, interface_above = s_low, s_high
 #thetaM, thetaM2 = 90., 270.   # spin flip
+
 thetaM, thetaM2 = 90., 90.   # non spin flip
 sample = (
     silicon(0, s_mid)
     | nickel(100, s_mid, magnetism=Magnetism(rhoM=5, thetaM=thetaM,
-             interface_below=interface_below, interface_above=interface_above))
+                                             interface_below=interface_below,
+                                             interface_above=interface_above))
     | copper(10, 5)
     | nickel(100, 5, magnetism=Magnetism(rhoM=5, thetaM=thetaM2))
     | copper(10, 5)
@@ -29,21 +31,22 @@ rev_sample = (
     | copper(sample[2].thickness, sample[1].interface)
     | nickel(sample[1].thickness, sample[0].interface,
              magnetism=Magnetism(rhoM=5, thetaM=thetaM,
-             interface_below=interface_above, interface_above=interface_below))
+                                 interface_below=interface_above,
+                                 interface_above=interface_below))
     | silicon
 )
 #del sample[2:5]
 
 T = numpy.linspace(0, 5, 400)
-dT,L,dL = 0.02,4.75, 0.0475
+dT, L, dL = 0.02, 4.75, 0.0475
 
 xs = [NeutronProbe(T=T*(-1 if name == "neg" else 1), dT=0.01, L=4.75, dL=0.0475, name=name)
       for name in ("Nevot-Croce", "fine", "coarse", "neg")]
 # spin flip/non spin flip
 if thetaM != thetaM2:
-    probes = [PolarizedNeutronProbe([v,v,v,v], H=0, Aguide=270) for v in xs]
+    probes = [PolarizedNeutronProbe([v, v, v, v], H=0, Aguide=270) for v in xs]
 else:
-    probes = [PolarizedNeutronProbe([v,None,None,v], H=0, Aguide=270) for v in xs]
+    probes = [PolarizedNeutronProbe([v, None, None, v], H=0, Aguide=270) for v in xs]
 
 nc, fine, coarse, neg = probes
 

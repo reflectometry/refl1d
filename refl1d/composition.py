@@ -10,8 +10,8 @@ INCOMPLETE UNUSED UNTESTED CODE
 
 #@PydevCodeAnalysisIgnore
 
-import numpy
-from numpy import inf
+import numpy as np
+from numpy import inf, exp
 from bumps.parameter import Parameter as Par
 
 from .model import Layer
@@ -34,9 +34,10 @@ class CompositionSpace(Layer):
                                      name=name+" thickness")
 
     def parameters(self):
-        return {'solvent':self.solvent.parameters(),
-                'parts':[p.parameters() for p in self.parts],
-               }
+        return {
+            'solvent':self.solvent.parameters(),
+            'parts':[p.parameters() for p in self.parts],
+            }
 
     def add(self, part=None):
         self.parts.append(part)
@@ -51,16 +52,16 @@ class CompositionSpace(Layer):
     def __setitem__(self, n, part):
         self.parts[n] = part
 
-    def plot_volume_fraction(self, ax):
+    def plot_volume_fraction(self, slabs, ax):
         """
         Composition space items have a plotting routine for showing the
         volume profile.
         """
         # Uniform stepping
-        z = numpy.arange(slabs.dz/2, self.thickness.value, slabs.dz)
+        z = np.arange(slabs.dz/2, self.thickness.value, slabs.dz)
 
         # Storage for the sub-totals
-        volume_total = numpy.zeros_like(z)
+        volume_total = np.zeros_like(z)
 
         # Accumulate the parts
         for p in self.parts:
@@ -74,13 +75,13 @@ class CompositionSpace(Layer):
     # Render a profile
     def render(self, probe, slabs):
         # Uniform stepping
-        z = arange(slabs.dz/2, self.thickness.value, slabs.dz)
+        z = np.arange(slabs.dz/2, self.thickness.value, slabs.dz)
 
         # Storage for the sub-totals
         n, k = len(z), slabs.nprobe
-        rho_total = numpy.zeros((n, k))
-        mu_total = numpy.zeros((n, k))
-        volume_total = numpy.zeros_like(z)
+        rho_total = np.zeros((n, k))
+        mu_total = np.zeros((n, k))
+        volume_total = np.zeros_like(z)
 
         # Accumulate the parts
         for p in self.parts:
@@ -95,7 +96,7 @@ class CompositionSpace(Layer):
         mu_total += mu*(1-volume_total)
 
         # Add to model
-        w = slabs.dz * numpy.ones(z.shape)
+        w = slabs.dz * np.ones(z.shape)
         slabs.extend(w=w, rho=rho_total, mu=mu_total)
 
 class Part(object):
@@ -116,7 +117,7 @@ class Part(object):
         # composites such as oriented proteins for which the
         # sld and volume change at the same time.
         rho, mu = probe.sld(self.material)
-        f = fraction.value*self.profile(z)
+        f = self.fraction.value*self.profile(z)
         return f, rho*f, mu*f
 
 
@@ -149,14 +150,14 @@ class Gaussian(object):
                                    name=name + " sigma")
 
     def parameters(self):
-        return {'center':self.center, 'width':self.width, 'sigma':self.sigma}
+        return {'center':self.center, 'width':self.width, 'sigma':self.stretch}
 
     def __call__(self, z):
-        mu, sigma, w = self.center.value, self.sigma.value, self.width.value/2
+        mu, sigma, w = self.center.value, self.stretch.value, self.width.value/2
         if w <= 0:
             result = exp(-0.5*((z-mu)/sigma)**2)
         else:
-            result = numpy.ones_like(z)
+            result = np.ones_like(z)
             idx = abs(z-mu) < w
             result[idx] = exp(-0.5*((abs(z[idx]-mu)-w)/sigma)**2)
         return result

@@ -16,12 +16,14 @@ which is anyway already covered by the chisq cost function.
 from __future__ import print_function
 
 from scipy import stats
+import numpy as np
 
 def residual_nllf(v):
     # Normalize the scores so that we are assuming
-    z = stats.zs(v)
+    z = stats.zscore(v)
 
 def plot(self):
+    import pylab
     pylab.subplot(313)
     Q, R = self.reflectivity()
     self.probe.plot_transform(theory=(Q, R),
@@ -40,13 +42,13 @@ def plot_transform(self, theory=None, substrate=None, surround=None):
     print("substrate %s"%substrate)
     #Qc = sqrt(16*pi*substrate)
     Qc = 0
-    T = numpy.linspace(Qc, max(self.Q), len(self.Q))
+    T = np.linspace(Qc, max(self.Q), len(self.Q))
     if hasattr(self, 'R'):
-        A = abs(numpy.fft.fft(numpy.interp(T, self.Q, self.R/F)))
+        A = abs(np.fft.fft(np.interp(T, self.Q, self.R/F)))
         pylab.plot(T, A, '.')
     if theory is not None:
         Q, R = theory
-        A = abs(numpy.fft.fft(numpy.interp(T, self.Q, self.R/F)))
+        A = abs(np.fft.fft(np.interp(T, self.Q, self.R/F)))
         pylab.plot(T, A)
     pylab.xlabel('z (Angstroms)')
     if substrate is None:
@@ -74,9 +76,9 @@ def plot_deriv(self, theory=None):
 
 def deriv(Q, R, dR=None, width=5, degree=2):
     from bumps.wsolve import wpolyfit
-    d = numpy.empty_like(Q)
+    d = np.empty_like(Q)
     if dR is None:
-        dR = numpy.ones_like(Q)
+        dR = np.ones_like(Q)
     k = (width-1)/2
     p = wpolyfit(Q[:width], R[:width], dy=dR[:width], degree=degree)
     d[:k+1] = p.der(Q[:k+1])

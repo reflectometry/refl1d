@@ -61,14 +61,15 @@ def refl(kz, depth, rho, irho=0, sigma=0, rho_index=None):
     ## This allows the caller to provide an array of length n
     ## corresponding to rho, mu or of length n-1.
     r = empty(len(kz), 'D')
-    r[kz >= 1e-10] = calc(kz[kz >= 1e-10], depth, rho, irho, sigma)
-    r[kz <= 1e-10] = calc(-kz[kz <= 1e-10], depth[::-1], rho[:, ::-1],
-                          irho[:, ::-1], sigma[m-2::-1])
+    r[kz >= 1e-10] = _calc(kz[kz >= 1e-10], depth, rho, irho, sigma)
+    r[kz <= 1e-10] = _calc(-kz[kz <= 1e-10], depth[::-1], rho[:, ::-1],
+                           irho[:, ::-1], sigma[m-2::-1])
     r[abs(kz) < 1e-10] = -1
     return r
 
 
-def calc(kz, depth, rho, irho, sigma):
+def _calc(kz, depth, rho, irho, sigma):
+    # type: (np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray) -> np.ndarray
     if len(kz) == 0:
         return kz
 

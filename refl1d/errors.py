@@ -64,34 +64,34 @@ def run_errors(**kw):
     import sys
     import pylab
 
-    LOAD = {'model': None, 'store': None, 'nshown': 50, 'random': True}
-    SHOW = {'align': 'auto', 'plots': 2,
+    load = {'model': None, 'store': None, 'nshown': 50, 'random': True}
+    show = {'align': 'auto', 'plots': 2,
             'contours': _CONTOURS, 'npoints': 400,
             'save': None}
 
     for k, v in kw.items():
-        if k in LOAD:
-            LOAD[k] = v
-        elif k in SHOW:
-            SHOW[k] = v
+        if k in load:
+            load[k] = v
+        elif k in show:
+            show[k] = v
         else:
             raise TypeError("Unknown argument "+k)
 
     if len(sys.argv) > 2:
-        LOAD['model'], LOAD['store'] = sys.argv[1:3]
+        load['model'], load['store'] = sys.argv[1], sys.argv[2]
 
         align_str = sys.argv[3] if len(sys.argv) >= 4 else '0'
         if align_str[0] == 'R':
             align_str = '-'+align_str[1:]
-        SHOW['align'] = float(align_str) if align_str != 'auto' else align_str
+        show['align'] = float(align_str) if align_str != 'auto' else align_str
         plots_str = sys.argv[4] if len(sys.argv) >= 5 else '2'
-        SHOW['plots'] = int(plots_str) if plots_str != 'n' else plots_str
+        show['plots'] = int(plots_str) if plots_str != 'n' else plots_str
         #print align, align_str, len(sys.argv), sys.argv
 
-    if not LOAD['store'] or not LOAD['model']:
+    if not load['store'] or not load['model']:
         _usage()
-    if SHOW['save'] is None:
-        SHOW['save'] = os.path.join(LOAD['store'], LOAD['model'][:-3])
+    if show['save'] is None:
+        show['save'] = os.path.join(load['store'], load['model'][:-3])
 
     print("loading... this may take awhile")
     errors = reload_errors(**load)

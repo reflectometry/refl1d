@@ -700,7 +700,6 @@ class MixedExperiment(ExperimentBase):
         return self._cache[key]
 
     def plot_profile(self, plot_shift=None):
-        import pylab
         f = numpy.array([r.value for r in self.ratio], 'd')
         f /= numpy.sum(f)
         for p in self.parts:
@@ -733,7 +732,7 @@ def _nonpolarized_magnetic(R):
     Unpolarized magnetic data adds the cross-sections of the magnetic
     data incoherently and divides by two.
     """
-    return reduce(numpy.add, R)/2
+    return sum(R)/2
 
 def _amplitude_to_magnitude(r, ismagnetic, polarized):
     """
