@@ -46,7 +46,7 @@ class ExperimentBase(object):
     def reflectivity(self, resolution=True, interpolation=0):
         raise NotImplementedError()
 
-    def magnetic_profile(self):
+    def magnetic_step_profile(self):
         raise NotImplementedError()
 
     def slabs(self):
@@ -222,7 +222,7 @@ class ExperimentBase(object):
         fid.close()
 
         # Step profile
-        A = numpy.array(self.magnetic_profile())
+        A = numpy.array(self.magnetic_step_profile())
         fid = open(basename+"-steps.dat", "w")
         fid.write("# %10s %12s %12s %12s %12s\n"
                   %("z (A)", "rho (1e-6/A2)", "irho (1e-6/A2)",
