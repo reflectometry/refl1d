@@ -11,6 +11,7 @@ energy of the radiation.
 See :ref:`data-guide` for details.
 
 """
+from __future__ import with_statement, division, print_function
 
 # TOF stitching introduces a lot of complexity.
 # Theta offset:
@@ -37,7 +38,6 @@ See :ref:`data-guide` for details.
 #
 # Unstitched seems like the better bet.
 
-from __future__ import with_statement, division
 import os
 import json
 
@@ -514,6 +514,7 @@ class Probe(object):
             Q, dQ = _interpolate_Q(self.Q, self.dQ, interpolation)
             Q, R = self.Q, numpy.interp(Q, calc_Q, calc_R)
         R = self.intensity.value*R + self.background.value
+        #return calc_Q, calc_R
         return Q, R
 
     def fresnel(self, substrate=None, surface=None):
@@ -648,10 +649,10 @@ class Probe(object):
         if substrate is None and surface is None:
             raise TypeError("Fresnel-normalized reflectivity needs substrate or surface")
         F = self.fresnel(substrate=substrate, surface=surface)
-        scale = lambda Q, dQ, R, dR: (
-            Q, dQ,
-            R/(F(Q)*self.intensity.value+self.background.value),
-            dR/(F(Q)*self.intensity.value+self.background.value))
+        #print("substrate", substrate, "surface", surface)
+        def scale(Q, dQ, R, dR):
+            Q, fresnel = self.apply_beam(self.calc_Q, F(self.calc_Q))
+            return Q, dQ, R/fresnel, dR/fresnel
         if substrate is None:
             name = "air:%s" % surface.name
         elif surface is None or isinstance(surface, Vacuum):
@@ -1418,8 +1419,9 @@ class PolarizedNeutronProbe(object):
                                                wavelength=self.unique_L,
                                                density=density)
         # TODO: support wavelength dependent systems
+        #print("sf", str(material), type(rho), type(irho[0]))
         return rho, irho[0], rho_incoh
-        return rho, irho[self._L_idx], rho_incoh
+        #return rho, irho[self._L_idx], rho_incoh
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
     def select_corresponding(self, theory):
