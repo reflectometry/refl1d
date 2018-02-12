@@ -323,8 +323,8 @@ class Microslabs(object):
         from .reflmodule import _align_magnetic
 
         # Nuclear profile (one wavelength only)
-        if self.rho.shape[0] != 1:
-            raise ValueError("wavelength-dependent magnetism not supported")
+        #if self.rho.shape[0] != 1:
+        #    raise ValueError("wavelength-dependent magnetism not supported")
         w, sigma, rho, irho = self.w, self.sigma, self.rho[0], self.irho[0]
 
         # Fill in gaps for magnetic profile
@@ -594,11 +594,6 @@ class Microslabs(object):
         sigmaM = np.array(interfaces)
         #print "result", wM, rhoM, thetaM, sigmaM
         return wM, sigmaM, rhoM, thetaM
-
-    def _build_smooth_profile(self, dz):
-        # Only show the first wavelength
-        return z, rho, irho
-
 
 def compute_limited_sigma(thickness, roughness, limit):
     # Limit roughness to the depths of the surrounding layers.  Roughness
