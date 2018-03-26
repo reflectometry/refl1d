@@ -1033,6 +1033,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
           theta_offset=0, sample_broadening=0,
           L=None, dL=None, T=None, dT=None,
           FWHM=False, radiation=None,
+          columns=None,
          ):
     r"""
     Load in four column data Q, R, dR, dQ.
@@ -1095,10 +1096,20 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     *radiation* is 'xray' or 'neutron', depending on whether X-ray or
     neutron scattering length density calculator should be used for
     determining the scattering length density of a material.
+
+    *columns* is a string giving the column order in the file.  Default
+    order is "Q R dR dQ".
     """
     data = parse_multi(filename, keysep=keysep, sep=sep, comment=comment)
+    if columns:
+        actual = columns.split()
+        natural = "Q R dR dQ".split()
+        order = [natural.index(k) for k in actual]
+    else:
+        order = [0, 1, 2, 3]
     def _as_Qprobe(data):
-        Q, R, dR, dQ = data[1]
+        Q, R, dR, dQ = (data[1][k] for k in order)
+
         if FWHM: # dQ defaults to 1-sigma, if FWHM is not True
             dQ = FWHM2sigma(dQ)
 
