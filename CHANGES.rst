@@ -4,6 +4,12 @@ Change History
 
 Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 
+2018-05-17 v0.8.1
+=================
+* allow alternate column order, such as :code:`load4(..., columns="Q dQ R dR")`
+* include resolution effects in Fresnel reflectivity normalization
+* allow magnetic profile to be saved
+
 2017-12-01 v0.8
 ===============
 
