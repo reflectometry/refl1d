@@ -4,6 +4,10 @@ Change History
 
 Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 
+2018-05-18 v0.8.2
+=================
+* include new entry points: run program by typing :code:`refl1d` at prompt
+
 2018-05-17 v0.8.1
 =================
 * allow alternate column order, such as :code:`load4(..., columns="Q dQ R dR")`
