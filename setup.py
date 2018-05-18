@@ -91,6 +91,10 @@ dist = setup(
     packages = packages,
     #package_data = gui_resources.package_data(),
     scripts = ['bin/refl1d_cli.py', 'bin/refl1d_gui.py'],
+    entry_points = {
+        'console_scripts': ['refl1d=refl1d.main:cli'],
+        'gui_scripts': ['refl1d_gui=refl1d.main:gui']
+    },
     ext_modules = [reflmodule_config(), SCFmodule_config()],
     install_requires = ['bumps>=0.7.5', 'periodictable'],
     cmdclass = {'build_ext': build_ext_subclass},
