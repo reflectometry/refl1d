@@ -1,0 +1,12 @@
+setuptools
+nose
+wheel
+periodictable
+ipython==5.5
+pyreadline
+wxPython
+sphinx
+jinja2==2.8
+docutils
+#https://downloads.sourceforge.net/project/py2exe/py2exe/0.6.9/py2exe-0.6.9.zip
+#bumps
