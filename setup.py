@@ -96,7 +96,7 @@ dist = setup(
         'gui_scripts': ['refl1d_gui=refl1d.main:gui']
     },
     ext_modules = [reflmodule_config(), SCFmodule_config()],
-    install_requires = ['bumps>=0.7.5', 'periodictable'],
+    install_requires = ['bumps>=0.7.8', 'periodictable'],
     cmdclass = {'build_ext': build_ext_subclass},
     )
 
