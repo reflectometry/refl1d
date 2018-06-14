@@ -4,12 +4,12 @@
 //#ifdef NDEBUG
 //#undef NDEBUG
 //#endif
-
-#include <iostream>
-
-#define GREEDY
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <iostream>
+#include <algorithm>
+
+#define GREEDY
 #include <cassert>
 
 #define Z_EPS 1e-6
