@@ -4,6 +4,15 @@ Change History
 
 Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 
+2018-06-14 v0.8.4
+=================
+* full support for python 3 in GUI
+* allow :code:`--pars=parfile` with extra or missing parameters
+
+2018-06-08 v0.8.3
+=================
+* fix saved magnetic profiles
+
 2018-05-18 v0.8.2
 =================
 * include new entry points: run program by typing :code:`refl1d` at prompt

@@ -71,8 +71,8 @@ def SCFmodule_config():
 
 #sys.dont_write_bytecode = False
 dist = setup(
-    name = 'refl1d',
-    version = version,
+    name='refl1d',
+    version=version,
     author='Paul Kienzle',
     author_email='pkienzle@nist.gov',
     url='http://www.reflectometry.org/danse/model1d.html',
@@ -88,16 +88,16 @@ dist = setup(
         'Topic :: Scientific/Engineering :: Chemistry',
         'Topic :: Scientific/Engineering :: Physics',
         ],
-    packages = packages,
-    #package_data = gui_resources.package_data(),
-    scripts = ['bin/refl1d_cli.py', 'bin/refl1d_gui.py'],
-    entry_points = {
+    packages=packages,
+    #package_data=gui_resources.package_data(),
+    scripts=['bin/refl1d_cli.py', 'bin/refl1d_gui.py'],
+    entry_points={
         'console_scripts': ['refl1d=refl1d.main:cli'],
         'gui_scripts': ['refl1d_gui=refl1d.main:gui']
     },
-    ext_modules = [reflmodule_config(), SCFmodule_config()],
-    install_requires = ['bumps>=0.7.8', 'periodictable'],
-    cmdclass = {'build_ext': build_ext_subclass},
+    ext_modules=[reflmodule_config(), SCFmodule_config()],
+    install_requires=['bumps>=0.7.9', 'periodictable'],
+    cmdclass={'build_ext': build_ext_subclass},
     )
 
 # End of file
