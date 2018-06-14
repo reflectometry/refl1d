@@ -7,12 +7,12 @@ import sys
 from matplotlib import transforms
 
 # CRUFT: matplotlib doesn't yet support canvas.draw_now()
-from matplotlib.backends.backend_wx import FigureCanvasWx
+from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg
 def wxdrawnow(self):
     #print "draw if needed"
     if not self._isDrawn:
         self.draw()
-FigureCanvasWx.draw_now = wxdrawnow
+FigureCanvasWxAgg.draw_now = wxdrawnow
 
 if hasattr(transforms,'Transform'):
     # 0.98 transforms
