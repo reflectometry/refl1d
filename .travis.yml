@@ -14,11 +14,12 @@ matrix:
     language: generic
     env: PYTHON=3.6.5
 
-before_install: |
+before_install: 
   - openssl aes-256-cbc -K $encrypted_b1042ea612e6_key -iv $encrypted_b1042ea612e6_iv -in github_deploy_key.enc -out github_deploy_key -d
   - chmod 600 github_deploy_key
   - eval $(ssh-agent -s)
-  - ssh-add github_deploy_key
+  - ssh-add github_deploy_key 
+  - |
   if [ "$TRAVIS_OS_NAME" == "osx" ]; then
     brew update
     # Per the `pyenv homebrew recommendations <https://github.com/yyuu/pyenv/wiki#suggested-build-environment>`_.
