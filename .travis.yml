@@ -1,10 +1,3 @@
-os: linux
-
-language: python
-python:
-  - 2.7
-  - 3.6
-
 matrix:
   include:
   - os: osx
@@ -14,18 +7,42 @@ matrix:
     language: generic
     env: PYTHON=3.6.5
 
-before_install: 
+before_install: |
+  if [ "$TRAVIS_OS_NAME" == "osx" ]; then
+    brew update
+    # Per the `pyenv homebrew recommendations <https://github.com/yyuu/pyenv/wiki#suggested-build-environment>`_.
+    brew install openssl readline
+    # See https://docs.travis-ci.com/user/osx-ci-environment/#A-note-on-upgrading-packages.
+    # I didn't do this above because it works and I'm lazy.
+    brew outdated pyenv || brew upgrade pyenv
+    # virtualenv doesn't work without pyenv knowledge. venv in Python 3.3
+    # doesn't provide Pip by default. So, use `pyenv-virtualenv <https://github.com/yyuu/pyenv-virtualenv/blob/master/README.md>`_.
+    brew install pyenv-virtualenv
+    pyenv install $PYTHON
+    # I would expect something like ``pyenv init; pyenv local $PYTHON`` or
+    # ``pyenv shell $PYTHON`` would work, but ``pyenv init`` doesn't seem to
+    # modify the Bash environment. ??? So, I hand-set the variables instead.
+    export PYENV_VERSION=$PYTHON
+    export PATH="/Users/travis/.pyenv/shims:${PATH}"
+    pyenv-virtualenv venv
+    source venv/bin/activate
+    # A manual check that the correct version of Python is running.
+    python --version
+  fi
+  
+install:
+  - python -m pip install -U pip
+  - python -m easy_install -U setuptools
+  - python -m pip install wheel
+  - python -m pip install -e .
+  - python setup.py bdist_wheel
+
+before_deploy: 
   - openssl aes-256-cbc -K $encrypted_b1042ea612e6_key -iv $encrypted_b1042ea612e6_iv -in github_deploy_key.enc -out github_deploy_key -d
   - chmod 600 github_deploy_key
   - eval $(ssh-agent -s)
   - ssh-add github_deploy_key 
-  - bash ./brew_update.sh
 
-install:
-  - python -m pip install -U pip
-  - python -m easy_install -U setuptools
-  - python setup.py bdist_wheel
-  
 deploy:
   provider: pages
   skip-cleanup: true
