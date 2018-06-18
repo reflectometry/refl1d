@@ -21,3 +21,6 @@ multicore machine, or using MPI for running on a cluster.
 
 See `<https://github.com/reflectometry/refl1d/blob/master/CHANGES.rst>`_ for
 details on recent changes.
+
+.. image:: https://travis-ci.org/reflectometry/refl1d.svg?branch=master
+    :target: https://travis-ci.org/reflectometry/refl1d
