@@ -4,6 +4,11 @@ Change History
 
 Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 
+2018-06-18 v0.8.5
+=================
+* fix for plotting spin asymmetry when data is not present (model-only)
+* added requirements to setup.py so that `pip install refl1d` suffices
+
 2018-06-14 v0.8.4
 =================
 * full support for python 3 in GUI
