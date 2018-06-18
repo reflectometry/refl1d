@@ -1517,7 +1517,7 @@ class PolarizedNeutronProbe(object):
         trans = auto_shift(plot_shift)
         pp, mm = self.pp, self.mm
         c = coordinated_colors()
-        if hasattr(pp, 'R'):
+        if hasattr(pp, 'R') and hasattr(mm, 'R') and pp.R is not None and mm.R is not None:
             Q, SA, dSA = spin_asymmetry(pp.Q, pp.R, pp.dR, mm.Q, mm.R, mm.dR)
             if dSA is not None:
                 pylab.errorbar(Q, SA, yerr=dSA, xerr=pp.dQ, fmt='.', capsize=0,
