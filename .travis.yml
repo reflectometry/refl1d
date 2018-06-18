@@ -42,14 +42,13 @@ before_deploy:
   - chmod 600 github_deploy_key
   - eval $(ssh-agent -s)
   - ssh-add github_deploy_key
-
+    
 deploy:
-  provider: pages
+  provider: releases
   skip-cleanup: true
-  github_token:
+  file_glob: true
+  api_key:
     secure: jIGTuuAw9GwsIYwxIFL6qlYCS8aRGOsYlmEiOy9aYOkpZFJHkLW2eYIdqka4qdoxeUuyTRkiIkG71uCh/RRQNwFOEZXZcjQmK7lkFCr1COOSwFPfOYjGX1tdnRNpOwWRxJQpqIrEsbYrWHm0WilBSss8ONa4lC0uFA46u0KhGTY=
-  keep-history: true
-  target-branch: dist
-  local-dir: dist
+  file: dist/*
   on:
-    branch: master
+    tags: true
