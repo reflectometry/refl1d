@@ -35,13 +35,6 @@ install:
   - python -m easy_install -U setuptools
   - python -m pip install wheel numpy scipy matplotlib periodictable wxPython bumps
   - python setup.py bdist_wheel
-  
-before_deploy:
-  - openssl aes-256-cbc -K $encrypted_b1042ea612e6_key -iv $encrypted_b1042ea612e6_iv
-    -in github_deploy_key.enc -out github_deploy_key -d
-  - chmod 600 github_deploy_key
-  - eval $(ssh-agent -s)
-  - ssh-add github_deploy_key
     
 deploy:
   provider: releases
