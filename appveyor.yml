@@ -47,8 +47,19 @@ after_test:
 artifacts:
   # bdist_wheel puts your built wheel in the dist directory
   - path: dist\*
+  name: Releases
 
 #on_success:
 #  You can use this step to upload your artifacts to a public website.
 #  See Appveyor's documentation for more details. Or you can simply
 #  access your wheels from the Appveyor "artifacts" tab for your build.
+
+deploy:
+  provider: GitHub
+  auth_token:
+    secure: WFLDvxMUUWcL7b4fRIY9DXFswHxWX85rqrGKO+2+q24MzGeQtFVnHSKhmcCKSi7w
+  artifact: /*.whl/
+  draft: false
+  prerelease: false
+  on:
+    appveyor_repo_tag: true
