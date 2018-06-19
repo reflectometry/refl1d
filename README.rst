@@ -24,3 +24,6 @@ details on recent changes.
 
 .. image:: https://travis-ci.org/reflectometry/refl1d.svg?branch=master
     :target: https://travis-ci.org/reflectometry/refl1d
+
+.. image:: https://ci.appveyor.com/api/projects/status/55ps40bauoqw2q6m?svg=true
+    :target: https://ci.appveyor.com/project/reflectometry/refl1d
