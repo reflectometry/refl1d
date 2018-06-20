@@ -58,7 +58,7 @@ deploy:
   provider: GitHub
   auth_token:
     secure: WFLDvxMUUWcL7b4fRIY9DXFswHxWX85rqrGKO+2+q24MzGeQtFVnHSKhmcCKSi7w
-  artifact: /*.whl/
+  artifact: /.*\.whl/
   draft: false
   prerelease: false
   on:
