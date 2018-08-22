@@ -50,7 +50,7 @@ from bumps.plotutil import coordinated_colors, auto_shift
 from bumps.data import parse_multi, strip_quotes
 
 from . import fresnel
-from .material import Vacuum
+from .material import Vacuum, parameter_to_dict
 from .resolution import QL2T, QT2L, TL2Q, dQdL2dT, dQdT2dLoL, dTdL2dQ
 from .resolution import sigma2FWHM, FWHM2sigma
 from .stitch import stitch
@@ -345,6 +345,13 @@ class Probe(object):
                 'back_absorption':self.back_absorption,
                 'theta_offset':self.theta_offset,
                }
+
+    def to_dict(self):
+        """ Return a dictionary representation of the parameters """
+        return dict(intensity=parameter_to_dict(self.intensity),
+                    background=parameter_to_dict(self.background),
+                    back_absorption=parameter_to_dict(self.back_absorption),
+                    theta_offset=parameter_to_dict(self.theta_offset))
 
     def scattering_factors(self, material, density):
         """
@@ -1334,6 +1341,12 @@ class PolarizedNeutronProbe(object):
             'pp': pp, 'pm': pm, 'mp': mp, 'mm': mm,
             'Aguide': self.Aguide, 'H': self.H,
         }
+
+    def to_dict(self):
+        """ Return a dictionary representation of the parameters """
+        mm, mp, pm, pp = [(xsi.to_dict() if xsi else None)
+                          for xsi in self.xs]
+        return dict(pp=pp, pm=pm, mp=mp, mm=mm, a_guide=self.Aguide, h=self.H)
 
     def resynth_data(self):
         for p in self.xs:
