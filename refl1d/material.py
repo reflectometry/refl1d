@@ -46,6 +46,18 @@ from numpy import inf, NaN
 import periodictable
 from bumps.parameter import Parameter as Par
 
+def parameter_to_dict(par):
+    """
+        Utility function to transform a bumps Parameter into a dictionary.
+
+        #TODO: Check to see whether this belongs in bumps, especially because
+        there might be different flavors of Parameters and we don't want to
+        create conflicts.
+    """
+    return dict(name=par.name, value=par.value, fixed=par.fixed,
+                bounds=par._bounds.limits)
+
+
 class Scatterer(object):
     """
     A generic scatterer separates the lookup of the scattering factors

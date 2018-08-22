@@ -255,6 +255,12 @@ class Stack(Layer):
     def __repr__(self):
         return "Stack("+", ".join(repr(L) for L in self._layers)+")"
 
+    def to_dict(self):
+        """
+            Return a dictionary representation of the Stack object
+        """
+        return [L.to_dict() for L in self._layers]
+
     def parameters(self):
         layers = [L.layer_parameters() for L in self._layers]
         return {'thickness':self.thickness, 'layers':layers}
@@ -687,3 +693,16 @@ class Slab(Layer):
 
     def __repr__(self):
         return "Slab("+repr(self.material)+")"
+
+    def to_dict(self):
+        """
+            Return a dictionary representation of the Slab object
+
+            #TODO: Add magnetism
+        """
+        _slab_dict = dict(name=self.name)
+        _slab_dict['thickness'] = material.parameter_to_dict(self.thickness)
+        _slab_dict['interface'] = material.parameter_to_dict(self.interface)
+        for name, param in self.material.parameters().iteritems():
+            _slab_dict[name] = material.parameter_to_dict(param)
+        return _slab_dict
