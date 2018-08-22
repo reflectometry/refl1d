@@ -29,6 +29,7 @@ from copy import copy, deepcopy
 import numpy
 from numpy import (inf, nan, pi, sin, cos, tan, sqrt, exp, log, log10,
                    degrees, radians, floor, ceil)
+import json
 import periodictable
 import periodictable.xsf as xsf
 import periodictable.nsf as nsf
@@ -259,7 +260,8 @@ class Stack(Layer):
         """
             Return a dictionary representation of the Stack object
         """
-        return [L.to_dict() for L in self._layers]
+        return dict(type=type(self).__name__,
+                    layers=[L.to_dict() for L in self._layers])
 
     def parameters(self):
         layers = [L.layer_parameters() for L in self._layers]
@@ -700,9 +702,9 @@ class Slab(Layer):
 
             #TODO: Add magnetism
         """
-        _slab_dict = dict(name=self.name)
-        _slab_dict['thickness'] = material.parameter_to_dict(self.thickness)
-        _slab_dict['interface'] = material.parameter_to_dict(self.interface)
+        _slab_dict = dict(name=self.name, type=type(self).__name__)
+        _slab_dict['thickness'] = self.thickness.to_dict()
+        _slab_dict['interface'] = self.interface.to_dict()
         for name, param in self.material.parameters().iteritems():
-            _slab_dict[name] = material.parameter_to_dict(param)
+            _slab_dict[name] = param.to_dict()
         return _slab_dict

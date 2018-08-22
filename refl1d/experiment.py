@@ -22,6 +22,7 @@ from .reflectivity import magnetic_amplitude as reflmag
 #print("Using pure python reflectivity calculator")
 #from .abeles import refl as reflamp
 from . import material, profile
+from . import __version__
 
 def plot_sample(sample, instrument=None, roughness_limit=0):
     """
@@ -538,7 +539,9 @@ class Experiment(ExperimentBase):
 
         json_file = basename + "-expt.json"
         with open(json_file, 'w') as fid:
-            _expt_dict = dict(probe=self.probe.to_dict(),
+            _expt_dict = dict(refl1d=__version__,
+                              type=type(self).__name__,
+                              probe=self.probe.to_dict(),
                               sample=self.sample.to_dict())
             data = json.dumps(_expt_dict)
             fid.write(data)
