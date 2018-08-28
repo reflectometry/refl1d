@@ -534,9 +534,6 @@ class Experiment(ExperimentBase):
 
     def save_json(self, basename):
         """ Save the experiment as a json file """
-        # TODO: verify whether this needs to be called
-        self._render_slabs()
-
         json_file = basename + "-expt.json"
         with open(json_file, 'w') as fid:
             _expt_dict = dict(refl1d=__version__,

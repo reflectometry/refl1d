@@ -26,10 +26,11 @@ scattering density may vary with depth in the layer.
 __all__ = ['Repeat', 'Slab', 'Stack', 'Layer']
 
 from copy import copy, deepcopy
+import json
+
 import numpy
 from numpy import (inf, nan, pi, sin, cos, tan, sqrt, exp, log, log10,
                    degrees, radians, floor, ceil)
-import json
 import periodictable
 import periodictable.xsf as xsf
 import periodictable.nsf as nsf
