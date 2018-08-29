@@ -1041,7 +1041,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
           theta_offset=0, sample_broadening=0,
           L=None, dL=None, T=None, dT=None,
           FWHM=False, radiation=None,
-          columns=None,
+          columns=None,data_range=[None,None],
          ):
     r"""
     Load in four column data Q, R, dR, dQ.
@@ -1116,7 +1116,8 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     else:
         order = [0, 1, 2, 3]
     def _as_Qprobe(data):
-        Q, R, dR, dQ = (data[1][k] for k in order)
+        lower_lim,upper_lim=data_range
+        Q, R, dR, dQ = [data[1][k][lower_lim:upper_lim] for k in order]
 
         if FWHM: # dQ defaults to 1-sigma, if FWHM is not True
             dQ = FWHM2sigma(dQ)
