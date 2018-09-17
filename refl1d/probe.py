@@ -280,6 +280,9 @@ class Probe(object):
 
         if noise is None:
             pass # use existing noise
+        elif isinstance(noise, (list, tuple, numpy.ndarray)) and len(noise) == len(theory):
+            self.dR = numpy.asarray(noise)
+            self.dR[self.dR==0] = 1e-11
         else:
             self.dR = 0.01*noise*self.Ro
             self.dR[self.dR==0] = 1e-11
