@@ -1371,9 +1371,11 @@ class PolarizedNeutronProbe(object):
     restore_data.__doc__ = Probe.restore_data.__doc__
 
     def simulate_data(self, theory, noise=2):
-        for p, th in zip(self.xs, theory):
-            if p is not None:
-                p.simulate_data(theory=th, noise=noise)
+        if numpy.isscalar(noise):
+            noise = [noise]*4
+        for data_k, theory_k, noise_k in zip(self.xs, theory, noise):
+            if data_k is not None:
+                data_k.simulate_data(theory=theory_k, noise=noise_k)
     simulate_data.__doc__ = Probe.simulate_data.__doc__
 
     def _check(self):
