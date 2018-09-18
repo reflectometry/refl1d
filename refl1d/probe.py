@@ -279,12 +279,11 @@ class Probe(object):
             return
 
         if noise is None:
-            pass # use existing noise
-        elif isinstance(noise, (list, tuple, numpy.ndarray)) and len(noise) == len(theory):
-            self.dR = numpy.asarray(noise)
-            self.dR[self.dR==0] = 1e-11
+            pass
         else:
-            self.dR = 0.01*noise*self.Ro
+            self.dR = numpy.asarray(noise)
+            if len(self.dR.shape) == 0:  # noise is a scalar
+                self.dR = 0.01 * noise * self.Ro
             self.dR[self.dR==0] = 1e-11
 
         # Add noise to the theory function
@@ -868,10 +867,16 @@ class ProbeSet(Probe):
     restore_data.__doc__ = Probe.restore_data.__doc__
 
     def simulate_data(self, theory, noise=2):
+        """
+            Simulate data, allowing for noise to be a dR array for each Q point.
+        """
         Q, R = theory
+        dR = numpy.asarray(noise)
         offset = 0
         for p in self.probes:
             n = len(p.Q)
+            if len(self.dR.shape) > 0:
+                noise = dR[offset:offset+n]
             p.simulate_data(theory=(Q[offset:offset+n], R[offset:offset+n]),
                             noise=noise)
             offset += n
