@@ -4,6 +4,11 @@ Change History
 
 Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 
+2018-09-24 v0.8.6
+=================
+* added serialization support
+* added option to supply uncertainties when simulating data
+
 2018-06-18 v0.8.5
 =================
 * fix for plotting spin asymmetry when data is not present (model-only)
