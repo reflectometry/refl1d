@@ -61,6 +61,6 @@ deploy:
     secure: WFLDvxMUUWcL7b4fRIY9DXFswHxWX85rqrGKO+2+q24MzGeQtFVnHSKhmcCKSi7w
   artifact: /.*\.whl/
   draft: false
-  prerelease: false
+  prerelease: true
   on:
     appveyor_repo_tag: true
