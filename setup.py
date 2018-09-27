@@ -64,7 +64,9 @@ def SCFmodule_config():
     from numpy import get_include
     return Extension('refl1d.calc_g_zs_cex',
                      sources=[os.path.join('refl1d', 'lib', 'calc_g_zs_cex.c')],
-                     include_dirs=[get_include()])
+                     include_dirs=[get_include()],
+                     py_limited_api=True,
+                     )
 
 #TODO: write a proper dependency checker for packages which cannot be
 # installed by easy_install
