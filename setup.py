@@ -12,9 +12,8 @@ if sys.argv[1] == 'test':
 
 #sys.dont_write_bytecode = True
 
-#from distutils.core import setup, Extension
 from setuptools import setup, Extension
-from distutils.command.build_ext import build_ext
+from setuptools.command.build_ext import build_ext
 
 packages = ['refl1d', 'refl1d.view']
 
@@ -55,7 +54,7 @@ def reflmodule_config():
     module = Extension('refl1d.reflmodule',
                        sources=sources,
                        depends=depends,
-                       py_limited_api=True,
+                       py_limited_api="cp32",
                        )
     return module
 
@@ -65,7 +64,7 @@ def SCFmodule_config():
     return Extension('refl1d.calc_g_zs_cex',
                      sources=[os.path.join('refl1d', 'lib', 'calc_g_zs_cex.c')],
                      include_dirs=[get_include()],
-                     py_limited_api=True,
+                     py_limited_api="cp32",
                      )
 
 #TODO: write a proper dependency checker for packages which cannot be
