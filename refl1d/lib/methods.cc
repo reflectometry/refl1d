@@ -1,5 +1,6 @@
 /* This program is public domain. */
 
+#define Py_LIMITED_API 0x03020000
 #include <Python.h>
 #include "reflcalc.h"
 #include <math.h>
@@ -42,7 +43,7 @@ PyObject* Pcalculate_u1_u3(PyObject*obj,PyObject*args)
     return NULL;
   }
 
-  for (size_t i=0; i<nrhom; i++) {
+  for (Py_ssize_t i=0; i<nrhom; i++) {
     sldb[i] = rhom[i];
     calculate_U1_U3(H, sldb[i], thetam[i], Aguide, u1[i], u3[i]);
     //sldb[i] = fabs(sldb[i]);

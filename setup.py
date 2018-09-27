@@ -55,6 +55,7 @@ def reflmodule_config():
     module = Extension('refl1d.reflmodule',
                        sources=sources,
                        depends=depends,
+                       py_limited_api=True,
                        )
     return module
 
