@@ -12,7 +12,7 @@
   typedef unsigned long long uint64_t;
 #endif
 
-#define Py_LIMITED_API 0x03020000
+//#define Py_LIMITED_API 0x03020000
 #include <Python.h>
 
 #include "methods.h"
@@ -27,6 +27,7 @@ PyObject* Prebin(PyObject *obj, PyObject *args)
   Py_ssize_t nin,nIin, nout, nIout;
   double *in, *out;
   T *Iin, *Iout;
+  DECLARE_VECTORS(4);
 
   if (!PyArg_ParseTuple(args, "OOOO:rebin",
                         &in_obj,&Iin_obj,&out_obj,&Iout_obj)) return NULL;
@@ -37,9 +38,11 @@ PyObject* Prebin(PyObject *obj, PyObject *args)
   if (nin-1 != nIin || nout-1 != nIout) {
     PyErr_SetString(PyExc_ValueError,
         "_reduction.rebin: must have one more bin edges than bins");
+    FREE_VECTORS();
     return NULL;
   }
   rebin_counts<T>(nin-1,in,Iin,nout-1,out,Iout);
+  FREE_VECTORS();
   return Py_BuildValue("");
 }
 
@@ -52,6 +55,7 @@ PyObject* Prebin2d(PyObject *obj, PyObject *args)
   Py_ssize_t nxout, nyout, nIout;
   double *xin,*yin,*xout,*yout;
   T *Iin, *Iout;
+  DECLARE_VECTORS(6);
 
   if (!PyArg_ParseTuple(args, "OOOOOO:rebin",
                         &xin_obj, &yin_obj, &Iin_obj,
@@ -68,10 +72,12 @@ PyObject* Prebin2d(PyObject *obj, PyObject *args)
     /* printf("%ld %ld %ld %ld %ld %ld\n",nxin,nyin,nIin,nxout,nyout,nIout); */
     PyErr_SetString(PyExc_ValueError,
         "_reduction.rebin2d: must have one more bin edges than bins");
+    FREE_VECTORS();
     return NULL;
   }
   rebin_counts_2D<T>(nxin-1,xin,nyin-1,yin,Iin,
       nxout-1,xout,nyout-1,yout,Iout);
+  FREE_VECTORS();
   return Py_BuildValue("");
 }
 

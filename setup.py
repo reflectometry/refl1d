@@ -54,7 +54,7 @@ def reflmodule_config():
     module = Extension('refl1d.reflmodule',
                        sources=sources,
                        depends=depends,
-                       py_limited_api="cp32",
+                       #py_limited_api="cp32",
                        )
     return module
 
@@ -64,7 +64,7 @@ def SCFmodule_config():
     return Extension('refl1d.calc_g_zs_cex',
                      sources=[os.path.join('refl1d', 'lib', 'calc_g_zs_cex.c')],
                      include_dirs=[get_include()],
-                     py_limited_api="cp32",
+                     #py_limited_api="cp32",
                      )
 
 #TODO: write a proper dependency checker for packages which cannot be

@@ -143,7 +143,7 @@ calculate_U1_U3(const double H,
 int
 align_magnetic(int nlayers, double d[], double sigma[], double rho[], double irho[],
                int nlayersM, double dM[], double sigmaM[], double rhoM[], double thetaM[],
-               double output[]);
+               int noutput, double output[]);
 
 int
 contract_by_step(int n, double d[], double sigma[],

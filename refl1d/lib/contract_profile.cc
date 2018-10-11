@@ -19,7 +19,7 @@ extern "C"
 int
 align_magnetic(int nlayers, double d[], double sigma[], double rho[], double irho[],
                int nlayersM, double dM[], double sigmaM[], double rhoM[], double thetaM[],
-               double output_flat[])
+               int noutput, double output_flat[])
 {
   // ignoring thickness d on the first and last layers
   // ignoring interface width sigma on the last layer
@@ -36,6 +36,7 @@ align_magnetic(int nlayers, double d[], double sigma[], double rho[], double irh
   //int active = 3; // active interfaces, active&0x1 for nuclear, active&0x2 for magnetic
   int k = 0;  // current output layer index
   while (1) { // repeat over all nuclear/magnetic layers
+    if (k == noutput) return -1;  // exceeds capacity of output
     assert(nuclear < nlayers);
     assert(magnetic < nlayersM);
     //printf("%d: %d %d %g %g %g\n", k, nuclear, magnetic, z, next_z, next_zM);
