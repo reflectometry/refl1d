@@ -141,10 +141,9 @@ def rebin2d(x, y, I, xo, yo, Io=None, dtype=None):
     We can check this by rebinning with uniform size bins::
 
         >>> xo, yo = range(6), range(4)
-        >>> rebin2d(y, x, z, yo, xo)
-        array([[1., 1., 1., 1., 1.],
-               [1., 1., 1., 1., 1.],
-               [1., 1., 1., 1., 1.]])
+        >>> zo = rebin2d(y, x, z, yo, xo)
+        >>> (zo == 1.).all()
+        True
 
     dtype is the type to use for the intensity vectors.  This can be
     integer (uint8, uint16, uint32) or real (float32 or f, float64 or d).
