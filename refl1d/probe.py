@@ -57,7 +57,7 @@ from .stitch import stitch
 from .reflectivity import convolve
 
 PROBE_KW = ('T', 'dT', 'L', 'dL', 'data', 'name', 'filename',
-            'intensity', 'background', 'back_absorption',
+            'intensity', 'background', 'back_absorption', 'sample_broadening',
             'theta_offset', 'back_reflectivity', 'data')
 
 
@@ -114,6 +114,8 @@ class Probe(object):
            means complete absorption.
         *theta_offset* : float or Parameter
            Offset of the sample from perfect alignment
+        *sample_broadening* : float or Parameter
+           Additional angular divergence from sample curvature
         *back_reflectivity* : True or False
            True if the beam enters through the substrate
 
@@ -155,6 +157,7 @@ class Probe(object):
 
     def __init__(self, T=None, dT=0, L=None, dL=0, data=None,
                  intensity=1, background=0, back_absorption=1, theta_offset=0,
+                 sample_broadening=0,
                  back_reflectivity=False, name=None, filename=None):
         if T is None or L is None:
             raise TypeError("T and L required")
@@ -171,7 +174,8 @@ class Probe(object):
                                                  limits=[0., 1.])
         self.theta_offset = Parameter.default(theta_offset,
                                               name="theta_offset"+qualifier)
-
+        self.sample_broadening = Parameter.default(sample_broadening,
+                                              name="sample_broadening"+qualifier)
         self.back_reflectivity = back_reflectivity
         if data is not None:
             R, dR = data
@@ -191,7 +195,7 @@ class Probe(object):
         #    dE = E * dL/L
 
         Q = TL2Q(T=T, L=L)
-        dQ = dTdL2dQ(T=T, dT=dT, L=L, dL=dL)
+        dQ = dTdL2dQ(T=T, dT=dT + sigma2FWHM(self.sample_broadening.value), L=L, dL=dL)
 
         # Make sure that we are dealing with vectors
         T, dT, L, dL = [numpy.ones_like(Q)*v for v in (T, dT, L, dL)]
@@ -200,7 +204,7 @@ class Probe(object):
         idx = numpy.argsort(Q)
         self.T, self.dT = T[idx], dT[idx]
         self.L, self.dL = L[idx], dL[idx]
-        self.Qo, self.dQ = Q[idx], dQ[idx]
+        self.Qo, self.dQo = Q[idx], dQ[idx]
         if R is not None:
             R = R[idx]
         if dR is not None:
@@ -333,6 +337,15 @@ class Probe(object):
         return Q
 
     @property
+    def dQ(self):
+        if self.sample_broadening.value != 0:
+            dQ = dTdL2dQ(T=self.T, dT=self.dT + sigma2FWHM(self.sample_broadening.value),
+                         L=self.L, dL=self.dL)
+        else:
+            dQ = self.dQo
+        return dQ
+
+    @property
     def calc_Q(self):
         if self.theta_offset.value != 0:
             Q = TL2Q(T=self.calc_T+self.theta_offset.value, L=self.calc_L)
@@ -346,6 +359,7 @@ class Probe(object):
                 'background':self.background,
                 'back_absorption':self.back_absorption,
                 'theta_offset':self.theta_offset,
+                'sample_broadening':self.sample_broadening
                }
 
     def to_dict(self):
@@ -354,7 +368,8 @@ class Probe(object):
                     intensity=self.intensity.to_dict(),
                     background=self.background.to_dict(),
                     back_absorption=self.back_absorption.to_dict(),
-                    theta_offset=self.theta_offset.to_dict())
+                    theta_offset=self.theta_offset.to_dict(),
+                    sample_broadening=self.sample_broadening.to_dict())
 
     def scattering_factors(self, material, density):
         """
@@ -387,7 +402,7 @@ class Probe(object):
 
         self.T, self.dT = self.T[idx], self.dT[idx]
         self.L, self.dL = self.L[idx], self.dL[idx]
-        self.Qo, self.dQ = self.Qo[idx], self.dQ[idx]
+        self.Qo, self.dQo = self.Qo[idx], self.dQo[idx]
         if self.R is not None:
             self.Ro = self.R = self.R[idx]
         if self.dR is not None:
@@ -891,6 +906,10 @@ class ProbeSet(Probe):
         return numpy.unique(numpy.hstack(p.calc_Q for p in self.probes))
 
     @property
+    def dQ(self):
+        return numpy.hstack(p.dQ for p in self.probes)
+
+    @property
     def unique_L(self):
         return numpy.unique(numpy.hstack(p.unique_L for p in self.probes))
 
@@ -1176,8 +1195,8 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
             data_dL = data_dLoL * data_L
 
         if data_L is not None:
-            data_dT += (sigma2FWHM(sample_broadening)
-                        if not FWHM else sample_broadening)
+#            data_dT += (sigma2FWHM(sample_broadening)
+#                        if not FWHM else sample_broadening)
             probe = make_probe(
                 T=data_T, dT=data_dT,
                 L=data_L, dL=data_dL,
@@ -1188,6 +1207,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
                 background=background,
                 back_absorption=back_absorption,
                 theta_offset=theta_offset,
+                sample_broadening=sample_broadening,
                 back_reflectivity=back_reflectivity,
             )
         else:
@@ -1240,6 +1260,7 @@ class QProbe(Probe):
                                                  name="back_absorption"+qualifier,
                                                  limits=[0, 1])
         self.theta_offset = Constant(0, name="theta_offset"+qualifier)
+        self.sample_broadening = Constant(0, name="sample_broadening"+qualifier)
 
         self.back_reflectivity = back_reflectivity
 
