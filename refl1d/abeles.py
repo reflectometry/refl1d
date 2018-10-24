@@ -22,7 +22,7 @@ def refl(kz, depth, rho, irho=0, sigma=0, rho_index=None):
     *depth* :  float[m] | |Ang|
         thickness of each layer.  The thickness of the incident medium
         and substrate are ignored.
-    *rho*, *irho* :  float[n,k] | |1e-6/Ang^2|
+    *rho*, *irho* :  float[n, k] | |1e-6/Ang^2|
         real and imaginary scattering length density for each layer for each kz
         Note: absorption cross section mu = 2 irho/lambda
     *sigma* : float[m-1] | |Ang|
@@ -36,44 +36,47 @@ def refl(kz, depth, rho, irho=0, sigma=0, rho_index=None):
     Slabs are ordered with the surface SLD at index 0 and substrate at
     index -1, or reversed if kz < 0.
     """
-    if isscalar(kz): kz = asarray([kz], 'd')
+    if isscalar(kz):
+        kz = asarray([kz], 'd')
 
     m = len(depth)
 
     # Make everything into arrays
-    depth = asarray(depth,'d')
-    rho = asarray(rho,'d')
-    irho = irho*ones_like(rho) if isscalar(irho) else asarray(irho,'d')
-    sigma = sigma*ones(m-1,'d') if isscalar(sigma) else asarray(sigma,'d')
+    depth = asarray(depth, 'd')
+    rho = asarray(rho, 'd')
+    irho = irho*ones_like(rho) if isscalar(irho) else asarray(irho, 'd')
+    sigma = sigma*ones(m-1, 'd') if isscalar(sigma) else asarray(sigma, 'd')
 
-    # Repeat rho,irho columns as needed
+    # Repeat rho, irho columns as needed
     if rho_index is not None:
         rho = rho[rho_index, :]
         irho = irho[rho_index, :]
     elif len(rho.shape) == 1:
-        rho = rho[None,:]
-        irho = irho[None,:]
+        rho = rho[None, :]
+        irho = irho[None, :]
 
     ## For kz < 0 we need to reverse the order of the layers
     ## Note that the interface array sigma is conceptually one
-    ## shorter than rho,mu so when reversing it, start at n-1.
+    ## shorter than rho, mu so when reversing it, start at n-1.
     ## This allows the caller to provide an array of length n
-    ## corresponding to rho,mu or of length n-1.
-    r = empty(len(kz),'D')
-    r[kz>=1e-10] = calc(kz[kz>=1e-10], depth, rho, irho, sigma)
-    r[kz<=1e-10] = calc(-kz[kz<=1e-10], depth[::-1], rho[:,::-1],
-                        irho[:,::-1], sigma[m-2::-1])
+    ## corresponding to rho, mu or of length n-1.
+    r = empty(len(kz), 'D')
+    r[kz >= 1e-10] = _calc(kz[kz >= 1e-10], depth, rho, irho, sigma)
+    r[kz <= 1e-10] = _calc(-kz[kz <= 1e-10], depth[::-1], rho[:, ::-1],
+                           irho[:, ::-1], sigma[m-2::-1])
     r[abs(kz) < 1e-10] = -1
     return r
 
 
-def calc(kz, depth, rho, irho, sigma):
-    if len(kz) == 0: return kz
+def _calc(kz, depth, rho, irho, sigma):
+    # type: (np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray) -> np.ndarray
+    if len(kz) == 0:
+        return kz
 
     # Complex index of refraction is relative to the incident medium.
     # We can get the same effect using kz_rel^2 = kz^2 + 4*pi*rho_o
     # in place of kz^2, and ignoring rho_o
-    kz_sq = kz**2 + 4e-6*pi*rho[:,0]
+    kz_sq = kz**2 + 4e-6*pi*rho[:, 0]
     k = kz
 
     # According to Heavens, the initial matrix should be [ 1 F; F 1],
@@ -84,19 +87,19 @@ def calc(kz, depth, rho, irho, sigma):
     B21 = 0
     B12 = 0
     for i in range(0, len(depth)-1):
-        k_next = sqrt(kz_sq - 4e-6*pi*(rho[:,i+1] + 1j*irho[:,i+1]))
+        k_next = sqrt(kz_sq - 4e-6*pi*(rho[:, i+1] + 1j*irho[:, i+1]))
         F = (k - k_next) / (k + k_next)
         F *= exp(-2*k*k_next*sigma[i]**2)
-        #print "==== layer",i
+        #print "==== layer", i
         #print "kz:", kz
         #print "k:", k
-        #print "k_next:",k_next
-        #print "F:",F
-        #print "rho:",rho[:,i+1]
-        #print "irho:",irho[:,i+1]
-        #print "d:",depth[i],"sigma:",sigma[i]
-        M11 = exp(1j*k*depth[i]) if i>0 else 1
-        M22 = exp(-1j*k*depth[i]) if i>0 else 1
+        #print "k_next:", k_next
+        #print "F:", F
+        #print "rho:", rho[:, i+1]
+        #print "irho:", irho[:, i+1]
+        #print "d:", depth[i], "sigma:", sigma[i]
+        M11 = exp(1j*k*depth[i]) if i > 0 else 1
+        M22 = exp(-1j*k*depth[i]) if i > 0 else 1
         M21 = F*M11
         M12 = F*M22
         C1 = B11*M11 + B21*M12

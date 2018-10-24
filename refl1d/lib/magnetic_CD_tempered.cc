@@ -84,7 +84,7 @@ C $Log$
 C Modification 2014/11/25 Brian Maranville
 C specifying polarization state of incoming beam
 C to allow for Felcher effect
-C 
+C
 C Revision 1.1  2005/08/02 00:18:24  pkienzle
 C initial release
 C
@@ -117,7 +117,7 @@ C * Converted to subroutine from GEPORE.f
       Cplx B11,B12,B13,B14,B21,B22,B23,B24;
       Cplx B31,B32,B33,B34,B41,B42,B43,B44;
       Cplx C1,C2,C3,C4;
-      //bool subcrit_plus = false, subcrit_minus = false; 
+      //bool subcrit_plus = false, subcrit_minus = false;
 
 //    variables for translating resulting B into a signal
       Cplx DETW;
@@ -151,32 +151,32 @@ C * Converted to subroutine from GEPORE.f
         // IP = -1 specifies polarization of the incident beam I-
         E0 = KZ*KZ + PI4*(RHO[L]-RHOM[L]);
       }
-      
+
       Z = 0.0;
-      
+
       if (N>1) {
         // chi in layer 1
         LP = L + STEP;
-        // Branch selection:  the -sqrt below for S1 and S3 will be 
-        //     +Imag for KZ > Kcrit, 
+        // Branch selection:  the -sqrt below for S1 and S3 will be
+        //     +Imag for KZ > Kcrit,
         //     -Real for KZ < Kcrit
-        // which covers the S1, S3 waves allowed by the boundary conditions in the 
+        // which covers the S1, S3 waves allowed by the boundary conditions in the
         // fronting and backing medium:
         // either traveling forward (+Imag) or decaying exponentially forward (-Real).
-        // The decaying exponential only occurs for the transmitted forward wave in the backing: 
+        // The decaying exponential only occurs for the transmitted forward wave in the backing:
         // the root +iKz is automatically chosen for the incident wave in the fronting.
-        // 
-        // In the fronting, the -S1 and -S3 waves are either traveling waves backward (-Imag) 
+        //
+        // In the fronting, the -S1 and -S3 waves are either traveling waves backward (-Imag)
         // or decaying along the -z reflection direction (-Real) * (-z) = (+Real*z).
         // NB: This decaying reflection only occurs when the reflected wave is below Kcrit
-        // while the incident wave is above Kcrit, so it only happens for spin-flip from 
-        // minus to plus (lower to higher potential energy) and the observed R-+ will 
+        // while the incident wave is above Kcrit, so it only happens for spin-flip from
+        // minus to plus (lower to higher potential energy) and the observed R-+ will
         // actually be zero at large distances from the interface.
-        // 
+        //
         // In the backing, the -S1 and -S3 waves are explicitly set to be zero amplitude
-        // by the boundary conditions (neutrons only incident in the fronting medium - no 
+        // by the boundary conditions (neutrons only incident in the fronting medium - no
         // source of neutrons below).
-        // 
+        //
         S1L = -sqrt(Cplx(PI4*(RHO[L]+RHOM[L])-E0, -PI4*fabs(IRHO[L])));
         S3L = -sqrt(Cplx(PI4*(RHO[L]-RHOM[L])-E0, -PI4*fabs(IRHO[L])));
         S1LP = -sqrt(Cplx(PI4*(RHO[LP]+RHOM[LP])-E0, -PI4*fabs(IRHO[LP])));
@@ -194,7 +194,7 @@ C * Converted to subroutine from GEPORE.f
             S1L = S3L;
             S3L = SSWAP; // swap S3 and S1
         }
-        
+
         if (abs(U1[LP]) <= 1.0) {
             // then Bz >= 0
             BLP = U1[LP];
@@ -207,38 +207,38 @@ C * Converted to subroutine from GEPORE.f
             S1LP = S3LP;
             S3LP = SSWAP; // swap S3 and S1
         }
-        
+
         DELTA = 0.5*CR / (1.0 - (BLP*GLP));
-        
+
         FS1S1 = S1L/S1LP;
         FS1S3 = S1L/S3LP;
         FS3S1 = S3L/S1LP;
         FS3S3 = S3L/S3LP;
-         
+
         B11 = DELTA *   1.0 * (1.0 + FS1S1);
         B12 = DELTA *   1.0 * (1.0 - FS1S1);
         B13 = DELTA *  -GLP * (1.0 + FS3S1);
         B14 = DELTA *  -GLP * (1.0 - FS3S1);
-        
+
         B21 = DELTA *   1.0 * (1.0 - FS1S1);
         B22 = DELTA *   1.0 * (1.0 + FS1S1);
         B23 = DELTA *  -GLP * (1.0 - FS3S1);
         B24 = DELTA *  -GLP * (1.0 + FS3S1);
-        
+
         B31 = DELTA *  -BLP * (1.0 + FS1S3);
         B32 = DELTA *  -BLP * (1.0 - FS1S3);
         B33 = DELTA *   1.0 * (1.0 + FS3S3);
         B34 = DELTA *   1.0 * (1.0 - FS3S3);
-        
+
         B41 = DELTA *  -BLP * (1.0 - FS1S3);
         B42 = DELTA *  -BLP * (1.0 + FS1S3);
         B43 = DELTA *   1.0 * (1.0 - FS3S3);
         B44 = DELTA *   1.0 * (1.0 + FS3S3);
-        
+
         Z += D[LP];
         L = LP;
       }
-      
+
 //    Process the loop once for each interior layer, either from
 //    front to back or back to front.
       for (I=1; I < N-1; I++) {
@@ -261,9 +261,9 @@ C * Converted to subroutine from GEPORE.f
             S1LP = S3LP;
             S3LP = SSWAP; // swap S3 and S1
         }
-        
-        
-        
+
+
+
         DELTA = 0.5*CR / (1.0 - (BLP*GLP));
         DBB = (BL - BLP) * DELTA; // multiply by delta here?
         DBG = (1.0 - BL*GLP) * DELTA;
@@ -278,12 +278,12 @@ C * Converted to subroutine from GEPORE.f
         ENS3L = CR / ES3L;
         ES3LP = exp(S3LP*Z);
         ENS3LP = CR / ES3LP;
-        
+
         FS1S1 = S1L/S1LP;
         FS1S3 = S1L/S3LP;
         FS3S1 = S3L/S1LP;
         FS3S3 = S3L/S3LP;
-        
+
         A11 = A22 = DBG * (1.0 + FS1S1);
         A11 *= ES1L * ENS1LP;
         A22 *= ENS1L * ES1LP;
@@ -296,7 +296,7 @@ C * Converted to subroutine from GEPORE.f
         A14 = A23 = DGG * (1.0 - FS3S1);
         A14 *= ENS3L * ENS1LP;
         A23 *= ES3L  * ES1LP;
-        
+
         A31 = A42 = DBB * (1.0 + FS1S3);
         A31 *= ES1L * ENS3LP;
         A42 *= ENS1L * ES3LP;
@@ -347,7 +347,7 @@ C * Converted to subroutine from GEPORE.f
         B24=C2;
         B34=C3;
         B44=C4;
-        
+
         Z += D[LP];
         L = LP;
       }
@@ -356,9 +356,9 @@ C * Converted to subroutine from GEPORE.f
       DETW=(B44*B22-B24*B42);
 
 //    Calculate reflectivity coefficients specified by POLSTAT
-      YA = (B24*B41-B21*B44)/DETW; // ++ 
+      YA = (B24*B41-B21*B44)/DETW; // ++
       YB = (B21*B42-B41*B22)/DETW; // +-
-      YC = (B24*B43-B23*B44)/DETW; // -+ 
+      YC = (B24*B43-B23*B44)/DETW; // -+
       YD = (B23*B42-B43*B22)/DETW; // --
 
 }

@@ -60,25 +60,27 @@ from __future__ import print_function
 
 import os
 import sys
-import glob
 import shutil
 import subprocess
 from distutils.util import get_platform
 
 # python 3 uses input rather than raw_input
-try: input = raw_input
-except: pass
+try:
+    input = raw_input
+except Exception:
+    pass
 
-GIT="git"
-MAKE="make"
+GIT = "git"
+MAKE = "make"
 
 # Windows commands to run utilities
 PYTHON = sys.executable
 if os.name == "nt":
-    SYSBIN=r"C:\Program Files (x86)"
-    if not os.path.exists(SYSBIN): SYSBIN=r"C:\Program Files"
+    SYSBIN = r"C:\Program Files (x86)"
+    if not os.path.exists(SYSBIN):
+        SYSBIN = r"C:\Program Files"
     GIT = SYSBIN+r"\Git\mingw64\bin\git.exe"
-    INNO   = SYSBIN+r"\Inno Setup 5\ISCC.exe"  # command line operation
+    INNO = SYSBIN+r"\Inno Setup 5\ISCC.exe"  # command line operation
 
     if not os.path.exists(GIT):
         print("missing git: "+GIT+" --- source will not be updated",
@@ -101,7 +103,7 @@ if os.name == "nt":
 else:
     # Support for wx in virtualenv on mac
     if hasattr(sys, "real_prefix"):
-        PYTHON = os.path.join(sys.real_prefix,'bin','python')
+        PYTHON = os.path.join(sys.real_prefix, 'bin', 'python')
         os.environ['PYTHON'] = PYTHON
         os.environ['PYTHONHOME'] = sys.prefix
 
@@ -146,14 +148,14 @@ else:
     TOP_DIR = RUN_DIR
 
 # Set the python path
-platform = '.%s-%s'%(get_platform(),sys.version[:3])
+PLATFORM = '.%s-%s'%(get_platform(), sys.version[:3])
 BUMPS_DIR = os.path.join(TOP_DIR, "bumps")
 REFL_DIR = os.path.join(TOP_DIR, "refl1d")
 PERIODICTABLE_DIR = os.path.join(TOP_DIR, "periodictable")
-BUMPS_LIB = os.path.join(BUMPS_DIR,'build','lib'+platform)
-REFL_LIB = os.path.join(REFL_DIR,'build','lib'+platform)
+BUMPS_LIB = os.path.join(BUMPS_DIR, 'build', 'lib'+PLATFORM)
+REFL_LIB = os.path.join(REFL_DIR, 'build', 'lib'+PLATFORM)
 paths = [BUMPS_LIB, REFL_LIB, PERIODICTABLE_DIR]
-sys.path  = paths + sys.path
+sys.path = paths + sys.path
 os.environ['PYTHONPATH'] = os.pathsep.join(paths)
 
 BUMPS_NEW = '"%s" clone https://github.com/bumps/bumps.git'%GIT
@@ -172,7 +174,7 @@ def get_version():
     # Get the version string of the application for use later.
     # This has to be done after we have checked out the repository.
     for line in open(os.path.join(REFL_DIR, PKG_NAME, '__init__.py')).readlines():
-        if (line.startswith('__version__')):
+        if line.startswith('__version__'):
             PKG_VERSION = line.split('=')[1].strip()[1:-1]
             break
     else:
@@ -202,20 +204,20 @@ def checkout_code():
 
 def create_archive(version=None):
     "create source distribution"
-    if version == None: version = PKG_VERSION
+    if version is None:
+        version = PKG_VERSION
 
     # Create zip and tar archives of the source code and a manifest file
     # containing the names of all files.
     print("Creating an archive of the source code ...\n")
 
-    
     try:
         # Create zip and tar archives in the dist subdirectory.
         exec_cmd("%s setup.py sdist --formats=zip,gztar --dist-dir=%s"
-                 %(PYTHON,INSTALLER_DIR), cwd=REFL_DIR)
+                 %(PYTHON, INSTALLER_DIR), cwd=REFL_DIR)
         exec_cmd("%s setup.py sdist --formats=zip,gztar --dist-dir=%s"
-                 %(PYTHON,INSTALLER_DIR), cwd=BUMPS_DIR)
-    except:
+                 %(PYTHON, INSTALLER_DIR), cwd=BUMPS_DIR)
+    except Exception:
         print("*** Failed to create source archive ***")
 
 
@@ -333,7 +335,7 @@ def check_dependencies():
     # ------------------------------------------------------
     try:
         from matplotlib import __version__ as mpl_ver
-    except:
+    except Exception:
         mpl_ver = "0"
     finally:
         req_pkg["matplotlib"] = (mpl_ver, MIN_MATPLOTLIB)
@@ -341,7 +343,7 @@ def check_dependencies():
     # ------------------------------------------------------
     try:
         from numpy import __version__ as numpy_ver
-    except:
+    except Exception:
         numpy_ver = "0"
     finally:
         req_pkg["numpy"] = (numpy_ver, MIN_NUMPY)
@@ -349,7 +351,7 @@ def check_dependencies():
     # ------------------------------------------------------
     try:
         from scipy import __version__ as scipy_ver
-    except:
+    except Exception:
         scipy_ver = "0"
     finally:
         req_pkg["scipy"] = (scipy_ver, MIN_SCIPY)
@@ -357,7 +359,7 @@ def check_dependencies():
     # ------------------------------------------------------
     try:
         from wx import __version__ as wx_ver
-    except:
+    except Exception:
         wx_ver = "0"
     finally:
         req_pkg["wxpython"] = (wx_ver, MIN_WXPYTHON)
@@ -365,19 +367,18 @@ def check_dependencies():
     # ------------------------------------------------------
     try:
         from setuptools import __version__ as setup_ver
-    except:
+    except Exception:
         setup_ver = "0"
     finally:
         req_pkg["setuptools"] = (setup_ver, MIN_SETUPTOOLS)
 
     # ------------------------------------------------------
     try:
-        if os.name == 'nt': flag = False
-        else:               flag = True
+        shell = os.name != 'nt'
         p = subprocess.Popen("gcc -dumpversion", stdout=subprocess.PIPE,
-                             shell=flag)
+                             shell=shell)
         gcc_ver = p.stdout.read().strip()
-    except:
+    except Exception:
         gcc_ver = "0"
     finally:
         req_pkg["gcc"] = (gcc_ver, MIN_GCC)
@@ -385,7 +386,7 @@ def check_dependencies():
     # ------------------------------------------------------
     try:
         from pyparsing import __version__ as parse_ver
-    except:
+    except Exception:
         parse_ver = "0"
     finally:
         req_pkg["pyparsing"] = (parse_ver, MIN_PYPARSING)
@@ -393,7 +394,7 @@ def check_dependencies():
     # ------------------------------------------------------
     try:
         from periodictable import __version__ as ptab_ver
-    except:
+    except Exception:
         ptab_ver = "0"
     finally:
         req_pkg["periodictable"] = (ptab_ver, MIN_PERIODICTABLE)
@@ -401,7 +402,7 @@ def check_dependencies():
     # ------------------------------------------------------
     try:
         from nose import __version__ as nose_ver
-    except:
+    except Exception:
         nose_ver = "0"
     finally:
         req_pkg["nose"] = (nose_ver, MIN_NOSE)
@@ -409,7 +410,7 @@ def check_dependencies():
     # ------------------------------------------------------
     try:
         from sphinx import __version__ as sphinx_ver
-    except:
+    except Exception:
         sphinx_ver = "0"
     finally:
         req_pkg["sphinx"] = (sphinx_ver, MIN_SPHINX)
@@ -417,7 +418,7 @@ def check_dependencies():
     # ------------------------------------------------------
     try:
         from docutils import __version__ as docutils_ver
-    except:
+    except Exception:
         docutils_ver = "0"
     finally:
         req_pkg["docutils"] = (docutils_ver, MIN_DOCUTILS)
@@ -425,7 +426,7 @@ def check_dependencies():
     # ------------------------------------------------------
     try:
         from pygments import __version__ as pygments_ver
-    except:
+    except Exception:
         pygments_ver = "0"
     finally:
         req_pkg["pygments"] = (pygments_ver, MIN_PYGMENTS)
@@ -433,7 +434,7 @@ def check_dependencies():
     # ------------------------------------------------------
     try:
         from jinja2 import __version__ as jinja2_ver
-    except:
+    except Exception:
         jinja2_ver = "0"
     finally:
         req_pkg["jinja2"] = (jinja2_ver, MIN_JINJA2)
@@ -442,7 +443,7 @@ def check_dependencies():
     if os.name == 'nt':
         try:
             from py2exe import __version__ as py2exe_ver
-        except:
+        except Exception:
             py2exe_ver = "0"
         finally:
             req_pkg["py2exe"] = (py2exe_ver, MIN_PY2EXE)
@@ -454,10 +455,10 @@ def check_dependencies():
 
     # ------------------------------------------------------
     error = False
-    for key, values in list(req_pkg.items()):
+    for key in req_pkg:
         if req_pkg[key][0] == "0":
             print("====> %s not found; version %s or later is required - ERROR"
-                %(key, req_pkg[key][1]))
+                  % (key, req_pkg[key][1]))
             error = True
         elif req_pkg[key][0] == "?":
             print("Found %s" %(key))  # version is unknown
@@ -465,7 +466,7 @@ def check_dependencies():
             print("Found %s %s" %(key, req_pkg[key][0]))
         else:
             print("Found %s %s but minimum tested version is %s - WARNING"
-                %(key, req_pkg[key][0], req_pkg[key][1]))
+                  % (key, req_pkg[key][0], req_pkg[key][1]))
             error = True
 
     if error:
@@ -491,51 +492,52 @@ def exec_cmd(command, cwd=None):
         sys.exit(result)
 
 BUILD_POINTS = [
-  ('deps', check_dependencies),
-  ('update', checkout_code),
-  ('build', build_package),
-  ('test', run_tests),
-  ('docs', build_documentation),  # Needed by windows installer
-  ('zip', create_archive),
-  ('exe', create_binary),
-  ('installer', create_installer),
+    ('deps', check_dependencies),
+    ('update', checkout_code),
+    ('build', build_package),
+    ('test', run_tests),
+    ('docs', build_documentation),  # Needed by windows installer
+    ('zip', create_archive),
+    ('exe', create_binary),
+    ('installer', create_installer),
 ]
 
-
-
 def main():
-
+    points, _ = zip(*BUILD_POINTS)
     start = BUILD_POINTS[0][0]
     only = False
-    if len(sys.argv)>1:
+    if len(sys.argv) > 1:
         # Display help if requested.
-        if (len(sys.argv) > 1 and sys.argv[1] not in zip(*BUILD_POINTS)[0]
+        if (len(sys.argv) > 1 and sys.argv[1] not in points
                 or len(sys.argv) > 2 and sys.argv[2] != 'only'
                 or len(sys.argv) > 3):
             print("\nUsage: python master_builder.py [<start>] [only]\n")
             print("Build start points:")
-            for point,fn in BUILD_POINTS:
-                print("  %-10s %s"%(point,fn.__doc__))
+            for point, function in BUILD_POINTS:
+                print("  %-10s %s"%(point, function.__doc__))
             print("Add 'only' to the command to only perform a single step")
             sys.exit()
         else:
             start = sys.argv[1]
-            only = len(sys.argv)>2 and sys.argv[2] == 'only'
+            only = len(sys.argv) > 2 and sys.argv[2] == 'only'
 
     get_version()
     print("\nBuilding the %s-%s application from the %s repository ...\n"
-        %(APP_NAME, PKG_VERSION, PKG_NAME))
+          % (APP_NAME, PKG_VERSION, PKG_NAME))
     print("Current working directory  = %s"%RUN_DIR)
     print("Top-level (root) directory = %s"%TOP_DIR)
     print("Package (source) directory = %s"%REFL_DIR)
 
     started = False
-    for point,fn in BUILD_POINTS:
-        if point==start: started = True
-        if not started: continue
-        print("%s %s %s"%("/"*5,point,"/"*25))
-        fn()
-        if only: break
-        
+    for point, function in BUILD_POINTS:
+        if point == start:
+            started = True
+        if not started:
+            continue
+        print("%s %s %s"%("/"*5, point, "/"*25))
+        function()
+        if only:
+            break
+
 if __name__ == "__main__":
-     main()
+    main()

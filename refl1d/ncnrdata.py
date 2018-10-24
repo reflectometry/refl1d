@@ -31,9 +31,9 @@ Magnetic data has multiple cross sections and often has fixed slits:
 For simulation, you need a probe and a sample:
 
     >>> instrument = NCNR.ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
-    >>> probe = instrument.probe(T=numpy.linspace(0,5,51))
+    >>> probe = instrument.probe(T=numpy.linspace(0, 5, 51))
     >>> probe.plot_resolution()
-    >>> sample = silicon(0,10) | gold(100,10) | air
+    >>> sample = silicon(0, 10) | gold(100, 10) | air
     >>> M = Experiment(probe=probe, sample=sample)
     >>> M.simulate_data() # Optional
     >>> M.plot()
@@ -41,11 +41,11 @@ For simulation, you need a probe and a sample:
 And for magnetic:
 
     >>> instrument = NCNR.NG1(slits_at_Tlo=1)
-    >>> #sample = silicon(0,10) | Magnetic(permalloy(100,10),rho_M=3) | air
+    >>> #sample = silicon(0, 10) | Magnetic(permalloy(100, 10), rho_M=3) | air
     >>> #M = Experiment(probe=probe, sample=sample)
     >>> #M.simulate_data()
     >>> #M.plot()
-    >>> #probe = instrument.simulate_magnetic(sample, T=numpy.linspace(0,5,51))
+    >>> #probe = instrument.simulate_magnetic(sample, T=numpy.linspace(0, 5, 51))
     >>> #h = pylab.plot(probe.Q, probe.dQ)
     >>> #h = pylab.ylabel('resolution (1-sigma)')
     >>> #h = pylab.xlabel('Q (inv A)')
@@ -236,9 +236,9 @@ class NG7(NCNRData, Monochromatic):
     instrument = "NG-7"
     radiation = "neutron"
     wavelength = 4.768
-    dLoL = 0.025  # 4% FWHM wavelength spread
-    d_s2 = 275.   # TODO: check this number
-    d_s1 = d_s2 + 1350.
+    dLoL = 0.025  # 2.5% FWHM wavelength spread
+    d_s2 = 222.25
+    d_s1 = 1722.25
     d_detector = 2000.
 
 
@@ -308,7 +308,7 @@ INSTRUMENTS = {
     'Xray': XRay,
     }
 
-_ = '''
+_ = r'''
 def _counting_time(instrument, sample, uncertainty,
     Qrange, Qstep, beam_rate, num_parts):
     r"""
@@ -340,7 +340,7 @@ def _counting_time(instrument, sample, uncertainty,
     to reflection off the sample (this is just $R_{\rm th} I$) and use
     that to simulate detector counts $D$ by drawing from a Poisson
     distribution $D ~ P(R_{\rm th} I)$.  Given $D$ and $I$ we can use
-    the normal reflectometry reduction process to get $(R,\Delta R)$
+    the normal reflectometry reduction process to get $(R, \Delta R)$
     as:
 
     .. math:
@@ -359,8 +359,8 @@ def _counting_time(instrument, sample, uncertainty,
     else: # Q^4 counting
         I = 1/(100*probe.Q**4 * uncertainty**2)
     D = numpy.random.poisson( Rth * I )
-    R,dR = D/I, numpy.sqrt(D)/I
-    probe.data = R,dR
+    R, dR = D/I, numpy.sqrt(D)/I
+    probe.data = R, dR
 
     return M
 '''

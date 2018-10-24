@@ -11,7 +11,7 @@
 from refl1d.names import *
 
 nickel = Material('Ni')
-sample = silicon(0,10) | nickel(125,10) | air
+sample = silicon(0, 10) | nickel(125, 10) | air
 
 # We are going to try to recover the original thickness by letting the
 # thickness value range by $125 \pm 50$ |Ang|.  Since nickel is layer 1 in
@@ -26,13 +26,13 @@ sample[1].thickness.pm(50)
 # top of the layer below.  Here we are restricting the silicon:nickel interface
 # to the interval $[3,12]$ and the nickel:air interface to the range $[0,20]$:
 
-sample[0].interface.range(3,12)
-sample[1].interface.range(0,20)
+sample[0].interface.range(3, 12)
+sample[1].interface.range(0, 20)
 
 # The data is loaded as before.
 
 instrument = SNS.Liquids()
-files = ['nifilm-tof-%d.dat'%d for d in (1,2,3,4)]
+files = ['nifilm-tof-%d.dat'%d for d in (1, 2, 3, 4)]
 probe = ProbeSet(instrument.load(f) for f in files)
 
 M = Experiment(probe=probe, sample=sample)

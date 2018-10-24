@@ -6,7 +6,7 @@ from .config import interface_color, pick_radius
 from .interactor import BaseInteractor
 from .util import clip, setpar
 
-MAX_ROUGH=3
+MAX_ROUGH=1
 
 class InterfaceInteractor(BaseInteractor):
     """

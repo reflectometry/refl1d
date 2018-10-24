@@ -220,9 +220,9 @@ class MlayerModel(object):
 
         Replace a set of attribute values.
 
-    model.fit_resolution(Q,dQ)
+    model.fit_resolution(Q, dQ)
 
-        Choose the best resolution parameters to match the given Q,dQ
+        Choose the best resolution parameters to match the given Q, dQ
         resolution.  Returns the object so that calls can be chained.
 
     model.resolution(Q)
@@ -244,7 +244,7 @@ class MlayerModel(object):
     Staj files can be constructed directly.  The MlayerModel constructor
     can accept all data attributes as key word arguments.  Models require
     at least *data_file*, *wavelength*, *thickness*, *roughness* and *rho*.
-    Resolution parameters can be set using model.fit_resolution(Q,dQ).
+    Resolution parameters can be set using model.fit_resolution(Q, dQ).
     Section sizes can be set using model.split_sections().  Everything
     else has reasonable defaults.
 
@@ -272,24 +272,24 @@ class MlayerModel(object):
         self.set(**kw)
 
     def set(self, **kw):
-        valid = ('data_file','Qmin','Qmax','num_Q','wavelength',
-                 'wavelength_dispersion','angular_divergence','intensity',
-                 'background','theta_offset',
-                 'num_top','num_middle','num_bottom','num_repeats',
-                 'roughness_steps','roughness_profile','sigma_roughness',
-                 'thickness','roughness','rho','irho','incoh',
-                 'fitpars','constraints','output_file')
-        for k,v in kw.items():
+        valid = ('data_file', 'Qmin', 'Qmax', 'num_Q', 'wavelength',
+                 'wavelength_dispersion', 'angular_divergence', 'intensity',
+                 'background', 'theta_offset',
+                 'num_top', 'num_middle', 'num_bottom', 'num_repeats',
+                 'roughness_steps', 'roughness_profile', 'sigma_roughness',
+                 'thickness', 'roughness', 'rho', 'irho', 'incoh',
+                 'fitpars', 'constraints', 'output_file')
+        for k, v in kw.items():
             if k not in valid:
                 raise TypeError("Unexpected attribute '%s' in Mlayer Model"%k)
-            setattr(self,k,v)
+            setattr(self, k, v)
 
     @classmethod
     def load(cls, filename):
         """
         Load a staj file, returning an MlayerModel object
         """
-        fin = open(filename,'r')
+        fin = open(filename, 'r')
         lines = fin.readlines()
         fin.close()
 
@@ -302,7 +302,7 @@ class MlayerModel(object):
         Save the staj file
         """
         self._check()
-        fid = open(filename,'w')
+        fid = open(filename, 'w')
         try:
             self._write(fid)
         finally:
@@ -351,7 +351,7 @@ class MlayerModel(object):
         """
         A = numpy.array([abs(Q)/self.wavelength,
                          numpy.ones_like(Q)*(4*pi/self.wavelength)]).T
-        s = wsolve(A,y=dQ,dy=weight)
+        s = wsolve(A, y=dQ, dy=weight)
         self.wavelength_dispersion = s.x[0]
         self.angular_divergence = s.x[1]
 
@@ -396,21 +396,21 @@ class MlayerModel(object):
             line.append("Data: %s"%self.data_file)
         else:
             line.append("Q: %g to %g in %d steps"
-                        %(self.Qmin,self.Qmax,self.num_Q))
+                        %(self.Qmin, self.Qmax, self.num_Q))
         line.append("Wavelength L: %g  dL/L: %g, dTheta: %g"
                     %(self.wavelength, self.wavelength_dispersion,
                       self.angular_divergence))
         line.append("Beam intensity: %g  Background: %g, Theta offset: %g"
                     %(self.intensity, self.background, self.theta_offset))
-        profile = 'error function' if self.roughness_profile=='E' else 'tanh'
+        profile = 'error function' if self.roughness_profile == 'E' else 'tanh'
         line.append("Interface: %s in %d steps"
                     %(profile, self.roughness_steps))
-        w,s = self.thickness, self.roughness
-        rho,mu = self.rho, self.mu
+        w, s = self.thickness, self.roughness
+        rho, mu = self.rho, self.mu
         line.append("Layers:")
         line.append(("   " + "%15s "*4)
-                    %("Width (A)","Interface (FWHM)",
-                      "Rho (1e-6/A)","Mu (1e-6/A)"))
+                    %("Width (A)", "Interface (FWHM)",
+                      "Rho (1e-6/A)", "Mu (1e-6/A)"))
         for i in range(len(self.rho)):
             if i == 0:
                 name = 'V'
@@ -420,7 +420,7 @@ class MlayerModel(object):
                 name = 'M%d'%(i-self.num_top)
             else:
                 name = 'B%d'%(i-self.num_top-self.num_middle)
-            line.append(("%s:"+("%15g "*4))%(name,w[i],s[i],rho[i],mu[i]))
+            line.append(("%s:"+("%15g "*4))%(name, w[i], s[i], rho[i], mu[i]))
         if self.constraints != "":
             line.append("Constraints:")
             line.append(self.constraints)
@@ -482,7 +482,7 @@ class MlayerModel(object):
 
         #4: profile_type ('E' for error function, 'H' for tanh)
         self.roughness_profile = lines[3].strip().upper()[:1]
-        if self.roughness_profile not in ('E','H'):
+        if self.roughness_profile not in ('E', 'H'):
             raise ValueError("Expected roughness profile type E or H")
 
         #5: data_file
@@ -500,11 +500,11 @@ class MlayerModel(object):
         del layers[self.num_top+self.num_middle+1]
 
         A = numpy.array(layers)
-        self.rho = A[:,0] * (1e6/16/pi)
-        self.irho = A[:,4] * (1e6/2/self.wavelength)
-        self.incoh = A[:,0] * 0
-        self.thickness = A[:,2]
-        self.roughness = A[:,3]
+        self.rho = A[:, 0] * (1e6/16/pi)
+        self.irho = A[:, 4] * (1e6/2/self.wavelength)
+        self.incoh = A[:, 0] * 0
+        self.thickness = A[:, 2]
+        self.roughness = A[:, 3]
 
         #7+nL+1: P1 P2 P3 ...  (fit parameters)
         self.fitpars = [int(s) for s in lines[6+nL].split()]
@@ -514,16 +514,16 @@ class MlayerModel(object):
     def _write(self, fid):
         #1: num_top num_middle num_bottom num_repeats num_fit rough_steps
         fid.write("%d %d %d %d %d %d\n"%(self.num_top, self.num_middle,
-                                    self.num_bottom, self.num_repeats,
-                                    len(self.fitpars), self.roughness_steps))
+                                         self.num_bottom, self.num_repeats,
+                                         len(self.fitpars), self.roughness_steps))
 
         #2: wavelength  wavelength_dispersion  angular_divergence [theta_offset]
         fid.write("%g %g %g %g\n"%(self.wavelength, self.wavelength_dispersion,
-                                 self.angular_divergence, self.theta_offset))
+                                   self.angular_divergence, self.theta_offset))
 
         #3: intensity  background  Qmin  Qmax  num_Q
         fid.write("%g %g %g %g %d\n"%(self.intensity, self.background,
-                                    self.Qmin, self.Qmax, self.num_Q))
+                                      self.Qmin, self.Qmax, self.num_Q))
 
         #4: profile_type ('E' for error function, 'H' for tanh)
         fid.write("%s\n"%self.roughness_profile)
@@ -537,7 +537,7 @@ class MlayerModel(object):
         #ignore the layer before each section
         rho = self.rho*(16*pi*1e-6)
         mu = self.mu*1e-6
-        w,s = self.thickness, self.roughness
+        w, s = self.thickness, self.roughness
         def _write_layer(idx):
             fid.write("%g %g %g %g %g\n"%(rho[idx], 0.,
                                           w[idx], s[idx],
@@ -765,9 +765,9 @@ class MlayerMagnetic(object):
 
         Replace a set of attribute values.
 
-    model.fit_resolution(Q,dQ)
+    model.fit_resolution(Q, dQ)
 
-        Choose the best resolution parameters to match the given Q,dQ
+        Choose the best resolution parameters to match the given Q, dQ
         resolution.  Returns the object so that calls can be chained.
 
     model.resolution(Q)
@@ -784,7 +784,7 @@ class MlayerMagnetic(object):
     Staj files can be constructed directly.  The MlayerModel constructor
     can accept all data attributes as key word arguments.  Models require
     at least *data_file*, *wavelength*, *thickness*, *roughness* and *rho*.
-    Resolution parameters can be set using model.fit_resolution(Q,dQ).
+    Resolution parameters can be set using model.fit_resolution(Q, dQ).
     Everything else has reasonable defaults.
 
     """
@@ -810,24 +810,24 @@ class MlayerMagnetic(object):
         self.set(**kw)
 
     def set(self, **kw):
-        valid = ('data_file','active_xsec','Qmin','Qmax','num_Q','wavelength',
-                 'wavelength_dispersion','angular_divergence','intensity',
-                 'background','guide_angle',
-                 'roughness_steps','roughness_profile',
-                 'thickness','roughness','rho','irho','sigma_roughness',
-                 'mthickness','mroughness','mrho','mtheta','sigma_mroughness',
-                 'fitpars','constraints','output_file')
-        for k,v in kw.items():
+        valid = ('data_file', 'active_xsec', 'Qmin', 'Qmax', 'num_Q', 'wavelength',
+                 'wavelength_dispersion', 'angular_divergence', 'intensity',
+                 'background', 'guide_angle',
+                 'roughness_steps', 'roughness_profile',
+                 'thickness', 'roughness', 'rho', 'irho', 'sigma_roughness',
+                 'mthickness', 'mroughness', 'mrho', 'mtheta', 'sigma_mroughness',
+                 'fitpars', 'constraints', 'output_file')
+        for k, v in kw.items():
             if k not in valid:
                 raise TypeError("Unexpected attribute '%s' in Mlayer Model"%k)
-            setattr(self,k,v)
+            setattr(self, k, v)
 
     @classmethod
     def load(cls, filename):
         """
         Load a staj file, returning an MlayerModel object
         """
-        fin = open(filename,'r')
+        fin = open(filename, 'r')
         lines = fin.readlines()
         fin.close()
 
@@ -843,7 +843,7 @@ class MlayerMagnetic(object):
         Save the staj file
         """
         self._check()
-        fid = open(filename,'w')
+        fid = open(filename, 'w')
         try:
             self._write(fid)
         finally:
@@ -857,7 +857,7 @@ class MlayerMagnetic(object):
     def fit_FWHMresolution(self, Q, dQ, weight=1):
         A = numpy.array([abs(Q)/self.wavelength,
                          numpy.ones_like(Q)*(4*pi/self.wavelength)])
-        s = wsolve(A,y=dQ,dy=weight)
+        s = wsolve(A, y=dQ, dy=weight)
         self.wavelength_dispersion = s.x[0]
         self.angular_divergence = s.x[1]
 
@@ -868,19 +868,19 @@ class MlayerMagnetic(object):
         line = []
         if self.data_file is not "":
             line.append("Data: %s[%s]"
-                        %(self.data_file,self.active_xsec.upper()))
+                        %(self.data_file, self.active_xsec.upper()))
         else:
             line.append("Q: %g to %g in %d steps"
-                        %(self.Qmin,self.Qmax,self.num_Q))
+                        %(self.Qmin, self.Qmax, self.num_Q))
         line.append("Wavelength L: %g  dL/L: %g, dTheta: %g"
                     %(self.wavelength, self.wavelength_dispersion,
                       self.angular_divergence))
         line.append("Beam intensity: %g  Background: %g, Guide angle: %g"
                     %(self.intensity, self.background, self.guide_angle))
-        profile = 'error function' if self.roughness_profile=='E' else 'tanh'
+        profile = 'error function' if self.roughness_profile == 'E' else 'tanh'
         line.append("Interface: %s in %d steps"
                     %(profile, self.roughness_steps))
-        w,s = self.thickness, self.roughness
+        w, s = self.thickness, self.roughness
         wm = self.mthickness if self.mthickness is not None else w
         sm = self.mroughness if self.mroughness is not None else s
         rho = self.rho
@@ -889,13 +889,13 @@ class MlayerMagnetic(object):
         mtheta = self.mtheta if self.mtheta is not None else 270*numpy.ones_like(w)
         line.append("Layers:")
         line.append(("    " + ("%15s "*4) + "\n    " + ("%15s "*4))
-                    %("Width (A)","Interface (FWHM)",
-                      "Rho (1e-6/A)","iRho (1e-6/A)",
-                      "Mag width","Mag interface","Mag rho","Mag angle (deg)"))
+                    %("Width (A)", "Interface (FWHM)",
+                      "Rho (1e-6/A)", "iRho (1e-6/A)",
+                      "Mag width", "Mag interface", "Mag rho", "Mag angle (deg)"))
         for i in range(len(self.rho)):
             line.append(("%3d:"+("%15g "*4)+"\n    " + ("%15g "*4))
-                        %(i, w[i],s[i],rho[i],irho[i],
-                          wm[i],sm[i],mrho[i],mtheta[i]))
+                        %(i, w[i], s[i], rho[i], irho[i],
+                          wm[i], sm[i], mrho[i], mtheta[i]))
         if self.constraints != "":
             line.append("Constraints:")
             line.append(self.constraints)
@@ -912,7 +912,7 @@ class MlayerMagnetic(object):
                         self.mtheta)]
         if any((n != ns[0] and n != 0) for n in ns[1:]):
             raise ValueError("layer parameters have different lengths")
-        if any((n==0) for n in ns[:3]):
+        if any((n == 0) for n in ns[:3]):
             raise ValueError("rho, thickness and roughness are required")
 
         # Could check if Qmin/Qmax/num_Q matches data, but I don't think
@@ -970,7 +970,7 @@ class MlayerMagnetic(object):
 
         #8: profile_type ('E' for error function, 'H' for tanh)
         self.roughness_profile = lines[7].strip()
-        if self.roughness_profile not in ('E','H'):
+        if self.roughness_profile not in ('E', 'H'):
             raise ValueError("Expected roughness profile type E or H")
 
         #9: active cross sections (usually 'abcd' or 'ABCD')
@@ -990,14 +990,14 @@ class MlayerMagnetic(object):
                   for i in range(nL)]
 
         A = numpy.array(layers)
-        self.rho = A[:,0]* (1e6/16/pi)
-        self.irho = A[:,3] * (1e6/2/self.wavelength)
-        self.thickness = A[:,1]
-        self.roughness = A[:,2]
-        self.mrho = A[:,4] * (1e6/16/pi)
-        self.mtheta = A[:,7]
-        self.mthickness = A[:,5]
-        self.mroughness = A[:,6]
+        self.rho = A[:, 0]* (1e6/16/pi)
+        self.irho = A[:, 3] * (1e6/2/self.wavelength)
+        self.thickness = A[:, 1]
+        self.roughness = A[:, 2]
+        self.mrho = A[:, 4] * (1e6/16/pi)
+        self.mtheta = A[:, 7]
+        self.mthickness = A[:, 5]
+        self.mroughness = A[:, 6]
 
         ## Fit information fills the remainder of the file
         #footer+1: P1 P2 P3 ...  (fit parameters)
@@ -1008,7 +1008,7 @@ class MlayerMagnetic(object):
     def _write(self, fid):
         #1: wavelength  wavelength_dispersion  angular_divergence [aguide]
         fid.write("%g %g %g %g\n"%(self.wavelength, self.wavelength_dispersion,
-                                 self.angular_divergence, self.guide_angle))
+                                   self.angular_divergence, self.guide_angle))
 
         #2: intensity  background
         fid.write("%g %g\n"%(self.intensity, self.background))
@@ -1038,7 +1038,7 @@ class MlayerMagnetic(object):
         #Line next (2):  mrho  mdepth  mrough (mrho is also known as phi)
         #Line next (3):  mtheta
         rho = self.rho*(16*pi/1e6)
-        w,s = self.thickness, self.roughness
+        w, s = self.thickness, self.roughness
         wm = self.mthickness if self.mthickness is not None else self.thickness
         sm = self.mroughness if self.mroughness is not None else self.roughness
         if self.irho is not None:
@@ -1055,7 +1055,7 @@ class MlayerMagnetic(object):
             mtheta = 270*numpy.ones_like(rho)
         for i in range(len(rho)):
             fid.write("%g %g %g %g\n%g %g %g\n%g\n"
-                      %(rho[i],w[i],s[i],mu[i],mrho[i],wm[i],sm[i],mtheta[i]))
+                      %(rho[i], w[i], s[i], mu[i], mrho[i], wm[i], sm[i], mtheta[i]))
 
         ## Fit information fills the remainder of the file
         #footer+1: P1 P2 P3 ...  (fit parameters)

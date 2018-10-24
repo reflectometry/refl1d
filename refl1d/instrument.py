@@ -36,20 +36,20 @@ measured data set or generate a probe for simulation:
 
     >>> from numpy import linspace, loadtxt
     >>> datafile = sample_data('10ndt001.refl')
-    >>> Q,R,dR = loadtxt(datafile).T
-    >>> probe = geometry.probe(Q=Q, data=(R,dR))
-    >>> simulation = geometry.probe(T=linspace(0,5,51))
+    >>> Q, R, dR = loadtxt(datafile).T
+    >>> probe = geometry.probe(Q=Q, data=(R, dR))
+    >>> simulation = geometry.probe(T=linspace(0, 5, 51))
 
 All instrument parameters can be specified when constructing the probe,
 replacing the defaults that are associated with the instrument.  For
 example, to include sample broadening effects in the resolution:
 
-    >>> probe2 = geometry.probe(Q=Q, data=(R,dR), sample_broadening=0.1,
+    >>> probe2 = geometry.probe(Q=Q, data=(R, dR), sample_broadening=0.1,
     ...    name="probe2")
 
 For magnetic systems a polarized beam probe is needed::
 
-    >>> magnetic_probe = geometry.magnetic_probe(T=numpy.linspace(0,5,100),)
+    >>> magnetic_probe = geometry.magnetic_probe(T=numpy.linspace(0, 5, 100))
 
 The string representation of the geometry prints a multi-line
 description of the default instrument configuration:
@@ -79,8 +79,8 @@ For example, the above SP:2 instrument could be defined as follows:
     ...    d_s1 = 230.0 + 1856.0 # mm
     ...    d_s2 = 230.0          # mm
     ...    def load(self, filename, **kw):
-    ...        Q,R,dR = loadtxt(datafile).T
-    ...        probe = self.probe(Q=Q, data=(R,dR), **kw)
+    ...        Q, R, dR = loadtxt(datafile).T
+    ...        probe = self.probe(Q=Q, data=(R, dR), **kw)
     ...        return probe
 
 This definition can then be used to define the measurement geometry.  We
@@ -121,7 +121,7 @@ metadata values are changed, the resolution can be recomputed and the
 display updated.  When the data set is accepted, the final resolution
 calculation can be performed.
 """
-from __future__ import division
+from __future__ import division, print_function
 
 # TODO: the resolution calculator should not be responsible for loading
 # the data; maybe do it as a mixin?
@@ -151,22 +151,22 @@ class Monochromatic(object):
         *dLoL* : float
             constant relative wavelength dispersion; wavelength range and
             dispersion together determine the bins
-        *slits* : float OR (float,float) | mm
+        *slits* : float OR (float, float) | mm
             fixed slits
-        *slits_at_Tlo* : float OR (float,float) | mm
+        *slits_at_Tlo* : float OR (float, float) | mm
             slit 1 and slit 2 openings at Tlo; this can be a scalar if both
-            slits are open by the same amount, otherwise it is a pair (s1,s2).
-        *slits_at_Qlo* : float OR (float,float) | mm
+            slits are open by the same amount, otherwise it is a pair (s1, s2).
+        *slits_at_Qlo* : float OR (float, float) | mm
             equivalent to slits_at_Tlo, for instruments that are controlled by
             Q rather than theta
         *Tlo*, *Thi* : float | |deg|
             range of opening slits, or inf if slits are fixed.
         *Qlo*, *Qhi* : float | |1/Ang|
             range of opening slits when instrument is controlled by Q.
-        *slits_below*, *slits_above* : float OR (float,float) | mm
+        *slits_below*, *slits_above* : float OR (float, float) | mm
             slit 1 and slit 2 openings below Tlo and above Thi; again, these
             can be scalar if slit 1 and slit 2 are the same, otherwise they
-            are each a pair (s1,s2).  Below and above default to the values of
+            are each a pair (s1, s2).  Below and above default to the values of
             the slits at Tlo and Thi respectively.
         *sample_width* : float | mm
             width of sample; at low angle with tiny samples, stray neutrons
@@ -187,8 +187,8 @@ class Monochromatic(object):
     d_s1 = None
     d_s2 = None
     # Optional attributes
-    Tlo= 90  # Use 90 for fixed slits; this is effectively inf
-    Thi= 90
+    Tlo = 90  # Use 90 for fixed slits; this is effectively inf
+    Thi = 90
     fixed_slits = None
     slits_at_Tlo = None    # Slit openings at Tlo, and default for slits_below
     slits_below = None     # Slit openings below Tlo, or fixed slits if Tlo=90
@@ -198,7 +198,7 @@ class Monochromatic(object):
 
     def __init__(self, **kw):
         self._translate_Q_to_theta(kw)
-        for k,v in kw.items():
+        for k, v in kw.items():
             if hasattr(self, k):
                 setattr(self, k, v)
             else:
@@ -229,9 +229,9 @@ class Monochromatic(object):
         angular divergence.
         """
         self._translate_Q_to_theta(kw)
-        T,dT,L,dL = self.resolution(**kw)
-        kw.update(T=T,dT=dT,L=L,dL=dL)
-        kw.setdefault('radiation',self.radiation)
+        T, dT, L, dL = self.resolution(**kw)
+        kw.update(T=T, dT=dT, L=L, dL=dL)
+        kw.setdefault('radiation', self.radiation)
         return make_probe(**kw)
 
     def magnetic_probe(self, Aguide=270, shared_beam=True, H=0, **kw):
@@ -248,7 +248,7 @@ class Monochromatic(object):
         """
         base_name = kw.pop("name", "")
         probes = [self.probe(name=base_name+xs, **kw)
-                  for xs in ("--","-+","+-","++")]
+                  for xs in ("--", "-+", "+-", "++")]
         probe = PolarizedNeutronProbe(probes, Aguide=Aguide, H=H)
         if shared_beam:
             probe.shared_beam()  # Share the beam parameters by default
@@ -268,11 +268,11 @@ class Monochromatic(object):
         if 'T' not in kw:
             raise TypeError("resolution requires slits and either T or Q")
 
-        L = kw.get('L',kw.get('wavelength',self.wavelength))
+        L = kw.get('L', kw.get('wavelength', self.wavelength))
         if 'dL' in kw:
             dL = kw['dL']
         else:
-            dL = kw.get('dLoL',self.dLoL) * L
+            dL = kw.get('dLoL', self.dLoL) * L
 
         if L is None or dL is None:
             raise TypeError("Need wavelength and wavelength dispersion to compute resolution")
@@ -285,14 +285,14 @@ class Monochromatic(object):
                 kw['slits'] = self.calc_slits(**kw)
             dT = self.calc_dT(**kw)
 
-        return T,dT,L,dL
+        return T, dT, L, dL
 
     def calc_slits(self, **kw):
         """
         Determines slit openings from measurement pattern.
 
         If slits are fixed simply return the same slits for every angle,
-        otherwise use an opening range [Tlo,Thi] and the value of the
+        otherwise use an opening range [Tlo, Thi] and the value of the
         slits at the start of the opening to define the slits.  Slits
         below Tlo and above Thi can be specified separately.
 
@@ -307,16 +307,16 @@ class Monochromatic(object):
         if 'T' not in kw:
             raise TypeError("calc_slits requires angle T=... or Q=...")
         T = kw['T']
-        Tlo = kw.get('Tlo',self.Tlo)
-        Thi = kw.get('Thi',self.Thi)
-        fixed_slits = kw.get('fixed_slits',self.fixed_slits)
+        Tlo = kw.get('Tlo', self.Tlo)
+        Thi = kw.get('Thi', self.Thi)
+        fixed_slits = kw.get('fixed_slits', self.fixed_slits)
         if fixed_slits is not None:
             slits_at_Tlo = slits_below = slits_above = fixed_slits
             Tlo = 90
         else:
-            slits_at_Tlo = kw.get('slits_at_Tlo',self.slits_at_Tlo)
-            slits_below = kw.get('slits_below',self.slits_below)
-            slits_above = kw.get('slits_above',self.slits_above)
+            slits_at_Tlo = kw.get('slits_at_Tlo', self.slits_at_Tlo)
+            slits_below = kw.get('slits_below', self.slits_below)
+            slits_above = kw.get('slits_above', self.slits_above)
 
         # Otherwise we are using opening slits
         if Tlo is None or slits_at_Tlo is None:
@@ -334,7 +334,7 @@ class Monochromatic(object):
         :Parameters:
             *T* OR *Q* : [float] | |deg| OR |1/Ang|
                 measurement angles
-            *slits* : float OR (float,float) | mm
+            *slits* : float OR (float, float) | mm
                 total slit opening from edge to edge, not beam center to edge
             *d_s1*, *d_s2* : float | mm
                 distance from sample to slit 1 and slit 2
@@ -358,13 +358,13 @@ class Monochromatic(object):
             raise TypeError("calc_dT requires slits and either T or Q")
         slits = kw['slits']
         T = kw['T']
-        d_s1 = kw.get('d_s1',self.d_s1)
-        d_s2 = kw.get('d_s2',self.d_s2)
+        d_s1 = kw.get('d_s1', self.d_s1)
+        d_s2 = kw.get('d_s2', self.d_s2)
         if d_s1 is None or d_s2 is None:
             raise TypeError("Need slit distances d_s1, d_s2 to compute resolution")
-        sample_width = kw.get('sample_width',self.sample_width)
-        sample_broadening = kw.get('sample_broadening',self.sample_broadening)
-        dT = divergence(T=T, slits=slits, distance=(d_s1,d_s2),
+        sample_width = kw.get('sample_width', self.sample_width)
+        sample_broadening = kw.get('sample_broadening', self.sample_broadening)
+        dT = divergence(T=T, slits=slits, distance=(d_s1, d_s2),
                         sample_width=sample_width,
                         sample_broadening=sample_broadening)
 
@@ -376,7 +376,7 @@ class Monochromatic(object):
         """
         # Grab wavelength first so we can translate Qlo/Qhi to Tlo/Thi no
         # matter what order the keywords appear.
-        wavelength = kw.get('wavelength',self.wavelength)
+        wavelength = kw.get('wavelength', self.wavelength)
         if "Q" in kw:
             kw["T"] = QL2T(kw.pop("Q"), wavelength)
         if "Qlo" in kw:
@@ -401,7 +401,7 @@ sample broadening = %(sample_broadening)g degrees\
            sample_broadening=self.sample_broadening,
            Tlo=self.Tlo, Thi=self.Thi,
            slits_at_Tlo=str(self.slits_at_Tlo), radiation=self.radiation,
-           )
+          )
         return msg
 
     @classmethod
@@ -413,8 +413,8 @@ sample broadening = %(sample_broadening)g degrees\
 == Instrument class %(name)s ==
 radiation = %(radiation)s at %(L)s Angstrom with %(dL)s resolution
 slit distances = %(d_s1)s mm and %(d_s2)s mm"""
-        L,d_s1,d_s2 = ["%g"%v if v is not None else 'unknown'
-                       for v in (cls.wavelength, cls.d_s1, cls.d_s2)]
+        L, d_s1, d_s2 = ["%g"%v if v is not None else 'unknown'
+                         for v in (cls.wavelength, cls.d_s1, cls.d_s2)]
         dL = "%g%%"%(cls.dLoL*100) if cls.dLoL else 'unknown'
         return msg % dict(name=cls.instrument, radiation=cls.radiation,
                           L=L, dL=dL, d_s1=d_s1, d_s2=d_s2)
@@ -435,22 +435,22 @@ class Pulsed(object):
         *d_s1*, *d_s2* : float | mm
             distance from sample to pre-sample slits 1 and 2; post-sample
             slits are ignored
-        *wavelength* : (float,float) | |Ang|
+        *wavelength* : (float, float) | |Ang|
             wavelength range for the measurement
         *dLoL* : float
             constant relative wavelength dispersion; wavelength range and
             dispersion together determine the bins
-        *slits* : float OR (float,float) | mm
+        *slits* : float OR (float, float) | mm
             fixed slits
-        *slits_at_Tlo* : float OR (float,float) | mm
+        *slits_at_Tlo* : float OR (float, float) | mm
             slit 1 and slit 2 openings at Tlo; this can be a scalar if both
-            slits are open by the same amount, otherwise it is a pair (s1,s2).
+            slits are open by the same amount, otherwise it is a pair (s1, s2).
         *Tlo*, *Thi* : float | |deg|
             range of opening slits, or inf if slits are fixed.
-        *slits_below*, *slits_above* : float OR (float,float) | mm
+        *slits_below*, *slits_above* : float OR (float, float) | mm
             slit 1 and slit 2 openings below Tlo and above Thi; again, these
             can be scalar if slit 1 and slit 2 are the same, otherwise they
-            are each a pair (s1,s2).  Below and above default to the values of
+            are each a pair (s1, s2).  Below and above default to the values of
             the slits at Tlo and Thi respectively.
         *sample_width* : float | mm
             width of sample; at low angle with tiny samples, stray neutrons
@@ -474,8 +474,8 @@ class Pulsed(object):
     dLoL = None # usually 0.02 for 2% FWHM
     # Optional attributes
     TOF_range = (0, numpy.inf)
-    Tlo= 90  # Use 90 for fixed slits; this is effectively inf
-    Thi= 90
+    Tlo = 90  # Use 90 for fixed slits; this is effectively inf
+    Thi = 90
     fixed_slits = None
     slits_at_Tlo = None    # Slit openings at Tlo, and default for slits_below
     slits_below = None     # Slit openings below Tlo, or fixed slits if Tlo=90
@@ -485,7 +485,7 @@ class Pulsed(object):
 
 
     def __init__(self, **kw):
-        for k,v in kw.items():
+        for k, v in kw.items():
             if not hasattr(self, k):
                 raise TypeError("unexpected keyword argument '%s'"%k)
             setattr(self, k, v)
@@ -502,13 +502,13 @@ class Pulsed(object):
         the angular divergence and *dLoL* defines the wavelength
         resolution.
         """
-        low,high = kw.get('wavelength',self.wavelength)
-        dLoL = kw.get('dLoL',self.dLoL)
-        T = kw.pop('T',self.T)
-        L = bins(low,high,dLoL)
+        low, high = kw.get('wavelength', self.wavelength)
+        dLoL = kw.get('dLoL', self.dLoL)
+        T = kw.pop('T', self.T)
+        L = bins(low, high, dLoL)
         dL = binwidths(L)
-        T,dT,L,dL = self.resolution(L=L, dL=dL, T=T, **kw)
-        return make_probe(T=T,dT=dT,L=L,dL=dL,
+        T, dT, L, dL = self.resolution(L=L, dL=dL, T=T, **kw)
+        return make_probe(T=T, dT=dT, L=L, dL=dL,
                           radiation=self.radiation, **kw)
 
     def magnetic_probe(self, Aguide=270, shared_beam=True, **kw):
@@ -537,8 +537,8 @@ class Pulsed(object):
             *sample* : Stack
                 Reflectometry model
             *T* : [float] | |deg|
-                List of angles to be measured, such as [0.15,0.4,1,2].
-            *slits* : [float] or [(float,float)] | mm
+                List of angles to be measured, such as [0.15, 0.4, 1, 2].
+            *slits* : [float] or [(float, float)] | mm
                 Slit settings for each angle.
             *uncertainty* = 1 : float or [float] | %
                 Incident intensity is set so that the median dR/R is equal
@@ -579,7 +579,7 @@ class Pulsed(object):
 
         # Compute reflectivity with resolution and added noise
         probes = []
-        for Ti,Si in zip(T,slits):
+        for Ti, Si in zip(T, slits):
             probe = self.probe(T=Ti, slits=Si, dLoL=dLoL)
             probe.back_reflectivity = back_reflectivity
             probe.theta_offset.value = theta_offset
@@ -588,7 +588,7 @@ class Pulsed(object):
             _, Rth = M.reflectivity()
             # Note: probe.L is reversed because L is sorted by increasing
             # Q in probe.
-            I = rebin(binedges(self.feather[0]),self.feather[1],
+            I = rebin(binedges(self.feather[0]), self.feather[1],
                       binedges(probe.L[::-1]))[::-1]
             Ci = numpy.median(1./(uncertainty**2 * I * Rth))
             Igoal = Ci*I
@@ -596,8 +596,8 @@ class Pulsed(object):
 
             Irefl = pois(Igoal*Rth)+1.
             if background > 0:
-                Irefl += pois(Igoal*background)+1.
-                Iback  = pois(Igoal*background)+1.
+                Irefl += pois(Igoal*background) + 1.0
+                Iback = pois(Igoal*background) + 1.0
             else:
                 Iback = 0
             # Set intensity/background _after_ calculating the theory function
@@ -614,7 +614,7 @@ class Pulsed(object):
             #    dZ = sqrt( (Y+X)*X/Y**3) = sqrt((Y+X)*(X/Y))/Y
             R = (Irefl-Iback)/Ibeam
             dR = numpy.sqrt((Irefl + Iback + Ibeam)*(Irefl/Ibeam))/Ibeam
-            if numpy.isnan(dR).any() or (dR==0).any() or (R<=0).any():
+            if numpy.isnan(dR).any() or (dR == 0).any() or (R <= 0).any():
                 print("Ibeam %s"%Ibeam)
                 print("Irefl %s"%Irefl)
                 print("Iback %s"%Iback)
@@ -643,19 +643,19 @@ class Pulsed(object):
         """
         T = kw.pop('T', self.T)
         if 'slits' not in kw:
-            kw['slits'] = self.calc_slits(T=T,**kw)
-        dT = self.calc_dT(T,**kw)
+            kw['slits'] = self.calc_slits(T=T, **kw)
+        dT = self.calc_dT(T, **kw)
 
         # Compute the FWHM angular divergence in radians
         # Return the resolution
-        return T,dT,L,dL
+        return T, dT, L, dL
 
     def calc_slits(self, **kw):
         """
         Determines slit openings from measurement pattern.
 
         If slits are fixed simply return the same slits for every angle,
-        otherwise use an opening range [Tlo,Thi] and the value of the
+        otherwise use an opening range [Tlo, Thi] and the value of the
         slits at the start of the opening to define the slits.  Slits
         below Tlo and above Thi can be specified separately.
 
@@ -669,16 +669,16 @@ class Pulsed(object):
         if 'T' not in kw:
             raise TypeError("calc_slits requires angle T=...")
         T = kw['T']
-        Tlo = kw.get('Tlo',self.Tlo)
-        Thi = kw.get('Thi',self.Thi)
-        fixed_slits = kw.get('fixed_slits',self.fixed_slits)
+        Tlo = kw.get('Tlo', self.Tlo)
+        Thi = kw.get('Thi', self.Thi)
+        fixed_slits = kw.get('fixed_slits', self.fixed_slits)
         if fixed_slits is not None:
             slits_at_Tlo = slits_below = slits_above = fixed_slits
             Tlo = 90
         else:
-            slits_at_Tlo = kw.get('slits_at_Tlo',self.slits_at_Tlo)
-            slits_below = kw.get('slits_below',self.slits_below)
-            slits_above = kw.get('slits_above',self.slits_above)
+            slits_at_Tlo = kw.get('slits_at_Tlo', self.slits_at_Tlo)
+            slits_below = kw.get('slits_below', self.slits_below)
+            slits_above = kw.get('slits_above', self.slits_above)
 
         # Otherwise we are using opening slits
         if Tlo is None or slits_at_Tlo is None:
@@ -690,11 +690,11 @@ class Pulsed(object):
         return slits
 
     def calc_dT(self, T, slits, **kw):
-        d_s1 = kw.get('d_s1',self.d_s1)
-        d_s2 = kw.get('d_s2',self.d_s2)
-        sample_width = kw.get('sample_width',self.sample_width)
-        sample_broadening = kw.get('sample_broadening',self.sample_broadening)
-        dT = divergence(T=T, slits=slits, distance=(d_s1,d_s2),
+        d_s1 = kw.get('d_s1', self.d_s1)
+        d_s2 = kw.get('d_s2', self.d_s2)
+        sample_width = kw.get('sample_width', self.sample_width)
+        sample_broadening = kw.get('sample_broadening', self.sample_broadening)
+        dT = divergence(T=T, slits=slits, distance=(d_s1, d_s2),
                         sample_width=sample_width,
                         sample_broadening=sample_broadening)
 
@@ -711,11 +711,11 @@ sample broadening = %(sample_broadening)g degrees FWHM
 """ % dict(name=self.instrument,
            L_min=self.wavelength[0], L_max=self.wavelength[1],
            dLpercent=self.dLoL*100,
-           d_s1=self.d_s1, d_s2=self.d_s2, slits = str(self.slits),
+           d_s1=self.d_s1, d_s2=self.d_s2, slits=str(self.slits),
            sample_width=self.sample_width,
            sample_broadening=self.sample_broadening,
            radiation=self.radiation,
-           )
+          )
         return msg
 
     @classmethod
@@ -732,7 +732,7 @@ slit distances = %(d_s1)g mm and %(d_s2)g mm
            dLpercent=cls.dLoL*100,
            d_s1=cls.d_s1, d_s2=cls.d_s2,
            radiation=cls.radiation,
-           )
+          )
         return msg
 
 _ = '''
@@ -757,17 +757,17 @@ class GenericMonochromatic(Monochromatic):
         # Load the data
         data = numpy.loadtxt(filename).T
         if data.shape[0] == 2:
-            Q,R = data
+            Q, R = data
             dR = None
         elif data.shape[0] == 3:
-            Q,R,dR = data
+            Q, R, dR = data
         elif data.shape[0] == 4:
-            Q,dQ,R,dR = data
+            Q, dQ, R, dR = data
         elif data.shape[0] == 5:
-            Q,dQ,R,dR,L = data
+            Q, dQ, R, dR, L = data
         if "Q" not in kw: kw["Q"] = Q
-        T,dT,L,dL = self.resolution(**kw)
-        kw.update(dict(T=T,dT=dT,L=L,dL=dL,data=(R,dR),
+        T, dT, L, dL = self.resolution(**kw)
+        kw.update(dict(T=T, dT=dT, L=L, dL=dL, data=(R, dR),
                        radiation=self.radiation))
         return make_probe(**kw)
 
@@ -784,10 +784,10 @@ class GenericPulsed(Pulsed):
         """
         # Load the data
         data = numpy.loadtxt(filename).T
-        Q,dQ,R,dR,L = data
+        Q, dQ, R, dR, L = data
         dL = binwidths(L)
-        T = kw.pop('T',QL2T(Q,L))
-        T,dT,L,dL = self.resolution(L=L, dL=dL, T=T, **kw)
-        return make_probe(T=T,dT=dT,L=L,dL=dL,data=(R,dR),
+        T = kw.pop('T', QL2T(Q, L))
+        T, dT, L, dL = self.resolution(L=L, dL=dL, T=T, **kw)
+        return make_probe(T=T, dT=dT, L=L, dL=dL, data=(R, dR),
                           radiation=self.radiation, **kw)
 '''

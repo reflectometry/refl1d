@@ -15,15 +15,19 @@ class FunctionalProfile(Layer):
     Parameters:
 
         *thickness* the thickness of the layer
+
         *interface* the roughness of the surface [not implemented]
+
         *profile* the profile function, suitably parameterized
+
         *tol* is the tolerance for considering values equal
+
         *magnetism* magnetic profile associated with the layer
+
         *name* is the layer name
 
     The profile function takes a depth vector *z* returns a density vector
     *rho*. For absorbing profiles, return complex vector *rho + irho*1j*.
-
 
     Fitting parameters are the available named arguments to the function.
     The first argument is a depth vector, which is the array of depths at
@@ -48,14 +52,17 @@ class FunctionalProfile(Layer):
                                     rhoL=L1.rho, rhoR=L3.rho)
         sample = L1 | profile | L3
     """
-    RESERVED = ('thickness','interface','profile','tol','magnetism','name')
+    RESERVED = ('thickness', 'interface', 'profile', 'tol', 'magnetism', 'name')
 
     # TODO: test that thickness(z) matches the thickness of the layer
     def __init__(self, thickness=0, interface=0, profile=None, tol=1e-3,
                  magnetism=None, name=None, **kw):
-        if not name: name = profile.__name__
-        if interface != 0: raise NotImplementedError("interface not yet supported")
-        if profile is None: raise TypeError("Need profile")
+        if not name:
+            name = profile.__name__
+        if interface != 0:
+            raise NotImplementedError("interface not yet supported")
+        if profile is None:
+            raise TypeError("Need profile")
         self.name = name
         self.thickness = Parameter.default(thickness, name=name+" thickness")
         self.interface = Parameter.default(interface, name=name+" interface")
@@ -66,36 +73,37 @@ class FunctionalProfile(Layer):
         # TODO: maybe make these lazy (and for magnetism below as well)
         rho_start = _LayerLimit(self, isend=False, isrho=True)
         irho_start = _LayerLimit(self, isend=False, isrho=False)
-        rho_end= _LayerLimit(self, isend=True, isrho=True)
-        irho_end= _LayerLimit(self, isend=True, isrho=False)
+        rho_end = _LayerLimit(self, isend=True, isrho=True)
+        irho_end = _LayerLimit(self, isend=True, isrho=False)
         self.start = SLD(name+" start", rho=rho_start, irho=irho_start)
         self.end = SLD(name+" end", rho=rho_end, irho=irho_end)
 
         self._parameters = _set_vars(self, name, profile, kw, self.RESERVED)
 
     def parameters(self):
-        P = dict( (k,getattr(self,k)) for k in self._parameters)
+        P = dict((k, getattr(self, k)) for k in self._parameters)
         P['thickness'] = self.thickness
         #P['interface'] = self.interface
         return P
 
     def render(self, probe, slabs):
-        Pw,Pz = slabs.microslabs(self.thickness.value)
-        if len(Pw)== 0: return
+        Pw, Pz = slabs.microslabs(self.thickness.value)
+        if len(Pw) == 0:
+            return
         #print kw
         # TODO: always return rho, irho from profile function
         # return value may be a constant for rho or irho
-        phi = asarray(self.profile(Pz,**self._fpars()))
+        phi = asarray(self.profile(Pz, **self._fpars()))
         if phi.shape != Pz.shape:
             raise TypeError("profile function '%s' did not return array phi(z)"
                             %self.profile.__name__)
-        Pw,phi = util.merge_ends(Pw, phi, tol=self.tol)
+        Pw, phi = util.merge_ends(Pw, phi, tol=self.tol)
         #P = M*phi + S*(1-phi)
-        slabs.extend(rho = [real(phi)], irho = [imag(phi)], w = Pw)
+        slabs.extend(rho=[real(phi)], irho=[imag(phi)], w=Pw)
         #slabs.interface(self.interface.value)
 
     def _fpars(self):
-        kw = dict((k,getattr(self,k).value) for k in self._parameters)
+        kw = dict((k, getattr(self, k).value) for k in self._parameters)
         return  kw
 
 
@@ -106,24 +114,28 @@ class FunctionalMagnetism(BaseMagnetism):
     Parameters:
 
         *profile* the profile function, suitably parameterized
+
         *tol* is the tolerance for considering values equal
+
         :class:`refl1d.magnetism.BaseMagnetism` parameters
 
     The profile function takes a depth vector *z* and returns a magnetism
-    vector *rhoM*. For magnetic twist, return a pair of vectors (rhoM, thetaM).
-    Constants can be returned using numpy.ones_like(z)*value.
+    vector *rhoM*. For magnetic twist, return a pair of vectors *(rhoM, thetaM)*.
+    Constants can be returned for *rhoM* or *thetaM*.
 
     See :class:`FunctionalProfile` for a description of the the profile
     function.
     """
-    RESERVED = ('profile','tol','name','extent', 'dead_below', 'dead_above',
+    RESERVED = ('profile', 'tol', 'name', 'extent', 'dead_below', 'dead_above',
                 'interface_below', 'interface_above')
     magnetic = True
     def __init__(self, profile=None, tol=1e-3, name=None, **kw):
-        if not name: name = profile.__name__
-        if profile is None: raise TypeError("Need profile")
+        if not name:
+            name = profile.__name__
+        if profile is None:
+            raise TypeError("Need profile")
         # strip magnetism keywords from list of keywords
-        magkw = dict((a,kw.pop(a)) for a in set(self.RESERVED)&set(kw.keys()))
+        magkw = dict((a, kw.pop(a)) for a in set(self.RESERVED)&set(kw.keys()))
         BaseMagnetism.__init__(self, name=name, **magkw)
         self.profile = profile
         self.tol = tol
@@ -146,7 +158,7 @@ class FunctionalMagnetism(BaseMagnetism):
             stack, index = self.anchor
         except:
             raise ValueError("\
-Need layer.magnetism.set_anchor(stack,layer) to compute magnetic thickness.")
+Need layer.magnetism.set_anchor(stack, layer) to compute magnetic thickness.")
 
         stack, start = stack._lookup(index)
         total = 0
@@ -157,31 +169,33 @@ Need layer.magnetism.set_anchor(stack,layer) to compute magnetic thickness.")
 
     def parameters(self):
         parameters = BaseMagnetism.parameters(self)
-        parameters.update( (k,getattr(self,k)) for k in self._parameters )
+        parameters.update((k, getattr(self, k)) for k in self._parameters)
         return parameters
 
     def render(self, probe, slabs, thickness, anchor, sigma):
-        Pw,Pz = slabs.microslabs(thickness)
-        if len(Pw)== 0: return
-        kw = dict((k,getattr(self,k).value) for k in self._parameters)
-        P = self.profile(Pz,**kw)
+        Pw, Pz = slabs.microslabs(thickness)
+        if len(Pw) == 0: return
+        kw = dict((k, getattr(self, k).value) for k in self._parameters)
+        P = self.profile(Pz, **kw)
         # TODO: always return rhoM, thetaM from profile function
         # rhoM or thetaM may be constant
-        try: rhoM, thetaM = P
-        except: rhoM, thetaM = P, Pz*0
-        rhoM, thetaM = [asarray(v) for v in (rhoM,thetaM)]
+        try:
+            rhoM, thetaM = P
+        except Exception:
+            rhoM, thetaM = P, Pz*0
+        rhoM, thetaM = [asarray(v) for v in (rhoM, thetaM)]
         if rhoM.shape != Pz.shape or thetaM.shape != Pz.shape:
             raise TypeError("profile function '%s' did not return array rhoM(z)"
                             %self.profile.__name__)
         P = rhoM + thetaM*0.001j  # combine rhoM/thetaM so they can be merged
-        Pw,P = util.merge_ends(Pw, P, tol=self.tol)
-        rhoM,thetaM = P.real,P.imag*1000  # split out rhoM,thetaM again
+        Pw, P = util.merge_ends(Pw, P, tol=self.tol)
+        rhoM, thetaM = P.real, P.imag*1000  # split out rhoM,thetaM again
         slabs.add_magnetism(anchor=anchor,
-                            w=Pw,rhoM=rhoM,thetaM=thetaM,
+                            w=Pw, rhoM=rhoM, thetaM=thetaM,
                             sigma=sigma)
 
     def _fpars(self):
-        kw = dict((k,getattr(self,k).value) for k in self._parameters)
+        kw = dict((k, getattr(self, k).value) for k in self._parameters)
         return  kw
 
     def __repr__(self):
@@ -191,8 +205,9 @@ Need layer.magnetism.set_anchor(stack,layer) to compute magnetic thickness.")
 def _set_vars(self, name, profile, kw, reserved):
     # Query profile function for the list of arguments
     vars = inspect.getargspec(profile)[0]
-    #print "vars",vars
-    if inspect.ismethod(profile): vars = vars[1:]  # Chop self
+    #print "vars", vars
+    if inspect.ismethod(profile):
+        vars = vars[1:]  # Chop self
     vars = vars[1:]  # Chop z
     #print vars
     unused = [k for k in kw.keys() if k not in vars]
@@ -201,9 +216,10 @@ def _set_vars(self, name, profile, kw, reserved):
     dups = [k for k in vars if k in reserved]
     if len(dups) > 0:
         raise TypeError("Profile has conflicting argument %r"%dups[0])
-    for k in vars: kw.setdefault(k,0)
-    for k,v in kw.items():
-        setattr(self,k,Parameter.default(v,name=name+" "+k))
+    for k in vars:
+        kw.setdefault(k, 0)
+    for k, v in kw.items():
+        setattr(self, k, Parameter.default(v, name=name+" "+k))
 
     return vars
 
@@ -250,8 +266,10 @@ class _MagnetismLimit(BaseParameter):
         # rhoM, [0., 0.]
         z = asarray([0., 0.5*zmax, zmax])
         P = self.flayer.profile(z, **self.flayer._fpars())
-        try: rhoM, thetaM = P   # Returns rhoM and thetaM
-        except: rhoM, thetaM = P, [0., 0., 0.]  # Returns rhoM only
+        try:
+            rhoM, thetaM = P   # Returns rhoM and thetaM
+        except Exception:
+            rhoM, thetaM = P, [0., 0., 0.]  # Returns rhoM only
         index = 2 if self.isend else 0
         return rhoM[index] if self.isrhoM else thetaM[index]
 

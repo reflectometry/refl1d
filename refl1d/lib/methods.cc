@@ -1,10 +1,13 @@
 /* This program is public domain. */
 
-#include <Python.h>
-#include "reflcalc.h"
 #include <math.h>
 #include <stdio.h>
 #include <iostream>
+
+//#define Py_LIMITED_API 0x03020000
+#include <Python.h>
+
+#include "reflcalc.h"
 #include "methods.h"
 
 
@@ -14,6 +17,46 @@ typedef int Py_ssize_t;
 
 
 #undef BROKEN_EXCEPTIONS
+
+
+PyObject* Pcalculate_u1_u3(PyObject*obj,PyObject*args)
+{
+  PyObject *rhom_obj, *thetam_obj, *sldb_obj, *u1_obj, *u3_obj;
+  Py_ssize_t nrhom, nthetam, nsldb, nu1, nu3;
+  const double *rhom, *thetam;
+  double *sldb;
+  Cplx *u1, *u3;
+  double H, Aguide;
+  DECLARE_VECTORS(5);
+
+  if (!PyArg_ParseTuple(args, "dOOdOOO:calculate_u1_u3",
+      &H, &rhom_obj, &thetam_obj, &Aguide, &sldb_obj, &u1_obj, &u3_obj))
+    return NULL;
+  INVECTOR(rhom_obj,rhom,nrhom);
+  INVECTOR(thetam_obj,thetam,nthetam);
+  OUTVECTOR(sldb_obj,sldb,nsldb);
+  OUTVECTOR(u1_obj,u1,nu1);
+  OUTVECTOR(u3_obj,u3,nu3);
+  if (nrhom != nthetam || nrhom != nsldb || nrhom != nu1 || nrhom != nu3) {
+    //printf("%ld %ld %ld %ld %ld %ld\n",
+    //    long(nd), long(nsigma), long(nrho), long(nirho), long(nrhom), long(nu1));
+#ifndef BROKEN_EXCEPTIONS
+    PyErr_SetString(PyExc_ValueError, "rhom,thetam,sldb,u1,u3 have different lengths");
+#endif
+    FREE_VECTORS();
+    return NULL;
+  }
+
+  for (Py_ssize_t i=0; i<nrhom; i++) {
+    sldb[i] = rhom[i];
+    calculate_U1_U3(H, sldb[i], thetam[i], Aguide, u1[i], u3[i]);
+    //sldb[i] = fabs(sldb[i]);
+  }
+
+  FREE_VECTORS();
+  return Py_BuildValue("");
+}
+
 
 
 PyObject* Pmagnetic_amplitude(PyObject*obj,PyObject*args)
@@ -27,8 +70,9 @@ PyObject* Pmagnetic_amplitude(PyObject*obj,PyObject*args)
   const int *rho_index;
   double Aguide;
   Cplx *r1, *r2, *r3, *r4;
+  DECLARE_VECTORS(13);
 
-  if (!PyArg_ParseTuple(args, "OOOOOOOdOOOOOO:magnetic_reflectivity",
+  if (!PyArg_ParseTuple(args, "OOOOOOOdOOOOOO:magnetic_amplitude",
       &d_obj, &sigma_obj,
       &rho_obj, &irho_obj, &rhom_obj,&u1_obj, &u3_obj,
       &Aguide,&kz_obj,&rho_index_obj,
@@ -53,6 +97,7 @@ PyObject* Pmagnetic_amplitude(PyObject*obj,PyObject*args)
 #ifndef BROKEN_EXCEPTIONS
     PyErr_SetString(PyExc_ValueError, "d,sigma,rho,irho,rhom,u1,u3 have different lengths");
 #endif
+    FREE_VECTORS();
     return NULL;
   }
   if (nkz != nr1 || nkz != nr2 || nkz != nr3 || nkz != nr4 || nkz != nrho_index) {
@@ -61,10 +106,12 @@ PyObject* Pmagnetic_amplitude(PyObject*obj,PyObject*args)
 #ifndef BROKEN_EXCEPTIONS
     PyErr_SetString(PyExc_ValueError, "kz,r1,r2,r3,r4,rho_index have different lengths");
 #endif
+    FREE_VECTORS();
     return NULL;
   }
   magnetic_amplitude((int)nd, d, sigma, rho, irho, rhom, u1, u3,
                      Aguide, (int)nkz, kz, rho_index, r1, r2, r3, r4);
+  FREE_VECTORS();
   return Py_BuildValue("");
 }
 
@@ -77,6 +124,7 @@ PyObject* Preflectivity_amplitude(PyObject*obj,PyObject*args)
   const int *rho_index;
   int nprofiles;
   Cplx *r;
+  DECLARE_VECTORS(7);
 
   if (!PyArg_ParseTuple(args, "OOOOOOO:reflectivity",
       &d_obj,&sigma_obj,&rho_obj,&irho_obj,
@@ -100,12 +148,14 @@ PyObject* Preflectivity_amplitude(PyObject*obj,PyObject*args)
 #ifndef BROKEN_EXCEPTIONS
     PyErr_SetString(PyExc_ValueError, "d,rho,irho,sigma have different lengths");
 #endif
+    FREE_VECTORS();
     return NULL;
   }
   if (nrho < nd*nprofiles || nirho < nd*nprofiles) {
 #ifndef BROKEN_EXCEPTIONS
     PyErr_SetString(PyExc_ValueError, "rho_index too high");
 #endif
+    FREE_VECTORS();
     return NULL;
   }
   if (nkz != nr || nrho_index != nkz) {
@@ -114,13 +164,71 @@ PyObject* Preflectivity_amplitude(PyObject*obj,PyObject*args)
 #ifndef BROKEN_EXCEPTIONS
     PyErr_SetString(PyExc_ValueError, "kz,rho_index,r have different lengths");
 #endif
+    FREE_VECTORS();
     return NULL;
   }
   reflectivity_amplitude((int)nd, d, sigma, rho, irho, (int)nkz, kz, rho_index, r);
+  FREE_VECTORS();
   return Py_BuildValue("");
 }
 
+PyObject* Palign_magnetic(PyObject *obj, PyObject *args)
+{
+  PyObject *d_obj,*rho_obj,*irho_obj,*sigma_obj;
+  PyObject *dM_obj,*rhoM_obj,*thetaM_obj,*sigmaM_obj;
+  PyObject *output_obj;
+  Py_ssize_t nd, nrho, nirho, nsigma;
+  Py_ssize_t ndM, nrhoM, nthetaM, nsigmaM;
+  Py_ssize_t noutput;
+  double *d, *sigma, *rho, *irho;
+  double *dM, *sigmaM, *rhoM, *thetaM;
+  double *output;
+  DECLARE_VECTORS(9);
 
+  if (!PyArg_ParseTuple(args, "OOOOOOOOO:align_magnetic",
+      &d_obj,&sigma_obj,&rho_obj,&irho_obj,
+      &dM_obj,&sigmaM_obj,&rhoM_obj,&thetaM_obj,
+      &output_obj))
+    return NULL;
+  INVECTOR(d_obj,d,nd);
+  INVECTOR(sigma_obj,sigma,nsigma);
+  INVECTOR(rho_obj,rho,nrho);
+  INVECTOR(irho_obj,irho,nirho);
+  INVECTOR(dM_obj,dM,ndM);
+  INVECTOR(sigmaM_obj,sigmaM,nsigmaM);
+  INVECTOR(rhoM_obj,rhoM,nrhoM);
+  INVECTOR(thetaM_obj,thetaM,nthetaM);
+  OUTVECTOR(output_obj,output,noutput);
+
+  // interfaces should be one shorter than layers
+  if (nd != nrho || nd != nirho || nd-1 != nsigma) {
+#ifndef BROKEN_EXCEPTIONS
+    PyErr_SetString(PyExc_ValueError, "d,sigma,rho,irho have different lengths");
+#endif
+    FREE_VECTORS();
+    return NULL;
+  }
+  if (ndM != nrhoM || ndM != nthetaM || ndM-1 != nsigmaM) {
+#ifndef BROKEN_EXCEPTIONS
+    PyErr_SetString(PyExc_ValueError, "dM,sigmaM,rhoM,thetaM have different lengths");
+#endif
+    FREE_VECTORS();
+    return NULL;
+  }
+
+  int newlen = align_magnetic((int)nd, d, sigma, rho, irho,
+                              (int)ndM, dM, sigmaM, rhoM, thetaM,
+                              ((int)noutput)/6, output);
+  if (newlen < 0) {
+#ifndef BROKEN_EXCEPTIONS
+    PyErr_SetString(PyExc_ValueError, "output too short --- can be as large as 6x(#nuc+#mag)");
+#endif
+    FREE_VECTORS();
+    return NULL;
+  }
+  FREE_VECTORS();
+  return Py_BuildValue("i",newlen);
+}
 
 PyObject* Pcontract_by_area(PyObject*obj,PyObject*args)
 {
@@ -128,6 +236,7 @@ PyObject* Pcontract_by_area(PyObject*obj,PyObject*args)
   Py_ssize_t nd, nrho, nirho, nsigma;
   double *d, *sigma, *rho, *irho;
   double dA;
+  DECLARE_VECTORS(4);
 
   if (!PyArg_ParseTuple(args, "OOOOd:reflectivity",
       &d_obj,&sigma_obj,&rho_obj,&irho_obj,&dA))
@@ -141,35 +250,41 @@ PyObject* Pcontract_by_area(PyObject*obj,PyObject*args)
 #ifndef BROKEN_EXCEPTIONS
     PyErr_SetString(PyExc_ValueError, "d,rho,mu,sigma have different lengths");
 #endif
+    FREE_VECTORS();
     return NULL;
   }
   int newlen = contract_by_area((int)nd, d, sigma, rho, irho, dA);
+  FREE_VECTORS();
   return Py_BuildValue("i",newlen);
 }
 
 PyObject* Pcontract_mag(PyObject*obj,PyObject*args)
 {
-  PyObject *d_obj,*rho_obj,*irho_obj,*rhoM_obj,*thetaM_obj;
-  Py_ssize_t nd, nrho, nirho, nrhoM, nthetaM;
-  double *d, *rho, *irho, *rhoM, *thetaM;
+  PyObject *d_obj,*rho_obj,*irho_obj,*rhoM_obj,*thetaM_obj,*sigma_obj;
+  Py_ssize_t nd, nrho, nirho, nrhoM, nthetaM, nsigma;
+  double *d, *sigma, *rho, *irho, *rhoM, *thetaM;
   double dA;
+  DECLARE_VECTORS(6);
 
-  if (!PyArg_ParseTuple(args, "OOOOOd:contract_mag",
-      &d_obj,&rho_obj,&irho_obj,&rhoM_obj,&thetaM_obj,&dA))
+  if (!PyArg_ParseTuple(args, "OOOOOOd:contract_mag",
+      &d_obj,&sigma_obj,&rho_obj,&irho_obj,&rhoM_obj,&thetaM_obj,&dA))
     return NULL;
   INVECTOR(d_obj,d,nd);
+  INVECTOR(sigma_obj,sigma,nsigma);
   INVECTOR(rho_obj,rho,nrho);
   INVECTOR(irho_obj,irho,nirho);
   INVECTOR(rhoM_obj,rhoM,nrhoM);
   INVECTOR(thetaM_obj,thetaM,nthetaM);
   // interfaces should be one shorter than layers
-  if (nd != nrho || nd != nirho || nd != nrhoM || nd != nthetaM) {
+  if (nd != nrho || nd != nirho || nd != nrhoM || nd != nthetaM || nd != nsigma+1) {
 #ifndef BROKEN_EXCEPTIONS
-    PyErr_SetString(PyExc_ValueError, "d,rho,irho,rhoM,thetaM have different lengths");
+    PyErr_SetString(PyExc_ValueError, "d,rho,irho,rhoM,thetaM,sigma have different lengths");
 #endif
+    FREE_VECTORS();
     return NULL;
   }
-  int newlen = contract_mag((int)nd, d, rho, irho, rhoM, thetaM, dA);
+  int newlen = contract_mag((int)nd, d, sigma, rho, irho, rhoM, thetaM, dA);
+  FREE_VECTORS();
   return Py_BuildValue("i",newlen);
 }
 
@@ -180,6 +295,7 @@ PyObject* Pcontract_by_step(PyObject*obj,PyObject*args)
   Py_ssize_t nd, nrho, nirho, nsigma;
   double *d, *sigma, *rho, *irho;
   double dv;
+  DECLARE_VECTORS(4);
 
   if (!PyArg_ParseTuple(args, "OOOOOd:reflectivity",
       &d_obj,&sigma_obj,&rho_obj,&irho_obj,&dv))
@@ -193,9 +309,11 @@ PyObject* Pcontract_by_step(PyObject*obj,PyObject*args)
 #ifndef BROKEN_EXCEPTIONS
     PyErr_SetString(PyExc_ValueError, "d,rho,mu,sigma have different lengths");
 #endif
+    FREE_VECTORS();
     return NULL;
   }
   int newlen = contract_by_step((int)nd, d, sigma, rho, irho, dv);
+  FREE_VECTORS();
   return Py_BuildValue("i",newlen);
 }
 
@@ -206,6 +324,7 @@ PyObject* Pconvolve(PyObject *obj, PyObject *args)
   const double *xi, *yi, *x, *dx;
   double *y;
   Py_ssize_t nxi, nyi, nx, ndx, ny;
+  DECLARE_VECTORS(5);
 
   if (!PyArg_ParseTuple(args, "OOOOO:convolve",
 			&xi_obj,&yi_obj,&x_obj,&dx_obj,&y_obj)) return NULL;
@@ -218,15 +337,18 @@ PyObject* Pconvolve(PyObject *obj, PyObject *args)
 #ifndef BROKEN_EXCEPTIONS
     PyErr_SetString(PyExc_ValueError, "convolve: xi and yi have different lengths");
 #endif
+    FREE_VECTORS();
     return NULL;
   }
   if (nx != ndx || nx != ny) {
 #ifndef BROKEN_EXCEPTIONS
     PyErr_SetString(PyExc_ValueError, "convolve: x, dx and y have different lengths");
 #endif
+    FREE_VECTORS();
     return NULL;
   }
   convolve(nxi,xi,yi,nx,x,dx,y);
+  FREE_VECTORS();
   return Py_BuildValue("");
 }
 
@@ -236,6 +358,7 @@ PyObject* Pconvolve_sampled(PyObject *obj, PyObject *args)
   const double *xi, *yi, *xp, *yp, *x, *dx;
   double *y;
   Py_ssize_t nxi, nyi, nxp, nyp, nx, ndx, ny;
+  DECLARE_VECTORS(7);
 
   if (!PyArg_ParseTuple(args, "OOOOOOO:convolve_sampled",
 	   &xi_obj,&yi_obj,&xp_obj,&yp_obj,&x_obj,&dx_obj,&y_obj)) return NULL;
@@ -250,22 +373,25 @@ PyObject* Pconvolve_sampled(PyObject *obj, PyObject *args)
 #ifndef BROKEN_EXCEPTIONS
     PyErr_SetString(PyExc_ValueError, "convolve_sampled: xi and yi have different lengths");
 #endif
+    FREE_VECTORS();
     return NULL;
   }
   if (nxp != nyp) {
 #ifndef BROKEN_EXCEPTIONS
     PyErr_SetString(PyExc_ValueError, "convolve_sampled: xp and yp have different lengths");
 #endif
+    FREE_VECTORS();
     return NULL;
   }
   if (nx != ndx || nx != ny) {
 #ifndef BROKEN_EXCEPTIONS
     PyErr_SetString(PyExc_ValueError, "convolve_sampled: x, dx and y have different lengths");
 #endif
+    FREE_VECTORS();
     return NULL;
   }
   convolve_sampled(nxi,xi,yi,nxp,xp,yp,nx,x,dx,y);
+  FREE_VECTORS();
   return Py_BuildValue("");
 }
-
 

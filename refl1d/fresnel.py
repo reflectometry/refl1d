@@ -6,7 +6,7 @@ Pure python Fresnel reflectivity calculator.
 
 from numpy import sqrt, exp, real, conj, pi, abs, choose
 
-class Fresnel:
+class Fresnel(object):
     """
     Function for computing the Fresnel reflectivity for a single interface.
 
@@ -26,8 +26,8 @@ class Fresnel:
     incident medium since we do not know the path length.
     """
     def __init__(self, rho=0, irho=0, sigma=0, Vrho=0, Virho=0):
-        self.rho,self.Vrho,self.irho,self.Virho,self.sigma \
-            = rho,Vrho,irho,Virho,sigma
+        self.rho, self.Vrho, self.irho, self.Virho, self.sigma \
+            = rho, Vrho, irho, Virho, sigma
 
     def reflectivity(self, Q):
         """
@@ -41,9 +41,9 @@ class Fresnel:
         # substrate, and therefore be corrected during reduction.
         delta_rho_Qp = 1e-6*((self.rho-self.Vrho) + 1j*self.irho)
         delta_rho_Qm = 1e-6*((self.Vrho-self.rho) + 1j*self.Virho)
-        #print "fresnel",rho_Qp.shape,rho_Qm.shape,Q.shape
+        #print "fresnel", rho_Qp.shape, rho_Qm.shape, Q.shape
 
-        delta_rho = choose(Q<0, (delta_rho_Qp, delta_rho_Qm))
+        delta_rho = choose(Q < 0, (delta_rho_Qp, delta_rho_Qm))
         kz = abs(Q)/2
         f = sqrt(kz**2 - 4*pi*delta_rho)  # fresnel coefficient
 
@@ -68,24 +68,25 @@ def test():
     from . import abeles
 
     # Rough silicon with an anomolously large absorbtion
-    rho,irho = 2.07,1.01
-    Vrho,Virho = -1,1.1
+    rho, irho = 2.07, 1.01
+    Vrho, Virho = -1, 1.1
     sigma = 20
     fresnel = Fresnel(rho=rho, irho=irho, Vrho=Vrho, Virho=Virho, sigma=sigma)
 
-    Mw = [0,0]
-    Mrho = [[Vrho,rho]]
-    Mirho = [[Virho,irho]]
+    Mw = [0, 0]
+    Mrho = [[Vrho, rho]]
+    Mirho = [[Virho, irho]]
     Msigma = [sigma]
 
-    Q = numpy.linspace(-0.1,0.1,101,'d')
+    Q = numpy.linspace(-0.1, 0.1, 101, 'd')
     Rf = fresnel(Q)
     rm = abeles.refl(Q/2, depth=Mw, rho=Mrho, irho=Mirho, sigma=Msigma)
     Rm = abs(rm)**2
 
-    #print "Rm",Rm
-    #print "Rf",Rf
+    #print "Rm", Rm
+    #print "Rf", Rf
     relerr = numpy.linalg.norm((Rf-Rm)/Rm)
     assert relerr < 1e-14, "relative error is %g"%relerr
 
-if __name__ == "__main__": test()
+if __name__ == "__main__":
+    test()

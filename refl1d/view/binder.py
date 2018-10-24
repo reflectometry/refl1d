@@ -7,12 +7,12 @@ import sys
 from matplotlib import transforms
 
 # CRUFT: matplotlib doesn't yet support canvas.draw_now()
-from matplotlib.backends.backend_wx import FigureCanvasWx
+from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg
 def wxdrawnow(self):
     #print "draw if needed"
     if not self._isDrawn:
         self.draw()
-FigureCanvasWx.draw_now = wxdrawnow
+FigureCanvasWxAgg.draw_now = wxdrawnow
 
 if hasattr(transforms,'Transform'):
     # 0.98 transforms
@@ -280,7 +280,7 @@ class BindArtist:
         #self.canvas.draw()
         #draw_now(self.canvas)
         # TODO: sort by zorder of axes then by zorder within axes
-        self._artists.sort(cmp=lambda x,y: cmp(y.zorder,x.zorder))
+        self._artists.sort(key=lambda x: x.zorder, reverse=True)
         # print "search"," ".join([str(h) for h in self._artists])
 
         found = Selection()

@@ -2,7 +2,7 @@ r"""
 Freeform modeling with Chebyshev polynomials
 
 `Chebyshev polynomials <http://en.wikipedia.org/wiki/Chebyshev_polynomials>`_
-$T_k$ form a basis set for functions over $[-1,1]$.  The truncated
+$T_k$ form a basis set for functions over $[-1, 1]$.  The truncated
 interpolating polynomial $P_n$ is a weighted sum of Chebyshev polynomials
 up to degree $n$:
 
@@ -28,8 +28,8 @@ control using 'interp', but the function may oscillate wildly outside
 the bounds.  Bounds on the oscillation are easier to control using
 'direct', but the shape of the profile is difficult to control.
 """
-#TODO: clipping volume fraction to [0,1] distorts parameter space
-# Option 0: clip to [0,1]
+#TODO: clipping volume fraction to [0, 1] distorts parameter space
+# Option 0: clip to [0, 1]
 # - Bayesian analysis: parameter values outside the domain will be equally
 #   probable out to infinity
 # - Newton methods: the fit space is flat outside the domain, which leads
@@ -37,7 +37,7 @@ the bounds.  Bounds on the oscillation are easier to control using
 # - Direct methods: won't fail, but will be subject to random walk
 #   performance outside the domain.
 # - trivial to implement!
-# Option 1: compress (-inf,0.001] and [0.999,inf) into (0,0.001], [0.999,1)
+# Option 1: compress (-inf, 0.001] and [0.999, inf) into (0, 0.001], [0.999, 1)
 # - won't address any of the problems of clipping
 # Option 2: have chisq return inf for points outside the domain
 # - Bayesian analysis: correctly assigns probability zero
@@ -58,7 +58,7 @@ the bounds.  Bounds on the oscillation are easier to control using
 #   coefficients), and the addition of the penalty value would reduce
 #   parameter correlations that result from having transformed parameters
 #   resulting in identical profiles.  Returning T = ||A(x)|| from render,
-#   with A being a transform that brings the profile within [0,1], the
+#   with A being a transform that brings the profile within [0, 1], the
 #   objective function can return P'(x) = P(x)/(10*(1+sum(T_i)^4) for all
 #   slabs i, or P(x) if no slabs return a penalty value.  So long as T is
 #   monotonic with increasing badness, with value of 0 within D, and so long
@@ -80,12 +80,13 @@ import numpy
 from numpy import inf, real, imag
 from bumps.parameter import  Parameter as Par
 from bumps.cheby import cheby_val, cheby_coeff
-from bumps.cheby import cheby_approx, cheby_points # for export @UnusedImport
+from bumps.cheby import cheby_approx, cheby_points #pylint: disable=unused-import
+
 from .model import Layer
 from . import util
 
-#TODO: add left_sld,right_sld to all layers so that fresnel works
-#TODO: access left_sld,right_sld so freeform doesn't need left,right
+#TODO: add left_sld, right_sld to all layers so that fresnel works
+#TODO: access left_sld, right_sld so freeform doesn't need left, right
 #TODO: restructure to use vector parameters
 #TODO: allow the number of layers to be adjusted by the fit
 class FreeformCheby(Layer):
@@ -95,35 +96,38 @@ class FreeformCheby(Layer):
     sld (rho) and imaginary sld (irho) can be modeled with a separate
     polynomial orders.
     """
-    def __init__(self, thickness=0, interface=0, rho=[], irho=[],
+    def __init__(self, thickness=0, interface=0, rho=(), irho=(),
                  name="Cheby", method="interp"):
         if interface != 0:
             raise NotImplementedError("interface not yet supported")
         self.name = name
         self.method = method
-        self.thickness = Par.default(thickness, limits=(0,inf),
-                                   name=name+" thickness")
+        self.thickness = Par.default(thickness, limits=(0, inf),
+                                     name=name+" thickness")
         self.rho, self.irho \
-            = [[Par.default(p, name=name+"[%d] %s"%(i,part), limits=limits)
-                for i,p in enumerate(v)]
-               for v,part,limits in zip((rho, irho),
-                                        ('rho', 'irho'),
-                                        ((-inf,inf), (-inf,inf)),
-                                        )]
+            = [[Par.default(p, name=name+"[%d] %s"%(i, part), limits=limits)
+                for i, p in enumerate(v)]
+               for v, part, limits
+               in zip((rho, irho),
+                      ('rho', 'irho'),
+                      ((-inf, inf), (-inf, inf)))
+              ]
+
     def parameters(self):
         """Return parameters used to define layer"""
         return {'rho':self.rho, 'irho':self.irho}
+
     def render(self, probe, slabs):
         """Render slabs for use with the given probe"""
         thickness = self.thickness.value
-        Pw,Pz = slabs.microslabs(thickness)
+        Pw, Pz = slabs.microslabs(thickness)
         t = Pz/thickness
         Prho = _profile([p.value for p in self.rho], t, self.method)
         Pirho = _profile([p.value for p in self.irho], t, self.method)
         slabs.extend(rho=[Prho], irho=[Pirho], w=Pw)
 
 class ChebyVF(Layer):
-    """
+    r"""
     Material in a solvent
 
     :Parameters:
@@ -145,13 +149,13 @@ class ChebyVF(Layer):
     polynomial coefficients or 'interp' if *vf* values refer to
     control points located at $z_k$.
 
-    The control point $k$ is located at $z_k \in [0,L]$ for layer
+    The control point $k$ is located at $z_k \in [0, L]$ for layer
     thickness $L$, as returned by :func:`cheby_points` called with
-    n=len(*vf*) and range=\ $[0,L]$.
+    n=len(*vf*) and range=\ $[0, L]$.
 
     The materials can either use the scattering length density directly,
     such as PDMS = SLD(0.063, 0.00006) or they can use chemical composition
-    and material density such as PDMS=Material("C2H6OSi",density=0.965).
+    and material density such as PDMS=Material("C2H6OSi", density=0.965).
 
     These parameters combine in the following profile formula::
 
@@ -167,32 +171,36 @@ class ChebyVF(Layer):
         self.interface = Par.default(interface, name="solvent interface")
         self.solvent = solvent
         self.material = material
-        self.vf = [Par.default(p, name="vf[%d]"%i) for i,p in enumerate(vf)]
+        self.vf = [Par.default(p, name="vf[%d]"%i) for i, p in enumerate(vf)]
         self.method = method
         # Constraints:
-        #   base_vf in [0,1]
-        #   base,length,sigma,thickness,interface>0
+        #   base_vf in [0, 1]
+        #   base, length, sigma, thickness, interface>0
         #   base+length+3*sigma <= thickness
+
     def parameters(self):
         return {'solvent': self.solvent.parameters(),
                 'material': self.material.parameters(),
                 'vf': self.vf}
+
     def render(self, probe, slabs):
-        Mr,Mi = self.material.sld(probe)
-        Sr,Si = self.solvent.sld(probe)
+        Mr, Mi = self.material.sld(probe)
+        Sr, Si = self.solvent.sld(probe)
         M = Mr + 1j*Mi
         S = Sr + 1j*Si
-        try: M,S = M[0],S[0]  # Temporary hack
-        except: pass
+        try:
+            M, S = M[0], S[0]  # Temporary hack
+        except Exception:
+            pass
 
         thickness = self.thickness.value
-        Pw,Pz = slabs.microslabs(thickness)
+        Pw, Pz = slabs.microslabs(thickness)
         t = Pz/thickness
         vf = _profile([p.value for p in self.vf], t, self.method)
         vf = numpy.clip(vf, 0, 1)
-        Pw,vf = util.merge_ends(Pw, vf, tol=1e-3)
+        Pw, vf = util.merge_ends(Pw, vf, tol=1e-3)
         P = M*vf + S*(1-vf)
-        Pr,Pi = real(P), imag(P)
+        Pr, Pi = real(P), imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
 
 def _profile(c, t, method):

@@ -11,6 +11,7 @@ energy of the radiation.
 See :ref:`data-guide` for details.
 
 """
+from __future__ import with_statement, division, print_function
 
 # TOF stitching introduces a lot of complexity.
 # Theta offset:
@@ -37,7 +38,6 @@ See :ref:`data-guide` for details.
 #
 # Unstitched seems like the better bet.
 
-from __future__ import with_statement, division
 import os
 import json
 
@@ -82,8 +82,8 @@ class Probe(object):
     points only, but for some systems, such as those with very thick layers,
     oversampling is needed to avoid aliasing effects.
 
-    A measurement point consists of incident angle, angular resolution, 
-    incident wavelength, FWHM wavelength resolution, reflectivity and 
+    A measurement point consists of incident angle, angular resolution,
+    incident wavelength, FWHM wavelength resolution, reflectivity and
     uncertainty in reflectivity.
 
     A probe is a set of points, defined by vectors for point attribute.  For
@@ -138,13 +138,13 @@ class Probe(object):
         *plot_shift* : float
             The number of pixels to shift each new dataset so
             datasets can be seen separately
-        *residuals_shift* : 
+        *residuals_shift* :
             The number of pixels to shift each new set of residuals
             so the residuals plots can be seen separately.
 
     Normally *view* is set directly in the class rather than the
-    instance since it is not specific to the view.  Fresnel and Q4 
-    views are corrected for background and intensity; log and 
+    instance since it is not specific to the view.  Fresnel and Q4
+    views are corrected for background and intensity; log and
     linear views show the uncorrected data.
     """
     polarized = False
@@ -153,12 +153,12 @@ class Probe(object):
     plot_shift = 0
     residuals_shift = 0
 
-    def __init__(self, T=None, dT=0, L=None, dL=0, data=None, 
+    def __init__(self, T=None, dT=0, L=None, dL=0, data=None,
                  intensity=1, background=0, back_absorption=1, theta_offset=0,
                  back_reflectivity=False, name=None, filename=None):
         if T is None or L is None:
             raise TypeError("T and L required")
-        if not name and filename: 
+        if not name and filename:
             name = os.path.splitext(os.path.basename(filename))[0]
         qualifier = " "+name if name is not None else ""
         self.intensity = Parameter.default(intensity,
@@ -279,9 +279,11 @@ class Probe(object):
             return
 
         if noise is None:
-            pass # use existing noise
+            pass
         else:
-            self.dR = 0.01*noise*self.Ro
+            self.dR = numpy.asarray(noise)
+            if len(self.dR.shape) == 0:  # noise is a scalar
+                self.dR = 0.01 * noise * self.Ro
             self.dR[self.dR==0] = 1e-11
 
         # Add noise to the theory function
@@ -344,7 +346,15 @@ class Probe(object):
                 'background':self.background,
                 'back_absorption':self.back_absorption,
                 'theta_offset':self.theta_offset,
-                }
+               }
+
+    def to_dict(self):
+        """ Return a dictionary representation of the parameters """
+        return dict(type=type(self).__name__,
+                    intensity=self.intensity.to_dict(),
+                    background=self.background.to_dict(),
+                    back_absorption=self.back_absorption.to_dict(),
+                    theta_offset=self.theta_offset.to_dict())
 
     def scattering_factors(self, material, density):
         """
@@ -378,8 +388,10 @@ class Probe(object):
         self.T, self.dT = self.T[idx], self.dT[idx]
         self.L, self.dL = self.L[idx], self.dL[idx]
         self.Qo, self.dQ = self.Qo[idx], self.dQ[idx]
-        if self.R is not None: self.Ro = self.R = self.R[idx]
-        if self.dR is not None: self.dR = self.dR[idx]
+        if self.R is not None:
+            self.Ro = self.R = self.R[idx]
+        if self.dR is not None:
+            self.dR = self.dR[idx]
         self._set_calc(self.T, self.L)
 
     def resolution_guard(self):
@@ -392,7 +404,7 @@ class Probe(object):
         raise NotImplementedError
         # TODO: implement resolution guard.
 
-    def critical_edge(self,  substrate=None, surface=None,
+    def critical_edge(self, substrate=None, surface=None,
                       n=51, delta=0.25):
         r"""
         Oversample points near the critical edge.
@@ -463,7 +475,7 @@ class Probe(object):
         *n* between 20 and 100 should lead to stable values for the convolved
         reflectivity.
         """
-        if n<=5:
+        if n <= 5:
             raise ValueError("Oversampling with n<=5 is not useful")
 
         rng = numpy.random.RandomState(seed=seed)
@@ -491,7 +503,7 @@ class Probe(object):
         # Handle absorption through the substrate, which occurs when Q<0
         # (condition)*C is C when condition is True or 0 when False,
         # (condition)*(C-1)+1 is C when condition is True or 1 when False.
-        back = (calc_Q<0)*(self.back_absorption.value-1)+1
+        back = (calc_Q < 0)*(self.back_absorption.value-1)+1
         calc_R = calc_R * back
 
         # For back reflectivity, reverse the sign of Q after computing
@@ -512,13 +524,15 @@ class Probe(object):
             Q, dQ = _interpolate_Q(self.Q, self.dQ, interpolation)
             Q, R = self.Q, numpy.interp(Q, calc_Q, calc_R)
         R = self.intensity.value*R + self.background.value
+        #return calc_Q, calc_R
         return Q, R
 
     def fresnel(self, substrate=None, surface=None):
         """
         Returns a Fresnel reflectivity calculator given the surface and
-        and substrate.  The calculated reflectivity includes The Fresnel reflectivity for the probe reflecting from a block of
-        material with the given substrate.
+        and substrate.  The calculated reflectivity includes The Fresnel
+        reflectivity for the probe reflecting from a block of material with
+        the given substrate.
 
         Returns F = R(probe.Q), where R is magnitude squared reflectivity.
         """
@@ -631,8 +645,8 @@ class Probe(object):
         r"""
         Plot the Fresnel-normalized reflectivity associated with the probe.
 
-        Note that the Fresnel reflectivity has the intensity and background 
-        applied before normalizing so that hydrogenated samples display more 
+        Note that the Fresnel reflectivity has the intensity and background
+        applied before normalizing so that hydrogenated samples display more
         cleanly.  The formula to reproduce the graph is:
 
         .. math::
@@ -645,10 +659,10 @@ class Probe(object):
         if substrate is None and surface is None:
             raise TypeError("Fresnel-normalized reflectivity needs substrate or surface")
         F = self.fresnel(substrate=substrate, surface=surface)
-        scale = lambda Q, dQ, R, dR: (
-            Q, dQ,
-            R/(F(Q)*self.intensity.value+self.background.value),
-            dR/(F(Q)*self.intensity.value+self.background.value))
+        #print("substrate", substrate, "surface", surface)
+        def scale(Q, dQ, R, dR):
+            Q, fresnel = self.apply_beam(self.calc_Q, F(self.calc_Q))
+            return Q, dQ, R/fresnel, dR/fresnel
         if substrate is None:
             name = "air:%s" % surface.name
         elif surface is None or isinstance(surface, Vacuum):
@@ -659,7 +673,7 @@ class Probe(object):
 
     def plot_Q4(self, **kwargs):
         r"""
-        Plot the Q**4 reflectivity associated with the probe.  
+        Plot the Q**4 reflectivity associated with the probe.
 
         Note that Q**4 reflectivity has the intensity and background applied
         so that hydrogenated samples display more cleanly.  The formula
@@ -687,7 +701,6 @@ class Probe(object):
                    plot_shift=None, **kw):
         import pylab
         c = coordinated_colors()
-        isheld = pylab.ishold()
         plot_shift = plot_shift if plot_shift is not None else Probe.plot_shift
         trans = auto_shift(plot_shift)
         if hasattr(self, 'R') and self.R is not None:
@@ -697,7 +710,6 @@ class Probe(object):
                            label=self.label(prefix=label,
                                             gloss='data',
                                             suffix=suffix))
-            pylab.hold(True)
         if theory is not None:
             Q, R = theory
             Q, dQ, R, dR = correct(Q, 0, R, 0)
@@ -706,7 +718,6 @@ class Probe(object):
                        label=self.label(prefix=label,
                                         gloss='theory',
                                         suffix=suffix))
-        pylab.hold(isheld)
         pylab.xlabel('Q (inv Angstroms)')
         pylab.ylabel(ylabel)
         #pylab.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
@@ -741,7 +752,6 @@ class Probe(object):
         raise NotImplementedError
         import pylab
         c = coordinated_colors()
-        isheld = pylab.ishold()
         if substrate is None and surface is None:
             raise TypeError("FFT reflectivity needs substrate or surface")
         F = self.fresnel(substrate=substrate, surface=surface)
@@ -758,7 +768,6 @@ class Probe(object):
                        label=self.label(prefix=label,
                                         gloss='data',
                                         suffix=suffix))
-            pylab.hold(True)
         if theory is not None:
             Q, R = theory
             signal = numpy.interp(T, Q, R/F(Q))
@@ -768,7 +777,6 @@ class Probe(object):
                        label=self.label(prefix=label,
                                         gloss='theory',
                                         suffix=suffix))
-        pylab.hold(isheld)
         pylab.xlabel('w (A)')
         if substrate is None:
             name = "air:%s" % surface.name
@@ -800,8 +808,8 @@ class XrayProbe(Probe):
         # Note: the real density is calculated as a scale factor applied to
         # the returned sld as computed assuming density=1
         rho, irho = xsf.xray_sld(material,
-                                 wavelength = self.unique_L,
-                                 density = density)
+                                 wavelength=self.unique_L,
+                                 density=density)
         # TODO: support wavelength dependent systems
         return rho[0], irho[0], 0
         #return rho[self._L_idx], irho[self._L_idx], 0
@@ -822,11 +830,11 @@ class NeutronProbe(Probe):
         # Note: the real density is calculated as a scale factor applied to
         # the returned sld as computed assuming density=1
         rho, irho, rho_incoh = nsf.neutron_sld(material,
-                                               wavelength = self.unique_L,
-                                               density = density)
+                                               wavelength=self.unique_L,
+                                               density=density)
         # TODO: support wavelength dependent systems
         return rho, irho[0], rho_incoh
-        return rho, irho[self._L_idx], rho_incoh
+        #return rho, irho[self._L_idx], rho_incoh
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
 
@@ -859,10 +867,16 @@ class ProbeSet(Probe):
     restore_data.__doc__ = Probe.restore_data.__doc__
 
     def simulate_data(self, theory, noise=2):
+        """
+            Simulate data, allowing for noise to be a dR array for each Q point.
+        """
         Q, R = theory
+        dR = numpy.asarray(noise)
         offset = 0
         for p in self.probes:
             n = len(p.Q)
+            if len(self.dR.shape) > 0:
+                noise = dR[offset:offset+n]
             p.simulate_data(theory=(Q[offset:offset+n], R[offset:offset+n]),
                             noise=noise)
             offset += n
@@ -908,11 +922,8 @@ class ProbeSet(Probe):
 
     def plot(self, theory=None, **kw):
         import pylab
-        ishold = pylab.ishold()
         for p, th in self.parts(theory):
             p.plot(theory=th, **kw)
-            pylab.hold(True)
-        pylab.hold(ishold)
     plot.__doc__ = Probe.plot.__doc__
 
     def plot_resolution(self, **kw):
@@ -1038,7 +1049,8 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
           theta_offset=0, sample_broadening=0,
           L=None, dL=None, T=None, dT=None,
           FWHM=False, radiation=None,
-          ):
+          columns=None,
+         ):
     r"""
     Load in four column data Q, R, dR, dQ.
 
@@ -1100,10 +1112,20 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     *radiation* is 'xray' or 'neutron', depending on whether X-ray or
     neutron scattering length density calculator should be used for
     determining the scattering length density of a material.
+
+    *columns* is a string giving the column order in the file.  Default
+    order is "Q R dR dQ".
     """
     data = parse_multi(filename, keysep=keysep, sep=sep, comment=comment)
+    if columns:
+        actual = columns.split()
+        natural = "Q R dR dQ".split()
+        order = [natural.index(k) for k in actual]
+    else:
+        order = [0, 1, 2, 3]
     def _as_Qprobe(data):
-        Q, R, dR, dQ = data[1]
+        Q, R, dR, dQ = (data[1][k] for k in order)
+
         if FWHM: # dQ defaults to 1-sigma, if FWHM is not True
             dQ = FWHM2sigma(dQ)
 
@@ -1300,21 +1322,26 @@ class PolarizedNeutronProbe(object):
         spec = " "+name if name else ""
         self.H = Parameter.default(H, name="H"+spec)
         self.Aguide = Parameter.default(Aguide, name="Aguide"+spec,
-                                            limits=[-360, 360])
+                                        limits=[-360, 360])
     @property
-    def xs(self): return self._xs  # Don't let user replace xs
+    def xs(self):
+        return self._xs  # Don't let user replace xs
 
     @property
-    def pp(self): return self.xs[3]
+    def pp(self):
+        return self.xs[3]
 
     @property
-    def pm(self): return self.xs[2]
+    def pm(self):
+        return self.xs[2]
 
     @property
-    def mp(self): return self.xs[1]
+    def mp(self):
+        return self.xs[1]
 
     @property
-    def mm(self): return self.xs[0]
+    def mm(self):
+        return self.xs[0]
 
     def parameters(self):
         mm, mp, pm, pp = [(xsi.parameters() if xsi else None)
@@ -1324,6 +1351,13 @@ class PolarizedNeutronProbe(object):
             'Aguide': self.Aguide, 'H': self.H,
         }
 
+    def to_dict(self):
+        """ Return a dictionary representation of the parameters """
+        mm, mp, pm, pp = [(xsi.to_dict() if xsi else None)
+                          for xsi in self.xs]
+        return dict(type=type(self).__name__,
+                    pp=pp, pm=pm, mp=mp, mm=mm, a_guide=self.Aguide, h=self.H)
+
     def resynth_data(self):
         for p in self.xs:
             if p is not None:
@@ -1332,12 +1366,16 @@ class PolarizedNeutronProbe(object):
 
     def restore_data(self):
         for p in self.xs:
-            if p is not None: p.restore_data()
+            if p is not None:
+                p.restore_data()
     restore_data.__doc__ = Probe.restore_data.__doc__
 
     def simulate_data(self, theory, noise=2):
-        for p, th in zip(self.xs, theory):
-            if p is not None: p.simulate_data(theory=th, noise=noise)
+        if numpy.isscalar(noise):
+            noise = [noise]*4
+        for data_k, theory_k, noise_k in zip(self.xs, theory, noise):
+            if data_k is not None:
+                data_k.simulate_data(theory=theory_k, noise=noise_k)
     simulate_data.__doc__ = Probe.simulate_data.__doc__
 
     def _check(self):
@@ -1417,8 +1455,9 @@ class PolarizedNeutronProbe(object):
                                                wavelength=self.unique_L,
                                                density=density)
         # TODO: support wavelength dependent systems
+        #print("sf", str(material), type(rho), type(irho[0]))
         return rho, irho[0], rho_incoh
-        return rho, irho[self._L_idx], rho_incoh
+        #return rho, irho[self._L_idx], rho_incoh
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
     def select_corresponding(self, theory):
@@ -1501,10 +1540,9 @@ class PolarizedNeutronProbe(object):
 
         plot_shift = plot_shift if plot_shift is not None else Probe.plot_shift
         trans = auto_shift(plot_shift)
-        isheld = pylab.ishold()
         pp, mm = self.pp, self.mm
         c = coordinated_colors()
-        if hasattr(pp, 'R'):
+        if hasattr(pp, 'R') and hasattr(mm, 'R') and pp.R is not None and mm.R is not None:
             Q, SA, dSA = spin_asymmetry(pp.Q, pp.R, pp.dR, mm.Q, mm.R, mm.dR)
             if dSA is not None:
                 pylab.errorbar(Q, SA, yerr=dSA, xerr=pp.dQ, fmt='.', capsize=0,
@@ -1514,9 +1552,8 @@ class PolarizedNeutronProbe(object):
             else:
                 pylab.plot(Q, SA, '.',
                            label=pp.label(prefix=label, gloss='data'),
-                               transform=trans,
+                           transform=trans,
                            color=c['light'])
-            pylab.hold(True)
         if theory is not None:
             mm, mp, pm, pp = theory
             Q, SA, _ = spin_asymmetry(pp[0], pp[1], None, mm[0], mm[1], None)
@@ -1524,7 +1561,6 @@ class PolarizedNeutronProbe(object):
                        label=self.pp.label(prefix=label, gloss='theory'),
                        transform=trans,
                        color=c['dark'])
-        pylab.hold(isheld)
         pylab.xlabel(r'Q (\AA^{-1})')
         pylab.ylabel(r'spin asymmetry $(R^{++} -\, R^{--}) / (R^{++} +\, R^{--})$')
         pylab.legend(numpoints=1)
@@ -1532,16 +1568,13 @@ class PolarizedNeutronProbe(object):
     def _xs_plot(self, plotter, theory=None, **kwargs):
         import pylab
         # Plot available cross sections
-        isheld = pylab.ishold()
         if theory is None:
             theory = (None, None, None, None)
         for x_data, x_th, suffix in zip(self.xs, theory,
-                                      ('$^{--}$', '$^{-+}$', '$^{+-}$', '$^{++}$')):
+                                        ('$^{--}$', '$^{-+}$', '$^{+-}$', '$^{++}$')):
             if x_data is not None:
                 fn = getattr(x_data, plotter)
                 fn(theory=x_th, suffix=suffix, **kwargs)
-                pylab.hold(True)
-        if not isheld: pylab.hold(False)
 
 def spin_asymmetry(Qp, Rp, dRp, Qm, Rm, dRm):
     r"""
@@ -1582,7 +1615,7 @@ def spin_asymmetry(Qp, Rp, dRp, Qm, Rm, dRm):
     if dRp is not None:
         dRm = numpy.interp(Qp, Qm, dRm)
         dvsq = 4 * ((Rp*dRm)**2 + (Rm*dRp)**2) / (Rp+Rm)**4
-        dvsq[dvsq<0] = 0
+        dvsq[dvsq < 0] = 0
         return Qp, v, sqrt(dvsq)
     else:
         return Qp, v, None

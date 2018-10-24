@@ -8,12 +8,12 @@ from refl1d.names import *
 from copy import copy
 
 # === Materials ===
-SiOx = SLD(name="SiOx",rho=3.47)
-D_toluene = SLD(name="D-toluene",rho=5.66)
-D_initiator = SLD(name="D-initiator",rho=1.5)
-D_polystyrene = SLD(name="D-PS",rho=6.2)
-H_toluene = SLD(name="H-toluene",rho=0.94)
-H_initiator = SLD(name="H-initiator",rho=0)
+SiOx = SLD(name="SiOx", rho=3.47)
+D_toluene = SLD(name="D-toluene", rho=5.66)
+D_initiator = SLD(name="D-initiator", rho=1.5)
+D_polystyrene = SLD(name="D-PS", rho=6.2)
+H_toluene = SLD(name="H-toluene", rho=0.94)
+H_initiator = SLD(name="H-initiator", rho=0)
 
 # In this case we are using the neutron scattering length density as is
 # standard practice in reflectivity experiments rather than the chemical
@@ -59,7 +59,7 @@ D_brush = PolymerBrush(polymer=D_polystyrene, solvent=D_toluene,
 # This layer can be combined with the remaining layers to form the
 # deuterated measurement sample
 
-D = (silicon(0,5) | SiOx(100,5) | D_initiator(100,20) | D_brush(400,0)
+D = (silicon(0, 5) | SiOx(100, 5) | D_initiator(100, 20) | D_brush(400, 0)
      | D_toluene)
 
 # The stack notation ``material(thickness, interface) | ...`` is performing
@@ -74,8 +74,8 @@ D = (silicon(0,5) | SiOx(100,5) | D_initiator(100,20) | D_brush(400,0)
 #    L_SiOx = Slab(material=SiOx, thickness=100, interface=5)
 #    L_D_initiator = Slab(material=D_initiator, thickness=100, interface=20)
 #    L_D_brush = copy(D_brush)
-#    L_D_brush.thickness = Parameter.default(400,name=D_brush.name+" thickness")
-#    L_D_brush.interface = Parameter.default(0,name=D_brush.name+" interface")
+#    L_D_brush.thickness = Parameter.default(400, name=D_brush.name+" thickness")
+#    L_D_brush.interface = Parameter.default(0, name=D_brush.name+" interface")
 #    L_D_toluene = Slab(material=D_toluene)
 #    D = Stack([L_silicon, L_SiOx, L_D_initiator, L_D_brush, L_D_toluene])
 #
@@ -95,7 +95,7 @@ H = silicon | SiOx | H_initiator | H_brush | H_toluene
 # as well, so we write a loop to go through the layers of *D* and
 # copy the thickness and interface parameters to *H*
 
-for i,_ in enumerate(D):
+for i, _ in enumerate(D):
     H[i].thickness = D[i].thickness
     H[i].interface = D[i].interface
 
@@ -113,23 +113,23 @@ for i,_ in enumerate(D):
 # parameters
 
 # === Fit parameters ===
-for i in 0, 1, 2:
-    D[i].interface.range(0,100)
-D[1].thickness.range(0,200)
-D[2].thickness.range(0,200)
-D_polystyrene.rho.range(6.2,6.5)
-SiOx.rho.range(2.07,4.16) # Si to SiO2
+for i in (0, 1, 2):
+    D[i].interface.range(0, 100)
+D[1].thickness.range(0, 200)
+D[2].thickness.range(0, 200)
+D_polystyrene.rho.range(6.2, 6.5)
+SiOx.rho.range(2.07, 4.16) # Si to SiO2
 D_toluene.rho.pmp(5)
-D_initiator.rho.range(0,1.5)
-D_brush.base_vf.range(50,80)
-D_brush.base.range(0,200)
-D_brush.length.range(0,500)
-D_brush.power.range(0,5)
-D_brush.sigma.range(0,20)
+D_initiator.rho.range(0, 1.5)
+D_brush.base_vf.range(50, 80)
+D_brush.base.range(0, 200)
+D_brush.length.range(0, 500)
+D_brush.power.range(0, 5)
+D_brush.sigma.range(0, 20)
 
 # Undeuterated system adds two extra parameters
 H_toluene.rho.pmp(5)
-H_initiator.rho.range(-0.5,0.5)
+H_initiator.rho.range(-0.5, 0.5)
 
 # Notice that in some cases we are using layer number to reference the
 # parameter, such as ``D[1].thickness`` whereas in other cases we are using
@@ -153,7 +153,7 @@ instrument = NCNR.NG7(Qlo=0.005, slits_at_Qlo=0.075)
 D_probe = instrument.load('10ndt001.refl', back_reflectivity=True)
 H_probe = instrument.load('10nht001.refl', back_reflectivity=True)
 
-D_probe.theta_offset.range(-0.1,0.1)
+D_probe.theta_offset.range(-0.1, 0.1)
 
 # We set ``back_reflectivity=True`` because we are coming in through the
 # substrate.  The reflectometry calculator will automatically reverse

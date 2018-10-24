@@ -133,6 +133,18 @@ magnetic_amplitude(const int layers,
                    const double kz[], const int rho_offset[],
                    Cplx Ra[], Cplx Rb[], Cplx Rc[], Cplx Rd[]);
 
+void
+calculate_U1_U3(const double H,
+                double &rhoM,
+                const double thetaM,
+                const double Aguide,
+                Cplx &U1, Cplx &U3);
+
+int
+align_magnetic(int nlayers, double d[], double sigma[], double rho[], double irho[],
+               int nlayersM, double dM[], double sigmaM[], double rhoM[], double thetaM[],
+               int noutput, double output[]);
+
 int
 contract_by_step(int n, double d[], double sigma[],
                  double rho[], double irho[], double dh);
@@ -142,7 +154,7 @@ contract_by_area(int n, double d[], double sigma[],
                  double rho[], double irho[], double dA);
 
 int
-contract_mag(int n, double d[], double rho[], double irho[],
+contract_mag(int n, double d[], double sigma[], double rho[], double irho[],
              double rhoM[], double thetaM[], double dA);
 
 void

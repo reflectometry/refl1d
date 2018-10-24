@@ -7,7 +7,7 @@ IS_MAC = (wx.Platform == '__WXMAC__')
 from numpy import inf
 
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-from matplotlib.backends.backend_wxagg import NavigationToolbar2Wx as Toolbar
+from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg as Toolbar
 
 # The Figure object is used to create backend-independent plot representations.
 from matplotlib.figure import Figure
@@ -221,7 +221,6 @@ class DataView(wx.Panel):
                         if hasattr(p.fitness, 'reflectivity'):
                             p.fitness.plot_reflectivity(view=self.view,
                                                         plot_shift=shift)
-                            pylab.hold(True)
                             if self._cancel_calculate or p.fitness.is_reset(): break
                     if self._cancel_calculate \
                         or self.problem.active_model.fitness.is_reset(): continue

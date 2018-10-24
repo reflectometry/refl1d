@@ -40,11 +40,13 @@ type and energy.  Unlike the normally tabulated scattering factors f', f''
 for X-ray, there is no need to scale by probe by electron radius.  In
 the end, sld is just the returned scattering factors times density.
 """
-__all__ = ['Material','Mixture','SLD','Vacuum', 'Scatterer', 'ProbeCache']
+__all__ = ['Material', 'Mixture', 'SLD', 'Vacuum', 'Scatterer', 'ProbeCache']
 import numpy
 from numpy import inf, NaN
 import periodictable
+
 from bumps.parameter import Parameter as Par
+
 
 class Scatterer(object):
     """
@@ -65,7 +67,23 @@ class Scatterer(object):
         scattering factors, as returned from a call to scattering_factors()
         for a particular probe.
         """
-        raise NotImplementedError
+        raise NotImplementedError()
+
+    def __or__(self, other):
+        """
+        Interface for a material stacker, to support e.g., *stack = Si | air*.
+        """
+        raise NotImplementedError("failed monkey-patch: material stacker needs"
+                                  " to replace __or__ in Scatterer")
+
+    def __call__(self, *args, **kw):
+        """
+        Interface for a material stacker, to support e.g., *stack = Si(thickness=)*.
+        """
+        raise NotImplementedError("failed monkey-patch: material stacker needs"
+                                  " to replace __call__ in Scatterer")
+
+
     def __str__(self):
         return self.name
 
@@ -77,10 +95,13 @@ class Vacuum(Scatterer):
     Empty layer
     """
     name = 'air'
+
     def parameters(self):
         return []
+
     def sld(self, probe):
-        return 0,0
+        return 0, 0
+
     def __repr__(self):
         return "Vacuum()"
 
@@ -108,12 +129,14 @@ class SLD(Scatterer):
     """
     def __init__(self, name="SLD", rho=0, irho=0):
         self.name = name
-        self.rho = Par.default(rho, name=name+" rho" )
-        self.irho = Par.default(irho, name=name+" irho" )
+        self.rho = Par.default(rho, name=name+" rho")
+        self.irho = Par.default(irho, name=name+" irho")
+
     def parameters(self):
         return {'rho':self.rho, 'irho':self.irho}
+
     def sld(self, probe):
-        return self.rho.value,self.irho.value
+        return self.rho.value, self.irho.value
 
 # ============================ Substances =============================
 
@@ -153,7 +176,7 @@ class Material(Scatterer):
     For example, to fit Pd by cell volume use::
 
         >>> m = Material('Pd', fitby='cell_volume')
-        >>> m.cell_volume.range(1,10)
+        >>> m.cell_volume.range(1, 10)
         Parameter(Pd cell volume)
         >>> print("%.2f %.2f"%(m.density.value, m.cell_volume.value))
         12.02 14.70
@@ -204,31 +227,33 @@ class Material(Scatterer):
         """
 
         # Clean out old parameter
-        for attr in ('bulk_density','natural_density','cell_volume',
+        for attr in ('bulk_density', 'natural_density', 'cell_volume',
                      'relative_density'):
-            try: delattr(self, attr)
-            except: pass
+            try:
+                delattr(self, attr)
+            except Exception:
+                pass
 
         # Put in new parameters
         if type is 'bulk_density':
             if value is None:
                 value = self.formula.density
             self.bulk_density = Par.default(value, name=self.name+" density",
-                                            limits=(0,inf))
+                                            limits=(0, inf))
             self.density = self.bulk_density
         elif type is 'natural_density':
             if value is None:
                 value = self.formula.natural_density
             self.natural_density = Par.default(value,
                                                name=self.name+" nat. density",
-                                               limits=(0,inf))
+                                               limits=(0, inf))
             self.density = self.natural_density / self.formula.natural_mass_ratio()
         elif type is 'relative_density':
             if value is None:
                 value = 1
             self.relative_density = Par.default(value,
                                                 name=self.name+" rel. density",
-                                                limits=(0,inf))
+                                                limits=(0, inf))
             self.density = self.formula.density*self.relative_density
         ## packing factor code should be correct, but radii are unreliable
         #elif type is 'packing_factor':
@@ -245,7 +270,7 @@ class Material(Scatterer):
                 value = (1e24*self.formula.molecular_mass)/self.formula.density
             self.cell_volume = Par.default(value,
                                            name=self.name+" cell volume",
-                                           limits=(0,inf))
+                                           limits=(0, inf))
             self.density = (1e24*self.formula.molecular_mass)/self.cell_volume
         else:
             raise ValueError("Unknown density calculation type '%s'"%type)
@@ -253,11 +278,11 @@ class Material(Scatterer):
     def parameters(self):
         return {'density': self.density}
     def sld(self, probe):
-        rho, irho, incoh = probe.scattering_factors(self.formula, 
-            density=self.density.value)
+        rho, irho, incoh = probe.scattering_factors(self.formula,
+                                                    density=self.density.value)
         if self.use_incoherent:
             raise NotImplementedError("incoherent scattering not supported")
-            irho += incoh
+            #irho += incoh
         return rho, irho
     def __str__(self):
         return self.name
@@ -279,13 +304,13 @@ class Compound(Scatterer):
     An individual component can be a chemical formula, not just an element.
     """
     def __init__(self, parts=None):
-        # Split [M1,N1,M2,N2,...] into [M1,M2,...], [N1,N2,...]
-        formula = [parts[i] for i in range(0, len(parts),2)]
-        count = [parts[i] for i in range(1, len(parts),2)]
-        # Convert M1,M2, ... to materials if necessary
+        # Split [M1, N1, M2, N2, ...] into [M1, M2, ...], [N1, N2, ...]
+        formula = [parts[i] for i in range(0, len(parts), 2)]
+        count = [parts[i] for i in range(1, len(parts), 2)]
+        # Convert M1, M2, ... to materials if necessary
         formula = [periodictable.formula(p) for p in formula]
-        count = [Par.default(w,limits=(0,inf), name=str(f)+" count")
-                  for w,f in zip(count,formula)]
+        count = [Par.default(w, limits=(0, inf), name=str(f)+" count")
+                 for w, f in zip(count, formula)]
         self.parts = formula
         self.count = count
 
@@ -298,17 +323,18 @@ class Compound(Scatterer):
         return {'count':self.count}
 
     def formula(self):
-        return tuple( (c.value,f) for c,f in zip(self.count,self.parts))
+        return tuple((c.value, f) for c, f in zip(self.count, self.parts))
 
     def __str__(self):
-        return "<%s>"%(",".join(str(M) for M in self.formula))
+        return "<%s>"%(", ".join(str(M) for M in self.formula()))
+
     def __repr__(self):
-        return "Compound([%s])"%(",".join(repr(M) for M in self.formula))
+        return "Compound([%s])"%(", ".join(repr(M) for M in self.formula()))
 
 
 # ============================ Alloys =============================
 
-class _VolumeFraction:
+class _VolumeFraction(object):
     """
     Returns the relative volume for each component in the system given
     the volume percentages.
@@ -318,7 +344,7 @@ class _VolumeFraction:
     def __call__(self, fraction):
         return 0.01*numpy.asarray(fraction)
 
-class _MassFraction:
+class _MassFraction(object):
     """
     Returns the relative volume for each component in the system given
     the relative masses.
@@ -337,8 +363,8 @@ class Mixture(Scatterer):
     The components of the mixture can vary relative to each other, either
     by mass, by volume or by number::
 
-        Mixture.bymass(base,M1,F1,M2,F2...,name='mixture name')
-        Mixture.byvolume(base,M1,F1,M2,F2...,name='mixture name')
+        Mixture.bymass(base, M1, F1, M2, F2..., name='mixture name')
+        Mixture.byvolume(base, M1, F1, M2, F2..., name='mixture name')
 
     The materials *base*, *M1*, *M2*, *M3*, ... can be chemical formula
     strings  or material objects.  In practice, since the chemical
@@ -346,7 +372,7 @@ class Mixture(Scatterer):
     materials can be specified by string. Use natural_density will need
     to change from bulk values if the formula has isotope substitutions.
 
-    The fractions F2, F3, ... are percentages in [0,100]. The implicit
+    The fractions F2, F3, ... are percentages in [0, 100]. The implicit
     fraction F1 is 100 - (F2+F3+...). The SLD is NaN when *F1 < 0*).
 
     name defaults to M1.name+M2.name+...
@@ -356,7 +382,7 @@ class Mixture(Scatterer):
         """
         Returns an alloy defined by relative mass of the constituents.
 
-        Mixture.bymass(base,M1,F2,...,name='mixture name')
+        Mixture.bymass(base, M1, F2, ..., name='mixture name')
         """
         return cls(base, parts, by='mass', **kw)
 
@@ -365,17 +391,18 @@ class Mixture(Scatterer):
         """
         Returns an alloy defined by relative volume of the constituents.
 
-        Mixture.byvolume(M1,M2,F2,...,name='mixture name')
+        Mixture.byvolume(M1, M2, F2, ..., name='mixture name')
         """
         return cls(base, parts, by='volume', **kw)
 
     def __init__(self, base, parts, by='volume', name=None, use_incoherent=False):
-        # Split [M1,M2,F2,...] into [M1,M2,...], [F2,...]
+        # Split [M1, M2, F2, ...] into [M1, M2, ...], [F2, ...]
         material = [parts[i] for i in range(0, len(parts), 2)]
         fraction = [parts[i] for i in range(1, len(parts), 2)]
-        # Convert M1,M2, ... to materials if necessary
-        if not isinstance(base,Scatterer): base = Material(base)
-        material = [p if isinstance(p,Scatterer) else Material(p)
+        # Convert M1, M2, ... to materials if necessary
+        if not isinstance(base, Scatterer):
+            base = Material(base)
+        material = [p if isinstance(p, Scatterer) else Material(p)
                     for p in material]
 
         # Specify the volume calculator based on the type of fraction
@@ -387,11 +414,12 @@ class Mixture(Scatterer):
             raise ValueError('fraction must be one of volume, mass or number')
 
         # Name defaults to names of individual components
-        if name is None: name = "+".join(p.name for p in material)
+        if name is None:
+            name = "+".join(p.name for p in material)
 
         # Make the fractions into fittable parameters
-        fraction = [Par.default(w,limits=(0,100), name=f.name+"% "+by)
-                    for w,f in zip(fraction,material)]
+        fraction = [Par.default(w, limits=(0, 100), name=f.name+"% "+by)
+                    for w, f in zip(fraction, material)]
 
         self._volume = _volume
         self.base = base
@@ -409,7 +437,7 @@ class Mixture(Scatterer):
         return {'base':self.base.parameters(),
                 'material':[m.parameters() for m in self.material],
                 'fraction':self.fraction,
-                }
+               }
 
     def _density(self):
         """
@@ -423,12 +451,12 @@ class Mixture(Scatterer):
         # fraction[0] = 100 - S/scale
         # penalty = scale - 1
         fraction[0] = 100 - sum(fraction)
-        if (fraction<0).any():
+        if (fraction < 0).any():
             return NaN
         volume = self._volume(fraction)
         density = numpy.array([m.density() for m in [self.base]+self.material])
         return numpy.sum(volume*density)
-    density = property(_density,doc=_density.__doc__)
+    density = property(_density, doc=_density.__doc__)
 
     def sld(self, probe):
         """
@@ -442,12 +470,12 @@ class Mixture(Scatterer):
         # scale = S/100 if S > 100 else 1
         # fraction[0] = 100 - S/scale
         # penalty = scale - 1
-        if (fraction<0).any():
+        if (fraction < 0).any():
             return NaN, NaN
 
         # Lookup SLD
         slds = [c.sld(probe) for c in [self.base] + self.material]
-        rho,irho = [numpy.asarray(v) for v in zip(*slds)]
+        rho, irho = [numpy.asarray(v) for v in zip(*slds)]
 
         # Use calculator to convert individual SLDs to overall SLD
         volume_fraction = self._volume(fraction)
@@ -456,18 +484,19 @@ class Mixture(Scatterer):
         irho = numpy.sum(irho*volume_fraction)
         if self.use_incoherent:
             raise NotImplementedError("incoherent scattering not supported")
-        #print "Mixture",self.name,coh,absorp
+        #print "Mixture", self.name, coh, absorp
 
-        return rho,irho
+        return rho, irho
 
     def __str__(self):
-        return "<%s>"%(",".join(str(M) for M in [self.base]+self.material))
+        return "<%s>"%(", ".join(str(M) for M in [self.base]+self.material))
+
     def __repr__(self):
-        return "Mixture(%s)"%(",".join(repr(M) for M in [self.base]+self.material))
+        return "Mixture(%s)"%(", ".join(repr(M) for M in [self.base]+self.material))
 
 # ============================ SLD cache =============================
 
-class ProbeCache:
+class ProbeCache(object):
     """
     Probe proxy for materials properties.
 
@@ -486,11 +515,14 @@ class ProbeCache:
     def __init__(self, probe=None):
         self._probe = probe
         self._cache = {}
+
     def clear(self):
         self._cache = {}
+
     def __delitem__(self, material):
         if material in self._cache:
             del self._cache[material]
+
     def scattering_factors(self, material, density):
         """
         Return the scattering factors for the material, retrieving them from
@@ -500,5 +532,5 @@ class ProbeCache:
         if h not in self._cache:
             # lookup density of 1, and scale to actual density on retrieval
             self._cache[h] = self._probe.scattering_factors(material,
-                density=1.0)
+                                                            density=1.0)
         return [v*density for v in self._cache[h]]

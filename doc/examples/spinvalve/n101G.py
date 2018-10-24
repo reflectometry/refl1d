@@ -1,4 +1,9 @@
-# A model with magnetic structure
+# Magnetism example
+# =================
+#
+# Magnetic structures can be anchored to the layer boundaries.
+#
+# Defining a magnetic model starts as usual.
 
 from refl1d.names import *
 

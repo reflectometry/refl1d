@@ -27,3 +27,4 @@ deuterated or hydrogenated toluene.
 .. toctree::
 
   tethered.rst
+  freeform.rst

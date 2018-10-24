@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This program is public domain
 # Authors Paul Kienzle, Richard Sheridan
-"""
+r"""
 Layer models for polymer systems.
 
 Analytic Self-consistent Field (SCF) Brush profile\ [#Zhulina]_\ [#Karim]_
@@ -19,19 +19,19 @@ Profile\ [#Cosgrove]_\ [#deVos]_\ [#Sheridan]_
 .. [#Karim] Karim, A; Douglas, JF; Horkay, F; Fetters, LJ; Satija, SK (1996)
     "Comparative swelling of gels and polymer brush layers",
     Physica B 221, 331-336. doi:10.1016/0921-4526(95)00946-9
-   
+
 .. [#Adamuti-Trache] Adamuţi-Trache, M., McMullen, W. E. & Douglas, J. F.
     Segmental concentration profiles of end-tethered polymers with
     excluded-volume and surface interactions. J. Chem. Phys. 105, 4798 (1996).
 
-.. [#Cosgrove] Cosgrove, T., Heath, T., Van Lent, B., Leermakers, F. A. M., 
-    & Scheutjens, J. M. H. M. (1987). Configuration of terminally attached 
-    chains at the solid/solvent interface: self-consistent field theory and 
-    a Monte Carlo model. Macromolecules, 20(7), 1692–1696. 
+.. [#Cosgrove] Cosgrove, T., Heath, T., Van Lent, B., Leermakers, F. A. M.,
+    & Scheutjens, J. M. H. M. (1987). Configuration of terminally attached
+    chains at the solid/solvent interface: self-consistent field theory and
+    a Monte Carlo model. Macromolecules, 20(7), 1692–1696.
     doi:10.1021/ma00173a041
-    
-.. [#deVos] De Vos, W. M., & Leermakers, F. A. M. (2009). Modeling the 
-    structure of a polydisperse polymer brush. Polymer, 50(1), 305–316. 
+
+.. [#deVos] De Vos, W. M., & Leermakers, F. A. M. (2009). Modeling the
+    structure of a polydisperse polymer brush. Polymer, 50(1), 305–316.
     doi:10.1016/j.polymer.2008.10.025
     
 .. [#Sheridan] •	Sheridan, R. J., Orski, S. V., Jones, R. L., Satija, S., 
@@ -48,7 +48,8 @@ Profile\ [#Cosgrove]_\ [#deVos]_\ [#Sheridan]_
 from __future__ import division, print_function, unicode_literals
 
 
-__all__ = ["PolymerBrush","PolymerMushroom","EndTetheredPolymer","VolumeProfile","layer_thickness"]
+__all__ = ["PolymerBrush", "PolymerMushroom", "EndTetheredPolymer",
+           "VolumeProfile", "layer_thickness"]
 
 import inspect
 
@@ -63,7 +64,8 @@ try:
     from collections import OrderedDict
 except ImportError:
     class OrderedDict(dict):
-        def popitem(self,*args,**kw): return dict.popitem(self,*args)
+        def popitem(self, *args, **kw):
+            return dict.popitem(self, *args)
 
 from numpy import real, imag, exp, log, sqrt, pi, hstack, ones_like
 
@@ -71,40 +73,40 @@ from numpy import real, imag, exp, log, sqrt, pi, hstack, ones_like
 # otherwise a slice LAMBDA_ARRAY[::-1] is necessary
 from numpy.core.multiarray import correlate
 
-LAMBDA_1 = np.float64(1.0)/6.0 #always assume cubic lattice (1/6) for now
-LAMBDA_0 = 1.0-2.0*LAMBDA_1
-LAMBDA_ARRAY = np.array([LAMBDA_1,LAMBDA_0,LAMBDA_1])
+LAMBDA_1 = 1.0/6.0 #always assume cubic lattice (1/6) for now
+LAMBDA_0 = 1.0 - 2.0*LAMBDA_1
+LAMBDA_ARRAY = np.array([LAMBDA_1, LAMBDA_0, LAMBDA_1])
 MINLAT = 25
 MINBULK = 5
-SQRT_PI=sqrt(pi)
+SQRT_PI = sqrt(pi)
 
 class PolymerBrush(Layer):
     r"""
     Polymer brushes in a solvent
 
     :Parameters:
-        *thickness* 
+        *thickness*
             the thickness of the solvent layer
-        *interface* 
+        *interface*
             the roughness of the solvent surface
-        *polymer* 
+        *polymer*
             the polymer material
-        *solvent* 
+        *solvent*
             the solvent material or vacuum
-        *base_vf* 
+        *base_vf*
             volume fraction (%) of the polymer brush at the interface
-        *base* 
+        *base*
             the thickness of the brush interface (A)
-        *length* 
+        *length*
             the length of the brush above the interface (A)
-        *power* 
+        *power*
             the rate of brush thinning
-        *sigma* 
+        *sigma*
             rms brush roughness (A)
 
     The materials can either use the scattering length density directly,
     such as PDMS = SLD(0.063, 0.00006) or they can use chemical composition
-    and material density such as PDMS=Material("C2H6OSi",density=0.965).
+    and material density such as PDMS=Material("C2H6OSi", density=0.965).
 
     These parameters combine in the following profile formula:
 
@@ -141,9 +143,10 @@ class PolymerBrush(Layer):
         self.polymer = polymer
         self.name = name
         # Constraints:
-        #   base_vf in [0,1]
-        #   base,length,sigma,thickness,interface>0
+        #   base_vf in [0, 1]
+        #   base, length, sigma, thickness, interface>0
         #   base+length+3*sigma <= thickness
+
     def parameters(self):
         return {'solvent':self.solvent.parameters(),
                 'polymer':self.polymer.parameters(),
@@ -152,12 +155,12 @@ class PolymerBrush(Layer):
                 'length':self.length,
                 'power':self.power,
                 'sigma':self.sigma,
-                }
-                
+               }
+
     def profile(self, z):
         base_vf, base, length, power, sigma \
-            = [p.value for p in (self.base_vf, self.base,
-               self.length, self.power, self.sigma)]
+            = [p.value for p in (self.base_vf, self.base, self.length,
+                                 self.power, self.sigma)]
         base_vf /= 100. # % to fraction
         L0 = base  # if base < thickness else thickness
         L1 = base+length # if base+length < thickness else thickness-L0
@@ -165,8 +168,8 @@ class PolymerBrush(Layer):
             v = np.ones_like(z)
         else:
             v = (1 - ((z-L0)/(L1-L0))**2)
-        v[z<L0] = 1
-        v[z>L1] = 0
+        v[z < L0] = 1
+        v[z > L1] = 0
         brush_profile = base_vf * v**power
         # TODO: we could use Nevot-Croce rather than smearing the profile
         vf = smear(z, brush_profile, sigma)
@@ -174,23 +177,26 @@ class PolymerBrush(Layer):
 
     def render(self, probe, slabs):
         thickness = self.thickness.value
-        Pw,Pz = slabs.microslabs(thickness)
+        Pw, Pz = slabs.microslabs(thickness)
         # Skip layer if it falls to zero thickness.  This may lead to
         # problems in the fitter, since R(thickness) is non-differentiable
         # at thickness = 0.  "Clip to boundary" range handling will at
         # least allow this point to be found.
         # TODO: consider using this behaviour on all layer types.
-        if len(Pw) == 0: return
+        if len(Pw) == 0:
+            return
 
-        Mr,Mi = self.polymer.sld(probe)
-        Sr,Si = self.solvent.sld(probe)
+        Mr, Mi = self.polymer.sld(probe)
+        Sr, Si = self.solvent.sld(probe)
         M = Mr + 1j*Mi
         S = Sr + 1j*Si
-        try: M,S = M[0],S[0]  # Temporary hack
-        except: pass
+        try:
+            M, S = M[0], S[0]  # Temporary hack
+        except Exception:
+            pass
 
         vf = self.profile(Pz)
-        Pw,vf = util.merge_ends(Pw, vf, tol=1e-3)
+        Pw, vf = util.merge_ends(Pw, vf, tol=1e-3)
         P = M*vf + S*(1-vf)
         Pr, Pi = real(P), imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
@@ -211,20 +217,20 @@ class VolumeProfile(Layer):
 
     :Parameters:
 
-        *thickness* 
+        *thickness*
             the thickness of the solvent layer
-        *interface* 
+        *interface*
             the roughness of the solvent surface
-        *material* 
+        *material*
             the polymer material
-        *solvent* 
+        *solvent*
             the solvent material
-        *profile* 
+        *profile*
             the profile function, suitably parameterized
 
     The materials can either use the scattering length density directly,
     such as PDMS = SLD(0.063, 0.00006) or they can use chemical composition
-    and material density such as PDMS=Material("C2H6OSi",density=0.965).
+    and material density such as PDMS=Material("C2H6OSi", density=0.965).
 
     These parameters combine in the following profile formula::
 
@@ -250,7 +256,8 @@ class VolumeProfile(Layer):
     # TODO: test that thickness(z) matches the thickness of the layer
     def __init__(self, thickness=0, interface=0, name="VolumeProfile",
                  material=None, solvent=None, profile=None, **kw):
-        if interface != 0: raise NotImplementedError("interface not yet supported")
+        if interface != 0:
+            raise NotImplementedError("interface not yet supported")
         if profile is None or material is None or solvent is None:
             raise TypeError("Need polymer, solvent and profile")
         self.name = name
@@ -262,50 +269,54 @@ class VolumeProfile(Layer):
 
         # Query profile function for the list of arguments
         vars = inspect.getargspec(profile)[0]
-        #print("vars",vars)
-        if inspect.ismethod(profile): vars = vars[1:]  # Chop self
+        #print("vars", vars)
+        if inspect.ismethod(profile):
+            vars = vars[1:]  # Chop self
         vars = vars[1:]  # Chop z
         #print(vars)
         unused = [k for k in kw.keys() if k not in vars]
         if len(unused) > 0:
             raise TypeError("Profile got unexpected keyword argument '%s'"%unused[0])
         dups = [k for k in vars
-                if k in ('thickness','interface','polymer','solvent','profile')]
+                if k in ('thickness', 'interface', 'polymer', 'solvent', 'profile')]
         if len(dups) > 0:
             raise TypeError("Profile has conflicting argument '%s'"%dups[0])
-        for k in vars: kw.setdefault(k,0)
-        for k,v in kw.items():
-            setattr(self,k,Parameter.default(v,name=k))
+        for k in vars:
+            kw.setdefault(k, 0)
+        for k, v in kw.items():
+            setattr(self, k, Parameter.default(v, name=k))
 
         self._parameters = vars
 
     def parameters(self):
         P = {'solvent':self.solvent.parameters(),
              'material':self.material.parameters(),
-             }
+            }
         for k in self._parameters:
-            P[k] = getattr(self,k)
+            P[k] = getattr(self, k)
         return P
 
     def render(self, probe, slabs):
-        Mr,Mi = self.material.sld(probe)
-        Sr,Si = self.solvent.sld(probe)
+        Mr, Mi = self.material.sld(probe)
+        Sr, Si = self.solvent.sld(probe)
         M = Mr + 1j*Mi
         S = Sr + 1j*Si
-        #M,S = M[0],S[0]  # Temporary hack
-        Pw,Pz = slabs.microslabs(self.thickness.value)
-        if len(Pw)== 0: return
-        kw = dict((k,getattr(self,k).value) for k in self._parameters)
+        #M, S = M[0], S[0]  # Temporary hack
+        Pw, Pz = slabs.microslabs(self.thickness.value)
+        if len(Pw) == 0:
+            return
+        kw = dict((k, getattr(self, k).value) for k in self._parameters)
         #print(kw)
-        phi = self.profile(Pz,**kw)
+        phi = self.profile(Pz, **kw)
         try:
-            if phi.shape != Pz.shape: raise Exception
-        except:
+            if phi.shape != Pz.shape:
+                raise Exception
+        except Exception:
             raise TypeError("profile function '%s' did not return array phi(z)"
-                            %self.profile.__name__)
-        Pw,phi = util.merge_ends(Pw, phi, tol=1e-3)
+                            % self.profile.__name__)
+        Pw, phi = util.merge_ends(Pw, phi, tol=1e-3)
         P = M*phi + S*(1-phi)
-        slabs.extend(rho = [real(P)], irho = [imag(P)], w = Pw)
+        slabs.extend(rho=[real(P)], irho=[imag(P)], w=Pw)
         #slabs.interface(self.interface.value)
 
 
@@ -324,16 +335,18 @@ def smear(z, P, sigma):
         *Ps* | vector
             smeared sample values
     """
-    if len(z) < 3: return P
+    if len(z) < 3:
+        return P
     dz = z[1]-z[0]
-    if 3*sigma < dz: return P
+    if 3*sigma < dz:
+        return P
     w = int(3*sigma/dz)
-    G = exp(-0.5*(np.arange(-w,w+1)*(dz/sigma))**2)
-    full = np.hstack( ([P[0]]*w, P, [P[-1]]*w) )
-    return np.convolve(full,G/np.sum(G),'valid')
+    G = exp(-0.5*(np.arange(-w, w+1)*(dz/sigma))**2)
+    full = np.hstack(([P[0]]*w, P, [P[-1]]*w))
+    return np.convolve(full, G/np.sum(G), 'valid')
 
 class PolymerMushroom(Layer):
-    """ 
+    r"""
     Polymer mushrooms in a solvent (volume profile)
 
     :Parameters:
@@ -343,14 +356,14 @@ class PolymerMushroom(Layer):
             not quite volume fraction (dimensionless grafting density)
         *sigma* | real scalar
             convolution roughness (A)
-    
+
     Using analytical SCF methods for gaussian chains, which are scaled
-    by the radius of gyration of the equivalent free polymer as an 
+    by the radius of gyration of the equivalent free polymer as an
     approximation to results of renormalization group methods.\ [#Adamuti-Trache]_
-    
-    Solutions are only strictly valid for vf << 1. 
+
+    Solutions are only strictly valid for vf << 1.
     """
-    
+
     def __init__(self, thickness=0, interface=0, name="Mushroom",
                  polymer=None, solvent=None, sigma=0,
                  vf=0, delta=0):
@@ -362,6 +375,7 @@ class PolymerMushroom(Layer):
         self.solvent = solvent
         self.polymer = polymer
         self.name = name
+
     def parameters(self):
         return {'solvent':self.solvent.parameters(),
                 'polymer':self.polymer.parameters(),
@@ -370,47 +384,50 @@ class PolymerMushroom(Layer):
                 'sigma':self.sigma,
                 'thickness':self.thickness,
                 'interface':self.interface
-                }
-                
+               }
+
     def profile(self, z):
-        delta, sigma, vf, thickness = [p.value for p in (
-                self.delta, self.sigma, self.vf, self.thickness)]
+        delta, sigma, vf, thickness \
+            = [p.value for p in (self.delta, self.sigma, self.vf, self.thickness)]
 
         return smear(z, MushroomProfile(z, delta, vf, sigma), sigma)
 
 
     def render(self, probe, slabs):
         thickness = self.thickness.value
-        Pw,Pz = slabs.microslabs(thickness)
+        Pw, Pz = slabs.microslabs(thickness)
         # Skip layer if it falls to zero thickness.  This may lead to
         # problems in the fitter, since R(thickness) is non-differentiable
         # at thickness = 0.  "Clip to boundary" range handling will at
         # least allow this point to be found.
         # TODO: consider using this behaviour on all layer types.
-        if len(Pw) == 0: return
+        if len(Pw) == 0:
+            return
 
-        Mr,Mi = self.polymer.sld(probe)
-        Sr,Si = self.solvent.sld(probe)
+        Mr, Mi = self.polymer.sld(probe)
+        Sr, Si = self.solvent.sld(probe)
         M = Mr + 1j*Mi
         S = Sr + 1j*Si
-        try: M,S = M[0],S[0]  # Temporary hack
-        except: pass
+        try:
+            M, S = M[0], S[0]  # Temporary hack
+        except KeyError:
+            pass
 
         phi = self.profile(Pz)
-        Pw,phi = util.merge_ends(Pw, phi, tol=1e-3)
+        Pw, phi = util.merge_ends(Pw, phi, tol=1e-3)
         P = M*phi + S*(1-phi)
         Pr, Pi = np.real(P), np.imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
 
 def MushroomProfile(z, delta=0.1, vf=1.0, sigma=1.0):
     thickness = layer_thickness(z)
-    thresh=1e-10
-    
+    thresh = 1e-10
+
     base = 3.0*sigma # tail is erf, capture 95% of the mixing
     Rg = (thickness-base) / 4.0 # profile ends by ~4 RG, so we can tether these
-    keep = (z-base) >= 0.0    
+    keep = (z-base) >= 0.0
     x = (z[keep] - base) / Rg
-    
+
     """
     mushroom_profile_math has a divide by zero problem at delta=0.
     Fix it by weighted average of the profile above and below a threshold.
@@ -419,11 +436,11 @@ def MushroomProfile(z, delta=0.1, vf=1.0, sigma=1.0):
     """
 
     if abs(delta) > thresh:
-        mushroom_profile = mushroom_math(x,delta,vf)
+        mushroom_profile = mushroom_math(x, delta, vf)
     else: # we should RARELY get here
-        scale = (delta+thresh)/2.0/thresh             
-        mushroom_profile = (scale*mushroom_math(x,thresh,vf) 
-                            + (1.0-scale)*mushroom_math(x,-thresh,vf))
+        scale = (delta+thresh)/2.0/thresh
+        mushroom_profile = (scale*mushroom_math(x, thresh, vf)
+                            + (1.0-scale)*mushroom_math(x, -thresh, vf))
 
     try:
         # make the base connect with the profile
@@ -431,25 +448,25 @@ def MushroomProfile(z, delta=0.1, vf=1.0, sigma=1.0):
         base_profile = ones_like(zextra)*mushroom_profile[0]
     except IndexError:
         base_profile = ones_like(z)*mushroom_profile[0]
-        
+
     return hstack((base_profile, mushroom_profile))
 
-def mushroom_math(x,delta=.1,vf=.1):
+def mushroom_math(x, delta=.1, vf=.1):
     """
     new method, rewrite for numerical stability at high delta
     delta=0 causes divide by zero error!! Compensate elsewhere.
     http://ab-initio.mit.edu/wiki/index.php/Faddeeva_Package
     """
-    
+
     from scipy.special import erfc, erfcx
-    
-    x_half=x/2.0
-    delta_double=2.0*delta
+
+    x_half = x/2.0
+    delta_double = 2.0*delta
     return (
             (
-             erfc(x_half) 
-             -erfcx(delta_double+x_half)/exp(x_half*x_half)
-             -erfc(x)
+             erfc(x_half)
+             - erfcx(delta_double+x_half)/exp(x_half*x_half)
+             - erfc(x)
              + (
                 (.25-delta*(x+delta_double))*erfcx(delta_double+x)
                 + delta/SQRT_PI
@@ -460,40 +477,40 @@ def mushroom_math(x,delta=.1,vf=.1):
 class EndTetheredPolymer(Layer):
     r"""
     Polymer end-tethered to an interface in a solvent
-    
+
     Uses a numerical self-consistent field profile.\ [#Cosgrove]_\ [#deVos]_\ [#Sheridan]_
-    
+
     **Parameters**
-    
-        :*chi*:
+
+        *chi*
             solvent interaction parameter
-        :*chi_s*:
+        *chi_s*
             surface interaction parameter
-        :*h_dry*:
+        *h_dry*
             thickness of the neat polymer layer
-        :*l_lat*:
+        *l_lat*
             real length per lattice site
-        :*mn*:
+        *mn*
             Number average molecular weight
-        :*m_lat*:
+        *m_lat*
             real mass per lattice segment
-        :*pdi*:
+        *pdi*
             Dispersity (Polydispersity index)
-        :*phi_b*:
+        *phi_b*
             volume fraction of free chains in solution. useful for associating grafted films 
             e.g. PS-COOH in Toluene with an SiO2 surface.
-        :*thickness*:
+        *thickness*
             Slab thickness should be greater than the contour 
             length of the polymer
-        :*interface*:
+        *interface*
             should be zero
-        :*material*:
+        *material*
             the polymer material
-        :*solvent*:
+        *solvent*
             the solvent material
-    
-    Previous layer should not have roughness! Use a spline to simulate it. 
-    
+
+    Previous layer should not have roughness! Use a spline to simulate it.
+
     According to [#Vincent]_, $l_\text{lat}$ and $m_\text{lat}$ should be
     calculated by the formulas:
 
@@ -507,12 +524,12 @@ class EndTetheredPolymer(Layer):
     theta conditions. The lattice persistence, $p_l$, is:
 
     .. math::
-    
+
         p_l = \frac16 \frac{1+1/Z}{1-1/Z}
-    
+
     with coordination number $Z = 6$ for a cubic lattice, $p_l = .233$.
     """
-    
+
     def __init__(self, thickness=0, interface=0, name="EndTetheredPolymer",
                  polymer=None, solvent=None, chi=0, chi_s=0, h_dry=None,
                  l_lat=1, mn=None, m_lat=1, pdi=1, phi_b=0):
@@ -520,7 +537,7 @@ class EndTetheredPolymer(Layer):
             raise NotImplementedError("interface not yet supported")
         if polymer is None or solvent is None or h_dry is None or mn is None:
             raise TypeError("Need polymer, solvent and profile")
-        
+
         self.thickness = Parameter.default(thickness, name="SCF thickness")
         self.interface = Parameter.default(interface, name="SCF interface")
         self.chi = Parameter.default(chi, name="Chi")
@@ -534,7 +551,7 @@ class EndTetheredPolymer(Layer):
         self.solvent = solvent
         self.polymer = polymer
         self.name = name
-        
+
     def parameters(self):
         return {'solvent':self.solvent.parameters(),
                 'polymer':self.polymer.parameters(),
@@ -548,8 +565,8 @@ class EndTetheredPolymer(Layer):
                 'phi_b': self.phi_b,
                 'thickness':self.thickness,
                 'interface':self.interface
-                }
-                
+               }
+
     def profile(self, z):
         return SCFprofile(z, chi=self.chi.value, chi_s=self.chi_s.value,
                           h_dry=self.h_dry.value, l_lat=self.l_lat.value, mn=self.mn.value,
@@ -557,23 +574,26 @@ class EndTetheredPolymer(Layer):
 
     def render(self, probe, slabs):
         thickness = self.thickness.value
-        Pw,Pz = slabs.microslabs(thickness)
+        Pw, Pz = slabs.microslabs(thickness)
         # Skip layer if it falls to zero thickness.  This may lead to
         # problems in the fitter, since R(thickness) is non-differentiable
         # at thickness = 0.  "Clip to boundary" range handling will at
         # least allow this point to be found.
         # TODO: consider using this behaviour on all layer types.
-        if len(Pw) == 0: return
+        if len(Pw) == 0:
+            return
 
-        Mr,Mi = self.polymer.sld(probe)
-        Sr,Si = self.solvent.sld(probe)
+        Mr, Mi = self.polymer.sld(probe)
+        Sr, Si = self.solvent.sld(probe)
         M = Mr + 1j*Mi
         S = Sr + 1j*Si
-        try: M,S = M[0],S[0]  # Temporary hack
-        except: pass
+        try:
+            M, S = M[0], S[0]  # Temporary hack
+        except KeyError:
+            pass
 
         phi = self.profile(Pz)
-        Pw,phi = util.merge_ends(Pw, phi, tol=1e-3)
+        Pw, phi = util.merge_ends(Pw, phi, tol=1e-3)
         P = M*phi + S*(1-phi)
         Pr, Pi = np.real(P), np.imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
@@ -603,9 +623,11 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None,
     sigma = theta/segments
 
     # solve the self consistent field equations using the cache
-    if disp: print("\n=====Begin calculations=====\n")
+    if disp:
+        print("\n=====Begin calculations=====\n")
     phi_lat = SCFcache(chi, chi_s, pdi, sigma, phi_b, segments, disp)
-    if disp: print("\n============================\n")
+    if disp:
+        print("\n============================\n")
 
     # Chop edge effects out
     for x, layer in enumerate(reversed(phi_lat)):
@@ -616,7 +638,7 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None,
     # re-dimensionalize the solution
     layers = len(phi_lat)
     z_end = l_lat*layers
-    z_lat = np.linspace(0.0,z_end,num=layers)
+    z_lat = np.linspace(0.0, z_end, num=layers)
     phi = np.interp(z, z_lat, phi_lat, right=phi_b)
 
     return phi
@@ -749,7 +771,8 @@ def SCFsolve(chi=0, chi_s=0, pdi=1, sigma=None, phi_b=0, segments=None,
     if sigma >= 1:
         raise ValueError('Chains that short cannot be squeezed that high')
 
-    if disp: starttime = time()
+    if disp:
+        starttime = time()
 
     p_i = SZdist(pdi,segments)
 
@@ -774,7 +797,8 @@ def SCFsolve(chi=0, chi_s=0, pdi=1, sigma=None, phi_b=0, segments=None,
         return SCFeqns(phi, chi, chi_s, sigma, segments, p_i, phi_b)
 
     while lattice_too_small:
-        if disp: print("Solving SCF equations")
+        if disp:
+            print("Solving SCF equations")
 
         try:
             with np.errstate(invalid='ignore'):
@@ -834,7 +858,7 @@ def SZdist(pdi, nn, cache=_SZdist_dict):
     default to an exact uniform calculation.
     """
     from scipy.special import gammaln
-    args = pdi,nn
+    args = pdi, nn
     if args in cache:
         cache[args] = cache.pop(args)
         return cache[args]
@@ -852,15 +876,16 @@ def SZdist(pdi, nn, cache=_SZdist_dict):
         p_ni_list = []
         pdi_underflow = False
 
-        for i in range(max(1,int((100*nn)/chunk))):
-            ni = np.arange(chunk*i+1,chunk*(i+1)+1,dtype=np.float64)
+        for i in range(max(1, int((100*nn)/chunk))):
+            ni = np.arange(chunk*i+1, chunk*(i+1)+1, dtype=np.float64)
             r = ni/nn
             xr = x*r
 
             p_ni = exp(log(x/ni) - gammaln(x+1) + xr*(log(xr)/r-1))
 
-            pdi_underflow = (p_ni>=1.0).any() # catch "too small PDI"
-            if pdi_underflow: break # and break out to uniform calculation
+            pdi_underflow = (p_ni >= 1.0).any() # catch "too small PDI"
+            if pdi_underflow:
+                break # and break out to uniform calculation
 
             # Stop calculating when species account for less than 1ppm
             keep = (r < 1.0) | (p_ni >= 1e-6)
@@ -929,7 +954,6 @@ def SCFeqns(phi_z, chi, chi_s, sigma, n_avg, p_i, phi_b=0):
     g_z_norm = g_z / exp(u_z_avg)
 
     phi_z_new = calc_phi_z(g_z_norm, n_avg, sigma, phi_b, u_z_avg, p_i)
-
     eps_z = phi_z - phi_z_new
 
     if penalty_flag:
@@ -1071,4 +1095,4 @@ class Propagator(object):
             segments = g_zs.shape[1]
             pg_zs = g_zs[:, 0]
             for r in range(1, segments):
-                g_zs[:, r] = pg_zs = correlate(pg_zs, LAMBDA_ARRAY, 1) * g_z
+                g_zs[:, r] = pg_zs = correlate(pg_zs, LAMBDA_ARRAY, 1) * g

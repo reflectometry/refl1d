@@ -1,6 +1,6 @@
 # This program is public domain
 # Author: Paul Kienzle
-"""
+r"""
 Interfacial roughness
 
 Interfacial roughness is defined by a probability distribution P and the
@@ -13,7 +13,7 @@ Example
 Define a silicon wafer with tanh roughness between 0 and 5:
 
     >>> from refl1d.names import *
-    >>> sample = silicon(interface=Tanh(5,"Si:Air")) | air
+    >>> sample = silicon(interface=Tanh(5, "Si:Air")) | air
 
 The above example uses a function interface.  Other interface include:
 
@@ -59,14 +59,15 @@ You will need to provide the following methods::
     ppf(z)
         returns the percent point function, which is the inverse of
         the cdf.  You can define a profile with n equal sized steps in
-        y using y=numpy.linspace(0,1,n+2)[1:-1], x=interface.ppf(y)
+        y using y=numpy.linspace(0, 1, n+2)[1:-1], x=interface.ppf(y)
     parameters()
         returns the set of parameters used to define the interface
 
 See the implementation of :class:`Erf` or :class:`Tanh` for a complete example.
 """
-from __future__ import division
-__all__ = ['Interface','Sharp', 'Erf', 'Tanh', 'Linear']
+from __future__ import division, print_function
+
+__all__ = ['Interface', 'Sharp', 'Erf', 'Tanh', 'Linear']
 
 import numpy
 from numpy import tanh, cosh, exp, log, sqrt, pi, inf
@@ -78,13 +79,15 @@ try:
     from bumps.parameter import Parameter
 except ImportError:
     print("Could not import Parameter; using trivial implementation")
-    class Parameter:
+    class Parameter(object):
         def __init__(self, value, **kw):
             self.value = value
         @classmethod
         def default(cls, value, **kw):
-            if isinstance(value, Parameter): return value
-            else: return cls(value)
+            if isinstance(value, Parameter):
+                return value
+            else:
+                return cls(value)
 
 sech = lambda x: 1/cosh(x)
 asech = lambda x: acosh(1/x)
@@ -101,14 +104,17 @@ class Interface(object):
         Fittable parameters
         """
         return []
+
     def cdf(self, z):
         """
         Return the cumulative density function corresponding to the interface.
         """
+
     def pdf(self, z):
         """
         Return the probability density function corresponding to the interface.
         """
+
     def ppf(self, z):
         """
         Return the percent point function, which is the inverse of the cdf.
@@ -129,15 +135,18 @@ class Sharp(Interface):
     """
     def parameters(self):
         return []
+
     def cdf(self, z):
-        return 1*(z>=0)
+        return 1*(z >= 0)
+
     def pdf(self, z):
-        return inf*(z==0)
+        return inf*(z == 0)
+
     def ppf(self, z):
         return 0*z
 
 class Erf(Interface):
-    """
+    r"""
     Error function profile
 
     *width* (Parameter: 0 Angstroms)
@@ -170,23 +179,28 @@ class Erf(Interface):
         self = cls(*args, **kw)
         self._scale = 1/sqrt(8*log(2))
         return self
+
     def __init__(self, width=0, name="erf"):
         self._scale = 1
-        self.width = Parameter.default(width, limits=(0,inf), name=name)
+        self.width = Parameter.default(width, limits=(0, inf), name=name)
+
     def parameters(self):
         return {'width':self.width}
+
     def cdf(self, z):
         sigma = self.width.value * self._scale
         if sigma <= 0.0:
             return 1.*(z >= 0)
         else:
-            return 0.5*(1 + erf( z/(sigma*sqrt(2)) ))
+            return 0.5*(1 + erf(z/(sigma*sqrt(2))))
+
     def pdf(self, z):
         sigma = self.width.value * self._scale
         if sigma <= 0.0:
-            return inf*(z==0)
+            return inf*(z == 0)
         else:
             return exp(z**2/(-2*sigma**2)) / sqrt(2*pi*sigma**2)
+
     def ppf(self, z):
         sigma = self.width.value * self._scale
         if sigma <= 0.0:
@@ -209,7 +223,7 @@ class Linear(Interface):
         PPF(z) = w/2*z if |z|<w/2, -w/2 if z<-w/2, w/2 otherwise
     """
     def __init__(self, width=0, name="linear"):
-        self.width = Parameter.default(width, limits=(0,inf), name=name)
+        self.width = Parameter.default(width, limits=(0, inf), name=name)
     def parameters(self):
         return {'width':self.width}
     def cdf(self, z):
@@ -217,19 +231,19 @@ class Linear(Interface):
         if w <= 0.0:
             return 1.*(z >= 0)
         else:
-            return numpy.clip(z/w + 0.5,0,1)
+            return numpy.clip(z/w + 0.5, 0, 1)
     def pdf(self, z):
         w = float(self.width.value)
         if w <= 0.0:
-            return inf*(z==0)
+            return inf*(z == 0)
         else:
-            return (abs(z)<w/2)/w
+            return (abs(z) < w/2)/w
     def ppf(self, z):
         w = float(self.width.value)
         if w <= 0.0:
             return 0*z
         else:
-            return numpy.clip(2*z/w,-w/2,w/2)
+            return numpy.clip(2*z/w, -w/2, w/2)
 
 class Tanh(Interface):
     r"""
@@ -297,7 +311,7 @@ class Tanh(Interface):
     Cfwhm = 2*acosh(sqrt(2))
     @classmethod
     def as_fwhm(cls, *args, **kw):
-        """
+        r"""
         Defines interface using FWHM rather than 1-\ $\sigma$.
         """
         self = cls(*args, **kw)
@@ -305,7 +319,7 @@ class Tanh(Interface):
         return self
     def __init__(self, width=0, name="tanh"):
         self._scale = 1
-        self.width = Parameter.default(width, limits=(0,inf), name=name)
+        self.width = Parameter.default(width, limits=(0, inf), name=name)
     def parameters(self):
         return {'width':self.width}
     def cdf(self, z):
@@ -313,13 +327,13 @@ class Tanh(Interface):
         if w <= 0.0:
             return 1.*(z > 0)
         else:
-            return 0.5*( 1 + tanh((Tanh.C/w)*z))
+            return 0.5*(1 + tanh((Tanh.C/w)*z))
     def pdf(self, z):
         w = self.width.value * self._scale
         if w <= 0.0:
-            return inf*(z==0)
+            return inf*(z == 0)
         else:
-            return sech( (Tanh.C/w)*z )**2 * (Tanh.C / (2*w))
+            return sech((Tanh.C/w)*z)**2 * (Tanh.C / (2*w))
     def ppf(self, z):
         w = self.width.value * self._scale
         if w <= 0.0:
@@ -339,26 +353,26 @@ def demo_fwhm():
     perf = Erf.as_fwhm(w)
     ptanh = Tanh.as_fwhm(w)
 
-    z=pylab.linspace(-w,w,800)
+    z = pylab.linspace(-w, w, 800)
     pylab.subplot(211)
-    pylab.plot(z,perf.cdf(z),hold=False)
-    pylab.plot(z,ptanh.cdf(z),hold=True)
-    pylab.legend(['erf','tanh'])
+    pylab.plot(z, perf.cdf(z))
+    pylab.plot(z, ptanh.cdf(z))
+    pylab.legend(['erf', 'tanh'])
     pylab.grid(True)
     pylab.subplot(212)
-    pylab.plot(z,perf.pdf(z),'b',hold=False)
-    pylab.plot(z,ptanh.pdf(z),'g',hold=True)
-    pylab.legend(['erf','tanh'])
+    pylab.plot(z, perf.pdf(z), 'b')
+    pylab.plot(z, ptanh.pdf(z), 'g')
+    pylab.legend(['erf', 'tanh'])
 
     # Show fwhm
-    arrowprops=dict(arrowstyle='wedge',connectionstyle='arc3',fc='0.6')
-    bbox=dict(boxstyle='round', fc='0.8')
-    pylab.annotate('erf FWHM',xy=(w/2,perf.pdf(0)/2),
-                   xytext=(-35,10),textcoords="offset points",
+    arrowprops = dict(arrowstyle='wedge', connectionstyle='arc3', fc='0.6')
+    bbox = dict(boxstyle='round', fc='0.8')
+    pylab.annotate('erf FWHM', xy=(w/2, perf.pdf(0)/2),
+                   xytext=(-35, 10), textcoords="offset points",
                    arrowprops=arrowprops, bbox=bbox)
-    pylab.annotate('tanh FWHM',xy=(w/2,ptanh.pdf(0)/2),
-                   xytext=(-35,-35),textcoords="offset points",
-                   arrowprops=arrowprops,bbox=bbox)
+    pylab.annotate('tanh FWHM', xy=(w/2, ptanh.pdf(0)/2),
+                   xytext=(-35, -35), textcoords="offset points",
+                   arrowprops=arrowprops, bbox=bbox)
 
     pylab.grid(True)
 
@@ -376,28 +390,28 @@ def demo_tanh_to_erf():
     ptanh = Tanh.as_fwhm(w)
     perf = Erf(ws)
 
-    z=pylab.linspace(-2*w,2*w,800)
+    z = pylab.linspace(-2*w, 2*w, 800)
     pylab.subplot(211)
-    pylab.plot(z,perf.cdf(z),hold=False)
-    pylab.plot(z,ptanh.cdf(z),hold=True)
+    pylab.plot(z, perf.cdf(z))
+    pylab.plot(z, ptanh.cdf(z))
     pylab.title("""FWHM tanh -> 1-sigma erf
 scale by atanh(erf(1/sqrt(2))) / (2 acosh(sqrt(2)))""")
-    pylab.legend(['erf','tanh'])
+    pylab.legend(['erf', 'tanh'])
     pylab.grid(True)
     pylab.subplot(212)
-    pylab.plot(z,perf.pdf(z),'b',hold=False)
-    pylab.plot(z,ptanh.pdf(z),'g',hold=True)
-    pylab.legend(['erf','tanh'])
+    pylab.plot(z, perf.pdf(z), 'b')
+    pylab.plot(z, ptanh.pdf(z), 'g')
+    pylab.legend(['erf', 'tanh'])
 
     # Show fwhm
-    arrowprops=dict(arrowstyle='wedge',connectionstyle='arc3',fc='0.6')
-    bbox=dict(boxstyle='round', fc='0.8')
-    pylab.annotate('erf 1-sigma',xy=(ws,perf.pdf(ws)),
-                   xytext=(-2,20),textcoords="offset points",
+    arrowprops = dict(arrowstyle='wedge', connectionstyle='arc3', fc='0.6')
+    bbox = dict(boxstyle='round', fc='0.8')
+    pylab.annotate('erf 1-sigma', xy=(ws, perf.pdf(ws)),
+                   xytext=(-2, 20), textcoords="offset points",
                    arrowprops=arrowprops, bbox=bbox)
-    pylab.annotate('tanh FWHM',xy=(w/2,ptanh.pdf(0)/2),
-                   xytext=(-58,-35),textcoords="offset points",
-                   arrowprops=arrowprops,bbox=bbox)
+    pylab.annotate('tanh FWHM', xy=(w/2, ptanh.pdf(0)/2),
+                   xytext=(-58, -35), textcoords="offset points",
+                   arrowprops=arrowprops, bbox=bbox)
 
     pylab.grid(True)
 
@@ -414,49 +428,49 @@ def demo():
     ptanh = Tanh(w)
     plinear = Linear(2.35*w)
 
-    #arrowprops=dict(arrowstyle='wedge',connectionstyle='arc3',fc='0.6')
+    #arrowprops=dict(arrowstyle='wedge', connectionstyle='arc3', fc='0.6')
     #bbox=dict(boxstyle='round', fc='0.8')
 
-    z=pylab.linspace(-3*w,3*w,800)
+    z = pylab.linspace(-3*w, 3*w, 800)
     pylab.subplot(211)
-    pylab.plot(z,perf.cdf(z),hold=False)
-    pylab.plot(z,ptanh.cdf(z),hold=True)
-    pylab.plot(z,plinear.cdf(z),hold=True)
-    pylab.axvline(w,linewidth=2)
-    pylab.annotate('1-sigma',xy=(w*1.1,0.2))
-    pylab.legend(['erf','tanh'])
+    pylab.plot(z, perf.cdf(z))
+    pylab.plot(z, ptanh.cdf(z))
+    pylab.plot(z, plinear.cdf(z))
+    pylab.axvline(w, linewidth=2)
+    pylab.annotate('1-sigma', xy=(w*1.1, 0.2))
+    pylab.legend(['erf', 'tanh'])
     pylab.grid(True)
     pylab.subplot(212)
-    pylab.plot(z,perf.pdf(z),hold=False)
-    pylab.plot(z,ptanh.pdf(z),hold=True)
-    pylab.plot(z,plinear.pdf(z),hold=True)
+    pylab.plot(z, perf.pdf(z))
+    pylab.plot(z, ptanh.pdf(z))
+    pylab.plot(z, plinear.pdf(z))
     pylab.axvline(w, linewidth=2)
-    pylab.annotate('1-sigma',xy=(w*1.1,0.2))
-    pylab.legend(['erf','tanh','linear'])
+    pylab.annotate('1-sigma', xy=(w*1.1, 0.2))
+    pylab.legend(['erf', 'tanh', 'linear'])
     pylab.grid(True)
 
-def _test_one(name,p,w,tol):
+def _test_one(name, p, w, tol):
     import scipy.integrate as sum
     # Check that the pdf approximately matchs the numerical integral
-    # Check that integral(-inf,0) of pdf sums to 0.5
-    err = abs(sum.romberg(p.pdf,-20*w,0,tol=1e-15) - 0.5)
-    assert err<tol,"%s cdf(0) == 0.5 yields %g"%(name,err)
+    # Check that integral(-inf, 0) of pdf sums to 0.5
+    err = abs(sum.romberg(p.pdf, -20*w, 0, tol=1e-15) - 0.5)
+    assert err < tol, "%s cdf(0) == 0.5 yields %g"%(name, err)
 
-    # Check that integral(-inf,x) of pdf sums to cdf when x != 0
-    err = abs(sum.romberg(p.pdf,-20*w,w/6,tol=1e-15) - p.cdf(w/6))
-    assert err<tol,"%s cdf(w/6) == w/6 yields %g"%(name,err)
+    # Check that integral(-inf, x) of pdf sums to cdf when x != 0
+    err = abs(sum.romberg(p.pdf, -20*w, w/6, tol=1e-15) - p.cdf(w/6))
+    assert err < tol, "%s cdf(w/6) == w/6 yields %g"%(name, err)
 
     # Check that P = cdf(ppf(P))
     P = 0.002
     err = abs(p.cdf(p.ppf(P)) - P)
-    assert err<tol,"%s p(lo) = P yields %g"%(name,err)
+    assert err < tol, "%s p(lo) = P yields %g"%(name, err)
 
 def test():
-    w=1.5
-    _test_one('Erf',Erf(w),w=w,tol=1e-13)
-    _test_one('Tanh',Tanh(w),w=w,tol=1e-11)
-    _test_one('Erf:fwhm',Erf.as_fwhm(2.35*w),w=w,tol=1e-11)
-    _test_one('Tanh:fwhm',Tanh.as_fwhm(2*w),w=w,tol=1e-11)
+    w = 1.5
+    _test_one('Erf', Erf(w), w=w, tol=1e-13)
+    _test_one('Tanh', Tanh(w), w=w, tol=1e-11)
+    _test_one('Erf:fwhm', Erf.as_fwhm(2.35*w), w=w, tol=1e-11)
+    _test_one('Tanh:fwhm', Tanh.as_fwhm(2*w), w=w, tol=1e-11)
 
 if __name__ == "__main__":
     #demo()

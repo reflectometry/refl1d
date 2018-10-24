@@ -126,8 +126,8 @@ def rebin2d(x, y, I, xo, yo, Io=None, dtype=None):
     """
     Rebin a matrix.
 
-    x,y are the existing bin edges
-    xo,yo are the new bin edges
+    x, y are the existing bin edges
+    xo, yo are the new bin edges
     I is the existing counts (one fewer than edges in each direction)
 
     For example, with x representing the column edges in each row and
@@ -135,16 +135,15 @@ def rebin2d(x, y, I, xo, yo, Io=None, dtype=None):
     represents a uniform field::
 
         >>> #from bumps.rebin import rebin2d
-        >>> x,y = [0,2,4,5], [0,1,3]
-        >>> z = [[2,2,1], [4,4,2]]
+        >>> x, y = [0, 2, 4, 5], [0, 1, 3]
+        >>> z = [[2, 2, 1], [4, 4, 2]]
 
     We can check this by rebinning with uniform size bins::
 
-        >>> xo,yo = range(6),range(4)
-        >>> rebin2d(y, x, z, yo, xo)
-        array([[ 1.,  1.,  1.,  1.,  1.],
-               [ 1.,  1.,  1.,  1.,  1.],
-               [ 1.,  1.,  1.,  1.,  1.]])
+        >>> xo, yo = range(6), range(4)
+        >>> zo = rebin2d(y, x, z, yo, xo)
+        >>> (zo == 1.).all()
+        True
 
     dtype is the type to use for the intensity vectors.  This can be
     integer (uint8, uint16, uint32) or real (float32 or f, float64 or d).
@@ -234,21 +233,21 @@ def _check_all_1d():
     _check_one_1d([0, 1, 2, 3, 4], [5, 10, 20, 30], [1, 2.5, 3], [20, 10])
 
     # bin is a subset of rebin
-    _check_one_1d([1,   2,   3,   4,   5,   6],
-                  [10,  20,  30,  40,  50],
-                  [2.5,  3.5],
+    _check_one_1d([1, 2, 3, 4, 5, 6],
+                  [10, 20, 30, 40, 50],
+                  [2.5, 3.5],
                   [25])
 
     # one bin to many
-    _check_one_1d([1,   2,   3,   4,   5,  6],
-                  [10,  20,  30,  40,  50],
+    _check_one_1d([1, 2, 3, 4, 5, 6],
+                  [10, 20, 30, 40, 50],
                   [2.1, 2.2, 2.3, 2.4],
-                  [2,   2,   2])
+                  [2, 2, 2])
 
     # many bins to one
-    _check_one_1d([1,   2,   3,   4,   5,  6],
-                  [10,  20,  30,  40,  50],
-                  [2.5,      4.5],
+    _check_one_1d([1, 2, 3, 4, 5, 6],
+                  [10, 20, 30, 40, 50],
+                  [2.5, 4.5],
                   [60])
 
 
@@ -259,14 +258,14 @@ def _check_one_2d(x, y, z, xo, yo, zo):
     result = rebin2d(x, y, z, xo, yo)
     target = np.array(zo, dtype=result.dtype)
     assert np.linalg.norm(target - result) < 1e-14, \
-        "rebin2d failed for %s,%s->%s,%s\nexpected: %s\nbut got: %s" \
+        "rebin2d failed for %s, %s->%s, %s\nexpected: %s\nbut got: %s" \
         % (x, y, xo, yo, zo, z)
 
 
 def _check_uniform_2d(x, y):
     z = np.array([y], 'd') * np.array([x], 'd').T
-    xedges = np.concatenate([(0,), np.cumsum(x)])
-    yedges = np.concatenate([(0,), np.cumsum(y)])
+    xedges = np.concatenate([(0, ), np.cumsum(x)])
+    yedges = np.concatenate([(0, ), np.cumsum(y)])
     nx = int(np.round(xedges[-1]))
     ny = int(np.round(yedges[-1]))
     ox = np.arange(nx + 1)
@@ -299,9 +298,9 @@ def _check_all_2d():
                       np.array([[1] * 4] * 4, dtype=dtype),
                       [-2, -1, 2, 5, 6], [-2, -1, 2, 5, 6],
                       np.array([[0, 0, 0, 0], [0, 4, 4, 0],
-                                   [0, 4, 4, 0], [0, 0, 0, 0]],
-                                  dtype=dtype)
-                      )
+                                [0, 4, 4, 0], [0, 0, 0, 0]],
+                               dtype=dtype)
+                     )
     # non-square test
     _check_uniform_2d([1, 2.5, 4, 0.5], [3, 1, 2.5, 1, 3.5])
     _check_uniform_2d([3, 2], [1, 2])

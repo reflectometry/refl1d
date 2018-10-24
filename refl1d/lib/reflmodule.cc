@@ -12,6 +12,7 @@
   typedef unsigned long long uint64_t;
 #endif
 
+//#define Py_LIMITED_API 0x03020000
 #include <Python.h>
 
 #include "methods.h"
@@ -26,6 +27,7 @@ PyObject* Prebin(PyObject *obj, PyObject *args)
   Py_ssize_t nin,nIin, nout, nIout;
   double *in, *out;
   T *Iin, *Iout;
+  DECLARE_VECTORS(4);
 
   if (!PyArg_ParseTuple(args, "OOOO:rebin",
                         &in_obj,&Iin_obj,&out_obj,&Iout_obj)) return NULL;
@@ -36,9 +38,11 @@ PyObject* Prebin(PyObject *obj, PyObject *args)
   if (nin-1 != nIin || nout-1 != nIout) {
     PyErr_SetString(PyExc_ValueError,
         "_reduction.rebin: must have one more bin edges than bins");
+    FREE_VECTORS();
     return NULL;
   }
   rebin_counts<T>(nin-1,in,Iin,nout-1,out,Iout);
+  FREE_VECTORS();
   return Py_BuildValue("");
 }
 
@@ -51,6 +55,7 @@ PyObject* Prebin2d(PyObject *obj, PyObject *args)
   Py_ssize_t nxout, nyout, nIout;
   double *xin,*yin,*xout,*yout;
   T *Iin, *Iout;
+  DECLARE_VECTORS(6);
 
   if (!PyArg_ParseTuple(args, "OOOOOO:rebin",
                         &xin_obj, &yin_obj, &Iin_obj,
@@ -67,10 +72,12 @@ PyObject* Prebin2d(PyObject *obj, PyObject *args)
     /* printf("%ld %ld %ld %ld %ld %ld\n",nxin,nyin,nIin,nxout,nyout,nIout); */
     PyErr_SetString(PyExc_ValueError,
         "_reduction.rebin2d: must have one more bin edges than bins");
+    FREE_VECTORS();
     return NULL;
   }
   rebin_counts_2D<T>(nxin-1,xin,nyin-1,yin,Iin,
       nxout-1,xout,nyout-1,yout,Iout);
+  FREE_VECTORS();
   return Py_BuildValue("");
 }
 
@@ -84,22 +91,32 @@ static PyMethodDef methods[] = {
 	{"_magnetic_amplitude",
 	 Pmagnetic_amplitude,
 	 METH_VARARGS,
-	 "_magnetic_amplitude(d,sigma,rho,irho,rhoM,u1,u3,Aguide,Q,rho_offset,R1,R2,R3,R4): compute amplitude putting it into vector R of len(Q)"},
+	 "_magnetic_amplitude(d,sigma,rho,irho,sld_b,U1,U3,Aguide,Q,rho_offset,R1,R2,R3,R4): compute amplitude putting it into vector R of len(Q)"},
+
+	{"_calculate_u1_u3",
+	 Pcalculate_u1_u3,
+	 METH_VARARGS,
+	 "_calculate_u1_u3(H,rhoM,thetaM,Aguide,sld_b,U1,U3): compute sld_b,U1,U3 from rhoM,thetaM to pass to magnetic amplitude"},
 
 	{"_contract_by_area",
-         Pcontract_by_area,
-         METH_VARARGS,
-         "_contract_by_area(d,sigma,rho,irho,dA): join layers in microstep profile, keeping error under control"},
+	 Pcontract_by_area,
+	 METH_VARARGS,
+	 "_contract_by_area(d,sigma,rho,irho,dA): join layers in microstep profile, keeping error under control"},
 
-         {"_contract_mag",
-          Pcontract_mag,
-          METH_VARARGS,
-          "_contract_mag(d,sigma,rho,irho,rhoM,thetaM,dA): join layers in microstep profile, keeping error under control"},
+	{"_contract_mag",
+	 Pcontract_mag,
+	 METH_VARARGS,
+	 "_contract_mag(d,sigma,rho,irho,rhom,thetam,da): join layers in microstep profile, keeping error under control"},
 
-        {"_contract_by_step",
-         Pcontract_by_step,
-         METH_VARARGS,
-         "_contract_by_step(d,sigma,rho,irho,dv): join layers in microstep profile, keeping error under control"},
+	{"_contract_by_step",
+	 Pcontract_by_step,
+	 METH_VARARGS,
+	 "_contract_by_step(d,sigma,rho,irho,dv): join layers in microstep profile, keeping error under control"},
+
+	{"_align_magnetic",
+	 Palign_magnetic,
+	 METH_VARARGS,
+	 "_align_magnetic(d,sigma,rho,irho,dm,sigmam,rhom,thetam,result): align the interfaces between nuclear and magnetic profiles"},
 
 	{"convolve",
 	 Pconvolve,
