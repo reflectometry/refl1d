@@ -336,6 +336,14 @@ class Probe(object):
             Q = self.Qo
         return Q
 
+    @Q.setter
+    def Q(self, Q):
+        # If we explicity set Q, then forget what we know about T and L.
+        # This will cause theta offset != 0 to fail.
+        if hasattr(self, 'T'):
+            del self.T, self.L
+        self.Qo = Q
+
     @property
     def dQ(self):
         if self.sample_broadening.value != 0:
@@ -344,6 +352,14 @@ class Probe(object):
         else:
             dQ = self.dQo
         return dQ
+
+    @dQ.setter
+    def dQ(self, dQ):
+        # If we explicity set dQ, then forget what we know about dT and dL.
+        # This will cause sample broadening != 0 to fail.
+        if hasattr(self, 'dT'):
+            del self.dT, self.dL
+        self.dQo = dQ
 
     @property
     def calc_Q(self):
@@ -1265,13 +1281,12 @@ class QProbe(Probe):
         self.back_reflectivity = back_reflectivity
 
 
-        self.Qo, self.dQ = Q, dQ
         if data is not None:
             R, dR = data
         else:
             R, dR = None, None
 
-        self.Qo, self.dQ = Q, dQ
+        self.Q, self.dQ = Q, dQ
         self.Ro = self.R = R
         self.dR = dR
         self.unique_L = None
