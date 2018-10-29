@@ -116,7 +116,7 @@ class Probe(object):
            Offset of the sample from perfect alignment
         *sample_broadening* : float or Parameter
            Additional angular divergence from sample curvature.  Should be
-           expressed as 1-$\sigma$ rms.  Scale by sqrt(8 ln 2) ~ 2.35
+           expressed as FWHM.  Scale by sqrt(8 ln 2) ~ 2.35
            to convert from rms to FWHM.
         *back_reflectivity* : True or False
            True if the beam enters through the substrate
@@ -349,7 +349,7 @@ class Probe(object):
     @property
     def dQ(self):
         if self.sample_broadening.value != 0:
-            dQ = dTdL2dQ(T=self.T, dT=self.dT + sigma2FWHM(self.sample_broadening.value),
+            dQ = dTdL2dQ(T=self.T, dT=self.dT + self.sample_broadening.value,
                          L=self.L, dL=self.dL)
         else:
             dQ = self.dQo
@@ -1152,7 +1152,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     have a polarization keyword, with value "++", "+-", "-+" or "--".
 
     *FWHM* is True if dQ, dT, dL are given as FWHM rather than 1-$\sigma$.
-    *dR* is always 1-$\sigma$.
+    *dR* is always 1-$\sigma$.  *sample_broadening* is always FWHM.
 
     *radiation* is 'xray' or 'neutron', depending on whether X-ray or
     neutron scattering length density calculator should be used for
