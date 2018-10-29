@@ -115,7 +115,9 @@ class Probe(object):
         *theta_offset* : float or Parameter
            Offset of the sample from perfect alignment
         *sample_broadening* : float or Parameter
-           Additional angular divergence from sample curvature
+           Additional angular divergence from sample curvature.  Should be
+           expressed as 1-$\sigma$ rms.  Scale by sqrt(8 ln 2) ~ 2.35
+           to convert from rms to FWHM.
         *back_reflectivity* : True or False
            True if the beam enters through the substrate
 
@@ -195,7 +197,7 @@ class Probe(object):
         #    dE = E * dL/L
 
         Q = TL2Q(T=T, L=L)
-        dQ = dTdL2dQ(T=T, dT=dT + sigma2FWHM(self.sample_broadening.value), L=L, dL=dL)
+        dQ = dTdL2dQ(T=T, dT=dT + self.sample_broadening.value, L=L, dL=dL)
 
         # Make sure that we are dealing with vectors
         T, dT, L, dL = [numpy.ones_like(Q)*v for v in (T, dT, L, dL)]
@@ -371,12 +373,13 @@ class Probe(object):
         return Q if not self.back_reflectivity else -Q
 
     def parameters(self):
-        return {'intensity':self.intensity,
-                'background':self.background,
-                'back_absorption':self.back_absorption,
-                'theta_offset':self.theta_offset,
-                'sample_broadening':self.sample_broadening
-               }
+        return {
+            'intensity': self.intensity,
+            'background': self.background,
+            'back_absorption': self.back_absorption,
+            'theta_offset': self.theta_offset,
+            'sample_broadening': self.sample_broadening
+            }
 
     def to_dict(self):
         """ Return a dictionary representation of the parameters """
@@ -1009,27 +1012,34 @@ class ProbeSet(Probe):
                 offset += n
 
     def shared_beam(self, intensity=1, background=0,
-                    back_absorption=1, theta_offset=0):
+                    back_absorption=1, theta_offset=0,
+                    sample_broadening=0):
         """
         Share beam parameters across all segments.
 
         New parameters are created for *intensity*, *background*,
-        *theta_offset* and *back_absorption* and assigned to the all
-        segments.  These can be replaced in an individual segment if
-        that parameter is independent.
+        *theta_offset*, *sample_broadening* and *back_absorption*
+        and assigned to the all segments.  These can be replaced
+        with an explicit parameter in an individual segment if that
+        parameter is independent.
         """
         intensity = Parameter.default(intensity, name="intensity")
-        background = Parameter.default(background, name="background",
+        background = Parameter.default(background,
+                                       name="background",
                                        limits=[0, inf])
         back_absorption = Parameter.default(back_absorption,
                                             name="back_absorption",
                                             limits=[0, 1])
         theta_offset = Parameter.default(theta_offset, name="theta_offset")
+        sample_broadening = Parameter.default(sample_broadening,
+                                              name="sample_broadening",
+                                              limits=[0, inf])
         for p in self.probes:
             p.intensity = intensity
             p.background = background
             p.back_absorption = back_absorption
             p.theta_offset = theta_offset
+            p.sample_broadening = sample_broadening
 
     def stitch(self, same_Q=0.001, same_dQ=0.001):
         r"""
@@ -1132,7 +1142,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
         # wavelength: [1, 1.2, 1.5, 2.0, ...]
         # wavelength_resolution: [0.02, 0.02, 0.02, ...]
 
-    *sample_broadening* in degrees (1-\ $\sigma$) adds to the angular_resolution.
+    *sample_broadening* in degrees (1-$\sigma$ rms) adds to the angular_resolution.
 
     *Aguide* and *H* are parameters for polarized beam measurements
     indicating the magnitude and direction of the applied field.
@@ -1141,8 +1151,8 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     with blank lines separating each section.  Each section must
     have a polarization keyword, with value "++", "+-", "-+" or "--".
 
-    *FWHM* is True if dQ, dT, dL are given as FWHM rather than 1-\ $\sigma$.
-    *dR* is always 1-\ $\sigma$.
+    *FWHM* is True if dQ, dT, dL are given as FWHM rather than 1-$\sigma$.
+    *dR* is always 1-$\sigma$.
 
     *radiation* is 'xray' or 'neutron', depending on whether X-ray or
     neutron scattering length density calculator should be used for
@@ -1211,8 +1221,6 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
             data_dL = data_dLoL * data_L
 
         if data_L is not None:
-#            data_dT += (sigma2FWHM(sample_broadening)
-#                        if not FWHM else sample_broadening)
             probe = make_probe(
                 T=data_T, dT=data_dT,
                 L=data_L, dL=data_dL,
@@ -1422,15 +1430,16 @@ class PolarizedNeutronProbe(object):
             raise ValueError("Cannot mix front and back reflectivity measurements")
 
     def shared_beam(self, intensity=1, background=0,
-                    back_absorption=1, theta_offset=0):
+                    back_absorption=1, theta_offset=0,
+                    sample_broadening=0):
         """
         Share beam parameters across all four cross sections.
 
         New parameters are created for *intensity*, *background*,
-        *theta_offset* and *back_absorption* and assigned to the all
-        cross sections.  These can be replaced in an individual
-        cross section if for some reason one of the parameters is
-        independent.
+        *theta_offset*, *sample_broadening* and *back_absorption*
+        and assigned to the all cross sections.  These can be replaced
+        with an explicit parameter in an individual cross section if that
+        parameter is independent.
         """
         intensity = Parameter.default(intensity, name="intensity")
         background = Parameter.default(background, name="background",
@@ -1439,12 +1448,16 @@ class PolarizedNeutronProbe(object):
                                             name="back_absorption",
                                             limits=[0, 1])
         theta_offset = Parameter.default(theta_offset, name="theta_offset")
+        sample_broadening = Parameter.default(sample_broadening,
+                                              name="sample_broadening",
+                                              limits=[0, inf])
         for x in self.xs:
             if x is not None:
                 x.intensity = intensity
                 x.background = background
                 x.back_absorption = back_absorption
                 x.theta_offset = theta_offset
+                x.sample_broadening = sample_broadening
 
     def oversample(self, n=6, seed=1):
         # doc string is inherited from parent (see below)
