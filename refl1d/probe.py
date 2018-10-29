@@ -877,7 +877,6 @@ class ProbeSet(Probe):
         self.probes = list(probes)
         self.R = numpy.hstack(p.R for p in self.probes)
         self.dR = numpy.hstack(p.dR for p in self.probes)
-        self.dQ = numpy.hstack(p.dQ for p in self.probes)
         self.name = name if name is not None else self.probes[0].name
 
         back_refls = [f.back_reflectivity for f in self.probes]
