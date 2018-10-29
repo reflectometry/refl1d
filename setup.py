@@ -39,8 +39,16 @@ class build_ext_subclass(build_ext):
 
 # reflmodule extension
 def reflmodule_config():
-    if sys.platform == "darwin":
-        os.environ['CXX'] = 'c++'
+    if sys.platform == "darwin" and sys.version_info[0] < 3:
+        # Python 2.7 is not finding C++ headers on Mac unless the
+        # minimum OSX version is bumped from the default 10.6 up
+        # to 10.10.  Don't know if this is because of the mac
+        # setup (older development libraries not installed) or
+        # because of the anaconda build (targetted to 10.6) or
+        # some combination.  Override by setting the deployment
+        # target on the command line.  Curiously, Xcode can
+        # target c++ code to 10.7 on the same machine.
+        os.environ.setdefault('MACOSX_DEPLOYMENT_TARGET', '10.10')
 
     S = ("reflmodule.cc", "methods.cc",
          "reflectivity.cc", "magnetic.cc",
@@ -51,12 +59,12 @@ def reflmodule_config():
     Sdeps = ("erf.c", "methods.h", "rebin.h", "rebin2D.h", "reflcalc.h")
     sources = [os.path.join('refl1d', 'lib', f) for f in S]
     depends = [os.path.join('refl1d', 'lib', f) for f in Sdeps]
-    module = Extension('refl1d.reflmodule',
-                       sources=sources,
-                       depends=depends,
-                       #py_limited_api="cp32",
-                       )
-    return module
+    return Extension('refl1d.reflmodule',
+                     sources=sources,
+                     depends=depends,
+                     language="c++",
+                     #py_limited_api="cp32",
+                     )
 
 # SCF extension
 def SCFmodule_config():
@@ -64,6 +72,7 @@ def SCFmodule_config():
     return Extension('refl1d.calc_g_zs_cex',
                      sources=[os.path.join('refl1d', 'lib', 'calc_g_zs_cex.c')],
                      include_dirs=[get_include()],
+                     #language="c++",
                      #py_limited_api="cp32",
                      )
 
