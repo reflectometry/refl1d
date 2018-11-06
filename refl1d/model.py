@@ -129,8 +129,10 @@ class Layer(object): # Abstract base class
         if self.thickness: _layer_dict['thickness'] = self.thickness.to_dict()
         if self.interface: _layer_dict['interface'] = self.interface.to_dict()
         if self.magnetism:
-            for name, param in self.magnetism.parameters().iteritems():
-                _layer_dict[name] = param.to_dict()
+            _mag_parameters = self.magnetism.parameters()
+            if _mag_parameters:
+                for name, param in _mag_parameters.iteritems():
+                    _layer_dict[name] = param.to_dict()
         return _layer_dict
 
     # Define a little algebra for composing samples
@@ -717,6 +719,8 @@ class Slab(Layer):
         _slab_dict = dict(name=self.name, type=type(self).__name__)
         _slab_dict['thickness'] = self.thickness.to_dict()
         _slab_dict['interface'] = self.interface.to_dict()
-        for name, param in self.material.parameters().iteritems():
-            _slab_dict[name] = param.to_dict()
+        _material_parameters = self.material.parameters()
+        if _material_parameters:
+            for name, param in _material_parameters.iteritems():
+                _slab_dict[name] = param.to_dict()
         return _slab_dict

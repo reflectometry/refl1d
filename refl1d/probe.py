@@ -1399,7 +1399,9 @@ class PolarizedNeutronProbe(object):
         mm, mp, pm, pp = [(xsi.to_dict() if xsi else None)
                           for xsi in self.xs]
         return dict(type=type(self).__name__,
-                    pp=pp, pm=pm, mp=mp, mm=mm, a_guide=self.Aguide, h=self.H)
+                    pp=pp, pm=pm, mp=mp, mm=mm,
+                    a_guide=self.Aguide.to_dict(),
+                    h=self.H.to_dict())
 
     def resynth_data(self):
         for p in self.xs:
