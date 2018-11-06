@@ -121,6 +121,17 @@ class Layer(object): # Abstract base class
         """
         return getattr(self, 'name', repr(self))
 
+    def to_dict(self):
+        """
+            Return a dictionary representation of the Slab object
+        """
+        _layer_dict = dict(name=self.name, type=type(self).__name__)
+        if self.thickness: _layer_dict['thickness'] = self.thickness.to_dict()
+        if self.interface: _layer_dict['interface'] = self.interface.to_dict()
+        if self.magnetism:
+            for name, param in self.magnetism.parameters().iteritems():
+                _layer_dict[name] = param.to_dict()
+        return _layer_dict
 
     # Define a little algebra for composing samples
     # Layers can be stacked, repeated, or have length/roughness/magnetism set
