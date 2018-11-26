@@ -1414,8 +1414,8 @@ class PolarizedNeutronProbe(object):
     restore_data.__doc__ = Probe.restore_data.__doc__
 
     def simulate_data(self, theory, noise=2):
-        noise = numpy.asarray(noise)
-        if len(noise.shape) < 2:
+        _noise = numpy.asarray(noise)
+        if len(_noise.shape) < 1 or (len(_noise.shape) == 1 and not _noise.shape[0]==4):
             noise = [noise]*4
         for data_k, theory_k, noise_k in zip(self.xs, theory, noise):
             if data_k is not None:
