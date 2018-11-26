@@ -287,9 +287,7 @@ class Probe(object):
         if noise is None:
             pass
         else:
-            self.dR = numpy.asarray(noise)
-            if len(self.dR.shape) == 0:  # noise is a scalar
-                self.dR = 0.01 * noise * self.Ro
+            self.dR = 0.01 * numpy.asarray(noise) * self.Ro
             self.dR[self.dR==0] = 1e-11
 
         # Add noise to the theory function
@@ -1416,7 +1414,8 @@ class PolarizedNeutronProbe(object):
     restore_data.__doc__ = Probe.restore_data.__doc__
 
     def simulate_data(self, theory, noise=2):
-        if numpy.isscalar(noise):
+        noise = numpy.asarray(noise)
+        if len(noise.shape) < 2:
             noise = [noise]*4
         for data_k, theory_k, noise_k in zip(self.xs, theory, noise):
             if data_k is not None:
