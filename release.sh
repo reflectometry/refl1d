@@ -61,6 +61,8 @@ git push --tags # OR MAYBE: git push origin vX.Y.Z
 git tag -a vX.Y.Z -f
 git push --tags -f
 
+# mark an existing commit with a version tag
+GIT_COMMITTER_DATE="$(git show -s --format=%cI bd145a46)" git tag -a v0.8.1 bd145a46 -m "Refl1d 0.8.1"
 
 # trigger the build on readthedocs
 https://readthedocs.org/builds/refl1d/
