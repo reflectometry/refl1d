@@ -20,8 +20,8 @@ git status
   [bumps, refl1d, periodictable] X [windows, mac, linux] X [python 2.6, 2.7, 3.3, 3.4]
 
 git pull
-pythonX.Y tests.py
-pythonX.Y check_examples.py --chisq
+python setup.py test
+python check_examples.py --chisq
 
 (3) update change log in CHANGES.rst
 
@@ -38,7 +38,6 @@ git log
 (5) update version number and requirements
 
 vi refl1d/__init__.py
-vi setup.py
 vi rtd-requirements
 git commit -a -m "R X.Y.Z"
 git push
