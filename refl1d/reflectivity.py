@@ -113,6 +113,9 @@ def reflectivity_amplitude(kz=None,
     else:
         irho = _dense(irho, 'd')
 
+
+    #print(irho.shape, irho[:,0], irho[:,-1])
+    irho[irho < 0] = 0.
     #print depth.shape, rho.shape, irho.shape, sigma.shape
     #print depth.dtype, rho.dtype, irho.dtype, sigma.dtype
     r = np.empty(kz.shape, 'D')
