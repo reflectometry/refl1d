@@ -39,8 +39,8 @@ class build_ext_subclass(build_ext):
 
 # reflmodule extension
 def reflmodule_config():
-    if sys.platform == "darwin" and sys.version_info[0] < 3:
-        # Python 2.7 is not finding C++ headers on Mac unless the
+    if sys.platform == "darwin":
+        # Python is not finding C++ headers on Mac unless the
         # minimum OSX version is bumped from the default 10.6 up
         # to 10.10.  Don't know if this is because of the mac
         # setup (older development libraries not installed) or
