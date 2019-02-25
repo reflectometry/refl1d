@@ -712,9 +712,9 @@ class Slab(Layer):
 
     def to_dict(self):
         """
-            Return a dictionary representation of the Slab object
+        Return a dictionary representation of the Slab object
 
-            #TODO: Add magnetism
+        #TODO: Add magnetism
         """
         _slab_dict = dict(name=self.name, type=type(self).__name__)
         _slab_dict['thickness'] = self.thickness.to_dict()
