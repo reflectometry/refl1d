@@ -13,6 +13,7 @@ from math import pi, log10, floor
 import os
 import traceback
 import json
+from warnings import warn
 
 import numpy
 from bumps import parameter
@@ -211,7 +212,7 @@ class ExperimentBase(object):
 
     def save_json(self, basename):
         """ Save the experiment as a json file """
-        raise NotImplementedError()
+        warn("saving to json not implemented for %s" % self.__class__.__name__)
 
     def save_profile(self, basename):
         if self.ismagnetic:
@@ -232,6 +233,15 @@ class ExperimentBase(object):
         # Step profile
         A = numpy.array(self.magnetic_step_profile())
         fid = open(basename+"-steps.dat", "w")
+        fid.write("# %10s %12s %12s %12s %12s\n"
+                  %("z (A)", "rho (1e-6/A2)", "irho (1e-6/A2)",
+                    "rhoM (1e-6/A2)", "theta (degrees)"))
+        numpy.savetxt(fid, A.T, fmt="%12.8f")
+        fid.close()
+
+        # Smooth profile
+        A = numpy.array(self.magnetic_smooth_profile())
+        fid = open(basename+"-profile.dat", "w")
         fid.write("# %10s %12s %12s %12s %12s\n"
                   %("z (A)", "rho (1e-6/A2)", "irho (1e-6/A2)",
                     "rhoM (1e-6/A2)", "theta (degrees)"))
@@ -630,10 +640,11 @@ class MixedExperiment(ExperimentBase):
         for p in self.parts: p.update()
 
     def parameters(self):
-        return {'samples': [s.parameters() for s in self.samples],
-                'ratio': self.ratio,
-                'probe': self.probe.parameters(),
-               }
+        return {
+            'samples': [s.parameters() for s in self.samples],
+            'ratio': self.ratio,
+            'probe': self.probe.parameters(),
+            }
 
     def _reflamp(self):
         """
