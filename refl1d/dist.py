@@ -69,6 +69,13 @@ class Weights(object):
     def parameters(self):
         return {'args': self.args, 'loc': self.loc, 'scale': self.scale}
 
+    def to_dict(self):
+        return {
+            'args': [s.to_dict() for s in self.args],
+            'loc': self.loc.to_dict(),
+            'scale': self.scale.to_dict(),
+            }
+
     def __iter__(self):
         # Find weights and normalize the sum to 1
         centers = (self.edges[:-1]+self.edges[1:])/2
@@ -114,9 +121,16 @@ class DistributionExperiment(ExperimentBase):
         self._name = None
 
     def parameters(self):
-        return {'distribution':self.distribution.parameters(),
-                'experiment':self.experiment.parameters(),
-               }
+        return {
+            'distribution': self.distribution.parameters(),
+            'experiment': self.experiment.parameters(),
+            }
+
+    def to_dict(self):
+        return {
+            'distribution': self.distribution.to_dict(),
+            'experiment': self.experiment.to_dict(),
+            }
 
     def reflectivity(self, resolution=True, interpolation=0):
         key = ("reflectivity", resolution, interpolation)

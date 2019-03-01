@@ -47,6 +47,9 @@ class ExperimentBase(object):
     def parameters(self):
         raise NotImplementedError()
 
+    def to_dict(self):
+        return None
+
     def reflectivity(self, resolution=True, interpolation=0):
         raise NotImplementedError()
 
@@ -212,7 +215,18 @@ class ExperimentBase(object):
 
     def save_json(self, basename):
         """ Save the experiment as a json file """
-        warn("saving to json not implemented for %s" % self.__class__.__name__)
+        experiment = self.to_dict()
+        if experiment is None:
+            warn("saving to json not implemented for %s" % type(self).__name__)
+            return
+
+        # add tags for version and experiment type
+        experiment['refl1d'] = __version__
+        experiment['type'] = type(self).__name__
+        json_file = basename + "-expt.json"
+        with open(json_file, 'w') as fid:
+            data = json.dumps(experiment)
+            fid.write(data)
 
     def save_profile(self, basename):
         if self.ismagnetic:
@@ -368,8 +382,14 @@ class Experiment(ExperimentBase):
     def parameters(self):
         """Fittable parameters to sample and probe"""
         return {
-            'sample':self.sample.parameters(),
-            'probe':self.probe.parameters(),
+            'sample': self.sample.parameters(),
+            'probe': self.probe.parameters(),
+            }
+
+    def to_dict(self):
+        return {
+            'sample': self.sample.to_dict(),
+            'probe': self.probe.to_dict(),
             }
 
     def _render_slabs(self):
@@ -542,17 +562,6 @@ class Experiment(ExperimentBase):
             print("==== could not save staj file ====")
             traceback.print_exc()
 
-    def save_json(self, basename):
-        """ Save the experiment as a json file """
-        json_file = basename + "-expt.json"
-        with open(json_file, 'w') as fid:
-            _expt_dict = dict(refl1d=__version__,
-                              type=type(self).__name__,
-                              probe=self.probe.to_dict(),
-                              sample=self.sample.to_dict())
-            data = json.dumps(_expt_dict)
-            fid.write(data)
-
     def plot_profile(self, plot_shift=None):
         import pylab
         from bumps.plotutil import auto_shift
@@ -644,6 +653,13 @@ class MixedExperiment(ExperimentBase):
             'samples': [s.parameters() for s in self.samples],
             'ratio': self.ratio,
             'probe': self.probe.parameters(),
+            }
+
+    def to_dict(self):
+        return {
+            'samples': [s.to_dict() for s in self.samples],
+            'ratio': [s.to_dict() for s in self.ratio],
+            'probe': self.probe.to_dict(),
             }
 
     def _reflamp(self):
