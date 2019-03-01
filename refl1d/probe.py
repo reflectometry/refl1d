@@ -116,7 +116,8 @@ class Probe(object):
            Offset of the sample from perfect alignment
         *sample_broadening* : float or Parameter
            Additional angular divergence from sample curvature.  Should be
-           expressed as FWHM.  Scale rms by 2 sqrt(2 ln 2) ~ 2.35.
+           expressed as FWHM.  Scale 1-$\sigma$ rms by
+           $2 \surd(2 \ln 2) \approx 2.35$ to convert to FWHM.
         *back_reflectivity* : True or False
            True if the beam enters through the substrate
 
@@ -1141,7 +1142,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
         # wavelength_resolution: [0.02, 0.02, 0.02, ...]
 
     *sample_broadening* in degrees FWHM adds to the angular_resolution.
-    Scale by $2 \surd(2 \ln 2)$ to convert to 1-$\sigma$ rms.
+    Scale 1-$\sigma$ rms by $2 \surd(2 \ln 2) \approx 2.34$ to convert to FWHM.
 
     *Aguide* and *H* are parameters for polarized beam measurements
     indicating the magnitude and direction of the applied field.
