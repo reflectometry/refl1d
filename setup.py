@@ -48,7 +48,8 @@ def reflmodule_config():
         # some combination.  Override by setting the deployment
         # target on the command line.  Curiously, Xcode can
         # target c++ code to 10.7 on the same machine.
-        os.environ.setdefault('MACOSX_DEPLOYMENT_TARGET', '10.10')
+        #os.environ.setdefault('MACOSX_DEPLOYMENT_TARGET', '10.10')
+        os.environ.setdefault('MACOSX_DEPLOYMENT_TARGET', '10.13')
 
     S = ("reflmodule.cc", "methods.cc",
          "reflectivity.cc", "magnetic.cc",
