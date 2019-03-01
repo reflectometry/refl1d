@@ -4,6 +4,13 @@ Change History
 
 Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 
+2019-03-01 v0.8.8
+=================
+* fix json save for MixedExperiments
+* save smooth magnetic profiles
+* fix abeles code to choose correct branch cut below critical edge
+* force absorption to be 0 or positive
+
 2018-12-18 v0.8.7
 =================
 * make sample broadening a fittable parameter
