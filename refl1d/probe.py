@@ -588,26 +588,27 @@ class Probe(object):
         """
         Save the data and theory to a file.
         """
-        fresnel = self.fresnel(substrate, surface)
+        fresnel_calculator = self.fresnel(substrate, surface)
+        Q, FQ = self.apply_beam(self.calc_Q, fresnel_calculator(self.calc_Q))
         Q, R = theory
         fid = open(filename, "w")
         fid.write("# intensity: %.15g\n# background: %.15g\n"
                   % (self.intensity.value, self.background.value))
         if len(Q) != len(self.Q):
             # Saving interpolated data
-            A = numpy.array((Q, R, fresnel(Q)))
+            A = numpy.array((Q, R, np.interp(Q, self.Q, FQ)))
             fid.write("# %17s %20s %20s\n"
                       % ("Q (1/A)", "theory", "fresnel"))
         elif getattr(self, 'R', None) is not None:
             A = numpy.array((self.Q, self.dQ, self.R, self.dR,
-                             R, fresnel(self.Q)))
+                             R, FQ))
             fid.write("# %17s %20s %20s %20s %20s %20s\n"
                       % ("Q (1/A)", "dQ (1/A)", "R", "dR", "theory", "fresnel"))
         else:
-            A = numpy.array((self.Q, self.dQ, R, fresnel(self.Q)))
+            A = numpy.array((self.Q, self.dQ, R, FQ))
             fid.write("# %17s %20s %20s %20s\n"
                       % ("Q (1/A)", "dQ (1/A)", "theory", "fresnel"))
-        #print "A", self.Q.shape, A.shape
+        #print("saving", A)
         numpy.savetxt(fid, A.T, fmt="%20.15g")
         fid.close()
 
@@ -888,6 +889,11 @@ class ProbeSet(Probe):
     def parameters(self):
         return [p.parameters() for p in self.probes]
     parameters.__doc__ = Probe.parameters.__doc__
+
+    def to_dict(self):
+        """ Return a dictionary representation of the parameters """
+        return dict(type=type(self).__name__,
+                    pp=[p.to_dict() for p in self.probes])
 
     def resynth_data(self):
         for p in self.probes: p.resynth_data()
