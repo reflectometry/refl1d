@@ -41,6 +41,7 @@ install:
     
 deploy:
   provider: releases
+  prerelease: true
   skip-cleanup: true
   file_glob: true
   api_key:
