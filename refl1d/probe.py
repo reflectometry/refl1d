@@ -1107,6 +1107,9 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
 
     *columns* is a string giving the column order in the file.  Default
     order is "Q R dR dQ".
+
+    *data_range* is a list specifying the first and last row of the data
+    file to use.  The default is to use all of the rows.
     """
     data = parse_multi(filename, keysep=keysep, sep=sep, comment=comment)
     if columns:
