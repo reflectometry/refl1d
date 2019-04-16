@@ -73,27 +73,32 @@ class DataView(wx.Panel):
                                           "&Fresnel",
                                           "Plot R/R_F")
         frame.Bind(wx.EVT_MENU, self.OnFresnel, _item)
-        _item.Check(True)
+        _item.Check(Probe.view == 'fresnel')
         _item = menu.AppendRadioItem(wx.ID_ANY,
                                           "Log Fresnel",
                                           "Plot log R/R_F")
         frame.Bind(wx.EVT_MENU, self.OnLogFresnel, _item)
+        _item.Check(Probe.view == 'logfresnel')
         _item = menu.AppendRadioItem(wx.ID_ANY,
                                           "Li&near",
                                           "Plot linear R")
         frame.Bind(wx.EVT_MENU, self.OnLinear, _item)
+        _item.Check(Probe.view == 'linear')
         _item = menu.AppendRadioItem(wx.ID_ANY,
                                           "&Log",
                                           "Plot log R")
         frame.Bind(wx.EVT_MENU, self.OnLog, _item)
+        _item.Check(Probe.view == 'log')
         _item = menu.AppendRadioItem(wx.ID_ANY,
                                           "&Q4",
                                           "Plot R * Q^4")
         frame.Bind(wx.EVT_MENU, self.OnQ4, _item)
+        _item.Check(Probe.view == 'q4')
         _item = menu.AppendRadioItem(wx.ID_ANY,
                                           "&SA",
                                           "Plot spin asymmetry")
         frame.Bind(wx.EVT_MENU, self.OnSA, _item)
+        _item.Check(Probe.view == 'SA')
 
         menu.AppendSeparator()
 

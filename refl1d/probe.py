@@ -40,6 +40,7 @@ from __future__ import with_statement, division, print_function
 
 import os
 import json
+import warning
 
 import numpy
 from numpy import sqrt, pi, inf, sign, log
@@ -153,7 +154,7 @@ class Probe(object):
     """
     polarized = False
     Aguide = 270  # default guide field for unpolarized measurements
-    view = "fresnel"
+    view = "log"
     plot_shift = 0
     residuals_shift = 0
 
@@ -1223,7 +1224,7 @@ def _data_as_probe(entry, probe_args, T, L, dT, dL, FWHM, radiation, column_orde
     elif 'radiation' in header:
         data_radiation = json.loads(header['radiation'])
     else:
-        # Default to neutron data so fresnel reflectivity from silicon will work.
+        # Default to neutron data if radiation not given in head.
         data_radiation = 'neutron'
         #data_radiation = None
 
@@ -1274,8 +1275,11 @@ def _data_as_probe(entry, probe_args, T, L, dT, dL, FWHM, radiation, column_orde
     else:
         # If we don't know angle and wavelength, then we can't adjust
         # sample alignment and angular divergence.
-        args.pop('theta_offset')
-        args.pop('sample_broadening')
+        theta_offset = probe_args.pop('theta_offset')
+        sample_broadening = probe_args.pop('sample_broadening')
+        if theta_offset != 0. or sample_broadening != 0.:
+            warnings.warn("Theta offset and sample broadening ignored for %r"
+                          % probe_args['filename'])
         probe = QProbe(Q, dQ, data=(R, dR), **probe_args)
     return probe
 
