@@ -13,6 +13,7 @@ from math import pi, log10, floor
 import os
 import traceback
 import json
+from warnings import warn
 
 import numpy
 from bumps import parameter
@@ -45,6 +46,9 @@ class ExperimentBase(object):
     _surface = None
     def parameters(self):
         raise NotImplementedError()
+
+    def to_dict(self):
+        return None
 
     def reflectivity(self, resolution=True, interpolation=0):
         raise NotImplementedError()
@@ -211,7 +215,18 @@ class ExperimentBase(object):
 
     def save_json(self, basename):
         """ Save the experiment as a json file """
-        raise NotImplementedError()
+        experiment = self.to_dict()
+        if experiment is None:
+            warn("saving to json not implemented for %s" % type(self).__name__)
+            return
+
+        # add tags for version and experiment type
+        experiment['refl1d'] = __version__
+        experiment['type'] = type(self).__name__
+        json_file = basename + "-expt.json"
+        with open(json_file, 'w') as fid:
+            data = json.dumps(experiment)
+            fid.write(data)
 
     def save_profile(self, basename):
         if self.ismagnetic:
@@ -232,6 +247,15 @@ class ExperimentBase(object):
         # Step profile
         A = numpy.array(self.magnetic_step_profile())
         fid = open(basename+"-steps.dat", "w")
+        fid.write("# %10s %12s %12s %12s %12s\n"
+                  %("z (A)", "rho (1e-6/A2)", "irho (1e-6/A2)",
+                    "rhoM (1e-6/A2)", "theta (degrees)"))
+        numpy.savetxt(fid, A.T, fmt="%12.8f")
+        fid.close()
+
+        # Smooth profile
+        A = numpy.array(self.magnetic_smooth_profile())
+        fid = open(basename+"-profile.dat", "w")
         fid.write("# %10s %12s %12s %12s %12s\n"
                   %("z (A)", "rho (1e-6/A2)", "irho (1e-6/A2)",
                     "rhoM (1e-6/A2)", "theta (degrees)"))
@@ -358,8 +382,14 @@ class Experiment(ExperimentBase):
     def parameters(self):
         """Fittable parameters to sample and probe"""
         return {
-            'sample':self.sample.parameters(),
-            'probe':self.probe.parameters(),
+            'sample': self.sample.parameters(),
+            'probe': self.probe.parameters(),
+            }
+
+    def to_dict(self):
+        return {
+            'sample': self.sample.to_dict(),
+            'probe': self.probe.to_dict(),
             }
 
     def _render_slabs(self):
@@ -532,17 +562,6 @@ class Experiment(ExperimentBase):
             print("==== could not save staj file ====")
             traceback.print_exc()
 
-    def save_json(self, basename):
-        """ Save the experiment as a json file """
-        json_file = basename + "-expt.json"
-        with open(json_file, 'w') as fid:
-            _expt_dict = dict(refl1d=__version__,
-                              type=type(self).__name__,
-                              probe=self.probe.to_dict(),
-                              sample=self.sample.to_dict())
-            data = json.dumps(_expt_dict)
-            fid.write(data)
-
     def plot_profile(self, plot_shift=None):
         import pylab
         from bumps.plotutil import auto_shift
@@ -630,10 +649,18 @@ class MixedExperiment(ExperimentBase):
         for p in self.parts: p.update()
 
     def parameters(self):
-        return {'samples': [s.parameters() for s in self.samples],
-                'ratio': self.ratio,
-                'probe': self.probe.parameters(),
-               }
+        return {
+            'samples': [s.parameters() for s in self.samples],
+            'ratio': self.ratio,
+            'probe': self.probe.parameters(),
+            }
+
+    def to_dict(self):
+        return {
+            'samples': [s.to_dict() for s in self.samples],
+            'ratio': [s.to_dict() for s in self.ratio],
+            'probe': self.probe.to_dict(),
+            }
 
     def _reflamp(self):
         """

@@ -131,7 +131,7 @@ class Layer(object): # Abstract base class
         if self.magnetism:
             _mag_parameters = self.magnetism.parameters()
             if _mag_parameters:
-                for name, param in _mag_parameters.iteritems():
+                for name, param in _mag_parameters.items():
                     _layer_dict[name] = param.to_dict()
         return _layer_dict
 
@@ -712,15 +712,15 @@ class Slab(Layer):
 
     def to_dict(self):
         """
-            Return a dictionary representation of the Slab object
+        Return a dictionary representation of the Slab object
 
-            #TODO: Add magnetism
+        #TODO: Add magnetism
         """
         _slab_dict = dict(name=self.name, type=type(self).__name__)
         _slab_dict['thickness'] = self.thickness.to_dict()
         _slab_dict['interface'] = self.interface.to_dict()
         _material_parameters = self.material.parameters()
         if _material_parameters:
-            for name, param in _material_parameters.iteritems():
+            for name, param in _material_parameters.items():
                 _slab_dict[name] = param.to_dict()
         return _slab_dict

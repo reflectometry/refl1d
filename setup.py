@@ -39,8 +39,8 @@ class build_ext_subclass(build_ext):
 
 # reflmodule extension
 def reflmodule_config():
-    if sys.platform == "darwin" and sys.version_info[0] < 3:
-        # Python 2.7 is not finding C++ headers on Mac unless the
+    if sys.platform == "darwin":
+        # Python is not finding C++ headers on Mac unless the
         # minimum OSX version is bumped from the default 10.6 up
         # to 10.10.  Don't know if this is because of the mac
         # setup (older development libraries not installed) or
@@ -48,7 +48,8 @@ def reflmodule_config():
         # some combination.  Override by setting the deployment
         # target on the command line.  Curiously, Xcode can
         # target c++ code to 10.7 on the same machine.
-        os.environ.setdefault('MACOSX_DEPLOYMENT_TARGET', '10.10')
+        #os.environ.setdefault('MACOSX_DEPLOYMENT_TARGET', '10.10')
+        os.environ.setdefault('MACOSX_DEPLOYMENT_TARGET', '10.13')
 
     S = ("reflmodule.cc", "methods.cc",
          "reflectivity.cc", "magnetic.cc",

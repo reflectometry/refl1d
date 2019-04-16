@@ -32,6 +32,7 @@ doesn't perturb the fit.
 """
 __all__ = ["load"]
 
+import sys
 import os
 from os import getpid
 from ctypes import CDLL, c_int, c_double, c_void_p, c_char_p, byref
@@ -48,6 +49,13 @@ from .experiment import Experiment
 from .model import Stack
 from .profile import Microslabs
 from .material import SLD, Vacuum
+
+if sys.version_info[0] >= 3:
+    def tostr(s):
+        return s.decode('ascii')
+else:
+    def tostr(s):
+        return s
 
 def trace(fn):
     """simple function trace function"""
@@ -240,7 +248,7 @@ class GareflModel(object):
         if n == 0:
             return None
         data = empty((n, 4), 'd')
-        filename = self.dll.ex_get_data(self.models, k, xs, data.ctypes)
+        filename = tostr(self.dll.ex_get_data(self.models, k, xs, data.ctypes))
         Q, dQ, R, dR = data.T
         probe = QProbe(Q, dQ, data=(R, dR), name=filename)
         return probe
@@ -276,7 +284,7 @@ class GareflModel(object):
 
     @trace
     def par_names(self):
-        return [self.dll.ex_par_name(self.models, i)
+        return [tostr(self.dll.ex_par_name(self.models, i))
                 for i in range(self.num_pars)]
 
     @trace

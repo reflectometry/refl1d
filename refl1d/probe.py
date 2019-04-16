@@ -40,6 +40,7 @@ from __future__ import with_statement, division, print_function
 
 import os
 import json
+import warnings
 
 import numpy
 from numpy import sqrt, pi, inf, sign, log
@@ -116,8 +117,8 @@ class Probe(object):
            Offset of the sample from perfect alignment
         *sample_broadening* : float or Parameter
            Additional angular divergence from sample curvature.  Should be
-           expressed as FWHM.  Scale by sqrt(8 ln 2) ~ 2.35
-           to convert from rms to FWHM.
+           expressed as FWHM.  Scale 1-$\sigma$ rms by
+           $2 \surd(2 \ln 2) \approx 2.35$ to convert to FWHM.
         *back_reflectivity* : True or False
            True if the beam enters through the substrate
 
@@ -153,7 +154,7 @@ class Probe(object):
     """
     polarized = False
     Aguide = 270  # default guide field for unpolarized measurements
-    view = "fresnel"
+    view = "log"
     plot_shift = 0
     residuals_shift = 0
 
@@ -393,7 +394,9 @@ class Probe(object):
         Returns the scattering factors associated with the material given
         the range of wavelengths/energies used in the probe.
         """
-        raise NotImplementedError
+        raise NotImplementedError(
+            "need radiation type in <%s> to compute sld for %s"
+            % (self.filename, material))
 
     def subsample(self, dQ):
         """
@@ -586,26 +589,27 @@ class Probe(object):
         """
         Save the data and theory to a file.
         """
-        fresnel = self.fresnel(substrate, surface)
+        fresnel_calculator = self.fresnel(substrate, surface)
+        Q, FQ = self.apply_beam(self.calc_Q, fresnel_calculator(self.calc_Q))
         Q, R = theory
         fid = open(filename, "w")
         fid.write("# intensity: %.15g\n# background: %.15g\n"
                   % (self.intensity.value, self.background.value))
         if len(Q) != len(self.Q):
             # Saving interpolated data
-            A = numpy.array((Q, R, fresnel(Q)))
+            A = numpy.array((Q, R, np.interp(Q, self.Q, FQ)))
             fid.write("# %17s %20s %20s\n"
                       % ("Q (1/A)", "theory", "fresnel"))
         elif getattr(self, 'R', None) is not None:
             A = numpy.array((self.Q, self.dQ, self.R, self.dR,
-                             R, fresnel(self.Q)))
+                             R, FQ))
             fid.write("# %17s %20s %20s %20s %20s %20s\n"
                       % ("Q (1/A)", "dQ (1/A)", "R", "dR", "theory", "fresnel"))
         else:
-            A = numpy.array((self.Q, self.dQ, R, fresnel(self.Q)))
+            A = numpy.array((self.Q, self.dQ, R, FQ))
             fid.write("# %17s %20s %20s %20s\n"
                       % ("Q (1/A)", "dQ (1/A)", "theory", "fresnel"))
-        #print "A", self.Q.shape, A.shape
+        #print("saving", A)
         numpy.savetxt(fid, A.T, fmt="%20.15g")
         fid.close()
 
@@ -887,6 +891,11 @@ class ProbeSet(Probe):
         return [p.parameters() for p in self.probes]
     parameters.__doc__ = Probe.parameters.__doc__
 
+    def to_dict(self):
+        """ Return a dictionary representation of the parameters """
+        return dict(type=type(self).__name__,
+                    pp=[p.to_dict() for p in self.probes])
+
     def resynth_data(self):
         for p in self.probes: p.resynth_data()
         self.R = numpy.hstack(p.R for p in self.probes)
@@ -1091,7 +1100,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
           theta_offset=0, sample_broadening=0,
           L=None, dL=None, T=None, dT=None,
           FWHM=False, radiation=None,
-          columns=None,
+          columns=None, data_range=(None, None),
          ):
     r"""
     Load in four column data Q, R, dR, dQ.
@@ -1139,7 +1148,8 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
         # wavelength: [1, 1.2, 1.5, 2.0, ...]
         # wavelength_resolution: [0.02, 0.02, 0.02, ...]
 
-    *sample_broadening* in degrees (1-$\sigma$ rms) adds to the angular_resolution.
+    *sample_broadening* in degrees FWHM adds to the angular_resolution.
+    Scale 1-$\sigma$ rms by $2 \surd(2 \ln 2) \approx 2.34$ to convert to FWHM.
 
     *Aguide* and *H* are parameters for polarized beam measurements
     indicating the magnitude and direction of the applied field.
@@ -1154,100 +1164,49 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     *radiation* is 'xray' or 'neutron', depending on whether X-ray or
     neutron scattering length density calculator should be used for
     determining the scattering length density of a material.
+    Default is 'neutron'
 
     *columns* is a string giving the column order in the file.  Default
     order is "Q R dR dQ".
+
+    *data_range* indicates which data rows to use.  Arguments are the
+    same as the list slice arguments, *(start, stop, step)*.  This follows
+    the usual semantics of list slicing, *L[start:stop:step]*, with
+    0-origin indices, stop is last plus one and step optional.  Use negative
+    numbers to count from the end.  Default is *(None, None)* for the entire
+    data set.
     """
-    data = parse_multi(filename, keysep=keysep, sep=sep, comment=comment)
+    entries = parse_multi(filename, keysep=keysep, sep=sep, comment=comment)
     if columns:
         actual = columns.split()
         natural = "Q R dR dQ".split()
-        order = [natural.index(k) for k in actual]
+        column_order = [natural.index(k) for k in actual]
     else:
-        order = [0, 1, 2, 3]
-    def _as_Qprobe(data):
-        Q, R, dR, dQ = (data[1][k] for k in order)
-
-        if FWHM: # dQ defaults to 1-sigma, if FWHM is not True
-            dQ = FWHM2sigma(dQ)
-
-        # support calculation of sld from material based on radiation type
-        if radiation is not None:
-            data_radiation = radiation
-        elif 'radiation' in data[0]:
-            data_radiation = json.loads(data[0]['radiation'])
-        else:
-            data_radiation = None
-        if data_radiation == 'xray':
-            make_probe = XrayProbe
-        elif data_radiation == 'neutron':
-            make_probe = NeutronProbe
-        else:
-            make_probe = Probe
-
-        # Get wavelength from header if it is not provided as an argument
-        data_L = data_T = None
-        if L is not None:
-            data_L = L
-        elif 'wavelength' in data[0]:
-            data_L = json.loads(data[0]['wavelength'])
-        if T is not None:
-            data_T = T
-        elif 'angle' in data[0]:
-            data_T = json.loads(data[0]['angle'])
-        if data_L is not None:
-            if dL is not None:
-                data_dL = dL
-            elif 'wavelength_resolution' in data[0]:
-                data_dL = json.loads(data[0]['wavelength_resolution'])
-            else:
-                raise ValueError("Need wavelength_resolution to determine dT")
-            data_dL = sigma2FWHM(data_dL) if not FWHM else data_dL
-            data_T = QL2T(Q, data_L)
-            data_dT = dQdL2dT(Q, dQ, data_L, data_dL)
-        elif data_T is not None:
-            if dT is not None:
-                data_dT = dT
-            elif 'angular_resolution' in data[0]:
-                data_dT = json.loads(data[0]['angular_resolution'])
-            else:
-                raise ValueError("Need angular_resolution to determine dL")
-            data_dT = sigma2FWHM(data_dT) if not FWHM else data_dT
-            data_L = QT2L(Q, data_T)
-            data_dLoL = dQdT2dLoL(Q, dQ, data_T, data_dT)
-            data_dL = data_dLoL * data_L
-
-        if data_L is not None:
-            probe = make_probe(
-                T=data_T, dT=data_dT,
-                L=data_L, dL=data_dL,
-                data=(R, dR),
-                name=name,
-                filename=filename,
-                intensity=intensity,
-                background=background,
-                back_absorption=back_absorption,
-                theta_offset=theta_offset,
-                sample_broadening=sample_broadening,
-                back_reflectivity=back_reflectivity,
-            )
-        else:
-            probe = QProbe(
-                Q, dQ, data=(R, dR),
-                name=name,
-                filename=filename,
-                intensity=intensity,
-                background=background,
-                back_absorption=back_absorption,
-                back_reflectivity=back_reflectivity,
-            )
-        return probe
-
-    if len(data) == 1:
-        probe = _as_Qprobe(data[0])
+        column_order = [0, 1, 2, 3]
+    index = slice(*data_range)
+    probe_args = dict(
+        name=name,
+        filename=filename,
+        intensity=intensity,
+        background=background,
+        back_absorption=back_absorption,
+        back_reflectivity=back_reflectivity,
+        theta_offset=theta_offset,
+        sample_broadening=sample_broadening,
+    )
+    data_args = dict(
+        radiation=radiation,
+        FWHM=FWHM,
+        T=T, L=L, dT=dT, dL=dL,
+        column_order=column_order,
+        index=index,
+    )
+    if len(entries) == 1:
+        probe = _data_as_probe(entries[0], probe_args, **data_args)
     else:
-        data_by_xs = dict((strip_quotes(d[0]["polarization"]), _as_Qprobe(d))
-                          for d in data)
+        data_by_xs = {strip_quotes(entry[0]["polarization"])
+                      : _data_as_probe(entry, probe_args, **data_args)
+                      for entry in entries}
         if not set(data_by_xs.keys()) <= set('-- -+ +- ++'.split()):
             raise ValueError("Unknown cross sections in: "
                              + ", ".join(sorted(data_by_xs.keys())))
@@ -1257,6 +1216,79 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
             probe = PolarizedQProbe(xs, Aguide=Aguide, H=H)
         else:
             probe = PolarizedNeutronProbe(xs, Aguide=Aguide, H=H)
+    return probe
+
+def _data_as_probe(entry, probe_args, T, L, dT, dL, FWHM, radiation,
+                   column_order, index):
+    header, data = entry
+    Q, R, dR, dQ = (data[k][index] for k in column_order)
+
+    if FWHM: # dQ defaults to 1-sigma, if FWHM is not True
+        dQ = FWHM2sigma(dQ)
+
+    # support calculation of sld from material based on radiation type
+    if radiation is not None:
+        data_radiation = radiation
+    elif 'radiation' in header:
+        data_radiation = json.loads(header['radiation'])
+    else:
+        # Default to neutron data if radiation not given in head.
+        data_radiation = 'neutron'
+        #data_radiation = None
+
+    if data_radiation == 'xray':
+        make_probe = XrayProbe
+    elif data_radiation == 'neutron':
+        make_probe = NeutronProbe
+    else:
+        make_probe = Probe
+
+    # Get wavelength from header if it is not provided as an argument
+    data_L = data_T = None
+    if L is not None:
+        data_L = L
+    elif 'wavelength' in header:
+        data_L = json.loads(header['wavelength'])
+    if T is not None:
+        data_T = T
+    elif 'angle' in header:
+        data_T = json.loads(header['angle'])
+    if data_L is not None:
+        if dL is not None:
+            data_dL = dL
+        elif 'wavelength_resolution' in header:
+            data_dL = json.loads(header['wavelength_resolution'])
+        else:
+            raise ValueError("Need wavelength_resolution to determine dT")
+        data_dL = sigma2FWHM(data_dL) if not FWHM else data_dL
+        data_T = QL2T(Q, data_L)
+        data_dT = dQdL2dT(Q, dQ, data_L, data_dL)
+    elif data_T is not None:
+        if dT is not None:
+            data_dT = dT
+        elif 'angular_resolution' in header:
+            data_dT = json.loads(header['angular_resolution'])
+        else:
+            raise ValueError("Need angular_resolution to determine dL")
+        data_dT = sigma2FWHM(data_dT) if not FWHM else data_dT
+        data_L = QT2L(Q, data_T)
+        data_dLoL = dQdT2dLoL(Q, dQ, data_T, data_dT)
+        data_dL = data_dLoL * data_L
+
+    if data_L is not None:
+        probe = make_probe(
+            T=data_T, dT=data_dT,
+            L=data_L, dL=data_dL,
+            data=(R, dR), **probe_args)
+    else:
+        # If we don't know angle and wavelength, then we can't adjust
+        # sample alignment and angular divergence.
+        theta_offset = probe_args.pop('theta_offset')
+        sample_broadening = probe_args.pop('sample_broadening')
+        if theta_offset != 0. or sample_broadening != 0.:
+            warnings.warn("Theta offset and sample broadening ignored for %r"
+                          % probe_args['filename'])
+        probe = QProbe(Q, dQ, data=(R, dR), **probe_args)
     return probe
 
 
@@ -1297,6 +1329,12 @@ class QProbe(Probe):
         self.unique_L = None
         self.calc_Qo = self.Qo
         self.name = name
+
+    def scattering_factors(self, material, density):
+        raise NotImplementedError(
+            "need radiation type and wavelength in <%s> to compute sld for %s"
+            % (self.filename, material))
+    scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
 
 def measurement_union(xs):

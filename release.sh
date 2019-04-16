@@ -20,8 +20,8 @@ git status
   [bumps, refl1d, periodictable] X [windows, mac, linux] X [python 2.6, 2.7, 3.3, 3.4]
 
 git pull
-pythonX.Y tests.py
-pythonX.Y check_examples.py --chisq
+python setup.py test
+python check_examples.py --chisq
 
 (3) update change log in CHANGES.rst
 
@@ -38,7 +38,6 @@ git log
 (5) update version number and requirements
 
 vi refl1d/__init__.py
-vi setup.py
 vi rtd-requirements
 git commit -a -m "R X.Y.Z"
 git push
@@ -61,15 +60,38 @@ git push --tags # OR MAYBE: git push origin vX.Y.Z
 git tag -a vX.Y.Z -f
 git push --tags -f
 
+# mark an existing commit with a version tag
+GIT_COMMITTER_DATE="$(git show -s --format=%cI bd145a46)" git tag -a v0.8.1 bd145a46 -m "Refl1d 0.8.1"
 
 # trigger the build on readthedocs
 https://readthedocs.org/builds/refl1d/
 
-(8) update pypi with new release version
+(8) Build source distribution
 
-python setup.py sdist upload
+python setup.py sdist
 
-(9) check that the new pypi version runs (single machine should be fine)
+(8) Update the release page
+
+https://github.com/reflectometry/refl1d/releases/edit/vX.Y.Z
+
+Documentation: http://refl1d.readthedocs.org
+
+YYYY-M-DD vX.Y.Z
+================
+... content of CHANGES.rst for most recent release ...
+
+See [CHANGES.rst](https://github.com/reflectometry/refl1d/tree/vX.Y.Z/CHANGES.rst) for complete history.
+
+
+(9) download wheel files for windows/mac cp27/36/37 from release page
+
+Wait for travis to finish building then copy the wheel files into refl1d/dist
+
+(10) update pypi with new release version
+
+twine upload dist/*-X.Y.Z*
+
+(11) check that the new pypi version runs (single machine should be fine)
 
 # create virtualenv
 cd ~
@@ -82,17 +104,24 @@ pythonw -m refl1d.main --edit
 deactivate
 rm -r ~/anaconda/envs/piptest
 
-(10) update shared resources with new versions
+(12) update shared resources with new versions
 
+ssh ncnrgpu
+sudo su - conda
+conda activate refl1d
+pip install --upgrade refl1d
+
+*skip*
 ssh sparkle  // shimmer
 cd ~/src/periodictable && git pull
 cd ~/src/bumps && git pull
 cd ~/src/refl1d && git pull && python setup.py build
 
+*skip*
 ssh rocks
 pip install --user --no-deps periodictable bumps refl1d
 
-(11) announce release
+(13) announce release
 
 update reflectometry.org web pages
 send message to reflectometry announcement list

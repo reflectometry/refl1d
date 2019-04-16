@@ -55,6 +55,9 @@ def refl(kz, depth, rho, irho=0, sigma=0, rho_index=None):
         rho = rho[None, :]
         irho = irho[None, :]
 
+    # Force the correct branch cut for sqrt below the critical edge
+    irho = abs(irho) + 1e-30
+
     ## For kz < 0 we need to reverse the order of the layers
     ## Note that the interface array sigma is conceptually one
     ## shorter than rho, mu so when reversing it, start at n-1.

@@ -8,6 +8,16 @@ def setup_bumps():
     """
     Install the refl1d plugin into bumps, but don't run main.
     """
+    # vfs_init must be called pretty much first since it replaces filesystem
+    # calls with filesystem hooks.  Any module that imports the calls directly
+    # e.g., using *from os.path import exists*, needs to have the hook in
+    # place before the module is even imported.  This includes
+    try:
+        from bumps.vfs import vfs_init
+        vfs_init()
+    except ImportError:
+        # CRUFT: older bumps doesn't provide vfs
+        pass
     import bumps.cli
     bumps.cli.set_mplconfig(appdatadir='Refl1D-'+__version__)
     from . import fitplugin
