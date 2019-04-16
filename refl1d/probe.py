@@ -273,10 +273,9 @@ class Probe(object):
         """
         Set the data for the probe to R, adding random noise dR.
 
-        If noise is None, then use the uncertainty in the probe.
-
-        As a hack, if noise<0, use the probe uncertainty but don't add
-        noise to the data.  Don't depend on this behavior.
+        If *noise* is None (the default) then use the existing uncertainty,
+        otherwise set the probe uncertainty as a percentage of the reflectivity
+        using dR = R*noise/100.
         """
         self.Ro = theory[1]+0.
 
@@ -285,11 +284,9 @@ class Probe(object):
             self.R = self.Ro
             return
 
-        if noise is None:
-            pass
-        else:
+        if noise is not None:
             self.dR = 0.01 * numpy.asarray(noise) * self.Ro
-            self.dR[self.dR==0] = 1e-11
+            self.dR[self.dR<=0] = 1e-11
 
         # Add noise to the theory function
         self.resynth_data()
@@ -906,9 +903,9 @@ class ProbeSet(Probe):
         self.R = numpy.hstack(p.R for p in self.probes)
     restore_data.__doc__ = Probe.restore_data.__doc__
 
-    def simulate_data(self, theory, noise=2):
+    def simulate_data(self, theory, noise=None):
         """
-            Simulate data, allowing for noise to be a dR array for each Q point.
+        Simulate data, allowing for noise to be a dR array for each Q point.
         """
         Q, R = theory
         dR = numpy.asarray(noise)
@@ -1451,9 +1448,8 @@ class PolarizedNeutronProbe(object):
                 p.restore_data()
     restore_data.__doc__ = Probe.restore_data.__doc__
 
-    def simulate_data(self, theory, noise=2):
-        _noise = numpy.asarray(noise)
-        if len(_noise.shape) < 1 or (len(_noise.shape) == 1 and not _noise.shape[0]==4):
+    def simulate_data(self, theory, noise=None):
+        if noise is None or numpy.isscalar(noise):
             noise = [noise]*4
         for data_k, theory_k, noise_k in zip(self.xs, theory, noise):
             if data_k is not None:

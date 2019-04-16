@@ -88,6 +88,7 @@ nose_args += sys.argv[1:]  # allow coverage arguments
 
 # Add targets
 nose_args += [build_path, os.path.join('tests', 'refl1d')]
+nose_args += [build_path, os.path.join('tests')]
 nose_args += glob('doc/g*/*.rst')
 nose_args += glob('doc/examples/*/*.rst')
 
