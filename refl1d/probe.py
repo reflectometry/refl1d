@@ -40,7 +40,7 @@ from __future__ import with_statement, division, print_function
 
 import os
 import json
-import warning
+import warnings
 
 import numpy
 from numpy import sqrt, pi, inf, sign, log
@@ -1102,7 +1102,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
           theta_offset=0, sample_broadening=0,
           L=None, dL=None, T=None, dT=None,
           FWHM=False, radiation=None,
-          columns=None,
+          columns=None, data_range=(None, None),
          ):
     r"""
     Load in four column data Q, R, dR, dQ.
@@ -1170,6 +1170,13 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
 
     *columns* is a string giving the column order in the file.  Default
     order is "Q R dR dQ".
+
+    *data_range* indicates which data rows to use.  Arguments are the
+    same as the list slice arguments, *(start, stop, step)*.  This follows
+    the usual semantics of list slicing, *L[start:stop:step]*, with
+    0-origin indices, stop is last plus one and step optional.  Use negative
+    numbers to count from the end.  Default is *(None, None)* for the entire
+    data set.
     """
     entries = parse_multi(filename, keysep=keysep, sep=sep, comment=comment)
     if columns:
@@ -1178,6 +1185,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
         column_order = [natural.index(k) for k in actual]
     else:
         column_order = [0, 1, 2, 3]
+    index = slice(*data_range)
     probe_args = dict(
         name=name,
         filename=filename,
@@ -1193,6 +1201,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
         FWHM=FWHM,
         T=T, L=L, dT=dT, dL=dL,
         column_order=column_order,
+        index=index,
     )
     if len(entries) == 1:
         probe = _data_as_probe(entries[0], probe_args, **data_args)
@@ -1211,9 +1220,10 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
             probe = PolarizedNeutronProbe(xs, Aguide=Aguide, H=H)
     return probe
 
-def _data_as_probe(entry, probe_args, T, L, dT, dL, FWHM, radiation, column_order):
+def _data_as_probe(entry, probe_args, T, L, dT, dL, FWHM, radiation,
+                   column_order, index):
     header, data = entry
-    Q, R, dR, dQ = (data[k] for k in column_order)
+    Q, R, dR, dQ = (data[k][index] for k in column_order)
 
     if FWHM: # dQ defaults to 1-sigma, if FWHM is not True
         dQ = FWHM2sigma(dQ)
