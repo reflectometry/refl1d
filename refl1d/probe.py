@@ -56,6 +56,7 @@ from .resolution import QL2T, QT2L, TL2Q, dQdL2dT, dQdT2dLoL, dTdL2dQ
 from .resolution import sigma2FWHM, FWHM2sigma
 from .stitch import stitch
 from .reflectivity import convolve
+from .util import asbytes
 
 PROBE_KW = ('T', 'dT', 'L', 'dL', 'data', 'name', 'filename',
             'intensity', 'background', 'back_absorption', 'sample_broadening',
@@ -333,8 +334,8 @@ class Probe(object):
         """
         if header is None:
             header = "# %s\n"%' '.join(columns)
-        with open(filename, 'w') as fid:
-            fid.write(header)
+        with open(filename, 'wb') as fid:
+            fid.write(asbytes(header))
             data = numpy.vstack([getattr(self, c) for c in columns])
             numpy.savetxt(fid, data.T)
 
@@ -614,26 +615,28 @@ class Probe(object):
         fresnel_calculator = self.fresnel(substrate, surface)
         Q, FQ = self.apply_beam(self.calc_Q, fresnel_calculator(self.calc_Q))
         Q, R = theory
-        fid = open(filename, "w")
-        fid.write("# intensity: %.15g\n# background: %.15g\n"
-                  % (self.intensity.value, self.background.value))
         if len(Q) != len(self.Q):
             # Saving interpolated data
             A = numpy.array((Q, R, numpy.interp(Q, self.Q, FQ)))
-            fid.write("# %17s %20s %20s\n"
+            header = ("# %17s %20s %20s\n"
                       % ("Q (1/A)", "theory", "fresnel"))
         elif getattr(self, 'R', None) is not None:
             A = numpy.array((self.Q, self.dQ, self.R, self.dR,
                              R, FQ))
-            fid.write("# %17s %20s %20s %20s %20s %20s\n"
+            header = ("# %17s %20s %20s %20s %20s %20s\n"
                       % ("Q (1/A)", "dQ (1/A)", "R", "dR", "theory", "fresnel"))
         else:
             A = numpy.array((self.Q, self.dQ, R, FQ))
-            fid.write("# %17s %20s %20s %20s\n"
+            header = ("# %17s %20s %20s %20s\n"
                       % ("Q (1/A)", "dQ (1/A)", "theory", "fresnel"))
-        #print("saving", A)
-        numpy.savetxt(fid, A.T, fmt="%20.15g")
-        fid.close()
+
+        header = ("# intensity: %.15g\n# background: %.15g\n"
+                    % (self.intensity.value, self.background.value)) + header
+
+        with open(filename, "wb") as fid:
+            #print("saving", A)
+            fid.write(asbytes(header))
+            numpy.savetxt(fid, A.T, fmt="%20.15g")
 
     def plot(self, view=None, **kwargs):
         """

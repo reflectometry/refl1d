@@ -18,6 +18,8 @@ import numpy as np
 from bumps.plotutil import next_color, dhsv, plot_quantiles, form_quantiles
 from bumps.errplot import reload_errors
 
+from .util import asbytes
+
 #_CONTOURS = (68, 95, 100)
 #_CONTOURS = (57, 68, 84, 95, 100)
 _CONTOURS = (68, 95)
@@ -329,9 +331,9 @@ def _save_residual_data(errors, contours, save):
         k += 1
 
 def _write_file(path, data, title, columns):
-    with open(path, "wt") as fid:
-        fid.write("# "+title+"\n")
-        fid.write("# "+" ".join(columns)+"\n")
+    with open(path, "wb") as fid:
+        fid.write(asbytes("# "+title+"\n"))
+        fid.write(asbytes("# "+" ".join(columns)+"\n"))
         np.savetxt(fid, data.T)
 
 

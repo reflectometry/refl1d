@@ -19,20 +19,13 @@ from warnings import warn
 import numpy
 from bumps import parameter
 
+from . import material, profile
+from . import __version__
 from .reflectivity import reflectivity_amplitude as reflamp
 from .reflectivity import magnetic_amplitude as reflmag
 #print("Using pure python reflectivity calculator")
 #from .abeles import refl as reflamp
-from . import material, profile
-from . import __version__
-
-# CRUFT: 2.7 support
-if sys.version_info[0] > 2:
-    def asbytes(s):
-        return s.encode('utf-8')
-else:
-    def asbytes(s):
-        return s
+from .util import asbytes
 
 def plot_sample(sample, instrument=None, roughness_limit=0):
     """

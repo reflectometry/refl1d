@@ -1,6 +1,16 @@
 __all__ = ["merge_ends"]
 
+import sys
+
 import numpy
+
+# CRUFT: 2.7 support
+if sys.version_info[0] > 2:
+    def asbytes(s):
+        return s.encode('utf-8')
+else:
+    def asbytes(s):
+        return s
 
 def merge_ends(w, p, tol=1e-3):
     """
