@@ -77,7 +77,7 @@ class ExperimentMagneticSimulateTest(unittest.TestCase):
         self.expt = Experiment(probe=probe, sample=sample)
 
         # Reference
-        self.expt.simulate_data(noise=0)
+        self.expt.simulate_data(noise=1e-11)
         self.r_i = self.expt.probe.pp.R[0]
         self.r_f = self.expt.probe.pp.R[-1]
 
@@ -188,7 +188,7 @@ class ExperimentNonMagSimulateTest(unittest.TestCase):
         self.expt = Experiment(probe=probe, sample=sample)
 
         # Reference
-        self.expt.simulate_data(noise=0)
+        self.expt.simulate_data(noise=1e-11)
         self.r_i = self.expt.probe.R[0]
         self.r_f = self.expt.probe.R[-1]
 
@@ -209,7 +209,7 @@ class ExperimentNonMagSimulateTest(unittest.TestCase):
         m = 10.0 / (self.q_values[-1] - self.q_values[0])
         b = 1 - m * self.q_values[0]
         _noise = m * self.q_values + b
-        print("noise input", _noise)
+        #print("noise input", _noise)
 
         self.expt.simulate_data(noise=_noise)
         self.assertEqual(len(self.expt.probe.dR), len(self.q_values))

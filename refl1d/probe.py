@@ -212,7 +212,7 @@ class Probe(object):
             R = R[idx]
         if dR is not None:
             dR = dR[idx]
-        self.Ro = self.R = R
+        self.R = R
         self.dR = dR
 
         # By default the calculated points are the measured points.  Use
@@ -248,52 +248,77 @@ class Probe(object):
         format.  Call probe.log10_to_linear() after loading this data to
         convert it to linear for subsequent display and fitting.
         """
-        if self.Ro is not None:
-            self.Ro = 10**self.Ro
+        if self.R is not None:
+            self.R = 10**self.R
             if self.dR is not None:
-                self.dR = self.Ro * self.dR * log(10)
-            self.R = self.Ro
+                self.dR = self.R * self.dR * log(10)
 
     def resynth_data(self):
         """
-        Generate new data according to the model R ~ N(Ro, dR).
+        Generate new data according to the model R' ~ N(R, dR).
 
         The resynthesis step is a precursor to refitting the data, as is
-        required for certain types of monte carlo error analysis.
+        required for certain types of monte carlo error analysis.  The
+        first time it is run it will save the original R into Ro.  If you
+        reset R in the probe you will also need to reset Ro so that it
+        is used for subsequent resynth analysis.
         """
-        self.R = self.Ro + numpy.random.randn(*self.Ro.shape)*self.dR
+        if not hasattr(self, 'Ro'):
+            self._Ro = self.R
+        self.R = self._Ro + numpy.random.randn(*self._Ro.shape)*self.dR
 
     def restore_data(self):
         """
-        Restore the original data.
+        Restore the original data after resynth.
         """
-        self.R = self.Ro
+        self.R = self._Ro
+        del self._Ro
 
-    def simulate_data(self, theory, noise=None):
+    # CRUFT: Ro doesn't need to be part of the public interface.
+    @property
+    def Ro(self):
+        warnings.warn("Use probe.R instead of probe.Ro.", DeprecationWarning)
+        return getattr(self, '_Ro', self.R)
+
+    def simulate_data(self, theory, noise=2.):
+        r"""
+        Set the data for the probe to R + eps with eps ~ normal(dR^2).
+
+        *theory* is (Q, R),
+
+        If the percent *noise* is provided, set dR to R*noise/100 before
+        simulating.  *noise* defaults to 2% if no dR is present.
+
+        Note that measured data estimates uncertainty from the number of
+        counts.  This means that points above the true value will have
+        larger uncertainty than points below the true value.  This bias
+        is not captured in the simulated data.
         """
-        Set the data for the probe to R, adding random noise dR.
+        # Minimum value for dR after noise is added.
+        # TODO: does this need to be a parameter?
+        noise_floor = 1e-11
 
-        If *noise* is None (the default) then use the existing uncertainty,
-        otherwise set the probe uncertainty as a percentage of the reflectivity
-        using dR = R*noise/100.
-        """
-        self.Ro = theory[1]+0.
+        # Set the theory function.
+        R = numpy.asarray(theory[1], 'd')
+        assert R.shape == self.Q.shape
+        self.R = R
 
-        if numpy.isscalar(noise) and noise < 0:
-            # leave the probe uncertainty alone, and don't add noise to the data
-            self.R = self.Ro
-            return
+        # Make sure scalar noise is positive.  This check is here to so that
+        # old interfaces will fail properly.
+        if numpy.isscalar(noise) and noise <= 0.:
+            raise ValueError("Noise level must be positive")
 
+        # If dR is missing then default noise to 2% so that dR will be set.
+        if self.dR is None and noise is None:
+            noise = 2.
+
+        # Set dR if noise was given or otherwise defaulted.
         if noise is not None:
-            self.dR = 0.01 * numpy.asarray(noise) * self.Ro
-            self.dR[self.dR<=0] = 1e-11
+            self.dR = 0.01 * numpy.asarray(noise) * self.R
+            self.dR[self.dR < noise_floor] = noise_floor
 
-        # Add noise to the theory function
-        self.resynth_data()
-
-        # Pretend the noisy theory function is the underlying measured data
-        # This allows us to resynthesize later, as needed.
-        self.Ro = self.R
+        # Add noise according to dR.
+        self.R += numpy.random.randn(*self.R.shape)*self.dR
 
     def write_data(self, filename,
                    columns=('Q', 'R', 'dR'),
@@ -421,7 +446,7 @@ class Probe(object):
         self.L, self.dL = self.L[idx], self.dL[idx]
         self.Qo, self.dQo = self.Qo[idx], self.dQo[idx]
         if self.R is not None:
-            self.Ro = self.R = self.R[idx]
+            self.R = self.R[idx]
         if self.dR is not None:
             self.dR = self.dR[idx]
         self._set_calc(self.T, self.L)
@@ -594,7 +619,7 @@ class Probe(object):
                   % (self.intensity.value, self.background.value))
         if len(Q) != len(self.Q):
             # Saving interpolated data
-            A = numpy.array((Q, R, np.interp(Q, self.Q, FQ)))
+            A = numpy.array((Q, R, numpy.interp(Q, self.Q, FQ)))
             fid.write("# %17s %20s %20s\n"
                       % ("Q (1/A)", "theory", "fresnel"))
         elif getattr(self, 'R', None) is not None:
@@ -903,7 +928,7 @@ class ProbeSet(Probe):
         self.R = numpy.hstack(p.R for p in self.probes)
     restore_data.__doc__ = Probe.restore_data.__doc__
 
-    def simulate_data(self, theory, noise=None):
+    def simulate_data(self, theory, noise=2.):
         """
         Simulate data, allowing for noise to be a dR array for each Q point.
         """
@@ -1321,7 +1346,7 @@ class QProbe(Probe):
             R, dR = None, None
 
         self.Q, self.dQ = Q, dQ
-        self.Ro = self.R = R
+        self.R = R
         self.dR = dR
         self.unique_L = None
         self.calc_Qo = self.Qo
@@ -1448,7 +1473,7 @@ class PolarizedNeutronProbe(object):
                 p.restore_data()
     restore_data.__doc__ = Probe.restore_data.__doc__
 
-    def simulate_data(self, theory, noise=None):
+    def simulate_data(self, theory, noise=2.):
         if noise is None or numpy.isscalar(noise):
             noise = [noise]*4
         for data_k, theory_k, noise_k in zip(self.xs, theory, noise):

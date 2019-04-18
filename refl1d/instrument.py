@@ -630,7 +630,7 @@ class Pulsed(object):
                 probe.background.value *= Ci
                 probe.intensity.value = Ci
 
-            probe.Ro = probe.R = R
+            probe.R = R
             probe.dR = dR
             probes.append(probe)
 

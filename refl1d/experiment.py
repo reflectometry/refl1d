@@ -9,8 +9,9 @@ to create a fittable reflectometry model.
 """
 from __future__ import division, print_function
 
-from math import pi, log10, floor
+import sys
 import os
+from math import pi, log10, floor
 import traceback
 import json
 from warnings import warn
@@ -24,6 +25,14 @@ from .reflectivity import magnetic_amplitude as reflmag
 #from .abeles import refl as reflamp
 from . import material, profile
 from . import __version__
+
+# CRUFT: 2.7 support
+if sys.version_info[0] > 2:
+    def asbytes(s):
+        return s.encode('utf-8')
+else:
+    def asbytes(s):
+        return s
 
 def plot_sample(sample, instrument=None, roughness_limit=0):
     """
@@ -188,15 +197,19 @@ class ExperimentBase(object):
         """Save simulated data to a file"""
         self.probe.write_data(filename, **kw)
 
-    def simulate_data(self, noise=2):
+    def simulate_data(self, noise=2.):
         """
-        Simulate a random data set for the model
+        Simulate a random data set for the model.
+
+        This sets R and dR according to the noise level given.
 
         **Parameters:**
 
-        *noise* = 2 : float | %
-            Percentage noise to add to the data.
+        *noise*: float or array or None | %
+            dR/R uncertainty as a percentage.  If noise is set to None, then
+            use dR from the data if present, otherwise default to 2%.
         """
+        # TODO: can't do perfect data while setting default uncertainty
         theory = self.reflectivity(resolution=True)
         self.probe.simulate_data(theory, noise=noise)
 
@@ -237,56 +250,57 @@ class ExperimentBase(object):
     def _save_magnetic(self, basename):
         # Slabs
         A = numpy.array(self.magnetic_slabs())
-        fid = open(basename+"-slabs.dat", "w")
-        fid.write("# %17s %20s %20s %20s %20s %20s\n"
-                  %("thickness (A)", "interface (A)", "rho (1e-6/A^2)", "irho (1e-6/A^2)",
+        header = ("# %17s %20s %20s %20s %20s %20s\n"
+                  %("thickness (A)", "interface (A)",
+                    "rho (1e-6/A^2)", "irho (1e-6/A^2)",
                     "rhoM (1e-6/A^2)", "theta (degrees)"))
-        numpy.savetxt(fid, A.T, fmt="%20.15g")
-        fid.close()
+        with open(basename+"-slabs.dat", "wb") as fid:
+            fid.write(asbytes(header))
+            numpy.savetxt(fid, A.T, fmt="%20.15g")
 
         # Step profile
         A = numpy.array(self.magnetic_step_profile())
-        fid = open(basename+"-steps.dat", "w")
-        fid.write("# %10s %12s %12s %12s %12s\n"
+        header = ("# %10s %12s %12s %12s %12s\n"
                   %("z (A)", "rho (1e-6/A2)", "irho (1e-6/A2)",
                     "rhoM (1e-6/A2)", "theta (degrees)"))
-        numpy.savetxt(fid, A.T, fmt="%12.8f")
-        fid.close()
+        with open(basename+"-steps.dat", "wb") as fid:
+            fid.write(asbytes(header))
+            numpy.savetxt(fid, A.T, fmt="%12.8f")
 
         # Smooth profile
         A = numpy.array(self.magnetic_smooth_profile())
-        fid = open(basename+"-profile.dat", "w")
-        fid.write("# %10s %12s %12s %12s %12s\n"
+        header = ("# %10s %12s %12s %12s %12s\n"
                   %("z (A)", "rho (1e-6/A2)", "irho (1e-6/A2)",
                     "rhoM (1e-6/A2)", "theta (degrees)"))
-        numpy.savetxt(fid, A.T, fmt="%12.8f")
-        fid.close()
+        with open(basename+"-profile.dat", "wb") as fid:
+            fid.write(asbytes(header))
+            numpy.savetxt(fid, A.T, fmt="%12.8f")
 
     def _save_nonmagnetic(self, basename):
         # Slabs
         A = numpy.array(self.slabs())
-        fid = open(basename+"-slabs.dat", "w")
-        fid.write("# %17s %20s %20s %20s\n"
+        header = ("# %17s %20s %20s %20s\n"
                   %("thickness (A)", "interface (A)", "rho (1e-6/A^2)",
                     "irho (1e-6/A^2)"))
-        numpy.savetxt(fid, A.T, fmt="%20.15g")
-        fid.close()
+        with open(basename+"-slabs.dat", "wb") as fid:
+            fid.write(asbytes(header))
+            numpy.savetxt(fid, A.T, fmt="%20.15g")
 
         # Step profile
         A = numpy.array(self.step_profile())
-        fid = open(basename+"-steps.dat", "w")
-        fid.write("# %10s %20s %20s\n"
+        header = ("# %10s %20s %20s\n"
                   %("z (A)", "rho (1e-6/A2)", "irho (1e-6/A2)"))
-        numpy.savetxt(fid, A.T, fmt="%12.8f")
-        fid.close()
+        with open(basename+"-steps.dat", "wb") as fid:
+            fid.write(asbytes(header))
+            numpy.savetxt(fid, A.T, fmt="%12.8f")
 
         # Smooth profile
         A = numpy.array(self.smooth_profile())
-        fid = open(basename+"-profile.dat", "w")
-        fid.write("# %10s %12s %12s\n"
+        header = ("# %10s %12s %12s\n"
                   %("z (A)", "rho (1e-6/A2)", "irho (1e-6/A2)"))
-        numpy.savetxt(fid, A.T, fmt="%12.8f")
-        fid.close()
+        with open(basename+"-profile.dat", "wb") as fid:
+            fid.write(asbytes(header))
+            numpy.savetxt(fid, A.T, fmt="%12.8f")
 
     def save_refl(self, basename):
         # Reflectivity
@@ -554,9 +568,10 @@ class Experiment(ExperimentBase):
             save_mlayer(self, basename+".staj", datafile=datafile)
             probe = self.probe
             datafile = os.path.join(os.path.dirname(basename), os.path.basename(datafile))
-            fid = open(datafile, "w")
-            fid.write("# Q R dR\n")
-            numpy.savetxt(fid, numpy.vstack((probe.Qo, probe.R, probe.dR)).T)
+            header = ("# Q R dR\n")
+            with open(datafile, "wb") as fid:
+                fid.write(asbytes(header))
+                numpy.savetxt(fid, numpy.vstack((probe.Qo, probe.R, probe.dR)).T)
             fid.close()
         except Exception:
             print("==== could not save staj file ====")
