@@ -132,7 +132,8 @@ class Layer(object): # Abstract base class
             _mag_parameters = self.magnetism.parameters()
             if _mag_parameters:
                 for name, param in _mag_parameters.items():
-                    _layer_dict[name] = param.to_dict()
+                    if param is not None:
+                        _layer_dict[name] = param.to_dict()
         return _layer_dict
 
     # Define a little algebra for composing samples
