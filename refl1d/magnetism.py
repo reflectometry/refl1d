@@ -194,7 +194,7 @@ class MagnetismStack(BaseMagnetism):
 
         slabs.add_magnetism(anchor=anchor,
                             w=w, rhoM=rhoM, thetaM=thetaM,
-                            sigma=sigma)
+                            sigma=sigmaM)
 
     def __str__(self):
         return "MagnetismStack(%d)"%(len(self.rhoM))
