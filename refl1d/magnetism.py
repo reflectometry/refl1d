@@ -105,24 +105,42 @@ class BaseMagnetism(object):
 class Magnetism(BaseMagnetism):
     """
     Region of constant magnetism.
+
+    *interfaceM* defines the roughness for the magnetic layer. If None (default) is supplied,
+    the roughness is taken from the corresponding nuclear layer's roughness.
     """
-    def __init__(self, rhoM=0, thetaM=270, name="LAYER", **kw):
+    def __init__(self, rhoM=0, thetaM=270, interfaceM=None, name="LAYER", **kw):
         BaseMagnetism.__init__(self, name=name, **kw)
         self.rhoM = Parameter.default(rhoM, name=name+" rhoM")
         self.thetaM = Parameter.default(thetaM, limits=(0, 360),
                                         name=name+" thetaM")
+        if interfaceM is None:
+            self.interfaceM = None
+        else:
+            self.interfaceM = Parameter.default(interfaceM, name=name + " interfaceM")
 
     def parameters(self):
         parameters = BaseMagnetism.parameters(self)
-        parameters.update(rhoM=self.rhoM, thetaM=self.thetaM)
+
+        if self.interfaceM is None:
+            parameters.update(rhoM=self.rhoM, thetaM=self.thetaM)
+        else:
+            parameters.update(rhoM=self.rhoM, thetaM=self.thetaM, interfaceM=self.interfaceM)
+
         return parameters
 
     def render(self, probe, slabs, thickness, anchor, sigma):
+
+        if self.interfaceM is None:
+            sigmaM = sigma
+        else:
+            sigmaM = self.interfaceM.value
+
         slabs.add_magnetism(anchor=anchor,
                             w=[thickness],
                             rhoM=[self.rhoM.value],
                             thetaM=[self.thetaM.value],
-                            sigma=sigma)
+                            sigma=sigmaM)
     def __str__(self):
         return "magnetism(%g)"%self.rhoM.value
 
