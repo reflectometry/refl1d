@@ -12,4 +12,5 @@ cd 'build\Refl1D'
 
 cd ..
 $VERSION = (Select-String '__version__ *= *"(.*)"' ..\refl1d\__init__.py -ca).matches | Select-Object -ExpandProperty Groups | Select-Object -Last 1 -ExpandProperty value
-Compress-Archive -Path Refl1D -DestinationPath "..\dist\Refl1D-$VERSION.zip"
+$PYVERSION = "-cp37m-embedded-amd64"
+Compress-Archive -Path Refl1D -DestinationPath "..\dist\Refl1D-$VERSION$PYVERSION.zip"
