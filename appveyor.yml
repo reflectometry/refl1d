@@ -29,14 +29,6 @@ install:
 
 build: off
 
-for:
--
-   matrix:
-       only:
-          - PYTHON: C:\\Python37
-       after_test:
-           - ps: extra\build_win_installer.ps1
-
 test_script:
   # Put your test command here.
   # If you don't need to build C extensions on 64-bit Python 3.3 or 3.4,
@@ -53,6 +45,7 @@ after_test:
   # 64-bit Python 3.3/3.4. And you need to use %PYTHON% to get the correct
   # interpreter
   - "%PYTHON%\\python.exe setup.py bdist_wheel"
+  - ps: if ($PYTHON -eq "C:\\Python37") { extra\build_win_install.ps1 }
 
 artifacts:
   # bdist_wheel puts your built wheel in the dist directory
