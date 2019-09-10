@@ -29,6 +29,14 @@ install:
 
 build: off
 
+for:
+-
+   matrix:
+       only:
+          - PYTHON: C:\\Python37
+       after_test:
+           - ps: extra\build_win_installer.ps1
+
 test_script:
   # Put your test command here.
   # If you don't need to build C extensions on 64-bit Python 3.3 or 3.4,
@@ -48,8 +56,10 @@ after_test:
 
 artifacts:
   # bdist_wheel puts your built wheel in the dist directory
-  - path: dist\*
-    name: Releases
+  - path: 'dist\*.whl'
+    name: Wheels
+  - path: 'dist\Refl1D-*.zip'
+    name: Windows installer
 
 #on_success:
 #  You can use this step to upload your artifacts to a public website.
@@ -60,7 +70,7 @@ deploy:
   provider: GitHub
   auth_token:
     secure: WFLDvxMUUWcL7b4fRIY9DXFswHxWX85rqrGKO+2+q24MzGeQtFVnHSKhmcCKSi7w
-  artifact: /.*\.whl/
+  artifact: /.*\.(whl|zip)/
   draft: false
   prerelease: true
   on:
