@@ -45,7 +45,9 @@ def import_dll(module, build_path):
     import imp
     try:
         import sysconfig
-        ext = sysconfig.get_config_var('SO')
+        ext = sysconfig.get_config_var('EXT_SUFFIX')
+        if ext is None:
+            ext = sysconfig.get_config_var('SO')
     except ImportError:
         ext = '.pyd' if sys.platform == 'win32' else '.so'
 
