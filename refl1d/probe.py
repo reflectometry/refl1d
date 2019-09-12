@@ -165,6 +165,10 @@ class Probe(object):
                  back_reflectivity=False, name=None, filename=None):
         if T is None or L is None:
             raise TypeError("T and L required")
+        if sample_broadening is None:
+            sample_broadening = 0
+        if theta_offset is None:
+            theta_offset = 0
         if not name and filename:
             name = os.path.splitext(os.path.basename(filename))[0]
         qualifier = " "+name if name is not None else ""
@@ -1122,7 +1126,7 @@ class ProbeSet(Probe):
 def load4(filename, keysep=":", sep=None, comment="#", name=None,
           intensity=1, background=0, back_absorption=1,
           back_reflectivity=False, Aguide=270, H=0,
-          theta_offset=0, sample_broadening=0,
+          theta_offset=None, sample_broadening=None,
           L=None, dL=None, T=None, dT=None,
           FWHM=False, radiation=None,
           columns=None, data_range=(None, None),
@@ -1268,54 +1272,70 @@ def _data_as_probe(entry, probe_args, T, L, dT, dL, FWHM, radiation,
     else:
         make_probe = Probe
 
-    # Get wavelength from header if it is not provided as an argument
-    data_L = data_T = None
-    if L is not None:
-        data_L = L
-    elif 'wavelength' in header:
-        data_L = json.loads(header['wavelength'])
-    if T is not None:
-        data_T = T
-    elif 'angle' in header:
-        data_T = json.loads(header['angle'])
-    if data_L is not None:
-        if dL is not None:
-            data_dL = dL
-        elif 'wavelength_resolution' in header:
-            data_dL = json.loads(header['wavelength_resolution'])
+    # Get T,dT,L,dL from header if it is not provided as an argument
+    def fetch_key(key, override):
+        if override is not None:
+            return override
+        elif key in header:
+            return json.loads(header['key'])
         else:
-            raise ValueError("Need wavelength_resolution to determine dT")
-        data_dL = sigma2FWHM(data_dL) if not FWHM else data_dL
+            return None
+
+    # Get T and L, either from user input or from datafile.
+    data_T = fetch_key('angle', T)
+    data_L = fetch_key('wavelength', L)
+
+    # If one of T and L is missing, reconstruct it from Q
+    if data_T is None and data_L is not None:
         data_T = QL2T(Q, data_L)
-        data_dT = dQdL2dT(Q, dQ, data_L, data_dL)
-    elif data_T is not None:
-        if dT is not None:
-            data_dT = dT
-        elif 'angular_resolution' in header:
-            data_dT = json.loads(header['angular_resolution'])
-        else:
-            raise ValueError("Need angular_resolution to determine dL")
-        data_dT = sigma2FWHM(data_dT) if not FWHM else data_dT
+    if data_L is None and data_T is not None:
         data_L = QT2L(Q, data_T)
+
+
+    # Get dT and dL, either from user input or from datafile.
+    # Convert input dT,dL to FWHM if necessary.
+    data_dL = fetch_key('wavelength_resolution', dL)
+    data_dT = fetch_key('angular_resolution', dT)
+    if data_dL is not None and not FWHM:
+        data_dL = sigma2FWHM(data_dL)
+    if data_dT is not None and not FWHM:
+        data_dT = sigma2FWHM(data_dT)
+
+    # If one of T and L is missing, reconstruct it from Q.
+    if data_dT is None and not (data_L is None or data_dL is None):
+        data_dT = dQdL2dT(Q, dQ, data_L, data_dL)
+    if data_dL is None and not (data_T is None or data_dT is None):
         data_dLoL = dQdT2dLoL(Q, dQ, data_T, data_dT)
         data_dL = data_dLoL * data_L
 
-    if data_L is not None:
+    # Check reconstruction if user provided any of T, L, dT, or dL.
+    # Also, sample_offset or sample_broadening.
+    offset = probe_args['theta_offset']
+    broadening = probe_args['sample_broadening']
+    if any(v is not None for v in (T, dT, L, dL, offset, broadening)):
+        name = probe_args['filename']
+        if data_T is None:
+            raise ValueError("Need L to determine T from Q for %r" % name)
+        if data_L is None:
+            raise ValueError("Need T to determine L from Q for %r" % name)
+        if data_dT is None:
+            raise ValueError("Need dL to determine dT from dQ for %r" % name)
+        if data_dL is None:
+            raise ValueError("Need dT to determine dL from dQ for %r" % name)
+
+    # Build the probe, or the Q probe if we don't have angle and wavelength.
+    if all(v is not None for v in (data_T, data_L, data_dT, data_dL)):
         probe = make_probe(
             T=data_T, dT=data_dT,
             L=data_L, dL=data_dL,
             data=(R, dR), **probe_args)
     else:
-        # If we don't know angle and wavelength, then we can't adjust
-        # sample alignment and angular divergence. Note: don't modify
-        # probe_args since it might be needed for the next entry.
+        # QProbe doesn't accept theta_offset or sample_broadening
         qprobe_args = probe_args.copy()
-        theta_offset = qprobe_args.pop('theta_offset')
-        sample_broadening = qprobe_args.pop('sample_broadening')
-        if theta_offset != 0. or sample_broadening != 0.:
-            warnings.warn("Theta offset and sample broadening ignored for %r"
-                          % qprobe_args['filename'])
+        qprobe_args.pop('theta_offset')
+        qprobe_args.pop('sample_broadening')
         probe = QProbe(Q, dQ, data=(R, dR), **qprobe_args)
+
     return probe
 
 
