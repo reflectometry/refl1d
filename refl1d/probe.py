@@ -1307,13 +1307,15 @@ def _data_as_probe(entry, probe_args, T, L, dT, dL, FWHM, radiation,
             data=(R, dR), **probe_args)
     else:
         # If we don't know angle and wavelength, then we can't adjust
-        # sample alignment and angular divergence.
-        theta_offset = probe_args.pop('theta_offset')
-        sample_broadening = probe_args.pop('sample_broadening')
+        # sample alignment and angular divergence. Note: don't modify
+        # probe_args since it might be needed for the next entry.
+        qprobe_args = probe_args.copy()
+        theta_offset = qprobe_args.pop('theta_offset')
+        sample_broadening = qprobe_args.pop('sample_broadening')
         if theta_offset != 0. or sample_broadening != 0.:
             warnings.warn("Theta offset and sample broadening ignored for %r"
-                          % probe_args['filename'])
-        probe = QProbe(Q, dQ, data=(R, dR), **probe_args)
+                          % qprobe_args['filename'])
+        probe = QProbe(Q, dQ, data=(R, dR), **qprobe_args)
     return probe
 
 
