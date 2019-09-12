@@ -189,11 +189,11 @@ def _calc(kz, depth, rho, irho, sigma):
     #    print("t[%d]"%k, layer[0])
     #print("t   ", t)
     k0, kn = k_list[0], k_list[-1]
-    print("r^2 =", abs(r**2))
-    print("t^2 =", abs(t**2))
-    print("r^2 + t^2*k0/kn =", abs(r**2) + abs(t**2)*(k0/kn).real)
-    print("k0", k0)
-    print("kn", kn)
+    #print("r^2 =", abs(r**2))
+    #print("t^2 =", abs(t**2))
+    #print("r^2 + t^2*k0/kn =", abs(r**2) + abs(t**2)*(k0/kn).real)
+    #print("k0", k0)
+    #print("kn", kn)
 
     ## Compute back reflectivity
     #negative = (kz < 0.0)
@@ -227,12 +227,149 @@ def check():
         print("rold", r_old)
     except ImportError:
         print("could not import abeles")
-    layers = refl_tr(q/2, depth, rho, irho=irho, sigma=sigma)
-    for k, layer in enumerate(layers):
-        print("r[%d]"%k, layer[1])
-        print("t[%d]"%k, layer[0])
-    r, t = layers[0][1], layers[-1][0]
+    wave = refl_tr(q/2, depth, rho, irho=irho, sigma=sigma)
+    for k, wk in enumerate(wave):
+        print("r[%d]"%k, wk[1])
+        print("t[%d]"%k, wk[0])
+    r, t = wk[0][1], wk[-1][0]
+    #print("r^2", abs(r**2))
+
+
+def check2(t=200, rho=4.66):
+    import numpy as np
+    np.set_printoptions(linewidth=10000)
+
+    #q = np.linspace(0.0, 0.05, 600)
+    q = np.linspace(0.0, 0.0005, 6000)
+    #q = np.linspace(0.1, 0.3, 3)
+    layers = [
+        # depth rho irho sigma
+        [  0, 0.0, 0.0,  0.0],
+        #[200, 2.0, 0.0,  0.0],
+        [t, -rho, 0.0,  0.0],
+        [  0, 0, 0.0,  0.0],
+        #[  0, 2.07, 0.0,  0.0],
+    ]
+    # add absorption
+    # layers[1][2] = 1.0
+    depth, rho, irho, sigma = zip(*layers)
+
+    wave = refl_tr(q/2, depth, rho, irho=irho, sigma=sigma)
+    #print("shape", wave.shape)
+    r = wave[0, 1]
+
+    from matplotlib import pyplot as plt
+    plt.plot(q, r.real, '-b', label='real')
+    plt.plot(q, r.imag, '-r', label='imag')
+    plt.plot(q, abs(r**2), '-g', label='magnitude')
+    #plt.legend()
+    plt.grid(True)
+    #plt.xlabel('q (1/A)')
+    #plt.title("stack = Si / 20 nm Au / Air")
+    #plt.show()
+    #print("q", q)
+    #print("r", r)
+    #print("r^2", abs(r**2))
+
+def check3(t=200, rho=4.66):
+    import numpy as np
+    np.set_printoptions(linewidth=10000)
+
+    qmax = 0.1
+    t, qmax = 2000, 0.05
+    #t, qmax = 20, 0.4
+    q = np.linspace(0.0, qmax, 6000)[1:]
+    layers = [
+        # depth rho irho sigma
+        [  0, 0.0, 0.0,  0.0],
+        #[200, 2.0, 0.0,  0.0],
+        [t, rho, 0.0,  0.0],
+        [  0, 0, 0.0,  0.0],
+        #[  0, 2.07, 0.0,  0.0],
+    ]
+    # add absorption
+    # layers[1][2] = 1.0
+    vdepth, vrho, virho, vsigma = [np.asarray(v) for v in zip(*layers)]
+
+    if 1:
+        steps = 2001
+        #portion = 0.9
+        portion = 0.0
+        thickness = t
+        flat = thickness*portion
+        ends = thickness*(1-portion)
+        z = np.linspace(-3, 3, steps)
+        vrho = np.exp(-0.5*z**2)*rho
+        virho = 0*rho
+        vdepth = np.ones_like(z)*ends/steps
+        vdepth[int((steps-1)/2)] = flat
+        vsigma = 0*rho
+
+    if 0:
+        steps = 2001
+        thickness, portion = t, 0.0
+        flat = thickness*portion
+        ends = thickness*(1-portion)
+        z = np.linspace(-3, 3, steps)
+        vrho = np.exp(-0.5*z**2)*rho
+        vrho += -np.exp(-0.5*(z-1)**2*4)*rho
+        virho = 0*rho
+        vdepth = np.ones_like(z)*ends/steps
+        vdepth[int((steps-1)/2)] = flat
+        vsigma = 0*rho
+
+    ## normalize to same amount of scattering density
+    #total = rho*t
+    #vrho *= total/np.sum(vrho*vdepth)
+
+    wave = refl_tr(q/2, vdepth, vrho, irho=virho, sigma=vsigma)
+    #print("shape", layers.shape)
+    r = wave[0, 1]
+
+    from matplotlib import pyplot as plt
+    from mpl_toolkits.axes_grid.inset_locator import InsetPosition
+
+    scale = q*0+1
+    #scale = q**4
+    plt.plot(q, scale*r.real, '-b', label='real', zorder=2)
+    plt.plot(q, scale*r.imag, '-r', label='imag')
+    plt.plot(q, scale*abs(r**2), '-g', label='magnitude')
+    #plt.yscale('symlog', linthreshy=1e-6)
+    #plt.legend()
+    plt.grid(True)
+    ax = plt.gca()
+    inset = plt.axes([0, 0, 1, 1])
+    inset.step(np.cumsum(vdepth), vrho, '-g', label='rho')
+    #inset.step(np.cumsum(vdepth), virho, '-m', label='irho')
+    inset.set_axes_locator(InsetPosition(ax, [0.6, 0.7, 0.4, 0.3]))
+    inset.patch.set_alpha(0.5)
+    inset.patch.set_color([0.9,0.9,0.8])
+    #mark_inset(ax, inset)
+
+    #plt.xlabel('q (1/A)')
+    #plt.title("stack = Si / 20 nm Au / Air")
+    #plt.show()
+    #print("q", q)
+    #print("r", r)
     #print("r^2", abs(r**2))
 
 if __name__ == "__main__":
-    check()
+    from matplotlib import pyplot as plt
+    check3()
+    """
+    plt.subplot(211)
+    check2(t=50)
+    check2(t=100)
+    check2(t=200)
+    check2(t=400)
+    check2(t=800)
+    check2(t=1600)
+    plt.subplot(212)
+    check2(t=200,rho=-2)
+    check2(t=200,rho=1)
+    check2(t=200,rho=2)
+    check2(t=200,rho=4)
+    check2(t=200,rho=6)
+    check2(t=200,rho=8)
+    """
+    plt.show()
