@@ -203,7 +203,7 @@ class Probe(object):
         #    dE = E * dL/L
 
         Q = TL2Q(T=T, L=L)
-        dQ = dTdL2dQ(T=T, dT=dT + self.sample_broadening.value, L=L, dL=dL)
+        dQ = dTdL2dQ(T=T, dT=dT, L=L, dL=dL)
 
         # Make sure that we are dealing with vectors
         T, dT, L, dL = [numpy.ones_like(Q)*v for v in (T, dT, L, dL)]
