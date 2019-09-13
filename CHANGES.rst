@@ -4,6 +4,22 @@ Change History
 
 Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 
+2019-??-?? v0.8.9
+=================
+* load4: accept 2 and 3 column data
+* load4: override resolution and uncertainty given (or missing) from file
+* load4: accept multi-entry data as Q probe without knowing theta/lambda
+* load4: set the data slice to load
+* load4: set default radiation to 'neutron'
+* fix bug in dQ when sample_broadening is initialized to non-zeros
+* revised installer: embedded python in zip file
+* functions to compute transmission and reflection at each layer
+* allow simulation with uncertainty from data
+* force minimum uncertainty in data to 1e-11
+* change default data view from Fresnel to log10
+* apply resolution to saved Fresnel curve
+* improved python 3 support
+
 2019-03-01 v0.8.8
 =================
 * fix json save for MixedExperiments
