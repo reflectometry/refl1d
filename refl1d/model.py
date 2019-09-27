@@ -126,13 +126,15 @@ class Layer(object): # Abstract base class
             Return a dictionary representation of the Slab object
         """
         _layer_dict = dict(name=self.name, type=type(self).__name__)
-        if self.thickness: _layer_dict['thickness'] = self.thickness.to_dict()
-        if self.interface: _layer_dict['interface'] = self.interface.to_dict()
+        if self.thickness:
+            _layer_dict['thickness'] = self.thickness.to_dict()
+        if self.interface:
+            _layer_dict['interface'] = self.interface.to_dict()
         if self.magnetism:
             _mag_parameters = self.magnetism.parameters()
             if _mag_parameters:
                 for name, param in _mag_parameters.items():
-                    _layer_dict[name] = param.to_dict()
+                    _layer_dict[name] = param.to_dict() if param is not None else None
         return _layer_dict
 
     # Define a little algebra for composing samples
