@@ -1,6 +1,6 @@
 # This program is public domain
 # Author: Paul Kienzle
-"""
+r"""
 Magnetic modeling for 1-D reflectometry.
 
 Magnetic properties are tied to the structural description of the
@@ -85,11 +85,12 @@ class BaseMagnetism(object):
         self.extent = extent
 
     def parameters(self):
-        return {'dead_below':self.dead_below,
-                'dead_above':self.dead_above,
-                'interface_below':self.interface_below,
-                'interface_above':self.interface_above,
-               }
+        return {
+            'dead_below': self.dead_below,
+            'dead_above': self.dead_above,
+            'interface_below': self.interface_below,
+            'interface_above': self.interface_above,
+            }
 
     def set_layer_name(self, name):
         """
@@ -141,9 +142,9 @@ class MagnetismStack(BaseMagnetism):
                 and len(interfaceM) != 1 and len(interfaceM) != len(weight)-1):
             raise ValueError("Must have one rhoM, thetaM and intefaceM for each layer")
         if interfaceM != [0]:
-            raise NotImplementedError("Doesn't support magnetic roughness")
+            raise notimplementederror("doesn't support magnetic roughness")
 
-        BaseMagnetism.__init__(self, stack=stack, name=name, **kw)
+        BaseMagnetism.__init__(self, name=name, **kw)
         self.weight = [Parameter.default(v, name=name+" weight[%d]"%i)
                        for i, v in enumerate(weight)]
         self.rhoM = [Parameter.default(v, name=name+" rhoM[%d]"%i)

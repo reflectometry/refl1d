@@ -355,6 +355,8 @@ class Experiment(ExperimentBase):
 
     *interpolation* indicates the number of points to plot in between
     existing points.
+
+    *smoothness* **DEPRECATED** This parameter is not used.
     """
     profile_shift = 0
     def __init__(self, sample=None, probe=None, name=None,
