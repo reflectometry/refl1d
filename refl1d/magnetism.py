@@ -46,6 +46,9 @@ from bumps.mono import monospline
 
 from .model import Layer, Stack
 
+def _optional_dict(p):
+    return p.to_dict() if p is not None else None
+
 class BaseMagnetism(object):
     """
     Magnetic properties of the layer.
@@ -92,6 +95,17 @@ class BaseMagnetism(object):
             'interface_above': self.interface_above,
             }
 
+    def to_dict(self):
+        return {
+            'type': type(self).__name__,
+            'extent': self.extent,
+            'name': self.name,
+            'dead_below': self.dead_below.to_dict(),
+            'dead_above': self.dead_above.to_dict(),
+            'interface_below': _optional_dict(self.interface_below),
+            'interface_above': _optional_dict(self.interface_above),
+        }
+
     def set_layer_name(self, name):
         """
         Update the names of the magnetic parameters with the name of the
@@ -118,12 +132,19 @@ class Magnetism(BaseMagnetism):
         parameters.update(rhoM=self.rhoM, thetaM=self.thetaM)
         return parameters
 
+    def to_dict(self):
+        result = BaseMagnetism.to_dict(self)
+        result['rhoM'] = self.rhoM.to_dict()
+        result['thetaM'] = self.thetaM.to_dict()
+        return result
+
     def render(self, probe, slabs, thickness, anchor, sigma):
         slabs.add_magnetism(anchor=anchor,
                             w=[thickness],
                             rhoM=[self.rhoM.value],
                             thetaM=[self.thetaM.value],
                             sigma=sigma)
+
     def __str__(self):
         return "magnetism(%g)"%self.rhoM.value
 
@@ -142,7 +163,7 @@ class MagnetismStack(BaseMagnetism):
                 and len(interfaceM) != 1 and len(interfaceM) != len(weight)-1):
             raise ValueError("Must have one rhoM, thetaM and intefaceM for each layer")
         if interfaceM != [0]:
-            raise notimplementederror("doesn't support magnetic roughness")
+            raise NotImplementedError("doesn't support magnetic roughness")
 
         BaseMagnetism.__init__(self, name=name, **kw)
         self.weight = [Parameter.default(v, name=name+" weight[%d]"%i)
@@ -161,6 +182,14 @@ class MagnetismStack(BaseMagnetism):
                           interfaceM=self.interfaceM,
                           weight=self.weight)
         return parameters
+
+    def to_dict(self):
+        result = BaseMagnetism.to_dict(self)
+        result['weight'] = [p.to_dict() for p in self.weight]
+        result['rhoM'] = [p.to_dict() for p in self.rhoM]
+        result['thetaM'] = [p.to_dict() for p in self.thetaM]
+        result['interfaceM'] = [p.to_dict() for p in self.interfaceM]
+        return result
 
     def render(self, probe, slabs, thickness, anchor, sigma):
         w = numpy.array([p.value for p in self.weight])
@@ -203,6 +232,12 @@ class MagnetismTwist(BaseMagnetism):
         parameters = BaseMagnetism.parameters(self)
         parameters.update(rhoM=self.rhoM, thetaM=self.thetaM)
         return parameters
+
+    def to_dict(self):
+        result = BaseMagnetism.to_dict(self)
+        result['rhoM'] = [p.to_dict() for p in self.rhoM]
+        result['thetaM'] = [p.to_dict() for p in self.thetaM]
+        return result
 
     def render(self, probe, slabs, thickness, anchor, sigma):
         w, z = slabs.microslabs(thickness)
@@ -247,6 +282,13 @@ class FreeMagnetism(BaseMagnetism):
         parameters = BaseMagnetism.parameters(self)
         parameters.update(rhoM=self.rhoM, thetaM=self.thetaM, z=self.z)
         return parameters
+
+    def to_dict(self):
+        result = BaseMagnetism.to_dict(self)
+        result['z'] = [p.to_dict() for p in self.z]
+        result['rhoM'] = [p.to_dict() for p in self.rhoM]
+        result['thetaM'] = [p.to_dict() for p in self.thetaM]
+        return result
 
     def profile(self, Pz, thickness):
         mbelow, tbelow = 0, (self.thetaM[0].value if self.thetaM else 270)
