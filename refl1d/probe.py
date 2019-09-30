@@ -904,8 +904,8 @@ class NeutronProbe(Probe):
 class ProbeSet(Probe):
     def __init__(self, probes, name=None):
         self.probes = list(probes)
-        self.R = numpy.hstack(p.R for p in self.probes)
-        self.dR = numpy.hstack(p.dR for p in self.probes)
+        self.R = numpy.hstack([p.R for p in self.probes])
+        self.dR = numpy.hstack([p.dR for p in self.probes])
         self.name = name if name is not None else self.probes[0].name
 
         back_refls = [f.back_reflectivity for f in self.probes]
@@ -925,12 +925,12 @@ class ProbeSet(Probe):
 
     def resynth_data(self):
         for p in self.probes: p.resynth_data()
-        self.R = numpy.hstack(p.R for p in self.probes)
+        self.R = numpy.hstack([p.R for p in self.probes])
     resynth_data.__doc__ = Probe.resynth_data.__doc__
 
     def restore_data(self):
         for p in self.probes: p.restore_data()
-        self.R = numpy.hstack(p.R for p in self.probes)
+        self.R = numpy.hstack([p.R for p in self.probes])
     restore_data.__doc__ = Probe.restore_data.__doc__
 
     def simulate_data(self, theory, noise=2.):
@@ -951,19 +951,19 @@ class ProbeSet(Probe):
 
     @property
     def Q(self):
-        return numpy.hstack(p.Q for p in self.probes)
+        return numpy.hstack([p.Q for p in self.probes])
 
     @property
     def calc_Q(self):
-        return numpy.unique(numpy.hstack(p.calc_Q for p in self.probes))
+        return numpy.unique(numpy.hstack([p.calc_Q for p in self.probes]))
 
     @property
     def dQ(self):
-        return numpy.hstack(p.dQ for p in self.probes)
+        return numpy.hstack([p.dQ for p in self.probes])
 
     @property
     def unique_L(self):
-        return numpy.unique(numpy.hstack(p.unique_L for p in self.probes))
+        return numpy.unique(numpy.hstack([p.unique_L for p in self.probes]))
 
     def oversample(self, **kw):
         for p in self.probes:
