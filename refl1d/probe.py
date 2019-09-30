@@ -1125,7 +1125,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
           intensity=1, background=0, back_absorption=1,
           back_reflectivity=False, Aguide=270, H=0,
           theta_offset=None, sample_broadening=None,
-          L=None, dL=None, T=None, dT=None, dRoR=None,
+          L=None, dL=None, T=None, dT=None, dR=None,
           FWHM=False, radiation=None,
           columns=None, data_range=(None, None),
          ):
@@ -1176,13 +1176,14 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
         # wavelength: [1, 1.2, 1.5, 2.0, ...]
         # wavelength_resolution: [0.02, 0.02, 0.02, ...]
 
-    *dRoR* can be used to replace the uncertainty estimate for R in the
-    file with $\DeltaR = R * \text{dRoR}$.  This allows files with only
-    two columns, *Q* and *R* to be loaded.
+    *dR* can be used to replace the uncertainty estimate for R in the
+    file with $\Delta R = R * \text{dR}$.  This allows files with only
+    two columns, *Q* and *R* to be loaded.  Note that points with *dR=0*
+    are automatically set to the minimum *dR>0* in the dataset.
 
     Instead of constants, you can provide function, *dT = lambda T: f(T)*,
-    *dL = lambda L: f(L)* or *dRoR = lambda Q, R: f(Q, R)* for more complex
-    relationships (with *dRoR(Q, R)* returning 1-sigma *dR* despite its name).
+    *dL = lambda L: f(L)* or *dR = lambda Q, R, dR: f(Q, R, dR)* for more
+    complex relationships (with *dR()* returning 1-$\sigma$ $\Delta R$).
 
     *sample_broadening* in degrees FWHM adds to the angular_resolution.
     Scale 1-$\sigma$ rms by $2 \surd(2 \ln 2) \approx 2.34$ to convert to FWHM.
@@ -1234,7 +1235,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     data_args = dict(
         radiation=radiation,
         FWHM=FWHM,
-        T=T, L=L, dT=dT, dL=dL, dRoR=dRoR,
+        T=T, L=L, dT=dT, dL=dL, dR=dR,
         column_order=column_order,
         index=index,
     )
@@ -1255,30 +1256,30 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
             probe = PolarizedNeutronProbe(xs, Aguide=Aguide, H=H)
     return probe
 
-def _data_as_probe(entry, probe_args, T, L, dT, dL, dRoR, FWHM, radiation,
+def _data_as_probe(entry, probe_args, T, L, dT, dL, dR, FWHM, radiation,
                    column_order, index):
     name = probe_args['filename']
     header, data = entry
     if len(data) == 2:
-        Q, R = (data[k][index] for k in column_order[:2])
-        dR, dQ = None, None
-        if dRoR is None:
-            raise ValueError("Need dRoR for two column in %r" % name)
+        data_Q, data_R = (data[k][index] for k in column_order[:2])
+        data_dR, data_dQ = None, None
+        if dR is None:
+            raise ValueError("Need dR for two column data in %r" % name)
     elif len(data) == 3:
-        Q, R, dR = (data[k][index] for k in column_order[:3])
-        dQ = None
+        data_Q, data_R, data_dR = (data[k][index] for k in column_order[:3])
+        data_dQ = None
     else:
-        Q, R, dR, dQ = (data[k][index] for k in column_order)
+        data_Q, data_R, data_dR, data_dQ = (data[k][index] for k in column_order)
 
-    if FWHM and dQ is not None: # dQ defaults to 1-sigma, if FWHM is not True
-        dQ = FWHM2sigma(dQ)
+    if FWHM and data_dQ is not None: # dQ is already 1-sigma when not FWHM
+        data_dQ = FWHM2sigma(data_dQ)
 
     # Override dR in the file if desired.
     # Make sure the computed dR is positive (otherwise chisq is infinite) by
     # choosing the smallest positive uncertainty to replace the invalid values.
-    if dRoR is not None:
-        dR = dRoR(Q, R) if callable(dRoR) else R * dRoR
-        dR[dR <= 0] = numpy.min(dR[dR > 0])
+    if dR is not None:
+        data_dR = dR(data_Q, data_R, data_dR) if callable(dR) else data_R * dR
+        data_dR[data_dR <= 0] = numpy.min(data_dR[data_dR > 0])
 
     # support calculation of sld from material based on radiation type
     if radiation is not None:
@@ -1302,7 +1303,7 @@ def _data_as_probe(entry, probe_args, T, L, dT, dL, dRoR, FWHM, radiation,
         if override is not None:
             return override
         elif key in header:
-            return json.loads(header['key'])
+            return json.loads(header[key])
         else:
             return None
 
@@ -1312,9 +1313,9 @@ def _data_as_probe(entry, probe_args, T, L, dT, dL, dRoR, FWHM, radiation,
 
     # If one of T and L is missing, reconstruct it from Q
     if data_T is None and data_L is not None:
-        data_T = QL2T(Q, data_L)
+        data_T = QL2T(data_Q, data_L)
     if data_L is None and data_T is not None:
-        data_L = QT2L(Q, data_T)
+        data_L = QT2L(data_Q, data_T)
 
 
     # Get dT and dL, either from user input or from datafile.
@@ -1338,10 +1339,10 @@ def _data_as_probe(entry, probe_args, T, L, dT, dL, dRoR, FWHM, radiation,
         data_dT = sigma2FWHM(data_dT)
 
     # If one of T and L is missing, reconstruct it from Q.
-    if data_dT is None and not any(v is None for v in (data_L, data_dL, dQ)):
-        data_dT = dQdL2dT(Q, dQ, data_L, data_dL)
-    if data_dL is None and not any(v is None for v in (data_T, data_dT, dQ)):
-        data_dLoL = dQdT2dLoL(Q, dQ, data_T, data_dT)
+    if data_dT is None and not any(v is None for v in (data_L, data_dL, data_dQ)):
+        data_dT = dQdL2dT(data_Q, data_dQ, data_L, data_dL)
+    if data_dL is None and not any(v is None for v in (data_T, data_dT, data_dQ)):
+        data_dLoL = dQdT2dLoL(data_Q, data_dQ, data_T, data_dT)
         data_dL = data_dLoL * data_L
 
     # Check reconstruction if user provided any of T, L, dT, or dL.
@@ -1363,14 +1364,14 @@ def _data_as_probe(entry, probe_args, T, L, dT, dL, dRoR, FWHM, radiation,
         probe = make_probe(
             T=data_T, dT=data_dT,
             L=data_L, dL=data_dL,
-            data=(R, dR),
+            data=(data_R, data_dR),
             **probe_args)
     else:
         # QProbe doesn't accept theta_offset or sample_broadening
         qprobe_args = probe_args.copy()
         qprobe_args.pop('theta_offset')
         qprobe_args.pop('sample_broadening')
-        probe = QProbe(Q, dQ, data=(R, dR), **qprobe_args)
+        probe = QProbe(data_Q, data_dQ, data=(data_R, data_dR), **qprobe_args)
 
     return probe
 
