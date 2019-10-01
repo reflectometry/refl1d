@@ -50,7 +50,7 @@ class ExperimentBase(object):
         raise NotImplementedError()
 
     def to_dict(self):
-        return None
+        raise NotImplementedError()
 
     def reflectivity(self, resolution=True, interpolation=0):
         raise NotImplementedError()
@@ -397,8 +397,15 @@ class Experiment(ExperimentBase):
 
     def to_dict(self):
         return {
+            'type': type(self).__name__,
             'sample': self.sample.to_dict(),
             'probe': self.probe.to_dict(),
+            'roughness_limit': self.roughness_limit,
+            'dz': self.dz,
+            'dA': self.dA,
+            'step_interfaces': self.step_interfaces,
+            'interpolation': self.interpolation,
+            'name': self.name,
             }
 
     def _render_slabs(self):
@@ -667,9 +674,14 @@ class MixedExperiment(ExperimentBase):
 
     def to_dict(self):
         return {
+            'type': type(self).__name__,
             'samples': [s.to_dict() for s in self.samples],
             'ratio': [s.to_dict() for s in self.ratio],
             'probe': self.probe.to_dict(),
+            'parts': [s.to_dict() for s in self.parts],
+            'coherent': self.coherent,
+            'interpolation': self.interpolation,
+            'name': self.name,
             }
 
     def _reflamp(self):

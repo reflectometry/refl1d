@@ -71,9 +71,13 @@ class Weights(object):
 
     def to_dict(self):
         return {
+            'type': type(self).__name__,
+            'edges': self.edges.tolist(),
+            'cdf': self.cdf.__name__,  # TODO: can't lookup name
             'args': [s.to_dict() for s in self.args],
             'loc': self.loc.to_dict(),
             'scale': self.scale.to_dict(),
+            'truncated': self.truncated,
             }
 
     def __iter__(self):
@@ -98,10 +102,12 @@ class DistributionExperiment(ExperimentBase):
     """
     Compute reflectivity from a non-uniform sample.
 
-    The parameter *P* takes on the values from *distribution* in the
-    context of *experiment*. Clearly, *P* should not be a fitted
-    parameter, but the remaining experiment parameters can be fitted,
-    as can the parameters of the distribution.
+    *P* is the target parameter for the model, which takes on the values
+    from *distribution* in the context of the *experiment*.  The result
+    is the weighted sum of the theory curves after setting *P.value* to
+    each distribution value. Clearly, *P* should not be a fitted parameter,
+    but the remaining experiment parameters can be fitted, as can the
+    parameters of the distribution.
 
     If *coherent* is true, then the reflectivity of the mixture is computed
     from the coherent sum rather than the incoherent sum.
@@ -128,8 +134,12 @@ class DistributionExperiment(ExperimentBase):
 
     def to_dict(self):
         return {
+            'type': type(self).__name__,
+            'P': str(self.P),  # TODO: parameter name may not be unique
             'distribution': self.distribution.to_dict(),
             'experiment': self.experiment.to_dict(),
+            # Don't need self.probe since it is the experiment probe.
+            'coherent': self.coherent,
             }
 
     def reflectivity(self, resolution=True, interpolation=0):

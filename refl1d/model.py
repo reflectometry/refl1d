@@ -52,6 +52,7 @@ class Layer(object): # Abstract base class
     """
     thickness = None
     interface = None
+    name = None
 
     # Make magnetism a property so we can update the magnetism parameter
     # names with the layer name when we assign magnetism to the layer
@@ -90,8 +91,10 @@ class Layer(object): # Abstract base class
 
     def layer_parameters(self):
         pars = {'thickness': self.thickness}
-        if self.interface: pars['interface'] = self.interface
-        if self.magnetism: pars['magnetism'] = self.magnetism.parameters()
+        if self.interface:
+            pars['interface'] = self.interface
+        if self.magnetism:
+            pars['magnetism'] = self.magnetism.parameters()
         pars.update(self.parameters())
         return pars
 
@@ -131,10 +134,7 @@ class Layer(object): # Abstract base class
         if self.interface:
             _layer_dict['interface'] = self.interface.to_dict()
         if self.magnetism:
-            _mag_parameters = self.magnetism.parameters()
-            if _mag_parameters:
-                for name, param in _mag_parameters.items():
-                    _layer_dict[name] = param.to_dict() if param is not None else None
+            _layer_dict['magnetism'] = self.magnetism.to_dict()
         return _layer_dict
 
     # Define a little algebra for composing samples
@@ -693,7 +693,7 @@ class Slab(Layer):
         self.magnetism = magnetism
 
     def parameters(self):
-        return {'material':self.material.parameters()}
+        return {'material': self.material.parameters()}
 
     def render(self, probe, slabs):
         rho, irho = self.material.sld(probe)
@@ -721,8 +721,6 @@ class Slab(Layer):
         _slab_dict = dict(name=self.name, type=type(self).__name__)
         _slab_dict['thickness'] = self.thickness.to_dict()
         _slab_dict['interface'] = self.interface.to_dict()
+        _slab_dict['material'] = self.material.to_dict()
         _material_parameters = self.material.parameters()
-        if _material_parameters:
-            for name, param in _material_parameters.items():
-                _slab_dict[name] = param.to_dict()
         return _slab_dict

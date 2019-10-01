@@ -61,6 +61,8 @@ class Scatterer(object):
        expressions. It is not done directly to avoid circular dependencies
        between :mod:`model <refl1d.model>` and :mod:`material <refl1d.material>`.
     """
+    name = None
+
     def sld(self, sf):
         """
         Return the scattering length density expected for the given
@@ -99,6 +101,11 @@ class Vacuum(Scatterer):
     def parameters(self):
         return []
 
+    def to_dict(self):
+        return {
+            'type': type(self).__name__,
+        }
+
     def sld(self, probe):
         return 0, 0
 
@@ -134,6 +141,14 @@ class SLD(Scatterer):
 
     def parameters(self):
         return {'rho':self.rho, 'irho':self.irho}
+
+    def to_dict(self):
+        return {
+            'type': type(self).__name__,
+            'name': self.name,
+            'rho': self.rho.to_dict(),
+            'irho': self.irho.to_dict(),
+        }
 
     def sld(self, probe):
         return self.rho.value, self.irho.value
@@ -235,20 +250,20 @@ class Material(Scatterer):
                 pass
 
         # Put in new parameters
-        if type is 'bulk_density':
+        if type == 'bulk_density':
             if value is None:
                 value = self.formula.density
             self.bulk_density = Par.default(value, name=self.name+" density",
                                             limits=(0, inf))
             self.density = self.bulk_density
-        elif type is 'natural_density':
+        elif type == 'natural_density':
             if value is None:
                 value = self.formula.natural_density
             self.natural_density = Par.default(value,
                                                name=self.name+" nat. density",
                                                limits=(0, inf))
             self.density = self.natural_density / self.formula.natural_mass_ratio()
-        elif type is 'relative_density':
+        elif type == 'relative_density':
             if value is None:
                 value = 1
             self.relative_density = Par.default(value,
@@ -262,7 +277,7 @@ class Material(Scatterer):
         #        value = self.formula.density/max_density
         #    self.packing_factor = Par.default(value, name=self.name+" packing factor")
         #    self.density = self.packing_factor * max_density
-        elif type is 'cell_volume':
+        elif type == 'cell_volume':
             # Density is in grams/cm^3.
             # Mass is in grams.
             # Volume is in A^3 = 1e24*cm^3.
@@ -277,6 +292,17 @@ class Material(Scatterer):
 
     def parameters(self):
         return {'density': self.density}
+
+    def to_dict(self):
+        return {
+            'type': type(self).__name__,
+            'name': self.name,
+            'formula': str(self.formula),
+            'density': self.density.to_dict(),
+            'use_incoherent': self.use_incoherent,
+            # TODO: what about fitby, natural_density and cell_volume?
+        }
+
     def sld(self, probe):
         rho, irho, incoh = probe.scattering_factors(self.formula,
                                                     density=self.density.value)
@@ -320,7 +346,14 @@ class Compound(Scatterer):
         constituent and the relative scale fraction used to tweak
         the overall density.
         """
-        return {'count':self.count}
+        return {'count': self.count}
+
+    def to_dict(self):
+        return {
+            'type': type(self).__name__,
+            'parts': [str(p) for p in self.formula],
+            'count': [p.to_dict() for p in self.count],
+        }
 
     def formula(self):
         return tuple((c.value, f) for c, f in zip(self.count, self.parts))
@@ -434,10 +467,19 @@ class Mixture(Scatterer):
         constituent and the relative scale fraction used to tweak
         the overall density.
         """
-        return {'base':self.base.parameters(),
-                'material':[m.parameters() for m in self.material],
-                'fraction':self.fraction,
-               }
+        return {
+            'base':self.base.parameters(),
+            'material':[m.parameters() for m in self.material],
+            'fraction':self.fraction,
+            }
+
+    def to_dict(self):
+        return {
+            'type': type(self).__name__,
+            'base': self.base.to_dict(),
+            'material': self.material.to_dict(),
+            'fraction': self.fraction.to_dict(),
+        }
 
     def _density(self):
         """
