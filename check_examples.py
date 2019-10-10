@@ -1,36 +1,42 @@
 #!/usr/bin/env python
-import sys, os
+import sys
+import os
 
 sys.dont_write_bytecode = True
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
-CLI = "%s %s/bin/refl1d_cli.py %%s %%s"%(sys.executable,ROOT)
-EXAMPLEDIR = os.path.join(ROOT,'doc','examples')
+CLI = "%s %s/bin/refl1d_cli.py %%s %%s"%(sys.executable, ROOT)
+EXAMPLEDIR = os.path.join(ROOT, 'doc', 'examples')
 
 # Add the build dir(s) to the system path
 from distutils.util import get_platform
 platform = '.%s-%s'%(get_platform(),sys.version[:3])
-buildpath = os.path.abspath(os.path.join(ROOT,'build','lib'+platform))
+buildpath = os.path.abspath(os.path.join(ROOT, 'build', 'lib'+platform))
 packages = [buildpath]
-try: import bumps
-except: packages.append(os.path.abspath(os.path.join(ROOT,'..','bumps')))
-try: import periodictable
-except: packages.append(os.path.abspath(os.path.join(ROOT,'..','periodictable')))
-if 'PYTHONPATH' in os.environ: packages.append(os.environ['PYTHONPATH'])
+try:
+    import bumps
+except ImportError:
+    packages.append(os.path.abspath(os.path.join(ROOT, '..', 'bumps')))
+try:
+    import periodictable
+except ImportError:
+    packages.append(os.path.abspath(os.path.join(ROOT, '..', 'periodictable')))
+if 'PYTHONPATH' in os.environ:
+    packages.append(os.environ['PYTHONPATH'])
 os.environ['PYTHONPATH'] = os.pathsep.join(packages)
 
 class Commands(object):
     @staticmethod
     def preview(f):
-        return os.system(CLI%(f,'--preview --seed=1'))
+        return os.system(CLI%(f, '--preview --seed=1'))
 
     @staticmethod
     def edit(f):
-        return os.system(CLI%(f,'--edit --seed=1'))
+        return os.system(CLI%(f, '--edit --seed=1'))
 
     @staticmethod
     def chisq(f):
-        return os.system(CLI%(f,'--chisq --seed=1'))
+        return os.system(CLI%(f, '--chisq --seed=1'))
 
 examples = [
     "distribution/dist-example.py",
@@ -68,7 +74,9 @@ def main():
         command = getattr(Commands, sys.argv[1][2:])
         for f in examples:
             print("\n"+f)
-            status = command(os.path.join(EXAMPLEDIR,f))
-            if status != 0: sys.exit(1)
+            status = command(os.path.join(EXAMPLEDIR, f))
+            if status != 0:
+                sys.exit(1)
 
-if __name__ == "__main__": main()
+if __name__ == "__main__":
+    main()

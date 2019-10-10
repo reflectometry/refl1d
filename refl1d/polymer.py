@@ -158,9 +158,9 @@ class PolymerBrush(Layer):
         }
 
     def profile(self, z):
-        base_vf, base, length, power, sigma \
-            = [p.value for p in (self.base_vf, self.base,
-               self.length, self.power, self.sigma)]
+        base_vf, base, length, power, sigma = [
+            p.value for p in (self.base_vf, self.base,
+            self.length, self.power, self.sigma)]
         base_vf /= 100. # % to fraction
         L0 = base  # if base < thickness else thickness
         L1 = base+length # if base+length < thickness else thickness-L0
@@ -168,8 +168,8 @@ class PolymerBrush(Layer):
             v = np.ones_like(z)
         else:
             v = (1 - ((z-L0)/(L1-L0))**2)
-        v[z<L0] = 1
-        v[z>L1] = 0
+        v[z < L0] = 1
+        v[z > L1] = 0
         brush_profile = base_vf * v**power
         # TODO: we could use Nevot-Croce rather than smearing the profile
         vf = smear(z, brush_profile, sigma)
@@ -192,7 +192,7 @@ class PolymerBrush(Layer):
         S = Sr + 1j*Si
         try:
             M, S = M[0], S[0]  # Temporary hack
-        except:
+        except Exception:
             pass
 
         vf = self.profile(Pz)
@@ -304,19 +304,20 @@ class VolumeProfile(Layer):
         S = Sr + 1j*Si
         #M, S = M[0], S[0]  # Temporary hack
         Pw, Pz = slabs.microslabs(self.thickness.value)
-        if len(Pw)== 0: return
+        if len(Pw) == 0:
+            return
         kw = dict((k, getattr(self, k).value) for k in self._parameters)
         #print(kw)
         phi = self.profile(Pz, **kw)
         try:
             if phi.shape != Pz.shape:
                 raise Exception
-        except:
+        except Exception:
             raise TypeError("profile function '%s' did not return array phi(z)"
                             %self.profile.__name__)
         Pw, phi = util.merge_ends(Pw, phi, tol=1e-3)
         P = M*phi + S*(1-phi)
-        slabs.extend(rho = [real(P)], irho = [imag(P)], w = Pw)
+        slabs.extend(rho=[real(P)], irho=[imag(P)], w=Pw)
         #slabs.interface(self.interface.value)
 
 
@@ -342,7 +343,7 @@ def smear(z, P, sigma):
         return P
     w = int(3*sigma/dz)
     G = exp(-0.5*(np.arange(-w, w+1)*(dz/sigma))**2)
-    full = np.hstack( ([P[0]]*w, P, [P[-1]]*w) )
+    full = np.hstack(([P[0]]*w, P, [P[-1]]*w))
     return np.convolve(full, G/np.sum(G), 'valid')
 
 class PolymerMushroom(Layer):
@@ -387,8 +388,9 @@ class PolymerMushroom(Layer):
         }
 
     def profile(self, z):
-        delta, sigma, vf, thickness = [p.value for p in (
-                self.delta, self.sigma, self.vf, self.thickness)]
+        delta, sigma, vf, thickness = [
+            p.value for p in (self.delta, self.sigma, self.vf, self.thickness)
+            ]
 
         return smear(z, MushroomProfile(z, delta, vf, sigma), sigma)
 
@@ -421,7 +423,7 @@ class PolymerMushroom(Layer):
 
 def MushroomProfile(z, delta=0.1, vf=1.0, sigma=1.0):
     thickness = layer_thickness(z)
-    thresh=1e-10
+    thresh = 1e-10
     base = 3.0*sigma # tail is erf, capture 95% of the mixing
     Rg = (thickness-base) / 4.0 # profile ends by ~4 RG, so we can tether these
     keep = (z-base) >= 0.0
@@ -457,8 +459,8 @@ def mushroom_math(x, delta=.1, vf=.1):
     """
     from scipy.special import erfc, erfcx
 
-    x_half=x/2.0
-    delta_double=2.0*delta
+    x_half = x/2.0
+    delta_double = 2.0*delta
     return (
             (
              erfc(x_half)

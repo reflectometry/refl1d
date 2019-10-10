@@ -182,7 +182,7 @@ If it shows a general upward sweep, then the burn time was not
 sufficient, and the analysis should be restarted.  The ability to
 continue to burn from the current population is not yet implemented.
 
-Given sufficient burn time, points in the search space will be visited 
+Given sufficient burn time, points in the search space will be visited
 with probability proportional to the goodness of fit.  It can be difficult
 to determine the correct amount of burn time in advance.  If burn is not
 long enough, then the population of log likelihood values will show an
@@ -224,8 +224,8 @@ operations after the fact::
 
     $ ipython -pylab
 
-    import dream.state
-    state = dream.state.load_state(modelname)
+    from bumps.dream.state import load_state
+    state = load_state(modelname)
     state.mark_outliers() # ignore outlier chains
     state.show()  # Plot statistics
 
@@ -234,7 +234,7 @@ You can restrict a variable to a certain range when doing plots.
 For example, to restrict the third parameter to [0.8-1.0] and the
 fifth to [0.2-0.4]::
 
-    from dream import views
+    from bumps.dream import views
     selection={2: (0.8,1.0), 4:(0.2,0.4),...}
     views.plot_vars(state, selection=selection)
     views.plot_corrmatrix(state, selection=selection)
@@ -261,9 +261,9 @@ from the source tree, you can modify the dream plotting libraries as you
 need for a one-off plot, the replot the graph::
 
 
-    # ... change the plotting code in dream.views/dream.corrplot
-    reload(dream.views)
-    reload(dream.corrplot)
+    # ... after changing code in bumps/dream/views or bumps/dream/corrplot
+    reload(bumps.dream.views)
+    reload(bumps.dream.corrplot)
     state.show()
 
 Be sure to restore the original versions when you are done.  If the change
@@ -276,7 +276,7 @@ Reporting results
 As with any parametric modeling technique, you cannot say that the model
 is correct and has certain parameter value, only that the observed data is
 consistent with the model and the given parameter values.  There may be
-other models within the parameter search space that are equally 
+other models within the parameter search space that are equally
 consistent, but which were not discovered by Refl1D, particularly if
 you are forced to use --init=eps to achieve convergence.  This is true
 even for models which exhibit good convergence:
@@ -294,29 +294,29 @@ The following blurb can be used as a description of the analysis method
 when reporting your results:
 
     Refl1D[1] was used to model the reflectivity data.  The sample depth
-    profile is represented as a series of slabs of varying scattering length 
+    profile is represented as a series of slabs of varying scattering length
     density and thickness with gaussian interfaces between them.  Freeform
-    sections of the profile are modeled using monotonic splines.  
-    Reflectivity is computed using the Abeles optical matrix method, with 
-    interfacial effects computed by the method of Nevot and Croce or by 
+    sections of the profile are modeled using monotonic splines.
+    Reflectivity is computed using the Abeles optical matrix method, with
+    interfacial effects computed by the method of Nevot and Croce or by
     approximating the interfaces by a series of thin slabs.  Refl1d supports
     simultaneous refinement of multiple reflectivity data sets with
     constraints between the models.
-    
+
     Refl1D uses a Bayesian approach to determine the uncertainty in the
     model parameters.  By representing the problem as the likelihood of
-    observing the measured reflectivity curve given a particular choice of 
-    parameters, Refl1D can use Markov Chain Monte Carlo (MCMC) methods[2] 
-    to draw a random sample from the joint parameter probability 
-    distribution.  This sample can then used to estimate the probability 
+    observing the measured reflectivity curve given a particular choice of
+    parameters, Refl1D can use Markov Chain Monte Carlo (MCMC) methods[2]
+    to draw a random sample from the joint parameter probability
+    distribution.  This sample can then used to estimate the probability
     distribution for each individual parameter.
 
-    [1] Kienzle P. A., Krycka J., A., and Patel, N.  Refl1D: Interactive 
+    [1] Kienzle P. A., Krycka J., A., and Patel, N.  Refl1D: Interactive
     depth profile modeler.  http://www.reflectometry.org/danse/software
 
-    [2] Vrugt J. A., ter Braak C. J. F., Diks C. G. H., Higdon D., 
-    Robinson B. A., and Hyman J. M.  Accelerating Markov chain Monte Carlo 
-    simulation by differential evolution with self-adaptive randomized 
+    [2] Vrugt J. A., ter Braak C. J. F., Diks C. G. H., Higdon D.,
+    Robinson B. A., and Hyman J. M.  Accelerating Markov chain Monte Carlo
+    simulation by differential evolution with self-adaptive randomized
     subspace sampling, Int. J. Nonlin. Sci. Num., 10, 271--288, 2009.
 
 
@@ -324,7 +324,7 @@ If you are reporting maximum likelihood and credible intervals:
 
     The parameter values reported are the those from the model which best
     fits the data, with uncertainty determined from the range of parameter
-    values which covers 68% of the sample set.  This corresponds to the 
+    values which covers 68% of the sample set.  This corresponds to the
     :math:`1-\sigma` uncertainty level if the sample set were normally
     distributed.
 
@@ -334,12 +334,12 @@ If you are reporting mean and standard deviation:
     deviation of the sample set.  This corresponds to the best fitting
     normal distribition to marginal probability distribution for the
     parameter.
-    
+
 There are caveats to reporting mean and standard deviation.  The technique
 is not robust.   If burn-in is insufficient, if the distribution is
 multi-modal, or if the distribution has long tails, then the reported
 mean may correspond to a bad fit, and the standard deviation can be
-huge. [We should confirm this by modeling a cauchy distribution]  
+huge. [We should confirm this by modeling a cauchy distribution]
 
 
 
@@ -354,23 +354,26 @@ from the refl1d application by first loading the model and the fit
 results then accessing their data directly to produce the plots that
 you need.
 
-The model file (call it plot.py) will start with the following::
+The model file (called plot.py in this example) will start with the following::
 
     import sys
-    from refl1d.cli import load_problem, load_best
+    import os.path
+    from bumps.fitproblem import load_problem
+    from bumps.cli import load_best
 
     model, store = sys.argv[1:3]
 
-    problem = load_problem([model])
+    problem = load_problem(model)
     load_best(problem, os.path.join(store, model[:-3]+".par"))
     chisq = problem.chisq
 
-    print "chisq",chisq
+    print("chisq %g"%chisq)
+
 
 Assuming your model script is in model.py and you have run a fit with
 --store=X5, you can run this file using::
 
-    $ refl1d plot.py model.py X5
+    $ refl1d -p plot.py model.py X5
 
 Now model.py is loaded and the best fit parameters are set.
 
@@ -428,27 +431,41 @@ Putting the pieces together, here is a skeleton for a specialized
 plotting script::
 
     import sys
-    import pylab
-    import dream.state
-    from bumps.cli import load_problem, load_best
-    from refl1d.errors import calc_errors_from_state, align_profiles
+    import os.path
+    from bumps.fitproblem import load_problem
+    from bumps.cli import load_best
 
     model, store = sys.argv[1:3]
 
-    problem = load_problem([model])
+    problem = load_problem(model)
     load_best(problem, os.path.join(store, model[:-3]+".par"))
 
-    chisq = problem.chisq
-    experiment = problem.fitness
-    z,rho,irho = experiment.smooth_profile(dz=0.2)
-    # ... insert profile plotting code here ...
-    QR = experiment.reflectivity()
-    for p,th in self.parts(QR):
-        Q,dQ,R,dR,theory = p.Q, p.dQ, p.R, p.dR, th[1]
-        # ... insert reflectivity plotting code here ...
+    print("chisq %s"%problem.chisq_str())
 
-    if 1:  # Loading errors is expensive; may not want to do so all the time.
-        state = dream.state.load_state(os.path.join(store, model[:-3]))
+    chisq = problem.chisq()
+
+    # Assume for this example there is a single measurement in this problem.
+    # Otherwise, you will need to use M.fitness for M in problem.models.
+    experiment = problem.fitness
+
+    # We are going to assume that we have a simple experiment with only one
+    # reflectivity profile, and only one dataset associated with the profile.
+    # The details for more complicated scenarios are in experiment.plot_profile
+    # and experiment.plot_reflectivity.
+    z, rho, irho = experiment.smooth_profile(dz=0.2)
+    pylab.figure()
+    pylab.subplot(211)
+    pylab.plot(z, rho, label='SLD profile')
+
+    Qtheory, Rtheory = experiment.reflectivity()
+    probe = experiment.probe
+    Q, R, dR = probe.Q, probe.R, probe.dR
+    pylab.subplot(212)
+    pylab.semilogy(Qtheory, Rtheory, label='theory')
+    pylab.errorbar(Q, R, yerr=dR, label='data')
+
+    if 0:  # Loading errors is expensive; may not want to do so all the time.
+        state = load_state(os.path.join(store, model[:-3]))
         state.mark_outliers()
         # ... insert correlation plots, etc. here ...
         profiles,slabs,Q,residuals = calc_errors_from_state(problem, state)

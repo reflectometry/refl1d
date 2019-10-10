@@ -12,6 +12,7 @@ environment:
     #- PYTHON: "C:\\Python34"
     #- PYTHON: "C:\\Python35"
     - PYTHON: "C:\\Python36"
+    - PYTHON: "C:\\Python37"
     - PYTHON: "C:\\Python27-x64"
     #- PYTHON: "C:\\Python33-x64"
     #  DISTUTILS_USE_SDK: "1"
@@ -43,12 +44,15 @@ after_test:
   # Again, you only need build.cmd if you're building C extensions for
   # 64-bit Python 3.3/3.4. And you need to use %PYTHON% to get the correct
   # interpreter
-  - "build.cmd %PYTHON%\\python.exe setup.py bdist_wheel"
+  - "%PYTHON%\\python.exe setup.py bdist_wheel"
+  - ps: if ($PYTHON -eq "C:\\Python37") { extra\build_win_install.ps1 }
 
 artifacts:
   # bdist_wheel puts your built wheel in the dist directory
-  - path: dist\*
-    name: Releases
+  - path: 'dist\*.whl'
+    name: Wheels
+  - path: 'dist\Refl1D-*.zip'
+    name: Windows installer
 
 #on_success:
 #  You can use this step to upload your artifacts to a public website.
@@ -59,7 +63,7 @@ deploy:
   provider: GitHub
   auth_token:
     secure: WFLDvxMUUWcL7b4fRIY9DXFswHxWX85rqrGKO+2+q24MzGeQtFVnHSKhmcCKSi7w
-  artifact: /.*\.whl/
+  artifact: /.*\.(whl|zip)/
   draft: false
   prerelease: true
   on:

@@ -165,21 +165,23 @@ class Probe(object):
                  back_reflectivity=False, name=None, filename=None):
         if T is None or L is None:
             raise TypeError("T and L required")
+        if sample_broadening is None:
+            sample_broadening = 0
+        if theta_offset is None:
+            theta_offset = 0
         if not name and filename:
             name = os.path.splitext(os.path.basename(filename))[0]
         qualifier = " "+name if name is not None else ""
-        self.intensity = Parameter.default(intensity,
-                                           name="intensity"+qualifier)
-        self.background = Parameter.default(background,
-                                            name="background"+qualifier,
-                                            limits=[0., inf])
-        self.back_absorption = Parameter.default(back_absorption,
-                                                 name="back_absorption"+qualifier,
-                                                 limits=[0., 1.])
-        self.theta_offset = Parameter.default(theta_offset,
-                                              name="theta_offset"+qualifier)
-        self.sample_broadening = Parameter.default(sample_broadening,
-                                              name="sample_broadening"+qualifier)
+        self.intensity = Parameter.default(
+            intensity, name="intensity"+qualifier)
+        self.background = Parameter.default(
+            background, name="background"+qualifier, limits=[0., inf])
+        self.back_absorption = Parameter.default(
+            back_absorption, name="back_absorption"+qualifier, limits=[0., 1.])
+        self.theta_offset = Parameter.default(
+            theta_offset, name="theta_offset"+qualifier)
+        self.sample_broadening = Parameter.default(
+            sample_broadening, name="sample_broadening"+qualifier)
         self.back_reflectivity = back_reflectivity
         if data is not None:
             R, dR = data
@@ -199,7 +201,7 @@ class Probe(object):
         #    dE = E * dL/L
 
         Q = TL2Q(T=T, L=L)
-        dQ = dTdL2dQ(T=T, dT=dT + self.sample_broadening.value, L=L, dL=dL)
+        dQ = dTdL2dQ(T=T, dT=dT, L=L, dL=dL)
 
         # Make sure that we are dealing with vectors
         T, dT, L, dL = [numpy.ones_like(Q)*v for v in (T, dT, L, dL)]
@@ -902,8 +904,8 @@ class NeutronProbe(Probe):
 class ProbeSet(Probe):
     def __init__(self, probes, name=None):
         self.probes = list(probes)
-        self.R = numpy.hstack(p.R for p in self.probes)
-        self.dR = numpy.hstack(p.dR for p in self.probes)
+        self.R = numpy.hstack([p.R for p in self.probes])
+        self.dR = numpy.hstack([p.dR for p in self.probes])
         self.name = name if name is not None else self.probes[0].name
 
         back_refls = [f.back_reflectivity for f in self.probes]
@@ -923,12 +925,12 @@ class ProbeSet(Probe):
 
     def resynth_data(self):
         for p in self.probes: p.resynth_data()
-        self.R = numpy.hstack(p.R for p in self.probes)
+        self.R = numpy.hstack([p.R for p in self.probes])
     resynth_data.__doc__ = Probe.resynth_data.__doc__
 
     def restore_data(self):
         for p in self.probes: p.restore_data()
-        self.R = numpy.hstack(p.R for p in self.probes)
+        self.R = numpy.hstack([p.R for p in self.probes])
     restore_data.__doc__ = Probe.restore_data.__doc__
 
     def simulate_data(self, theory, noise=2.):
@@ -949,19 +951,19 @@ class ProbeSet(Probe):
 
     @property
     def Q(self):
-        return numpy.hstack(p.Q for p in self.probes)
+        return numpy.hstack([p.Q for p in self.probes])
 
     @property
     def calc_Q(self):
-        return numpy.unique(numpy.hstack(p.calc_Q for p in self.probes))
+        return numpy.unique(numpy.hstack([p.calc_Q for p in self.probes]))
 
     @property
     def dQ(self):
-        return numpy.hstack(p.dQ for p in self.probes)
+        return numpy.hstack([p.dQ for p in self.probes])
 
     @property
     def unique_L(self):
-        return numpy.unique(numpy.hstack(p.unique_L for p in self.probes))
+        return numpy.unique(numpy.hstack([p.unique_L for p in self.probes]))
 
     def oversample(self, **kw):
         for p in self.probes:
@@ -1122,8 +1124,8 @@ class ProbeSet(Probe):
 def load4(filename, keysep=":", sep=None, comment="#", name=None,
           intensity=1, background=0, back_absorption=1,
           back_reflectivity=False, Aguide=270, H=0,
-          theta_offset=0, sample_broadening=0,
-          L=None, dL=None, T=None, dT=None,
+          theta_offset=None, sample_broadening=None,
+          L=None, dL=None, T=None, dT=None, dR=None,
           FWHM=False, radiation=None,
           columns=None, data_range=(None, None),
          ):
@@ -1154,15 +1156,16 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     by providing values for the wavelength or the angle, and the associated
     resolution.
 
-    For monochromatic sources you can supply *L*, *dLoL* when you call *load4*,
-    or you can store it in the header of the file::
+    *L*, *dL* in Angstroms can be used to recover angle and angular resolution
+    for monochromatic sources where wavelength is fixed and angle is varying.
+    These values can also be stored in the file header as::
 
         # wavelength: 4.75  # Ang
         # wavelength_resolution: 0.02  # Ang (1-sigma)
 
-    For time of flight sources, angle is fixed and wavelength is
-    varying, so you can supply *T*, *dT* in degrees when you call *load4*,
-    or you can store it in the header of the file::
+    *T*, *dT* in degrees can be used to recover wavelength and wavelength
+    dispersion for time of flight sources where angle is fixed and wavelength
+    is varying, or you can store them in the header of the file::
 
         # angle: 2  # degrees
         # angular_resolution: 0.2  # degrees (1-sigma)
@@ -1172,6 +1175,15 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
 
         # wavelength: [1, 1.2, 1.5, 2.0, ...]
         # wavelength_resolution: [0.02, 0.02, 0.02, ...]
+
+    *dR* can be used to replace the uncertainty estimate for R in the
+    file with $\Delta R = R * \text{dR}$.  This allows files with only
+    two columns, *Q* and *R* to be loaded.  Note that points with *dR=0*
+    are automatically set to the minimum *dR>0* in the dataset.
+
+    Instead of constants, you can provide function, *dT = lambda T: f(T)*,
+    *dL = lambda L: f(L)* or *dR = lambda Q, R, dR: f(Q, R, dR)* for more
+    complex relationships (with *dR()* returning 1-$\sigma$ $\Delta R$).
 
     *sample_broadening* in degrees FWHM adds to the angular_resolution.
     Scale 1-$\sigma$ rms by $2 \surd(2 \ln 2) \approx 2.34$ to convert to FWHM.
@@ -1192,7 +1204,8 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     Default is 'neutron'
 
     *columns* is a string giving the column order in the file.  Default
-    order is "Q R dR dQ".
+    order is "Q R dR dQ".  Note: include dR and dQ even if the file only
+    has two or three columns, but put the missing columns at the end.
 
     *data_range* indicates which data rows to use.  Arguments are the
     same as the list slice arguments, *(start, stop, step)*.  This follows
@@ -1222,7 +1235,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     data_args = dict(
         radiation=radiation,
         FWHM=FWHM,
-        T=T, L=L, dT=dT, dL=dL,
+        T=T, L=L, dT=dT, dL=dL, dR=dR,
         column_order=column_order,
         index=index,
     )
@@ -1243,13 +1256,30 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
             probe = PolarizedNeutronProbe(xs, Aguide=Aguide, H=H)
     return probe
 
-def _data_as_probe(entry, probe_args, T, L, dT, dL, FWHM, radiation,
+def _data_as_probe(entry, probe_args, T, L, dT, dL, dR, FWHM, radiation,
                    column_order, index):
+    name = probe_args['filename']
     header, data = entry
-    Q, R, dR, dQ = (data[k][index] for k in column_order)
+    if len(data) == 2:
+        data_Q, data_R = (data[k][index] for k in column_order[:2])
+        data_dR, data_dQ = None, None
+        if dR is None:
+            raise ValueError("Need dR for two column data in %r" % name)
+    elif len(data) == 3:
+        data_Q, data_R, data_dR = (data[k][index] for k in column_order[:3])
+        data_dQ = None
+    else:
+        data_Q, data_R, data_dR, data_dQ = (data[k][index] for k in column_order)
 
-    if FWHM: # dQ defaults to 1-sigma, if FWHM is not True
-        dQ = FWHM2sigma(dQ)
+    if FWHM and data_dQ is not None: # dQ is already 1-sigma when not FWHM
+        data_dQ = FWHM2sigma(data_dQ)
+
+    # Override dR in the file if desired.
+    # Make sure the computed dR is positive (otherwise chisq is infinite) by
+    # choosing the smallest positive uncertainty to replace the invalid values.
+    if dR is not None:
+        data_dR = dR(data_Q, data_R, data_dR) if callable(dR) else data_R * dR
+        data_dR[data_dR <= 0] = numpy.min(data_dR[data_dR > 0])
 
     # support calculation of sld from material based on radiation type
     if radiation is not None:
@@ -1268,52 +1298,81 @@ def _data_as_probe(entry, probe_args, T, L, dT, dL, FWHM, radiation,
     else:
         make_probe = Probe
 
-    # Get wavelength from header if it is not provided as an argument
-    data_L = data_T = None
-    if L is not None:
-        data_L = L
-    elif 'wavelength' in header:
-        data_L = json.loads(header['wavelength'])
-    if T is not None:
-        data_T = T
-    elif 'angle' in header:
-        data_T = json.loads(header['angle'])
-    if data_L is not None:
-        if dL is not None:
-            data_dL = dL
-        elif 'wavelength_resolution' in header:
-            data_dL = json.loads(header['wavelength_resolution'])
+    # Get T,dT,L,dL from header if it is not provided as an argument
+    def fetch_key(key, override):
+        if override is not None:
+            return override
+        elif key in header:
+            return json.loads(header[key])
         else:
-            raise ValueError("Need wavelength_resolution to determine dT")
-        data_dL = sigma2FWHM(data_dL) if not FWHM else data_dL
-        data_T = QL2T(Q, data_L)
-        data_dT = dQdL2dT(Q, dQ, data_L, data_dL)
-    elif data_T is not None:
-        if dT is not None:
-            data_dT = dT
-        elif 'angular_resolution' in header:
-            data_dT = json.loads(header['angular_resolution'])
-        else:
-            raise ValueError("Need angular_resolution to determine dL")
-        data_dT = sigma2FWHM(data_dT) if not FWHM else data_dT
-        data_L = QT2L(Q, data_T)
-        data_dLoL = dQdT2dLoL(Q, dQ, data_T, data_dT)
+            return None
+
+    # Get T and L, either from user input or from datafile.
+    data_T = fetch_key('angle', T)
+    data_L = fetch_key('wavelength', L)
+
+    # If one of T and L is missing, reconstruct it from Q
+    if data_T is None and data_L is not None:
+        data_T = QL2T(data_Q, data_L)
+    if data_L is None and data_T is not None:
+        data_L = QT2L(data_Q, data_T)
+
+
+    # Get dT and dL, either from user input or from datafile.
+    data_dL = fetch_key('wavelength_resolution', dL)
+    data_dT = fetch_key('angular_resolution', dT)
+
+    # Support dT = f(T), dL = f(L)
+    if callable(data_dT):
+        if data_T is None:
+            raise ValueError("Need T to determine dT for %r" % name)
+        data_dT = data_dT(data_T)
+    if callable(data_dL):
+        if data_L is None:
+            raise ValueError("Need L to determine dL for %r" % name)
+        data_dL = data_dL(data_L)
+
+    # Convert input dT,dL to FWHM if necessary.
+    if data_dL is not None and not FWHM:
+        data_dL = sigma2FWHM(data_dL)
+    if data_dT is not None and not FWHM:
+        data_dT = sigma2FWHM(data_dT)
+
+    # If one of T and L is missing, reconstruct it from Q.
+    if data_dT is None and not any(v is None for v in (data_L, data_dL, data_dQ)):
+        data_dT = dQdL2dT(data_Q, data_dQ, data_L, data_dL)
+    if data_dL is None and not any(v is None for v in (data_T, data_dT, data_dQ)):
+        data_dLoL = dQdT2dLoL(data_Q, data_dQ, data_T, data_dT)
         data_dL = data_dLoL * data_L
 
-    if data_L is not None:
+    # Check reconstruction if user provided any of T, L, dT, or dL.
+    # Also, sample_offset or sample_broadening.
+    offset = probe_args['theta_offset']
+    broadening = probe_args['sample_broadening']
+    if any(v is not None for v in (T, dT, L, dL, offset, broadening)):
+        if data_T is None:
+            raise ValueError("Need L to determine T from Q for %r" % name)
+        if data_L is None:
+            raise ValueError("Need T to determine L from Q for %r" % name)
+        if data_dT is None:
+            raise ValueError("Need dL to determine dT from dQ for %r" % name)
+        if data_dL is None:
+            raise ValueError("Need dT to determine dL from dQ for %r" % name)
+
+    # Build the probe, or the Q probe if we don't have angle and wavelength.
+    if all(v is not None for v in (data_T, data_L, data_dT, data_dL)):
         probe = make_probe(
             T=data_T, dT=data_dT,
             L=data_L, dL=data_dL,
-            data=(R, dR), **probe_args)
+            data=(data_R, data_dR),
+            **probe_args)
     else:
-        # If we don't know angle and wavelength, then we can't adjust
-        # sample alignment and angular divergence.
-        theta_offset = probe_args.pop('theta_offset')
-        sample_broadening = probe_args.pop('sample_broadening')
-        if theta_offset != 0. or sample_broadening != 0.:
-            warnings.warn("Theta offset and sample broadening ignored for %r"
-                          % probe_args['filename'])
-        probe = QProbe(Q, dQ, data=(R, dR), **probe_args)
+        # QProbe doesn't accept theta_offset or sample_broadening
+        qprobe_args = probe_args.copy()
+        qprobe_args.pop('theta_offset')
+        qprobe_args.pop('sample_broadening')
+        probe = QProbe(data_Q, data_dQ, data=(data_R, data_dR), **qprobe_args)
+
     return probe
 
 
