@@ -44,6 +44,7 @@ __all__ = ['Material', 'Mixture', 'SLD', 'Vacuum', 'Scatterer', 'ProbeCache']
 import numpy
 from numpy import inf, NaN
 import periodictable
+from periodictable.constants import avogadro_number
 
 from bumps.parameter import Parameter as Par
 
@@ -228,6 +229,8 @@ class Material(Scatterer):
                 Density is *relative_density* * formula density
             *cell_volume* : |Ang^3|
                 Density is mass / *cell_volume*
+            *number_density*: [atoms/cm^3]
+                Density is *number_density* * molar mass / avogadro constant
 
         The resulting material will have a *density* attribute with the
         computed material density in addition to the *fitby*
@@ -243,7 +246,7 @@ class Material(Scatterer):
 
         # Clean out old parameter
         for attr in ('bulk_density', 'natural_density', 'cell_volume',
-                     'relative_density'):
+                     'relative_density', 'number_density'):
             try:
                 delattr(self, attr)
             except Exception:
@@ -256,6 +259,11 @@ class Material(Scatterer):
             self.bulk_density = Par.default(value, name=self.name+" density",
                                             limits=(0, inf))
             self.density = self.bulk_density
+        elif type == "number_density":
+            if value is None:
+                value = avogadro_number / self.formula.mass * self.formula.density
+            self.number_density = Par.default(value, name=self.name+" number density", limits=(0, inf))
+            self.density = self.number_density / avogadro_number * self.formula.mass
         elif type == 'natural_density':
             if value is None:
                 value = self.formula.natural_density
