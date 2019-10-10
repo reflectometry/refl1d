@@ -120,6 +120,21 @@ class BaseMagnetism(object):
 class Magnetism(BaseMagnetism):
     """
     Region of constant magnetism.
+
+    *rhoM* is the magnetic SLD the layer. Default is :code:`rhoM=0`.
+
+    *thetaM* is the magnetic angle for the layer. Default is :code:`thetaM=270`.
+
+    *name* is the base name for the various layer parameters.
+
+    *extent* defines the number of nuclear layers covered by the magnetic layer.
+
+    *dead_above* and *dead_below* define magnetically dead layers at the
+    nuclear boundaries.  These can be negative if magnetism extends beyond
+    the nuclear boundary.
+
+    *interface_above* and *interface_below* define the magnetic interface
+    at the boundaries, if it is different from the nuclear interface.
     """
     def __init__(self, rhoM=0, thetaM=270, name="LAYER", **kw):
         BaseMagnetism.__init__(self, name=name, **kw)
@@ -166,17 +181,20 @@ class MagnetismStack(BaseMagnetism):
     *thetaM* is the magnetic angle for each layer.  Default is
     :code:`thetaM=[270]` for no magnetic twist.
 
+    **Not yet implemented.**
     *interfaceM* is the magnetic interface for all but the last layer.  Default
     is :code:`interfaceM=[0]` for equal width interfaces in all layers.
 
-    *name* is the base name for the layer parameters.  Default
-    is :code:`name="LAYER"`.
+    *name* is the base name for the various layer parameters.
 
-    Further parameters are forwarded to :class:`BaseMagnetism`.  These are
-    *extent*, giving the number of nuclear layers covered by the magnetism,
-    *dead_above* and *dead_below* for magnetically dead layers at the nuclear
-    boundaries, and *interface_above* and *interface_below* for the magnetic
-    interface at the boundaries.
+    *extent* defines the number of nuclear layers covered by the magnetic layer.
+
+    *dead_above* and *dead_below* define magnetically dead layers at the
+    nuclear boundaries.  These can be negative if magnetism extends beyond
+    the nuclear boundary.
+
+    *interface_above* and *interface_below* define the magnetic interface
+    at the boundaries, if it is different from the nuclear interface.
     """
     def __init__(self, weight=None, rhoM=None, thetaM=None, interfaceM=None,
                  name="LAYER", **kw):
@@ -261,6 +279,22 @@ class MagnetismStack(BaseMagnetism):
 class MagnetismTwist(BaseMagnetism):
     """
     Linear change in magnetism throughout layer.
+
+    *rhoM* contains the *(left, right)* values for the magnetic scattering
+    length density.  The number of steps is determined by the model *dz*.
+
+    *thetaM* contains the *(left, right)* values for the magnetic angle.
+
+    *name* is the base name for the various layer parameters.
+
+    *extent* defines the number of nuclear layers covered by the magnetic layer.
+
+    *dead_above* and *dead_below* define magnetically dead layers at the
+    nuclear boundaries.  These can be negative if magnetism extends beyond
+    the nuclear boundary.
+
+    *interface_above* and *interface_below* define the magnetic interface
+    at the boundaries, if it is different from the nuclear interface.
     """
     magnetic = True
     def __init__(self,
@@ -302,6 +336,25 @@ class MagnetismTwist(BaseMagnetism):
 class FreeMagnetism(BaseMagnetism):
     """
     Spline change in magnetism throughout layer.
+
+    Defines monotonic splines for rhoM and thetaM with shared knot positions.
+
+    *z* is position of the knot in [0, 1] relative to the magnetic layer
+    thickness.  The *z* coordinates are automatically sorted before
+    rendering, leading to multiple equivalent solutions if knots are swapped.
+
+    *rhoM* gives the magnetic scattering length density for each knot.
+
+    *thetaM* gives the magnetic angle for each knot.
+
+    *name* is the base name for the various layer parameters.
+
+    *dead_above* and *dead_below* define magnetically dead layers at the
+    nuclear boundaries.  These can be negative if magnetism extends beyond
+    the nuclear boundary.
+
+    *interface_above* and *interface_below* define the magnetic interface
+    at the boundaries, if it is different from the nuclear interface.
     """
     magnetic = True
     def __init__(self, z=(), rhoM=(), thetaM=(),
