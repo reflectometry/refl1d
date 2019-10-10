@@ -1799,9 +1799,9 @@ def _interpolate_Q(Q, dQ, n):
     *n* is the number of points to show between existing points.
     """
     if n > 0:
-        # Extend the Q-range by one point on either side
-        Q = numpy.hstack((0.5*(Q[0]-Q[1]), Q, 0.5*(3.*Q[-1]-Q[-2])))
-        dQ = numpy.hstack((0.5*(dQ[0]-dQ[1]), dQ, 0.5*(3.*dQ[-1]-dQ[-2])))
+        # Extend the Q-range by 1/2 interval on either side
+        Q = numpy.hstack((0.5*(3.*Q[0]-Q[1]), Q, 0.5*(3.*Q[-1]-Q[-2])))
+        dQ = numpy.hstack((0.5*(3.*dQ[0]-dQ[1]), dQ, 0.5*(3.*dQ[-1]-dQ[-2])))
         index = numpy.arange(0, len(Q), dtype='d')
         subindex = numpy.arange(0, (n+1)*(len(Q)-1)+1, dtype='d')/(n+1.)
         Q = numpy.interp(subindex, index, Q)
