@@ -6,7 +6,7 @@ Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 
 2019-10-15 v0.8.9
 =================
-* json asve: material and magnetism are now json objects
+* json save: material and magnetism are now json objects
 * json save: include non-parameter data in save file
 * load4: accept 2 and 3 column data
 * load4: override resolution and uncertainty given (or missing) from file
