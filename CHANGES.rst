@@ -4,13 +4,17 @@ Change History
 
 Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 
-2019-??-?? v0.8.9
+2019-10-15 v0.8.9
 =================
+* json asve: material and magnetism are now json objects
+* json save: include non-parameter data in save file
 * load4: accept 2 and 3 column data
 * load4: override resolution and uncertainty given (or missing) from file
 * load4: accept multi-entry data as Q probe without knowing theta/lambda
 * load4: set the data slice to load
 * load4: set default radiation to 'neutron'
+* allow fit by number density for materials
+* fix interpolation when plotting reflectivity between measured data points
 * fix bug in dQ when sample_broadening is initialized to non-zeros
 * revised installer: embedded python in zip file
 * functions to compute transmission and reflection at each layer
