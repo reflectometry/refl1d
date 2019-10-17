@@ -112,6 +112,13 @@ class GareflExperiment(Experiment):
     def parameters(self):
         return self._pars
 
+    def to_dict(self):
+        return {
+            'type': type(self).__name__,
+            'dll_path': self.model._dll_path,
+            'index': self.index,
+        }
+
     def _render_slabs(self):
         """
         Build a slab description of the model from the individual layers.
