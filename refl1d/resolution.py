@@ -91,8 +91,11 @@ def dQdT2dLoL(Q, dQ, T, dT):
     """
     T, dT = radians(asarray(T, 'd')), radians(asarray(dT, 'd'))
     Q, dQ = asarray(Q, 'd'), asarray(dQ, 'd')
-    return sqrt((sigma2FWHM(dQ)/Q)**2 - (dT/tan(T))**2)
-
+    dQoQ = sigma2FWHM(dQ)/Q
+    dToT = dT/tan(T)
+    if (dQoQ < dToT).any():
+        raise ValueError("Cannot infer wavelength resolution: dQ is too small or dT is too large for some data points")
+    return sqrt(dQoQ**2 - dToT**2)
 
 
 def dQdL2dT(Q, dQ, L, dL):
@@ -107,8 +110,12 @@ def dQdL2dT(Q, dQ, L, dL):
     """
     L, dL = asarray(L, 'd'), asarray(dL, 'd')
     Q, dQ = asarray(Q, 'd'), asarray(dQ, 'd')
-    T = QL2T(Q, L)
-    dT = degrees(sqrt((sigma2FWHM(dQ)/Q)**2 - (dL/L)**2) * tan(radians(T)))
+    T = radians(QL2T(Q, L))
+    dQoQ = sigma2FWHM(dQ)/Q
+    dLoL = dL/L
+    if (dQoQ < dLoL).any():
+        raise ValueError("Cannot infer angular resolution: dQ is too small or dL is too large for some data points")
+    dT = degrees(sqrt(dQoQ**2 - dLoL**2) * tan(T))
     return dT
 
 
@@ -301,7 +308,8 @@ def divergence(T=None, slits=None, distance=None,
     # For small samples, use the sample projection instead.
     sample_s = sample_width * sin(radians(T))
     if isscalar(sample_s):
-        if sample_s < s2: dT = degrees(0.5*(s1+sample_s)/d1)
+        if sample_s < s2:
+            dT = degrees(0.5*(s1+sample_s)/d1)
     else:
         idx = sample_s < s2
         #print s1, s2, d1, d2, T, dT, sample_s
