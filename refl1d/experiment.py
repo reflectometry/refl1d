@@ -42,7 +42,7 @@ def plot_sample(sample, instrument=None, roughness_limit=0):
 
 class ExperimentBase(object):
     probe = None # type: probe.Probe
-    interpolation = None
+    interpolation = 0
     _probe_cache = None
     _substrate = None
     _surface = None
