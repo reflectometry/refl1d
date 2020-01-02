@@ -11,11 +11,20 @@ haven't changed since that version.
 
 from __future__ import division, print_function
 import numpy as np
+from numpy.linalg import norm
+
 
 from refl1d.names import Material
 from refl1d.polymer import (PolymerBrush, PolymerMushroom, EndTetheredPolymer,
                             SCFprofile, SCFcache, SCFsolve, SCFeqns, SZdist,
                             Propagator)
+
+def check(a, b, atol=1e-14, rtol=1e-8):
+    if not np.allclose(a, b, atol=atol, rtol=rtol):
+        atol = np.max(abs(a-b))
+        rtol = np.max(abs(a-b)/(abs(b) + (b==0.0)))
+        raise AssertionError("atol=%.2e and rtol=%.2e for\na=%s,\nb=%s"
+                             %(atol, rtol, str(a), str(b)))
 
 g_zs_data = np.array((
     (0.90000000, 0.67833333, 0.53457407, 0.43538321, 0.36346252,
@@ -137,7 +146,7 @@ def calc_g_zs_ta_test():
     segments = 20
     g_z = np.linspace(.9, 1.1, layers)
     g_zs = Propagator(g_z, segments)
-    assert np.allclose(g_zs.ta(), g_zs_ta_data, atol=1e-14)
+    check(g_zs.ta(), g_zs_ta_data)
 
 
 def calc_g_zs_ngts_u_test():
@@ -146,7 +155,7 @@ def calc_g_zs_ngts_u_test():
     g_z = np.linspace(.9, 1.1, layers)
     c = 1.0
     g_zs = Propagator(g_z, segments)
-    assert np.allclose(g_zs.ngts_u(c), g_zs_data, atol=1e-14)
+    check(g_zs.ngts_u(c), g_zs_data, rtol=1e-7)
 
 
 def calc_g_zs_ngts_test():
@@ -156,7 +165,7 @@ def calc_g_zs_ngts_test():
     c_i = np.zeros(segments)
     c_i[-1] = 1.0
     g_zs = Propagator(g_z, segments)
-    assert np.allclose(g_zs.ngts(c_i), g_zs_data, atol=1e-14)
+    check(g_zs.ngts(c_i), g_zs_data, rtol=1e-7)
 
 
 def calc_g_zs_free_test():
@@ -164,11 +173,11 @@ def calc_g_zs_free_test():
     segments = 20
     g_z = np.linspace(.9, 1.1, layers)
     g_zs = Propagator(g_z, segments)
-    assert np.allclose(g_zs.free(), g_zs_data, atol=1e-14)
-    
+    check(g_zs.free(), g_zs_data, rtol=1e-7)
+
 
 def SZdist_test():
-    
+
     # uniform
     pdi=1
     nn=100
@@ -181,13 +190,13 @@ def SZdist_test():
          0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
          0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
          0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  1.)))
-    assert np.allclose(SZdist(pdi,nn), data, atol=1e-14)
-    
+    check(SZdist(pdi,nn), data)
+
     # too narrow
     pdi=1.0000000001
     nn=100
-    assert np.allclose(SZdist(pdi,nn), data, atol=1e-14)
-         
+    check(SZdist(pdi,nn), data)
+
     # broad
     pdi=2
     nn = 30
@@ -295,7 +304,7 @@ def SZdist_test():
                      1.34678900e-06, 1.30263600e-06, 1.25993051e-06,
                      1.21862508e-06, 1.17867380e-06, 1.14003227e-06,
                      1.10265757e-06, 1.06650815e-06, 1.03154386e-06))
-    assert np.allclose(SZdist(pdi,nn), data, atol=1e-14)
+    check(SZdist(pdi,nn), data)
 
 
 easy_phi_z = np.array((3.65555778e-01, 3.97530942e-01, 3.95177593e-01,
@@ -326,10 +335,10 @@ easy_phi_z = np.array((3.65555778e-01, 3.97530942e-01, 3.95177593e-01,
                        2.83845206e-08, 1.63805733e-08, 9.35038310e-09,
                        5.26436221e-09, 2.90675760e-09, 1.55475537e-09,
                        7.81883338e-10, 3.39857917e-10, 9.31247294e-11))
-         
-         
+
+
 def SCFeqns_test():
-    
+
     # away from solution
     phi_z = np.linspace(.5,0,50)
     chi = 0.1
@@ -349,8 +358,8 @@ def SCFeqns_test():
                      0.00499654, -0.00331032, -0.01221627, -0.02143066, -0.03017221,
                      -0.0368608, -0.0390676, -0.03438821, -0.02291077, -0.01063797))
     result = SCFeqns(phi_z,chi,chi_s,sigma,navgsegments,p_i)
-    assert np.allclose(result, data, atol=1e-14)
-    
+    check(result, data, rtol=2e-6)
+
     # at solution
     phi_z = easy_phi_z.copy()
     data = np.array((-9.29275601e-10, -5.71888092e-11, -6.36132924e-10,
@@ -382,11 +391,11 @@ def SCFeqns_test():
                      -7.46744540e-08, -4.27578070e-08, -2.36527590e-08,
                      -1.22420735e-08, -5.42986558e-09, -1.49766885e-09))
     result = SCFeqns(phi_z,chi,chi_s,sigma,navgsegments,p_i)
-    assert np.allclose(result, data, atol=1e-14)
-    
+    check(result, data)
+
     #TODO: check float overflow handling
-    
-    
+
+
 def SCFsolve_test():
     from scipy.optimize.nonlin import NoConvergence
     #find the solution used in the previous test without an initial guess
@@ -397,8 +406,8 @@ def SCFsolve_test():
     pdi = 1.2
     data = easy_phi_z.copy()
     result = SCFsolve(chi, chi_s, pdi, sigma, 0, navgsegments)
-    assert np.allclose(result, data, atol=1e-14)
-    
+    check(result, data)
+
     # try a very hard one using the answer as an initial guess
     chi = 1
     chi_s = .5
@@ -407,7 +416,7 @@ def SCFsolve_test():
         assert False, 'should not arrive here'
     except NoConvergence:
         pass
-    
+
     phi0 = np.array((
          7.68622748e-01,   7.38403430e-01,   7.24406743e-01,
          7.18854113e-01,   7.13805025e-01,   7.08721605e-01,
@@ -429,11 +438,11 @@ def SCFsolve_test():
                      1.47318752e-07, 4.54628391e-08, 1.39474490e-08,
                      4.20912796e-09, 1.19874994e-09, 2.57686731e-10))
     result = SCFsolve(chi, chi_s, pdi, sigma, 0, navgsegments, False, phi0)
-    assert np.allclose(result, data, atol=1e-14)
-    
-         
+    check(result, data)
+
+
 def SCFcache_test():
-    
+
     # check that the hard solution can be found by walking
     chi = 1
     chi_s = 0.5
@@ -463,11 +472,11 @@ def SCFcache_test():
                      2.63682600e-16, 7.96432707e-17, 2.39335164e-17,
                      7.08353585e-18, 1.98293799e-18, 4.21217798e-19))
     result = SCFcache(chi, chi_s, pdi, sigma, 0, navgsegments, cache=cache)
-    assert np.allclose(result, data, atol=1e-14)
-    
+    check(result, data)
+
     # check that the cache is holding items
     assert cache
-    
+
     # check that cache is reordered on hits and misses
     if flag:
         cache_keys = list(cache)
@@ -596,23 +605,23 @@ long_profile = np.array((4.99203946e-01, 4.87932148e-01, 4.76660349e-01,
                          1.95573337e-05, 1.83061781e-05, 1.70550226e-05,
                          1.58442642e-05, 1.48564737e-05, 1.38686832e-05,
                          1.28808926e-05, 1.20259528e-05))
-         
-         
+
+
 def SCFprofile_test():
-    
+
     # basically checking that numpy interp hasn't changed
     data = long_profile.copy()
     result = SCFprofile(np.linspace(0,100,350), chi=.5, chi_s=.3, h_dry=15,
                         l_lat=1, mn=200, m_lat=1, pdi=1.5, disp=False)
-    assert np.allclose(result, data, atol=1e-14)
-    
+    check(result, data)
+
 
 PS = Material(formula='C8H8', name='PS', density=1.299)
 CHEXd = Material(formula='C6D12', name='cyclohexane-d12', density = .893)
 
 
 def EndTetheredPolymer_test():
-    
+
     # check that the profile doesn't change when filtered thru the class
     etp=EndTetheredPolymer(
             thickness=100, interface=0, name="EndTetheredPolymer",
@@ -620,8 +629,8 @@ def EndTetheredPolymer_test():
             l_lat=1, mn=200, m_lat=1, pdi=1.5)
     data = long_profile.copy()
     result = etp.profile(np.linspace(0,100,350))
-    assert np.allclose(result, data, atol=1e-14)
-    
+    check(result, data)
+
 
 def PolymerMushroom_test():
     shroom = PolymerMushroom(
@@ -699,8 +708,8 @@ def PolymerMushroom_test():
         0.00036892,  0.00036011,  0.00035169,  0.00034366,  0.000336  ,
         0.00032871,  0.00032179,  0.00031522,  0.000309  ,  0.00030311))
     result = shroom.profile(np.linspace(0,100,350))
-    assert np.allclose(result, data, atol=1e-8)
-    
+    check(result, data, rtol=2e-5)
+
 
 def PolymerBrush_test():
     brush = PolymerBrush(
@@ -742,8 +751,8 @@ def PolymerBrush_test():
          1.19114105e-04,   9.15816535e-05,   6.93513001e-05,
          5.16572477e-05,   3.77789065e-05,   2.70571017e-05))
     result = brush.profile(np.linspace(0,60,99))
-    assert np.allclose(result, data, atol=1e-14)
-    
+    check(result, data)
+
 
 if __name__ == '__main__':
     calc_g_zs_ta_test()
