@@ -4,6 +4,10 @@ Change History
 
 Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 
+Pre-release
+===========
+* hide resolution bars using *Probe.show_resolution = False* in your model.py
+
 2019-10-15 v0.8.9
 =================
 * json save: material and magnetism are now json objects
