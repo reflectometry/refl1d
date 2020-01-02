@@ -230,7 +230,8 @@ class Monochromatic(object):
         """
         self._translate_Q_to_theta(kw)
         T, dT, L, dL = self.resolution(**kw)
-        kw.update(T=T, dT=dT, L=L, dL=dL)
+        sample_broadening = kw.get('sample_broadening', self.sample_broadening)
+        kw.update(T=T, dT=dT-sample_broadening, L=L, dL=dL)
         kw.setdefault('radiation', self.radiation)
         return make_probe(**kw)
 
@@ -508,7 +509,8 @@ class Pulsed(object):
         L = bins(low, high, dLoL)
         dL = binwidths(L)
         T, dT, L, dL = self.resolution(L=L, dL=dL, T=T, **kw)
-        return make_probe(T=T, dT=dT, L=L, dL=dL,
+        sample_broadening = kw.get('sample_broadening', self.sample_broadening)
+        return make_probe(T=T, dT=dT-sample_broadening, L=L, dL=dL,
                           radiation=self.radiation, **kw)
 
     def magnetic_probe(self, Aguide=270, shared_beam=True, **kw):

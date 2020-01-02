@@ -8,6 +8,12 @@ Pre-release
 ===========
 * hide resolution bars using *Probe.show_resolution = False* in your model.py
 
+**BREAKING CHANGE**: old-style data loader with sample_broadening set
+* sample_broadening was applied twice: once to the base Δθ from when the probe
+  was created and again whenever ΔQ was computed; this is not a problem with
+  the new *load4* function.  The code was fixed, which may cause difficulties
+  when reloading old fits.
+
 2019-10-15 v0.8.9
 =================
 * json save: material and magnetism are now json objects

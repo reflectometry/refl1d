@@ -254,13 +254,14 @@ class XRay(NCNRData, Monochromatic):
 
     You can choose to ignore the geometric calculation entirely
     by setting the slit opening to 0 and using sample_broadening
-    to define the entire divergence::
+    to define the entire divergence.  Note that Probe.sample_broadening
+    is a fittable parameter, so you need to access its value::
 
         >>> from refl1d.names import *
         >>> file = sample_data("spin_valve01.refl")
         >>> xray = NCNR.XRay(slits_at_Tlo=0)
         >>> data = xray.load(file, sample_broadening=1e-4)
-        >>> print(data.dT[5])
+        >>> print(data.sample_broadening.value)
         0.0001
     """
     instrument = "X-ray"
