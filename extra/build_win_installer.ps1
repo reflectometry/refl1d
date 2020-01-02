@@ -4,10 +4,10 @@
 # Remove dist\*.whl and run "pythoon setup.py bdist_wheel" before running.
 
 # TODO: Use the PYTHON environment variable to infer the version of python.
-$PY_VERSION = "3.7.4"
-$PTH_FILE = "python37._pth"
-$WHEEL_TAG = "cp37-cp37m-win_amd64"
-$INSTALL_TAG = "cp37m-embedded-amd64"
+$PY_VERSION = "3.8.1"
+$PTH_FILE = "python38._pth"
+$WHEEL_TAG = "cp38-cp38m-win_amd64"
+$INSTALL_TAG = "cp38m-embedded-amd64"
 $PACKAGE = "refl1d"
 $APP_NAME = "Refl1D"
 
@@ -32,7 +32,7 @@ cd "build\$APP_NAME"
 
 # Use pip to install the app from the binary wheel in the dist directory.
 cd ..
-"$APP_NAME\Scripts\pip.exe" install "..\dist\$PACKAGE-$APP_VERSION-$WHEEL_TAG.whl"
+& "$APP_NAME\Scripts\pip.exe" install "..\dist\$PACKAGE-$APP_VERSION-$WHEEL_TAG.whl"
 
 # Create the embedded app archive in the dist directory .
 Compress-Archive -Path "$APP_NAME" -DestinationPath "..\dist\$APP_NAME-$APP_VERSION-$INSTALL_TAG.zip"

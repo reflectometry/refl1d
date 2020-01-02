@@ -55,7 +55,7 @@ after_test:
   - ps: |
       if ($env:BUILD_INSTALLER -eq "1") {
         Write-Host "Building windows application using $env:PYTHON"
-        & extra\build_win_install.ps1
+        & "$PSScriptRoot\extra\build_win_install.ps1"
       }
 
 artifacts:
