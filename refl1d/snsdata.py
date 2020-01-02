@@ -14,7 +14,9 @@ See :mod:`resolution` for details.
 
 import re
 import math
+
 import numpy as np
+
 from bumps.data import parse_file
 
 from .rebin import rebin
@@ -150,7 +152,7 @@ def parse_sns_file(filename):
     header['date'] = raw_header.get('D', '')
 
     # Column names and units
-    columnpat = re.compile(r'(?P<name>\w+)[(](?P<units>[^)]*)[)]')
+    columnpat = re.compile(r'(?P<name>\w+)\((?P<units>[^)]*)\)')
     columns, units = zip(*columnpat.findall(raw_header.get('L', '')))
     header['columns'] = columns
     header['units'] = units
@@ -276,7 +278,7 @@ def boltzmann_feather(L, counts=100000, range=None):
     y = np.linspace(-4, 4, 10)
     G = np.exp(-y**2/10)
     x = np.arange(12, 85)
-    B = scipy.stats.boltzmann.pmf(x, 0.05, 1, loc=16)
+    B = scipy.stats.boltzmann.pmf(x, 0.05, counts, loc=16)
     BGz = np.convolve(B, G, mode='same')
     #if range is None: range = L[0], L[-1]
     #if range[0] > range[1]: range = range[::-1]

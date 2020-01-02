@@ -37,19 +37,19 @@ filename = 'liquids-SiO2.txt'
 try:
     with open(filename, 'w') as outfile:
         outfile.write("""\
-        #F /SNSlocal/REF_L/2007_1_4B_SCI/2893/NeXus/REF_L_1001.nxs
-        #E 1174593179.87
-        #D 2007-03-22 15:52:59
-        #C Run Number: 1001
-        #C Title: 100 A SiO2 on Si
-        #C Notes: Fake data for 100A SiO2 on Si
-        #C Detector Angle: (1.0, 'degree')
-        #C Proton Charge: 35.6334991455
+#F /SNSlocal/REF_L/2007_1_4B_SCI/2893/NeXus/REF_L_1001.nxs
+#E 1174593179.87
+#D 2007-03-22 15:52:59
+#C Run Number: 1001
+#C Title: 100 A SiO2 on Si
+#C Notes: Fake data for 100A SiO2 on Si
+#C Detector Angle: (1.0, 'degree')
+#C Proton Charge: 35.6334991455
 
-        #S 1 Spectrum ID ('bank1', (87, 152))
-        #N 3
-        #L Q(inv Angstrom) dQ(inv Angstrom) R() dR() L(Angstrom)
-        """)
+#S 1 Spectrum ID ('bank1', (87, 152))
+#N 3
+#L Q(inv Angstrom) dQ(inv Angstrom) R() dR() L(Angstrom)
+""")
         numpy.savetxt(outfile, data.T)
 
     probe2 = SNS.load(filename, slits=slits)
