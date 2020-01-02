@@ -7,22 +7,26 @@ environment:
     # The list here is complete (excluding Python 2.6, which
     # isn't covered by this document) at the time of writing.
 
-    - PYTHON: "C:\\Python27"
+    # Build wheels for x86-32
+    #- PYTHON: "C:\\Python27"
     #- PYTHON: "C:\\Python33"
     #- PYTHON: "C:\\Python34"
     #- PYTHON: "C:\\Python35"
     - PYTHON: "C:\\Python36"
     - PYTHON: "C:\\Python37"
     - PYTHON: "C:\\Python38"
-    - PYTHON: "C:\\Python27-x64"
+
+    # Build wheels for x86-64
+    #- PYTHON: "C:\\Python27-x64"
     #- PYTHON: "C:\\Python33-x64"
     #  DISTUTILS_USE_SDK: "1"
     #- PYTHON: "C:\\Python34-x64"
-      DISTUTILS_USE_SDK: "1"
+    #  DISTUTILS_USE_SDK: "1"
     #- PYTHON: "C:\\Python35-x64"
     - PYTHON: "C:\\Python36-x64"
     - PYTHON: "C:\\Python37-x64"
     - PYTHON: "C:\\Python38-x64"
+      BUILD_INSTALLER: "1"
 
 install:
   # We need wheel installed to build wheels
@@ -40,6 +44,7 @@ test_script:
   # the interpreter you're using - Appveyor does not do anything special
   # to put the Python version you want to use on PATH.
   #- "build.cmd %PYTHON%\\python.exe setup.py test"
+  - "%PYTHON%\\python.exe setup.py test"
 
 after_test:
   # This step builds your wheels.
@@ -47,7 +52,7 @@ after_test:
   # 64-bit Python 3.3/3.4. And you need to use %PYTHON% to get the correct
   # interpreter
   - "%PYTHON%\\python.exe setup.py bdist_wheel"
-  - ps: if ($PYTHON -eq "C:\\Python37") { extra\build_win_install.ps1 }
+  - ps: if ($BUILD_INSTALLER -eq "1") { extra\build_win_install.ps1 }
 
 artifacts:
   # bdist_wheel puts your built wheel in the dist directory
