@@ -925,7 +925,7 @@ def default_guess(segments=100, sigma=.5, phi_b=.1, chi=0, chi_s=0):
     For now, a line using numbers from scaling theory
     """
     ss=sqrt(sigma)
-    default_layers = round(max(MINLAT, segments * ss))
+    default_layers = int(round(max(MINLAT, segments * ss)))
     default_phi0 = np.linspace(ss, phi_b, num=default_layers)
     return default_phi0
 
