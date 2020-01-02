@@ -57,7 +57,7 @@ git tag -a vX.Y.Z -m "Refl1d X.Y.Z"
 git push --tags # OR MAYBE: git push origin vX.Y.Z
 
 # to move a tag to the new head
-git tag -a vX.Y.Z -f
+git tag -a vX.Y.Z -m "Refl1d X.Y.Z" -f
 git push --tags -f
 
 # mark an existing commit with a version tag
