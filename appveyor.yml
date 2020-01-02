@@ -52,7 +52,11 @@ after_test:
   # 64-bit Python 3.3/3.4. And you need to use %PYTHON% to get the correct
   # interpreter
   - "%PYTHON%\\python.exe setup.py bdist_wheel"
-  - ps: if ($BUILD_INSTALLER -eq "1") { extra\build_win_install.ps1 }
+  - ps: |
+      if ($env:BUILD_INSTALLER -eq "1") {
+        Write-Host "Building windows application for $env:PYTHON"
+        extra\build_win_install.ps1
+      }
 
 artifacts:
   # bdist_wheel puts your built wheel in the dist directory
