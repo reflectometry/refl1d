@@ -50,8 +50,33 @@ Viewing data
 ============
 
 The probe object controls the plotting of theory and data curves.  This
-is reasonable since it is only the probe which knows details such as
-the original points and the points used in the calculation
+is because the probe which knows details such as the original points
+and the points used in the calculation.
+
+The :class:`refl1d.probe.Probe` object has a couple of attributes for
+controlling the plot.   These attributes are usually set directly on the
+class rather than the individual data sets so they apply uniformly.
+
+*Probe.view* can be set to one of linear, log, q4, fresnel or logfresnel.
+Q4 divides reflectivity by $q^4$ after correcting for intensity and
+background, plotting $R/(I_0 q^4 + B)$. Fresnel divides the reflectivity
+of the film by the fresnel reflectivity of the substrate; in addition to
+intensity and background, it also applies the resolution function to the
+fresnel calculation prior to division. The view does not affect the fit,
+which uses the uncertainty on the data points when evaluating the likelihood
+of the model.
+
+*Probe.show_resolution* can be True to show the resolution of each data point
+as a horizontal bar on the data point, or False to hide it.  The default is
+True so that you first assess the resolution of the loaded data before trying
+to fit it; after verifying that it looks reasonable, set it to False so that
+the graphs are not so busy.
+
+*Probe.plot_shift* is the number of pixels to shift each data set when plotting
+multiple data sets on the same plot.
+
+*Probe.resoiduals_shift* is the number of pixels to shift each data set when
+plotting multiple residuals on the same plot.
 
 .. data_resolution_:
 

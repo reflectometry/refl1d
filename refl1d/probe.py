@@ -141,6 +141,8 @@ class Probe(object):
 
         *view* : string
             One of 'fresnel', 'logfresnel', 'log', 'linear', 'q4', 'residuals'
+        *show_resolution* : bool
+            True if resolution bars should be plotted with each point.
         *plot_shift* : float
             The number of pixels to shift each new dataset so
             datasets can be seen separately
@@ -151,13 +153,15 @@ class Probe(object):
     Normally *view* is set directly in the class rather than the
     instance since it is not specific to the view.  Fresnel and Q4
     views are corrected for background and intensity; log and
-    linear views show the uncorrected data.
+    linear views show the uncorrected data.  The Fresnel reflectivity
+    calculation has resolution applied.
     """
     polarized = False
     Aguide = 270  # default guide field for unpolarized measurements
     view = "log"
     plot_shift = 0
     residuals_shift = 0
+    show_resolution = True
 
     def __init__(self, T=None, dT=0, L=None, dL=0, data=None,
                  intensity=1, background=0, back_absorption=1, theta_offset=0,
@@ -768,6 +772,8 @@ class Probe(object):
         trans = auto_shift(plot_shift)
         if hasattr(self, 'R') and self.R is not None:
             Q, dQ, R, dR = correct(self.Q, self.dQ, self.R, self.dR)
+            if not self.show_resolution:
+                dQ = None
             pylab.errorbar(Q, R, yerr=dR, xerr=dQ, capsize=0,
                            fmt='.', color=c['light'], transform=trans,
                            label=self.label(prefix=label,
@@ -781,6 +787,10 @@ class Probe(object):
                        label=self.label(prefix=label,
                                         gloss='theory',
                                         suffix=suffix))
+            #from numpy.fft import fft
+            #x, y = Q[1::2], abs(fft(R)[:(len(R)-1)//2])
+            #y = y * (R.max()/y.max())
+            #pylab.plot(x, y, '-')
         pylab.xlabel('Q (inv Angstroms)')
         pylab.ylabel(ylabel)
         #pylab.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
@@ -1469,7 +1479,8 @@ class PolarizedNeutronProbe(object):
 
     *H* (tesla) is the magnitude of the applied field
     """
-    view = None  # Default to Probe.view so only need to change in one place
+    view = None  # Default to Probe.view when None
+    show_resolution = None  # Default to Probe.show_resolution when None
     substrate = surface = None
     polarized = True
     def __init__(self, xs=None, name=None, Aguide=270, H=0):
@@ -1660,7 +1671,8 @@ class PolarizedNeutronProbe(object):
         """
         view = view if view is not None else self.view
 
-        if view is None: view = Probe.view  # Default to Probe.view
+        if view is None:
+            view = Probe.view  # Default to Probe.view
 
         if view == 'linear':
             self.plot_linear(**kwargs)
@@ -1715,7 +1727,10 @@ class PolarizedNeutronProbe(object):
         if hasattr(pp, 'R') and hasattr(mm, 'R') and pp.R is not None and mm.R is not None:
             Q, SA, dSA = spin_asymmetry(pp.Q, pp.R, pp.dR, mm.Q, mm.R, mm.dR)
             if dSA is not None:
-                pylab.errorbar(Q, SA, yerr=dSA, xerr=pp.dQ, fmt='.', capsize=0,
+                res = (self.show_resolution if self.show_resolution is not None
+                       else Probe.show_resolution)
+                dQ = pp.dQ if res else None
+                pylab.errorbar(Q, SA, yerr=dSA, xerr=dQ, fmt='.', capsize=0,
                                label=pp.label(prefix=label, gloss='data'),
                                transform=trans,
                                color=c['light'])
