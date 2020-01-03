@@ -56,7 +56,7 @@ after_test:
   - ps: |
       if ($env:BUILD_INSTALLER -eq "1") {
         Write-Host "Building windows application using $env:PYTHON"
-        & "$env:APPVEYOR_BUILD_FOLDER\extra\build_win_install.ps1"
+        & "$env:APPVEYOR_BUILD_FOLDER\extra\build_win_installer.ps1"
       }
 
 artifacts:
