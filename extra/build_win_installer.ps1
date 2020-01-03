@@ -33,7 +33,7 @@ cd "build\$APP_NAME"
 
 # Use pip to install the app from the binary wheel in the dist directory.
 cd ..
-& "$APP_NAME\Scripts\pip.exe" install "$PSScriptPath\dist\$PACKAGE-$APP_VERSION-$WHEEL_TAG.whl"
+& "$APP_NAME\Scripts\pip.exe" install "$PSScriptRoot\dist\$PACKAGE-$APP_VERSION-$WHEEL_TAG.whl"
 
 # Create the embedded app archive in the dist directory .
-Compress-Archive -Path "$APP_NAME" -DestinationPath "$PSScriptPath\dist\$APP_NAME-$APP_VERSION-$INSTALL_TAG.zip"
+Compress-Archive -Path "$APP_NAME" -DestinationPath "$PSScriptRoot\dist\$APP_NAME-$APP_VERSION-$INSTALL_TAG.zip"
