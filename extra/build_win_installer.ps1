@@ -15,10 +15,10 @@ $APP_NAME = "Refl1D"
 # Grab version number from the application source.  Assumes it is defined as
 #     package\__init__.py:__version__ = "..."
 $APP_VERSION = (Select-String '__version__ *= *"(.*)"' "$PACKAGE\__init__.py" -ca).matches | Select-Object -ExpandProperty Groups | Select-Object -Last 1 -ExpandProperty value
-Write-Host "$APP_NAME-$APP_VERSION"
+#Write-Host "Building application $APP_NAME-$APP_VERSION"
 
 # Fetch embedded python zip file
-Write-Host "Fetching python"
+#Write-Host "Fetching python"
 $AllProtocols = [System.Net.SecurityProtocolType]'Ssl3,Tls,Tls11,Tls12'
 [System.Net.ServicePointManager]::SecurityProtocol = $AllProtocols
 Invoke-WebRequest -Uri "https://www.python.org/ftp/python/$PY_VERSION/python-$PY_VERSION-embed-amd64.zip" -OutFile python_embedded.zip
@@ -40,9 +40,9 @@ Write-Host "Installing $APP_NAME-$APP_VERSION into embedded environment"
 & "build\$APP_NAME\Scripts\pip.exe" install --no-warn-script-location "$PSScriptRoot\..\dist\$PACKAGE-$APP_VERSION-$WHEEL_TAG.whl"
 
 # Create the embedded app archive in the dist directory .
-Write-Host "Compressing into $ZIP_PATH"
 cd build
 $ZIP_PATH = "dist\$APP_NAME-$APP_VERSION-$INSTALL_TAG.zip"
+#Write-Host "Compressing into $ZIP_PATH"
 Compress-Archive -Path "$APP_NAME" -DestinationPath "$PSScriptRoot\..\$ZIP_PATH"
 
-Write-Host "All done!!"
+Write-Host "All done!!  Application is in $ZIP_PATH"

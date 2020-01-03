@@ -11,8 +11,8 @@ environment:
     - PYTHON: "C:\\Python38-x64"
       # !!! Python version must match version in extra/build_win_installer.ps1
       BUILD_INSTALLER: "1"
-    #- PYTHON: "C:\\Python37-x64"
-    #- PYTHON: "C:\\Python36-x64"
+    - PYTHON: "C:\\Python37-x64"
+    - PYTHON: "C:\\Python36-x64"
     #- PYTHON: "C:\\Python35-x64"
     #- PYTHON: "C:\\Python34-x64"
     #  DISTUTILS_USE_SDK: "1"
@@ -21,9 +21,9 @@ environment:
     #- PYTHON: "C:\\Python27-x64"
 
     # Build wheels for x86-32
-    #- PYTHON: "C:\\Python38"
-    #- PYTHON: "C:\\Python37"
-    #- PYTHON: "C:\\Python36"
+    - PYTHON: "C:\\Python38"
+    - PYTHON: "C:\\Python37"
+    - PYTHON: "C:\\Python36"
     #- PYTHON: "C:\\Python35"
     #- PYTHON: "C:\\Python34"
     #- PYTHON: "C:\\Python33"
