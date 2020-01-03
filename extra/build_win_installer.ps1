@@ -15,7 +15,7 @@ $APP_NAME = "Refl1D"
 # Grab version number from the application source.  Assumes it is defined as
 #     package\__init__.py:__version__ = "..."
 $APP_VERSION = (Select-String '__version__ *= *"(.*)"' "$PACKAGE\__init__.py" -ca).matches | Select-Object -ExpandProperty Groups | Select-Object -Last 1 -ExpandProperty value
-Write-Host "$APP_NAME: $APP_VERSION"
+Write-Host "$APP_NAME-$APP_VERSION"
 
 # Fetch embedded python zip file
 Write-Host "Fetching python"
