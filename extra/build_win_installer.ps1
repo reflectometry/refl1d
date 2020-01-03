@@ -4,6 +4,7 @@
 # Remove dist\*.whl and run "pythoon setup.py bdist_wheel" before running.
 
 # TODO: Use the PYTHON environment variable to infer the version of python.
+# Look in https://www.python.org/ftp/python for the latest python version.
 $PY_VERSION = "3.8.1"
 $PTH_FILE = "python38._pth"
 $WHEEL_TAG = "cp38-cp38m-win_amd64"
