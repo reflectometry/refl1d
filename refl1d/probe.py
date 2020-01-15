@@ -807,6 +807,8 @@ class Probe(object):
         if theory is not None and self.R is not None:
             c = coordinated_colors()
             Q, R = theory
+            # In case theory curve is evaluated at more/different points...
+            R = np.interp(self.Q, Q, R)
             residual = (R - self.R)/self.dR
             plt.plot(self.Q, residual,
                      '.', color=c['light'],
