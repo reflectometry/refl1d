@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 
 from .config import pick_radius
 from .config import profile_color
@@ -52,13 +52,13 @@ class FreeInterfaceInteractor(BaseInteractor):
         left = self.profile.boundary[n]
         layer = self.layer
 
-        z = numpy.linspace(0,layer.thickness.value,200)
+        z = np.linspace(0,layer.thickness.value,200)
         vf = layer.profile(z)
         self.hprofile.set_xdata(z+left)
         self.hprofile.set_ydata(vf*vf_scale)
 
-        z = numpy.cumsum(numpy.array([v.value for v in layer.dz],'d'))
-        p = numpy.cumsum(numpy.array([v.value for v in layer.dp],'d'))
+        z = np.cumsum(np.array([v.value for v in layer.dz],'d'))
+        p = np.cumsum(np.array([v.value for v in layer.dp],'d'))
         self._zscale = layer.thickness.value/z[-1]
         if p[-1] == 0: p[-1] = 1
         p *= vf_scale/p[-1]
@@ -85,8 +85,8 @@ class FreeInterfaceInteractor(BaseInteractor):
         idx = self.markers.index(evt.artist)
         z = [h.get_xdata()[0] for h in self.markers]
         z[idx] = evt.xdata
-        dz = numpy.diff(numpy.sort(numpy.clip(z+[left,right], left, right)))
-        dz /= numpy.max(dz)
+        dz = np.diff(np.sort(np.clip(z+[left,right], left, right)))
+        dz /= np.max(dz)
         for p,v in zip(self.layer.dz,dz): setpar(p, v)
 
 
@@ -143,9 +143,9 @@ class FreeLayerInteractor(BaseInteractor):
         left = self.profile.boundary[n]
         layer = self.layer
 
-        z = numpy.array([v.value for v in layer.z])
-        rho = numpy.array([v.value for v in layer.rho])
-        rhoI = numpy.array([v.value for v in layer.irho])
+        z = np.array([v.value for v in layer.z])
+        rho = np.array([v.value for v in layer.rho])
+        rhoI = np.array([v.value for v in layer.irho])
         self._zscale = layer.thickness.value
         z *= self._zscale
         z += left

@@ -11,7 +11,8 @@ has files ending in **.sta**.
 """
 
 from math import pi
-import numpy
+
+import numpy as np
 from bumps.wsolve import wsolve
 
 ERF_FWHM = 2.35482004503095 # 2 * sqrt(2*log(2))
@@ -349,8 +350,8 @@ class MlayerModel(object):
 
         Returns the object so that operations can be chained.
         """
-        A = numpy.array([abs(Q)/self.wavelength,
-                         numpy.ones_like(Q)*(4*pi/self.wavelength)]).T
+        A = np.array([abs(Q)/self.wavelength,
+                      np.ones_like(Q)*(4*pi/self.wavelength)]).T
         s = wsolve(A, y=dQ, dy=weight)
         self.wavelength_dispersion = s.x[0]
         self.angular_divergence = s.x[1]
@@ -444,7 +445,7 @@ class MlayerModel(object):
 
     def _get_mu(self):
         mu = 2*self.wavelength*self.irho + self.incoh
-        return mu*numpy.ones_like(self.rho)
+        return mu*np.ones_like(self.rho)
     def _set_mu(self, mu):
         self.irho = mu/(2*self.wavelength)
     mu = property(fget=_get_mu, fset=_set_mu)
@@ -499,7 +500,7 @@ class MlayerModel(object):
         del layers[self.num_top+1]
         del layers[self.num_top+self.num_middle+1]
 
-        A = numpy.array(layers)
+        A = np.array(layers)
         self.rho = A[:, 0] * (1e6/16/pi)
         self.irho = A[:, 4] * (1e6/2/self.wavelength)
         self.incoh = A[:, 0] * 0
@@ -855,8 +856,8 @@ class MlayerMagnetic(object):
     FWHMresolution.__doc__ = MlayerModel.FWHMresolution.__doc__
 
     def fit_FWHMresolution(self, Q, dQ, weight=1):
-        A = numpy.array([abs(Q)/self.wavelength,
-                         numpy.ones_like(Q)*(4*pi/self.wavelength)])
+        A = np.array([abs(Q)/self.wavelength,
+                      np.ones_like(Q)*(4*pi/self.wavelength)])
         s = wsolve(A, y=dQ, dy=weight)
         self.wavelength_dispersion = s.x[0]
         self.angular_divergence = s.x[1]
@@ -884,9 +885,9 @@ class MlayerMagnetic(object):
         wm = self.mthickness if self.mthickness is not None else w
         sm = self.mroughness if self.mroughness is not None else s
         rho = self.rho
-        irho = self.irho if self.irho is not None else numpy.zeros_like(w)
-        mrho = self.mrho if self.mrho is not None else numpy.zeros_like(w)
-        mtheta = self.mtheta if self.mtheta is not None else 270*numpy.ones_like(w)
+        irho = self.irho if self.irho is not None else np.zeros_like(w)
+        mrho = self.mrho if self.mrho is not None else np.zeros_like(w)
+        mtheta = self.mtheta if self.mtheta is not None else 270*np.ones_like(w)
         line.append("Layers:")
         line.append(("    " + ("%15s "*4) + "\n    " + ("%15s "*4))
                     %("Width (A)", "Interface (FWHM)",
@@ -989,7 +990,7 @@ class MlayerMagnetic(object):
         layers = [[float(v) for v in " ".join(lines[11+3*i:11+3*(i+1)]).split()]
                   for i in range(nL)]
 
-        A = numpy.array(layers)
+        A = np.array(layers)
         self.rho = A[:, 0]* (1e6/16/pi)
         self.irho = A[:, 3] * (1e6/2/self.wavelength)
         self.thickness = A[:, 1]
@@ -1044,15 +1045,15 @@ class MlayerMagnetic(object):
         if self.irho is not None:
             mu = self.irho*(2*self.wavelength/1e6)
         else:
-            mu = numpy.zeros_like(rho)
+            mu = np.zeros_like(rho)
         if self.mrho is not None:
             mrho = self.mrho * (16*pi/1e6)
         else:
-            mrho = numpy.zeros_like(rho)
+            mrho = np.zeros_like(rho)
         if self.mtheta is not None:
             mtheta = self.mtheta
         else:
-            mtheta = 270*numpy.ones_like(rho)
+            mtheta = 270*np.ones_like(rho)
         for i in range(len(rho)):
             fid.write("%g %g %g %g\n%g %g %g\n%g\n"
                       %(rho[i], w[i], s[i], mu[i], mrho[i], wm[i], sm[i], mtheta[i]))

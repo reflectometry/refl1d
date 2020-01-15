@@ -42,8 +42,10 @@ import os
 import json
 import warnings
 
-import numpy
+import numpy as np
 from numpy import sqrt, pi, inf, sign, log
+import numpy.random
+import numpy.fft
 
 from periodictable import nsf, xsf
 from bumps.parameter import Parameter, Constant
@@ -208,10 +210,10 @@ class Probe(object):
         dQ = dTdL2dQ(T=T, dT=dT, L=L, dL=dL)
 
         # Make sure that we are dealing with vectors
-        T, dT, L, dL = [numpy.ones_like(Q)*v for v in (T, dT, L, dL)]
+        T, dT, L, dL = [np.ones_like(Q)*v for v in (T, dT, L, dL)]
 
         # Probe stores sorted values for convenience of resolution calculator
-        idx = numpy.argsort(Q)
+        idx = np.argsort(Q)
         self.T, self.dT = T[idx], dT[idx]
         self.L, self.dL = L[idx], dL[idx]
         self.Qo, self.dQo = Q[idx], dQ[idx]
@@ -306,13 +308,13 @@ class Probe(object):
         noise_floor = 1e-11
 
         # Set the theory function.
-        R = numpy.asarray(theory[1], 'd')
+        R = np.asarray(theory[1], 'd')
         assert R.shape == self.Q.shape
         self.R = R
 
         # Make sure scalar noise is positive.  This check is here to so that
         # old interfaces will fail properly.
-        if numpy.isscalar(noise) and noise <= 0.:
+        if np.isscalar(noise) and noise <= 0.:
             raise ValueError("Noise level must be positive")
 
         # If dR is missing then default noise to 2% so that dR will be set.
@@ -321,7 +323,7 @@ class Probe(object):
 
         # Set dR if noise was given or otherwise defaulted.
         if noise is not None:
-            self.dR = 0.01 * numpy.asarray(noise) * self.R
+            self.dR = 0.01 * np.asarray(noise) * self.R
             self.dR[self.dR < noise_floor] = noise_floor
 
         # Add noise according to dR.
@@ -342,20 +344,20 @@ class Probe(object):
             header = "# %s\n"%' '.join(columns)
         with open(filename, 'wb') as fid:
             fid.write(asbytes(header))
-            data = numpy.vstack([getattr(self, c) for c in columns])
-            numpy.savetxt(fid, data.T)
+            data = np.vstack([getattr(self, c) for c in columns])
+            np.savetxt(fid, data.T)
 
     def _set_calc(self, T, L):
         Q = TL2Q(T=T, L=L)
 
-        idx = numpy.argsort(Q)
+        idx = np.argsort(Q)
         self.calc_T = T[idx]
         self.calc_L = L[idx]
         self.calc_Qo = Q[idx]
 
         # Only keep the scattering factors that you need
-        self.unique_L = numpy.unique(self.calc_L)
-        self._L_idx = numpy.searchsorted(self.unique_L, L)
+        self.unique_L = np.unique(self.calc_L)
+        self._L_idx = np.searchsorted(self.unique_L, L)
 
     @property
     def Q(self):
@@ -445,8 +447,8 @@ class Probe(object):
         """
         # Assumes self contains sorted Qo and associated T, L
         # Note: calc_Qo is already sorted
-        Q = numpy.arange(self.Qo[0], self.Qo[-1], dQ)
-        idx = numpy.unique(numpy.searchsorted(self.Qo, Q))
+        Q = np.arange(self.Qo[0], self.Qo[-1], dQ)
+        idx = np.unique(np.searchsorted(self.Qo, Q))
         #print len(idx), len(self.Qo)
 
         self.T, self.dT = self.T[idx], self.dT[idx]
@@ -506,11 +508,11 @@ class Probe(object):
         Vrho, Virho = (0, 0) if surface is None else surface.sld(self)[:2]
         drho = Srho-Vrho if not self.back_reflectivity else Vrho-Srho
         Q_c = sign(drho)*sqrt(16*pi*abs(drho)*1e-6)
-        Q = numpy.linspace(Q_c*(1 - delta), Q_c*(1+delta), n)
-        L = numpy.average(self.L)
+        Q = np.linspace(Q_c*(1 - delta), Q_c*(1+delta), n)
+        L = np.average(self.L)
         T = QL2T(Q=Q, L=L)
-        T = numpy.hstack((self.T, T, 0))
-        L = numpy.hstack((self.L, [L]*(n+1)))
+        T = np.hstack((self.T, T, 0))
+        L = np.hstack((self.L, [L]*(n+1)))
         #print Q
         self._set_calc(T, L)
 
@@ -545,8 +547,8 @@ class Probe(object):
         rng = numpy.random.RandomState(seed=seed)
         T = rng.normal(self.T[:, None], self.dT[:, None], size=(len(self.dT), n-1))
         L = rng.normal(self.L[:, None], self.dL[:, None], size=(len(self.dL), n-1))
-        T = numpy.hstack((self.T, T.flatten()))
-        L = numpy.hstack((self.L, L.flatten()))
+        T = np.hstack((self.T, T.flatten()))
+        L = np.hstack((self.L, L.flatten()))
         self._set_calc(T, L)
 
     def _apply_resolution(self, Qin, Rin, interpolation):
@@ -586,7 +588,7 @@ class Probe(object):
             # in the size of Q, which is a bit pricey, but let's see
             # if it is a problem before optimizing.
             Q, dQ = _interpolate_Q(self.Q, self.dQ, interpolation)
-            Q, R = self.Q, numpy.interp(Q, calc_Q, calc_R)
+            Q, R = self.Q, np.interp(Q, calc_Q, calc_R)
         R = self.intensity.value*R + self.background.value
         #return calc_Q, calc_R
         return Q, R
@@ -608,7 +610,7 @@ class Probe(object):
             Sirho, Virho = Virho, Sirho
         if Srho == Vrho:
             Srho = Vrho + 1
-        #I = numpy.ones_like(self.Q)
+        #I = np.ones_like(self.Q)
         I = 1
         calculator = fresnel.Fresnel(rho=Srho*I, irho=Sirho*I,
                                      Vrho=Vrho*I, Virho=Virho*I)
@@ -623,16 +625,16 @@ class Probe(object):
         Q, R = theory
         if len(Q) != len(self.Q):
             # Saving interpolated data
-            A = numpy.array((Q, R, numpy.interp(Q, self.Q, FQ)))
+            A = np.array((Q, R, np.interp(Q, self.Q, FQ)))
             header = ("# %17s %20s %20s\n"
                       % ("Q (1/A)", "theory", "fresnel"))
         elif getattr(self, 'R', None) is not None:
-            A = numpy.array((self.Q, self.dQ, self.R, self.dR,
+            A = np.array((self.Q, self.dQ, self.R, self.dR,
                              R, FQ))
             header = ("# %17s %20s %20s %20s %20s %20s\n"
                       % ("Q (1/A)", "dQ (1/A)", "R", "dR", "theory", "fresnel"))
         else:
-            A = numpy.array((self.Q, self.dQ, R, FQ))
+            A = np.array((self.Q, self.dQ, R, FQ))
             header = ("# %17s %20s %20s %20s\n"
                       % ("Q (1/A)", "dQ (1/A)", "theory", "fresnel"))
 
@@ -642,7 +644,7 @@ class Probe(object):
         with open(filename, "wb") as fid:
             #print("saving", A)
             fid.write(asbytes(header))
-            numpy.savetxt(fid, A.T, fmt="%20.15g")
+            np.savetxt(fid, A.T, fmt="%20.15g")
 
     def plot(self, view=None, **kwargs):
         """
@@ -676,37 +678,37 @@ class Probe(object):
 
 
     def plot_resolution(self, suffix='', label=None, **kwargs):
-        import pylab
-        pylab.plot(self.Q, self.dQ,
-                   label=self.label(prefix=label, suffix=suffix))
-        pylab.xlabel(r'Q ($\AA^{-1}$)')
-        pylab.ylabel(r'Q resolution ($1-\sigma \AA^{-1}$)')
-        pylab.title('Measurement resolution')
+        import matplotlib.pyplot as plt
+        plt.plot(self.Q, self.dQ,
+                 label=self.label(prefix=label, suffix=suffix))
+        plt.xlabel(r'Q ($\AA^{-1}$)')
+        plt.ylabel(r'Q resolution ($1-\sigma \AA^{-1}$)')
+        plt.title('Measurement resolution')
 
 
     def plot_linear(self, **kwargs):
         """
         Plot the data associated with probe.
         """
-        import pylab
+        import matplotlib.pyplot as plt
         self._plot_pair(ylabel='Reflectivity', **kwargs)
-        pylab.yscale('linear')
+        plt.yscale('linear')
 
     def plot_log(self, **kwargs):
         """
         Plot the data associated with probe.
         """
-        import pylab
+        import matplotlib.pyplot as plt
         self._plot_pair(ylabel='Reflectivity', **kwargs)
-        pylab.yscale('log')
+        plt.yscale('log')
 
     def plot_logfresnel(self, *args, **kw):
         """
         Plot the log Fresnel-normalized reflectivity associated with the probe.
         """
-        import pylab
+        import matplotlib.pyplot as plt
         self.plot_fresnel(*args, **kw)
-        pylab.yscale('log')
+        plt.yscale('log')
 
     def plot_fresnel(self, substrate=None, surface=None, **kwargs):
         r"""
@@ -755,8 +757,8 @@ class Probe(object):
         """
         scale = lambda Q, dQ, R, dR: (
             Q, dQ,
-            #R/numpy.maximum(1e-8*Q**-4, self.background.value),
-            #dR/numpy.maximum(1e-8*Q**-4, self.background.value))
+            #R/np.maximum(1e-8*Q**-4, self.background.value),
+            #dR/np.maximum(1e-8*Q**-4, self.background.value))
             R/(1e-8*Q**-4*self.intensity.value + self.background.value),
             dR/(1e-8*Q**-4*self.intensity.value + self.background.value))
         #Q4[Q4==0] = 1
@@ -766,7 +768,7 @@ class Probe(object):
                    correct=lambda Q, dQ, R, dR: (Q, dQ, R, dR),
                    ylabel="", suffix="", label=None,
                    plot_shift=None, **kw):
-        import pylab
+        import matplotlib.pyplot as plt
         c = coordinated_colors()
         plot_shift = plot_shift if plot_shift is not None else Probe.plot_shift
         trans = auto_shift(plot_shift)
@@ -774,48 +776,48 @@ class Probe(object):
             Q, dQ, R, dR = correct(self.Q, self.dQ, self.R, self.dR)
             if not self.show_resolution:
                 dQ = None
-            pylab.errorbar(Q, R, yerr=dR, xerr=dQ, capsize=0,
-                           fmt='.', color=c['light'], transform=trans,
-                           label=self.label(prefix=label,
-                                            gloss='data',
-                                            suffix=suffix))
+            plt.errorbar(Q, R, yerr=dR, xerr=dQ, capsize=0,
+                         fmt='.', color=c['light'], transform=trans,
+                         label=self.label(prefix=label,
+                                          gloss='data',
+                                          suffix=suffix))
         if theory is not None:
             Q, R = theory
             Q, dQ, R, dR = correct(Q, 0, R, 0)
-            pylab.plot(Q, R, '-',
-                       color=c['dark'], transform=trans,
-                       label=self.label(prefix=label,
-                                        gloss='theory',
-                                        suffix=suffix))
+            plt.plot(Q, R, '-',
+                     color=c['dark'], transform=trans,
+                     label=self.label(prefix=label,
+                                      gloss='theory',
+                                      suffix=suffix))
             #from numpy.fft import fft
             #x, y = Q[1::2], abs(fft(R)[:(len(R)-1)//2])
             #y = y * (R.max()/y.max())
-            #pylab.plot(x, y, '-')
-        pylab.xlabel('Q (inv Angstroms)')
-        pylab.ylabel(ylabel)
-        #pylab.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-        h = pylab.legend(fancybox=True, numpoints=1)
+            #plt.plot(x, y, '-')
+        plt.xlabel('Q (inv Angstroms)')
+        plt.ylabel(ylabel)
+        #plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        h = plt.legend(fancybox=True, numpoints=1)
         h.get_frame().set_alpha(0.5)
 
     def plot_residuals(self, theory=None, suffix='', label=None,
                        plot_shift=None, **kwargs):
-        import pylab
+        import matplotlib.pyplot as plt
         plot_shift = plot_shift if plot_shift is not None else Probe.residuals_shift
         trans = auto_shift(plot_shift)
         if theory is not None and self.R is not None:
             c = coordinated_colors()
             Q, R = theory
             residual = (R - self.R)/self.dR
-            pylab.plot(self.Q, residual,
-                       '.', color=c['light'],
-                       transform=trans,
-                       label=self.label(prefix=label, suffix=suffix))
-        pylab.axhline(1, color='black', ls='--', lw=1)
-        pylab.axhline(0, color='black', lw=1)
-        pylab.axhline(-1, color='black', ls='--', lw=1)
-        pylab.xlabel('Q (inv A)')
-        pylab.ylabel('(theory-data)/error')
-        pylab.legend(numpoints=1)
+            plt.plot(self.Q, residual,
+                     '.', color=c['light'],
+                     transform=trans,
+                     label=self.label(prefix=label, suffix=suffix))
+        plt.axhline(1, color='black', ls='--', lw=1)
+        plt.axhline(0, color='black', lw=1)
+        plt.axhline(-1, color='black', ls='--', lw=1)
+        plt.xlabel('Q (inv A)')
+        plt.ylabel('(theory-data)/error')
+        plt.legend(numpoints=1)
 
     def plot_fft(self, theory=None, suffix='', label=None,
                  substrate=None, surface=None, **kwargs):
@@ -823,7 +825,7 @@ class Probe(object):
         FFT analysis of reflectivity signal.
         """
         raise NotImplementedError
-        import pylab
+        import matplotlib.pyplot as plt
         c = coordinated_colors()
         if substrate is None and surface is None:
             raise TypeError("FFT reflectivity needs substrate or surface")
@@ -831,33 +833,33 @@ class Probe(object):
         #Qc = sqrt(16*pi*substrate)
         Qc = 0
         Qmax = max(self.Q)
-        T = numpy.linspace(Qc, Qmax, len(self.Q))
-        z = numpy.linspace(0, 2*pi/Qmax, len(self.Q)//2)
+        T = np.linspace(Qc, Qmax, len(self.Q))
+        z = np.linspace(0, 2*pi/Qmax, len(self.Q)//2)
         if hasattr(self, 'R'):
-            signal = numpy.interp(T, self.Q, self.R/F(self.Q))
-            A = abs(numpy.fft.fft(signal - numpy.average(signal)))
+            signal = np.interp(T, self.Q, self.R/F(self.Q))
+            A = abs(numpy.fft.fft(signal - np.average(signal)))
             A = A[:len(A)//2]
-            pylab.plot(z, A, '.-', color=c['light'],
-                       label=self.label(prefix=label,
-                                        gloss='data',
-                                        suffix=suffix))
+            plt.plot(z, A, '.-', color=c['light'],
+                     label=self.label(prefix=label,
+                                      gloss='data',
+                                      suffix=suffix))
         if theory is not None:
             Q, R = theory
-            signal = numpy.interp(T, Q, R/F(Q))
-            A = abs(numpy.fft.fft(signal-numpy.average(signal)))
+            signal = np.interp(T, Q, R/F(Q))
+            A = abs(numpy.fft.fft(signal-np.average(signal)))
             A = A[:len(A)//2]
-            pylab.plot(z, A, '-', color=c['dark'],
-                       label=self.label(prefix=label,
-                                        gloss='theory',
-                                        suffix=suffix))
-        pylab.xlabel('w (A)')
+            plt.plot(z, A, '-', color=c['dark'],
+                     label=self.label(prefix=label,
+                                      gloss='theory',
+                                      suffix=suffix))
+        plt.xlabel('w (A)')
         if substrate is None:
             name = "air:%s" % surface.name
         elif surface is None or isinstance(surface, Vacuum):
             name = substrate.name
         else:
             name = "%s:%s" % (substrate.name, surface.name)
-        pylab.ylabel('|FFT(R/R(%s))|' % name)
+        plt.ylabel('|FFT(R/R(%s))|' % name)
 
     def label(self, prefix=None, gloss="", suffix=""):
         if not prefix:
@@ -914,8 +916,8 @@ class NeutronProbe(Probe):
 class ProbeSet(Probe):
     def __init__(self, probes, name=None):
         self.probes = list(probes)
-        self.R = numpy.hstack([p.R for p in self.probes])
-        self.dR = numpy.hstack([p.dR for p in self.probes])
+        self.R = np.hstack([p.R for p in self.probes])
+        self.dR = np.hstack([p.dR for p in self.probes])
         self.name = name if name is not None else self.probes[0].name
 
         back_refls = [f.back_reflectivity for f in self.probes]
@@ -935,12 +937,12 @@ class ProbeSet(Probe):
 
     def resynth_data(self):
         for p in self.probes: p.resynth_data()
-        self.R = numpy.hstack([p.R for p in self.probes])
+        self.R = np.hstack([p.R for p in self.probes])
     resynth_data.__doc__ = Probe.resynth_data.__doc__
 
     def restore_data(self):
         for p in self.probes: p.restore_data()
-        self.R = numpy.hstack([p.R for p in self.probes])
+        self.R = np.hstack([p.R for p in self.probes])
     restore_data.__doc__ = Probe.restore_data.__doc__
 
     def simulate_data(self, theory, noise=2.):
@@ -948,7 +950,7 @@ class ProbeSet(Probe):
         Simulate data, allowing for noise to be a dR array for each Q point.
         """
         Q, R = theory
-        dR = numpy.asarray(noise)
+        dR = np.asarray(noise)
         offset = 0
         for p in self.probes:
             n = len(p.Q)
@@ -961,19 +963,19 @@ class ProbeSet(Probe):
 
     @property
     def Q(self):
-        return numpy.hstack([p.Q for p in self.probes])
+        return np.hstack([p.Q for p in self.probes])
 
     @property
     def calc_Q(self):
-        return numpy.unique(numpy.hstack([p.calc_Q for p in self.probes]))
+        return np.unique(np.hstack([p.calc_Q for p in self.probes]))
 
     @property
     def dQ(self):
-        return numpy.hstack([p.dQ for p in self.probes])
+        return np.hstack([p.dQ for p in self.probes])
 
     @property
     def unique_L(self):
-        return numpy.unique(numpy.hstack([p.unique_L for p in self.probes]))
+        return np.unique(np.hstack([p.unique_L for p in self.probes]))
 
     def oversample(self, **kw):
         for p in self.probes:
@@ -984,12 +986,12 @@ class ProbeSet(Probe):
         # TODO: support wavelength dependent systems
         return self.probes[0].scattering_factors(material, density)
         # result = [p.scattering_factors(material, density) for p in self.probes]
-        # return [numpy.hstack(v) for v in zip(*result)]
+        # return [np.hstack(v) for v in zip(*result)]
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
     def apply_beam(self, calc_Q, calc_R, interpolation=0, **kw):
         result = [p.apply_beam(calc_Q, calc_R, **kw) for p in self.probes]
-        Q, R = [numpy.hstack(v) for v in zip(*result)]
+        Q, R = [np.hstack(v) for v in zip(*result)]
         return Q, R
 
     def fresnel(self, *args, **kw):
@@ -1002,7 +1004,7 @@ class ProbeSet(Probe):
     save.__doc__ = Probe.save.__doc__
 
     def plot(self, theory=None, **kw):
-        import pylab
+        import matplotlib.pyplot as plt
         for p, th in self.parts(theory):
             p.plot(theory=th, **kw)
     plot.__doc__ = Probe.plot.__doc__
@@ -1289,7 +1291,7 @@ def _data_as_probe(entry, probe_args, T, L, dT, dL, dR, FWHM, radiation,
     # choosing the smallest positive uncertainty to replace the invalid values.
     if dR is not None:
         data_dR = dR(data_Q, data_R, data_dR) if callable(dR) else data_R * dR
-        data_dR[data_dR <= 0] = numpy.min(data_dR[data_dR > 0])
+        data_dR[data_dR <= 0] = np.min(data_dR[data_dR > 0])
 
     # support calculation of sld from material based on radiation type
     if radiation is not None:
@@ -1442,14 +1444,14 @@ def measurement_union(xs):
         if x is not None:
             TL |= set(zip(x.T, x.dT, x.L, x.dL))
     T, dT, L, dL = zip(*[item for item in TL])
-    T, dT, L, dL = [numpy.asarray(v) for v in (T, dT, L, dL)]
+    T, dT, L, dL = [np.asarray(v) for v in (T, dT, L, dL)]
 
     # Convert to Q, dQ
     Q = TL2Q(T, L)
     dQ = dTdL2dQ(T, dT, L, dL)
 
     # Sort by Q
-    idx = numpy.argsort(Q)
+    idx = np.argsort(Q)
     T, dT, L, dL, Q, dQ = T[idx], dT[idx], L[idx], dL[idx], Q[idx], dQ[idx]
     if abs(Q[1:] - Q[:-1]).any() < 1e-14:
         raise ValueError("Q is not unique")
@@ -1463,7 +1465,7 @@ def Qmeasurement_union(xs):
     for x in xs:
         if x is not None:
             Qset |= set(zip(x.Q, x.dQ))
-    Q, dQ = [numpy.array(v) for v in zip(*sorted(Qset))]
+    Q, dQ = [np.array(v) for v in zip(*sorted(Qset))]
     if abs(Q[1:] - Q[:-1]).any() < 1e-14:
         raise ValueError("Q values differ by less than 1e-14")
     return Q, dQ
@@ -1547,7 +1549,7 @@ class PolarizedNeutronProbe(object):
     restore_data.__doc__ = Probe.restore_data.__doc__
 
     def simulate_data(self, theory, noise=2.):
-        if noise is None or numpy.isscalar(noise):
+        if noise is None or np.isscalar(noise):
             noise = [noise]*4
         for data_k, theory_k, noise_k in zip(self.xs, theory, noise):
             if data_k is not None:
@@ -1609,14 +1611,14 @@ class PolarizedNeutronProbe(object):
         # TODO: shouldn't clone code from probe
         Q = TL2Q(T=T, L=L)
 
-        idx = numpy.argsort(Q)
+        idx = np.argsort(Q)
         self.calc_T = T[idx]
         self.calc_L = L[idx]
         self.calc_Qo = Q[idx]
 
         # Only keep the scattering factors that you need
-        self.unique_L = numpy.unique(self.calc_L)
-        self._L_idx = numpy.searchsorted(self.unique_L, L)
+        self.unique_L = np.unique(self.calc_L)
+        self._L_idx = np.searchsorted(self.unique_L, L)
 
     def apply_beam(self, Q, R, resolution=True, interpolation=0):
         """
@@ -1652,7 +1654,7 @@ class PolarizedNeutronProbe(object):
 
         Qth, Rth = theory
         return [None if x_data is None
-                else (x_data.Q, numpy.interp(x_data.Q, Qth, x_th))
+                else (x_data.Q, np.interp(x_data.Q, Qth, x_th))
                 for x_data, x_th in zip(self.xs, Rth)]
 
 
@@ -1716,7 +1718,7 @@ class PolarizedNeutronProbe(object):
 
     def plot_SA(self, theory=None, label=None, plot_shift=None,
                 **kwargs):
-        import pylab
+        import matplotlib.pyplot as plt
         if self.pp is None or self.mm is None:
             raise TypeError("cannot form spin asymmetry plot without ++ and --")
 
@@ -1730,28 +1732,28 @@ class PolarizedNeutronProbe(object):
                 res = (self.show_resolution if self.show_resolution is not None
                        else Probe.show_resolution)
                 dQ = pp.dQ if res else None
-                pylab.errorbar(Q, SA, yerr=dSA, xerr=dQ, fmt='.', capsize=0,
-                               label=pp.label(prefix=label, gloss='data'),
-                               transform=trans,
-                               color=c['light'])
+                plt.errorbar(Q, SA, yerr=dSA, xerr=dQ, fmt='.', capsize=0,
+                             label=pp.label(prefix=label, gloss='data'),
+                             transform=trans,
+                             color=c['light'])
             else:
-                pylab.plot(Q, SA, '.',
-                           label=pp.label(prefix=label, gloss='data'),
-                           transform=trans,
-                           color=c['light'])
+                plt.plot(Q, SA, '.',
+                         label=pp.label(prefix=label, gloss='data'),
+                         transform=trans,
+                         color=c['light'])
         if theory is not None:
             mm, mp, pm, pp = theory
             Q, SA, _ = spin_asymmetry(pp[0], pp[1], None, mm[0], mm[1], None)
-            pylab.plot(Q, SA,
-                       label=self.pp.label(prefix=label, gloss='theory'),
-                       transform=trans,
-                       color=c['dark'])
-        pylab.xlabel(r'Q (\AA^{-1})')
-        pylab.ylabel(r'spin asymmetry $(R^{++} -\, R^{--}) / (R^{++} +\, R^{--})$')
-        pylab.legend(numpoints=1)
+            plt.plot(Q, SA,
+                     label=self.pp.label(prefix=label, gloss='theory'),
+                     transform=trans,
+                     color=c['dark'])
+        plt.xlabel(r'Q (\AA^{-1})')
+        plt.ylabel(r'spin asymmetry $(R^{++} -\, R^{--}) / (R^{++} +\, R^{--})$')
+        plt.legend(numpoints=1)
 
     def _xs_plot(self, plotter, theory=None, **kwargs):
-        import pylab
+        import matplotlib.pyplot as plt
         # Plot available cross sections
         if theory is None:
             theory = (None, None, None, None)
@@ -1795,10 +1797,10 @@ def spin_asymmetry(Qp, Rp, dRp, Qm, Rm, dRm):
                             {(R_{++} + R_{--})^4}
 
     """
-    Rm = numpy.interp(Qp, Qm, Rm)
+    Rm = np.interp(Qp, Qm, Rm)
     v = (Rp-Rm)/(Rp+Rm)
     if dRp is not None:
-        dRm = numpy.interp(Qp, Qm, dRm)
+        dRm = np.interp(Qp, Qm, dRm)
         dvsq = 4 * ((Rp*dRm)**2 + (Rm*dRp)**2) / (Rp+Rm)**4
         dvsq[dvsq < 0] = 0
         return Qp, v, sqrt(dvsq)
@@ -1815,12 +1817,12 @@ def _interpolate_Q(Q, dQ, n):
     """
     if n > 0:
         # Extend the Q-range by 1/2 interval on either side
-        Q = numpy.hstack((0.5*(3.*Q[0]-Q[1]), Q, 0.5*(3.*Q[-1]-Q[-2])))
-        dQ = numpy.hstack((0.5*(3.*dQ[0]-dQ[1]), dQ, 0.5*(3.*dQ[-1]-dQ[-2])))
-        index = numpy.arange(0, len(Q), dtype='d')
-        subindex = numpy.arange(0, (n+1)*(len(Q)-1)+1, dtype='d')/(n+1.)
-        Q = numpy.interp(subindex, index, Q)
-        dQ = numpy.interp(subindex, index, dQ)
+        Q = np.hstack((0.5*(3.*Q[0]-Q[1]), Q, 0.5*(3.*Q[-1]-Q[-2])))
+        dQ = np.hstack((0.5*(3.*dQ[0]-dQ[1]), dQ, 0.5*(3.*dQ[-1]-dQ[-2])))
+        index = np.arange(0, len(Q), dtype='d')
+        subindex = np.arange(0, (n+1)*(len(Q)-1)+1, dtype='d')/(n+1.)
+        Q = np.interp(subindex, index, Q)
+        dQ = np.interp(subindex, index, dQ)
     return Q, dQ
 
 class PolarizedQProbe(PolarizedNeutronProbe):

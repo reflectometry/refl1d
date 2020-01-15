@@ -2,7 +2,7 @@
 Freeform modeling with B-Splines
 """
 
-import numpy
+import numpy as np
 from numpy import inf
 from bumps.parameter import Parameter as Par
 from bumps.bspline import pbs, bspline
@@ -105,8 +105,8 @@ class FreeformInterface01(Layer):
         thickness = self.thickness.value
         left_rho, left_irho = self.below.sld(probe)
         right_rho, right_irho = self.above.sld(probe)
-        z = numpy.hstack((0, sorted([v.value for v in self.z]), 1))
-        vf = numpy.hstack((0, sorted([v.value for v in self.vf]), 1))
+        z = np.hstack((0, sorted([v.value for v in self.z]), 1))
+        vf = np.hstack((0, sorted([v.value for v in self.vf]), 1))
         Pw, Pz = slabs.microslabs(thickness)
         t = Pz/thickness
         offset, profile = pbs(z, vf, t, parametric=False, clamp=True)
@@ -162,23 +162,23 @@ class FreeInterface(Layer):
     def render(self, probe, slabs):
         left_rho, left_irho = self.below.sld(probe)
         right_rho, right_irho = self.above.sld(probe)
-        z = numpy.hstack((0, numpy.cumsum([v.value for v in self.dz])))
-        p = numpy.hstack((0, numpy.cumsum([v.value for v in self.dp])))
+        z = np.hstack((0, np.cumsum([v.value for v in self.dz])))
+        p = np.hstack((0, np.cumsum([v.value for v in self.dp])))
         if p[-1] == 0:
             p[-1] = 1
         p /= p[-1]
         Pw, Pz = slabs.microslabs(z[-1])
         _, profile = pbs(z, p, Pz, parametric=False, clamp=True)
-        profile = numpy.clip(profile, 0, 1)
+        profile = np.clip(profile, 0, 1)
         Pw, profile = util.merge_ends(Pw, profile, tol=1e-3)
         Prho = (1-profile)*left_rho + profile*right_rho
         Pirho = (1-profile)*left_irho + profile*right_irho
         slabs.extend(rho=[Prho], irho=[Pirho], w=Pw)
 
 def _profile(left, right, control, z, t):
-    cy = numpy.hstack((left, [p.value for p in control], right))
+    cy = np.hstack((left, [p.value for p in control], right))
     if len(z) > 0:
-        cx = numpy.hstack((0, [p.value for p in z], 1))
+        cx = np.hstack((0, [p.value for p in z], 1))
         return pbs(cx, cy, t)
     else:
         return bspline(cy, t)

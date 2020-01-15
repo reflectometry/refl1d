@@ -4,7 +4,8 @@
 Convert staj files to Refl1D models
 """
 import os
-import numpy
+
+import numpy as np
 from numpy import tan, cos, sqrt, radians, degrees, pi
 from bumps import parameter
 
@@ -126,11 +127,11 @@ def _load_probe(s, name, xs):
 
     if s.data_file == "":
         filename = "simulated"
-        Q = numpy.linspace(s.Qmin, s.Qmax, s.num_Q)
+        Q = np.linspace(s.Qmin, s.Qmax, s.num_Q)
         R, dR = None, None
     else:
         filename = s.data_file
-        Q, R, dR = numpy.loadtxt(s.data_file+xs).T
+        Q, R, dR = np.loadtxt(s.data_file+xs).T
 
     # Use Q and wavelength L from the staj file to determine angle T
     L = s.wavelength
@@ -243,13 +244,13 @@ def model_to_mlayer(model, datafile):
         thickness = layer.thickness.value
         roughness = layer.interface.value
         values.append((rho, irho, thickness, roughness))
-    vectors = [numpy.array(v) for v in zip(*values)]
+    vectors = [np.array(v) for v in zip(*values)]
 
     # If back reflectivity, reverse the layers and move the interfaces
     # from the top of the layer to the bottom.
     if probe.back_reflectivity:
         vectors = [v[::-1] for v in vectors]
-        vectors[3] = numpy.roll(vectors[3], 1)
+        vectors[3] = np.roll(vectors[3], 1)
         staj.num_top, staj.num_bottom = staj.num_bottom, staj.num_top
 
     staj.rho, staj.irho, staj.thickness, staj.sigma_roughness = vectors
@@ -261,12 +262,12 @@ def model_to_mlayer(model, datafile):
         # old top layer, and a thickness large enough to accommodate
         # the interface between the top layer and the second layer.
         while len(staj.rho) < 4:
-            staj.rho = numpy.hstack((staj.rho[0], staj.rho))
-            staj.irho = numpy.hstack((staj.irho[0], staj.irho))
-            staj.thickness = numpy.hstack((0,
-                                           3.5*staj.sigma_roughness[1],
-                                           staj.thickness[1:]))
-            staj.sigma_roughness = numpy.hstack((0, staj.sigma_roughness))
+            staj.rho = np.hstack((staj.rho[0], staj.rho))
+            staj.irho = np.hstack((staj.irho[0], staj.irho))
+            staj.thickness = np.hstack((0,
+                                        3.5*staj.sigma_roughness[1],
+                                        staj.thickness[1:]))
+            staj.sigma_roughness = np.hstack((0, staj.sigma_roughness))
 
         staj.split_sections()
 
@@ -299,7 +300,7 @@ def _mlayer_magnetic_to_stack(s, name, layers):
         name += " "
 
     # Construct slabs
-    magnetic_offset = numpy.cumsum(s.thickness-s.mthickness)
+    magnetic_offset = np.cumsum(s.thickness-s.mthickness)
     slabs = []
     nlayers = len(s.rho)
     for i in range(nlayers-1, -1, -1):

@@ -39,7 +39,7 @@ and anchoring them to the structure.
 """
 from __future__ import print_function
 
-import numpy
+import numpy as np
 from numpy import inf
 from bumps.parameter import Parameter, flatten
 from bumps.mono import monospline
@@ -252,8 +252,8 @@ class MagnetismStack(BaseMagnetism):
         return result
 
     def render(self, probe, slabs, thickness, anchor, sigma):
-        w = numpy.array([p.value for p in self.weight])
-        w *= thickness / numpy.sum(w)
+        w = np.array([p.value for p in self.weight])
+        w *= thickness / np.sum(w)
         rhoM = [p.value for p in self.rhoM]
         thetaM = [p.value for p in self.thetaM]
         #interfaceM = [p.value for p in self.interfaceM]
@@ -319,10 +319,10 @@ class MagnetismTwist(BaseMagnetism):
 
     def render(self, probe, slabs, thickness, anchor, sigma):
         w, z = slabs.microslabs(thickness)
-        rhoM = numpy.linspace(self.rhoM[0].value,
-                              self.rhoM[1].value, len(z))
-        thetaM = numpy.linspace(self.thetaM[0].value,
-                                self.thetaM[1].value, len(z))
+        rhoM = np.linspace(self.rhoM[0].value,
+                           self.rhoM[1].value, len(z))
+        thetaM = np.linspace(self.thetaM[0].value,
+                             self.thetaM[1].value, len(z))
         slabs.add_magnetism(anchor=anchor,
                             w=w, rhoM=rhoM, thetaM=thetaM,
                             sigma=sigma)
@@ -390,24 +390,24 @@ class FreeMagnetism(BaseMagnetism):
     def profile(self, Pz, thickness):
         mbelow, tbelow = 0, (self.thetaM[0].value if self.thetaM else 270)
         mabove, tabove = 0, (self.thetaM[-1].value if self.thetaM else 270)
-        z = numpy.sort([0]+[p.value for p in self.z]+[1])*thickness
+        z = np.sort([0]+[p.value for p in self.z]+[1])*thickness
 
-        rhoM = numpy.hstack((mbelow, [p.value for p in self.rhoM], mabove))
+        rhoM = np.hstack((mbelow, [p.value for p in self.rhoM], mabove))
         PrhoM = monospline(z, rhoM, Pz)
 
-        if numpy.any(numpy.isnan(PrhoM)):
+        if np.any(np.isnan(PrhoM)):
             print("in mono with bad PrhoM")
             print("z %s"%str(z))
             print("p %s"%str([p.value for p in self.z]))
 
 
         if len(self.thetaM) > 1:
-            thetaM = numpy.hstack((tbelow, [p.value for p in self.thetaM], tabove))
+            thetaM = np.hstack((tbelow, [p.value for p in self.thetaM], tabove))
             PthetaM = monospline(z, thetaM, Pz)
         elif len(self.thetaM) == 1:
-            PthetaM = self.thetaM.value * numpy.ones_like(PrhoM)
+            PthetaM = self.thetaM.value * np.ones_like(PrhoM)
         else:
-            PthetaM = 270*numpy.ones_like(PrhoM)
+            PthetaM = 270*np.ones_like(PrhoM)
         return PrhoM, PthetaM
 
     def render(self, probe, slabs, thickness, anchor, sigma):

@@ -76,7 +76,7 @@ the bounds.  Bounds on the oscillation are easier to control using
 # - Newton methods: Hessian should point back to domain
 # - Direct methods: random walk should be biased toward the domain
 # - moderately complicated
-import numpy
+import numpy as np
 from numpy import inf, real, imag
 from bumps.parameter import  Parameter as Par
 from bumps.cheby import cheby_val, cheby_coeff
@@ -197,7 +197,7 @@ class ChebyVF(Layer):
         Pw, Pz = slabs.microslabs(thickness)
         t = Pz/thickness
         vf = _profile([p.value for p in self.vf], t, self.method)
-        vf = numpy.clip(vf, 0, 1)
+        vf = np.clip(vf, 0, 1)
         Pw, vf = util.merge_ends(Pw, vf, tol=1e-3)
         P = M*vf + S*(1-vf)
         Pr, Pi = real(P), imag(P)

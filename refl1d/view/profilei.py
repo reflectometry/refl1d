@@ -4,7 +4,8 @@ Reflectometry profile interactor.
 from __future__ import division, print_function
 
 import math
-import numpy
+
+import numpy as np
 from numpy import inf
 from .binder import BindArtist, pixel_to_data
 from .config import rho_color, rhoI_color, rhoM_color, thetaM_color
@@ -153,7 +154,7 @@ class ProfileInteractor(object):
                 offset += dx
                 boundary.append(offset)
         boundary.append(inf)
-        self.boundary = numpy.asarray(boundary)
+        self.boundary = np.asarray(boundary)
 
     def sample_labels(self):
         return [L.name for L in self.experiment.sample]
@@ -166,7 +167,7 @@ class ProfileInteractor(object):
         """Make layer containing z the active layer."""
         # Note: sample_layer needs layer_num to be an int, rather than a
         # numpy int64, since it tests for int vs. string vs. material.
-        self.layer_num = int(numpy.searchsorted(self.boundary, z) - 1)
+        self.layer_num = int(np.searchsorted(self.boundary, z) - 1)
         layer = self.sample_layer(self.layer_num)
 
         # Reset the interface markers

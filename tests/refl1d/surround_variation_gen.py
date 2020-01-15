@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 from numpy import sqrt
 from numpy.linalg import norm
 from numpy.random import randn
@@ -22,7 +22,7 @@ def gendata(sample, filename, T, slits=None, dLoL=0.03, counts=None):
     probe.I = I  # Needed for stitching
 
     # Save to file
-    data = numpy.array((probe.Q,probe.dQ,probe.R,probe.dR,probe.L))
+    data = np.array((probe.Q,probe.dQ,probe.R,probe.dR,probe.L))
     header = """\
 #F /SNSlocal/REF_L/2007_1_4B_SCI/2893/NeXus/REF_L_1001.nxs
 #E 1174593179.87
@@ -39,7 +39,7 @@ def gendata(sample, filename, T, slits=None, dLoL=0.03, counts=None):
 """%dict(angle=T,sample=str(sample))
     outfile = open(filename,'w')
     outfile.write(header)
-    numpy.savetxt(outfile, data.T)
+    np.savetxt(outfile, data.T)
     outfile.close()
 
     return probe
@@ -66,19 +66,19 @@ def main():
         sets.append((p1,p2))
     #    p1.plot(); p2.plot()
     #stitch_sets(sets)
-    #import pylab; pylab.show()
+    #import matplotlib.pyplot as plt; plt.show()
 
 def plot_log(data, theory=None):
-    import pylab
+    import matplotlib.pyplot as plt
     Q,dQ,R,dR = data
-    #pylab.errorbar(Q, R, yerr=dR, xerr=dQ, fmt='.')
-    pylab.plot(Q, R, "-x",hold=True)
+    #plt.errorbar(Q, R, yerr=dR, xerr=dQ, fmt='.')
+    plt.plot(Q, R, "-x",hold=True)
     if theory is not None:
         Q,R = theory
-        pylab.plot(Q, R, hold=True)
-    pylab.yscale('log')
-    pylab.xlabel('Q (inv Angstroms)')
-    pylab.ylabel('Reflectivity')
+        plt.plot(Q, R, hold=True)
+    plt.yscale('log')
+    plt.xlabel('Q (inv Angstroms)')
+    plt.ylabel('Reflectivity')
 
 #TODO: move stitch from an example to a test suite
 def stitch_sets(sets):

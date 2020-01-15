@@ -1,5 +1,5 @@
 from math import *
-import numpy
+import numpy as np
 from numpy.linalg import norm
 from refl1d import resolution as res, ncnrdata, snsdata, instrument as inst
 
@@ -35,7 +35,7 @@ def test():
     # approximation.
     Tlo, Thi = 0.2, 0.5
     sTlo, sbelow, sabove = 0.2, 0.4, 3
-    Ts = numpy.array([Tlo/2, Tlo, (Tlo+Thi)/2, Thi, Thi*2])
+    Ts = np.array([Tlo/2, Tlo, (Tlo+Thi)/2, Thi, Thi*2])
     slits = (sbelow, sTlo, sTlo*(Tlo+Thi)/2/Tlo, sTlo*Thi/Tlo, sabove)
     assert norm(res.slit_widths(T=Ts, slits_at_Tlo=sTlo, Tlo=Tlo, Thi=Thi,
                 slits_below=sbelow, slits_above=sabove)[0]-slits) < 1e-14

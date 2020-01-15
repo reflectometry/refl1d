@@ -7,7 +7,7 @@ import wx
 
 IS_MAC = (wx.Platform == '__WXMAC__')
 
-import numpy
+import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.axes   import Subplot
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
@@ -245,7 +245,7 @@ class ModelView(wx.Panel):
         backend_wx call this function. KEEP it
         """
         return None
-        
+
     def GetTitle(self):
         """
         backend_wx calls this function.
@@ -269,6 +269,6 @@ class ModelView(wx.Panel):
         return True
 
     def quit_on_error(self):
-        numpy.seterr(all='raise')
+        np.seterr(all='raise')
         ProfileInteractor._debug = True
         BaseInteractor._debug = True

@@ -31,7 +31,7 @@ Magnetic data has multiple cross sections and often has fixed slits:
 For simulation, you need a probe and a sample:
 
     >>> instrument = NCNR.ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
-    >>> probe = instrument.probe(T=numpy.linspace(0, 5, 51))
+    >>> probe = instrument.probe(T=np.linspace(0, 5, 51))
     >>> probe.plot_resolution()
     >>> sample = silicon(0, 10) | gold(100, 10) | air
     >>> M = Experiment(probe=probe, sample=sample)
@@ -45,7 +45,7 @@ And for magnetic:
     >>> #M = Experiment(probe=probe, sample=sample)
     >>> #M.simulate_data()
     >>> #M.plot()
-    >>> #probe = instrument.simulate_magnetic(sample, T=numpy.linspace(0, 5, 51))
+    >>> #probe = instrument.simulate_magnetic(sample, T=np.linspace(0, 5, 51))
     >>> #h = pylab.plot(probe.Q, probe.dQ)
     >>> #h = pylab.ylabel('resolution (1-sigma)')
     >>> #h = pylab.xlabel('Q (inv A)')
@@ -351,7 +351,7 @@ def _counting_time(instrument, sample, uncertainty,
         R &=& D/I //
         \Delta R &=& \sqrt(D)/I
     """
-
+    import numpy as np
     from .experiment import Experiment
     probe = self.probe(**kw)
     M = Experiment(probe=probe, sample=sample)
@@ -359,8 +359,8 @@ def _counting_time(instrument, sample, uncertainty,
         I = 1/(M.fresnel()* uncertainty**2)
     else: # Q^4 counting
         I = 1/(100*probe.Q**4 * uncertainty**2)
-    D = numpy.random.poisson( Rth * I )
-    R, dR = D/I, numpy.sqrt(D)/I
+    D = np.random.poisson( Rth * I )
+    R, dR = D/I, np.sqrt(D)/I
     probe.data = R, dR
 
     return M

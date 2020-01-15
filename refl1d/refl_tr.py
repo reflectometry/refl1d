@@ -258,7 +258,7 @@ def check2(t=200, rho=4.66):
     #print("shape", wave.shape)
     r = wave[0, 1]
 
-    from matplotlib import pyplot as plt
+    import matplotlib.pyplot as plt
     plt.plot(q, r.real, '-b', label='real')
     plt.plot(q, r.imag, '-r', label='imag')
     plt.plot(q, abs(r**2), '-g', label='magnitude')
@@ -326,7 +326,7 @@ def check3(t=200, rho=4.66):
     #print("shape", layers.shape)
     r = wave[0, 1]
 
-    from matplotlib import pyplot as plt
+    import matplotlib.pyplot as plt
     from mpl_toolkits.axes_grid.inset_locator import InsetPosition
 
     scale = q*0+1
@@ -354,7 +354,7 @@ def check3(t=200, rho=4.66):
     #print("r^2", abs(r**2))
 
 if __name__ == "__main__":
-    from matplotlib import pyplot as plt
+    import matplotlib.pyplot as plt
     check3()
     """
     plt.subplot(211)

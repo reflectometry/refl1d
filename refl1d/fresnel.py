@@ -64,7 +64,7 @@ class Fresnel(object):
     __call__ = reflectivity
 
 def test():
-    import numpy
+    import numpy as np
     from . import abeles
 
     # Rough silicon with an anomolously large absorbtion
@@ -78,14 +78,14 @@ def test():
     Mirho = [[Virho, irho]]
     Msigma = [sigma]
 
-    Q = numpy.linspace(-0.1, 0.1, 101, 'd')
+    Q = np.linspace(-0.1, 0.1, 101, 'd')
     Rf = fresnel(Q)
     rm = abeles.refl(Q/2, depth=Mw, rho=Mrho, irho=Mirho, sigma=Msigma)
     Rm = abs(rm)**2
 
     #print "Rm", Rm
     #print "Rf", Rf
-    relerr = numpy.linalg.norm((Rf-Rm)/Rm)
+    relerr = np.linalg.norm((Rf-Rm)/Rm)
     assert relerr < 1e-14, "relative error is %g"%relerr
 
 if __name__ == "__main__":

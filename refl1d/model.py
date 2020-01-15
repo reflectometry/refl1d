@@ -28,7 +28,7 @@ __all__ = ['Repeat', 'Slab', 'Stack', 'Layer']
 from copy import copy, deepcopy
 import json
 
-import numpy
+import numpy as np
 from numpy import (inf, nan, pi, sin, cos, tan, sqrt, exp, log, log10,
                    degrees, radians, floor, ceil)
 import periodictable
@@ -358,39 +358,39 @@ class Stack(Layer):
 
     def _plot(self, dz=1, roughness_limit=0):
         # TODO: unused?
-        import pylab
+        import matplotlib.pyplot as plt
         from . import profile, material, probe
-        neutron_probe = probe.NeutronProbe(T=numpy.arange(0, 5, 100), L=5.)
-        xray_probe = probe.XrayProbe(T=numpy.arange(0, 5, 100), L=1.54)
+        neutron_probe = probe.NeutronProbe(T=np.arange(0, 5, 100), L=5.)
+        xray_probe = probe.XrayProbe(T=np.arange(0, 5, 100), L=1.54)
         slabs = profile.Microslabs(1, dz=dz)
 
-        pylab.subplot(211)
+        plt.subplot(211)
         cache = material.ProbeCache(xray_probe)
         slabs.clear()
         self.render(cache, slabs)
         z, rho, irho = slabs.step_profile()
-        pylab.plot(z, rho, '-g', z, irho, '-b')
+        plt.plot(z, rho, '-g', z, irho, '-b')
         z, rho, irho = slabs.smooth_profile(dz=1, roughness_limit=roughness_limit)
-        pylab.plot(z, rho, ':g', z, irho, ':b')
-        pylab.legend(['rho', 'irho'])
-        pylab.xlabel('depth (A)')
-        pylab.ylabel('SLD (10^6 inv A**2)')
-        pylab.text(0.05, 0.95, r"Cu-$K_\alpha$ X-ray", va="top", ha="left",
-                   transform=pylab.gca().transAxes)
+        plt.plot(z, rho, ':g', z, irho, ':b')
+        plt.legend(['rho', 'irho'])
+        plt.xlabel('depth (A)')
+        plt.ylabel('SLD (10^6 inv A**2)')
+        plt.text(0.05, 0.95, r"Cu-$K_\alpha$ X-ray", va="top", ha="left",
+                 transform=plt.gca().transAxes)
 
-        pylab.subplot(212)
+        plt.subplot(212)
         cache = material.ProbeCache(neutron_probe)
         slabs.clear()
         self.render(cache, slabs)
         z, rho, irho = slabs.step_profile()
-        pylab.plot(z, rho, '-g', z, irho, '-b')
+        plt.plot(z, rho, '-g', z, irho, '-b')
         z, rho, irho = slabs.smooth_profile(dz=1, roughness_limit=roughness_limit)
-        pylab.plot(z, rho, ':g', z, irho, ':b')
-        pylab.legend(['rho', 'irho'])
-        pylab.xlabel('depth (A)')
-        pylab.ylabel('SLD (10^6 inv A**2)')
-        pylab.text(0.05, 0.95, "5 A neutron", va="top", ha="left",
-                   transform=pylab.gca().transAxes)
+        plt.plot(z, rho, ':g', z, irho, ':b')
+        plt.legend(['rho', 'irho'])
+        plt.xlabel('depth (A)')
+        plt.ylabel('SLD (10^6 inv A**2)')
+        plt.text(0.05, 0.95, "5 A neutron", va="top", ha="left",
+                 transform=plt.gca().transAxes)
 
 
     # Stacks as lists

@@ -64,7 +64,7 @@ def run_errors(**kw):
     """
     import os
     import sys
-    import pylab
+    import matplotlib.pyplot as plt
 
     load = {'model': None, 'store': None, 'nshown': 50, 'random': True}
     show = {'align': 'auto', 'plots': 2,
@@ -99,7 +99,7 @@ def run_errors(**kw):
     errors = reload_errors(**load)
     print("showing...")
     show_errors(errors, **show)
-    pylab.show()
+    plt.show()
     raise KeyboardInterrupt()  # Force refl1d to terminate
 
 def _usage():
@@ -238,43 +238,43 @@ def show_errors(errors, contours=_CONTOURS, npoints=200,
     be "<store>/<model>".  The program will add '-err#.png' where '#'
     is the number of the plot.
     """
-    import pylab
+    import matplotlib.pyplot as plt
 
     if plots == 0: # Don't create plots, just save the data
         _save_profile_data(errors, contours=contours, npoints=npoints,
                            align=align, save=save)
         _save_residual_data(errors, contours=contours, save=save)
     elif plots == 1: # Subplots for profiles/residuals
-        pylab.subplot(211)
+        plt.subplot(211)
         show_profiles(errors, contours=contours, npoints=npoints, align=align)
-        pylab.subplot(212)
+        plt.subplot(212)
         show_residuals(errors, contours=contours)
         if save:
-            pylab.savefig(save+"-err.png")
+            plt.savefig(save+"-err.png")
     elif plots == 2:  # Separate plots for profiles/residuals
         show_profiles(errors, contours=contours, npoints=npoints, align=align)
         if save:
-            pylab.savefig(save+"-err1.png")
-        pylab.figure()
+            plt.savefig(save+"-err1.png")
+        plt.figure()
         show_residuals(errors, contours=contours)
         if save:
-            pylab.savefig(save+"-err2.png")
+            plt.savefig(save+"-err2.png")
     else: # Multiple plots
         profiles, slabs, Q, residuals = errors
         fignum = 1
         for m in profiles.keys():
-            pylab.figure()
+            plt.figure()
             show_profiles(errors=({m:profiles[m]}, {m:slabs[m]}, None, None),
                           contours=contours, npoints=npoints, align=align)
             if save:
-                pylab.savefig(save+"-err%d.png"%fignum)
+                plt.savefig(save+"-err%d.png"%fignum)
             fignum += 1
         for m in residuals.keys():
-            pylab.figure()
+            plt.figure()
             show_residuals(errors=(None, None, {m:Q[m]}, {m:residuals[m]}),
                            contours=contours)
             if save:
-                pylab.savefig(save+"-err%d.png"%fignum)
+                plt.savefig(save+"-err%d.png"%fignum)
             fignum += 1
 
 def show_profiles(errors, align, contours, npoints):
@@ -340,15 +340,15 @@ def _write_file(path, data, title, columns):
 # ===== Plotting functions =====
 
 def _profiles_labels(magnetic):
-    import pylab
-    pylab.xlabel('z (A)')
+    import matplotlib.pyplot as plt
+    plt.xlabel('z (A)')
     if magnetic:
-        pylab.ylabel('rho (1/A^2)')
+        plt.ylabel('rho (1/A^2)')
     else:
-        pylab.ylabel('rho, rhoM (1/A^2)')
+        plt.ylabel('rho, rhoM (1/A^2)')
 
 def _profiles_overplot(profiles):
-    import pylab
+    import matplotlib.pyplot as plt
 
     alpha = 0.1
     any_magnetic = False
@@ -356,25 +356,25 @@ def _profiles_overplot(profiles):
         if len(p[0]) == 3:
             rho_color = next_color()
             for z, rho, _ in p[1:]:
-                pylab.plot(z, rho, '-', color=rho_color, alpha=alpha)
+                plt.plot(z, rho, '-', color=rho_color, alpha=alpha)
             # Plot best
             z, rho, _ = p[0]
-            pylab.plot(z, rho, '-', color=dhsv(rho_color, dv=-0.2))
+            plt.plot(z, rho, '-', color=dhsv(rho_color, dv=-0.2))
         else:
             any_magnetic = True
             rho_color = next_color()
             rhoM_color = next_color()
             for z, rho, _, rhoM, _ in p[1:]:
-                pylab.plot(z, rho, '-', color=rho_color, alpha=alpha)
-                pylab.plot(z, rhoM, '-', color=rhoM_color, alpha=alpha)
+                plt.plot(z, rho, '-', color=rho_color, alpha=alpha)
+                plt.plot(z, rhoM, '-', color=rhoM_color, alpha=alpha)
             # Plot best
             z, rho, _, rhoM, _ = p[0]
-            pylab.plot(z, rho, '-', color=dhsv(rho_color, dv=-0.2))
-            pylab.plot(z, rhoM, '-', color=dhsv(rhoM_color, dv=-0.2))
+            plt.plot(z, rho, '-', color=dhsv(rho_color, dv=-0.2))
+            plt.plot(z, rhoM, '-', color=dhsv(rhoM_color, dv=-0.2))
     _profiles_labels(any_magnetic)
 
 def _profiles_contour(profiles, contours=_CONTOURS, npoints=200):
-    import pylab
+    import matplotlib.pyplot as plt
 
     any_magnetic = False
     for p in profiles.values():
@@ -388,7 +388,7 @@ def _profiles_contour(profiles, contours=_CONTOURS, npoints=200):
             # Plot the quantiles
             plot_quantiles(zp, rho, contours, rho_color)
             # Plot the best
-            pylab.plot(zp, rho[0], '-', color=dhsv(rho_color, dv=-0.2))
+            plt.plot(zp, rho[0], '-', color=dhsv(rho_color, dv=-0.2))
         else:
             any_magnetic = True
             rho_color = next_color()
@@ -400,37 +400,37 @@ def _profiles_contour(profiles, contours=_CONTOURS, npoints=200):
             plot_quantiles(zp, rho, contours, rho_color)
             plot_quantiles(zp, rhoM, contours, rhoM_color)
             # Plot the best
-            pylab.plot(zp, rho[0], '-', color=dhsv(rho_color, dv=-0.2))
-            pylab.plot(zp, rhoM[0], '-', color=dhsv(rhoM_color, dv=-0.2))
+            plt.plot(zp, rho[0], '-', color=dhsv(rho_color, dv=-0.2))
+            plt.plot(zp, rhoM[0], '-', color=dhsv(rhoM_color, dv=-0.2))
     _profiles_labels(any_magnetic)
 
 def _residuals_labels():
-    import pylab
+    import matplotlib.pyplot as plt
 
-    pylab.xlabel('Q (1/A)')
-    pylab.ylabel('Residuals')
+    plt.xlabel('Q (1/A)')
+    plt.ylabel('Residuals')
 
 def _residuals_overplot(Q, residuals):
-    import pylab
+    import matplotlib.pyplot as plt
     alpha = 0.4
     shift = 0
     for m, r in residuals.items():
         color = next_color()
-        pylab.plot(Q[m], shift+r[:, 1:], '.', markersize=1,
-                   color=color, alpha=alpha)
-        pylab.plot(Q[m], shift+r[:, 0], '.', markersize=1,
-                   color=dhsv(color, dv=-0.2)) # best
+        plt.plot(Q[m], shift+r[:, 1:], '.', markersize=1,
+                 color=color, alpha=alpha)
+        plt.plot(Q[m], shift+r[:, 0], '.', markersize=1,
+                 color=dhsv(color, dv=-0.2)) # best
         shift += 5
     _residuals_labels()
 
 def _residuals_contour(Q, residuals, contours=_CONTOURS):
-    import pylab
+    import matplotlib.pyplot as plt
     shift = 0
     for m, r in residuals.items():
         color = next_color()
         plot_quantiles(Q[m], shift+r.T, contours, color)
-        pylab.plot(Q[m], shift+r[:, 0], '.', markersize=1,
-                   color=dhsv(color, dv=-0.2)) # best
+        plt.plot(Q[m], shift+r[:, 0], '.', markersize=1,
+                 color=dhsv(color, dv=-0.2)) # best
         shift += 5
     _residuals_labels()
 

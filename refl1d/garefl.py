@@ -38,7 +38,7 @@ from os import getpid
 from ctypes import CDLL, c_int, c_double, c_void_p, c_char_p, byref
 from threading import current_thread
 
-import numpy
+import numpy as np
 from numpy import empty, zeros, array
 
 from bumps.parameter import Parameter
@@ -203,8 +203,8 @@ class GareflModel(object):
         self.num_models = MODELS.value
         self.num_pars = self.dll.ex_npars(self.models)
         lo, hi = self._par_bounds()
-        small = numpy.max(numpy.vstack((abs(lo), abs(hi))), axis=0) < 1e-3
-        self.scale = numpy.where(small, 1e6, 1)
+        small = np.max(np.vstack((abs(lo), abs(hi))), axis=0) < 1e-3
+        self.scale = np.where(small, 1e6, 1)
 
         # TODO: better way to force recalc on load
         self.update_model(self.par_values())

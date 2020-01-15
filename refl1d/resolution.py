@@ -415,13 +415,14 @@ def resolution(Q=None, s=None, d=None, L=None, dLoL=None, Tlo=None, Thi=None,
 
 
 def demo():
-    import pylab
     from numpy import linspace, exp, real, conj, sin, radians
+    import matplotlib.pyplot as plt
+
     # Values from volfrac example in garefl
     T = linspace(0, 9, 140)
     Q = 4*pi*sin(radians(T))/5.0042
     dQ = resolution(Q, s=0.21, Tlo=0.35, d=1890., L=5.0042, dLoL=0.009)
-    #pylab.plot(Q, dQ)
+    #plt.plot(Q, dQ)
 
     # Fresnel reflectivity for silicon
     rho, sigma=2.07, 5
@@ -430,21 +431,23 @@ def demo():
     r = (kz-f)/(kz+f)*exp(-2*sigma**2*kz*f)
     r[abs(kz)<1e-10] = -1
     R = real(r*conj(r))
-    pylab.errorbar(Q, R, xerr=dQ, fmt=',r', capsize=0)
-    pylab.grid(True)
-    pylab.semilogy(Q, R, ',b')
+    plt.errorbar(Q, R, xerr=dQ, fmt=',r', capsize=0)
+    plt.grid(True)
+    plt.semilogy(Q, R, ',b')
 
-    pylab.show()
+    plt.show()
 
 
 def demo2():
-    import numpy, pylab
-    Q, R, dR = numpy.loadtxt('ga128.refl.mce').T
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    Q, R, dR = np.loadtxt('ga128.refl.mce').T
     dQ = resolution(Q, s=0.154, Tlo=0.36, d=1500., L=4.75, dLoL=0.02)
-    pylab.errorbar(Q, R, xerr=dQ, yerr=dR, fmt=',r', capsize=0)
-    pylab.grid(True)
-    pylab.semilogy(Q, R, ',b')
-    pylab.show()
+    plt.errorbar(Q, R, xerr=dQ, yerr=dR, fmt=',r', capsize=0)
+    plt.grid(True)
+    plt.semilogy(Q, R, ',b')
+    plt.show()
 
 
 if __name__ == "__main__":

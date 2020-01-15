@@ -1,6 +1,6 @@
 import os
 
-import numpy
+import numpy as np
 from numpy import sqrt
 from numpy.linalg import norm
 from numpy.random import randn
@@ -32,7 +32,7 @@ probe.R, probe.dR = R, dR
 #preview(models=M)
 
 # Save to file
-data = numpy.array((probe.Q, probe.dQ, probe.R, probe.dR, probe.L))
+data = np.array((probe.Q, probe.dQ, probe.R, probe.dR, probe.L))
 filename = 'liquids-SiO2.txt'
 try:
     with open(filename, 'w') as outfile:
@@ -50,7 +50,7 @@ try:
 #N 3
 #L Q(inv Angstrom) dQ(inv Angstrom) R() dR() L(Angstrom)
 """)
-        numpy.savetxt(outfile, data.T)
+        np.savetxt(outfile, data.T)
 
     probe2 = SNS.load(filename, slits=slits)
 finally:

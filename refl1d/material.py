@@ -41,11 +41,11 @@ for X-ray, there is no need to scale by probe by electron radius.  In
 the end, sld is just the returned scattering factors times density.
 """
 __all__ = ['Material', 'Mixture', 'SLD', 'Vacuum', 'Scatterer', 'ProbeCache']
-import numpy
+
+import numpy as np
 from numpy import inf, NaN
 import periodictable
 from periodictable.constants import avogadro_number
-
 from bumps.parameter import Parameter as Par
 
 
@@ -383,7 +383,7 @@ class _VolumeFraction(object):
     def __init__(self, base, material):
         pass
     def __call__(self, fraction):
-        return 0.01*numpy.asarray(fraction)
+        return 0.01*np.asarray(fraction)
 
 class _MassFraction(object):
     """
@@ -393,7 +393,7 @@ class _MassFraction(object):
     def __init__(self, base, material):
         self._material = [base] + material
     def __call__(self, fraction):
-        density = numpy.array([m.density.value for m in self._material])
+        density = np.array([m.density.value for m in self._material])
         volume = fraction/density
         return volume/sum(volume)
 
@@ -494,7 +494,7 @@ class Mixture(Scatterer):
         Compute the density of the mixture from the density and proportion
         of the individual components.
         """
-        fraction = numpy.array([0.]+[m.value for m in self.fraction])
+        fraction = np.array([0.]+[m.value for m in self.fraction])
         # TODO: handle invalid fractions using penalty functions
         # S = sum(fraction)
         # scale = S/100 if S > 100 else 1
@@ -504,8 +504,8 @@ class Mixture(Scatterer):
         if (fraction < 0).any():
             return NaN
         volume = self._volume(fraction)
-        density = numpy.array([m.density() for m in [self.base]+self.material])
-        return numpy.sum(volume*density)
+        density = np.array([m.density() for m in [self.base]+self.material])
+        return np.sum(volume*density)
     density = property(_density, doc=_density.__doc__)
 
     def sld(self, probe):
@@ -513,7 +513,7 @@ class Mixture(Scatterer):
         Return the scattering length density and absorption of the mixture.
         """
         # Convert fractions into an array, with the final fraction
-        fraction = numpy.array([0.]+[f.value for f in self.fraction])
+        fraction = np.array([0.]+[f.value for f in self.fraction])
         fraction[0] = 100 - sum(fraction)
         # TODO: handle invalid fractions using penalty functions
         # S = sum(fraction)
@@ -525,13 +525,13 @@ class Mixture(Scatterer):
 
         # Lookup SLD
         slds = [c.sld(probe) for c in [self.base] + self.material]
-        rho, irho = [numpy.asarray(v) for v in zip(*slds)]
+        rho, irho = [np.asarray(v) for v in zip(*slds)]
 
         # Use calculator to convert individual SLDs to overall SLD
         volume_fraction = self._volume(fraction)
-        rho = numpy.sum(rho*volume_fraction)
+        rho = np.sum(rho*volume_fraction)
 
-        irho = numpy.sum(irho*volume_fraction)
+        irho = np.sum(irho*volume_fraction)
         if self.use_incoherent:
             raise NotImplementedError("incoherent scattering not supported")
         #print "Mixture", self.name, coh, absorp

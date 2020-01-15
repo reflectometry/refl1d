@@ -36,7 +36,7 @@ DM = DistributionExperiment(experiment=M, P=nickel.relative_density,
                             distribution=dist)
 DM.simulate_data(0.05)
 #DM.plot_weights()
-#import pylab; pylab.figure()
+#import matplotlib.pyplot as plt; plt.figure()
 #nickel.relative_density.value=0.5
 #M.update()
 problem = FitProblem(DM)

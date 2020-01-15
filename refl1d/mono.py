@@ -1,10 +1,9 @@
 """
 Monotonic spline modeling for free interfaces
 """
-
-
 from __future__ import division, with_statement
-import numpy
+
+import numpy as np
 from numpy import (diff, hstack, sqrt, searchsorted, asarray, cumsum,
                    inf, nonzero, linspace, sort, isnan, clip)
 from bumps.parameter import Parameter as Par, Function as ParFunction
@@ -80,8 +79,8 @@ class FreeLayer(Layer):
         return Prho, Pirho
 
     def penalty(self):
-        dz = numpy.diff([p.value for p in self.z])
-        return numpy.sum(dz[dz < 0]**2)
+        dz = diff([p.value for p in self.z])
+        return np.sum(dz[dz < 0]**2)
 
     def render(self, probe, slabs):
         below = self.below.sld(probe)

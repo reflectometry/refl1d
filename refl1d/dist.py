@@ -11,7 +11,7 @@ DistristributionExperiment allows the model to be computed for a single
 varying parameter.  Multi-parameter dispersion models are not available.
 """
 
-import numpy
+import numpy as np
 from bumps.parameter import Parameter
 
 from .experiment import ExperimentBase
@@ -59,7 +59,7 @@ class Weights(object):
     """
     def __init__(self, edges=None, cdf=None,
                  args=(), loc=None, scale=None, truncated=True):
-        self.edges = numpy.asarray(edges)
+        self.edges = np.asarray(edges)
         self.cdf = cdf
         self.truncated = truncated
         self.loc = Parameter.default(loc)
@@ -90,7 +90,7 @@ class Weights(object):
         if not self.truncated:
             cumulative_weights[0], cumulative_weights[-1] = 0, 1
         relative_weights = cumulative_weights[1:] - cumulative_weights[:-1]
-        total_weight = numpy.sum(relative_weights)
+        total_weight = np.sum(relative_weights)
         if total_weight == 0:
             return iter([])
         else:
@@ -165,7 +165,7 @@ class DistributionExperiment(ExperimentBase):
 
     def _max_P(self):
         x, w = zip(*self.distribution)
-        idx = numpy.argmax(w)
+        idx = np.argmax(w)
         return x[idx]
 
     def smooth_profile(self, dz=1):
@@ -195,20 +195,20 @@ class DistributionExperiment(ExperimentBase):
         return self._cache[key]
 
     def plot_profile(self, plot_shift=0.):
-        import pylab
+        import matplotlib.pyplot as plt
         from bumps.plotutil import auto_shift
 
         trans = auto_shift(plot_shift)
         z, rho, irho = self.step_profile()
-        pylab.plot(z, rho, '-g', z, irho, '-b', transform=trans)
+        plt.plot(z, rho, '-g', z, irho, '-b', transform=trans)
         z, rho, irho = self.smooth_profile()
-        pylab.plot(z, rho, ':g', z, irho, ':b', transform=trans)
-        pylab.legend(['rho', 'irho'])
+        plt.plot(z, rho, ':g', z, irho, ':b', transform=trans)
+        plt.legend(['rho', 'irho'])
 
     def plot_weights(self):
-        import pylab
+        import matplotlib.pyplot as plt
         x, w = zip(*self.distribution)
-        pylab.stem(x, 100*numpy.array(w))
-        pylab.title('Weight distribution')
-        pylab.xlabel(self.P.name)
-        pylab.ylabel('Percentage')
+        plt.stem(x, 100*np.array(w))
+        plt.title('Weight distribution')
+        plt.xlabel(self.P.name)
+        plt.ylabel('Percentage')

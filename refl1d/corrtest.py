@@ -23,8 +23,8 @@ def residual_nllf(v):
     z = stats.zscore(v)
 
 def plot(self):
-    import pylab
-    pylab.subplot(313)
+    import matplotlib.pyplot as plt
+    plt.subplot(313)
     Q, R = self.reflectivity()
     self.probe.plot_transform(theory=(Q, R),
                               substrate=self.sample[0].material,
@@ -35,7 +35,7 @@ def plot_transform(self, theory=None, substrate=None, surround=None):
     """
     Plot the Fresnel-normalized reflectivity associated with the probe.
     """
-    import pylab
+    import matplotlib.pyplot as plt
     if substrate is None and surround is None:
         raise TypeError("Fresnel-normalized reflectivity needs substrate or surround")
     F = self.fresnel(substrate=substrate, surround=surround)
@@ -45,34 +45,34 @@ def plot_transform(self, theory=None, substrate=None, surround=None):
     T = np.linspace(Qc, max(self.Q), len(self.Q))
     if hasattr(self, 'R'):
         A = abs(np.fft.fft(np.interp(T, self.Q, self.R/F)))
-        pylab.plot(T, A, '.')
+        plt.plot(T, A, '.')
     if theory is not None:
         Q, R = theory
         A = abs(np.fft.fft(np.interp(T, self.Q, self.R/F)))
-        pylab.plot(T, A)
-    pylab.xlabel('z (Angstroms)')
+        plt.plot(T, A)
+    plt.xlabel('z (Angstroms)')
     if substrate is None:
         name = "air:%s"%(surround.name)
     elif surround is None or isinstance(surround, Vacuum):
         name = substrate.name
     else:
         name = "%s:%s"%(substrate.name, surround.name)
-    pylab.ylabel('FFT(R/R(%s))'%(name))
+    plt.ylabel('FFT(R/R(%s))'%(name))
 
 def plot_deriv(self, theory=None):
-    import pylab
+    import matplotlib.pyplot as plt
     scale = 1e8*self.Q**4
     #scale=1
     if hasattr(self, 'R'):
         d = deriv(self.Q, self.R, self.dR)
-        pylab.plot(self.Q, d*scale, '.')
+        plt.plot(self.Q, d*scale, '.')
     if theory is not None:
         Q, R = theory
         dth = deriv(Q, R)
-        pylab.plot(Q, dth*scale)
-    #pylab.plot(Q, (sign(d)-sign(dth))/2)
-    pylab.xlabel('Q (inv Angstroms)')
-    pylab.ylabel('R\' (100 Q)^4')
+        plt.plot(Q, dth*scale)
+    #plt.plot(Q, (sign(d)-sign(dth))/2)
+    plt.xlabel('Q (inv Angstroms)')
+    plt.ylabel('R\' (100 Q)^4')
 
 def deriv(Q, R, dR=None, width=5, degree=2):
     from bumps.wsolve import wpolyfit
