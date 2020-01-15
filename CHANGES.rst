@@ -7,6 +7,7 @@ Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 Pre-release
 ===========
 * hide resolution bars using *Probe.show_resolution = False* in your model.py
+* fix residuals plot when interpolation is used for the theory function
 
 **BREAKING CHANGE**: old-style data loader with sample_broadening set
 * sample_broadening was applied twice: once to the base Δθ from when the probe
