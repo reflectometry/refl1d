@@ -729,8 +729,9 @@ class Probe(object):
             raise TypeError("Fresnel-normalized reflectivity needs substrate or surface")
         F = self.fresnel(substrate=substrate, surface=surface)
         #print("substrate", substrate, "surface", surface)
-        def scale(Q, dQ, R, dR):
-            Q, fresnel = self.apply_beam(self.calc_Q, F(self.calc_Q))
+        def scale(Q, dQ, R, dR, interpolation=0):
+            Q, fresnel = self.apply_beam(self.calc_Q, F(self.calc_Q),
+                                         interpolation=interpolation)
             return Q, dQ, R/fresnel, dR/fresnel
         if substrate is None:
             name = "air:%s" % surface.name
@@ -738,7 +739,7 @@ class Probe(object):
             name = substrate.name
         else:
             name = "%s:%s" % (substrate.name, surface.name)
-        self._plot_pair(correct=scale, ylabel='R/(R(%s)' % name, **kwargs)
+        self._plot_pair(scale=scale, ylabel='R/(R(%s)' % name, **kwargs)
 
     def plot_Q4(self, **kwargs):
         r"""
@@ -755,25 +756,23 @@ class Probe(object):
 
         where $B$ is the background.
         """
-        scale = lambda Q, dQ, R, dR: (
-            Q, dQ,
-            #R/np.maximum(1e-8*Q**-4, self.background.value),
-            #dR/np.maximum(1e-8*Q**-4, self.background.value))
-            R/(1e-8*Q**-4*self.intensity.value + self.background.value),
-            dR/(1e-8*Q**-4*self.intensity.value + self.background.value))
+        def scale(Q, dQ, R, dR, interpolation=0):
+            #Q4 = np.maximum(1e-8*Q**-4, self.background.value)
+            Q4 = 1e-8*Q**-4*self.intensity.value + self.background.value
+            return Q, dQ, R/Q4, dR/Q4
         #Q4[Q4==0] = 1
-        self._plot_pair(correct=scale, ylabel='R (100 Q)^4', **kwargs)
+        self._plot_pair(scale=scale, ylabel='R (100 Q)^4', **kwargs)
 
     def _plot_pair(self, theory=None,
-                   correct=lambda Q, dQ, R, dR: (Q, dQ, R, dR),
+                   scale=lambda Q, dQ, R, dR, interpolation=0: (Q, dQ, R, dR),
                    ylabel="", suffix="", label=None,
-                   plot_shift=None, **kw):
+                   plot_shift=None, **kwargs):
         import matplotlib.pyplot as plt
         c = coordinated_colors()
         plot_shift = plot_shift if plot_shift is not None else Probe.plot_shift
         trans = auto_shift(plot_shift)
         if hasattr(self, 'R') and self.R is not None:
-            Q, dQ, R, dR = correct(self.Q, self.dQ, self.R, self.dR)
+            Q, dQ, R, dR = scale(self.Q, self.dQ, self.R, self.dR)
             if not self.show_resolution:
                 dQ = None
             plt.errorbar(Q, R, yerr=dR, xerr=dQ, capsize=0,
@@ -782,8 +781,34 @@ class Probe(object):
                                           gloss='data',
                                           suffix=suffix))
         if theory is not None:
+            # TODO: completely restructure interpolation handling
+            # Interpolation is used to show the theory curve between the
+            # data points.  The _calc_Q points used to predict theory at
+            # the measured data are used for the interpolated Q points, with
+            # the resolution function centered on each interpolated value.
+            # The result is that when interpolation != 0, there are more
+            # theory points than data points, and we will need to accomodate
+            # this when computing normalization curves for Fresnel and Q^4
+            # reflectivity.
+            # Issues with current implementation:
+            # * If the resolution is too tight, there won't be sufficient
+            #   support from _calc_Q to compute theory at Q interpolated.
+            # * dQ for the interpolated points uses linear interpolation
+            #   of dQ between neighbours.  If measurements with tight and
+            #   loose resolution are interleaved the result will look very
+            #   strange.
+            # * There are too many assumptions about interpolation shared
+            #   between Experiment and Probe objects.  In particular, the
+            #   Fresnel object needs to be computed at the same interpolated
+            #   points as the theory function.
+            # * If there are large gaps in the data the interpolation will
+            #   not fill them in correctly.  Perhaps we should set _Q_plot
+            #   and _calc_Q_plot independently from the data?
+            # * We sometimes show the theory curve without resolution
+            #   applied; this has not been tested with interpolation
+            interpolation = kwargs.get('interpolation', 0)
             Q, R = theory
-            Q, dQ, R, dR = correct(Q, 0, R, 0)
+            Q, dQ, R, dR = scale(Q, 0, R, 0, interpolation=interpolation)
             plt.plot(Q, R, '-',
                      color=c['dark'], transform=trans,
                      label=self.label(prefix=label,
@@ -1688,7 +1713,7 @@ class PolarizedNeutronProbe(object):
             self.plot_logfresnel(**kwargs)
         elif view == 'q4':
             self.plot_Q4(**kwargs)
-        elif view == 'residuals':
+        elif view.startswith('resid'):
             self.plot_residuals(**kwargs)
         elif view == 'SA':
             self.plot_SA(**kwargs)

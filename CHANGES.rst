@@ -7,7 +7,7 @@ Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 Pre-release
 ===========
 * hide resolution bars using *Probe.show_resolution = False* in your model.py
-* fix residuals plot when interpolation is used for the theory function
+* fix residuals, fresnel, logfresnel, and q4 plots when interpolation is used
 * fix error contour save function: rhoM was not being written
 
 **BREAKING CHANGE**: old-style data loader with sample_broadening set
