@@ -308,14 +308,14 @@ def _save_profile_data(errors, align, contours, npoints, save):
         zp = np.linspace(np.min(z), np.max(z), npoints)
         # Interpolate rho on common z
         rho = np.vstack([np.interp(zp, L[0], L[1]) for L in p])
-        p, q = form_quantiles(rho, contours)
-        data = np.vstack((zp, rho[0], np.reshape(q, (-1, q.shape[2]))))
-        columns = ["z", "best"] + list("%g%%"%v for v in 100*p.flatten())
+        q, qval = form_quantiles(rho, contours)
+        data = np.vstack((zp, rho[0], np.reshape(qval, (-1, qval.shape[2]))))
+        columns = ["z", "best"] + list("%g%%"%v for v in 100*q.flatten())
         _write_file(save+"_rho_contour%d.dat"%k, data, title, columns)
         if len(p[0]) > 3:
             rhoM = np.vstack([np.interp(zp, L[0], L[3]) for L in p])
-            p, q = form_quantiles(rhoM, contours)
-            data = np.vstack((zp, rhoM[0], np.reshape(q, (-1, q.shape[2]))))
+            q, qval = form_quantiles(rhoM, contours)
+            data = np.vstack((zp, rhoM[0], np.reshape(qval, (-1, qval.shape[2]))))
             _write_file(save+"_rhoM_contour%d.dat"%k, data, title, columns)
         k += 1
 
@@ -323,10 +323,10 @@ def _save_residual_data(errors, contours, save):
     _, _, Q, residuals = errors
     k = 1
     for title, x, r in sorted((m.name, Q[m], v) for m, v in residuals.items()):
-        p, q = form_quantiles(r.T, contours)
+        q, qval = form_quantiles(r.T, contours)
         # TODO: should have columns for R, dR as well.
-        data = np.vstack((x, r[:, 0], np.reshape(q, (-1, q.shape[2]))))
-        columns = ["q", "best"] + list("%g%%"%v for v in 100*p.flatten())
+        data = np.vstack((x, r[:, 0], np.reshape(qval, (-1, qval.shape[2]))))
+        columns = ["q", "best"] + list("%g%%"%v for v in 100*q.flatten())
         _write_file(save+"_resid_contour%d.dat"%k, data, title, columns)
         k += 1
 

@@ -8,6 +8,7 @@ Pre-release
 ===========
 * hide resolution bars using *Probe.show_resolution = False* in your model.py
 * fix residuals plot when interpolation is used for the theory function
+* fix error contour save function: rhoM was not being written
 
 **BREAKING CHANGE**: old-style data loader with sample_broadening set
 * sample_broadening was applied twice: once to the base Δθ from when the probe
