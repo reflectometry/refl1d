@@ -1257,7 +1257,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     if columns:
         actual = columns.split()
         natural = "Q R dR dQ".split()
-        column_order = [natural.index(k) for k in actual]
+        column_order = [actual.index(k) for k in natural]
     else:
         column_order = [0, 1, 2, 3]
     index = slice(*data_range)
