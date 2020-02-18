@@ -34,7 +34,7 @@ Profile\ [#Cosgrove]_\ [#deVos]_\ [#Sheridan]_
     structure of a polydisperse polymer brush. Polymer, 50(1), 305–316.
     doi:10.1016/j.polymer.2008.10.025
 
-.. [#Sheridan] •	Sheridan, R. J., Orski, S. V., Jones, R. L., Satija, S.,
+.. [#Sheridan] Sheridan, R. J., Orski, S. V., Jones, R. L., Satija, S.,
     & Beers, K. L. (2017). Surface interaction parameter measurement of
     solvated polymers via model end-tethered chains. [Submitted]
 
