@@ -64,21 +64,14 @@ from the source archive directly.
 Windows
 -------
 
-There are several options for setting up a python environment on windows:
+There are couple of options for setting up a python environment on windows:
 
-  - `Python(X,Y) <http://code.google.com/p/pythonxy/>`_ ,
-  - `WinPython <http://winpython.sourceforge.net/>`_,
-  - `Anaconda <https://store.continuum.io/cshop/anaconda/>`_,
-  - `Canopy <https://www.enthought.com/products/canopy/>`_, or
-  - `python.org <https://www.python.org/>`_.
+  - `python.org <https://www.python.org/>`_, and
+  - `Anaconda <https://www.anaconda.com/distribution/>`_.
 
-Python(X,Y) is easiest as of this writing, since it contains all the required
-packages. You can select "Full Install" for convenience, or you can select
-"Custom Install" and make sure the required packages are selected.  In
-particular, wx is not selected by default.  Be sure to select py2exe and
-sphinx as well, since you may want to build a self contained release package.
-For the other environments, you may have to download and install the wxPython
-binary package manually.
+With most pypi packages now bundled with wheels, it is now easy to set up a
+development environment using the official python package.  Similarly,
+anaconda provides binaries for all the refl1d dependencies.
 
 You will need a C/C++ compiler.  If you already have Microsoft Visual C
 installed you are done. If not, you can use the MinGW compiler that is supplied
@@ -112,13 +105,10 @@ Latex is needed to build the pdf documentation.
 OS/X
 ----
 
-For OS/X you have a few options for setting up a python distribution:
+Similar to windows, you can install the official python distribution or
+use Anaconda.  You will need to install the Xcode command line utilities
+to get the compiler.
 
-  - `Anaconda <https://store.continuum.io/cshop/anaconda>`_,
-  - `Canopy <https://www.enthought.com/products/canopy>`_,
-  - `MacPorts <https://www.macports.org>`_, or
-  - `python.org <https://www.python.org>`_.
-
-To run the interactive interface on OS/X you will need to use::
+To run the interactive interface on OS/X you may need to use::
 
     pythonw -m refl1d.main --edit
