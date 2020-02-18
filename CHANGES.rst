@@ -9,6 +9,7 @@ Pre-release
 * hide resolution bars using *Probe.show_resolution = False* in your model.py
 * fix residuals, fresnel, logfresnel, and q4 plots when interpolation is used
 * fix error contour save function: rhoM was not being written
+* fix simulation error: theory and simulated data were sharing the same vector
 
 **BREAKING CHANGE**: old-style data loader with sample_broadening set
 * sample_broadening was applied twice: once to the base Δθ from when the probe
