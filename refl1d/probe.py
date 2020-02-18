@@ -272,7 +272,7 @@ class Probe(object):
         reset R in the probe you will also need to reset Ro so that it
         is used for subsequent resynth analysis.
         """
-        if not hasattr(self, 'Ro'):
+        if not hasattr(self, '_Ro'):
             self._Ro = self.R
         self.R = self._Ro + numpy.random.randn(*self._Ro.shape)*self.dR
 
@@ -308,7 +308,7 @@ class Probe(object):
         noise_floor = 1e-11
 
         # Set the theory function.
-        R = np.asarray(theory[1], 'd')
+        R = np.array(theory[1], 'd') # Force copy
         assert R.shape == self.Q.shape
         self.R = R
 
