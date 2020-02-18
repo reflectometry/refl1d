@@ -37,9 +37,10 @@ git log
 
 (5) update version number and requirements
 
+set REFLVER=X.Y.Z
 vi refl1d/__init__.py
 vi rtd-requirements
-git commit -a -m "R X.Y.Z"
+git commit -a -m "R $REFLVER"
 git push
 
 (6) build the binaries for windows and mac
@@ -53,17 +54,17 @@ python master_builder.py
 
 (7) tag release
 
-git tag -a vX.Y.Z -m "Refl1d X.Y.Z"
-git push --tags # OR MAYBE: git push origin vX.Y.Z
+git tag -a v$REFLVER -m "Refl1d $REFLVER"
+git push --tags # OR MAYBE: git push origin v$REFLVER
 
 # to move a tag to the new head
-git tag -a vX.Y.Z -m "Refl1d X.Y.Z" -f
+git tag -a v$REFLVER -m "Refl1d $REFLVER" -f
 git push --tags -f
 
-# mark an existing commit with a version tag
-GIT_COMMITTER_DATE="$(git show -s --format=%cI bd145a46)" git tag -a v0.8.1 bd145a46 -m "Refl1d 0.8.1"
+# mark an existing commit with a version tag e.g.:
+#GIT_COMMITTER_DATE="$(git show -s --format=%cI bd145a46)" git tag -a v0.8.1 bd145a46 -m "Refl1d 0.8.1"
 
-# trigger the build on readthedocs
+# trigger the build on readthedocs (this should happen automatically now)
 https://readthedocs.org/builds/refl1d/
 
 (8) Build source distribution
@@ -85,18 +86,30 @@ See [CHANGES.rst](https://github.com/reflectometry/refl1d/tree/vX.Y.Z/CHANGES.rs
 
 (9) download wheel files for windows/mac cp27/36/37 from release page
 
-Wait for travis to finish building then copy the wheel files into refl1d/dist
+curl -s https://api.github.com/repos/reflectometry/refl1d/releases/tags/v$REFLVER | grep "download_url.*whl" | sed -e's/^.*https:/curl -OL https:/;s/".*$//'
+
+# The output will be something like::
+#
+#   curl -OL https://github.com/reflectometry/refl1d/releases/download/v0.8.10/refl1d-0.8.10-cp27-cp27m-macosx_10_13_x86_64.whl
+#   ...
+#   curl -OL https://github.com/reflectometry/refl1d/releases/download/v0.8.10/refl1d-0.8.10-cp38-cp38-win_amd64.whl
+#
+# Copy and paste the above commands to download the files to the dist directory:
+
+cd dist
+<paste>
+cd ..
 
 (10) update pypi with new release version
 
-twine upload dist/*-X.Y.Z*
+twine upload dist/refl1d-$REFLVER*.whl dist/refl1d-$REFLVER.tar.gz
 
 (11) check that the new pypi version runs (single machine should be fine)
 
 # create virtualenv
 cd ~
-conda create -n piptest pip numpy matplotlib scipy wxpython pyparsing
-activate piptest
+conda create -n reflpip python=3.8
+conda activate reflpip
 pip install refl1d
 python -m refl1d.main
 pythonw -m refl1d.main --edit
