@@ -2,4 +2,3 @@ numpy>=1.0
 scipy>=0.7.0
 matplotlib>=1.0
 bumps
-wxpython>=4.0
