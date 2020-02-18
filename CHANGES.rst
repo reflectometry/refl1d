@@ -4,12 +4,15 @@ Change History
 
 Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 
-Pre-release
-===========
+2020-02-18 v0.8.10
+==================
+* add `--checkpoint=n` to save mcmc state every *n* hours.
 * hide resolution bars using *Probe.show_resolution = False* in your model.py
 * fix residuals, fresnel, logfresnel, and q4 plots when interpolation is used
 * fix error contour save function: rhoM was not being written
 * fix simulation error: theory and simulated data were sharing the same vector
+* fix doc generation: now builds with sphinx 2.4.0 and matplotlib 3.1.0.
+* python 3.8 support requires bumps v0.7.14 (released 2020-01-03)
 
 **BREAKING CHANGE**: old-style data loader with sample_broadening set
 * sample_broadening was applied twice: once to the base Δθ from when the probe
