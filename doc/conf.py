@@ -212,12 +212,13 @@ htmlhelp_basename = 'Refl1D'
 program_title = 'Refl1D: Neutron and X-Ray Reflectivity Analysis'
 
 # -- Options for LaTeX output --------------------------------------------------
+latex_elements = {}
 
 # The paper size ('letter' or 'a4').
-#latex_paper_size = 'letter'
+#latex_elements['papersize'] = 'letter'
 
 # The font size ('10pt', '11pt' or '12pt').
-#latex_font_size = '10pt'
+#latex_elements['size'] = '10pt'
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
@@ -241,14 +242,13 @@ latex_documents = [
 
 # Additional stuff for the LaTeX preamble.
 #latex_preamble = ''
-LATEX_PREAMBLE=r"""
+latex_elements['preamble'] = r"""
 \renewcommand{\AA}{\text{\r{A}}} % Allow \AA in math mode
 \usepackage[utf8]{inputenc}      % Allow unicode symbols in text
 \DeclareUnicodeCharacter {00B7} {\ensuremath{\cdot}}   % cdot
 \DeclareUnicodeCharacter {00B0} {\ensuremath{^\circ}}  % degrees
 \DeclareUnicodeCharacter {212B} {\AA}                  % Angstrom
 """
-latex_elements = {'preamble' : LATEX_PREAMBLE}
 
 # Documents to append as an appendix to all manuals.
 #latex_appendices = []
