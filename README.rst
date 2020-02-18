@@ -30,4 +30,4 @@ for details on recent changes.
     :target: https://ci.appveyor.com/project/reflectometry/refl1d
 
 .. image:: https://readthedocs.org/projects/refl1d/badge/
-    :target: https://refl1d.readthedocs.io
+    :target: https://readthedocs.org/projects/refl1d
