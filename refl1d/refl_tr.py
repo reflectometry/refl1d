@@ -25,7 +25,7 @@ correctly.
 
 [1] Dura, J.A., Rus, E.D., Kienzle, P.A., Maranville, B.B., 2017.
 Nanolayer Analysis by Neutron Reflectometry,
-in: Imae, T. (Ed.), Nanolayer Research. Elsevier, Amsterdam, pp. 155–202.
+in: Imae, T. (Ed.), Nanolayer Research. Elsevier, Amsterdam, pp. 155-202.
 https://doi.org/10.1016/B978-0-444-63739-0.00005-0
 
 [2] https://en.wikipedia.org/wiki/Transfer-matrix_method_(optics)#Abeles_matrix_formalism
@@ -108,7 +108,7 @@ def _calc(kz, depth, rho, irho, sigma):
     # Complex index of refraction is relative to the incident medium.
     # Dura, J.A., Rus, E.D., Kienzle, P.A., Maranville, B.B., 2017.
     # Nanolayer Analysis by Neutron Reflectometry,
-    # in: Imae, T. (Ed.), Nanolayer Research. Elsevier, Amsterdam, pp. 155–202.
+    # in: Imae, T. (Ed.), Nanolayer Research. Elsevier, Amsterdam, pp. 155-202.
     # https://doi.org/10.1016/B978-0-444-63739-0.00005-0
     #
     # Neutron energy in the layer, E0, is:
