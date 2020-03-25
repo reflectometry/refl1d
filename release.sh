@@ -86,16 +86,16 @@ See [CHANGES.rst](https://github.com/reflectometry/refl1d/tree/vX.Y.Z/CHANGES.rs
 
 (9) download wheel files for windows/mac cp27/36/37 from release page
 
-curl -s https://api.github.com/repos/reflectometry/refl1d/releases/tags/v$REFLVER | grep "download_url.*whl" | sed -e's/^.*https:/curl -OL https:/;s/".*$//'
-
-# The output will be something like::
+# You will to download the wheels from github with something like:
 #
 #   curl -OL https://github.com/reflectometry/refl1d/releases/download/v0.8.10/refl1d-0.8.10-cp27-cp27m-macosx_10_13_x86_64.whl
 #   ...
 #   curl -OL https://github.com/reflectometry/refl1d/releases/download/v0.8.10/refl1d-0.8.10-cp38-cp38-win_amd64.whl
 #
-# Copy and paste the above commands to download the files to the dist directory:
+# These commands can be generated using the following:
+curl -s https://api.github.com/repos/reflectometry/refl1d/releases/tags/v$REFLVER | grep "download_url.*whl" | sed -e's/^.*https:/curl -OL https:/;s/".*$//'
 
+# Copy and paste the commands after changing into the dist directory.
 cd dist
 <paste>
 cd ..
@@ -108,7 +108,7 @@ twine upload dist/refl1d-$REFLVER*.whl dist/refl1d-$REFLVER.tar.gz
 
 # create virtualenv
 cd ~
-conda create -n reflpip python=3.8
+conda create -n reflpip python==3.8
 conda activate reflpip
 pip install refl1d
 python -m refl1d.main
