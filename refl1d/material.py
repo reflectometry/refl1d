@@ -359,7 +359,7 @@ class Compound(Scatterer):
     def to_dict(self):
         return {
             'type': type(self).__name__,
-            'parts': [str(p) for p in self.formula],
+            'parts': [str(p) for p in self.parts],
             'count': [p.to_dict() for p in self.count],
         }
 
@@ -485,8 +485,8 @@ class Mixture(Scatterer):
         return {
             'type': type(self).__name__,
             'base': self.base.to_dict(),
-            'material': self.material.to_dict(),
-            'fraction': self.fraction.to_dict(),
+            'material': [p.to_dict() for p in self.material],
+            'fraction': [p.to_dict() for p in self.fraction],
         }
 
     def _density(self):
