@@ -69,18 +69,31 @@ def trace(fn):
         return ret
     return wrapper
 
-def load(modelfile):
-    M = experiment(modelfile)
+def load(modelfile, probes=None):
+    """
+    Load a garefl model file as an experiment.
+
+    *modelfile* is a model.so file created from setup.c.
+
+    *probes* is a list of datasets to fit to the models in the model file, or
+    None if the model file provides its own data.
+    """
+    M = experiment(modelfile, probes)
     constraints = M[0]._get_penalty
     if len(M) > 1:
         return FitProblem(M, constraints=constraints)
     else:
         return FitProblem(M[0], constraints=constraints)
 
-def experiment(modelfile):
+def experiment(modelfile, probes=None):
     setup = GareflModel(modelfile)
-    M = [GareflExperiment(setup, k)
-         for k in range(setup.num_models)]
+    if probes:
+        if len(probes) != setup.num_models:
+            raise ValueError("Number of datasets must match number of models")
+        M = [GareflExperiment(setup, k, probe=probes[k])
+             for k in range(setup.num_models)]
+    else:
+        M = [GareflExperiment(setup, k) for k in range(setup.num_models)]
     names = setup.par_names()
     low, high = setup.par_bounds()
     value = setup.par_values()
@@ -93,10 +106,14 @@ NOTHING=Vacuum()
 NOTHING.name = ''
 
 class GareflExperiment(Experiment):
-    def __init__(self, model, index, dz=1, step_interfaces=None):
+    def __init__(self, model, index, dz=1, step_interfaces=None, probe=None):
         self.model = model
         self.index = index
-        self.probe = model.get_probe(index)
+        if probe is None:
+            probe = model.get_probe(index)
+        else:
+            model.set_probe(probe)
+        self.probe = probe
         self.sample = Stack([NOTHING, NOTHING])
         self.sample[0].interface.fittable = False
         self.step_interfaces = True
@@ -188,6 +205,7 @@ class GareflModel(object):
     def _load_dll(self):
         dll = CDLL(self._dll_path)
         dll.ex_get_data.restype = c_char_p
+        dll.ex_set_data.restype = c_int
         dll.setup_models.restype = c_void_p
         dll.ex_par_name.restype = c_char_p
         dll.ex_get_penalty.restype = c_double
@@ -259,6 +277,32 @@ class GareflModel(object):
         Q, dQ, R, dR = data.T
         probe = QProbe(Q, dQ, data=(R, dR), name=filename)
         return probe
+
+    @trace
+    def set_probe(self, k, probe):
+        """
+        Return a probe for an individual garefl model.
+        """
+        if probe.polarized:
+            for xs, probe_xs in enumerate(probe.xs):
+                self._setdata(k, xs, probe_xs)
+        else:
+            self._setdata(k, 0, probe)
+
+    def _setdata(self, k, xs, probe):
+        if probe is not None:
+            n = probe.Q
+            data = empty((n, 4), dtype='d', order='F')
+            data[:, 0] = probe.Q
+            data[:, 1] = probe.dQ
+            data[:, 2] = probe.R
+            data[:, 3] = probe.dR
+        else:
+            n = 0
+            data = empty((n, 4), 'd')
+        result = self.dll.ex_set_data(self.models, k, xs, n, data.ctypes)
+        if result < 0:
+            raise RuntimeError("unable to create data in garefl")
 
     @trace
     def get_profile(self, k):
