@@ -39,7 +39,7 @@ before_install: |
 install:
   - python -m pip install -U pip
   - python -m easy_install -U setuptools
-  - python -m pip install wheel numpy scipy matplotlib periodictable wxPython bumps
+  - python -m pip install wheel numpy scipy matplotlib periodictable wxpython bumps
   - python setup.py bdist_wheel
 
 deploy:
