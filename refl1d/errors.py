@@ -453,7 +453,7 @@ def _align_profile_set(profiles, slabs, align):
 
 def _align_profile_pair(z1, r1, t1_offset, z2, r2, t2, align):
     """
-    Use autocorrelation to align r1 and r2.
+    Use crosscorrelation to align r1 and r2.
     """
     if align == 'auto':
         # Assume z1, z2 have the same step size
