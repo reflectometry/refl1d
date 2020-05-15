@@ -1342,7 +1342,8 @@ def _data_as_probe(entry, probe_args, T, L, dT, dL, dR, FWHM, radiation,
         if override is not None:
             return override
         elif key in header:
-            return json.loads(header[key])
+            v = json.loads(header[key])
+            return np.array(v) if isinstance(v, list) else v
         else:
             return None
 
@@ -1355,7 +1356,6 @@ def _data_as_probe(entry, probe_args, T, L, dT, dL, dR, FWHM, radiation,
         data_T = QL2T(data_Q, data_L)
     if data_L is None and data_T is not None:
         data_L = QT2L(data_Q, data_T)
-
 
     # Get dT and dL, either from user input or from datafile.
     data_dL = fetch_key('wavelength_resolution', dL)

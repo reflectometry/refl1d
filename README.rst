@@ -23,6 +23,8 @@ Documentation is available at `<https://refl1d.readthedocs.io>`_. See
 `CHANGES.rst <https://github.com/reflectometry/refl1d/blob/master/CHANGES.rst>`_
 for details on recent changes.
 
+Use "pip install refl1d wxpython" to install in your python environment.
+
 .. image:: https://travis-ci.org/reflectometry/refl1d.svg?branch=master
     :target: https://travis-ci.org/reflectometry/refl1d
 

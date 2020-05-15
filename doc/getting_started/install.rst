@@ -13,7 +13,7 @@ sample data used in the tutorial.
 
 Linux users will need to install from using pip::
 
-    pip install refl1d
+    pip install refl1d wxpython
 
 Note that the binary versions will lag the release version until the release
 process is automated.  Windows and Mac users may want to install using pip as

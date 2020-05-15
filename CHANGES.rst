@@ -4,6 +4,12 @@ Change History
 
 Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 
+2020-05-?? v0.8.11
+==================
+* support list values for angle and wavelength in four column data files
+* fix json output so saving the fit doesn't raise and error
+* wxpython is now an optional dependency
+
 2020-02-18 v0.8.10
 ==================
 * add `--checkpoint=n` to save mcmc state every *n* hours.
