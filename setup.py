@@ -109,7 +109,7 @@ dist = setup(
     },
     ext_modules=[reflmodule_config(), SCFmodule_config()],
     install_requires=['bumps>=0.7.11', 'numpy', 'scipy', 'matplotlib', 'periodictable'],
-    extras_require=['full': ['wxpython']],
+    extras_require={'full': ['wxpython']},
     cmdclass={'build_ext': build_ext_subclass},
     )
 
