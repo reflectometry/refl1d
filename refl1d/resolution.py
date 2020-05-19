@@ -67,6 +67,23 @@ def dTdL2dQ(T=None, dT=None, L=None, dL=None):
     *L*, *dL*  (Angstroms) wavelength and FWHM wavelength dispersion
 
     Returns 1-\ $\sigma$ $\Delta Q$
+
+    Given $Q = 4 \pi sin(\theta)/\lambda$, this follows directly from
+    gaussian error propagation using
+
+    ..math::
+
+        \Delta Q^2
+            &= \left(\frac{\partial Q}{\partial \lambda}\right)^2\Delta\lambda^2
+            + \left(\frac{\partial Q}{\partial \theta}\right)^2\Delta\theta^2
+
+            &= Q^2 \left(\frac{\Delta \lambda}{\lambda}\right)^2
+            + Q^2 \left(\frac{\Delta \theta}{\tan \theta}\right)^2
+
+            &= Q^2 \left(\frac{\Delta \lambda}{\lambda}\right)^2
+            + \left(\frac{4\pi\cos\theta\,\Delta\theta}{\lambda}\right)^2
+
+    with the final form chosen to avoid cancellation at $Q=0$.
     """
 
     # Compute dQ from wavelength dispersion (dL) and angular divergence (dT)
@@ -77,6 +94,25 @@ def dTdL2dQ(T=None, dT=None, L=None, dL=None):
 
     #sqrt((dL/L)**2+(radians(dT)/tan(radians(T)))**2)*probe.Q
     return FWHM2sigma(dQ)
+
+
+def dQ_broadening(dQ, L, T, dT, width):
+    r"""
+    Broaden an existing dQ by the given divergence.
+
+    *dQ* |1/Ang|, with 1-\ $\sigma$ $Q$ resolution
+    *L* |Ang|
+    *T*, *dT* |deg|, with FWHM angular divergence
+    *width* |deg|, with FWHM increased angular divergence
+
+    The calculation is derived by substituting
+    $\Delta\theta' = \Delta\theta + \omega$ for sample broadening $\omega$.
+    """
+    T, dT = radians(asarray(T, 'd')), FWHM2sigma(radians(asarray(dT, 'd')))
+    width = FWHM2sigma(radians(width))
+    dQsq = dQ**2 + (4*pi/L*cos(T))**2*(2*width*dT + width**2)
+
+    return sqrt(dQsq)
 
 
 def dQdT2dLoL(Q, dQ, T, dT):

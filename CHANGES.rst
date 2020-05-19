@@ -6,7 +6,9 @@ Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 
 2020-05-?? v0.8.11
 ==================
-* support list values for angle and wavelength in four column data files
+* support list values for angle and wavelength in column data format
+* use dQ from datafile rather than calculating it from dL and dT
+* adjust dQ with sample broadening rather than calculating it from dL and dT
 * fix json output so saving the fit doesn't raise and error
 * wxpython is now an optional dependency
 

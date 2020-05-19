@@ -55,7 +55,7 @@ from bumps.data import parse_multi, strip_quotes
 from . import fresnel
 from .material import Vacuum
 from .resolution import QL2T, QT2L, TL2Q, dQdL2dT, dQdT2dLoL, dTdL2dQ
-from .resolution import sigma2FWHM, FWHM2sigma
+from .resolution import sigma2FWHM, FWHM2sigma, dQ_broadening
 from .stitch import stitch
 from .reflectivity import convolve
 from .util import asbytes
@@ -98,13 +98,16 @@ class Probe(object):
         *T* : float or [float] | degrees
             Incident angle
         *dT* : float or [float] | degrees
-            FWHM angular resolution
+            FWHM angular divergence
         *L* : float or [float] | |Ang|
             Incident wavelength
         *dL* : float or [float] | |Ang|
             FWHM wavelength dispersion
         *data* : ([float], [float])
             R, dR reflectivity measurement and uncertainty
+        *dQ* : [float] or None | |1/Ang|
+            1-\$sigma$ Q resolution when it cannot be computed directly
+            from angular divergence and wavelength dispersion.
 
     Measurement properties:
 
@@ -119,19 +122,25 @@ class Probe(object):
         *theta_offset* : float or Parameter
            Offset of the sample from perfect alignment
         *sample_broadening* : float or Parameter
-           Additional angular divergence from sample curvature.  Should be
-           expressed as FWHM.  Scale 1-$\sigma$ rms by
-           $2 \surd(2 \ln 2) \approx 2.35$ to convert to FWHM.
+           Additional FWHM angular divergence from sample curvature.
+           Scale 1-$\sigma$ rms by $2 \surd(2 \ln 2) \approx 2.35$ to convert
+           to FWHM.
         *back_reflectivity* : True or False
            True if the beam enters through the substrate
 
     Measurement properties are fittable parameters.  *theta_offset* in
     particular should be set using *probe.theta_offset.dev(dT)*, with *dT*
     equal to the FWHM uncertainty in the peak position for the rocking curve,
-    as measured in radians.  Changes to *theta_offset* will then be penalized
+    as measured in radians. Changes to *theta_offset* will then be penalized
     in the cost function for the fit as if it were another measurement.  Use
     :meth:`alignment_uncertainty` to compute dT from the shape of the
     rocking curve.
+
+    Sample broadening adjusts the existing Q resolution rather than
+    recalculating it. This allows it the resolution to describe more
+    complicated effects than a simple gaussian distribution of wavelength
+    and angle will allow. The calculation uses the mean wavelength, angle
+    and angular divergence. See :func:`resolution.dQ_broadening` for details.
 
     *intensity* and *back_absorption* are generally not needed --- scaling
     the reflected signal by an appropriate intensity measurement will correct
@@ -168,7 +177,8 @@ class Probe(object):
     def __init__(self, T=None, dT=0, L=None, dL=0, data=None,
                  intensity=1, background=0, back_absorption=1, theta_offset=0,
                  sample_broadening=0,
-                 back_reflectivity=False, name=None, filename=None):
+                 back_reflectivity=False, name=None, filename=None,
+                 dQ=None):
         if T is None or L is None:
             raise TypeError("T and L required")
         if sample_broadening is None:
@@ -194,11 +204,11 @@ class Probe(object):
         else:
             R, dR = None, None
 
-        self._set_TLR(T, dT, L, dL, R, dR)
+        self._set_TLR(T, dT, L, dL, R, dR, dQ)
         self.name = name
         self.filename = filename
 
-    def _set_TLR(self, T, dT, L, dL, R, dR):
+    def _set_TLR(self, T, dT, L, dL, R, dR, dQ):
         #if L is None:
         #    L = xsf.xray_wavelength(E)
         #    dL = L * dE/E
@@ -207,7 +217,10 @@ class Probe(object):
         #    dE = E * dL/L
 
         Q = TL2Q(T=T, L=L)
-        dQ = dTdL2dQ(T=T, dT=dT, L=L, dL=dL)
+        if dQ is not None:
+            dQ = np.asarray(dQ)
+        else:
+            dQ = dTdL2dQ(T=T, dT=dT, L=L, dL=dL)
 
         # Make sure that we are dealing with vectors
         T, dT, L, dL = [np.ones_like(Q)*v for v in (T, dT, L, dL)]
@@ -378,19 +391,15 @@ class Probe(object):
 
     @property
     def dQ(self):
-        if self.sample_broadening.value != 0:
-            dQ = dTdL2dQ(T=self.T, dT=self.dT + self.sample_broadening.value,
-                         L=self.L, dL=self.dL)
-        else:
+        if self.sample_broadening.value == 0:
             dQ = self.dQo
+        else:
+            dQ = dQ_broadening(dQ=self.dQo, L=self.L, T=self.T, dT=self.dT,
+                               width=self.sample_broadening.value)
         return dQ
 
     @dQ.setter
     def dQ(self, dQ):
-        # If we explicity set dQ, then forget what we know about dT and dL.
-        # This will cause sample broadening != 0 to fail.
-        if hasattr(self, 'dT'):
-            del self.dT, self.dL
         self.dQo = dQ
 
     @property
@@ -1377,7 +1386,7 @@ def _data_as_probe(entry, probe_args, T, L, dT, dL, dR, FWHM, radiation,
     if data_dT is not None and not FWHM:
         data_dT = sigma2FWHM(data_dT)
 
-    # If one of T and L is missing, reconstruct it from Q.
+    # If dT or dL is missing, reconstruct it from Q.
     if data_dT is None and not any(v is None for v in (data_L, data_dL, data_dQ)):
         data_dT = dQdL2dT(data_Q, data_dQ, data_L, data_dL)
     if data_dL is None and not any(v is None for v in (data_T, data_dT, data_dQ)):
@@ -1404,6 +1413,7 @@ def _data_as_probe(entry, probe_args, T, L, dT, dL, dR, FWHM, radiation,
             T=data_T, dT=data_dT,
             L=data_L, dL=data_dL,
             data=(data_R, data_dR),
+            dQ=data_dQ,
             **probe_args)
     else:
         # QProbe doesn't accept theta_offset or sample_broadening
