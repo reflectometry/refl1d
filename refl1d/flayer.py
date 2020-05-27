@@ -121,7 +121,9 @@ class FunctionalMagnetism(BaseMagnetism):
 
     The profile function takes a depth vector *z* and returns a magnetism
     vector *rhoM*. For magnetic twist, return a pair of vectors *(rhoM, thetaM)*.
-    Constants can be returned for *rhoM* or *thetaM*.
+    Constants can be returned for *rhoM* or *thetaM*.  If *thetaM* is not
+    provided it defaults to *thetaM=0*, which is different from the default
+    value of 270 for magnetism slabs.
 
     See :class:`FunctionalProfile` for a description of the the profile
     function.
@@ -179,9 +181,9 @@ Need layer.magnetism.set_anchor(stack, layer) to compute magnetic thickness.")
         P = self.profile(Pz, **kw)
         # TODO: always return rhoM, thetaM from profile function
         # rhoM or thetaM may be constant
-        try:
+        if isinstance(P, tuple):
             rhoM, thetaM = P
-        except Exception:
+        else:
             rhoM, thetaM = P, Pz*0
         rhoM, thetaM = [asarray(v) for v in (rhoM, thetaM)]
         if rhoM.shape != Pz.shape or thetaM.shape != Pz.shape:
