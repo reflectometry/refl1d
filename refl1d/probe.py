@@ -1469,6 +1469,41 @@ class QProbe(Probe):
             % (self.filename, material))
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
+    def oversample(self, n=20, seed=1):
+        """
+        Generate an over-sampling of Q to avoid aliasing effects.
+
+        Oversampling is needed for thick layers, in which the underlying
+        reflectivity oscillates so rapidly in Q that a single measurement
+        has contributions from multiple Kissig fringes.
+
+        Sampling will be done using a pseudo-random generator so that
+        accidental structure in the function does not contribute to the
+        aliasing.  The generator will usually be initialized with a fixed
+        *seed* so that the point selection will not change from run to run,
+        but a *seed* of None will choose a different set of points each time
+        oversample is called.
+
+        The value *n* is the number of points that should contribute to
+        each Q value when computing the resolution.   These will be
+        distributed about the nominal measurement value, but varying in
+        both angle and energy according to the resolution function.  This
+        will yield more points near the measurement and fewer farther away.
+        The measurement point itself will not be used to avoid accidental
+        bias from uniform Q steps.  Depending on the problem, a value of
+        *n* between 20 and 100 should lead to stable values for the convolved
+        reflectivity.
+        """
+        if n <= 5:
+            raise ValueError("Oversampling with n<=5 is not useful")
+
+        rng = numpy.random.RandomState(seed=seed)
+        gnoise = rng.standard_normal(size=(self.Q.size, (n - 1)))
+        gnoise = np.c_[np.zeros(self.Q.size), gnoise]
+
+        Q = self.Q[:, None] + gnoise*self.dQ[:, None]
+        self.calc_Qo = Q.ravel().sort()
+
 
 def measurement_union(xs):
     """

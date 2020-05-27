@@ -12,6 +12,7 @@ Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 * fix json output so saving the fit doesn't raise and error
 * fix functional magnetic profile so [rho, rho] is not treated as rho, theta.
 * wxpython is now an optional dependency
+* implement Qprobe.oversample
 
 2020-02-18 v0.8.10
 ==================

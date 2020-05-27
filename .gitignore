@@ -20,3 +20,6 @@
 /bumps-*
 /Refl1D.pdf
 /.eggs
+.idea
+.ipynb_checkpoints
+.pytest_cache
