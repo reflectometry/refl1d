@@ -45,6 +45,7 @@ from bumps.parameter import Parameter, flatten
 from bumps.mono import monospline
 
 from .model import Layer, Stack
+from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
 
 def _optional_dict(p):
     return p.to_dict() if p is not None else None
@@ -136,7 +137,7 @@ class Magnetism(BaseMagnetism):
     *interface_above* and *interface_below* define the magnetic interface
     at the boundaries, if it is different from the nuclear interface.
     """
-    def __init__(self, rhoM=0, thetaM=270, name="LAYER", **kw):
+    def __init__(self, rhoM=0, thetaM=DEFAULT_THETA_M, name="LAYER", **kw):
         BaseMagnetism.__init__(self, name=name, **kw)
         self.rhoM = Parameter.default(rhoM, name=name+" rhoM")
         self.thetaM = Parameter.default(thetaM, limits=(0, 360),
@@ -221,7 +222,7 @@ class MagnetismStack(BaseMagnetism):
         if rhoM is None:
             rhoM = [0]
         if thetaM is None:
-            thetaM = [270]
+            thetaM = [DEFAULT_THETA_M]
         #if interfaceM is None:
         #    interfaceM = [0]
 
@@ -298,7 +299,7 @@ class MagnetismTwist(BaseMagnetism):
     """
     magnetic = True
     def __init__(self,
-                 rhoM=(0, 0), thetaM=(270, 270),
+                 rhoM=(0, 0), thetaM=(DEFAULT_THETA_M, DEFAULT_THETA_M),
                  name="LAYER", **kw):
         BaseMagnetism.__init__(self, name=name, **kw)
         self.rhoM = [Parameter.default(v, name=name+" rhoM[%d]"%i)
@@ -388,8 +389,8 @@ class FreeMagnetism(BaseMagnetism):
         return result
 
     def profile(self, Pz, thickness):
-        mbelow, tbelow = 0, (self.thetaM[0].value if self.thetaM else 270)
-        mabove, tabove = 0, (self.thetaM[-1].value if self.thetaM else 270)
+        mbelow, tbelow = 0, (self.thetaM[0].value if self.thetaM else DEFAULT_THETA_M)
+        mabove, tabove = 0, (self.thetaM[-1].value if self.thetaM else DEFAULT_THETA_M)
         z = np.sort([0]+[p.value for p in self.z]+[1])*thickness
 
         rhoM = np.hstack((mbelow, [p.value for p in self.rhoM], mabove))
@@ -407,7 +408,7 @@ class FreeMagnetism(BaseMagnetism):
         elif len(self.thetaM) == 1:
             PthetaM = self.thetaM.value * np.ones_like(PrhoM)
         else:
-            PthetaM = 270*np.ones_like(PrhoM)
+            PthetaM = DEFAULT_THETA_M*np.ones_like(PrhoM)
         return PrhoM, PthetaM
 
     def render(self, probe, slabs, thickness, anchor, sigma):

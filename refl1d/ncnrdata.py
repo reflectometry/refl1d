@@ -59,6 +59,7 @@ from bumps.data import parse_file
 
 from .instrument import Monochromatic
 from .probe import PolarizedNeutronProbe
+from .reflectivity import BASE_GUIDE_ANGLE
 
 
 def load(filename, instrument=None, **kw):
@@ -84,7 +85,7 @@ def load(filename, instrument=None, **kw):
     return probe
 
 
-def load_magnetic(filename, Aguide=270, H=0, shared_beam=True, **kw):
+def load_magnetic(filename, Aguide=BASE_GUIDE_ANGLE, H=0, shared_beam=True, **kw):
     """
     Return a probe for magnetic NCNR data.
 

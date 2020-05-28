@@ -49,6 +49,7 @@ from bumps.parameter import Parameter
 from bumps.mono import monospline
 
 from .model import Layer, Stack
+from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
 
 class MagneticLayer(Layer):
     @property
@@ -110,7 +111,7 @@ class MagneticSlab(MagneticLayer):
     """
     Region of constant magnetism.
     """
-    def __init__(self, stack, rhoM=0, thetaM=270, name="magnetic", **kw):
+    def __init__(self, stack, rhoM=0, thetaM=DEFAULT_THETA_M, name="magnetic", **kw):
         MagneticLayer.__init__(self, stack=stack, name=name, **kw)
         self.rhoM = Parameter.default(rhoM, name=name+" SLD")
         self.thetaM = Parameter.default(thetaM, limits=(0, 360),
@@ -138,7 +139,7 @@ class MagneticStack(MagneticLayer):
     """
     Magnetic slabs within a magnetic layer.
     """
-    def __init__(self, stack, weight=(), rhoM=(), thetaM=(270,), interfaceM=(0),
+    def __init__(self, stack, weight=(), rhoM=(), thetaM=(DEFAULT_THETA_M,), interfaceM=(0),
                  name="mag. stack", **kw):
         if (len(thetaM) != 1 and len(thetaM) != len(weight)
                 and len(rhoM) != 1 and len(rhoM) != len(weight)
@@ -194,7 +195,7 @@ class MagneticTwist(MagneticLayer):
     Linear change in magnetism throughout layer.
     """
     magnetic = True
-    def __init__(self, stack, rhoM=(0, 0), thetaM=(270, 270),
+    def __init__(self, stack, rhoM=(0, 0), thetaM=(DEFAULT_THETA_M, DEFAULT_THETA_M),
                  name="twist", **kw):
         MagneticLayer.__init__(self, stack=stack, name=name, **kw)
         self.rhoM = [Parameter.default(v, name=name+" rhoM[%d]"%i)
@@ -254,8 +255,8 @@ class FreeMagnetic(MagneticLayer):
 
     def profile(self, Pz):
         thickness = self.thickness.value
-        mbelow, tbelow = 0, (self.thetaM[0].value if self.thetaM else 270)
-        mabove, tabove = 0, (self.thetaM[-1].value if self.thetaM else 270)
+        mbelow, tbelow = 0, (self.thetaM[0].value if self.thetaM else DEFAULT_THETA_M)
+        mabove, tabove = 0, (self.thetaM[-1].value if self.thetaM else DEFAULT_THETA_M)
         z = np.sort([0]+[p.value for p in self.z]+[1])*thickness
 
         rhoM = np.hstack((mbelow, [p.value for p in self.rhoM], mabove))
@@ -271,9 +272,9 @@ class FreeMagnetic(MagneticLayer):
             thetaM = np.hstack((tbelow, [p.value for p in self.thetaM], tabove))
             PthetaM = monospline(z, thetaM, Pz)
         elif len(self.thetaM) == 1:
-            PthetaM = self.thetaM.value * np.ones_like(PrhoM)
+            PthetaM = np.full_like(PrhoM, self.thetaM.value)
         else:
-            PthetaM = 270*np.ones_like(PrhoM)
+            PthetaM = np.full_like(PrhoM, DEFAULT_THETA_M)
         return PrhoM, PthetaM
 
     def render(self, probe, slabs):

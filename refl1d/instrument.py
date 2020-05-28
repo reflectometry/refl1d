@@ -133,6 +133,7 @@ from .resolution import QL2T
 from .resolution import bins, binwidths, binedges
 from .resolution import slit_widths, divergence
 from .probe import make_probe, PolarizedNeutronProbe
+from .reflectivity import BASE_GUIDE_ANGLE
 
 
 class Monochromatic(object):
@@ -236,7 +237,7 @@ class Monochromatic(object):
         kw.setdefault('radiation', self.radiation)
         return make_probe(**kw)
 
-    def magnetic_probe(self, Aguide=270, shared_beam=True, H=0, **kw):
+    def magnetic_probe(self, Aguide=BASE_GUIDE_ANGLE, shared_beam=True, H=0, **kw):
         """
         Simulate a polarized measurement probe.
 
@@ -514,7 +515,7 @@ class Pulsed(object):
         return make_probe(T=T, dT=dT-sample_broadening, L=L, dL=dL,
                           radiation=self.radiation, **kw)
 
-    def magnetic_probe(self, Aguide=270, shared_beam=True, **kw):
+    def magnetic_probe(self, Aguide=BASE_GUIDE_ANGLE, shared_beam=True, **kw):
         """
         Simulate a polarized measurement probe.
 

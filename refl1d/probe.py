@@ -57,7 +57,7 @@ from .material import Vacuum
 from .resolution import QL2T, QT2L, TL2Q, dQdL2dT, dQdT2dLoL, dTdL2dQ
 from .resolution import sigma2FWHM, FWHM2sigma, dQ_broadening
 from .stitch import stitch
-from .reflectivity import convolve
+from .reflectivity import convolve, BASE_GUIDE_ANGLE
 from .util import asbytes
 
 PROBE_KW = ('T', 'dT', 'L', 'dL', 'data', 'name', 'filename',
@@ -168,7 +168,7 @@ class Probe(object):
     calculation has resolution applied.
     """
     polarized = False
-    Aguide = 270  # default guide field for unpolarized measurements
+    Aguide = BASE_GUIDE_ANGLE  # default guide field for unpolarized measurements
     view = "log"
     plot_shift = 0
     residuals_shift = 0
@@ -1171,7 +1171,7 @@ class ProbeSet(Probe):
 
 def load4(filename, keysep=":", sep=None, comment="#", name=None,
           intensity=1, background=0, back_absorption=1,
-          back_reflectivity=False, Aguide=270, H=0,
+          back_reflectivity=False, Aguide=BASE_GUIDE_ANGLE, H=0,
           theta_offset=None, sample_broadening=None,
           L=None, dL=None, T=None, dT=None, dR=None,
           FWHM=False, radiation=None,
@@ -1462,6 +1462,7 @@ class QProbe(Probe):
         self.unique_L = None
         self.calc_Qo = self.Qo
         self.name = name
+        self.filename = filename
 
     def scattering_factors(self, material, density):
         raise NotImplementedError(
@@ -1522,7 +1523,7 @@ class PolarizedNeutronProbe(object):
     show_resolution = None  # Default to Probe.show_resolution when None
     substrate = surface = None
     polarized = True
-    def __init__(self, xs=None, name=None, Aguide=270, H=0):
+    def __init__(self, xs=None, name=None, Aguide=BASE_GUIDE_ANGLE, H=0):
         self._xs = xs
 
         if name is None and self.xs[0] is not None:
@@ -1864,7 +1865,7 @@ def _interpolate_Q(Q, dQ, n):
 
 class PolarizedQProbe(PolarizedNeutronProbe):
     polarized = True
-    def __init__(self, xs=None, name=None, Aguide=270, H=0):
+    def __init__(self, xs=None, name=None, Aguide=BASE_GUIDE_ANGLE, H=0):
         self._xs = xs
         self._check()
         self.name = name if name is not None else xs[0].name

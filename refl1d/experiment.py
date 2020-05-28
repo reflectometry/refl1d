@@ -23,6 +23,7 @@ from . import material, profile
 from . import __version__
 from .reflectivity import reflectivity_amplitude as reflamp
 from .reflectivity import magnetic_amplitude as reflmag
+from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
 #print("Using pure python reflectivity calculator")
 #from .abeles import refl as reflamp
 from .util import asbytes
@@ -592,22 +593,26 @@ class Experiment(ExperimentBase):
                 plt.plot(z, rho, ':g', transform=trans)
                 plt.plot(z, irho, ':b', transform=trans)
                 plt.plot(z, rhoM, ':r', transform=trans)
-                if (abs(thetaM-thetaM[0]) > 1e-3).any():
+                if (abs(thetaM-DEFAULT_THETA_M) > 1e-3).any():
                     ax = plt.twinx()
                     plt.plot(z, thetaM, ':k', axes=ax, transform=trans)
                     plt.ylabel('magnetic angle (degrees)')
             z, rho, irho, rhoM, thetaM = self.magnetic_smooth_profile()
             #rhoM_net = rhoM*np.cos(np.radians(thetaM))
-            plt.plot(z, rho, '-g', transform=trans)
-            plt.plot(z, irho, '-b', transform=trans)
-            plt.plot(z, rhoM, '-r', transform=trans)
-            if (abs(thetaM-thetaM[0]) > 1e-3).any():
+            handles = [
+                plt.plot(z, rho, '-g', transform=trans, label='rho')[0],
+                plt.plot(z, irho, '-b', transform=trans, label='irho')[0],
+                plt.plot(z, rhoM, '-r', transform=trans, label='rhoM')[0],
+            ]
+            if (abs(thetaM-DEFAULT_THETA_M) > 1e-3).any():
                 ax = plt.twinx()
-                plt.plot(z, thetaM, '-k', axes=ax, transform=trans)
+                h = plt.plot(z, thetaM, '-k', axes=ax, transform=trans, label='thetaM')
+                handles.append(h[0])
                 plt.ylabel('magnetic angle (degrees)')
             plt.xlabel('depth (A)')
             plt.ylabel('SLD (10^6 / A**2)')
-            plt.legend(['rho', 'irho', 'rhoM'])
+            labels = [h.get_label() for h in handles]
+            plt.legend(handles=handles, labels=labels)
         else:
             if not self.step_interfaces:
                 z, rho, irho = self.step_profile()

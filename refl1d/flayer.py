@@ -1,11 +1,11 @@
 import inspect
 
-from numpy import real, imag, asarray
+from numpy import real, imag, asarray, broadcast_to
 
 from bumps.parameter import Parameter, BaseParameter
 from refl1d.material import SLD
 from refl1d.model import Layer
-from refl1d.magnetism import BaseMagnetism, Magnetism
+from refl1d.magnetism import BaseMagnetism, Magnetism, DEFAULT_THETA_M
 from refl1d import util
 
 class FunctionalProfile(Layer):
@@ -122,8 +122,7 @@ class FunctionalMagnetism(BaseMagnetism):
     The profile function takes a depth vector *z* and returns a magnetism
     vector *rhoM*. For magnetic twist, return a pair of vectors *(rhoM, thetaM)*.
     Constants can be returned for *rhoM* or *thetaM*.  If *thetaM* is not
-    provided it defaults to *thetaM=0*, which is different from the default
-    value of 270 for magnetism slabs.
+    provided it defaults to *thetaM=270*.
 
     See :class:`FunctionalProfile` for a description of the the profile
     function.
@@ -176,25 +175,23 @@ Need layer.magnetism.set_anchor(stack, layer) to compute magnetic thickness.")
 
     def render(self, probe, slabs, thickness, anchor, sigma):
         Pw, Pz = slabs.microslabs(thickness)
-        if len(Pw) == 0: return
+        if len(Pw) == 0:
+            return
         kw = dict((k, getattr(self, k).value) for k in self._parameters)
         P = self.profile(Pz, **kw)
-        # TODO: always return rhoM, thetaM from profile function
-        # rhoM or thetaM may be constant
-        if isinstance(P, tuple):
-            rhoM, thetaM = P
-        else:
-            rhoM, thetaM = P, Pz*0
-        rhoM, thetaM = [asarray(v) for v in (rhoM, thetaM)]
-        if rhoM.shape != Pz.shape or thetaM.shape != Pz.shape:
+
+        rhoM, thetaM = P if isinstance(P, tuple) else (P, DEFAULT_THETA_M)
+        try:
+            # rhoM or thetaM may be constant, lists or arrays (but not tuples!)
+            rhoM, thetaM = [broadcast_to(v, Pz.shape) for v in (rhoM, thetaM)]
+        except ValueError:
             raise TypeError("profile function '%s' did not return array rhoM(z)"
                             %self.profile.__name__)
         P = rhoM + thetaM*0.001j  # combine rhoM/thetaM so they can be merged
         Pw, P = util.merge_ends(Pw, P, tol=self.tol)
         rhoM, thetaM = P.real, P.imag*1000  # split out rhoM,thetaM again
-        slabs.add_magnetism(anchor=anchor,
-                            w=Pw, rhoM=rhoM, thetaM=thetaM,
-                            sigma=sigma)
+        slabs.add_magnetism(
+            anchor=anchor, w=Pw, rhoM=rhoM, thetaM=thetaM, sigma=sigma)
 
     def _fpars(self):
         kw = dict((k, getattr(self, k).value) for k in self._parameters)
@@ -262,17 +259,11 @@ class _MagnetismLimit(BaseParameter):
     @property
     def value(self):
         zmax = self.flayer._calc_thickness()
-        # TODO: fix interface
-        # awkward: calculating mid-point so that we don't accidentally
-        # interpret a two value return value as rhoM, thetaM instead of
-        # rhoM, [0., 0.]
-        z = asarray([0., 0.5*zmax, zmax])
+        z = asarray([0., zmax])
         P = self.flayer.profile(z, **self.flayer._fpars())
-        try:
-            rhoM, thetaM = P   # Returns rhoM and thetaM
-        except Exception:
-            rhoM, thetaM = P, [0., 0., 0.]  # Returns rhoM only
-        index = 2 if self.isend else 0
+        rhoM, thetaM = P if isinstance(P, tuple) else (P, DEFAULT_THETA_M)
+        rhoM, thetaM = [broadcast_to(v, z.shape) for v in (rhoM, thetaM)]
+        index = -1 if self.isend else 0
         return rhoM[index] if self.isrhoM else thetaM[index]
 
     def __repr__(self):
