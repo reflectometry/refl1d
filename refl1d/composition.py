@@ -170,10 +170,9 @@ class Gaussian(object):
         return {'center':self.center, 'width':self.width, 'sigma':self.stretch}
 
     def to_dict(self):
-        return to_dict({
-            'type': type(self).__name__,
-            **self.parameters(),
-        })
+        ret = { 'type': type(self).__name__, }
+        ret.update(to_dict(self.parameters()))
+        return ret
 
     def __call__(self, z):
         mu, sigma, w = self.center.value, self.stretch.value, self.width.value/2

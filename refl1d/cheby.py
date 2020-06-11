@@ -122,12 +122,13 @@ class FreeformCheby(Layer):
         }
 
     def to_dict(self):
-        return to_dict({
+        ret = self.parameters()
+        ret.update({
             'type': type(self).__name__,
             'name': self.name,
             'method': self.method,
-            **self.parameters(),
         })
+        return to_dict(ret)
 
     def render(self, probe, slabs):
         """Render slabs for use with the given probe"""
