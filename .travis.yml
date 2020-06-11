@@ -40,7 +40,8 @@ before_install: |
 install:
   - python -m pip install -U pip
   - python -m pip install setuptools
-  - python -m pip install wheel numpy scipy matplotlib periodictable wxpython bumps sphinx nose
+  - python -m pip install wheel numpy scipy matplotlib periodictable bumps sphinx nose
+  #- python -m pip install wxpython
   - python setup.py bdist_wheel
 
 script:
