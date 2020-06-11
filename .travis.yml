@@ -48,7 +48,7 @@ script:
   - python --version
   - python setup.py test
   - python check_examples.py --chisq
-  - if [ -n "$BUILDDOC" ]; then make html; fi
+  - if [ -n "$BUILDDOC" ]; then make -C doc html; fi
 
 deploy:
   provider: releases
