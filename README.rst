@@ -25,6 +25,9 @@ for details on recent changes.
 
 Use "pip install refl1d wxpython" to install in your python environment.
 
+Submit requests and pull requests to the project
+`git pages <https://github.com/reflectometry/refl1d>`_
+
 .. image:: https://travis-ci.org/reflectometry/refl1d.svg?branch=master
     :target: https://travis-ci.org/reflectometry/refl1d
 

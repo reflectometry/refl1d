@@ -4,7 +4,7 @@ Change History
 
 Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 
-2020-06-09 v0.8.11
+2020-06-11 v0.8.11
 ==================
 * support list values for angle and wavelength in column data format
 * use dQ from datafile rather than calculating it from dL and dT
