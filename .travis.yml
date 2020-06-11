@@ -10,10 +10,9 @@ matrix:
     language: generic
     env: PYTHON=3.6.10
   - os: linux
-    language: generic
-    env:
-      - PYTHON=2.7
-      - BUILDDOC=1
+    language: python
+    python: 2.7
+    env: BUILDDOC=1
 
 before_install: |
   if [ "$TRAVIS_OS_NAME" == "osx" ]; then
