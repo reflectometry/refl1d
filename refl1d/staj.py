@@ -393,7 +393,7 @@ class MlayerModel(object):
 
     def __str__(self):
         line = []
-        if self.data_file is not "":
+        if self.data_file != "":
             line.append("Data: %s"%self.data_file)
         else:
             line.append("Q: %g to %g in %d steps"
@@ -867,7 +867,7 @@ class MlayerMagnetic(object):
 
     def __str__(self):
         line = []
-        if self.data_file is not "":
+        if self.data_file != "":
             line.append("Data: %s[%s]"
                         %(self.data_file, self.active_xsec.upper()))
         else:
