@@ -35,7 +35,8 @@ import periodictable
 import periodictable.xsf as xsf
 import periodictable.nsf as nsf
 
-from bumps.parameter import Parameter as Par, IntegerParameter as IntPar, Function
+from bumps.parameter import (
+    Parameter as Par, IntegerParameter as IntPar, Function, to_dict)
 
 from . import material
 
@@ -126,16 +127,16 @@ class Layer(object): # Abstract base class
 
     def to_dict(self):
         """
-            Return a dictionary representation of the Slab object
+        Return a dictionary representation of the Slab object
         """
-        _layer_dict = dict(name=self.name, type=type(self).__name__)
-        if self.thickness:
-            _layer_dict['thickness'] = self.thickness.to_dict()
-        if self.interface:
-            _layer_dict['interface'] = self.interface.to_dict()
-        if self.magnetism:
-            _layer_dict['magnetism'] = self.magnetism.to_dict()
-        return _layer_dict
+        raise NotImplementedError("to_dict not defined for "+str(self))
+        #return to_dict({
+        #    'type': type(self).__name__,
+        #    'name': self.name,
+        #    'thickness': self.thickness,
+        #    'interface': self.interface,
+        #    'magnetism': self.magnetism,
+        #})
 
     # Define a little algebra for composing samples
     # Layers can be stacked, repeated, or have length/roughness/magnetism set
@@ -274,10 +275,14 @@ class Stack(Layer):
 
     def to_dict(self):
         """
-            Return a dictionary representation of the Stack object
+        Return a dictionary representation of the Stack object
         """
-        return dict(type=type(self).__name__,
-                    layers=[L.to_dict() for L in self._layers])
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'interface': self.interface,
+            'layers': self._layers,
+        })
 
     def parameters(self):
         layers = [L.layer_parameters() for L in self._layers]
@@ -559,6 +564,19 @@ class Repeat(Layer):
         # Thickness is computed; don't make it a simple attribute
         self._thickness = Function(self._calc_thickness, name="repeat thickness")
 
+    def to_dict(self):
+        """
+        Return a dictionary representation of the Repeat object
+        """
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'interface': self.interface,
+            'magnetism': self.magnetism,
+            'repeat': self.repeat,
+            'stack': self.stack,
+        })
+
     def __getstate__(self):
         return self.interface, self.repeat, self.name, self.stack
 
@@ -715,12 +733,12 @@ class Slab(Layer):
     def to_dict(self):
         """
         Return a dictionary representation of the Slab object
-
-        #TODO: Add magnetism
         """
-        _slab_dict = dict(name=self.name, type=type(self).__name__)
-        _slab_dict['thickness'] = self.thickness.to_dict()
-        _slab_dict['interface'] = self.interface.to_dict()
-        _slab_dict['material'] = self.material.to_dict()
-        _material_parameters = self.material.parameters()
-        return _slab_dict
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'thickness': self.thickness,
+            'interface': self.interface,
+            'material': self.material,
+            'magnetism': self.magnetism,
+        })

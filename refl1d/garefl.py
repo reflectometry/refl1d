@@ -41,7 +41,7 @@ from threading import current_thread
 import numpy as np
 from numpy import empty, zeros, array
 
-from bumps.parameter import Parameter
+from bumps.parameter import Parameter, to_dict
 from bumps.fitproblem import FitProblem
 
 from .probe import QProbe, PolarizedNeutronQProbe
@@ -130,11 +130,12 @@ class GareflExperiment(Experiment):
         return self._pars
 
     def to_dict(self):
-        return {
+        return to_dict({
             'type': type(self).__name__,
             'dll_path': self.model._dll_path,
             'index': self.index,
-        }
+            'parameters': self.parameters(),
+        })
 
     def _render_slabs(self):
         """

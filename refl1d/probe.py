@@ -48,7 +48,7 @@ import numpy.random
 import numpy.fft
 
 from periodictable import nsf, xsf
-from bumps.parameter import Parameter, Constant
+from bumps.parameter import Parameter, Constant, to_dict
 from bumps.plotutil import coordinated_colors, auto_shift
 from bumps.data import parse_multi, strip_quotes
 
@@ -422,12 +422,16 @@ class Probe(object):
 
     def to_dict(self):
         """ Return a dictionary representation of the parameters """
-        return dict(type=type(self).__name__,
-                    intensity=self.intensity.to_dict(),
-                    background=self.background.to_dict(),
-                    back_absorption=self.back_absorption.to_dict(),
-                    theta_offset=self.theta_offset.to_dict(),
-                    sample_broadening=self.sample_broadening.to_dict())
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'filename': self.filename,
+            'intensity': self.intensity,
+            'background': self.background,
+            'back_absorption': self.back_absorption,
+            'theta_offset': self.theta_offset,
+            'sample_broadening': self.sample_broadening,
+        })
 
     def scattering_factors(self, material, density):
         """
@@ -968,8 +972,11 @@ class ProbeSet(Probe):
 
     def to_dict(self):
         """ Return a dictionary representation of the parameters """
-        return dict(type=type(self).__name__,
-                    pp=[p.to_dict() for p in self.probes])
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'probes': self.probes,
+        })
 
     def resynth_data(self):
         for p in self.probes: p.resynth_data()
@@ -1567,12 +1574,17 @@ class PolarizedNeutronProbe(object):
 
     def to_dict(self):
         """ Return a dictionary representation of the parameters """
-        mm, mp, pm, pp = [(xsi.to_dict() if xsi else None)
-                          for xsi in self.xs]
-        return dict(type=type(self).__name__,
-                    pp=pp, pm=pm, mp=mp, mm=mm,
-                    a_guide=self.Aguide.to_dict(),
-                    h=self.H.to_dict())
+        mm, mp, pm, pp = self.xs
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'pp': pp,
+            'pm': pm,
+            'mp': mp,
+            'mm': mm,
+            'a_guide': self.Aguide,
+            'h': self.H,
+        })
 
     def resynth_data(self):
         for p in self.xs:

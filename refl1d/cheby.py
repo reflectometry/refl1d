@@ -78,7 +78,7 @@ the bounds.  Bounds on the oscillation are easier to control using
 # - moderately complicated
 import numpy as np
 from numpy import inf, real, imag
-from bumps.parameter import  Parameter as Par
+from bumps.parameter import  Parameter as Par, to_dict
 from bumps.cheby import cheby_val, cheby_coeff
 from bumps.cheby import cheby_approx, cheby_points #pylint: disable=unused-import
 
@@ -115,7 +115,19 @@ class FreeformCheby(Layer):
 
     def parameters(self):
         """Return parameters used to define layer"""
-        return {'rho':self.rho, 'irho':self.irho}
+        return {
+            'thickness': self.thickness,
+            'rho': self.rho,
+            'irho': self.irho
+        }
+
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'method': self.method,
+            **self.parameters(),
+        })
 
     def render(self, probe, slabs):
         """Render slabs for use with the given probe"""
@@ -179,9 +191,22 @@ class ChebyVF(Layer):
         #   base+length+3*sigma <= thickness
 
     def parameters(self):
-        return {'solvent': self.solvent.parameters(),
-                'material': self.material.parameters(),
-                'vf': self.vf}
+        return {
+            'solvent': self.solvent.parameters(),
+            'material': self.material.parameters(),
+            'vf': self.vf,
+        }
+
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'method': self.method,
+            'thickness': self.thickness,
+            'vf': self.vf,
+            'material': self.material,
+            'solvent': self.solvent,
+        })
 
     def render(self, probe, slabs):
         Mr, Mi = self.material.sld(probe)

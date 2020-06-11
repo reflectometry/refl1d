@@ -41,14 +41,11 @@ from __future__ import print_function
 
 import numpy as np
 from numpy import inf
-from bumps.parameter import Parameter, flatten
+from bumps.parameter import Parameter, flatten, to_dict
 from bumps.mono import monospline
 
 from .model import Layer, Stack
 from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
-
-def _optional_dict(p):
-    return p.to_dict() if p is not None else None
 
 class BaseMagnetism(object):
     """
@@ -97,15 +94,15 @@ class BaseMagnetism(object):
             }
 
     def to_dict(self):
-        return {
+        return to_dict({
             'type': type(self).__name__,
-            'extent': self.extent,
             'name': self.name,
-            'dead_below': self.dead_below.to_dict(),
-            'dead_above': self.dead_above.to_dict(),
-            'interface_below': _optional_dict(self.interface_below),
-            'interface_above': _optional_dict(self.interface_above),
-        }
+            'extent': self.extent,
+            'dead_below': self.dead_below,
+            'dead_above': self.dead_above,
+            'interface_below': self.interface_below,
+            'interface_above': self.interface_above,
+        })
 
     def set_layer_name(self, name):
         """
@@ -150,8 +147,8 @@ class Magnetism(BaseMagnetism):
 
     def to_dict(self):
         result = BaseMagnetism.to_dict(self)
-        result['rhoM'] = self.rhoM.to_dict()
-        result['thetaM'] = self.thetaM.to_dict()
+        result['rhoM'] = to_dict(self.rhoM)
+        result['thetaM'] = to_dict(self.thetaM)
         return result
 
     def render(self, probe, slabs, thickness, anchor, sigma):
@@ -246,10 +243,10 @@ class MagnetismStack(BaseMagnetism):
 
     def to_dict(self):
         result = BaseMagnetism.to_dict(self)
-        result['weight'] = [p.to_dict() for p in self.weight]
-        result['rhoM'] = [p.to_dict() for p in self.rhoM]
-        result['thetaM'] = [p.to_dict() for p in self.thetaM]
-        #result['interfaceM'] = [p.to_dict() for p in self.interfaceM]
+        result['weight'] = to_dict(self.weight)
+        result['rhoM'] = to_dict(self.rhoM)
+        result['thetaM'] = to_dict(self.thetaM)
+        #result['interfaceM'] = to_dict(self.interfaceM)
         return result
 
     def render(self, probe, slabs, thickness, anchor, sigma):
@@ -314,8 +311,8 @@ class MagnetismTwist(BaseMagnetism):
 
     def to_dict(self):
         result = BaseMagnetism.to_dict(self)
-        result['rhoM'] = [p.to_dict() for p in self.rhoM]
-        result['thetaM'] = [p.to_dict() for p in self.thetaM]
+        result['rhoM'] = to_dict(self.rhoM)
+        result['thetaM'] = to_dict(self.thetaM)
         return result
 
     def render(self, probe, slabs, thickness, anchor, sigma):
@@ -383,9 +380,9 @@ class FreeMagnetism(BaseMagnetism):
 
     def to_dict(self):
         result = BaseMagnetism.to_dict(self)
-        result['z'] = [p.to_dict() for p in self.z]
-        result['rhoM'] = [p.to_dict() for p in self.rhoM]
-        result['thetaM'] = [p.to_dict() for p in self.thetaM]
+        result['z'] = to_dict(self.z)
+        result['rhoM'] = to_dict(self.rhoM)
+        result['thetaM'] = to_dict(self.thetaM)
         return result
 
     def profile(self, Pz, thickness):

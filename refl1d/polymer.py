@@ -55,7 +55,7 @@ import inspect
 
 import numpy as np
 
-from bumps.parameter import Parameter
+from bumps.parameter import Parameter, to_dict
 from .model import Layer
 from . import util
 from time import time
@@ -156,6 +156,18 @@ class PolymerBrush(Layer):
             'power': self.power,
             'sigma': self.sigma,
         }
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'base_vf': self.base_vf,
+            'base': self.base,
+            'length': self.length,
+            'power': self.power,
+            'sigma': self.sigma,
+            'solvent': self.solvent,
+            'polymer': self.polymer,
+        })
 
     def profile(self, z):
         base_vf, base, length, power, sigma = [
@@ -296,6 +308,17 @@ class VolumeProfile(Layer):
         for k in self._parameters:
             P[k] = getattr(self, k)
         return P
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'profile': self.profile,
+            'thickness': self.thickness,
+            'interface': self.interface,
+            'parameters': {k: getattr(self, k) for k in self._parameters},
+            'solvent': self.solvent,
+            'material': self.material,
+        })
 
     def render(self, probe, slabs):
         Mr, Mi = self.material.sld(probe)
@@ -386,6 +409,19 @@ class PolymerMushroom(Layer):
             'thickness': self.thickness,
             'interface': self.interface
         }
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'profile': self.profile,
+            'thickness': self.thickness,
+            'interface': self.interface,
+            'delta': self.delta,
+            'vf': self.vf,
+            'sigma': self.sigma,
+            'solvent': self.solvent,
+            'polymer': self.polymer,
+        })
 
     def profile(self, z):
         delta, sigma, vf, thickness = [
@@ -565,6 +601,23 @@ class EndTetheredPolymer(Layer):
             'thickness': self.thickness,
             'interface': self.interface
         }
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'thickness': self.thickness,
+            'interface': self.interface,
+            'chi': self.chi,
+            'chi_s': self.chi_s,
+            'h_dry': self.h_dry,
+            'l_lat': self.l_lat,
+            'mn': self.mn,
+            'm_lat': self.m_lat,
+            'pdi': self.pdi,
+            'phi_b': self.phi_b,
+            'solvent': self.solvent,
+            'polymer': self.polymer,
+        })
     def profile(self, z):
         return SCFprofile(z, chi=self.chi.value, chi_s=self.chi_s.value,
                           h_dry=self.h_dry.value, l_lat=self.l_lat.value,

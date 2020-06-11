@@ -18,6 +18,7 @@ from warnings import warn
 
 import numpy as np
 from bumps import parameter
+from bumps.parameter import Parameter, to_dict
 
 from . import material, profile
 from . import __version__
@@ -222,18 +223,16 @@ class ExperimentBase(object):
 
     def save_json(self, basename):
         """ Save the experiment as a json file """
-        experiment = self.to_dict()
-        if experiment is None:
-            warn("saving to json not implemented for %s" % type(self).__name__)
-            return
-
-        # add tags for version and experiment type
-        experiment['refl1d'] = __version__
-        experiment['type'] = type(self).__name__
-        json_file = basename + "-expt.json"
-        with open(json_file, 'w') as fid:
-            data = json.dumps(experiment)
-            fid.write(data)
+        try:
+            experiment = to_dict(self)
+            experiment['refl1d'] = __version__
+            json_file = basename + "-expt.json"
+            with open(json_file, 'w') as fid:
+                data = json.dumps(experiment)
+                fid.write(data)
+        except Exception:
+            traceback.print_exc()
+            warn("failed to create json structure for model")
 
     def save_profile(self, basename):
         if self.ismagnetic:
@@ -397,17 +396,17 @@ class Experiment(ExperimentBase):
             }
 
     def to_dict(self):
-        return {
+        return to_dict({
             'type': type(self).__name__,
-            'sample': self.sample.to_dict(),
-            'probe': self.probe.to_dict(),
+            'name': self.name,
+            'sample': self.sample,
+            'probe': self.probe,
             'roughness_limit': self.roughness_limit,
             'dz': self.dz,
             'dA': self.dA,
             'step_interfaces': self.step_interfaces,
             'interpolation': self.interpolation,
-            'name': self.name,
-            }
+        })
 
     def _render_slabs(self):
         """
@@ -656,7 +655,7 @@ class MixedExperiment(ExperimentBase):
                  name=None, coherent=False, interpolation=0, **kw):
         self.samples = samples
         self.probe = probe
-        self.ratio = [parameter.Parameter.default(r, name="ratio %d"%i)
+        self.ratio = [Parameter.default(r, name="ratio %d"%i)
                       for i, r in enumerate(ratio)]
         self.parts = [Experiment(s, probe, **kw) for s in samples]
         self.coherent = coherent
@@ -678,16 +677,16 @@ class MixedExperiment(ExperimentBase):
             }
 
     def to_dict(self):
-        return {
+        return to_dict({
             'type': type(self).__name__,
-            'samples': [s.to_dict() for s in self.samples],
-            'ratio': [s.to_dict() for s in self.ratio],
-            'probe': self.probe.to_dict(),
-            'parts': [s.to_dict() for s in self.parts],
+            'name': self.name,
+            'samples': self.samples,
+            'ratio': self.ratio,
+            'probe': self.probe,
+            'parts': self.parts,
             'coherent': self.coherent,
             'interpolation': self.interpolation,
-            'name': self.name,
-            }
+        })
 
     def _reflamp(self):
         """

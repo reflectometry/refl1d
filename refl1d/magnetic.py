@@ -45,7 +45,7 @@ from __future__ import print_function
 
 import numpy as np
 from numpy import inf
-from bumps.parameter import Parameter
+from bumps.parameter import Parameter, to_dict
 from bumps.mono import monospline
 
 from .model import Layer, Stack
@@ -69,12 +69,23 @@ class MagneticLayer(Layer):
         self.interface_above = interface_above
         self.name = name
     def parameters(self):
-        return {'stack':self.stack.parameters(),
-                'dead_below':self.dead_below,
-                'dead_above':self.dead_above,
-                'interface_below':self.interface_below,
-                'interface_above':self.interface_above,
-               }
+        return {
+            'stack':self.stack.parameters(),
+            'dead_below':self.dead_below,
+            'dead_above':self.dead_above,
+            'interface_below':self.interface_below,
+            'interface_above':self.interface_above,
+        }
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'stack':self.stack,
+            'dead_below':self.dead_below,
+            'dead_above':self.dead_above,
+            'interface_below':self.interface_below,
+            'interface_above':self.interface_above,
+        })
     @property
     def thickness(self):
         """Thickness of the magnetic region"""
@@ -121,6 +132,11 @@ class MagneticSlab(MagneticLayer):
         parameters = MagneticLayer.parameters(self)
         parameters.update(rhoM=self.rhoM, thetaM=self.thetaM)
         return parameters
+    def to_dict(self):
+        ret = MagneticLayer.to_dict(self)
+        ret['rhoM'] = to_dict(self.rhoM)
+        ret['thetaM'] = to_dict(self.thetaM)
+        return ret
 
     def render(self, probe, slabs):
         anchor, sigma = self.render_stack(probe, slabs)
@@ -165,6 +181,13 @@ class MagneticStack(MagneticLayer):
                           interfaceM=self.interfaceM,
                           weight=self.weight)
         return parameters
+    def to_dict(self):
+        ret = MagneticLayer.to_dict(self)
+        ret['rhoM'] = to_dict(self.rhoM)
+        ret['thetaM'] = to_dict(self.thetaM)
+        ret['interfaceM'] = to_dict(self.interfaceM)
+        ret['weight'] = to_dict(self.weight)
+        return ret
 
     def render(self, probe, slabs):
         anchor, sigma = self.render_stack(probe, slabs)
@@ -207,6 +230,11 @@ class MagneticTwist(MagneticLayer):
         parameters = MagneticLayer.parameters(self)
         parameters.update(rhoM=self.rhoM, thetaM=self.thetaM)
         return parameters
+    def to_dict(self):
+        ret = MagneticLayer.to_dict(self)
+        ret['rhoM'] = to_dict(self.rhoM)
+        ret['thetaM'] = to_dict(self.thetaM)
+        return ret
 
     def render(self, probe, slabs):
         anchor, sigma = self.render_stack(probe, slabs)
@@ -252,6 +280,12 @@ class FreeMagnetic(MagneticLayer):
         parameters = MagneticLayer.parameters(self)
         parameters.update(rhoM=self.rhoM, thetaM=self.thetaM, z=self.z)
         return parameters
+    def to_dict(self):
+        ret = MagneticLayer.to_dict(self)
+        ret['rhoM'] = to_dict(self.rhoM)
+        ret['thetaM'] = to_dict(self.thetaM)
+        ret['z'] = to_dict(self.z)
+        return ret
 
     def profile(self, Pz):
         thickness = self.thickness.value

@@ -4,7 +4,7 @@ Freeform modeling with B-Splines
 
 import numpy as np
 from numpy import inf
-from bumps.parameter import Parameter as Par
+from bumps.parameter import Parameter as Par, to_dict
 from bumps.bspline import pbs, bspline
 
 from .model import Layer
@@ -47,13 +47,21 @@ class FreeLayer(Layer):
         if len(self.irhoz) > 0 and len(self.irhoz) != len(self.irho):
             raise ValueError("must have one z value for each irho")
     def parameters(self):
-        return {'rho':self.rho,
-                'rhoz':self.rhoz,
-                'irho':self.irho,
-                'irhoz':self.irhoz,
-                'left':self.left.parameters(),
-                'right':self.right.parameters(),
-               }
+        return {
+            'rho': self.rho,
+            'rhoz': self.rhoz,
+            'irho': self.irho,
+            'irhoz': self.irhoz,
+            # TODO: left/right pars are already listed in the stack
+            'left': self.left.parameters(),
+            'right': self.right.parameters(),
+        }
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'parameters': self.parameters(),
+        })
     def render(self, probe, slabs):
         thickness = self.thickness.value
         left_rho, left_irho = self.left.sld(probe)
@@ -96,11 +104,20 @@ class FreeformInterface01(Layer):
         self.vf = [Par.default(p, name=name+" vf[%d]"%i, limits=(0, 1))
                    for i, p in enumerate(vf)]
     def parameters(self):
-        return {'z':self.z,
-                'vf':self.vf,
-                'below':self.below.parameters(),
-                'above':self.above.parameters(),
-               }
+        return {
+            'thickness': self.thickness,
+            'interface': self.interface,
+            'z': self.z,
+            'vf': self.vf,
+            'below': self.below.parameters(),
+            'above': self.above.parameters(),
+        }
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'parameters': self.parameters(),
+        })
     def render(self, probe, slabs):
         thickness = self.thickness.value
         left_rho, left_irho = self.below.sld(probe)
@@ -154,11 +171,19 @@ class FreeInterface(Layer):
     thickness = property(_get_thickness, _set_thickness)
 
     def parameters(self):
-        return {'dz':self.dz,
-                'dp':self.dp,
-                'below':self.below.parameters(),
-                'above':self.above.parameters(),
-               }
+        return {
+            'interface': self.interface,
+            'below': self.below.parameters(),
+            'above': self.above.parameters(),
+            'dz': self.dz,
+            'dp': self.dp,
+            }
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'parameters': self.parameters(),
+        })
     def render(self, probe, slabs):
         left_rho, left_irho = self.below.sld(probe)
         right_rho, right_irho = self.above.sld(probe)

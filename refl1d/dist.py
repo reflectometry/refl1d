@@ -12,7 +12,7 @@ varying parameter.  Multi-parameter dispersion models are not available.
 """
 
 import numpy as np
-from bumps.parameter import Parameter
+from bumps.parameter import Parameter, to_dict
 
 from .experiment import ExperimentBase
 
@@ -70,15 +70,15 @@ class Weights(object):
         return {'args': self.args, 'loc': self.loc, 'scale': self.scale}
 
     def to_dict(self):
-        return {
+        return to_dict({
             'type': type(self).__name__,
             'edges': self.edges.tolist(),
             'cdf': self.cdf.__name__,  # TODO: can't lookup name
-            'args': [s.to_dict() for s in self.args],
-            'loc': self.loc.to_dict(),
-            'scale': self.scale.to_dict(),
+            'args': self.args,
+            'loc': self.loc,
+            'scale': self.scale,
             'truncated': self.truncated,
-            }
+        })
 
     def __iter__(self):
         # Find weights and normalize the sum to 1
@@ -133,14 +133,14 @@ class DistributionExperiment(ExperimentBase):
             }
 
     def to_dict(self):
-        return {
+        return to_dict({
             'type': type(self).__name__,
-            'P': str(self.P),  # TODO: parameter name may not be unique
-            'distribution': self.distribution.to_dict(),
-            'experiment': self.experiment.to_dict(),
+            'P': self.P, # Note: use parameter id to restore
+            'distribution': self.distribution,
+            'experiment': self.experiment,
             # Don't need self.probe since it is the experiment probe.
             'coherent': self.coherent,
-            }
+        })
 
     def reflectivity(self, resolution=True, interpolation=0):
         key = ("reflectivity", resolution, interpolation)

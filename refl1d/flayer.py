@@ -2,7 +2,7 @@ import inspect
 
 from numpy import real, imag, asarray, broadcast_to
 
-from bumps.parameter import Parameter, BaseParameter
+from bumps.parameter import Parameter, BaseParameter, to_dict
 from refl1d.material import SLD
 from refl1d.model import Layer
 from refl1d.magnetism import BaseMagnetism, Magnetism, DEFAULT_THETA_M
@@ -81,10 +81,22 @@ class FunctionalProfile(Layer):
         self._parameters = _set_vars(self, name, profile, kw, self.RESERVED)
 
     def parameters(self):
-        P = dict((k, getattr(self, k)) for k in self._parameters)
+        P = {k: getattr(self, k) for k in self._parameters}
         P['thickness'] = self.thickness
         #P['interface'] = self.interface
         return P
+
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'thickness': self.thickness,
+            'interface': self.interface,
+            'profile': self.profile,
+            'parameters': {k: getattr(self, k) for k in self._parameters},
+            'tol': self.tol,
+            'magnetism': self.magnetism,
+        })
 
     def render(self, probe, slabs):
         Pw, Pz = slabs.microslabs(self.thickness.value)
@@ -155,12 +167,11 @@ class FunctionalMagnetism(BaseMagnetism):
 
     # TODO: is there a sane way of computing magnetism thickness in advance?
     def _calc_thickness(self):
-        try:
-            stack, index = self.anchor
-        except:
-            raise ValueError("\
-Need layer.magnetism.set_anchor(stack, layer) to compute magnetic thickness.")
-
+        if self.anchor is None:
+            raise ValueError(
+                "Need layer.magnetism.set_anchor(stack, layer) to compute"
+                " magnetic thickness.")
+        stack, index = self.anchor
         stack, start = stack._lookup(index)
         total = 0
         for k in range(start, start+self.extent):
@@ -172,6 +183,14 @@ Need layer.magnetism.set_anchor(stack, layer) to compute magnetic thickness.")
         parameters = BaseMagnetism.parameters(self)
         parameters.update((k, getattr(self, k)) for k in self._parameters)
         return parameters
+
+    def to_dict(self):
+        ret = BaseMagnetism.to_dict(self)
+        ret.update(to_dict({
+            'profile': self.profile,
+            'parameters': {k: getattr(self, k) for k in self._parameters},
+            'tol': self.tol,
+        }))
 
     def render(self, probe, slabs, thickness, anchor, sigma):
         Pw, Pz = slabs.microslabs(thickness)

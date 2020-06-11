@@ -46,7 +46,7 @@ import numpy as np
 from numpy import inf, NaN
 import periodictable
 from periodictable.constants import avogadro_number
-from bumps.parameter import Parameter as Par
+from bumps.parameter import Parameter, to_dict
 
 
 class Scatterer(object):
@@ -137,19 +137,19 @@ class SLD(Scatterer):
     """
     def __init__(self, name="SLD", rho=0, irho=0):
         self.name = name
-        self.rho = Par.default(rho, name=name+" rho")
-        self.irho = Par.default(irho, name=name+" irho")
+        self.rho = Parameter.default(rho, name=name+" rho")
+        self.irho = Parameter.default(irho, name=name+" irho")
 
     def parameters(self):
         return {'rho':self.rho, 'irho':self.irho}
 
     def to_dict(self):
-        return {
+        return to_dict({
             'type': type(self).__name__,
             'name': self.name,
-            'rho': self.rho.to_dict(),
-            'irho': self.irho.to_dict(),
-        }
+            'rho': self.rho,
+            'irho': self.irho,
+        })
 
     def sld(self, probe):
         return self.rho.value, self.irho.value
@@ -256,34 +256,34 @@ class Material(Scatterer):
         if type == 'bulk_density':
             if value is None:
                 value = self.formula.density
-            self.bulk_density = Par.default(value, name=self.name+" density",
-                                            limits=(0, inf))
+            self.bulk_density = Parameter.default(
+                value, name=self.name+" density", limits=(0, inf))
             self.density = self.bulk_density
         elif type == "number_density":
             if value is None:
                 value = avogadro_number / self.formula.mass * self.formula.density
-            self.number_density = Par.default(value, name=self.name+" number density", limits=(0, inf))
+            self.number_density = Parameter.default(
+                value, name=self.name+" number density", limits=(0, inf))
             self.density = self.number_density / avogadro_number * self.formula.mass
         elif type == 'natural_density':
             if value is None:
                 value = self.formula.natural_density
-            self.natural_density = Par.default(value,
-                                               name=self.name+" nat. density",
-                                               limits=(0, inf))
+            self.natural_density = Parameter.default(
+                value, name=self.name+" nat. density", limits=(0, inf))
             self.density = self.natural_density / self.formula.natural_mass_ratio()
         elif type == 'relative_density':
             if value is None:
                 value = 1
-            self.relative_density = Par.default(value,
-                                                name=self.name+" rel. density",
-                                                limits=(0, inf))
+            self.relative_density = Parameter.default(
+                value, name=self.name+" rel. density", limits=(0, inf))
             self.density = self.formula.density*self.relative_density
         ## packing factor code should be correct, but radii are unreliable
         #elif type is 'packing_factor':
         #    max_density = self.formula.mass/self.formula.volume(packing_factor=1)
         #    if value is None:
         #        value = self.formula.density/max_density
-        #    self.packing_factor = Par.default(value, name=self.name+" packing factor")
+        #    self.packing_factor = Parameter.default(
+        #        value, name=self.name+" packing factor")
         #    self.density = self.packing_factor * max_density
         elif type == 'cell_volume':
             # Density is in grams/cm^3.
@@ -291,9 +291,8 @@ class Material(Scatterer):
             # Volume is in A^3 = 1e24*cm^3.
             if value is None:
                 value = (1e24*self.formula.molecular_mass)/self.formula.density
-            self.cell_volume = Par.default(value,
-                                           name=self.name+" cell volume",
-                                           limits=(0, inf))
+            self.cell_volume = Parameter.default(
+                value, name=self.name+" cell volume", limits=(0, inf))
             self.density = (1e24*self.formula.molecular_mass)/self.cell_volume
         else:
             raise ValueError("Unknown density calculation type '%s'"%type)
@@ -302,18 +301,18 @@ class Material(Scatterer):
         return {'density': self.density}
 
     def to_dict(self):
-        return {
+        return to_dict({
             'type': type(self).__name__,
             'name': self.name,
             'formula': str(self.formula),
-            'density': self.density.to_dict(),
+            'density': self.density,
             'use_incoherent': self.use_incoherent,
             # TODO: what about fitby, natural_density and cell_volume?
-        }
+        })
 
     def sld(self, probe):
-        rho, irho, incoh = probe.scattering_factors(self.formula,
-                                                    density=self.density.value)
+        rho, irho, incoh = probe.scattering_factors(
+            self.formula, density=self.density.value)
         if self.use_incoherent:
             raise NotImplementedError("incoherent scattering not supported")
             #irho += incoh
@@ -343,7 +342,7 @@ class Compound(Scatterer):
         count = [parts[i] for i in range(1, len(parts), 2)]
         # Convert M1, M2, ... to materials if necessary
         formula = [periodictable.formula(p) for p in formula]
-        count = [Par.default(w, limits=(0, inf), name=str(f)+" count")
+        count = [Parameter.default(w, limits=(0, inf), name=str(f)+" count")
                  for w, f in zip(count, formula)]
         self.parts = formula
         self.count = count
@@ -359,8 +358,8 @@ class Compound(Scatterer):
     def to_dict(self):
         return {
             'type': type(self).__name__,
-            'parts': [str(p) for p in self.parts],
-            'count': [p.to_dict() for p in self.count],
+            'parts': to_dict(self.parts),
+            'count': to_dict(self.count),
         }
 
     def formula(self):
@@ -459,7 +458,7 @@ class Mixture(Scatterer):
             name = "+".join(p.name for p in material)
 
         # Make the fractions into fittable parameters
-        fraction = [Par.default(w, limits=(0, 100), name=f.name+"% "+by)
+        fraction = [Parameter.default(w, limits=(0, 100), name=f.name+"% "+by)
                     for w, f in zip(fraction, material)]
 
         self._volume = _volume
@@ -484,9 +483,9 @@ class Mixture(Scatterer):
     def to_dict(self):
         return {
             'type': type(self).__name__,
-            'base': self.base.to_dict(),
-            'material': [p.to_dict() for p in self.material],
-            'fraction': [p.to_dict() for p in self.fraction],
+            'base': to_dict(self.base),
+            'material': to_dict(self.material),
+            'fraction': to_dict(self.fraction),
         }
 
     def _density(self):
