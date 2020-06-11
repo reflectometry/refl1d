@@ -11,7 +11,7 @@ def setup_bumps():
     # vfs_init must be called pretty much first since it replaces filesystem
     # calls with filesystem hooks.  Any module that imports the calls directly
     # e.g., using *from os.path import exists*, needs to have the hook in
-    # place before the module is even imported.  This includes
+    # place before the module is even imported.
     try:
         from bumps.vfs import vfs_init
         vfs_init()

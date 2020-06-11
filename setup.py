@@ -108,7 +108,7 @@ dist = setup(
         'gui_scripts': ['refl1d_gui=refl1d.main:gui']
     },
     ext_modules=[reflmodule_config(), SCFmodule_config()],
-    install_requires=['bumps>=0.7.11', 'numpy', 'scipy', 'matplotlib', 'periodictable'],
+    install_requires=['bumps>=0.7.16', 'numpy', 'scipy', 'matplotlib', 'periodictable'],
     extras_require={'full': ['wxpython']},
     cmdclass={'build_ext': build_ext_subclass},
     )

@@ -15,11 +15,14 @@ Refl1D Release Process
    # Note: linux boxen includes ~/dev as well as ~/src on the shared machines
 sh
 git status
+git pull
+git push
 
 (2) check that all tests pass
   [bumps, refl1d, periodictable] X [windows, mac, linux] X [python 2.6, 2.7, 3.3, 3.4]
 
-git pull
+... look for build badge on github page ...
+
 python setup.py test
 python check_examples.py --chisq
 
@@ -43,14 +46,14 @@ vi rtd-requirements
 git commit -a -m "R $REFLVER"
 git push
 
-(6) build the binaries for windows and mac
+(6) wait for the binaries for windows and mac
 
 # again, release is on jenkins, but this allows us to check the build
 # Note: don't use anaconda to build release version unless we update all
 # web pages to say "built with anaconda"; as convenient as it is, we don't
 # want to run afoul of license agreements by missing a page.
-[windows, mac]
-python master_builder.py
+#[windows, mac]
+#python master_builder.py
 
 (7) tag release
 

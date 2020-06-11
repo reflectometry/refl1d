@@ -4,18 +4,21 @@ Change History
 
 Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 
-2020-05-?? v0.8.11
+2020-06-09 v0.8.11
 ==================
 * support list values for angle and wavelength in column data format
 * use dQ from datafile rather than calculating it from dL and dT
 * adjust dQ with sample broadening rather than calculating it from dL and dT
-* fix json output so saving the fit doesn't raise and error
+* fix json output so saving the fit doesn't raise an error
 * fix functional magnetic profile so [rho, rho] is not treated as rho, theta.
 * fix plots to show magnetic angle when not the standard magnetic angle
 * fix legends when show magnetic angles on plots
 * wxpython is now an optional dependency
+* bumps: support *limits=(min, max)* for pm and pmp parameter ranges
+* bumps: fix *--entropy* command line option
+* bumps: parallel fitting suppressed in GUI for now---need to reuse thread pool
 
-**BREAKING CHANGE**: functional magnetic profile now defaults to thetaM=270
+**BREAKING CHANGE**: default thetaM for functional magnetism changed from 0 to 270
 
 2020-02-18 v0.8.10
 ==================
@@ -28,6 +31,7 @@ Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 * python 3.8 support requires bumps v0.7.14 (released 2020-01-03)
 
 **BREAKING CHANGE**: old-style data loader with sample_broadening set
+
 * sample_broadening was applied twice: once to the base Δθ from when the probe
   was created and again whenever ΔQ was computed; this is not a problem with
   the new *load4* function.  The code was fixed, which may cause difficulties
