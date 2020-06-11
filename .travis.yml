@@ -9,9 +9,11 @@ matrix:
   - os: osx
     language: generic
     env: PYTHON=3.6.10
-  #- os: osx
-  #  language: generic
-  #  env: PYTHON=2.7
+  - os: linux
+    language: generic
+    env:
+      - PYTHON=2.7
+      - BUILDDOC=1
 
 before_install: |
   if [ "$TRAVIS_OS_NAME" == "osx" ]; then
@@ -39,8 +41,14 @@ before_install: |
 install:
   - python -m pip install -U pip
   - python -m easy_install -U setuptools
-  - python -m pip install wheel numpy scipy matplotlib periodictable wxpython bumps
+  - python -m pip install wheel numpy scipy matplotlib periodictable wxpython bumps sphinx nose
   - python setup.py bdist_wheel
+
+script:
+  - python --version
+  - python setup.py test
+  - python check_examples.py --chisq
+  - if [ -n "$BUILDDOC" ]; then make html; fi
 
 deploy:
   provider: releases
