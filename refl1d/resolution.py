@@ -52,11 +52,11 @@ def TL2Q(T=None, L=None):
 
 _FWHM_scale = sqrt(log(256))
 def FWHM2sigma(s):
-    return s/_FWHM_scale
+    return asarray(s, 'd')/_FWHM_scale
 
 
 def sigma2FWHM(s):
-    return s*_FWHM_scale
+    return asarray(s, 'd')*_FWHM_scale
 
 
 def dTdL2dQ(T=None, dT=None, L=None, dL=None):
@@ -206,6 +206,7 @@ def binwidths(L):
 
     where $E$ and $\omega$ are as defined in :func:`binedges`.
     """
+    L = asarray(L, 'd')
     if L[1] > L[0]:
         dLoL = L[1]/L[0] - 1
     else:
@@ -258,6 +259,7 @@ def binedges(L):
                           = \frac{E_{i+1}}{E_i}
                           = \frac{E_i(1+\omega)}{E_i} = 1 + \omega
     """
+    L = asarray(L, 'd')
     if L[1] > L[0]:
         dLoL = L[1]/L[0] - 1
         last = (1+dLoL)
@@ -330,6 +332,7 @@ def divergence(T=None, slits=None, distance=None,
 
         \Delta\theta_s = B - \frac{180}{\pi}\Delta\theta_d
     """
+    # TODO: update from reductus to handle four slits
     # TODO: check that the formula is correct for T=0 => dT = s1 / d1
     # TODO: add sample_offset and compute full footprint
     d1, d2 = distance
