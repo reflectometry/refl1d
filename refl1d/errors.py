@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Visual representation of model uncertainty.
 
@@ -414,8 +415,8 @@ def _draw_contours(group, index, label, zp, contours):
 def _profile_labels():
     import matplotlib.pyplot as plt
     plt.legend()
-    plt.xlabel('z (Å)')
-    plt.ylabel('SLD (10⁻⁶/Å²)')
+    plt.xlabel(u'z (Å)')
+    plt.ylabel(u'SLD (10⁻⁶/Å²)')
 
 def _residuals_overplot(Q, residuals):
     import matplotlib.pyplot as plt
@@ -447,8 +448,8 @@ def _residuals_contour(Q, residuals, contours=CONTOURS):
 def _residuals_labels():
     import matplotlib.pyplot as plt
     plt.legend()
-    plt.xlabel('Q (1/Å)')
-    plt.ylabel('Residuals')
+    plt.xlabel(u'Q (1/Å)')
+    plt.ylabel(u'Residuals')
 
 # ==== Helper functions =====
 
