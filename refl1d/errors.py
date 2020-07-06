@@ -42,7 +42,7 @@ def run_errors(**kw):
 
     Type the following to regenerate the profile contour plots plots:
 
-        $ refl1d -m refl1d.align <model>.py <store> [<align>] [0|1|2|n]
+        $ refl1d align <model>.py <store> [<align>] [0|1|2|n]
 
     Align is either auto for the current behaviour, or it is an interface
     number. You can align on the center of a layer by adding 0.5 to the

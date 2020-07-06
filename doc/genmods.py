@@ -33,7 +33,6 @@ MODULES = [
     #('__init__', 'Top level namespace'),
     #('interface', 'Interface'),
     ('abeles', 'Pure python reflectivity calculator'),
-    ('align', 'Profile alignment command'),
     ('anstodata', 'Reader for ANSTO data format'),
     ('cheby', 'Freeform - Chebyshev model'),
     #('composition', 'Composition space model'),
