@@ -19,6 +19,7 @@ from bumps.plotutil import next_color, dhsv, plot_quantiles, form_quantiles
 from bumps.errplot import reload_errors
 
 from .util import asbytes
+from .reflectivity import BASE_GUIDE_ANGLE
 
 #_CONTOURS = (68, 95, 100)
 #_CONTOURS = (57, 68, 84, 95, 100)
@@ -264,14 +265,14 @@ def show_errors(errors, contours=_CONTOURS, npoints=200,
         fignum = 1
         for m in profiles.keys():
             plt.figure()
-            show_profiles(errors=({m:profiles[m]}, {m:slabs[m]}, None, None),
+            show_profiles(errors=({m: profiles[m]}, {m: slabs[m]}, None, None),
                           contours=contours, npoints=npoints, align=align)
             if save:
                 plt.savefig(save+"-err%d.png"%fignum)
             fignum += 1
         for m in residuals.keys():
             plt.figure()
-            show_residuals(errors=(None, None, {m:Q[m]}, {m:residuals[m]}),
+            show_residuals(errors=(None, None, {m: Q[m]}, {m: residuals[m]}),
                            contours=contours)
             if save:
                 plt.savefig(save+"-err%d.png"%fignum)
@@ -302,22 +303,37 @@ def _save_profile_data(errors, align, contours, npoints, save):
     if align is not None:
         profiles = align_profiles(profiles, slabs, align)
     k = 1
-    for title, p in sorted((m.name, p) for m, p in profiles.items()):
+    for title, group in sorted((m.name, group) for m, group in profiles.items()):
         # Find limits of all profiles
-        z = np.hstack([line[0] for line in p])
+        z = np.hstack([line[0] for line in group])
         zp = np.linspace(np.min(z), np.max(z), npoints)
-        # Interpolate rho on common z
-        rho = np.vstack([np.interp(zp, L[0], L[1]) for L in p])
-        q, qval = form_quantiles(rho, contours)
-        data = np.vstack((zp, rho[0], np.reshape(qval, (-1, qval.shape[2]))))
-        columns = ["z", "best"] + list("%g%%"%v for v in 100*q.flatten())
-        _write_file(save+"_rho_contour%d.dat"%k, data, title, columns)
-        if len(p[0]) > 3:
-            rhoM = np.vstack([np.interp(zp, L[0], L[3]) for L in p])
-            q, qval = form_quantiles(rhoM, contours)
-            data = np.vstack((zp, rhoM[0], np.reshape(qval, (-1, qval.shape[2]))))
-            _write_file(save+"_rhoM_contour%d.dat"%k, data, title, columns)
+
+        absorbing = any((L[2] != 1e-4).any() for L in group)
+        magnetic = (len(group[0]) > 3)
+        twist = magnetic and any((L[4] != BASE_GUIDE_ANGLE).any() for L in group)
+
+        data, columns = _build_profile_matrix(group, 1, zp, contours)
+        _write_file(save + "_rho_contour%d.dat"%k, data, title, columns)
+        if absorbing:
+            data, columns = _build_profile_matrix(group, 2, zp, contours)
+            _write_file(save + "_irho_contour%d.dat"%k, data, title, columns)
+        if magnetic:
+            data, columns = _build_profile_matrix(group, 3, zp, contours)
+            _write_file(save + "_rhoM_contour%d.dat"%k, data, title, columns)
+        if twist:
+            data, columns = _build_profile_matrix(group, 4, zp, contours)
+            _write_file(save + "_thetaM_contour%d.dat"%k, data, title, columns)
         k += 1
+
+def _build_profile_matrix(group, index, zp, contours):
+    # Interpolate to common z
+    fp = np.vstack([np.interp(zp, L[0], L[index]) for L in group])
+    # Find quantiles
+    q, qval = form_quantiles(fp, contours)
+    # Build and return data columns
+    columns = ["z", "best"] + list("%g%%"%v for v in 100*q.flatten())
+    data = np.vstack((zp, fp[0], np.reshape(qval, (-1, qval.shape[2]))))
+    return data, columns
 
 def _save_residual_data(errors, contours, save):
     _, _, Q, residuals = errors
@@ -339,76 +355,71 @@ def _write_file(path, data, title, columns):
 
 # ===== Plotting functions =====
 
-def _profiles_labels(magnetic):
-    import matplotlib.pyplot as plt
-    plt.xlabel('z (A)')
-    if magnetic:
-        plt.ylabel('rho (1/A^2)')
-    else:
-        plt.ylabel('rho, rhoM (1/A^2)')
+def dark(color):
+    return dhsv(color, dv=-0.2)
 
 def _profiles_overplot(profiles):
-    import matplotlib.pyplot as plt
-
-    alpha = 0.1
-    any_magnetic = False
-    for p in profiles.values():
-        if len(p[0]) == 3:
-            rho_color = next_color()
-            for z, rho, _ in p[1:]:
-                plt.plot(z, rho, '-', color=rho_color, alpha=alpha)
-            # Plot best
-            z, rho, _ = p[0]
-            plt.plot(z, rho, '-', color=dhsv(rho_color, dv=-0.2))
+    for model, group in profiles.items():
+        name = model.name
+        absorbing = any((L[2] != 1e-4).any() for L in group)
+        magnetic = (len(group[0]) > 3)
+        # Note: Use 3 colours per dataset for consistency
+        _draw_overplot(group, 1, name + ' rho')
+        if absorbing:
+            _draw_overplot(group, 2, name + ' irho')
         else:
-            any_magnetic = True
-            rho_color = next_color()
-            rhoM_color = next_color()
-            for z, rho, _, rhoM, _ in p[1:]:
-                plt.plot(z, rho, '-', color=rho_color, alpha=alpha)
-                plt.plot(z, rhoM, '-', color=rhoM_color, alpha=alpha)
-            # Plot best
-            z, rho, _, rhoM, _ = p[0]
-            plt.plot(z, rho, '-', color=dhsv(rho_color, dv=-0.2))
-            plt.plot(z, rhoM, '-', color=dhsv(rhoM_color, dv=-0.2))
-    _profiles_labels(any_magnetic)
+            next_color()
+        if magnetic:
+            _draw_overplot(group, 3, name + ' rhoM')
+        else:
+            next_color()
+    _profile_labels()
+
+def _draw_overplot(group, index, label):
+    import matplotlib.pyplot as plt
+    alpha = 0.1
+    color = next_color()
+    for L in group[1:]:
+        plt.plot(L[0], L[index], '-', color=color, alpha=alpha)
+    # Plot best
+    L = group[0]
+    plt.plot(L[0], L[index], '-', label=label, color=dark(color))
 
 def _profiles_contour(profiles, contours=_CONTOURS, npoints=200):
-    import matplotlib.pyplot as plt
-
-    any_magnetic = False
-    for p in profiles.values():
+    for model, group in profiles.items():
+        name = model.name
+        absorbing = any((L[2] > 1e-4).any() for L in group)
+        magnetic = (len(group[0]) > 3)
         # Find limits of all profiles
-        z = np.hstack([line[0] for line in p])
+        z = np.hstack([line[0] for line in group])
         zp = np.linspace(np.min(z), np.max(z), npoints)
-        if len(p[0]) == 3:
-            rho_color = next_color()
-            # Interpolate rho on common z
-            rho = np.vstack([np.interp(zp, L[0], L[1]) for L in p])
-            # Plot the quantiles
-            plot_quantiles(zp, rho, contours, rho_color)
-            # Plot the best
-            plt.plot(zp, rho[0], '-', color=dhsv(rho_color, dv=-0.2))
+        # Note: Use 3 colours per dataset for consistency
+        _draw_contours(group, 1, name + ' rho', zp, contours)
+        if absorbing:
+            _draw_contours(group, 2, name + ' irho', zp, contours)
         else:
-            any_magnetic = True
-            rho_color = next_color()
-            rhoM_color = next_color()
-            # Interpolate rho, rhoM on common z
-            rho = np.vstack([np.interp(zp, L[0], L[1]) for L in p])
-            rhoM = np.vstack([np.interp(zp, L[0], L[3]) for L in p])
-            # Plot the quantiles
-            plot_quantiles(zp, rho, contours, rho_color)
-            plot_quantiles(zp, rhoM, contours, rhoM_color)
-            # Plot the best
-            plt.plot(zp, rho[0], '-', color=dhsv(rho_color, dv=-0.2))
-            plt.plot(zp, rhoM[0], '-', color=dhsv(rhoM_color, dv=-0.2))
-    _profiles_labels(any_magnetic)
+            next_color()
+        if magnetic:
+            _draw_contours(group, 3, name + ' rhoM', zp, contours)
+        else:
+            next_color()
+    _profile_labels()
 
-def _residuals_labels():
+def _draw_contours(group, index, label, zp, contours):
     import matplotlib.pyplot as plt
+    color = next_color()
+    # Interpolate on common z
+    fp = np.vstack([np.interp(zp, L[0], L[index]) for L in group])
+    # Plot the quantiles
+    plot_quantiles(zp, fp, contours, color)
+    # Plot the best
+    plt.plot(zp, fp[0], '-', label=label, color=dark(color))
 
-    plt.xlabel('Q (1/A)')
-    plt.ylabel('Residuals')
+def _profile_labels():
+    import matplotlib.pyplot as plt
+    plt.legend()
+    plt.xlabel('z (Å)')
+    plt.ylabel('SLD (10⁻⁶/Å²)')
 
 def _residuals_overplot(Q, residuals):
     import matplotlib.pyplot as plt
@@ -416,10 +427,11 @@ def _residuals_overplot(Q, residuals):
     shift = 0
     for m, r in residuals.items():
         color = next_color()
-        plt.plot(Q[m], shift+r[:, 1:], '.', markersize=1,
-                 color=color, alpha=alpha)
-        plt.plot(Q[m], shift+r[:, 0], '.', markersize=1,
-                 color=dhsv(color, dv=-0.2)) # best
+        plt.plot(Q[m], shift+r[:, 1:], '.', markersize=1, color=color, alpha=alpha)
+        plt.plot(Q[m], shift+r[:, 0], '.', label=m.name, markersize=1, color=dark(color))
+        # Use 3 colours from cycle so reflectivity matches rho for each dataset
+        next_color()
+        next_color()
         shift += 5
     _residuals_labels()
 
@@ -429,10 +441,18 @@ def _residuals_contour(Q, residuals, contours=_CONTOURS):
     for m, r in residuals.items():
         color = next_color()
         plot_quantiles(Q[m], shift+r.T, contours, color)
-        plt.plot(Q[m], shift+r[:, 0], '.', markersize=1,
-                 color=dhsv(color, dv=-0.2)) # best
+        plt.plot(Q[m], shift+r[:, 0], '.', label=m.name, markersize=1, color=dark(color))
+        # Use 3 colours from cycle so reflectivity matches rho for each dataset
+        next_color()
+        next_color()
         shift += 5
     _residuals_labels()
+
+def _residuals_labels():
+    import matplotlib.pyplot as plt
+    plt.legend()
+    plt.xlabel('Q (1/Å)')
+    plt.ylabel('Residuals')
 
 # ==== Helper functions =====
 
@@ -447,8 +467,8 @@ def _align_profile_set(profiles, slabs, align):
         offsets.append(_align_profile_pair(p1[0], p1[1], t1_offset,
                                            p2[0], p2[1], t2,
                                            align))
-    profiles = [tuple([p[0]+offset]+list(p[1:]))
-                for offset, p in zip(offsets, profiles)]
+    profiles = [tuple([group[0]+offset]+list(group[1:]))
+                for offset, group in zip(offsets, profiles)]
     return profiles
 
 def _align_profile_pair(z1, r1, t1_offset, z2, r2, t2, align):
