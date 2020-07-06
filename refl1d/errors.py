@@ -14,6 +14,9 @@ __all__ = ['reload_errors', 'run_errors',
            'show_errors', 'show_profiles', 'show_residuals',
           ]
 
+import sys
+import os
+
 import numpy as np
 from bumps.plotutil import next_color, dhsv, plot_quantiles, form_quantiles
 from bumps.errplot import reload_errors
@@ -21,26 +24,24 @@ from bumps.errplot import reload_errors
 from .util import asbytes
 from .reflectivity import BASE_GUIDE_ANGLE
 
-#_CONTOURS = (68, 95, 100)
-#_CONTOURS = (57, 68, 84, 95, 100)
-_CONTOURS = (68, 95)
+#CONTOURS = (68, 95, 100)
+#CONTOURS = (57, 68, 84, 95, 100)
+CONTOURS = (68, 95)
+
+# TODO: we should just keep a certain number of evaluations as a matter of
+#       course during sampling rather than recomputing them after the fact.
+# TODO: want similar code for covariance matrix based forward analysis
+# TODO: need to delegate accumulation of models and plotting to Fitness
+# TODO: move run_errors to align.py and use argparse to process sys.argv
+# TODO: add controls for the additional parameters to the command line
 
 def run_errors(**kw):
     """
-    Argument parser for generating error plots from models.
+    Command line tool for generating error plots from models.
 
-    The model directory should contain a fake model align.py with:
+    Type the following to regenerate the profile contour plots plots:
 
-        from refl1d.errors import run_errors
-        run_errors(model="", store="", align='auto')
-
-    If you are using the command line then you should be able to type the
-    following at the command prompt to generate the plots:
-
-        $ refl1d align.py <model>.py <store> [<align>] [0|1|2|n]
-
-    If you are using the GUI, you will have to set model, store and
-    align directly in align.py each time you run.
+        $ refl1d -m refl1d.align <model>.py <store> [<align>] [0|1|2|n]
 
     Align is either auto for the current behaviour, or it is an interface
     number. You can align on the center of a layer by adding 0.5 to the
@@ -63,13 +64,10 @@ def run_errors(**kw):
 
             see :func:`show_errors`
     """
-    import os
-    import sys
-    import matplotlib.pyplot as plt
 
     load = {'model': None, 'store': None, 'nshown': 50, 'random': True}
     show = {'align': 'auto', 'plots': 2,
-            'contours': _CONTOURS, 'npoints': 400,
+            'contours': CONTOURS, 'npoints': 400,
             'save': None}
 
     for k, v in kw.items():
@@ -93,26 +91,24 @@ def run_errors(**kw):
 
     if not load['store'] or not load['model']:
         _usage()
+        sys.exit(0)
+
     if show['save'] is None:
-        show['save'] = os.path.join(load['store'], load['model'][:-3])
+        name, _ = os.path.splitext(os.path.basename(load['model']))
+        show['save'] = os.path.join(load['store'], name)
 
     print("loading... this may take awhile")
     errors = reload_errors(**load)
     print("showing...")
     show_errors(errors, **show)
-    plt.show()
-    raise KeyboardInterrupt()  # Force refl1d to terminate
+
+    if show['plots'] != 0:
+        import matplotlib.pyplot as plt
+        plt.show()
+    sys.exit(0)  # Force refl1d to terminate.
 
 def _usage():
     print(run_errors.__doc__)
-    raise RuntimeError()
-
-
-# TODO: we should just keep a certain number of evaluations as a matter of
-#       course during sampling rather than recomputing them after the fact.
-# TODO: want similar code for covariance matrix based forward analysis
-# TODO: need to delegate accumulation of models and plotting to Fitness
-# TODO: move run_errors somewhere more appropriate, like cli.py
 
 def calc_errors(problem, points):
     """
@@ -212,7 +208,7 @@ def align_profiles(profiles, slabs, align):
     return dict((m, _align_profile_set(profiles[m], slabs[m], align))
                 for m in profiles.keys())
 
-def show_errors(errors, contours=_CONTOURS, npoints=200,
+def show_errors(errors, contours=CONTOURS, npoints=200,
                 align='auto', plots=1, save=None):
     """
     Plot the aligned profiles and the distribution of the residuals for
@@ -385,7 +381,7 @@ def _draw_overplot(group, index, label):
     L = group[0]
     plt.plot(L[0], L[index], '-', label=label, color=dark(color))
 
-def _profiles_contour(profiles, contours=_CONTOURS, npoints=200):
+def _profiles_contour(profiles, contours=CONTOURS, npoints=200):
     for model, group in profiles.items():
         name = model.name
         absorbing = any((L[2] > 1e-4).any() for L in group)
@@ -435,7 +431,7 @@ def _residuals_overplot(Q, residuals):
         shift += 5
     _residuals_labels()
 
-def _residuals_contour(Q, residuals, contours=_CONTOURS):
+def _residuals_contour(Q, residuals, contours=CONTOURS):
     import matplotlib.pyplot as plt
     shift = 0
     for m, r in residuals.items():

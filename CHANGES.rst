@@ -4,6 +4,12 @@ Change History
 
 Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 
+2020-..-.. v0.8.12
+==================
+* add irho to the profile contour plots
+* simplify realignment usage to 'refl1d -m refl1d.align ...'
+* reenable python 2.7 support
+
 2020-06-11 v0.8.11
 ==================
 * support list values for angle and wavelength in column data format
