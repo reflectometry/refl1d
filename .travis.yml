@@ -3,14 +3,14 @@ matrix:
   - os: osx
     language: generic
     env:
-      - PYTHON=3.8.1
+      - PYVER=3.8.1
       - BUILDDOC=1
   - os: osx
     language: generic
-    env: PYTHON=3.7.6
+    env: PYVER=3.7.6
   - os: osx
     language: generic
-    env: PYTHON=3.6.10
+    env: PYVER=3.6.10
   - os: linux
     language: python
     python: 2.7
@@ -26,11 +26,11 @@ before_install: |
     # virtualenv doesn't work without pyenv knowledge. venv in Python 3.3
     # doesn't provide Pip by default. So, use `pyenv-virtualenv <https://github.com/yyuu/pyenv-virtualenv/blob/master/README.md>`_.
     brew install pyenv-virtualenv
-    pyenv install $PYTHON
-    # I would expect something like ``pyenv init; pyenv local $PYTHON`` or
-    # ``pyenv shell $PYTHON`` would work, but ``pyenv init`` doesn't seem to
+    pyenv install $PYVER
+    # I would expect something like ``pyenv init; pyenv local $PYVER`` or
+    # ``pyenv shell $PYVER`` would work, but ``pyenv init`` doesn't seem to
     # modify the Bash environment. ??? So, I hand-set the variables instead.
-    export PYENV_VERSION=$PYTHON
+    export PYENV_VERSION=$PYVER
     export PATH="/Users/travis/.pyenv/shims:${PATH}"
     pyenv-virtualenv venv
     source venv/bin/activate
