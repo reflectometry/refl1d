@@ -8,19 +8,9 @@ Experiment
 
 The :class:`Experiment <refl1d.experiment.Experiment>` object links a
 `sample <sample-guide>`_ with an experimental `probe <data-guide>`_.
-The probe defines the Q values and the resolution of the individual 
-measurements, and returns the scattering factors associated with the 
+The probe defines the Q values and the resolution of the individual
+measurements, and returns the scattering factors associated with the
 different materials in the sample.
-
-
-For the simple case of exploring the reflectivity of new samples,
-this means that you must define 
-
-the 
-purposes:
-
-  * defining the instrument resolution
-  * providing the scattering factors for materials
 
 Because our models allow representation based on composition, it is no
 longer trivial to compute the reflectivity from the model.  We now have
@@ -33,9 +23,9 @@ scattering factors.
 Direct Calculation
 ==================
 
-Rather than using :class:`Stack <refl1d.model.Stack`, 
-:class:`Probe <refl1d.probe.Probe>` and 
-class:`Experiment <refl1d.experiment.Experiment`, 
+Rather than using :class:`Stack <refl1d.model.Stack`,
+:class:`Probe <refl1d.probe.Probe>` and
+class:`Experiment <refl1d.experiment.Experiment`,
 we  can compute reflectivities directly with the functions in
 :mod:`refl1d.reflectivity`.  These routines provide the raw
 calculation engines for the optical matrix formalism, converting
@@ -43,7 +33,7 @@ microslab models of the sample into complex reflectivity amplitudes,
 and convolving the resulting reflectivity with the instrument resolution.
 
 The following performs a complete calculation for a silicon
-substrate with 5 |Ang| roughness using neutrons.  The theory is sampled 
+substrate with 5 |Ang| roughness using neutrons.  The theory is sampled
 at intervals of 0.001, which is convolved with a 1% $\Delta Q/Q$ resolution
 function to yield reflectivities at intervals of 0.01.
 

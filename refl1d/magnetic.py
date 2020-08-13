@@ -43,12 +43,13 @@ and anchoring them to the structure.
 """
 from __future__ import print_function
 
-import numpy
+import numpy as np
 from numpy import inf
-from bumps.parameter import Parameter
+from bumps.parameter import Parameter, to_dict
 from bumps.mono import monospline
 
 from .model import Layer, Stack
+from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
 
 class MagneticLayer(Layer):
     @property
@@ -68,12 +69,23 @@ class MagneticLayer(Layer):
         self.interface_above = interface_above
         self.name = name
     def parameters(self):
-        return {'stack':self.stack.parameters(),
-                'dead_below':self.dead_below,
-                'dead_above':self.dead_above,
-                'interface_below':self.interface_below,
-                'interface_above':self.interface_above,
-               }
+        return {
+            'stack':self.stack.parameters(),
+            'dead_below':self.dead_below,
+            'dead_above':self.dead_above,
+            'interface_below':self.interface_below,
+            'interface_above':self.interface_above,
+        }
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'stack':self.stack,
+            'dead_below':self.dead_below,
+            'dead_above':self.dead_above,
+            'interface_below':self.interface_below,
+            'interface_above':self.interface_above,
+        })
     @property
     def thickness(self):
         """Thickness of the magnetic region"""
@@ -110,7 +122,7 @@ class MagneticSlab(MagneticLayer):
     """
     Region of constant magnetism.
     """
-    def __init__(self, stack, rhoM=0, thetaM=270, name="magnetic", **kw):
+    def __init__(self, stack, rhoM=0, thetaM=DEFAULT_THETA_M, name="magnetic", **kw):
         MagneticLayer.__init__(self, stack=stack, name=name, **kw)
         self.rhoM = Parameter.default(rhoM, name=name+" SLD")
         self.thetaM = Parameter.default(thetaM, limits=(0, 360),
@@ -120,6 +132,11 @@ class MagneticSlab(MagneticLayer):
         parameters = MagneticLayer.parameters(self)
         parameters.update(rhoM=self.rhoM, thetaM=self.thetaM)
         return parameters
+    def to_dict(self):
+        ret = MagneticLayer.to_dict(self)
+        ret['rhoM'] = to_dict(self.rhoM)
+        ret['thetaM'] = to_dict(self.thetaM)
+        return ret
 
     def render(self, probe, slabs):
         anchor, sigma = self.render_stack(probe, slabs)
@@ -138,7 +155,7 @@ class MagneticStack(MagneticLayer):
     """
     Magnetic slabs within a magnetic layer.
     """
-    def __init__(self, stack, weight=(), rhoM=(), thetaM=(270,), interfaceM=(0),
+    def __init__(self, stack, weight=(), rhoM=(), thetaM=(DEFAULT_THETA_M,), interfaceM=(0),
                  name="mag. stack", **kw):
         if (len(thetaM) != 1 and len(thetaM) != len(weight)
                 and len(rhoM) != 1 and len(rhoM) != len(weight)
@@ -164,11 +181,18 @@ class MagneticStack(MagneticLayer):
                           interfaceM=self.interfaceM,
                           weight=self.weight)
         return parameters
+    def to_dict(self):
+        ret = MagneticLayer.to_dict(self)
+        ret['rhoM'] = to_dict(self.rhoM)
+        ret['thetaM'] = to_dict(self.thetaM)
+        ret['interfaceM'] = to_dict(self.interfaceM)
+        ret['weight'] = to_dict(self.weight)
+        return ret
 
     def render(self, probe, slabs):
         anchor, sigma = self.render_stack(probe, slabs)
-        w = numpy.array([p.value for p in self.weight])
-        w *= self.thicknessM.value / numpy.sum(w)
+        w = np.array([p.value for p in self.weight])
+        w *= self.thicknessM.value / np.sum(w)
         rhoM = [p.value for p in self.rhoM]
         thetaM = [p.value for p in self.thetaM]
         sigmaM = [p.value for p in self.interfaceM]
@@ -194,7 +218,7 @@ class MagneticTwist(MagneticLayer):
     Linear change in magnetism throughout layer.
     """
     magnetic = True
-    def __init__(self, stack, rhoM=(0, 0), thetaM=(270, 270),
+    def __init__(self, stack, rhoM=(0, 0), thetaM=(DEFAULT_THETA_M, DEFAULT_THETA_M),
                  name="twist", **kw):
         MagneticLayer.__init__(self, stack=stack, name=name, **kw)
         self.rhoM = [Parameter.default(v, name=name+" rhoM[%d]"%i)
@@ -206,14 +230,19 @@ class MagneticTwist(MagneticLayer):
         parameters = MagneticLayer.parameters(self)
         parameters.update(rhoM=self.rhoM, thetaM=self.thetaM)
         return parameters
+    def to_dict(self):
+        ret = MagneticLayer.to_dict(self)
+        ret['rhoM'] = to_dict(self.rhoM)
+        ret['thetaM'] = to_dict(self.thetaM)
+        return ret
 
     def render(self, probe, slabs):
         anchor, sigma = self.render_stack(probe, slabs)
         w, z = slabs.microslabs(self.thicknessM)
-        rhoM = numpy.linspace(self.rhoM[0].value,
-                              self.rhoM[1].value, len(z))
-        thetaM = numpy.linspace(self.thetaM[0].value,
-                                self.thetaM[1].value, len(z))
+        rhoM = np.linspace(self.rhoM[0].value,
+                           self.rhoM[1].value, len(z))
+        thetaM = np.linspace(self.thetaM[0].value,
+                             self.thetaM[1].value, len(z))
         slabs.add_magnetism(anchor=anchor,
                             w=w, rhoM=rhoM, thetaM=thetaM,
                             sigma=sigma)
@@ -251,29 +280,35 @@ class FreeMagnetic(MagneticLayer):
         parameters = MagneticLayer.parameters(self)
         parameters.update(rhoM=self.rhoM, thetaM=self.thetaM, z=self.z)
         return parameters
+    def to_dict(self):
+        ret = MagneticLayer.to_dict(self)
+        ret['rhoM'] = to_dict(self.rhoM)
+        ret['thetaM'] = to_dict(self.thetaM)
+        ret['z'] = to_dict(self.z)
+        return ret
 
     def profile(self, Pz):
         thickness = self.thickness.value
-        mbelow, tbelow = 0, (self.thetaM[0].value if self.thetaM else 270)
-        mabove, tabove = 0, (self.thetaM[-1].value if self.thetaM else 270)
-        z = numpy.sort([0]+[p.value for p in self.z]+[1])*thickness
+        mbelow, tbelow = 0, (self.thetaM[0].value if self.thetaM else DEFAULT_THETA_M)
+        mabove, tabove = 0, (self.thetaM[-1].value if self.thetaM else DEFAULT_THETA_M)
+        z = np.sort([0]+[p.value for p in self.z]+[1])*thickness
 
-        rhoM = numpy.hstack((mbelow, [p.value for p in self.rhoM], mabove))
+        rhoM = np.hstack((mbelow, [p.value for p in self.rhoM], mabove))
         PrhoM = monospline(z, rhoM, Pz)
 
-        if numpy.any(numpy.isnan(PrhoM)):
+        if np.any(np.isnan(PrhoM)):
             print("in mono")
             print("z %s" % str(z))
             print("p %s" % str([p.value for p in self.z]))
 
 
         if len(self.thetaM) > 1:
-            thetaM = numpy.hstack((tbelow, [p.value for p in self.thetaM], tabove))
+            thetaM = np.hstack((tbelow, [p.value for p in self.thetaM], tabove))
             PthetaM = monospline(z, thetaM, Pz)
         elif len(self.thetaM) == 1:
-            PthetaM = self.thetaM.value * numpy.ones_like(PrhoM)
+            PthetaM = np.full_like(PrhoM, self.thetaM.value)
         else:
-            PthetaM = 270*numpy.ones_like(PrhoM)
+            PthetaM = np.full_like(PrhoM, DEFAULT_THETA_M)
         return PrhoM, PthetaM
 
     def render(self, probe, slabs):

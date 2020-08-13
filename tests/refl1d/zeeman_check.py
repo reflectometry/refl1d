@@ -4,7 +4,7 @@ import os
 
 import numpy as np
 from numpy import radians
-import pylab
+import matplotlib.pyplot as plt
 
 from bumps.util import pushdir
 from refl1d.reflectivity import magnetic_amplitude as refl
@@ -23,7 +23,7 @@ def add_H(layers, H=0.0, AGUIDE=270.0):
         sld_m_x = sld_m * np.cos(theta_m*np.pi/180.0) # phi_m = 0
         sld_m_y = sld_m * np.sin(theta_m*np.pi/180.0) # phi_m = 0
         sld_m_z = 0.0 # by Maxwell's equations, H_demag = mz so we'll just cancel it here
-        sld_h = B2SLD * 1.0e6 * H        
+        sld_h = B2SLD * 1.0e6 * H
         # this code was completely wrong except for the case AGUIDE=270
         sld_h_x = 0 # by definition, H is along the z,lab direction and x,lab = x,sam so Hx,sam must = 0
         sld_h_y = -sld_h * np.sin(AGUIDE*np.pi/180.0)
@@ -104,49 +104,49 @@ def magnetic_cc(layers, kz, Aguide, H):
 
 def Rplot(title, Qz, R, format, dataset):
     """plot reflectivity"""
-    pylab.hold(True)
+    plt.hold(True)
     for name,xs in zip(('++','+-','-+','--'),R):
     #for name,xs in zip(('--','-+','+-','++'),R):
         Rxs = abs(xs)**2
         if (Rxs>1e-8).any():
-            pylab.plot(Qz, Rxs, format, label=name+dataset)
-    pylab.xlabel('$2k_{z0}$', size='large')
-    pylab.ylabel('R')
-    pylab.legend()
-    pylab.yscale('log')
-    pylab.title(title)
+            plt.plot(Qz, Rxs, format, label=name+dataset)
+    plt.xlabel('$2k_{z0}$', size='large')
+    plt.ylabel('R')
+    plt.legend()
+    plt.yscale('log')
+    plt.title(title)
 
 def rplot(Qz, R, format):
     """plot real and imaginary"""
-    pylab.hold(True)
-    pylab.figure()
+    plt.hold(True)
+    plt.figure()
     for name,xs in zip(('++','+-','-+','--'),R):
         rr = xs.real
         if (rr>1e-8).any():
-            pylab.plot(Qz, rr, format, label=name + 'r')
-    pylab.legend()
-    pylab.figure()
+            plt.plot(Qz, rr, format, label=name + 'r')
+    plt.legend()
+    plt.figure()
     for name,xs in zip(('++','+-','-+','--'),R):
         ri = xs.imag
         if (ri>1e-8).any():
-            pylab.plot(Qz, ri, format, label=name + 'i')
-    pylab.legend()
+            plt.plot(Qz, ri, format, label=name + 'i')
+    plt.legend()
 
-    pylab.figure()
+    plt.figure()
     for name,xs in zip(('++','+-','-+','--'),R):
         phi = np.arctan2(xs.imag, xs.real)
         if (ri>1e-8).any():
-            pylab.plot(Qz, phi, format, label=name + 'i')
-    pylab.legend()
+            plt.plot(Qz, phi, format, label=name + 'i')
+    plt.legend()
 
 def profile_plot(layers):
     dz, rho, rhoM, thetaM, phiM = np.asarray(layers).T
     z = np.cumsum([np.hstack((-dz[0],dz))])
     rho, rhoM, thetaM = [np.hstack((v[0],v)) for v in (rho, rhoM, thetaM)]
-    pylab.step(z, rho, label='rho')
-    pylab.step(z, rhoM, label='rhoM', hold=True)
-    pylab.step(z, thetaM*2*np.pi/360., label='thetaM', hold=True)
-    pylab.legend()
+    plt.step(z, rho, label='rho')
+    plt.step(z, rhoM, label='rhoM', hold=True)
+    plt.step(z, thetaM*2*np.pi/360., label='thetaM', hold=True)
+    plt.legend()
 
 
 def compare(name, layers, Aguide=270, H=0):
@@ -160,14 +160,14 @@ def compare(name, layers, Aguide=270, H=0):
     kz = Qz/2
     Rrefl1d = magnetic_cc(layers, kz, Aguide, H)
 
-    pylab.subplot(211)
+    plt.subplot(211)
     title = "%s H=%g"%(name, H)
     Rplot(title, Qz, Rgepore, '-', "gepore")
     Rplot(title, 2*kz, Rrefl1d, '-.', "refl1d")
 
-    pylab.subplot(212)
+    plt.subplot(212)
     profile_plot(layers)
-    
+
     return kz, Rrefl1d
 
     assert np.linalg.norm((R[0]-Rpp)/Rpp) < 1e-13, "fail ++ %s"%name
@@ -231,7 +231,7 @@ def NSF_example():
         [200, 4.0, 1e-6, 90, 0.0],
         ]
     return "non spin flip", layers, Aguide
-    
+
 def Yaohua_example():
     Aguide = 270.0
     rhoB = B2SLD * 0.4 * 1e6
@@ -243,7 +243,7 @@ def Yaohua_example():
         [   0, 4.0, rhoB,       90 , 0.0],
         ]
     return "Yaohua example", layers, Aguide
-    
+
 def zf_Yaohua_example():
     Aguide = 270.0
     layers = [
@@ -307,20 +307,20 @@ def _random_model(Nlayers=10, seed=None):
 
 def demo():
     """run demo"""
-    #pylab.figure(); compare(*simple())
-    #pylab.figure(); compare(*twist())
-    #pylab.figure(); compare(*magsub())
-    #pylab.figure(); compare(*magsurf())
-    pylab.figure(); compare(*zf_Yaohua_example(), H=0.4) # 4000 gauss
-    pylab.figure(); compare(*zf_Yaohua_example(), H=0.0005) # 5 Gauss
-    pylab.figure(); compare(*Kirby_example(), H=0.244)
-    #pylab.figure(); compare(*NSF_example(), H=0.00005) # Earth's field, 0.5G
-    #pylab.figure(); compare(*NSF_example(), H=1.0) # 1 tesla
-    #pylab.figure(); compare(*Chuck_example(), H=0) # zeroish field, but magnetic front
-    #pylab.figure(); compare(*_random_model(), H=0)
-    pylab.figure(); compare(*_random_model(), H=np.random.rand()*2)
-    #pylab.figure(); compare(*_random_model(seed=998543), H=2)
-    pylab.show()
+    #plt.figure(); compare(*simple())
+    #plt.figure(); compare(*twist())
+    #plt.figure(); compare(*magsub())
+    #plt.figure(); compare(*magsurf())
+    plt.figure(); compare(*zf_Yaohua_example(), H=0.4) # 4000 gauss
+    plt.figure(); compare(*zf_Yaohua_example(), H=0.0005) # 5 Gauss
+    plt.figure(); compare(*Kirby_example(), H=0.244)
+    #plt.figure(); compare(*NSF_example(), H=0.00005) # Earth's field, 0.5G
+    #plt.figure(); compare(*NSF_example(), H=1.0) # 1 tesla
+    #plt.figure(); compare(*Chuck_example(), H=0) # zeroish field, but magnetic front
+    #plt.figure(); compare(*_random_model(), H=0)
+    plt.figure(); compare(*_random_model(), H=np.random.rand()*2)
+    #plt.figure(); compare(*_random_model(seed=998543), H=2)
+    plt.show()
 
 
 def write_Chuck_result():

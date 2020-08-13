@@ -1,6 +1,16 @@
 __all__ = ["merge_ends"]
 
-import numpy
+import sys
+
+import numpy as np
+
+# CRUFT: 2.7 support
+if sys.version_info[0] > 2:
+    def asbytes(s):
+        return s.encode('utf-8')
+else:
+    def asbytes(s):
+        return s
 
 def merge_ends(w, p, tol=1e-3):
     """
@@ -16,15 +26,15 @@ def merge_ends(w, p, tol=1e-3):
         # the right, with index < -1.  We are going to put the first value
         # at left index - 1 and the last value at right index + 1, accumulating
         # the widths of the identical layers.
-        lidx = numpy.where(abs(p-p[0]) > tol)[0][0]-1
-        ridx = len(p)-numpy.where(abs(p[::-1]-p[-1]) > tol)[0][0]
-        w[lidx], p[lidx] = numpy.sum(w[:lidx+1]), p[0]
-        w[ridx], p[ridx] = numpy.sum(w[ridx:]), p[-1]
+        lidx = np.where(abs(p-p[0]) > tol)[0][0]-1
+        ridx = len(p) - np.where(abs(p[::-1]-p[-1]) > tol)[0][0]
+        w[lidx], p[lidx] = np.sum(w[:lidx+1]), p[0]
+        w[ridx], p[ridx] = np.sum(w[ridx:]), p[-1]
         return w[lidx:ridx+1], p[lidx:ridx+1]
     except Exception:
         if len(w):
             # All one big layer
-            w[0] = numpy.sum(w)
+            w[0] = np.sum(w)
             return w[0:1], p[0:1]
         else:
             return w, p

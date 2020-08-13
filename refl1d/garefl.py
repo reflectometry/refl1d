@@ -32,15 +32,16 @@ doesn't perturb the fit.
 """
 __all__ = ["load"]
 
+import sys
 import os
 from os import getpid
 from ctypes import CDLL, c_int, c_double, c_void_p, c_char_p, byref
 from threading import current_thread
 
-import numpy
+import numpy as np
 from numpy import empty, zeros, array
 
-from bumps.parameter import Parameter
+from bumps.parameter import Parameter, to_dict
 from bumps.fitproblem import FitProblem
 
 from .probe import QProbe, PolarizedNeutronQProbe
@@ -48,6 +49,13 @@ from .experiment import Experiment
 from .model import Stack
 from .profile import Microslabs
 from .material import SLD, Vacuum
+
+if sys.version_info[0] >= 3:
+    def tostr(s):
+        return s.decode('ascii')
+else:
+    def tostr(s):
+        return s
 
 def trace(fn):
     """simple function trace function"""
@@ -61,18 +69,31 @@ def trace(fn):
         return ret
     return wrapper
 
-def load(modelfile):
-    M = experiment(modelfile)
+def load(modelfile, probes=None):
+    """
+    Load a garefl model file as an experiment.
+
+    *modelfile* is a model.so file created from setup.c.
+
+    *probes* is a list of datasets to fit to the models in the model file, or
+    None if the model file provides its own data.
+    """
+    M = experiment(modelfile, probes)
     constraints = M[0]._get_penalty
     if len(M) > 1:
         return FitProblem(M, constraints=constraints)
     else:
         return FitProblem(M[0], constraints=constraints)
 
-def experiment(modelfile):
+def experiment(modelfile, probes=None):
     setup = GareflModel(modelfile)
-    M = [GareflExperiment(setup, k)
-         for k in range(setup.num_models)]
+    if probes:
+        if len(probes) != setup.num_models:
+            raise ValueError("Number of datasets must match number of models")
+        M = [GareflExperiment(setup, k, probe=probes[k])
+             for k in range(setup.num_models)]
+    else:
+        M = [GareflExperiment(setup, k) for k in range(setup.num_models)]
     names = setup.par_names()
     low, high = setup.par_bounds()
     value = setup.par_values()
@@ -85,10 +106,14 @@ NOTHING=Vacuum()
 NOTHING.name = ''
 
 class GareflExperiment(Experiment):
-    def __init__(self, model, index, dz=1, step_interfaces=None):
+    def __init__(self, model, index, dz=1, step_interfaces=None, probe=None):
         self.model = model
         self.index = index
-        self.probe = model.get_probe(index)
+        if probe is None:
+            probe = model.get_probe(index)
+        else:
+            model.set_probe(probe)
+        self.probe = probe
         self.sample = Stack([NOTHING, NOTHING])
         self.sample[0].interface.fittable = False
         self.step_interfaces = True
@@ -103,6 +128,14 @@ class GareflExperiment(Experiment):
 
     def parameters(self):
         return self._pars
+
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'dll_path': self.model._dll_path,
+            'index': self.index,
+            'parameters': self.parameters(),
+        })
 
     def _render_slabs(self):
         """
@@ -173,6 +206,7 @@ class GareflModel(object):
     def _load_dll(self):
         dll = CDLL(self._dll_path)
         dll.ex_get_data.restype = c_char_p
+        dll.ex_set_data.restype = c_int
         dll.setup_models.restype = c_void_p
         dll.ex_par_name.restype = c_char_p
         dll.ex_get_penalty.restype = c_double
@@ -188,8 +222,8 @@ class GareflModel(object):
         self.num_models = MODELS.value
         self.num_pars = self.dll.ex_npars(self.models)
         lo, hi = self._par_bounds()
-        small = numpy.max(numpy.vstack((abs(lo), abs(hi))), axis=0) < 1e-3
-        self.scale = numpy.where(small, 1e6, 1)
+        small = np.max(np.vstack((abs(lo), abs(hi))), axis=0) < 1e-3
+        self.scale = np.where(small, 1e6, 1)
 
         # TODO: better way to force recalc on load
         self.update_model(self.par_values())
@@ -240,10 +274,36 @@ class GareflModel(object):
         if n == 0:
             return None
         data = empty((n, 4), 'd')
-        filename = self.dll.ex_get_data(self.models, k, xs, data.ctypes)
+        filename = tostr(self.dll.ex_get_data(self.models, k, xs, data.ctypes))
         Q, dQ, R, dR = data.T
         probe = QProbe(Q, dQ, data=(R, dR), name=filename)
         return probe
+
+    @trace
+    def set_probe(self, k, probe):
+        """
+        Return a probe for an individual garefl model.
+        """
+        if probe.polarized:
+            for xs, probe_xs in enumerate(probe.xs):
+                self._setdata(k, xs, probe_xs)
+        else:
+            self._setdata(k, 0, probe)
+
+    def _setdata(self, k, xs, probe):
+        if probe is not None:
+            n = probe.Q
+            data = empty((n, 4), dtype='d', order='F')
+            data[:, 0] = probe.Q
+            data[:, 1] = probe.dQ
+            data[:, 2] = probe.R
+            data[:, 3] = probe.dR
+        else:
+            n = 0
+            data = empty((n, 4), 'd')
+        result = self.dll.ex_set_data(self.models, k, xs, n, data.ctypes)
+        if result < 0:
+            raise RuntimeError("unable to create data in garefl")
 
     @trace
     def get_profile(self, k):
@@ -276,7 +336,7 @@ class GareflModel(object):
 
     @trace
     def par_names(self):
-        return [self.dll.ex_par_name(self.models, i)
+        return [tostr(self.dll.ex_par_name(self.models, i))
                 for i in range(self.num_pars)]
 
     @trace

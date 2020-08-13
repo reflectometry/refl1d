@@ -17,10 +17,10 @@ def demo(experiment):
     app.MainLoop()
 
 def example_experiment():
-    import numpy
+    import numpy as np
     from ..names import Experiment, NeutronProbe, Material, silicon, air
 
-    T = numpy.linspace(0,3,100)
+    T = np.linspace(0,3,100)
     probe = NeutronProbe(L=4.75, dL=4.75*0.02, T=T, dT=T*0.01)
     chrome = Material("Cr")
     gold = Material("Au")

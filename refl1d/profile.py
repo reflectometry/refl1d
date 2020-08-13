@@ -63,6 +63,7 @@ import numpy as np
 from numpy import inf, nan, isnan
 from scipy.special import erf
 
+from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
 
 class Microslabs(object):
     """
@@ -199,9 +200,13 @@ class Microslabs(object):
         self._slabs_rho[self._num_slabs, :, 1] = irho
         self._num_slabs += 1
 
-    def add_magnetism(self, anchor, w, rhoM=0, thetaM=270., sigma=0):
+    def add_magnetism(self, anchor, w, rhoM=0, thetaM=DEFAULT_THETA_M, sigma=0):
         """
         Add magnetic layers.
+
+        Note that *sigma* is a pair *(interface_below, interface_above)*
+        representing the magnetic roughness, which may be different
+        from the nuclear roughness at the layer boundaries.
         """
         w = np.asarray(w, 'd')
         if np.isscalar(sigma):
@@ -549,7 +554,6 @@ class Microslabs(object):
         else:
             slices = [[[0], [0], [blocks[0][2, 0]]]]
         interfaces = []
-        sigma = None
         pos = 0
         for i, B in enumerate(blocks):
             anchor = offsets[i]

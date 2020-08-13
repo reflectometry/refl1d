@@ -76,9 +76,9 @@ the bounds.  Bounds on the oscillation are easier to control using
 # - Newton methods: Hessian should point back to domain
 # - Direct methods: random walk should be biased toward the domain
 # - moderately complicated
-import numpy
+import numpy as np
 from numpy import inf, real, imag
-from bumps.parameter import  Parameter as Par
+from bumps.parameter import  Parameter as Par, to_dict
 from bumps.cheby import cheby_val, cheby_coeff
 from bumps.cheby import cheby_approx, cheby_points #pylint: disable=unused-import
 
@@ -115,7 +115,20 @@ class FreeformCheby(Layer):
 
     def parameters(self):
         """Return parameters used to define layer"""
-        return {'rho':self.rho, 'irho':self.irho}
+        return {
+            'thickness': self.thickness,
+            'rho': self.rho,
+            'irho': self.irho
+        }
+
+    def to_dict(self):
+        ret = self.parameters()
+        ret.update({
+            'type': type(self).__name__,
+            'name': self.name,
+            'method': self.method,
+        })
+        return to_dict(ret)
 
     def render(self, probe, slabs):
         """Render slabs for use with the given probe"""
@@ -179,9 +192,22 @@ class ChebyVF(Layer):
         #   base+length+3*sigma <= thickness
 
     def parameters(self):
-        return {'solvent': self.solvent.parameters(),
-                'material': self.material.parameters(),
-                'vf': self.vf}
+        return {
+            'solvent': self.solvent.parameters(),
+            'material': self.material.parameters(),
+            'vf': self.vf,
+        }
+
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'method': self.method,
+            'thickness': self.thickness,
+            'vf': self.vf,
+            'material': self.material,
+            'solvent': self.solvent,
+        })
 
     def render(self, probe, slabs):
         Mr, Mi = self.material.sld(probe)
@@ -197,7 +223,7 @@ class ChebyVF(Layer):
         Pw, Pz = slabs.microslabs(thickness)
         t = Pz/thickness
         vf = _profile([p.value for p in self.vf], t, self.method)
-        vf = numpy.clip(vf, 0, 1)
+        vf = np.clip(vf, 0, 1)
         Pw, vf = util.merge_ends(Pw, vf, tol=1e-3)
         P = M*vf + S*(1-vf)
         Pr, Pi = real(P), imag(P)

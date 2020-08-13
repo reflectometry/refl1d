@@ -1,6 +1,7 @@
 # This program is public domain
 import sys; sys.path.append('..')
-import numpy
+
+import numpy as np
 import mystic.termination as stop
 from mystic.history import History
 
@@ -16,17 +17,17 @@ def _check(success=None, failure=None):
         t.config_history(history)
 
     history.ndim = 2
-    history.lower_bound = numpy.array([-1,0],'d')
-    history.upper_bound = numpy.array([1,1],'d')
+    history.lower_bound = np.array([-1,0],'d')
+    history.upper_bound = np.array([1,1],'d')
     history.update(
         step=1,
         calls=2,
         time=6,
         cpu_time=10,
-        point=numpy.array([1,1],'d'),
+        point=np.array([1,1],'d'),
         value=75,
-        population_points=numpy.array([[0,0],[1,1]],'d'),
-        population_values=numpy.array([100,75],'d')
+        population_points=np.array([[0,0],[1,1]],'d'),
+        population_values=np.array([100,75],'d')
         )
     # How to make this cumulative?
     history.update(
@@ -34,10 +35,10 @@ def _check(success=None, failure=None):
         calls=4,
         time=11,
         cpu_time=18,
-        point=numpy.array([1,0.5]),
+        point=np.array([1,0.5]),
         value=50,
-        population_points=numpy.array([[0.5,0],[1,0.5]],'d'),
-        population_values=numpy.array([87,50],'d')
+        population_points=np.array([[0.5,0],[1,0.5]],'d'),
+        population_values=np.array([87,50],'d')
         )
 
     return success.status(history),failure.status(history)

@@ -101,7 +101,7 @@ template = """
 """
 
 exception_template = """
-.. htmlonly::
+.. only:: html
 
    [`source code <%(linkdir)s/%(basename)s.py>`__]
 

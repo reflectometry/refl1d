@@ -31,7 +31,7 @@ Magnetic data has multiple cross sections and often has fixed slits:
 For simulation, you need a probe and a sample:
 
     >>> instrument = NCNR.ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
-    >>> probe = instrument.probe(T=numpy.linspace(0, 5, 51))
+    >>> probe = instrument.probe(T=np.linspace(0, 5, 51))
     >>> probe.plot_resolution()
     >>> sample = silicon(0, 10) | gold(100, 10) | air
     >>> M = Experiment(probe=probe, sample=sample)
@@ -45,7 +45,7 @@ And for magnetic:
     >>> #M = Experiment(probe=probe, sample=sample)
     >>> #M.simulate_data()
     >>> #M.plot()
-    >>> #probe = instrument.simulate_magnetic(sample, T=numpy.linspace(0, 5, 51))
+    >>> #probe = instrument.simulate_magnetic(sample, T=np.linspace(0, 5, 51))
     >>> #h = pylab.plot(probe.Q, probe.dQ)
     >>> #h = pylab.ylabel('resolution (1-sigma)')
     >>> #h = pylab.xlabel('Q (inv A)')
@@ -59,6 +59,7 @@ from bumps.data import parse_file
 
 from .instrument import Monochromatic
 from .probe import PolarizedNeutronProbe
+from .reflectivity import BASE_GUIDE_ANGLE
 
 
 def load(filename, instrument=None, **kw):
@@ -84,7 +85,7 @@ def load(filename, instrument=None, **kw):
     return probe
 
 
-def load_magnetic(filename, Aguide=270, H=0, shared_beam=True, **kw):
+def load_magnetic(filename, Aguide=BASE_GUIDE_ANGLE, H=0, shared_beam=True, **kw):
     """
     Return a probe for magnetic NCNR data.
 
@@ -254,13 +255,14 @@ class XRay(NCNRData, Monochromatic):
 
     You can choose to ignore the geometric calculation entirely
     by setting the slit opening to 0 and using sample_broadening
-    to define the entire divergence::
+    to define the entire divergence.  Note that Probe.sample_broadening
+    is a fittable parameter, so you need to access its value::
 
         >>> from refl1d.names import *
         >>> file = sample_data("spin_valve01.refl")
         >>> xray = NCNR.XRay(slits_at_Tlo=0)
         >>> data = xray.load(file, sample_broadening=1e-4)
-        >>> print(data.dT[5])
+        >>> print(data.sample_broadening.value)
         0.0001
     """
     instrument = "X-ray"
@@ -350,7 +352,7 @@ def _counting_time(instrument, sample, uncertainty,
         R &=& D/I //
         \Delta R &=& \sqrt(D)/I
     """
-
+    import numpy as np
     from .experiment import Experiment
     probe = self.probe(**kw)
     M = Experiment(probe=probe, sample=sample)
@@ -358,8 +360,8 @@ def _counting_time(instrument, sample, uncertainty,
         I = 1/(M.fresnel()* uncertainty**2)
     else: # Q^4 counting
         I = 1/(100*probe.Q**4 * uncertainty**2)
-    D = numpy.random.poisson( Rth * I )
-    R, dR = D/I, numpy.sqrt(D)/I
+    D = np.random.poisson( Rth * I )
+    R, dR = D/I, np.sqrt(D)/I
     probe.data = R, dR
 
     return M

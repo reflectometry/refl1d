@@ -49,7 +49,7 @@ example, to include sample broadening effects in the resolution:
 
 For magnetic systems a polarized beam probe is needed::
 
-    >>> magnetic_probe = geometry.magnetic_probe(T=numpy.linspace(0, 5, 100))
+    >>> magnetic_probe = geometry.magnetic_probe(T=np.linspace(0, 5, 100))
 
 The string representation of the geometry prints a multi-line
 description of the default instrument configuration:
@@ -126,12 +126,14 @@ from __future__ import division, print_function
 # TODO: the resolution calculator should not be responsible for loading
 # the data; maybe do it as a mixin?
 
-import numpy
+import numpy as np
 #from numpy import pi, inf, sqrt, log, degrees, radians, cos, sin, tan
+
 from .resolution import QL2T
 from .resolution import bins, binwidths, binedges
 from .resolution import slit_widths, divergence
 from .probe import make_probe, PolarizedNeutronProbe
+from .reflectivity import BASE_GUIDE_ANGLE
 
 
 class Monochromatic(object):
@@ -230,11 +232,12 @@ class Monochromatic(object):
         """
         self._translate_Q_to_theta(kw)
         T, dT, L, dL = self.resolution(**kw)
-        kw.update(T=T, dT=dT, L=L, dL=dL)
+        sample_broadening = kw.get('sample_broadening', self.sample_broadening)
+        kw.update(T=T, dT=dT-sample_broadening, L=L, dL=dL)
         kw.setdefault('radiation', self.radiation)
         return make_probe(**kw)
 
-    def magnetic_probe(self, Aguide=270, shared_beam=True, H=0, **kw):
+    def magnetic_probe(self, Aguide=BASE_GUIDE_ANGLE, shared_beam=True, H=0, **kw):
         """
         Simulate a polarized measurement probe.
 
@@ -473,7 +476,7 @@ class Pulsed(object):
     wavelength = None
     dLoL = None # usually 0.02 for 2% FWHM
     # Optional attributes
-    TOF_range = (0, numpy.inf)
+    TOF_range = (0, np.inf)
     Tlo = 90  # Use 90 for fixed slits; this is effectively inf
     Thi = 90
     fixed_slits = None
@@ -508,10 +511,11 @@ class Pulsed(object):
         L = bins(low, high, dLoL)
         dL = binwidths(L)
         T, dT, L, dL = self.resolution(L=L, dL=dL, T=T, **kw)
-        return make_probe(T=T, dT=dT, L=L, dL=dL,
+        sample_broadening = kw.get('sample_broadening', self.sample_broadening)
+        return make_probe(T=T, dT=dT-sample_broadening, L=L, dL=dL,
                           radiation=self.radiation, **kw)
 
-    def magnetic_probe(self, Aguide=270, shared_beam=True, **kw):
+    def magnetic_probe(self, Aguide=BASE_GUIDE_ANGLE, shared_beam=True, **kw):
         """
         Simulate a polarized measurement probe.
 
@@ -590,7 +594,7 @@ class Pulsed(object):
             # Q in probe.
             I = rebin(binedges(self.feather[0]), self.feather[1],
                       binedges(probe.L[::-1]))[::-1]
-            Ci = numpy.median(1./(uncertainty**2 * I * Rth))
+            Ci = np.median(1./(uncertainty**2 * I * Rth))
             Igoal = Ci*I
             Ibeam = pois(Igoal)+1.
 
@@ -613,8 +617,8 @@ class Pulsed(object):
             #       = (Y + X) * X/Y**3
             #    dZ = sqrt( (Y+X)*X/Y**3) = sqrt((Y+X)*(X/Y))/Y
             R = (Irefl-Iback)/Ibeam
-            dR = numpy.sqrt((Irefl + Iback + Ibeam)*(Irefl/Ibeam))/Ibeam
-            if numpy.isnan(dR).any() or (dR == 0).any() or (R <= 0).any():
+            dR = np.sqrt((Irefl + Iback + Ibeam)*(Irefl/Ibeam))/Ibeam
+            if np.isnan(dR).any() or (dR == 0).any() or (R <= 0).any():
                 print("Ibeam %s"%Ibeam)
                 print("Irefl %s"%Irefl)
                 print("Iback %s"%Iback)
@@ -622,7 +626,7 @@ class Pulsed(object):
                 print("dR %s"%dR)
                 raise RuntimeError("Should not be able to get here!!")
             #dR[Irefl==0] == 1./Ibeam[Irefl==0]
-            #print("median %s"%numpy.median(dR/R))
+            #print("median %s"%np.median(dR/R))
 
             if not normalize:
                 #Ci = 1./max(R)
@@ -630,7 +634,7 @@ class Pulsed(object):
                 probe.background.value *= Ci
                 probe.intensity.value = Ci
 
-            probe.Ro = probe.R = R
+            probe.R = R
             probe.dR = dR
             probes.append(probe)
 
@@ -755,7 +759,7 @@ class GenericMonochromatic(Monochromatic):
 
         """
         # Load the data
-        data = numpy.loadtxt(filename).T
+        data = np.loadtxt(filename).T
         if data.shape[0] == 2:
             Q, R = data
             dR = None
@@ -783,7 +787,7 @@ class GenericPulsed(Pulsed):
         angular divergence.
         """
         # Load the data
-        data = numpy.loadtxt(filename).T
+        data = np.loadtxt(filename).T
         Q, dQ, R, dR, L = data
         dL = binwidths(L)
         T = kw.pop('T', QL2T(Q, L))

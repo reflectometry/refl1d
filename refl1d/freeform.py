@@ -2,9 +2,9 @@
 Freeform modeling with B-Splines
 """
 
-import numpy
+import numpy as np
 from numpy import inf
-from bumps.parameter import Parameter as Par
+from bumps.parameter import Parameter as Par, to_dict
 from bumps.bspline import pbs, bspline
 
 from .model import Layer
@@ -47,13 +47,21 @@ class FreeLayer(Layer):
         if len(self.irhoz) > 0 and len(self.irhoz) != len(self.irho):
             raise ValueError("must have one z value for each irho")
     def parameters(self):
-        return {'rho':self.rho,
-                'rhoz':self.rhoz,
-                'irho':self.irho,
-                'irhoz':self.irhoz,
-                'left':self.left.parameters(),
-                'right':self.right.parameters(),
-               }
+        return {
+            'rho': self.rho,
+            'rhoz': self.rhoz,
+            'irho': self.irho,
+            'irhoz': self.irhoz,
+            # TODO: left/right pars are already listed in the stack
+            'left': self.left.parameters(),
+            'right': self.right.parameters(),
+        }
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'parameters': self.parameters(),
+        })
     def render(self, probe, slabs):
         thickness = self.thickness.value
         left_rho, left_irho = self.left.sld(probe)
@@ -96,17 +104,26 @@ class FreeformInterface01(Layer):
         self.vf = [Par.default(p, name=name+" vf[%d]"%i, limits=(0, 1))
                    for i, p in enumerate(vf)]
     def parameters(self):
-        return {'z':self.z,
-                'vf':self.vf,
-                'below':self.below.parameters(),
-                'above':self.above.parameters(),
-               }
+        return {
+            'thickness': self.thickness,
+            'interface': self.interface,
+            'z': self.z,
+            'vf': self.vf,
+            'below': self.below.parameters(),
+            'above': self.above.parameters(),
+        }
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'parameters': self.parameters(),
+        })
     def render(self, probe, slabs):
         thickness = self.thickness.value
         left_rho, left_irho = self.below.sld(probe)
         right_rho, right_irho = self.above.sld(probe)
-        z = numpy.hstack((0, sorted([v.value for v in self.z]), 1))
-        vf = numpy.hstack((0, sorted([v.value for v in self.vf]), 1))
+        z = np.hstack((0, sorted([v.value for v in self.z]), 1))
+        vf = np.hstack((0, sorted([v.value for v in self.vf]), 1))
         Pw, Pz = slabs.microslabs(thickness)
         t = Pz/thickness
         offset, profile = pbs(z, vf, t, parametric=False, clamp=True)
@@ -154,31 +171,39 @@ class FreeInterface(Layer):
     thickness = property(_get_thickness, _set_thickness)
 
     def parameters(self):
-        return {'dz':self.dz,
-                'dp':self.dp,
-                'below':self.below.parameters(),
-                'above':self.above.parameters(),
-               }
+        return {
+            'interface': self.interface,
+            'below': self.below.parameters(),
+            'above': self.above.parameters(),
+            'dz': self.dz,
+            'dp': self.dp,
+            }
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'parameters': self.parameters(),
+        })
     def render(self, probe, slabs):
         left_rho, left_irho = self.below.sld(probe)
         right_rho, right_irho = self.above.sld(probe)
-        z = numpy.hstack((0, numpy.cumsum([v.value for v in self.dz])))
-        p = numpy.hstack((0, numpy.cumsum([v.value for v in self.dp])))
+        z = np.hstack((0, np.cumsum([v.value for v in self.dz])))
+        p = np.hstack((0, np.cumsum([v.value for v in self.dp])))
         if p[-1] == 0:
             p[-1] = 1
         p /= p[-1]
         Pw, Pz = slabs.microslabs(z[-1])
         _, profile = pbs(z, p, Pz, parametric=False, clamp=True)
-        profile = numpy.clip(profile, 0, 1)
+        profile = np.clip(profile, 0, 1)
         Pw, profile = util.merge_ends(Pw, profile, tol=1e-3)
         Prho = (1-profile)*left_rho + profile*right_rho
         Pirho = (1-profile)*left_irho + profile*right_irho
         slabs.extend(rho=[Prho], irho=[Pirho], w=Pw)
 
 def _profile(left, right, control, z, t):
-    cy = numpy.hstack((left, [p.value for p in control], right))
+    cy = np.hstack((left, [p.value for p in control], right))
     if len(z) > 0:
-        cx = numpy.hstack((0, [p.value for p in z], 1))
+        cx = np.hstack((0, [p.value for p in z], 1))
         return pbs(cx, cy, t)
     else:
         return bspline(cy, t)

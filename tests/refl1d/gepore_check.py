@@ -14,7 +14,7 @@ GEPORE_SRC = 'gepore_zeeman.f'
 
 def add_H(layers, H=0.0, theta_H=0.0, phi_H=0.0):
     """ Take H (vector) as input and add H to 4piM:
-    In the parametrization of the Chatterji chapter, 
+    In the parametrization of the Chatterji chapter,
     phi_H is (90 - AGUIDE), and theta_H = 0
     """
     new_layers = []
@@ -24,7 +24,7 @@ def add_H(layers, H=0.0, theta_H=0.0, phi_H=0.0):
         sld_m_x = sld_m * np.cos(theta_m*np.pi/180.0) # phi_m = 0
         sld_m_y = sld_m * np.sin(theta_m*np.pi/180.0) # phi_m = 0
         sld_m_z = 0.0 # by Maxwell's equations, H_demag = mz so we'll just cancel it here
-        sld_h = B2SLD * 1.0e6 * H        
+        sld_h = B2SLD * 1.0e6 * H
         sld_h_x = sld_h * np.cos(theta_H * np.pi/180.0)
         sld_h_y = sld_h * np.sin(theta_H*np.pi/180.0)*np.cos(phi_H*np.pi/180.0)
         sld_h_z = sld_h * np.sin(theta_H*np.pi/180.0)*np.sin(phi_H*np.pi/180.0)
@@ -97,38 +97,38 @@ def magnetic_cc(layers, kz, Aguide, H):
     return R
 
 def Rplot(Qz, R, format):
-    import pylab
-    pylab.hold(True)
+    import matplotlib.pyplot as plt
+    plt.hold(True)
     for name,xs in zip(('--','+-','-+','++'),R):
         Rxs = abs(xs)**2
         if (Rxs>1e-8).any():
-            pylab.plot(Qz, Rxs, format, label=name)
-    pylab.xlabel('$2k_{z0}$', size='large')
-    pylab.ylabel('R')
-    pylab.legend()
+            plt.plot(Qz, Rxs, format, label=name)
+    plt.xlabel('$2k_{z0}$', size='large')
+    plt.ylabel('R')
+    plt.legend()
 
 def rplot(Qz, R, format):
-    import pylab
-    pylab.hold(True)
-    pylab.figure()
+    import matplotlib.pyplot as plt
+    plt.hold(True)
+    plt.figure()
     for name,xs in zip(('++','+-','-+','--'),R):
         rr = xs.real
         if (rr>1e-8).any():
-            pylab.plot(Qz, rr, format, label=name + 'r')
-    pylab.legend()
-    pylab.figure()
+            plt.plot(Qz, rr, format, label=name + 'r')
+    plt.legend()
+    plt.figure()
     for name,xs in zip(('++','+-','-+','--'),R):
         ri = xs.imag
         if (ri>1e-8).any():
-            pylab.plot(Qz, ri, format, label=name + 'i')
-    pylab.legend()
+            plt.plot(Qz, ri, format, label=name + 'i')
+    plt.legend()
 
-    pylab.figure()
+    plt.figure()
     for name,xs in zip(('++','+-','-+','--'),R):
         phi = np.arctan2(xs.imag, xs.real)
         if (ri>1e-8).any():
-            pylab.plot(Qz, phi, format, label=name + 'i')
-    pylab.legend()
+            plt.plot(Qz, phi, format, label=name + 'i')
+    plt.legend()
 
 def compare(name, layers, Aguide=270, H=0):
 
@@ -141,7 +141,7 @@ def compare(name, layers, Aguide=270, H=0):
     kz = Qz[::4]/2
     Rrefl1d = magnetic_cc(layers, kz, Aguide, H)
 
-    Rplot(Qz, Rgepore, '-'); Rplot(2*kz, Rrefl1d, '.'); import pylab; pylab.show(); return
+    Rplot(Qz, Rgepore, '-'); Rplot(2*kz, Rrefl1d, '.'); import matplotlib.pyplot as plt; plt.show(); return
 
     assert np.linalg.norm((R[0]-Rpp)/Rpp) < 1e-13, "fail ++ %s"%name
     assert np.linalg.norm((R[1]-Rpm)/Rpm) < 1e-13, "fail +- %s"%name
@@ -204,7 +204,7 @@ def NSF_example():
         [200, 4.0, 0.0, 270, 0.0],
         ]
     return "non spin flip", layers, Aguide
-    
+
 def Yaohua_example():
     Aguide = 270
     rhoB = B2SLD * 0.4 * 1e6
@@ -216,7 +216,7 @@ def Yaohua_example():
         [ 0, 4.0, rhoB, 90 , 0.0],
         ]
     return "Yaohua example", layers, Aguide
-    
+
 def zf_Yaohua_example():
     Aguide = 270
     layers = [
@@ -226,7 +226,7 @@ def zf_Yaohua_example():
         [ 200, 2.0, 1.0, 90, 0.0],
         [ 0, 4.0, 0.0, 90, 0.0],
         ]
-    return "Yaohua example", layers, Aguide 
+    return "Yaohua example", layers, Aguide
 
 def Chuck_test():
     Aguide = 270
@@ -238,25 +238,25 @@ def Chuck_test():
         [ 0, 5.0, 0.0, 90, 0.0],
     ]
     return "Chuck example", layers, Aguide
-    
+
 def demo():
     """run demo"""
-    import pylab
+    import matplotlib.pyplot as plt
     #compare(*simple())
     #compare(*twist())
     #compare(*magsub())
     #compare(*magsurf())
-    pylab.figure()
+    plt.figure()
     compare(*zf_Yaohua_example())
-    pylab.figure()
+    plt.figure()
     compare(*zf_Yaohua_example(), H=0.4) # 4000 gauss
-    pylab.figure()
+    plt.figure()
     compare(*NSF_example())
-    pylab.figure()
+    plt.figure()
     compare(*NSF_example(), H=1.0) # 1 tesla
-    pylab.figure()
+    plt.figure()
     compare(*Chuck_test(), H=0.0000001) # 0ish field, but magnetic front
-    pylab.show()
+    plt.show()
 
 if __name__ == "__main__":
     demo()

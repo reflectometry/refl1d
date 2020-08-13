@@ -12,7 +12,7 @@ INCOMPLETE UNUSED UNTESTED CODE
 
 import numpy as np
 from numpy import inf, exp
-from bumps.parameter import Parameter as Par
+from bumps.parameter import Parameter as Par, to_dict
 
 from .model import Layer
 from .materialdb import air
@@ -35,9 +35,17 @@ class CompositionSpace(Layer):
 
     def parameters(self):
         return {
-            'solvent':self.solvent.parameters(),
-            'parts':[p.parameters() for p in self.parts],
-            }
+            'solvent': self.solvent.parameters(),
+            'parts': [p.parameters() for p in self.parts],
+        }
+
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'solvent': self.solvent,
+            'parts': self.parts,
+        })
 
     def add(self, part=None):
         self.parts.append(part)
@@ -107,10 +115,19 @@ class Part(object):
                                     name=self.material.name+" fraction")
 
     def parameters(self):
-        return {'material':self.material.parameters(),
-                'profile':self.profile.parameters(),
-                'fraction':self.fraction,
-               }
+        return {
+            'material': self.material.parameters(),
+            'profile': self.profile.parameters(),
+            'fraction': self.fraction,
+        }
+
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'material': self.material,
+            'profile': self.profile,
+            'fraction': self.fraction,
+        })
 
     def f_sld(self, probe, z):
         # Note: combining f and sld because there my be some
@@ -151,6 +168,11 @@ class Gaussian(object):
 
     def parameters(self):
         return {'center':self.center, 'width':self.width, 'sigma':self.stretch}
+
+    def to_dict(self):
+        ret = { 'type': type(self).__name__, }
+        ret.update(to_dict(self.parameters()))
+        return ret
 
     def __call__(self, z):
         mu, sigma, w = self.center.value, self.stretch.value, self.width.value/2

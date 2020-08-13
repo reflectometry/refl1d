@@ -12,7 +12,7 @@ from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg as Toolbar
 # The Figure object is used to create backend-independent plot representations.
 from matplotlib.figure import Figure
 
-import pylab
+import matplotlib.pyplot as plt
 
 from bumps.gui.util import EmbeddedPylab
 from bumps.fitproblem import MultiFitProblem
@@ -73,27 +73,32 @@ class DataView(wx.Panel):
                                           "&Fresnel",
                                           "Plot R/R_F")
         frame.Bind(wx.EVT_MENU, self.OnFresnel, _item)
-        _item.Check(True)
+        _item.Check(Probe.view == 'fresnel')
         _item = menu.AppendRadioItem(wx.ID_ANY,
                                           "Log Fresnel",
                                           "Plot log R/R_F")
         frame.Bind(wx.EVT_MENU, self.OnLogFresnel, _item)
+        _item.Check(Probe.view == 'logfresnel')
         _item = menu.AppendRadioItem(wx.ID_ANY,
                                           "Li&near",
                                           "Plot linear R")
         frame.Bind(wx.EVT_MENU, self.OnLinear, _item)
+        _item.Check(Probe.view == 'linear')
         _item = menu.AppendRadioItem(wx.ID_ANY,
                                           "&Log",
                                           "Plot log R")
         frame.Bind(wx.EVT_MENU, self.OnLog, _item)
+        _item.Check(Probe.view == 'log')
         _item = menu.AppendRadioItem(wx.ID_ANY,
                                           "&Q4",
                                           "Plot R * Q^4")
         frame.Bind(wx.EVT_MENU, self.OnQ4, _item)
+        _item.Check(Probe.view == 'q4')
         _item = menu.AppendRadioItem(wx.ID_ANY,
                                           "&SA",
                                           "Plot spin asymmetry")
         frame.Bind(wx.EVT_MENU, self.OnSA, _item)
+        _item.Check(Probe.view == 'SA')
 
         menu.AppendSeparator()
 
@@ -208,12 +213,12 @@ class DataView(wx.Panel):
 
             # Redraw the canvas with newly calculated reflectivity
             with self.pylab_interface:
-                ax = pylab.gca()
+                ax = plt.gca()
                 #print "reset",reset, ax.get_autoscalex_on(), ax.get_xlim()
                 reset = reset or ax.get_autoscalex_on()
                 range_x = ax.get_xlim()
                 #print "composing"
-                pylab.clf() # clear the canvas
+                plt.clf() # clear the canvas
                 #shift=20 if self.view == 'log' else 0
                 shift=0
                 if isinstance(self.problem,MultiFitProblem):
@@ -235,15 +240,15 @@ class DataView(wx.Panel):
                     text = "chisq=%g"%self.problem.chisq()
                     constraints = self.problem.parameter_nllf() + self.problem.constraints_nllf()
                     if constraints > 0: text+= " constraints=%g"%constraints
-                    pylab.text(0.01, 0.01, text, transform=pylab.gca().transAxes)
-                except:
+                    plt.text(0.01, 0.01, text, transform=plt.gca().transAxes)
+                except Exception:
                     pass
                 #print "drawing"
                 if not reset:
                     self.toolbar.push_current()
-                    set_xrange(pylab.gca(), range_x)
+                    set_xrange(plt.gca(), range_x)
                     self.toolbar.push_current()
-                pylab.draw()
+                plt.draw()
                 #print "done drawing"
                 break
 

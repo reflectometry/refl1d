@@ -1,6 +1,6 @@
 # This program is public domain
 # Author: Paul Kienzle
-"""
+r"""
 Magnetic modeling for 1-D reflectometry.
 
 Magnetic properties are tied to the structural description of the
@@ -39,12 +39,13 @@ and anchoring them to the structure.
 """
 from __future__ import print_function
 
-import numpy
+import numpy as np
 from numpy import inf
-from bumps.parameter import Parameter, flatten
+from bumps.parameter import Parameter, flatten, to_dict
 from bumps.mono import monospline
 
 from .model import Layer, Stack
+from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
 
 class BaseMagnetism(object):
     """
@@ -52,8 +53,8 @@ class BaseMagnetism(object):
 
     Magnetism is attached to set of nuclear layers by setting the
     *magnetism* property of the first layer to the rendered for the
-    magnetic profile, and setting the *magnetism.extent* property to
-    say how many layers it extends over.
+    magnetic profile, and setting *extent* to the number of nuclear
+    layers attached to the magnetism object.
 
     *dead_below* and *dead_above* are dead regions within the magnetic
     extent, which allow you to shift the magnetic interfaces relative
@@ -85,11 +86,23 @@ class BaseMagnetism(object):
         self.extent = extent
 
     def parameters(self):
-        return {'dead_below':self.dead_below,
-                'dead_above':self.dead_above,
-                'interface_below':self.interface_below,
-                'interface_above':self.interface_above,
-               }
+        return {
+            'dead_below': self.dead_below,
+            'dead_above': self.dead_above,
+            'interface_below': self.interface_below,
+            'interface_above': self.interface_above,
+            }
+
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'extent': self.extent,
+            'dead_below': self.dead_below,
+            'dead_above': self.dead_above,
+            'interface_below': self.interface_below,
+            'interface_above': self.interface_above,
+        })
 
     def set_layer_name(self, name):
         """
@@ -105,8 +118,23 @@ class BaseMagnetism(object):
 class Magnetism(BaseMagnetism):
     """
     Region of constant magnetism.
+
+    *rhoM* is the magnetic SLD the layer. Default is :code:`rhoM=0`.
+
+    *thetaM* is the magnetic angle for the layer. Default is :code:`thetaM=270`.
+
+    *name* is the base name for the various layer parameters.
+
+    *extent* defines the number of nuclear layers covered by the magnetic layer.
+
+    *dead_above* and *dead_below* define magnetically dead layers at the
+    nuclear boundaries.  These can be negative if magnetism extends beyond
+    the nuclear boundary.
+
+    *interface_above* and *interface_below* define the magnetic interface
+    at the boundaries, if it is different from the nuclear interface.
     """
-    def __init__(self, rhoM=0, thetaM=270, name="LAYER", **kw):
+    def __init__(self, rhoM=0, thetaM=DEFAULT_THETA_M, name="LAYER", **kw):
         BaseMagnetism.__init__(self, name=name, **kw)
         self.rhoM = Parameter.default(rhoM, name=name+" rhoM")
         self.thetaM = Parameter.default(thetaM, limits=(0, 360),
@@ -117,12 +145,19 @@ class Magnetism(BaseMagnetism):
         parameters.update(rhoM=self.rhoM, thetaM=self.thetaM)
         return parameters
 
+    def to_dict(self):
+        result = BaseMagnetism.to_dict(self)
+        result['rhoM'] = to_dict(self.rhoM)
+        result['thetaM'] = to_dict(self.thetaM)
+        return result
+
     def render(self, probe, slabs, thickness, anchor, sigma):
         slabs.add_magnetism(anchor=anchor,
                             w=[thickness],
                             rhoM=[self.rhoM.value],
                             thetaM=[self.thetaM.value],
                             sigma=sigma)
+
     def __str__(self):
         return "magnetism(%g)"%self.rhoM.value
 
@@ -133,49 +168,104 @@ class Magnetism(BaseMagnetism):
 class MagnetismStack(BaseMagnetism):
     """
     Magnetic slabs within a magnetic layer.
-    """
-    def __init__(self, weight=(), rhoM=(), thetaM=(270,), interfaceM=(0,),
-                 name="LAYER", **kw):
-        if (len(thetaM) != 1 and len(thetaM) != len(weight)
-                and len(rhoM) != 1 and len(rhoM) != len(weight)
-                and len(interfaceM) != 1 and len(interfaceM) != len(weight)-1):
-            raise ValueError("Must have one rhoM, thetaM and intefaceM for each layer")
-        if interfaceM != [0]:
-            raise NotImplementedError("Doesn't support magnetic roughness")
 
-        BaseMagnetism.__init__(self, stack=stack, name=name, **kw)
+    *weight* is the relative thickness of each layer relative to the nuclear
+    stack to which it is anchored.  Weights are automatically normalized to 1.
+    Default is :code:`weight=[1]` equal size layers.
+
+    *rhoM* is the magnetic SLD for each layer. Default is :code:`rhoM=[0]`
+    for shared magnetism in all the layers.
+
+    *thetaM* is the magnetic angle for each layer.  Default is
+    :code:`thetaM=[270]` for no magnetic twist.
+
+    **Not yet implemented.**
+    *interfaceM* is the magnetic interface for all but the last layer.  Default
+    is :code:`interfaceM=[0]` for equal width interfaces in all layers.
+
+    *name* is the base name for the various layer parameters.
+
+    *extent* defines the number of nuclear layers covered by the magnetic layer.
+
+    *dead_above* and *dead_below* define magnetically dead layers at the
+    nuclear boundaries.  These can be negative if magnetism extends beyond
+    the nuclear boundary.
+
+    *interface_above* and *interface_below* define the magnetic interface
+    at the boundaries, if it is different from the nuclear interface.
+    """
+    def __init__(self, weight=None, rhoM=None, thetaM=None, interfaceM=None,
+                 name="LAYER", **kw):
+        weight_n = 0 if weight is None else len(weight)
+        rhoM_n = 0 if rhoM is None else len(rhoM)
+        thetaM_n = 0 if thetaM is None else len(thetaM)
+        interfaceM_n = 0 if interfaceM is None else (len(interfaceM) + 1)
+        n = max(weight_n, rhoM_n, thetaM_n, interfaceM_n)
+
+        if n == 0:
+            raise ValueError("Must specify one of weight, rhoM, thetaM or interfaceM as vector")
+        if ((weight_n > 1 and weight_n != n)
+                or (rhoM_n > 1 and rhoM_n != n)
+                or (thetaM_n > 1 and thetaM_n != n)
+                or (interfaceM_n > 1 and interfaceM_n != n)):
+            raise ValueError("Inconsistent lengths for weight, rhoM, thetaM and interfaceM")
+
+        # TODO: intefaces need to be implemented in profile.add_magnetism
+        if interfaceM is not None:
+            raise NotImplementedError("Doesn't yet support magnetic interfaces")
+
+        if weight is None:
+            weight = [1]
+        if rhoM is None:
+            rhoM = [0]
+        if thetaM is None:
+            thetaM = [DEFAULT_THETA_M]
+        #if interfaceM is None:
+        #    interfaceM = [0]
+
+        BaseMagnetism.__init__(self, name=name, **kw)
         self.weight = [Parameter.default(v, name=name+" weight[%d]"%i)
                        for i, v in enumerate(weight)]
         self.rhoM = [Parameter.default(v, name=name+" rhoM[%d]"%i)
                      for i, v in enumerate(rhoM)]
         self.thetaM = [Parameter.default(v, name=name+" thetaM[%d]"%i)
                        for i, v in enumerate(thetaM)]
-        self.interfaceM = [Parameter.default(v, name=name+" interfaceM[%d]"%i)
-                           for i, v in enumerate(interfaceM)]
+        #self.interfaceM = [Parameter.default(v, name=name+" interfaceM[%d]"%i)
+        #                   for i, v in enumerate(interfaceM)]
 
     def parameters(self):
         parameters = BaseMagnetism.parameters(self)
         parameters.update(rhoM=self.rhoM,
                           thetaM=self.thetaM,
-                          interfaceM=self.interfaceM,
+                          #interfaceM=self.interfaceM,
                           weight=self.weight)
         return parameters
 
+    def to_dict(self):
+        result = BaseMagnetism.to_dict(self)
+        result['weight'] = to_dict(self.weight)
+        result['rhoM'] = to_dict(self.rhoM)
+        result['thetaM'] = to_dict(self.thetaM)
+        #result['interfaceM'] = to_dict(self.interfaceM)
+        return result
+
     def render(self, probe, slabs, thickness, anchor, sigma):
-        w = numpy.array([p.value for p in self.weight])
-        w *= thickness / numpy.sum(w)
+        w = np.array([p.value for p in self.weight])
+        w *= thickness / np.sum(w)
         rhoM = [p.value for p in self.rhoM]
         thetaM = [p.value for p in self.thetaM]
-        sigmaM = [p.value for p in self.interfaceM]
+        #interfaceM = [p.value for p in self.interfaceM]
         if len(rhoM) == 1:
             rhoM = [rhoM[0]]*len(w)
         if len(thetaM) == 1:
             thetaM = [thetaM[0]]*len(w)
-        if len(sigmaM) == 1:
-            sigmaM = [sigmaM[0]]*(len(w)-1)
+        #if len(interfaceM) == 1:
+        #    interfaceM = [interfaceM[0]]*(len(w)-1)
 
         slabs.add_magnetism(anchor=anchor,
-                            w=w, rhoM=rhoM, thetaM=thetaM,
+                            w=w, rhoM=rhoM,
+                            thetaM=thetaM,
+                            #interfaceM=interfaceM,
                             sigma=sigma)
 
     def __str__(self):
@@ -187,10 +277,26 @@ class MagnetismStack(BaseMagnetism):
 class MagnetismTwist(BaseMagnetism):
     """
     Linear change in magnetism throughout layer.
+
+    *rhoM* contains the *(left, right)* values for the magnetic scattering
+    length density.  The number of steps is determined by the model *dz*.
+
+    *thetaM* contains the *(left, right)* values for the magnetic angle.
+
+    *name* is the base name for the various layer parameters.
+
+    *extent* defines the number of nuclear layers covered by the magnetic layer.
+
+    *dead_above* and *dead_below* define magnetically dead layers at the
+    nuclear boundaries.  These can be negative if magnetism extends beyond
+    the nuclear boundary.
+
+    *interface_above* and *interface_below* define the magnetic interface
+    at the boundaries, if it is different from the nuclear interface.
     """
     magnetic = True
     def __init__(self,
-                 rhoM=(0, 0), thetaM=(270, 270),
+                 rhoM=(0, 0), thetaM=(DEFAULT_THETA_M, DEFAULT_THETA_M),
                  name="LAYER", **kw):
         BaseMagnetism.__init__(self, name=name, **kw)
         self.rhoM = [Parameter.default(v, name=name+" rhoM[%d]"%i)
@@ -203,12 +309,18 @@ class MagnetismTwist(BaseMagnetism):
         parameters.update(rhoM=self.rhoM, thetaM=self.thetaM)
         return parameters
 
+    def to_dict(self):
+        result = BaseMagnetism.to_dict(self)
+        result['rhoM'] = to_dict(self.rhoM)
+        result['thetaM'] = to_dict(self.thetaM)
+        return result
+
     def render(self, probe, slabs, thickness, anchor, sigma):
         w, z = slabs.microslabs(thickness)
-        rhoM = numpy.linspace(self.rhoM[0].value,
-                              self.rhoM[1].value, len(z))
-        thetaM = numpy.linspace(self.thetaM[0].value,
-                                self.thetaM[1].value, len(z))
+        rhoM = np.linspace(self.rhoM[0].value,
+                           self.rhoM[1].value, len(z))
+        thetaM = np.linspace(self.thetaM[0].value,
+                             self.thetaM[1].value, len(z))
         slabs.add_magnetism(anchor=anchor,
                             w=w, rhoM=rhoM, thetaM=thetaM,
                             sigma=sigma)
@@ -222,6 +334,25 @@ class MagnetismTwist(BaseMagnetism):
 class FreeMagnetism(BaseMagnetism):
     """
     Spline change in magnetism throughout layer.
+
+    Defines monotonic splines for rhoM and thetaM with shared knot positions.
+
+    *z* is position of the knot in [0, 1] relative to the magnetic layer
+    thickness.  The *z* coordinates are automatically sorted before
+    rendering, leading to multiple equivalent solutions if knots are swapped.
+
+    *rhoM* gives the magnetic scattering length density for each knot.
+
+    *thetaM* gives the magnetic angle for each knot.
+
+    *name* is the base name for the various layer parameters.
+
+    *dead_above* and *dead_below* define magnetically dead layers at the
+    nuclear boundaries.  These can be negative if magnetism extends beyond
+    the nuclear boundary.
+
+    *interface_above* and *interface_below* define the magnetic interface
+    at the boundaries, if it is different from the nuclear interface.
     """
     magnetic = True
     def __init__(self, z=(), rhoM=(), thetaM=(),
@@ -247,27 +378,34 @@ class FreeMagnetism(BaseMagnetism):
         parameters.update(rhoM=self.rhoM, thetaM=self.thetaM, z=self.z)
         return parameters
 
-    def profile(self, Pz, thickness):
-        mbelow, tbelow = 0, (self.thetaM[0].value if self.thetaM else 270)
-        mabove, tabove = 0, (self.thetaM[-1].value if self.thetaM else 270)
-        z = numpy.sort([0]+[p.value for p in self.z]+[1])*thickness
+    def to_dict(self):
+        result = BaseMagnetism.to_dict(self)
+        result['z'] = to_dict(self.z)
+        result['rhoM'] = to_dict(self.rhoM)
+        result['thetaM'] = to_dict(self.thetaM)
+        return result
 
-        rhoM = numpy.hstack((mbelow, [p.value for p in self.rhoM], mabove))
+    def profile(self, Pz, thickness):
+        mbelow, tbelow = 0, (self.thetaM[0].value if self.thetaM else DEFAULT_THETA_M)
+        mabove, tabove = 0, (self.thetaM[-1].value if self.thetaM else DEFAULT_THETA_M)
+        z = np.sort([0]+[p.value for p in self.z]+[1])*thickness
+
+        rhoM = np.hstack((mbelow, [p.value for p in self.rhoM], mabove))
         PrhoM = monospline(z, rhoM, Pz)
 
-        if numpy.any(numpy.isnan(PrhoM)):
+        if np.any(np.isnan(PrhoM)):
             print("in mono with bad PrhoM")
             print("z %s"%str(z))
             print("p %s"%str([p.value for p in self.z]))
 
 
         if len(self.thetaM) > 1:
-            thetaM = numpy.hstack((tbelow, [p.value for p in self.thetaM], tabove))
+            thetaM = np.hstack((tbelow, [p.value for p in self.thetaM], tabove))
             PthetaM = monospline(z, thetaM, Pz)
         elif len(self.thetaM) == 1:
-            PthetaM = self.thetaM.value * numpy.ones_like(PrhoM)
+            PthetaM = self.thetaM.value * np.ones_like(PrhoM)
         else:
-            PthetaM = 270*numpy.ones_like(PrhoM)
+            PthetaM = DEFAULT_THETA_M*np.ones_like(PrhoM)
         return PrhoM, PthetaM
 
     def render(self, probe, slabs, thickness, anchor, sigma):

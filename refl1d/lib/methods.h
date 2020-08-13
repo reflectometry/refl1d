@@ -28,7 +28,7 @@
 *** */
 
 // Vector binding glue
-#if (PY_VERSION_HEX > 0x03000000) && !defined(Py_LIMITED_API)
+#if 0 && (PY_VERSION_HEX > 0x03000000) && !defined(Py_LIMITED_API)
 
   // Buffer protocol for python 3 requires freeing each view
   // that is retrieved, so need to leave space to retrieve

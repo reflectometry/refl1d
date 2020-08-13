@@ -9,6 +9,15 @@ Usage:
 import os
 import sys
 from os.path import abspath, join as joinpath, dirname
+import traceback
+import warnings
+
+# From mgab at https://stackoverflow.com/a/22376126/6195051
+def warn_with_traceback(message, category, filename, lineno, file=None, line=None):
+    log = file if hasattr(file,'write') else sys.stderr
+    traceback.print_stack(file=log)
+    log.write(warnings.formatwarning(message, category, filename, lineno, line))
+warnings.showwarning = warn_with_traceback
 
 def addpath(path):
     """
@@ -31,30 +40,7 @@ def cd(path):
     yield
     os.chdir(old_dir)
 
-def import_dll(module, build_path):
-    """Import a DLL from the build directory"""
-    import imp
-    try:
-        import sysconfig
-        ext = sysconfig.get_config_var('SO')
-    except ImportError:
-        ext = '.pyd' if sys.platform == 'win32' else '.so'
-
-    # build_path comes from context
-    path = joinpath(build_path, *module.split('.'))+ext
-    #print(" ".join(("importing", module, "from", path)))
-    mod = imp.load_dynamic(module, path)
-
-    # make sure module can be imported from package
-    package_name, module_name = module.rsplit('.', 1)
-    package = __import__(package_name)
-    setattr(package, module_name, mod)
-    return mod
-
 def prepare_environment():
-    from distutils.util import get_platform
-    platform = '.%s-%s'%(get_platform(),sys.version[:3])
-
     #sys.dont_write_bytecode = True
 
     # Make sure that we have a private version of mplconfig
@@ -67,7 +53,6 @@ def prepare_environment():
     refl1d_root = abspath(dirname(__file__))
     periodictable_root = abspath(joinpath(refl1d_root, '..', 'periodictable'))
     bumps_root = abspath(joinpath(refl1d_root, '..', 'bumps'))
-    refl1d_build = joinpath(refl1d_root, 'build', 'lib'+platform)
 
     # add bumps and periodictable to the path
     addpath(periodictable_root)
@@ -77,17 +62,14 @@ def prepare_environment():
     import subprocess
     with open(os.devnull, 'w') as devnull:
         with cd(refl1d_root):
-            subprocess.call((sys.executable, "setup.py", "build"),
+            subprocess.call((sys.executable, "setup.py", "build_ext", "--inplace"),
                             shell=False, stdout=devnull)
 
     # Add the build dir to the system path
-    #addpath(refl1d_build)
     addpath(refl1d_root)
-    import_dll('refl1d.reflmodule', refl1d_build)
-    import_dll('refl1d.calc_g_zs_cex', refl1d_build)
 
     # Make sample data and models available
-    os.environ['REFL1D_DATA'] = joinpath(refl1d_root, 'doc', '_examples')
+    os.environ['REFL1D_DATA'] = joinpath(refl1d_root, 'doc', 'examples')
 
     #print "\n".join(sys.path)
 

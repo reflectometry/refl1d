@@ -1,13 +1,12 @@
 """
 Monotonic spline modeling for free interfaces
 """
-
-
 from __future__ import division, with_statement
-import numpy
+
+import numpy as np
 from numpy import (diff, hstack, sqrt, searchsorted, asarray, cumsum,
                    inf, nonzero, linspace, sort, isnan, clip)
-from bumps.parameter import Parameter as Par, Function as ParFunction
+from bumps.parameter import Parameter as Par, Function as ParFunction, to_dict
 from bumps.mono import monospline, count_inflections
 
 from . import util
@@ -35,10 +34,10 @@ class FreeLayer(Layer):
                  z=(), rho=(), irho=(), name="Freeform"):
         self.name = name
         self.below, self.above = below, above
-        self.thickness = Par.default(thickness, name=name+" thickness",
-                                     limits=(0, inf))
-        self.interface = Par.default(0, name=name+" interface",
-                                     limits=(0, inf))
+        self.thickness = Par.default(
+            thickness, name=name+" thickness", limits=(0, inf))
+        self.interface = Par.default(
+            0, name=name+" interface", limits=(0, inf))
         self.interface.fittable = False
         def parvec(vector, name, limits):
             return [Par.default(p, name=name+"[%d]"%i, limits=limits)
@@ -56,12 +55,21 @@ class FreeLayer(Layer):
             raise ValueError("must have one z for each irho value")
 
     def parameters(self):
-        return {'rho':self.rho,
-                'irho':self.irho,
-                'z':self.z,
-                'below':self.below.parameters(),
-                'above':self.above.parameters(),
-               }
+        return {
+            'thickness': self.thickness,
+            'rho': self.rho,
+            'irho': self.irho,
+            'z': self.z,
+            'below': self.below.parameters(),
+            'above': self.above.parameters(),
+        }
+
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'parameters': self.parameters(),
+        })
 
     def profile(self, Pz, below, above):
         thickness = self.thickness.value
@@ -80,8 +88,8 @@ class FreeLayer(Layer):
         return Prho, Pirho
 
     def penalty(self):
-        dz = numpy.diff([p.value for p in self.z])
-        return numpy.sum(dz[dz < 0]**2)
+        dz = diff([p.value for p in self.z])
+        return np.sum(dz[dz < 0]**2)
 
     def render(self, probe, slabs):
         below = self.below.sld(probe)
@@ -108,10 +116,10 @@ class FreeInterface(Layer):
                  dz=None, dp=None, name="Interface"):
         self.name = name
         self.below, self.above = below, above
-        self.thickness = Par.default(thickness, limits=(0, inf),
-                                     name=name+" thickness")
-        self.interface = Par.default(interface, limits=(0, inf),
-                                     name=name+" interface")
+        self.thickness = Par.default(
+            thickness, limits=(0, inf), name=name+" thickness")
+        self.interface = Par.default(
+            interface, limits=(0, inf), name=name+" interface")
 
 
         # Choose reasonable defaults if not given
@@ -130,16 +138,28 @@ class FreeInterface(Layer):
                    for i, p in enumerate(dz)]
         self.dp = [Par.default(p, name=name+" dp[%d]"%i, limits=(0, inf))
                    for i, p in enumerate(dp)]
-        self.inflections = ParFunction(inflections, dx=self.dz, dy=self.dp,
-                                       name=name+" inflections")
+        self.inflections = ParFunction(
+            inflections, dx=self.dz, dy=self.dp, name=name+" inflections")
 
     def parameters(self):
-        return {'dz':self.dz,
-                'dp':self.dp,
-                'below':self.below.parameters(),
-                'above':self.above.parameters(),
-                'inflections':self.inflections,
-               }
+        return {
+            'thickness': self.thickness,
+            'interface': self.interface,
+            'dz': self.dz,
+            'dp': self.dp,
+            'below': self.below.parameters(),
+            'above': self.above.parameters(),
+            'inflections': self.inflections,
+        }
+
+    def to_dict(self):
+        pars = self.parameters()
+        pars.pop('inflections') # derived parameter not needed for save
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'parameters': pars,
+        })
 
     def profile(self, Pz):
         thickness = self.thickness.value
@@ -150,6 +170,7 @@ class FreeInterface(Layer):
         z *= thickness/z[-1]
         profile = clip(monospline(z, p, Pz), 0, 1)
         return profile
+
     def render(self, probe, slabs):
         thickness = self.thickness.value
         interface = self.interface.value
@@ -203,12 +224,21 @@ class _FreeInterfaceW(Layer):
     thickness = property(_get_thickness, _set_thickness)
 
     def parameters(self):
-        return {'dz':self.dz,
-                'dp':self.dp,
-                'below':self.below.parameters(),
-                'above':self.above.parameters(),
-               }
-
+        return {
+            'interface': self.interface,
+            'dz': self.dz,
+            'dp': self.dp,
+            'below': self.below.parameters(),
+            'above': self.above.parameters(),
+        }
+    def to_dict(self):
+        pars = self.parameters()
+        pars.pop('inflections') # derived parameter not needed for save
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'parameters': pars,
+        })
     def render(self, probe, slabs):
         interface = self.interface.value
         below_rho, below_irho = self.below.sld(probe)

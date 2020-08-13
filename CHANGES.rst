@@ -4,6 +4,78 @@ Change History
 
 Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 
+2020-..-.. v0.8.12
+==================
+* add irho to the profile contour plots
+* simplify realignment usage to 'refl1d align ...'
+* reenable python 2.7 support
+
+2020-06-11 v0.8.11
+==================
+* support list values for angle and wavelength in column data format
+* use dQ from datafile rather than calculating it from dL and dT
+* adjust dQ with sample broadening rather than calculating it from dL and dT
+* fix json output so saving the fit doesn't raise an error
+* fix functional magnetic profile so [rho, rho] is not treated as rho, theta.
+* fix plots to show magnetic angle when not the standard magnetic angle
+* fix legends when show magnetic angles on plots
+* wxpython is now an optional dependency
+* bumps: support *limits=(min, max)* for pm and pmp parameter ranges
+* bumps: fix *--entropy* command line option
+* bumps: parallel fitting suppressed in GUI for now---need to reuse thread pool
+
+**BREAKING CHANGE**: default thetaM for functional magnetism changed from 0 to 270
+
+2020-02-18 v0.8.10
+==================
+* add `--checkpoint=n` to save mcmc state every *n* hours.
+* hide resolution bars using *Probe.show_resolution = False* in your model.py
+* fix residuals, fresnel, logfresnel, and q4 plots when interpolation is used
+* fix error contour save function: rhoM was not being written
+* fix simulation error: theory and simulated data were sharing the same vector
+* fix doc generation: now builds with sphinx 2.4.0 and matplotlib 3.1.0.
+* python 3.8 support requires bumps v0.7.14 (released 2020-01-03)
+
+**BREAKING CHANGE**: old-style data loader with sample_broadening set
+
+* sample_broadening was applied twice: once to the base Δθ from when the probe
+  was created and again whenever ΔQ was computed; this is not a problem with
+  the new *load4* function.  The code was fixed, which may cause difficulties
+  when reloading old fits.
+
+2019-10-15 v0.8.9
+=================
+* json save: material and magnetism are now json objects
+* json save: include non-parameter data in save file
+* load4: accept 2 and 3 column data
+* load4: override resolution and uncertainty given (or missing) from file
+* load4: accept multi-entry data as Q probe without knowing theta/lambda
+* load4: set the data slice to load
+* load4: set default radiation to 'neutron'
+* allow fit by number density for materials
+* fix interpolation when plotting reflectivity between measured data points
+* fix bug in dQ when sample_broadening is initialized to non-zeros
+* revised installer: embedded python in zip file
+* functions to compute transmission and reflection at each layer
+* allow simulation with uncertainty from data
+* force minimum uncertainty in data to 1e-11
+* change default data view from Fresnel to log10
+* apply resolution to saved Fresnel curve
+* improved python 3 support
+
+2019-03-01 v0.8.8
+=================
+* fix json save for MixedExperiments
+* save smooth magnetic profiles
+* fix abeles code to choose correct branch cut below critical edge
+* force absorption to be 0 or positive
+
+2018-12-18 v0.8.7
+=================
+* make sample broadening a fittable parameter
+* allow model + data to be loaded from zip file (bumps 0.7.12 and up)
+* improve serialization support
+
 2018-09-24 v0.8.6
 =================
 * added serialization support

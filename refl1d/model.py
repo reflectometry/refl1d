@@ -28,14 +28,15 @@ __all__ = ['Repeat', 'Slab', 'Stack', 'Layer']
 from copy import copy, deepcopy
 import json
 
-import numpy
+import numpy as np
 from numpy import (inf, nan, pi, sin, cos, tan, sqrt, exp, log, log10,
                    degrees, radians, floor, ceil)
 import periodictable
 import periodictable.xsf as xsf
 import periodictable.nsf as nsf
 
-from bumps.parameter import Parameter as Par, IntegerParameter as IntPar, Function
+from bumps.parameter import (
+    Parameter as Par, IntegerParameter as IntPar, Function, to_dict)
 
 from . import material
 
@@ -52,6 +53,7 @@ class Layer(object): # Abstract base class
     """
     thickness = None
     interface = None
+    name = None
 
     # Make magnetism a property so we can update the magnetism parameter
     # names with the layer name when we assign magnetism to the layer
@@ -90,8 +92,10 @@ class Layer(object): # Abstract base class
 
     def layer_parameters(self):
         pars = {'thickness': self.thickness}
-        if self.interface: pars['interface'] = self.interface
-        if self.magnetism: pars['magnetism'] = self.magnetism.parameters()
+        if self.interface:
+            pars['interface'] = self.interface
+        if self.magnetism:
+            pars['magnetism'] = self.magnetism.parameters()
         pars.update(self.parameters())
         return pars
 
@@ -121,6 +125,18 @@ class Layer(object): # Abstract base class
         """
         return getattr(self, 'name', repr(self))
 
+    def to_dict(self):
+        """
+        Return a dictionary representation of the Slab object
+        """
+        raise NotImplementedError("to_dict not defined for "+str(self))
+        #return to_dict({
+        #    'type': type(self).__name__,
+        #    'name': self.name,
+        #    'thickness': self.thickness,
+        #    'interface': self.interface,
+        #    'magnetism': self.magnetism,
+        #})
 
     # Define a little algebra for composing samples
     # Layers can be stacked, repeated, or have length/roughness/magnetism set
@@ -259,10 +275,14 @@ class Stack(Layer):
 
     def to_dict(self):
         """
-            Return a dictionary representation of the Stack object
+        Return a dictionary representation of the Stack object
         """
-        return dict(type=type(self).__name__,
-                    layers=[L.to_dict() for L in self._layers])
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'interface': self.interface,
+            'layers': self._layers,
+        })
 
     def parameters(self):
         layers = [L.layer_parameters() for L in self._layers]
@@ -343,39 +363,39 @@ class Stack(Layer):
 
     def _plot(self, dz=1, roughness_limit=0):
         # TODO: unused?
-        import pylab
+        import matplotlib.pyplot as plt
         from . import profile, material, probe
-        neutron_probe = probe.NeutronProbe(T=numpy.arange(0, 5, 100), L=5.)
-        xray_probe = probe.XrayProbe(T=numpy.arange(0, 5, 100), L=1.54)
+        neutron_probe = probe.NeutronProbe(T=np.arange(0, 5, 100), L=5.)
+        xray_probe = probe.XrayProbe(T=np.arange(0, 5, 100), L=1.54)
         slabs = profile.Microslabs(1, dz=dz)
 
-        pylab.subplot(211)
+        plt.subplot(211)
         cache = material.ProbeCache(xray_probe)
         slabs.clear()
         self.render(cache, slabs)
         z, rho, irho = slabs.step_profile()
-        pylab.plot(z, rho, '-g', z, irho, '-b')
+        plt.plot(z, rho, '-g', z, irho, '-b')
         z, rho, irho = slabs.smooth_profile(dz=1, roughness_limit=roughness_limit)
-        pylab.plot(z, rho, ':g', z, irho, ':b')
-        pylab.legend(['rho', 'irho'])
-        pylab.xlabel('depth (A)')
-        pylab.ylabel('SLD (10^6 inv A**2)')
-        pylab.text(0.05, 0.95, r"Cu-$K_\alpha$ X-ray", va="top", ha="left",
-                   transform=pylab.gca().transAxes)
+        plt.plot(z, rho, ':g', z, irho, ':b')
+        plt.legend(['rho', 'irho'])
+        plt.xlabel('depth (A)')
+        plt.ylabel('SLD (10^6 inv A**2)')
+        plt.text(0.05, 0.95, r"Cu-$K_\alpha$ X-ray", va="top", ha="left",
+                 transform=plt.gca().transAxes)
 
-        pylab.subplot(212)
+        plt.subplot(212)
         cache = material.ProbeCache(neutron_probe)
         slabs.clear()
         self.render(cache, slabs)
         z, rho, irho = slabs.step_profile()
-        pylab.plot(z, rho, '-g', z, irho, '-b')
+        plt.plot(z, rho, '-g', z, irho, '-b')
         z, rho, irho = slabs.smooth_profile(dz=1, roughness_limit=roughness_limit)
-        pylab.plot(z, rho, ':g', z, irho, ':b')
-        pylab.legend(['rho', 'irho'])
-        pylab.xlabel('depth (A)')
-        pylab.ylabel('SLD (10^6 inv A**2)')
-        pylab.text(0.05, 0.95, "5 A neutron", va="top", ha="left",
-                   transform=pylab.gca().transAxes)
+        plt.plot(z, rho, ':g', z, irho, ':b')
+        plt.legend(['rho', 'irho'])
+        plt.xlabel('depth (A)')
+        plt.ylabel('SLD (10^6 inv A**2)')
+        plt.text(0.05, 0.95, "5 A neutron", va="top", ha="left",
+                 transform=plt.gca().transAxes)
 
 
     # Stacks as lists
@@ -544,6 +564,19 @@ class Repeat(Layer):
         # Thickness is computed; don't make it a simple attribute
         self._thickness = Function(self._calc_thickness, name="repeat thickness")
 
+    def to_dict(self):
+        """
+        Return a dictionary representation of the Repeat object
+        """
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'interface': self.interface,
+            'magnetism': self.magnetism,
+            'repeat': self.repeat,
+            'stack': self.stack,
+        })
+
     def __getstate__(self):
         return self.interface, self.repeat, self.name, self.stack
 
@@ -678,7 +711,7 @@ class Slab(Layer):
         self.magnetism = magnetism
 
     def parameters(self):
-        return {'material':self.material.parameters()}
+        return {'material': self.material.parameters()}
 
     def render(self, probe, slabs):
         rho, irho = self.material.sld(probe)
@@ -699,13 +732,13 @@ class Slab(Layer):
 
     def to_dict(self):
         """
-            Return a dictionary representation of the Slab object
-
-            #TODO: Add magnetism
+        Return a dictionary representation of the Slab object
         """
-        _slab_dict = dict(name=self.name, type=type(self).__name__)
-        _slab_dict['thickness'] = self.thickness.to_dict()
-        _slab_dict['interface'] = self.interface.to_dict()
-        for name, param in self.material.parameters().iteritems():
-            _slab_dict[name] = param.to_dict()
-        return _slab_dict
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'thickness': self.thickness,
+            'interface': self.interface,
+            'material': self.material,
+            'magnetism': self.magnetism,
+        })

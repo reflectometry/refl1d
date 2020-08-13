@@ -9,20 +9,25 @@ to create a fittable reflectometry model.
 """
 from __future__ import division, print_function
 
-from math import pi, log10, floor
+import sys
 import os
+from math import pi, log10, floor
 import traceback
 import json
+from warnings import warn
 
-import numpy
+import numpy as np
 from bumps import parameter
+from bumps.parameter import Parameter, to_dict
 
-from .reflectivity import reflectivity_amplitude as reflamp
-from .reflectivity import magnetic_amplitude as reflmag
-#print("Using pure python reflectivity calculator")
-#from .abeles import refl as reflamp
 from . import material, profile
 from . import __version__
+from .reflectivity import reflectivity_amplitude as reflamp
+from .reflectivity import magnetic_amplitude as reflmag
+from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
+#print("Using pure python reflectivity calculator")
+#from .abeles import refl as reflamp
+from .util import asbytes
 
 def plot_sample(sample, instrument=None, roughness_limit=0):
     """
@@ -30,7 +35,7 @@ def plot_sample(sample, instrument=None, roughness_limit=0):
     """
     if instrument is None:
         from .probe import NeutronProbe
-        probe = NeutronProbe(T=numpy.arange(0, 5, 0.05), L=5)
+        probe = NeutronProbe(T=np.arange(0, 5, 0.05), L=5)
     else:
         probe = instrument.simulate()
     experiment = Experiment(sample=sample, probe=probe,
@@ -39,11 +44,14 @@ def plot_sample(sample, instrument=None, roughness_limit=0):
 
 class ExperimentBase(object):
     probe = None # type: probe.Probe
-    interpolation = None
+    interpolation = 0
     _probe_cache = None
     _substrate = None
     _surface = None
     def parameters(self):
+        raise NotImplementedError()
+
+    def to_dict(self):
         raise NotImplementedError()
 
     def reflectivity(self, resolution=True, interpolation=0):
@@ -105,19 +113,19 @@ class ExperimentBase(object):
             if ((self.probe.polarized
                  and all(x is None or x.R is None for x in self.probe.xs))
                     or (not self.probe.polarized and self.probe.R is None)):
-                resid = numpy.zeros(0)
+                resid = np.zeros(0)
             else:
                 QR = self.reflectivity()
                 if self.probe.polarized:
-                    resid = numpy.hstack([(xs.R - QRi[1])/xs.dR
-                                          for xs, QRi in zip(self.probe.xs, QR)
-                                          if xs is not None])
+                    resid = np.hstack([(xs.R - QRi[1])/xs.dR
+                                       for xs, QRi in zip(self.probe.xs, QR)
+                                       if xs is not None])
                 else:
                     resid = (self.probe.R - QR[1])/self.probe.dR
             self._cache['residuals'] = resid
             #print(("%12s "*4)%("Q", "R", "dR", "Rtheory"))
             #print("\n".join(("%12.6e "*4)%el for el in zip(QR[0], self.probe.R, self.probe.dR, QR[1]))
-            #print("resid", numpy.sum(resid**2)/2)
+            #print("resid", np.sum(resid**2)/2)
 
         return self._cache['residuals']
 
@@ -140,10 +148,10 @@ class ExperimentBase(object):
         #if 'nllf_scale' not in self._cache:
         #    if self.probe.dR is None:
         #        raise ValueError("No data from which to calculate nllf")
-        #    self._cache['nllf_scale'] = numpy.sum(numpy.log(2*pi*self.probe.dR**2))
+        #    self._cache['nllf_scale'] = np.sum(np.log(2*pi*self.probe.dR**2))
         # TODO: add sigma^2 effects back into nllf; only needs to be calculated
         # when dR changes, so maybe it belongs in probe.
-        return 0.5*numpy.sum(self.residuals()**2) # + self._cache['nllf_scale']
+        return 0.5*np.sum(self.residuals()**2) # + self._cache['nllf_scale']
 
     def plot_reflectivity(self, show_resolution=False,
                           view=None, plot_shift=None):
@@ -152,24 +160,24 @@ class ExperimentBase(object):
         QR = self.reflectivity(interpolation=n)
         self.probe.plot(theory=QR,
                         substrate=self._substrate, surface=self._surface,
-                        view=view, plot_shift=plot_shift)
+                        view=view, plot_shift=plot_shift, interpolation=n)
 
         if show_resolution:
-            import pylab
+            import matplotlib.pyplot as plt
             QR = self.reflectivity(resolution=False, interpolation=n)
             if self.probe.polarized:
                 # Should be four pairs
                 for Q, R in QR:
-                    pylab.plot(Q, R, ':g')
+                    plt.plot(Q, R, ':g')
             else:
                 Q, R = QR
-                pylab.plot(Q, R, ':g')
+                plt.plot(Q, R, ':g')
 
     def plot(self, plot_shift=None, profile_shift=None, view=None):
-        import pylab
-        pylab.subplot(211)
+        import matplotlib.pyplot as plt
+        plt.subplot(211)
         self.plot_reflectivity(plot_shift=plot_shift, view=view)
-        pylab.subplot(212)
+        plt.subplot(212)
         self.plot_profile(plot_shift=profile_shift)
 
     def resynth_data(self):
@@ -184,15 +192,19 @@ class ExperimentBase(object):
         """Save simulated data to a file"""
         self.probe.write_data(filename, **kw)
 
-    def simulate_data(self, noise=2):
+    def simulate_data(self, noise=2.):
         """
-        Simulate a random data set for the model
+        Simulate a random data set for the model.
+
+        This sets R and dR according to the noise level given.
 
         **Parameters:**
 
-        *noise* = 2 : float | %
-            Percentage noise to add to the data.
+        *noise*: float or array or None | %
+            dR/R uncertainty as a percentage.  If noise is set to None, then
+            use dR from the data if present, otherwise default to 2%.
         """
+        # TODO: can't do perfect data while setting default uncertainty
         theory = self.reflectivity(resolution=True)
         self.probe.simulate_data(theory, noise=noise)
 
@@ -211,7 +223,16 @@ class ExperimentBase(object):
 
     def save_json(self, basename):
         """ Save the experiment as a json file """
-        raise NotImplementedError()
+        try:
+            experiment = to_dict(self)
+            experiment['refl1d'] = __version__
+            json_file = basename + "-expt.json"
+            with open(json_file, 'w') as fid:
+                data = json.dumps(experiment)
+                fid.write(data)
+        except Exception:
+            traceback.print_exc()
+            warn("failed to create json structure for model")
 
     def save_profile(self, basename):
         if self.ismagnetic:
@@ -221,48 +242,58 @@ class ExperimentBase(object):
 
     def _save_magnetic(self, basename):
         # Slabs
-        A = numpy.array(self.magnetic_slabs())
-        fid = open(basename+"-slabs.dat", "w")
-        fid.write("# %17s %20s %20s %20s %20s %20s\n"
-                  %("thickness (A)", "interface (A)", "rho (1e-6/A^2)", "irho (1e-6/A^2)",
+        A = np.array(self.magnetic_slabs())
+        header = ("# %17s %20s %20s %20s %20s %20s\n"
+                  %("thickness (A)", "interface (A)",
+                    "rho (1e-6/A^2)", "irho (1e-6/A^2)",
                     "rhoM (1e-6/A^2)", "theta (degrees)"))
-        numpy.savetxt(fid, A.T, fmt="%20.15g")
-        fid.close()
+        with open(basename+"-slabs.dat", "wb") as fid:
+            fid.write(asbytes(header))
+            np.savetxt(fid, A.T, fmt="%20.15g")
 
         # Step profile
-        A = numpy.array(self.magnetic_step_profile())
-        fid = open(basename+"-steps.dat", "w")
-        fid.write("# %10s %12s %12s %12s %12s\n"
+        A = np.array(self.magnetic_step_profile())
+        header = ("# %10s %12s %12s %12s %12s\n"
                   %("z (A)", "rho (1e-6/A2)", "irho (1e-6/A2)",
                     "rhoM (1e-6/A2)", "theta (degrees)"))
-        numpy.savetxt(fid, A.T, fmt="%12.8f")
-        fid.close()
+        with open(basename+"-steps.dat", "wb") as fid:
+            fid.write(asbytes(header))
+            np.savetxt(fid, A.T, fmt="%12.8f")
+
+        # Smooth profile
+        A = np.array(self.magnetic_smooth_profile())
+        header = ("# %10s %12s %12s %12s %12s\n"
+                  %("z (A)", "rho (1e-6/A2)", "irho (1e-6/A2)",
+                    "rhoM (1e-6/A2)", "theta (degrees)"))
+        with open(basename+"-profile.dat", "wb") as fid:
+            fid.write(asbytes(header))
+            np.savetxt(fid, A.T, fmt="%12.8f")
 
     def _save_nonmagnetic(self, basename):
         # Slabs
-        A = numpy.array(self.slabs())
-        fid = open(basename+"-slabs.dat", "w")
-        fid.write("# %17s %20s %20s %20s\n"
+        A = np.array(self.slabs())
+        header = ("# %17s %20s %20s %20s\n"
                   %("thickness (A)", "interface (A)", "rho (1e-6/A^2)",
                     "irho (1e-6/A^2)"))
-        numpy.savetxt(fid, A.T, fmt="%20.15g")
-        fid.close()
+        with open(basename+"-slabs.dat", "wb") as fid:
+            fid.write(asbytes(header))
+            np.savetxt(fid, A.T, fmt="%20.15g")
 
         # Step profile
-        A = numpy.array(self.step_profile())
-        fid = open(basename+"-steps.dat", "w")
-        fid.write("# %10s %20s %20s\n"
+        A = np.array(self.step_profile())
+        header = ("# %10s %20s %20s\n"
                   %("z (A)", "rho (1e-6/A2)", "irho (1e-6/A2)"))
-        numpy.savetxt(fid, A.T, fmt="%12.8f")
-        fid.close()
+        with open(basename+"-steps.dat", "wb") as fid:
+            fid.write(asbytes(header))
+            np.savetxt(fid, A.T, fmt="%12.8f")
 
         # Smooth profile
-        A = numpy.array(self.smooth_profile())
-        fid = open(basename+"-profile.dat", "w")
-        fid.write("# %10s %12s %12s\n"
+        A = np.array(self.smooth_profile())
+        header = ("# %10s %12s %12s\n"
                   %("z (A)", "rho (1e-6/A2)", "irho (1e-6/A2)"))
-        numpy.savetxt(fid, A.T, fmt="%12.8f")
-        fid.close()
+        with open(basename+"-profile.dat", "wb") as fid:
+            fid.write(asbytes(header))
+            np.savetxt(fid, A.T, fmt="%12.8f")
 
     def save_refl(self, basename):
         # Reflectivity
@@ -324,6 +355,8 @@ class Experiment(ExperimentBase):
 
     *interpolation* indicates the number of points to plot in between
     existing points.
+
+    *smoothness* **DEPRECATED** This parameter is not used.
     """
     profile_shift = 0
     def __init__(self, sample=None, probe=None, name=None,
@@ -358,9 +391,22 @@ class Experiment(ExperimentBase):
     def parameters(self):
         """Fittable parameters to sample and probe"""
         return {
-            'sample':self.sample.parameters(),
-            'probe':self.probe.parameters(),
+            'sample': self.sample.parameters(),
+            'probe': self.probe.parameters(),
             }
+
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'sample': self.sample,
+            'probe': self.probe,
+            'roughness_limit': self.roughness_limit,
+            'dz': self.dz,
+            'dA': self.dA,
+            'step_interfaces': self.step_interfaces,
+            'interpolation': self.interpolation,
+        })
 
     def _render_slabs(self):
         """
@@ -398,7 +444,7 @@ class Experiment(ExperimentBase):
             else:
                 calc_r = reflamp(-calc_q/2, depth=w, rho=rho, irho=irho,
                                  sigma=sigma)
-            if False and numpy.isnan(calc_r).any():
+            if False and np.isnan(calc_r).any():
                 print("w", w)
                 print("rho", rho)
                 print("irho", irho)
@@ -408,14 +454,14 @@ class Experiment(ExperimentBase):
                     print("Aguide", Aguide, "H", H)
                 print("sigma", sigma)
                 print("kz", self.probe.calc_Q/2)
-                print("R", abs(numpy.asarray(calc_r)**2))
+                print("R", abs(np.asarray(calc_r)**2))
                 pars = parameter.unique(self.parameters())
                 fitted = parameter.varying(pars)
                 print(parameter.summarize(fitted))
                 print("===")
             self._cache[key] = calc_q, calc_r
-            #if numpy.isnan(calc_q).any(): print("calc_Q contains NaN")
-            #if numpy.isnan(calc_r).any(): print("calc_r contains NaN")
+            #if np.isnan(calc_q).any(): print("calc_Q contains NaN")
+            #if np.isnan(calc_r).any(): print("calc_r contains NaN")
         return self._cache[key]
 
     def amplitude(self, resolution=False):
@@ -484,7 +530,7 @@ class Experiment(ExperimentBase):
              Roughness is for the top of the layer.
         """
         slabs = self._render_slabs()
-        return (slabs.w, numpy.hstack((slabs.sigma, 0)),
+        return (slabs.w, np.hstack((slabs.sigma, 0)),
                 slabs.rho[0], slabs.irho[0])
 
     def magnetic_smooth_profile(self, dz=0.1):
@@ -511,7 +557,7 @@ class Experiment(ExperimentBase):
 
     def magnetic_slabs(self):
         slabs = self._render_slabs()
-        return (slabs.w, numpy.hstack((slabs.sigma, 0)),
+        return (slabs.w, np.hstack((slabs.sigma, 0)),
                 slabs.rho[0], slabs.irho[0], slabs.rhoM, slabs.thetaM)
 
     def save_staj(self, basename):
@@ -524,27 +570,17 @@ class Experiment(ExperimentBase):
             save_mlayer(self, basename+".staj", datafile=datafile)
             probe = self.probe
             datafile = os.path.join(os.path.dirname(basename), os.path.basename(datafile))
-            fid = open(datafile, "w")
-            fid.write("# Q R dR\n")
-            numpy.savetxt(fid, numpy.vstack((probe.Qo, probe.R, probe.dR)).T)
+            header = ("# Q R dR\n")
+            with open(datafile, "wb") as fid:
+                fid.write(asbytes(header))
+                np.savetxt(fid, np.vstack((probe.Qo, probe.R, probe.dR)).T)
             fid.close()
         except Exception:
             print("==== could not save staj file ====")
             traceback.print_exc()
 
-    def save_json(self, basename):
-        """ Save the experiment as a json file """
-        json_file = basename + "-expt.json"
-        with open(json_file, 'w') as fid:
-            _expt_dict = dict(refl1d=__version__,
-                              type=type(self).__name__,
-                              probe=self.probe.to_dict(),
-                              sample=self.sample.to_dict())
-            data = json.dumps(_expt_dict)
-            fid.write(data)
-
     def plot_profile(self, plot_shift=None):
-        import pylab
+        import matplotlib.pyplot as plt
         from bumps.plotutil import auto_shift
 
         plot_shift = plot_shift if plot_shift is not None else Experiment.profile_shift
@@ -552,35 +588,39 @@ class Experiment(ExperimentBase):
         if self.ismagnetic:
             if not self.step_interfaces:
                 z, rho, irho, rhoM, thetaM = self.magnetic_step_profile()
-                #rhoM_net = rhoM*numpy.cos(numpy.radians(thetaM))
-                pylab.plot(z, rho, ':g', transform=trans)
-                pylab.plot(z, irho, ':b', transform=trans)
-                pylab.plot(z, rhoM, ':r', transform=trans)
-                if (abs(thetaM-thetaM[0]) > 1e-3).any():
-                    ax = pylab.twinx()
-                    pylab.plot(z, thetaM, ':k', axes=ax, transform=trans)
-                    pylab.ylabel('magnetic angle (degrees)')
+                #rhoM_net = rhoM*np.cos(np.radians(thetaM))
+                plt.plot(z, rho, ':g', transform=trans)
+                plt.plot(z, irho, ':b', transform=trans)
+                plt.plot(z, rhoM, ':r', transform=trans)
+                if (abs(thetaM-DEFAULT_THETA_M) > 1e-3).any():
+                    ax = plt.twinx()
+                    plt.plot(z, thetaM, ':k', axes=ax, transform=trans)
+                    plt.ylabel('magnetic angle (degrees)')
             z, rho, irho, rhoM, thetaM = self.magnetic_smooth_profile()
-            #rhoM_net = rhoM*numpy.cos(numpy.radians(thetaM))
-            pylab.plot(z, rho, '-g', transform=trans)
-            pylab.plot(z, irho, '-b', transform=trans)
-            pylab.plot(z, rhoM, '-r', transform=trans)
-            if (abs(thetaM-thetaM[0]) > 1e-3).any():
-                ax = pylab.twinx()
-                pylab.plot(z, thetaM, '-k', axes=ax, transform=trans)
-                pylab.ylabel('magnetic angle (degrees)')
-            pylab.xlabel('depth (A)')
-            pylab.ylabel('SLD (10^6 / A**2)')
-            pylab.legend(['rho', 'irho', 'rhoM'])
+            #rhoM_net = rhoM*np.cos(np.radians(thetaM))
+            handles = [
+                plt.plot(z, rho, '-g', transform=trans, label='rho')[0],
+                plt.plot(z, irho, '-b', transform=trans, label='irho')[0],
+                plt.plot(z, rhoM, '-r', transform=trans, label='rhoM')[0],
+            ]
+            if (abs(thetaM-DEFAULT_THETA_M) > 1e-3).any():
+                ax = plt.twinx()
+                h = plt.plot(z, thetaM, '-k', axes=ax, transform=trans, label='thetaM')
+                handles.append(h[0])
+                plt.ylabel('magnetic angle (degrees)')
+            plt.xlabel('depth (A)')
+            plt.ylabel('SLD (10^6 / A**2)')
+            labels = [h.get_label() for h in handles]
+            plt.legend(handles=handles, labels=labels)
         else:
             if not self.step_interfaces:
                 z, rho, irho = self.step_profile()
-                pylab.plot(z, rho, ':g', z, irho, ':b', transform=trans)
+                plt.plot(z, rho, ':g', z, irho, ':b', transform=trans)
             z, rho, irho = self.smooth_profile()
-            pylab.plot(z, rho, '-g', z, irho, '-b', transform=trans)
-            pylab.legend(['rho', 'irho'])
-            pylab.xlabel('depth (A)')
-            pylab.ylabel('SLD (10^6 / A**2)')
+            plt.plot(z, rho, '-g', z, irho, '-b', transform=trans)
+            plt.legend(['rho', 'irho'])
+            plt.xlabel('depth (A)')
+            plt.ylabel('SLD (10^6 / A**2)')
 
 
     def penalty(self):
@@ -615,7 +655,7 @@ class MixedExperiment(ExperimentBase):
                  name=None, coherent=False, interpolation=0, **kw):
         self.samples = samples
         self.probe = probe
-        self.ratio = [parameter.Parameter.default(r, name="ratio %d"%i)
+        self.ratio = [Parameter.default(r, name="ratio %d"%i)
                       for i, r in enumerate(ratio)]
         self.parts = [Experiment(s, probe, **kw) for s in samples]
         self.coherent = coherent
@@ -630,10 +670,23 @@ class MixedExperiment(ExperimentBase):
         for p in self.parts: p.update()
 
     def parameters(self):
-        return {'samples': [s.parameters() for s in self.samples],
-                'ratio': self.ratio,
-                'probe': self.probe.parameters(),
-               }
+        return {
+            'samples': [s.parameters() for s in self.samples],
+            'ratio': self.ratio,
+            'probe': self.probe.parameters(),
+            }
+
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'samples': self.samples,
+            'ratio': self.ratio,
+            'probe': self.probe,
+            'parts': self.parts,
+            'coherent': self.coherent,
+            'interpolation': self.interpolation,
+        })
 
     def _reflamp(self):
         """
@@ -650,10 +703,10 @@ class MixedExperiment(ExperimentBase):
         total = sum(r.value for r in self.ratio)
         Qs, Rs = zip(*[p._reflamp() for p in self.parts])
         if not self.coherent:
-            Rs = [numpy.asarray(ri)*numpy.sqrt(ratio_i.value/total)
+            Rs = [np.asarray(ri)*np.sqrt(ratio_i.value/total)
                   for ri, ratio_i in zip(Rs, self.ratio)]
         else: # self.coherent == True
-            Rs = [numpy.asarray(ri)*(ratio_i.value/total)
+            Rs = [np.asarray(ri)*(ratio_i.value/total)
                   for ri, ratio_i in zip(Rs, self.ratio)]
         #print("Rs", Rs)
         return Qs[0], Rs
@@ -666,7 +719,7 @@ class MixedExperiment(ExperimentBase):
         key = ('amplitude', resolution)
         if key not in self._cache:
             calc_Q, calc_R = self._reflamp()
-            calc_R = numpy.sum(calc_R, axis=1)
+            calc_R = np.sum(calc_R, axis=1)
             r_real = self.probe.apply_beam(calc_Q, calc_R.real, resolution=resolution)
             r_imag = self.probe.apply_beam(calc_Q, calc_R.imag, resolution=resolution)
             r = r_real + 1j*r_imag
@@ -702,14 +755,14 @@ class MixedExperiment(ExperimentBase):
 
             # Add the cross sections
             if self.coherent:
-                r = numpy.sum(r, axis=0)
+                r = np.sum(r, axis=0)
                 R = _amplitude_to_magnitude(r, ismagnetic=ismagnetic,
                                             polarized=polarized)
             else:
                 R = [_amplitude_to_magnitude(ri, ismagnetic=ismagnetic,
                                              polarized=polarized)
                      for ri in r]
-                R = numpy.sum(R, axis=0)
+                R = np.sum(R, axis=0)
 
             # Apply resolution
             res = self.probe.apply_beam(Q, R, resolution=resolution,
@@ -718,8 +771,8 @@ class MixedExperiment(ExperimentBase):
         return self._cache[key]
 
     def plot_profile(self, plot_shift=None):
-        f = numpy.array([r.value for r in self.ratio], 'd')
-        f /= numpy.sum(f)
+        f = np.array([r.value for r in self.ratio], 'd')
+        f /= np.sum(f)
         for p in self.parts:
             p.plot_profile(plot_shift=plot_shift)
 

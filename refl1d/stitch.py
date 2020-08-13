@@ -24,11 +24,12 @@ def stitch(data, same_x=0.001, same_dx=0.001):
 
     or use interpolation if you need to align two stitched scans::
 
+        import numpy as np
         x1, dx1, y1, dy1 = stitch([a1, b1, c1, d1])
         x2, dx2, y2, dy2 = stitch([a2, b2, c2, d2])
         x2[0], x2[-1] = x1[0], x1[-1] # Force matching end points
-        y2 = numpy.interp(x1, x2, y2)
-        dy2 = numpy.interp(x1, x2, dy2)
+        y2 = np.interp(x1, x2, y2)
+        dy2 = np.interp(x1, x2, dy2)
         x2 = x1
 
     WARNING: the returned dx value underestimates the true x, depending on

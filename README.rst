@@ -19,11 +19,20 @@ more completely describes the uncertain and correlations between parameters.
 Fitting is done in parallel, either using python multiprocessing on a
 multicore machine, or using MPI for running on a cluster.
 
-See `<https://github.com/reflectometry/refl1d/blob/master/CHANGES.rst>`_ for
-details on recent changes.
+Documentation is available at `<https://refl1d.readthedocs.io>`_. See
+`CHANGES.rst <https://github.com/reflectometry/refl1d/blob/master/CHANGES.rst>`_
+for details on recent changes.
+
+Use "pip install refl1d wxpython" to install in your python environment.
+
+Submit requests and pull requests to the project
+`git pages <https://github.com/reflectometry/refl1d>`_
 
 .. image:: https://travis-ci.org/reflectometry/refl1d.svg?branch=master
     :target: https://travis-ci.org/reflectometry/refl1d
 
 .. image:: https://ci.appveyor.com/api/projects/status/55ps40bauoqw2q6m?svg=true
     :target: https://ci.appveyor.com/project/reflectometry/refl1d
+
+.. image:: https://readthedocs.org/projects/refl1d/badge/
+    :target: https://readthedocs.org/projects/refl1d

@@ -2,13 +2,18 @@ matrix:
   include:
   - os: osx
     language: generic
-    env: PYTHON=2.7.15
+    env:
+      - PYVER=3.8.1
+      - BUILDDOC=1
   - os: osx
     language: generic
-    env: PYTHON=3.6.5
+    env: PYVER=3.7.6
   - os: osx
     language: generic
-    env: PYTHON=3.7.0
+    env: PYVER=3.6.10
+  - os: linux
+    language: python
+    python: 2.7
 
 before_install: |
   if [ "$TRAVIS_OS_NAME" == "osx" ]; then
@@ -21,26 +26,34 @@ before_install: |
     # virtualenv doesn't work without pyenv knowledge. venv in Python 3.3
     # doesn't provide Pip by default. So, use `pyenv-virtualenv <https://github.com/yyuu/pyenv-virtualenv/blob/master/README.md>`_.
     brew install pyenv-virtualenv
-    pyenv install $PYTHON
-    # I would expect something like ``pyenv init; pyenv local $PYTHON`` or
-    # ``pyenv shell $PYTHON`` would work, but ``pyenv init`` doesn't seem to
+    pyenv install $PYVER
+    # I would expect something like ``pyenv init; pyenv local $PYVER`` or
+    # ``pyenv shell $PYVER`` would work, but ``pyenv init`` doesn't seem to
     # modify the Bash environment. ??? So, I hand-set the variables instead.
-    export PYENV_VERSION=$PYTHON
+    export PYENV_VERSION=$PYVER
     export PATH="/Users/travis/.pyenv/shims:${PATH}"
     pyenv-virtualenv venv
     source venv/bin/activate
     # A manual check that the correct version of Python is running.
     python --version
   fi
-  
+
 install:
   - python -m pip install -U pip
-  - python -m easy_install -U setuptools
-  - python -m pip install wheel numpy scipy matplotlib periodictable wxPython bumps
+  - python -m pip install setuptools
+  - python -m pip install wheel numpy scipy matplotlib periodictable bumps sphinx nose
+  #- python -m pip install wxpython
   - python setup.py bdist_wheel
-    
+
+script:
+  - python --version
+  - python setup.py test
+  - python check_examples.py --chisq
+  - if [ -n "$BUILDDOC" ]; then make -C doc html; fi
+
 deploy:
   provider: releases
+  prerelease: true
   skip-cleanup: true
   file_glob: true
   api_key:

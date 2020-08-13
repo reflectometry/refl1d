@@ -28,15 +28,15 @@ def mixture_cdf(x, loc=0, scale=1):
     sample are some mixture of the two, then $b \lt 0$ and $m \gt 1-b$.
     """
     return numpy.clip((x-loc)/scale, 0, 1)
-edges = numpy.linspace(0,1,21)
+edges = numpy.linspace(0, 1, 21)
 
-dist = Weights(edges=numpy.linspace(0,1,41), truncated=False,
+dist = Weights(edges=numpy.linspace(0, 1, 41), truncated=False,
                cdf=mixture_cdf, loc=0.4, scale=0.2)
 DM = DistributionExperiment(experiment=M, P=nickel.relative_density,
-                           distribution=dist)
+                            distribution=dist)
 DM.simulate_data(0.05)
 #DM.plot_weights()
-#import pylab; pylab.figure()
+#import matplotlib.pyplot as plt; plt.figure()
 #nickel.relative_density.value=0.5
 #M.update()
 problem = FitProblem(DM)

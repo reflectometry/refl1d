@@ -25,6 +25,8 @@ from numpy import pi, sin, cos, conj, radians
 # delay load so doc build doesn't require compilation
 #from . import reflmodule
 
+BASE_GUIDE_ANGLE = 270.0
+
 def _dense(x, dtype='d'):
     return np.ascontiguousarray(x, dtype)
 
@@ -113,6 +115,9 @@ def reflectivity_amplitude(kz=None,
     else:
         irho = _dense(irho, 'd')
 
+
+    #print(irho.shape, irho[:,0], irho[:,-1])
+    irho[irho < 0] = 0.
     #print depth.shape, rho.shape, irho.shape, sigma.shape
     #print depth.dtype, rho.dtype, irho.dtype, sigma.dtype
     r = np.empty(kz.shape, 'D')
@@ -238,7 +243,7 @@ def calculate_u1_u3_py(H, rhoM, thetaM, Aguide):
 
     EPS = np.finfo('f').tiny # not 1e-20 # epsilon offset for divisions.
     thetaM = radians(thetaM)
-    phiH = radians(Aguide - 270.0)
+    phiH = radians(Aguide - BASE_GUIDE_ANGLE)
     thetaH = np.pi/2.0 # by convention, H is in y-z plane so theta = pi/2
 
     sld_h = B2SLD * H

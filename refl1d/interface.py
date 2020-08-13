@@ -59,7 +59,7 @@ You will need to provide the following methods::
     ppf(z)
         returns the percent point function, which is the inverse of
         the cdf.  You can define a profile with n equal sized steps in
-        y using y=numpy.linspace(0, 1, n+2)[1:-1], x=interface.ppf(y)
+        y using y=np.linspace(0, 1, n+2)[1:-1], x=interface.ppf(y)
     parameters()
         returns the set of parameters used to define the interface
 
@@ -69,7 +69,7 @@ from __future__ import division, print_function
 
 __all__ = ['Interface', 'Sharp', 'Erf', 'Tanh', 'Linear']
 
-import numpy
+import numpy as np
 from numpy import tanh, cosh, exp, log, sqrt, pi, inf
 from numpy import arccosh as acosh
 from numpy import arctanh as atanh
@@ -231,7 +231,7 @@ class Linear(Interface):
         if w <= 0.0:
             return 1.*(z >= 0)
         else:
-            return numpy.clip(z/w + 0.5, 0, 1)
+            return np.clip(z/w + 0.5, 0, 1)
     def pdf(self, z):
         w = float(self.width.value)
         if w <= 0.0:
@@ -243,7 +243,7 @@ class Linear(Interface):
         if w <= 0.0:
             return 0*z
         else:
-            return numpy.clip(2*z/w, -w/2, w/2)
+            return np.clip(2*z/w, -w/2, w/2)
 
 class Tanh(Interface):
     r"""
@@ -348,33 +348,33 @@ def demo_fwhm():
     """
 
     # Plot the cdf and pdf
-    import pylab
+    import matplotlib.pyplot as plt
     w = 10
     perf = Erf.as_fwhm(w)
     ptanh = Tanh.as_fwhm(w)
 
-    z = pylab.linspace(-w, w, 800)
-    pylab.subplot(211)
-    pylab.plot(z, perf.cdf(z))
-    pylab.plot(z, ptanh.cdf(z))
-    pylab.legend(['erf', 'tanh'])
-    pylab.grid(True)
-    pylab.subplot(212)
-    pylab.plot(z, perf.pdf(z), 'b')
-    pylab.plot(z, ptanh.pdf(z), 'g')
-    pylab.legend(['erf', 'tanh'])
+    z = plt.linspace(-w, w, 800)
+    plt.subplot(211)
+    plt.plot(z, perf.cdf(z))
+    plt.plot(z, ptanh.cdf(z))
+    plt.legend(['erf', 'tanh'])
+    plt.grid(True)
+    plt.subplot(212)
+    plt.plot(z, perf.pdf(z), 'b')
+    plt.plot(z, ptanh.pdf(z), 'g')
+    plt.legend(['erf', 'tanh'])
 
     # Show fwhm
     arrowprops = dict(arrowstyle='wedge', connectionstyle='arc3', fc='0.6')
     bbox = dict(boxstyle='round', fc='0.8')
-    pylab.annotate('erf FWHM', xy=(w/2, perf.pdf(0)/2),
-                   xytext=(-35, 10), textcoords="offset points",
-                   arrowprops=arrowprops, bbox=bbox)
-    pylab.annotate('tanh FWHM', xy=(w/2, ptanh.pdf(0)/2),
-                   xytext=(-35, -35), textcoords="offset points",
-                   arrowprops=arrowprops, bbox=bbox)
+    plt.annotate('erf FWHM', xy=(w/2, perf.pdf(0)/2),
+                 xytext=(-35, 10), textcoords="offset points",
+                 arrowprops=arrowprops, bbox=bbox)
+    plt.annotate('tanh FWHM', xy=(w/2, ptanh.pdf(0)/2),
+                 xytext=(-35, -35), textcoords="offset points",
+                 arrowprops=arrowprops, bbox=bbox)
 
-    pylab.grid(True)
+    plt.grid(True)
 
 
 def demo_tanh_to_erf():
@@ -384,36 +384,36 @@ def demo_tanh_to_erf():
     """
 
     # Plot the cdf and pdf
-    import pylab
+    import matplotlib.pyplot as plt
     w = 10
     ws = w * Tanh.C/Tanh.Cfwhm
     ptanh = Tanh.as_fwhm(w)
     perf = Erf(ws)
 
-    z = pylab.linspace(-2*w, 2*w, 800)
-    pylab.subplot(211)
-    pylab.plot(z, perf.cdf(z))
-    pylab.plot(z, ptanh.cdf(z))
-    pylab.title("""FWHM tanh -> 1-sigma erf
+    z = plt.linspace(-2*w, 2*w, 800)
+    plt.subplot(211)
+    plt.plot(z, perf.cdf(z))
+    plt.plot(z, ptanh.cdf(z))
+    plt.title("""FWHM tanh -> 1-sigma erf
 scale by atanh(erf(1/sqrt(2))) / (2 acosh(sqrt(2)))""")
-    pylab.legend(['erf', 'tanh'])
-    pylab.grid(True)
-    pylab.subplot(212)
-    pylab.plot(z, perf.pdf(z), 'b')
-    pylab.plot(z, ptanh.pdf(z), 'g')
-    pylab.legend(['erf', 'tanh'])
+    plt.legend(['erf', 'tanh'])
+    plt.grid(True)
+    plt.subplot(212)
+    plt.plot(z, perf.pdf(z), 'b')
+    plt.plot(z, ptanh.pdf(z), 'g')
+    plt.legend(['erf', 'tanh'])
 
     # Show fwhm
     arrowprops = dict(arrowstyle='wedge', connectionstyle='arc3', fc='0.6')
     bbox = dict(boxstyle='round', fc='0.8')
-    pylab.annotate('erf 1-sigma', xy=(ws, perf.pdf(ws)),
-                   xytext=(-2, 20), textcoords="offset points",
-                   arrowprops=arrowprops, bbox=bbox)
-    pylab.annotate('tanh FWHM', xy=(w/2, ptanh.pdf(0)/2),
-                   xytext=(-58, -35), textcoords="offset points",
-                   arrowprops=arrowprops, bbox=bbox)
+    plt.annotate('erf 1-sigma', xy=(ws, perf.pdf(ws)),
+                 xytext=(-2, 20), textcoords="offset points",
+                 arrowprops=arrowprops, bbox=bbox)
+    plt.annotate('tanh FWHM', xy=(w/2, ptanh.pdf(0)/2),
+                 xytext=(-58, -35), textcoords="offset points",
+                 arrowprops=arrowprops, bbox=bbox)
 
-    pylab.grid(True)
+    plt.grid(True)
 
 def demo():
     """
@@ -422,7 +422,7 @@ def demo():
     """
 
     # Plot the cdf and pdf
-    import pylab
+    import matplotlib.pyplot as plt
     w = 10
     perf = Erf(w)
     ptanh = Tanh(w)
@@ -431,23 +431,23 @@ def demo():
     #arrowprops=dict(arrowstyle='wedge', connectionstyle='arc3', fc='0.6')
     #bbox=dict(boxstyle='round', fc='0.8')
 
-    z = pylab.linspace(-3*w, 3*w, 800)
-    pylab.subplot(211)
-    pylab.plot(z, perf.cdf(z))
-    pylab.plot(z, ptanh.cdf(z))
-    pylab.plot(z, plinear.cdf(z))
-    pylab.axvline(w, linewidth=2)
-    pylab.annotate('1-sigma', xy=(w*1.1, 0.2))
-    pylab.legend(['erf', 'tanh'])
-    pylab.grid(True)
-    pylab.subplot(212)
-    pylab.plot(z, perf.pdf(z))
-    pylab.plot(z, ptanh.pdf(z))
-    pylab.plot(z, plinear.pdf(z))
-    pylab.axvline(w, linewidth=2)
-    pylab.annotate('1-sigma', xy=(w*1.1, 0.2))
-    pylab.legend(['erf', 'tanh', 'linear'])
-    pylab.grid(True)
+    z = plt.linspace(-3*w, 3*w, 800)
+    plt.subplot(211)
+    plt.plot(z, perf.cdf(z))
+    plt.plot(z, ptanh.cdf(z))
+    plt.plot(z, plinear.cdf(z))
+    plt.axvline(w, linewidth=2)
+    plt.annotate('1-sigma', xy=(w*1.1, 0.2))
+    plt.legend(['erf', 'tanh'])
+    plt.grid(True)
+    plt.subplot(212)
+    plt.plot(z, perf.pdf(z))
+    plt.plot(z, ptanh.pdf(z))
+    plt.plot(z, plinear.pdf(z))
+    plt.axvline(w, linewidth=2)
+    plt.annotate('1-sigma', xy=(w*1.1, 0.2))
+    plt.legend(['erf', 'tanh', 'linear'])
+    plt.grid(True)
 
 def _test_one(name, p, w, tol):
     import scipy.integrate as sum

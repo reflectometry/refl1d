@@ -52,11 +52,11 @@ def TL2Q(T=None, L=None):
 
 _FWHM_scale = sqrt(log(256))
 def FWHM2sigma(s):
-    return s/_FWHM_scale
+    return asarray(s, 'd')/_FWHM_scale
 
 
 def sigma2FWHM(s):
-    return s*_FWHM_scale
+    return asarray(s, 'd')*_FWHM_scale
 
 
 def dTdL2dQ(T=None, dT=None, L=None, dL=None):
@@ -67,6 +67,23 @@ def dTdL2dQ(T=None, dT=None, L=None, dL=None):
     *L*, *dL*  (Angstroms) wavelength and FWHM wavelength dispersion
 
     Returns 1-\ $\sigma$ $\Delta Q$
+
+    Given $Q = 4 \pi sin(\theta)/\lambda$, this follows directly from
+    gaussian error propagation using
+
+    ..math::
+
+        \Delta Q^2
+            &= \left(\frac{\partial Q}{\partial \lambda}\right)^2\Delta\lambda^2
+            + \left(\frac{\partial Q}{\partial \theta}\right)^2\Delta\theta^2
+
+            &= Q^2 \left(\frac{\Delta \lambda}{\lambda}\right)^2
+            + Q^2 \left(\frac{\Delta \theta}{\tan \theta}\right)^2
+
+            &= Q^2 \left(\frac{\Delta \lambda}{\lambda}\right)^2
+            + \left(\frac{4\pi\cos\theta\,\Delta\theta}{\lambda}\right)^2
+
+    with the final form chosen to avoid cancellation at $Q=0$.
     """
 
     # Compute dQ from wavelength dispersion (dL) and angular divergence (dT)
@@ -77,6 +94,25 @@ def dTdL2dQ(T=None, dT=None, L=None, dL=None):
 
     #sqrt((dL/L)**2+(radians(dT)/tan(radians(T)))**2)*probe.Q
     return FWHM2sigma(dQ)
+
+
+def dQ_broadening(dQ, L, T, dT, width):
+    r"""
+    Broaden an existing dQ by the given divergence.
+
+    *dQ* |1/Ang|, with 1-\ $\sigma$ $Q$ resolution
+    *L* |Ang|
+    *T*, *dT* |deg|, with FWHM angular divergence
+    *width* |deg|, with FWHM increased angular divergence
+
+    The calculation is derived by substituting
+    $\Delta\theta' = \Delta\theta + \omega$ for sample broadening $\omega$.
+    """
+    T, dT = radians(asarray(T, 'd')), FWHM2sigma(radians(asarray(dT, 'd')))
+    width = FWHM2sigma(radians(width))
+    dQsq = dQ**2 + (4*pi/L*cos(T))**2*(2*width*dT + width**2)
+
+    return sqrt(dQsq)
 
 
 def dQdT2dLoL(Q, dQ, T, dT):
@@ -91,8 +127,11 @@ def dQdT2dLoL(Q, dQ, T, dT):
     """
     T, dT = radians(asarray(T, 'd')), radians(asarray(dT, 'd'))
     Q, dQ = asarray(Q, 'd'), asarray(dQ, 'd')
-    return sqrt((sigma2FWHM(dQ)/Q)**2 - (dT/tan(T))**2)
-
+    dQoQ = sigma2FWHM(dQ)/Q
+    dToT = dT/tan(T)
+    if (dQoQ < dToT).any():
+        raise ValueError("Cannot infer wavelength resolution: dQ is too small or dT is too large for some data points")
+    return sqrt(dQoQ**2 - dToT**2)
 
 
 def dQdL2dT(Q, dQ, L, dL):
@@ -107,8 +146,12 @@ def dQdL2dT(Q, dQ, L, dL):
     """
     L, dL = asarray(L, 'd'), asarray(dL, 'd')
     Q, dQ = asarray(Q, 'd'), asarray(dQ, 'd')
-    T = QL2T(Q, L)
-    dT = degrees(sqrt((sigma2FWHM(dQ)/Q)**2 - (dL/L)**2) * tan(radians(T)))
+    T = radians(QL2T(Q, L))
+    dQoQ = sigma2FWHM(dQ)/Q
+    dLoL = dL/L
+    if (dQoQ < dLoL).any():
+        raise ValueError("Cannot infer angular resolution: dQ is too small or dL is too large for some data points")
+    dT = degrees(sqrt(dQoQ**2 - dLoL**2) * tan(T))
     return dT
 
 
@@ -163,6 +206,7 @@ def binwidths(L):
 
     where $E$ and $\omega$ are as defined in :func:`binedges`.
     """
+    L = asarray(L, 'd')
     if L[1] > L[0]:
         dLoL = L[1]/L[0] - 1
     else:
@@ -215,6 +259,7 @@ def binedges(L):
                           = \frac{E_{i+1}}{E_i}
                           = \frac{E_i(1+\omega)}{E_i} = 1 + \omega
     """
+    L = asarray(L, 'd')
     if L[1] > L[0]:
         dLoL = L[1]/L[0] - 1
         last = (1+dLoL)
@@ -287,6 +332,7 @@ def divergence(T=None, slits=None, distance=None,
 
         \Delta\theta_s = B - \frac{180}{\pi}\Delta\theta_d
     """
+    # TODO: update from reductus to handle four slits
     # TODO: check that the formula is correct for T=0 => dT = s1 / d1
     # TODO: add sample_offset and compute full footprint
     d1, d2 = distance
@@ -301,7 +347,8 @@ def divergence(T=None, slits=None, distance=None,
     # For small samples, use the sample projection instead.
     sample_s = sample_width * sin(radians(T))
     if isscalar(sample_s):
-        if sample_s < s2: dT = degrees(0.5*(s1+sample_s)/d1)
+        if sample_s < s2:
+            dT = degrees(0.5*(s1+sample_s)/d1)
     else:
         idx = sample_s < s2
         #print s1, s2, d1, d2, T, dT, sample_s
@@ -407,13 +454,14 @@ def resolution(Q=None, s=None, d=None, L=None, dLoL=None, Tlo=None, Thi=None,
 
 
 def demo():
-    import pylab
     from numpy import linspace, exp, real, conj, sin, radians
+    import matplotlib.pyplot as plt
+
     # Values from volfrac example in garefl
     T = linspace(0, 9, 140)
     Q = 4*pi*sin(radians(T))/5.0042
     dQ = resolution(Q, s=0.21, Tlo=0.35, d=1890., L=5.0042, dLoL=0.009)
-    #pylab.plot(Q, dQ)
+    #plt.plot(Q, dQ)
 
     # Fresnel reflectivity for silicon
     rho, sigma=2.07, 5
@@ -422,21 +470,23 @@ def demo():
     r = (kz-f)/(kz+f)*exp(-2*sigma**2*kz*f)
     r[abs(kz)<1e-10] = -1
     R = real(r*conj(r))
-    pylab.errorbar(Q, R, xerr=dQ, fmt=',r', capsize=0)
-    pylab.grid(True)
-    pylab.semilogy(Q, R, ',b')
+    plt.errorbar(Q, R, xerr=dQ, fmt=',r', capsize=0)
+    plt.grid(True)
+    plt.semilogy(Q, R, ',b')
 
-    pylab.show()
+    plt.show()
 
 
 def demo2():
-    import numpy, pylab
-    Q, R, dR = numpy.loadtxt('ga128.refl.mce').T
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    Q, R, dR = np.loadtxt('ga128.refl.mce').T
     dQ = resolution(Q, s=0.154, Tlo=0.36, d=1500., L=4.75, dLoL=0.02)
-    pylab.errorbar(Q, R, xerr=dQ, yerr=dR, fmt=',r', capsize=0)
-    pylab.grid(True)
-    pylab.semilogy(Q, R, ',b')
-    pylab.show()
+    plt.errorbar(Q, R, xerr=dQ, yerr=dR, fmt=',r', capsize=0)
+    plt.grid(True)
+    plt.semilogy(Q, R, ',b')
+    plt.show()
 
 
 if __name__ == "__main__":

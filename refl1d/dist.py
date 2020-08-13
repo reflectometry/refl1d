@@ -11,8 +11,8 @@ DistristributionExperiment allows the model to be computed for a single
 varying parameter.  Multi-parameter dispersion models are not available.
 """
 
-import numpy
-from bumps.parameter import Parameter
+import numpy as np
+from bumps.parameter import Parameter, to_dict
 
 from .experiment import ExperimentBase
 
@@ -59,7 +59,7 @@ class Weights(object):
     """
     def __init__(self, edges=None, cdf=None,
                  args=(), loc=None, scale=None, truncated=True):
-        self.edges = numpy.asarray(edges)
+        self.edges = np.asarray(edges)
         self.cdf = cdf
         self.truncated = truncated
         self.loc = Parameter.default(loc)
@@ -68,6 +68,17 @@ class Weights(object):
 
     def parameters(self):
         return {'args': self.args, 'loc': self.loc, 'scale': self.scale}
+
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'edges': self.edges.tolist(),
+            'cdf': self.cdf.__name__,  # TODO: can't lookup name
+            'args': self.args,
+            'loc': self.loc,
+            'scale': self.scale,
+            'truncated': self.truncated,
+        })
 
     def __iter__(self):
         # Find weights and normalize the sum to 1
@@ -79,7 +90,7 @@ class Weights(object):
         if not self.truncated:
             cumulative_weights[0], cumulative_weights[-1] = 0, 1
         relative_weights = cumulative_weights[1:] - cumulative_weights[:-1]
-        total_weight = numpy.sum(relative_weights)
+        total_weight = np.sum(relative_weights)
         if total_weight == 0:
             return iter([])
         else:
@@ -91,10 +102,12 @@ class DistributionExperiment(ExperimentBase):
     """
     Compute reflectivity from a non-uniform sample.
 
-    The parameter *P* takes on the values from *distribution* in the
-    context of *experiment*. Clearly, *P* should not be a fitted
-    parameter, but the remaining experiment parameters can be fitted,
-    as can the parameters of the distribution.
+    *P* is the target parameter for the model, which takes on the values
+    from *distribution* in the context of the *experiment*.  The result
+    is the weighted sum of the theory curves after setting *P.value* to
+    each distribution value. Clearly, *P* should not be a fitted parameter,
+    but the remaining experiment parameters can be fitted, as can the
+    parameters of the distribution.
 
     If *coherent* is true, then the reflectivity of the mixture is computed
     from the coherent sum rather than the incoherent sum.
@@ -114,9 +127,20 @@ class DistributionExperiment(ExperimentBase):
         self._name = None
 
     def parameters(self):
-        return {'distribution':self.distribution.parameters(),
-                'experiment':self.experiment.parameters(),
-               }
+        return {
+            'distribution': self.distribution.parameters(),
+            'experiment': self.experiment.parameters(),
+            }
+
+    def to_dict(self):
+        return to_dict({
+            'type': type(self).__name__,
+            'P': self.P, # Note: use parameter id to restore
+            'distribution': self.distribution,
+            'experiment': self.experiment,
+            # Don't need self.probe since it is the experiment probe.
+            'coherent': self.coherent,
+        })
 
     def reflectivity(self, resolution=True, interpolation=0):
         key = ("reflectivity", resolution, interpolation)
@@ -141,7 +165,7 @@ class DistributionExperiment(ExperimentBase):
 
     def _max_P(self):
         x, w = zip(*self.distribution)
-        idx = numpy.argmax(w)
+        idx = np.argmax(w)
         return x[idx]
 
     def smooth_profile(self, dz=1):
@@ -171,20 +195,20 @@ class DistributionExperiment(ExperimentBase):
         return self._cache[key]
 
     def plot_profile(self, plot_shift=0.):
-        import pylab
+        import matplotlib.pyplot as plt
         from bumps.plotutil import auto_shift
 
         trans = auto_shift(plot_shift)
         z, rho, irho = self.step_profile()
-        pylab.plot(z, rho, '-g', z, irho, '-b', transform=trans)
+        plt.plot(z, rho, '-g', z, irho, '-b', transform=trans)
         z, rho, irho = self.smooth_profile()
-        pylab.plot(z, rho, ':g', z, irho, ':b', transform=trans)
-        pylab.legend(['rho', 'irho'])
+        plt.plot(z, rho, ':g', z, irho, ':b', transform=trans)
+        plt.legend(['rho', 'irho'])
 
     def plot_weights(self):
-        import pylab
+        import matplotlib.pyplot as plt
         x, w = zip(*self.distribution)
-        pylab.stem(x, 100*numpy.array(w))
-        pylab.title('Weight distribution')
-        pylab.xlabel(self.P.name)
-        pylab.ylabel('Percentage')
+        plt.stem(x, 100*np.array(w))
+        plt.title('Weight distribution')
+        plt.xlabel(self.P.name)
+        plt.ylabel('Percentage')

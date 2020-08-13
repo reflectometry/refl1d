@@ -4,14 +4,13 @@
 # You can set these variables from the command line.
 PYTHON        ?= python
 SPHINXOPTS    =
-SPHINXBUILD   = "$(PYTHON)" -m sphinx.__init__
+SPHINXBUILD   = "$(PYTHON)" -m sphinx
 PAPER         ?= letter
 BUILDDIR      = _build
 
 # Internal variables.
-PAPEROPT_a4     = -D latex_paper_size=a4
-PAPEROPT_letter = -D latex_paper_size=letter
-ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
+ALLSPHINXOPTS = -d $(BUILDDIR)/doctrees -D latex_elements.papersize=$(PAPER) \
+		$(SPHINXOPTS) .
 
 .PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp \
         devhelp epub latex pdf text man changes linkcheck doctest
