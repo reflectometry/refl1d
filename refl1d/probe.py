@@ -122,7 +122,9 @@ class Probe(object):
         *theta_offset* : float or Parameter
            Offset of the sample from perfect alignment
         *sample_broadening* : float or Parameter
-           Additional angular divergence from sample curvature
+           Additional FWHM angular divergence from sample curvature.
+           Scale 1-$\sigma$ rms by $2 \surd(2 \ln 2) \approx 2.35$ to convert
+           to FWHM.
         *back_reflectivity* : True or False
            True if the beam enters through the substrate
 
@@ -186,18 +188,16 @@ class Probe(object):
         if not name and filename:
             name = os.path.splitext(os.path.basename(filename))[0]
         qualifier = " "+name if name is not None else ""
-        self.intensity = Parameter.default(intensity,
-                                           name="intensity"+qualifier)
-        self.background = Parameter.default(background,
-                                            name="background"+qualifier,
-                                            limits=[0., inf])
-        self.back_absorption = Parameter.default(back_absorption,
-                                                 name="back_absorption"+qualifier,
-                                                 limits=[0., 1.])
-        self.theta_offset = Parameter.default(theta_offset,
-                                              name="theta_offset"+qualifier)
-        self.sample_broadening = Parameter.default(sample_broadening,
-                                              name="sample_broadening"+qualifier)
+        self.intensity = Parameter.default(
+            intensity, name="intensity"+qualifier)
+        self.background = Parameter.default(
+            background, name="background"+qualifier, limits=[0., inf])
+        self.back_absorption = Parameter.default(
+            back_absorption, name="back_absorption"+qualifier, limits=[0., 1.])
+        self.theta_offset = Parameter.default(
+            theta_offset, name="theta_offset"+qualifier)
+        self.sample_broadening = Parameter.default(
+            sample_broadening, name="sample_broadening"+qualifier)
         self.back_reflectivity = back_reflectivity
         if data is not None:
             R, dR = data
@@ -220,7 +220,7 @@ class Probe(object):
         if dQ is not None:
             dQ = np.asarray(dQ)
         else:
-            dQ = dTdL2dQ(T=T, dT=dT + sigma2FWHM(self.sample_broadening.value), L=L, dL=dL)
+            dQ = dTdL2dQ(T=T, dT=dT, L=L, dL=dL)
 
         # Make sure that we are dealing with vectors
         T, dT, L, dL = [np.ones_like(Q)*v for v in (T, dT, L, dL)]
@@ -403,15 +403,6 @@ class Probe(object):
         self.dQo = dQ
 
     @property
-    def dQ(self):
-        if self.sample_broadening.value != 0:
-            dQ = dTdL2dQ(T=self.T, dT=self.dT + sigma2FWHM(self.sample_broadening.value),
-                         L=self.L, dL=self.dL)
-        else:
-            dQ = self.dQo
-        return dQ
-
-    @property
     def calc_Q(self):
         if self.theta_offset.value != 0:
             Q = TL2Q(T=self.calc_T+self.theta_offset.value, L=self.calc_L)
@@ -421,21 +412,26 @@ class Probe(object):
         return Q if not self.back_reflectivity else -Q
 
     def parameters(self):
-        return {'intensity':self.intensity,
-                'background':self.background,
-                'back_absorption':self.back_absorption,
-                'theta_offset':self.theta_offset,
-                'sample_broadening':self.sample_broadening
-               }
+        return {
+            'intensity': self.intensity,
+            'background': self.background,
+            'back_absorption': self.back_absorption,
+            'theta_offset': self.theta_offset,
+            'sample_broadening': self.sample_broadening
+            }
 
     def to_dict(self):
         """ Return a dictionary representation of the parameters """
-        return dict(type=type(self).__name__,
-                    intensity=self.intensity.to_dict(),
-                    background=self.background.to_dict(),
-                    back_absorption=self.back_absorption.to_dict(),
-                    theta_offset=self.theta_offset.to_dict(),
-                    sample_broadening=self.sample_broadening.to_dict())
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'filename': self.filename,
+            'intensity': self.intensity,
+            'background': self.background,
+            'back_absorption': self.back_absorption,
+            'theta_offset': self.theta_offset,
+            'sample_broadening': self.sample_broadening,
+        })
 
     def scattering_factors(self, material, density):
         """
@@ -1021,10 +1017,6 @@ class ProbeSet(Probe):
         return np.hstack([p.dQ for p in self.probes])
 
     @property
-    def dQ(self):
-        return numpy.hstack(p.dQ for p in self.probes)
-
-    @property
     def unique_L(self):
         return np.unique(np.hstack([p.unique_L for p in self.probes]))
 
@@ -1283,89 +1275,27 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
         natural = "Q R dR dQ".split()
         column_order = [actual.index(k) for k in natural]
     else:
-        order = [0, 1, 2, 3]
-    def _as_Qprobe(data):
-        Q, R, dR, dQ = (data[1][k] for k in order)
-
-        if FWHM: # dQ defaults to 1-sigma, if FWHM is not True
-            dQ = FWHM2sigma(dQ)
-
-        # support calculation of sld from material based on radiation type
-        if radiation is not None:
-            data_radiation = radiation
-        elif 'radiation' in data[0]:
-            data_radiation = json.loads(data[0]['radiation'])
-        else:
-            data_radiation = None
-        if data_radiation == 'xray':
-            make_probe = XrayProbe
-        elif data_radiation == 'neutron':
-            make_probe = NeutronProbe
-        else:
-            make_probe = Probe
-
-        # Get wavelength from header if it is not provided as an argument
-        data_L = data_T = None
-        if L is not None:
-            data_L = L
-        elif 'wavelength' in data[0]:
-            data_L = json.loads(data[0]['wavelength'])
-        if T is not None:
-            data_T = T
-        elif 'angle' in data[0]:
-            data_T = json.loads(data[0]['angle'])
-        if data_L is not None:
-            if dL is not None:
-                data_dL = dL
-            elif 'wavelength_resolution' in data[0]:
-                data_dL = json.loads(data[0]['wavelength_resolution'])
-            else:
-                raise ValueError("Need wavelength_resolution to determine dT")
-            data_dL = sigma2FWHM(data_dL) if not FWHM else data_dL
-            data_T = QL2T(Q, data_L)
-            data_dT = dQdL2dT(Q, dQ, data_L, data_dL)
-        elif data_T is not None:
-            if dT is not None:
-                data_dT = dT
-            elif 'angular_resolution' in data[0]:
-                data_dT = json.loads(data[0]['angular_resolution'])
-            else:
-                raise ValueError("Need angular_resolution to determine dL")
-            data_dT = sigma2FWHM(data_dT) if not FWHM else data_dT
-            data_L = QT2L(Q, data_T)
-            data_dLoL = dQdT2dLoL(Q, dQ, data_T, data_dT)
-            data_dL = data_dLoL * data_L
-
-        if data_L is not None:
-#            data_dT += (sigma2FWHM(sample_broadening)
-#                        if not FWHM else sample_broadening)
-            probe = make_probe(
-                T=data_T, dT=data_dT,
-                L=data_L, dL=data_dL,
-                data=(R, dR),
-                name=name,
-                filename=filename,
-                intensity=intensity,
-                background=background,
-                back_absorption=back_absorption,
-                theta_offset=theta_offset,
-                sample_broadening=sample_broadening,
-                back_reflectivity=back_reflectivity,
-            )
-        else:
-            probe = QProbe(
-                Q, dQ, data=(R, dR),
-                name=name,
-                filename=filename,
-                intensity=intensity,
-                background=background,
-                back_absorption=back_absorption,
-                back_reflectivity=back_reflectivity,
-            )
-        return probe
-
-    if len(data) == 1:
-        probe = _as_Qprobe(data[0])
+        column_order = [0, 1, 2, 3]
+    index = slice(*data_range)
+    probe_args = dict(
+        name=name,
+        filename=filename,
+        intensity=intensity,
+        background=background,
+        back_absorption=back_absorption,
+        back_reflectivity=back_reflectivity,
+        theta_offset=theta_offset,
+        sample_broadening=sample_broadening,
+    )
+    data_args = dict(
+        radiation=radiation,
+        FWHM=FWHM,
+        T=T, L=L, dT=dT, dL=dL, dR=dR,
+        column_order=column_order,
+        index=index,
+    )
+    if len(entries) == 1:
+        probe = _data_as_probe(entries[0], probe_args, **data_args)
     else:
         data_by_xs = {strip_quotes(entry[0]["polarization"])
                       : _data_as_probe(entry, probe_args, **data_args)
