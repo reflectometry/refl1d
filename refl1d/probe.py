@@ -108,6 +108,8 @@ class Probe(object):
         *dQ* : [float] or None | |1/Ang|
             1-\$sigma$ Q resolution when it cannot be computed directly
             from angular divergence and wavelength dispersion.
+        *resolution* : 'normal' or 'uniform'
+            Distribution function for Q resolution.
 
     Measurement properties:
 
@@ -178,7 +180,7 @@ class Probe(object):
                  intensity=1, background=0, back_absorption=1, theta_offset=0,
                  sample_broadening=0,
                  back_reflectivity=False, name=None, filename=None,
-                 dQ=None):
+                 dQ=None, resolution='normal'):
         if T is None or L is None:
             raise TypeError("T and L required")
         if sample_broadening is None:
@@ -207,6 +209,7 @@ class Probe(object):
         self._set_TLR(T, dT, L, dL, R, dR, dQ)
         self.name = name
         self.filename = filename
+        self.resolution = resolution
 
     def _set_TLR(self, T, dT, L, dL, R, dR, dQ):
         #if L is None:
@@ -569,7 +572,7 @@ class Probe(object):
         Apply the instrument resolution function
         """
         Q, dQ = _interpolate_Q(self.Q, self.dQ, interpolation)
-        R = convolve(Qin, Rin, Q, dQ)
+        R = convolve(Qin, Rin, Q, dQ, resolution=self.resolution)
         return Q, R
 
     def apply_beam(self, calc_Q, calc_R, resolution=True, interpolation=0):
@@ -1183,6 +1186,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
           L=None, dL=None, T=None, dT=None, dR=None,
           FWHM=False, radiation=None,
           columns=None, data_range=(None, None),
+          resolution='normal',
          ):
     r"""
     Load in four column data Q, R, dR, dQ.
@@ -1268,6 +1272,9 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     0-origin indices, stop is last plus one and step optional.  Use negative
     numbers to count from the end.  Default is *(None, None)* for the entire
     data set.
+
+    *resolution* is 'normal' (default) or 'uniform'. Use uniform if you
+    are merging Q points from a finely stepped energy sensitive measurement.
     """
     entries = parse_multi(filename, keysep=keysep, sep=sep, comment=comment)
     if columns:
@@ -1286,6 +1293,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
         back_reflectivity=back_reflectivity,
         theta_offset=theta_offset,
         sample_broadening=sample_broadening,
+        resolution=resolution,
     )
     data_args = dict(
         radiation=radiation,
@@ -1376,6 +1384,7 @@ def _data_as_probe(entry, probe_args, T, L, dT, dL, dR, FWHM, radiation,
     # Get dT and dL, either from user input or from datafile.
     data_dL = fetch_key('wavelength_resolution', dL)
     data_dT = fetch_key('angular_resolution', dT)
+    #print(header['angular_resolution'], data_dT)
 
     # Support dT = f(T), dL = f(L)
     if callable(data_dT):
