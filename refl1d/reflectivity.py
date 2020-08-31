@@ -290,7 +290,7 @@ def calculate_u1_u3_py(H, rhoM, thetaM, Aguide):
     return sld_b, u1, u3
 
 try:
-    raise ImportError() # uncomment to force numba off
+    #raise ImportError() # uncomment to force numba off
     from numba import njit
     USE_NUMBA = True
 except ImportError:
