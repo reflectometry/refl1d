@@ -289,8 +289,122 @@ def calculate_u1_u3_py(H, rhoM, thetaM, Aguide):
     #print "u3", u3
     return sld_b, u1, u3
 
-def convolve(xi, yi, x, dx):
-    """
+try:
+    #raise ImportError() # uncomment to force numba off
+    from numba import njit
+    USE_NUMBA = True
+except ImportError:
+    USE_NUMBA = False
+    # if no numba then njit does nothing
+    def njit(*args, **kw):
+        # Check for bare @njit, in which case we just return the function.
+        if len(args) == 1 and callable(args[0]) and not kw:
+            return args[0]
+        # Otherwise we have @njit(...), so return the identity decorator.
+        return lambda fn: fn
+
+@njit('(f8[:], f8[:], f8[:], f8[:], f8[:])')
+def _convolve_uniform(xi, yi, x, dx, y):
+    root_12_over_2 = np.sqrt(3)
+    left_index = 0
+    N = len(xi)
+    for k, x_k in enumerate(x):
+        # Convert 1-sigma width to 1/2 width of the region
+        limit = dx[k] * root_12_over_2
+        #print(f"point {x_k} +/- {limit}")
+        # Find integration limits, bound by the range of the data
+        left, right = max(x_k - limit, xi[0]), min(x_k + limit, xi[-1])
+        if right < left:
+            # Convolution does not overlap data range.
+            y[k] = 0.
+            continue
+
+        # Find the starting point for the convolution by first scanning
+        # forward until we reach the next point greater than the limit
+        # (we might already be there if the next output point has wider
+        # resolution than the current point), then scanning backwards to
+        # get to the last point before the limit. Make sure we have at
+        # least one interval so that we don't have to check edge cases
+        # later.
+        while left_index < N-2 and xi[left_index] < left:
+            left_index += 1
+        while left_index > 0 and xi[left_index] > left:
+            left_index -= 1
+
+        # Set the first interval.
+        total = 0.
+        right_index = left_index + 1
+        x1, y1 = xi[left_index], yi[left_index]
+        x2, y2 = xi[right_index], yi[right_index]
+
+
+        # Subtract the excess from left interval before the left edge.
+        #print(f" left {left} in {(x1, y1)}, {(x2, y2)}")
+        if x1 < left:
+            # Subtract the area of the rectangle from (x1, 0) to (left, y1)
+            # plus 1/2 the rectangle from (x1, y1) to (left, y'),
+            # where y' is y value where the line (x1, y1) to (x2, y2)
+            # intersects x=left. This can be computed as follows:
+            #    offset = left - x1
+            #    slope = (y2 - y1)/(x2 - x1)
+            #    yleft = y1 + slope*offset
+            #    area = offset * y1 + offset * (yleft-y1)/2
+            # It can be simplified to the following:
+            #    area = offset * (y1 + slope*offset/2)
+            offset = left - x1
+            slope = (y2 - y1)/(x2 - x1)
+            area = offset * (y1 + 0.5*slope*offset)
+            total -= area
+            #print(f" left correction {area}")
+
+        # Do trapezoidal integration up to and including the end interval
+        while right_index < N-1 and x2 < right:
+            # Add the current interval if it isn't empty
+            if x1 != x2:
+                area = 0.5*(y1 + y2)*(x2 - x1)
+                total += area
+                #print(f" adding {(x1,y1)}, {(x2, y2)} as {area}")
+            # Move to the next interval
+            right_index += 1
+            x1, y1, x2, y2 = x2, y2, xi[right_index], yi[right_index]
+        if x1 != x2:
+            area = 0.5*(y1 + y2)*(x2 - x1)
+            total += area
+            #print(f" adding final {(x1,y1)}, {(x2, y2)} as {area}")
+
+        # Subtract the excess from the right interval after the right edge.
+        #print(f" right {right} in {(x1, y1)}, {(x2, y2)}")
+        if x2 > right:
+            # Expression for area to subtract using rectangles is as follows:
+            #    offset = x2 - right
+            #    slope = (y2 - y1)/(x2 - x1)
+            #    yright = y2 - slope*offset
+            #    area = -(offset * yright + offset * (y2-yright)/2)
+            # It can be simplified to the following:
+            #    area = -offset * (y2 - slope*offset/2)
+            offset = x2 - right
+            slope = (y2 - y1)/(x2 - x1)
+            area = offset * (y2 - 0.5*slope*offset)
+            total -= area
+            #print(f" right correction {area}")
+
+        # Normalize by interval length
+        if left < right:
+            #print(f" normalize by length {right} - {left}")
+            y[k] = total / (right - left)
+        elif x1 < x2:
+            # If dx = 0 using the value interpolated at x (with left=right=x).
+            #print(f" dirac delta at {left} = {right} in {(x1, y1)}, {(x2, y2)}")
+            offset = left - x1
+            slope = (y2 - y1)/(x2 - x1)
+            y[k] = y1 + slope*offset
+        else:
+            # At an empty interval in the theory function. Average the y.
+            #print(f" empty interval with {left} = {right} in {(x1, y1)}, {(x2, y2)}")
+            y[k] = 0.5*(y1 + y2)
+
+def convolve(xi, yi, x, dx, resolution='normal'):
+    r"""
     Apply x-dependent gaussian resolution to the theory.
 
     Returns convolution y[k] of width dx[k] at points x[k].
@@ -301,12 +415,19 @@ def convolve(xi, yi, x, dx):
     beyond the ends of the data measurement points *x*. Convolution at the
     tails is truncated and normalized to area of overlap between the resolution
     function in case the theory does not extend far enough.
+
+    *resolution* is 'normal' (default) or 'uniform'. Note that the uniform
+    distribution uses the $1-\sigma$ equivalent distribution width which is
+    $1/\sqrt{3}$ times the width of the rectangle.
     """
     from . import reflmodule
 
-    x = _dense(x)
+    xi, yi, x, dx = _dense(xi), _dense(yi), _dense(x), _dense(dx)
     y = np.empty_like(x)
-    reflmodule.convolve(_dense(xi), _dense(yi), x, _dense(dx), y)
+    if resolution == 'uniform':
+        _convolve_uniform(xi, yi, x, dx, y)
+    else:
+        reflmodule.convolve(xi, yi, x, dx, y)
     return y
 
 
@@ -330,41 +451,64 @@ def convolve_sampled(xi, yi, xp, yp, x, dx):
                                 x, _dense(dx), y)
     return y
 
+def test_uniform():
+    xi = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    yi = [1, 3, 1, 2, 7, 3, 1, 2, 1, 3]
+    _check_uniform("uniform aligned", xi, yi, x=[2, 4, 6, 8], dx=1)
+    _check_uniform("uniform unaligned", xi, yi, x=[2.5, 4.5, 6.5, 8.5], dx=1)
+    _check_uniform("uniform wide", xi, yi, x=[2.5, 4.5, 6.5, 8.5], dx=3)
+    # Check bad values
+    ystar = convolve(xi, yi, x=[-3, 13], dx=[1/np.sqrt(3)]*2, resolution='uniform')
+    assert (ystar == 0.).all()
+
+    xi = [1.1, 2.3, 2.8, 4.2, 5, 6, 7, 8, 9, 10]
+    yi = [1, 3, 1, 2, 7, 3, 1, 2, 1, 3]
+    _check_uniform("uniform unaligned", xi, yi, x=[2.5, 4.5, 6.5, 8.5], dx=1)
+
+def _check_uniform(name, xi, yi, x, dx):
+    # Note: using fixed dx since that's all _check_spline supports.
+    ystar = convolve(xi, yi, x, [dx/np.sqrt(3)]*len(x), resolution='uniform')
+    #print("xi", xi)
+    #print("yi", yi)
+    #print("x", x, "dx", dx)
+    #print("ystar", ystar)
+    xp = [-dx, -dx, dx, dx]
+    yp = [0, 0.5/dx, 0.5/dx, 0]
+    _check_spline(name, xi, yi, xp, yp, x, ystar)
 
 def test_convolve_sampled():
-    x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    y = [1, 3, 1, 2, 1, 3, 1, 2, 1, 3]
+    xi = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    yi = [1, 3, 1, 2, 1, 3, 1, 2, 1, 3]
     xp = [-1, 0, 1, 2, 3]
     yp = [1, 4, 3, 2, 1]
-    _check_convolution("aligned", x, y, xp, yp, dx=1)
-    _check_convolution("unaligned", x, y, _dense(xp) - 0.2000003, yp, dx=1)
-    _check_convolution("wide", x, y, xp, yp, dx=2)
-    _check_convolution("super wide", x, y, xp, yp, dx=10)
+    _check_sampled("sampled aligned", xi, yi, xp, yp, dx=1)
+    _check_sampled("sampled unaligned", xi, yi, _dense(xp) - 0.2000003, yp, dx=1)
+    _check_sampled("sampled wide", xi, yi, xp, yp, dx=2)
+    _check_sampled("sampled super wide", xi, yi, xp, yp, dx=10)
 
+def _check_sampled(name, xi, yi, xp, yp, dx):
+    ystar = convolve_sampled(xi, yi, xp, yp, xi, dx=np.full_like(xi, dx))
+    xp = np.array(xp)*dx
+    _check_spline(name, xi, yi, xp, yp, xi, ystar)
 
-def _check_convolution(name, x, y, xp, yp, dx):
-    ystar = convolve_sampled(x, y, xp, yp, x, dx=np.ones_like(x) * dx)
-
-    xp = np.array(xp) * dx
+def _check_spline(name, xi, yi, xp, yp, x, ystar):
     step = 0.0001
     xpfine = np.arange(xp[0], xp[-1] + step / 10, step)
     ypfine = np.interp(xpfine, xp, yp)
-    # make sure xfine is wide enough by adding a couple of extra steps
-    # at the end
-    xfine = np.arange(x[0] + xpfine[0], x[-1] + xpfine[-1] + 2 * step, step)
-    yfine = np.interp(xfine, x, y, left=0, right=0)
+    # make sure xfine is wide enough by adding an extra interval at the ends
+    xfine = np.arange(xi[0] + xpfine[0] - 2*step, xi[-1] + xpfine[-1] + 2*step, step)
+    yfine = np.interp(xfine, xi, yi, left=0, right=0)
     pidx = np.searchsorted(xfine, np.array(x) + xp[0])
-    left, right = np.searchsorted(xfine, [x[0], x[-1]])
+    left, right = np.searchsorted(xfine, [xi[0], xi[-1]])
 
     conv = []
-    for pi in pidx:
-        norm_start = max(0, left - pi)
-        norm_end = min(len(xpfine), right - pi)
+    for pk in pidx:
+        norm_start = max(0, left - pk)
+        norm_end = min(len(xpfine), right - pk)
         norm = step * np.sum(ypfine[norm_start:norm_end])
-        conv.append(
-            step * np.sum(ypfine * yfine[pi:pi + len(xpfine)]) / norm)
+        conv.append(step * np.sum(ypfine * yfine[pk:pk + len(xpfine)]) / norm)
 
     #print("checking convolution %s"%(name, ))
     #print(" ".join("%7.4f"%yi for yi in ystar))
     #print(" ".join("%7.4f"%yi for yi in conv))
-    assert all(abs(yi - fi) < 0.0005 for (yi, fi) in zip(ystar, conv))
+    assert all(abs(yi - fi) < 0.0005 for (yi, fi) in zip(ystar, conv)), name

@@ -106,7 +106,9 @@ def dQ_broadening(dQ, L, T, dT, width):
     *width* |deg|, with FWHM increased angular divergence
 
     The calculation is derived by substituting
-    $\Delta\theta' = \Delta\theta + \omega$ for sample broadening $\omega$.
+    $\Delta\theta' = \Delta\theta + \omega$ for sample broadening $\omega$
+    into the resolution estimate
+    $(\Delta Q/Q)^2 = (\Delta\lambda/\lambda)^2 + (\Delta\theta/\tan\theta)^2$.
     """
     T, dT = radians(asarray(T, 'd')), FWHM2sigma(radians(asarray(dT, 'd')))
     width = FWHM2sigma(radians(width))
