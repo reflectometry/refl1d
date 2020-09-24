@@ -1176,7 +1176,8 @@ class ProbeSet(Probe):
                       intensity=Po.intensity,
                       background=Po.background,
                       back_absorption=Po.back_absorption,
-                      back_reflectivity=Po.back_reflectivity)
+                      back_reflectivity=Po.back_reflectivity,
+                      resolution=Po.resolution)
 
 
 def load4(filename, keysep=":", sep=None, comment="#", name=None,
@@ -1451,7 +1452,7 @@ class QProbe(Probe):
     """
     def __init__(self, Q, dQ, data=None, name=None, filename=None,
                  intensity=1, background=0, back_absorption=1,
-                 back_reflectivity=False):
+                 back_reflectivity=False, resolution='normal'):
         if not name and filename:
             name = os.path.splitext(os.path.basename(filename))[0]
         qualifier = " "+name if name is not None else ""
@@ -1479,6 +1480,7 @@ class QProbe(Probe):
         self.calc_Qo = self.Qo
         self.name = name
         self.filename = filename
+        self.resolution = resolution
 
     def scattering_factors(self, material, density):
         raise NotImplementedError(
