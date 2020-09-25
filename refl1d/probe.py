@@ -572,13 +572,33 @@ class Probe(object):
         Apply the instrument resolution function
         """
         Q, dQ = _interpolate_Q(self.Q, self.dQ, interpolation)
-        R = convolve(Qin, Rin, Q, dQ, resolution=self.resolution)
+        if np.iscomplex(Rin).any():
+            R_real = convolve(Qin, Rin.real, Q, dQ, resolution=self.resolution)
+            R_imag = convolve(Qin, Rin.imag, Q, dQ, resolution=self.resolution)
+            R = R_real + 1j*R_imag
+        else:
+            R = convolve(Qin, Rin, Q, dQ, resolution=self.resolution)
         return Q, R
 
     def apply_beam(self, calc_Q, calc_R, resolution=True, interpolation=0):
-        """
+        r"""
         Apply factors such as beam intensity, background, backabsorption,
         resolution to the data.
+
+        *resolution* is True if the resolution function should be applied
+        to the reflectivity.
+
+        *interpolation* is the number of Q points to show between the
+        nominal Q points of the probe. Use this to draw a smooth theory
+        line between the data points. The resolution dQ is interpolated
+        between the resolution of the surrounding Q points.
+
+        If an amplitude signal is provided, $r$ will be scaled by
+        $\surd I + i \surd B / |r|$, which when squared will equal
+        $I |r|^2 + B$. The resolution function will be applied directly
+        to the amplitude. Unlike intensity and background, the resulting
+        $|G \ast r|^2 \ne G \ast |r|^2$ for convolution operator $\ast$,
+        but it should be close.
         """
         # Note: in-place vector operations are not notably faster.
 
@@ -605,7 +625,24 @@ class Probe(object):
             # if it is a problem before optimizing.
             Q, dQ = _interpolate_Q(self.Q, self.dQ, interpolation)
             Q, R = self.Q, np.interp(Q, calc_Q, calc_R)
-        R = self.intensity.value*R + self.background.value
+        if np.iscomplex(R).any():
+            # When R is an amplitude you can scale R by sqrt(A) to reproduce
+            # the effect of scaling the intensity in the reflectivity. To
+            # reproduce the effect of adding a background you can fiddle the
+            # phase of r as well using:
+            #      s = (sqrt(A) + i sqrt(B)/|r|) r
+            # then
+            #      |s|^2 = |sqrt(A) + i sqrt(B)/|r||^2 |r|^2
+            #            = (A + B/|r|^2) |r|^2
+            #            = A |r|^2 + B
+            # Note that this cannot work for negative background since
+            # |s|^2 >= 0 always, whereas negative background could push the
+            # reflectivity below zero.
+            R = np.sqrt(self.intensity.value)*R
+            if self.background.value > 0:
+                R += 1j*np.sqrt(self.background.value)*R/abs(R)
+        else:
+            R = self.intensity.value*R + self.background.value
         #return calc_Q, calc_R
         return Q, R
 

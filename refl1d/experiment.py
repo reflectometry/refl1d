@@ -464,17 +464,16 @@ class Experiment(ExperimentBase):
             #if np.isnan(calc_r).any(): print("calc_r contains NaN")
         return self._cache[key]
 
-    def amplitude(self, resolution=False):
+    def amplitude(self, resolution=False, interpolation=0):
         """
         Calculate reflectivity amplitude at the probe points.
         """
-        key = ('amplitude', resolution)
+        key = ('amplitude', resolution, interpolation)
         if key not in self._cache:
             calc_q, calc_r = self._reflamp()
-            r_real = self.probe.apply_beam(calc_q, calc_r.real, resolution=resolution)
-            r_imag = self.probe.apply_beam(calc_q, calc_r.imag, resolution=resolution)
-            r = r_real + 1j*r_imag
-            self._cache[key] = self.probe.Q, r
+            res = self.probe.apply_beam(calc_q, calc_r, resolution=resolution,
+                                        interpolation=interpolation)
+            self._cache[key] = res
         return self._cache[key]
 
     def reflectivity(self, resolution=True, interpolation=0):
@@ -485,11 +484,11 @@ class Experiment(ExperimentBase):
         """
         key = ('reflectivity', resolution, interpolation)
         if key not in self._cache:
-            Q, r = self._reflamp()
-            R = _amplitude_to_magnitude(r,
-                                        ismagnetic=self.ismagnetic,
-                                        polarized=self.probe.polarized)
-            res = self.probe.apply_beam(Q, R, resolution=resolution,
+            calc_q, calc_r = self._reflamp()
+            calc_R = _amplitude_to_magnitude(calc_r,
+                                             ismagnetic=self.ismagnetic,
+                                             polarized=self.probe.polarized)
+            res = self.probe.apply_beam(calc_q, calc_R, resolution=resolution,
                                         interpolation=interpolation)
             self._cache[key] = res
         return self._cache[key]
