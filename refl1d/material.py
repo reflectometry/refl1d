@@ -403,26 +403,25 @@ class Mixture(Scatterer):
     The components of the mixture can vary relative to each other, either
     by mass, by volume or by number::
 
-        Mixture.bymass(base, M1, F1, M2, F2..., name='mixture name')
-        Mixture.byvolume(base, M1, F1, M2, F2..., name='mixture name')
+        Mixture.bymass(base, M2, F2..., name='mixture name')
+        Mixture.byvolume(base, M2, F2..., name='mixture name')
 
-    The materials *base*, *M1*, *M2*, *M3*, ... can be chemical formula
-    strings  or material objects.  In practice, since the chemical
-    formula parser does not have a density database, only elemental
-    materials can be specified by string. Use natural_density will need
+    The materials *base*, *M2*, *M3*, ... can be chemical formula
+    strings including @density or from material objects. Use natural_density
     to change from bulk values if the formula has isotope substitutions.
 
     The fractions F2, F3, ... are percentages in [0, 100]. The implicit
-    fraction F1 is 100 - (F2+F3+...). The SLD is NaN when *F1 < 0*).
+    fraction for the base material is 100 - (F2+F3+...). The SLD is NaN
+    then *F1 < 0*.
 
-    name defaults to M1.name+M2.name+...
+    name defaults to M2.name+M3.name+...
     """
     @classmethod
     def bymass(cls, base, *parts, **kw):
         """
         Returns an alloy defined by relative mass of the constituents.
 
-        Mixture.bymass(base, M1, F2, ..., name='mixture name')
+        Mixture.bymass(base, M2, F2, ..., name='mixture name')
         """
         return cls(base, parts, by='mass', **kw)
 
@@ -431,7 +430,7 @@ class Mixture(Scatterer):
         """
         Returns an alloy defined by relative volume of the constituents.
 
-        Mixture.byvolume(M1, M2, F2, ..., name='mixture name')
+        Mixture.byvolume(base, M2, F2, ..., name='mixture name')
         """
         return cls(base, parts, by='volume', **kw)
 
@@ -528,9 +527,9 @@ class Mixture(Scatterer):
 
         # Use calculator to convert individual SLDs to overall SLD
         volume_fraction = self._volume(fraction)
-        rho = np.sum(rho*volume_fraction)
+        rho = np.sum(rho*extend(volume_fraction, rho))
 
-        irho = np.sum(irho*volume_fraction)
+        irho = np.sum(irho*extend(volume_fraction, irho))
         if self.use_incoherent:
             raise NotImplementedError("incoherent scattering not supported")
         #print "Mixture", self.name, coh, absorp
@@ -583,3 +582,33 @@ class ProbeCache(object):
             self._cache[h] = self._probe.scattering_factors(material,
                                                             density=1.0)
         return [v*density for v in self._cache[h]]
+
+def extend(a, b):
+    """
+    Extend *a* to match the number of dimensions of *b*.
+
+    This adds dimensions to the end of *a* rather than the beginning. It is
+    equivalent to *a[..., None, None]* with the right number of None elements
+    to make the number of dimensions match (or np.newaxis if you prefer).
+
+    For example::
+
+        from numpy.random import rand
+        a, b = rand(3, 4), rand(3, 4, 2)
+        a + b
+        ==> ValueError: operands could not be broadcast together with shapes (3,4) (3,4,2)
+        c = extend(a, b) + b
+        c.shape
+        ==> (3, 4, 2)
+
+    Numpy broadcasting rules automatically extend arrays to the beginning,
+    so the corresponding *lextend* function is not needed::
+
+        c = rand(3, 4) + rand(2, 3, 4)
+        c.shape
+        ==> (2, 3, 4)
+    """
+    if np.isscalar(a):
+        return a
+    extra_dims = (np.newaxis,)*(b.ndim-a.ndim)
+    return a[(..., *extra_dims)]
