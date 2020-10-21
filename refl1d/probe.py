@@ -486,6 +486,13 @@ class Probe(object):
         raise NotImplementedError
         # TODO: implement resolution guard.
 
+    def Q_c(self, substrate=None, surface=None):
+        Srho, Sirho = (0, 0) if substrate is None else substrate.sld(self)[:2]
+        Vrho, Virho = (0, 0) if surface is None else surface.sld(self)[:2]
+        drho = Srho-Vrho if not self.back_reflectivity else Vrho-Srho
+        Q_c = sign(drho)*sqrt(16*pi*abs(drho)*1e-6)
+        return Q_c
+
     def critical_edge(self, substrate=None, surface=None,
                       n=51, delta=0.25):
         r"""
@@ -499,6 +506,9 @@ class Probe(object):
 
         *delta* is the relative uncertainty in the material density,
         which defines the range of values which are calculated.
+
+        Note: :meth:`critical_edge` will remove the extra Q calculation
+        points introduced by :meth:`oversample`.
 
         The $n$ points $Q_i$ are evenly distributed around the critical
         edge in $Q_c \pm \delta Q_c$ by varying angle $\theta$ for a
@@ -520,10 +530,7 @@ class Probe(object):
         back reflectivity to front reflectivity.  For completeness,
         the angle $\theta = 0$ is added as well.
         """
-        Srho, Sirho = (0, 0) if substrate is None else substrate.sld(self)[:2]
-        Vrho, Virho = (0, 0) if surface is None else surface.sld(self)[:2]
-        drho = Srho-Vrho if not self.back_reflectivity else Vrho-Srho
-        Q_c = sign(drho)*sqrt(16*pi*abs(drho)*1e-6)
+        Q_c = self.Q_c(substrate, surface)
         Q = np.linspace(Q_c*(1 - delta), Q_c*(1+delta), n)
         L = np.average(self.L)
         T = QL2T(Q=Q, L=L)
@@ -556,9 +563,12 @@ class Probe(object):
         bias from uniform Q steps.  Depending on the problem, a value of
         *n* between 20 and 100 should lead to stable values for the convolved
         reflectivity.
+
+        Note: :meth:`oversample` will remove the extra Q calculation
+        points introduced by :meth:`critical_edge`.
         """
-        if n <= 5:
-            raise ValueError("Oversampling with n<=5 is not useful")
+        if n < 5:
+            raise ValueError("Oversampling with n<5 is not useful")
 
         rng = numpy.random.RandomState(seed=seed)
         T = rng.normal(self.T[:, None], self.dT[:, None], size=(len(self.dT), n-1))
@@ -1525,6 +1535,22 @@ class QProbe(Probe):
             % (self.filename, material))
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
+    def oversample(self, n=20, seed=1):
+        if n < 5:
+            raise ValueError("Oversampling with n<5 is not useful")
+        rng = numpy.random.RandomState(seed=seed)
+        extra = rng.normal(self.Q, self.dQ, size=(n-1, len(self.Q)))
+        calc_Q = np.hstack((self.Q, extra.flatten()))
+        self.calc_Qo = np.sort(calc_Q)
+    oversample.__doc__ = Probe.oversample.__doc__
+
+    def critical_edge(self, substrate=None, surface=None,
+                      n=51, delta=0.25):
+        Q_c = self.Q_c(substrate, surface)
+        extra = np.linspace(Q_c*(1 - delta), Q_c*(1+delta), n)
+        calc_Q = np.hstack((self.Q, extra, 0))
+        self.calc_Qo = np.sort(calc_Q)
+    critical_edge.__doc__ = Probe.critical_edge.__doc__
 
 def measurement_union(xs):
     """
