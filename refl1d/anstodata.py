@@ -126,18 +126,6 @@ def load_magnetic(pp=None, pm=None, mp=None, mm=None, Aguide=270, H=0, instrumen
     return probe
 
 
-
-    #fname, name, data = _load_dat(filename)
-
-    #Q = data[0]
-    #R = data[1]
-    #dR = data[2]
-    #dQ = FWHM2sigma(data[3])
-
-    #probe = QProbe(Q, dQ, data=(R, dR), name=name, filename=fname)
-
-
-
 class ANSTOData(object):
     def load(self, filename, **kw):
         return load(filename, instrument=self, **kw)
