@@ -15,7 +15,7 @@ import os.path
 import numpy as np
 from .instrument import Pulsed
 from bumps.data import maybe_open
-from .probe import QProbe, PolarizedNeutronProbe
+from .probe import QProbe, PolarizedNeutronProbe, PolarizedQProbe
 from .resolution import FWHM2sigma
 
 
@@ -113,37 +113,37 @@ def load_magnetic(pp=None, pm=None, mp=None, mm=None, Aguide=270, H=0, instrumen
 
     probe : probe.QProbe
     """
-    probes = [ load(f) for f in [pp, pm, mp, mm] if f is not None ]
+    probes = [ load(f) if f is not None else None for f in [pp, pm, mp, mm] ]
 
     if all(p is None for p in probes):
-        raise IOError("Data set has no magnetic cross sections: %r" % filename)
-    probe = PolarizedNeutronProbe(probes, Aguide=Aguide, H=H)
-    if shared_beam:
-        probe.shared_beam()  # Share the beam parameters by default
-    return probe
-
-
-
-    fname, name, data = _load_dat(filename)
-
-    Q = data[0]
-    R = data[1]
-    dR = data[2]
-    dQ = FWHM2sigma(data[3])
-
-    probe = QProbe(Q, dQ, data=(R, dR), name=name, filename=fname)
-
+        raise IOError("Data set has no magnetic cross sections: %r" % pp)
+    probe = PolarizedQProbe(probes, Aguide=Aguide, H=H)
+    #if shared_beam:
+    #    probe.shared_beam()  # Share the beam parameters by default
     if instrument is not None:
         probe.instrument = instrument.instrument
 
     return probe
 
+
+
+    #fname, name, data = _load_dat(filename)
+
+    #Q = data[0]
+    #R = data[1]
+    #dR = data[2]
+    #dQ = FWHM2sigma(data[3])
+
+    #probe = QProbe(Q, dQ, data=(R, dR), name=name, filename=fname)
+
+
+
 class ANSTOData(object):
     def load(self, filename, **kw):
         return load(filename, instrument=self, **kw)
 
-    def load_magnetic(self, filename, **kw):
-        return load_magnetic(filename, instrument=self, **kw)
+    def load_magnetic(self, pp=None, pm=None, mp=None, mm=None, Aguide=None, H=None, **kw):
+        return load_magnetic(pp=pp, pm=pm, mp=mp, mm=mm, **kw)
 
 
 class Platypus(ANSTOData, Pulsed):
