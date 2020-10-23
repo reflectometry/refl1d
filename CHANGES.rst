@@ -4,10 +4,17 @@ Change History
 
 Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
 
-2020-..-.. v0.8.12
+2020-10-23 v0.8.12
 ==================
+* support uniform resolution in addition to gaussian resolution
+* implement *oversample()* and *critical_edge()* for *QProbe*
+* support variable wavelength probes for materials mixtures
 * add irho to the profile contour plots
+* save magnetic twist contour in output directory; it is not yet plotted
 * simplify realignment usage to 'refl1d align ...'
+* improve support for complex amplitude (beam corrections, interpolation)
+* restore DREAM fitter efficiency (it should now require fewer burn-in steps)
+* restore parallel processing for GUI
 * reenable python 2.7 support
 
 2020-06-11 v0.8.11
