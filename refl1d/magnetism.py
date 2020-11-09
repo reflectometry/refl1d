@@ -369,7 +369,7 @@ class FreeMagnetism(BaseMagnetism):
                       ((0, inf), (0, 360), (0, 1)))
               ]
         if len(self.z) != len(self.rhoM):
-            raise ValueError("must have number of intervals dz one less than rhoM")
+            raise ValueError("must have one position z for each rhoM")
         if len(self.thetaM) > 0 and len(self.rhoM) != len(self.thetaM):
             raise ValueError("must have one thetaM for each rhoM")
 
