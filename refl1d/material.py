@@ -610,5 +610,9 @@ def extend(a, b):
     """
     if np.isscalar(a):
         return a
-    extra_dims = (np.newaxis,)*(b.ndim-a.ndim)
-    return a[(..., *extra_dims)]
+    # CRUFT: python 2.7 support
+    extra_dims = (1,)*(b.ndim-a.ndim)
+    return a.reshape(a.shape + extra_dims)
+    # python 3 uses
+    #extra_dims = (np.newaxis,)*(b.ndim-a.ndim)
+    #return a[(..., *extra_dims)]
