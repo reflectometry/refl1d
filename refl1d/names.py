@@ -35,7 +35,7 @@ from .stajconvert import load_mlayer, save_mlayer
 from . import ncnrdata as NCNR, snsdata as SNS
 from .instrument import Monochromatic, Pulsed
 from .magnetic import MagneticSlab, MagneticTwist, FreeMagnetic, MagneticStack
-from .magnetism import Magnetism, MagnetismTwist, FreeMagnetism, MagnetismStack
+from .magnetism import Magnetism, MagnetismTwist, FreeMagnetism, FreeMagnetismInterface, MagnetismStack
 from .support import sample_data
 
 # Pull in common materials for reflectometry experiments.
