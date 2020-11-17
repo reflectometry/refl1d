@@ -180,8 +180,11 @@ class FreeInterface(Layer):
 
     def render(self, probe, slabs):
         thickness = self.thickness.value
+
+        # TODO: why is provided if it is ignored?
         # interface ignored for FreeInterface
         # interface = self.interface.value
+
         below_rho, below_irho = self.below.sld(probe)
         above_rho, above_irho = self.above.sld(probe)
         # Pz is the center, Pw is the width
