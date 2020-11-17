@@ -174,7 +174,7 @@ class FreeInterface(Layer):
         thickness = self.thickness.value
         z, p = [hstack((0, cumsum(asarray([v.value for v in vector], 'd'))))
                 for vector in (self.dz, self.dp)]
-        if p[-1] == 0: 
+        if p[-1] == 0:
             p[-1] = 1
         p *= 1/p[-1]
         # AJC included condition as if z[-1] == 0 then z *= thickness/z[-1] == [nan]*len(z)
