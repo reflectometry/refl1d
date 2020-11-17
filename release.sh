@@ -40,7 +40,7 @@ git log
 
 (5) update version number and requirements
 
-set REFLVER=X.Y.Z
+REFLVER=X.Y.Z
 vi refl1d/__init__.py
 vi rtd-requirements
 git commit -a -m "R $REFLVER"

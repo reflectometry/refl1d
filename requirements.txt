@@ -2,7 +2,7 @@ setuptools
 nose
 wheel
 periodictable
-ipython==5.5
+ipython
 pyreadline
 wxPython
 sphinx
