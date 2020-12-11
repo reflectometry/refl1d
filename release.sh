@@ -80,6 +80,13 @@ https://github.com/reflectometry/refl1d/releases/edit/vX.Y.Z
 
 Documentation: http://refl1d.readthedocs.org
 
+Use `pip install refl1d wxpython` to install in your python environment.
+
+For windows, download `Refl1d-X.Y.Z-exe.zip` and extract the archive. Go to
+the extracted directory and click on `refl1d_gui.bat`. This will open a dialog
+saying that the application is untrusted with a "Don't run" button at the
+bottom. Click on "more info" and a "Run anyway" button will appear.
+
 YYYY-M-DD vX.Y.Z
 ================
 ... content of CHANGES.rst for most recent release ...
