@@ -78,14 +78,9 @@ python setup.py sdist
 
 https://github.com/reflectometry/refl1d/releases/edit/vX.Y.Z
 
-Documentation: http://refl1d.readthedocs.org
+For windows, download [Refl1D-X.Y.Z-exe.zip](https://github.com/reflectometry/refl1d/releases/download/vX.Y.Z/Refl1D-X.Y.Z-exe.zip) and extract the archive. Go to the extracted directory and click on `refl1d_gui.bat`. This will open a dialog saying that the application is untrusted with a "Don't run" button at the bottom. Click on "more info" and a "Run anyway" button will appear.
 
-Use `pip install refl1d wxpython` to install in your python environment.
-
-For windows, download `Refl1d-X.Y.Z-exe.zip` and extract the archive. Go to
-the extracted directory and click on `refl1d_gui.bat`. This will open a dialog
-saying that the application is untrusted with a "Don't run" button at the
-bottom. Click on "more info" and a "Run anyway" button will appear.
+Use `pip install refl1d wxpython` to install Refl1D in your python environment.
 
 YYYY-M-DD vX.Y.Z
 ================
