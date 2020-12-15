@@ -181,7 +181,7 @@ def calc_errors(problem, points):
     residuals = dict((m, []) for m in experiments)
     slabs = dict((m, []) for m in experiments)
     def record_point():
-        problem.chisq() # Force reflectivity recalculation
+        problem.chisq_str() # Force reflectivity recalculation
         for m in experiments:
             D = m.residuals()
             residuals[m].append(D+0)
