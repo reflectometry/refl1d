@@ -15,8 +15,8 @@ Refl1D Release Process
    # Note: linux boxen includes ~/dev as well as ~/src on the shared machines
 sh
 git status
-git pull
 git push
+git pull
 
 (2) check that all tests pass
   [bumps, refl1d, periodictable] X [windows, mac, linux] X [python 2.6, 2.7, 3.3, 3.4]
@@ -44,18 +44,8 @@ REFLVER=X.Y.Z
 vi refl1d/__init__.py
 vi rtd-requirements
 git commit -a -m "R $REFLVER"
-git push
 
-(6) wait for the binaries for windows and mac
-
-# again, release is on jenkins, but this allows us to check the build
-# Note: don't use anaconda to build release version unless we update all
-# web pages to say "built with anaconda"; as convenient as it is, we don't
-# want to run afoul of license agreements by missing a page.
-#[windows, mac]
-#python master_builder.py
-
-(7) tag release
+(6) tag release
 
 git tag -a v$REFLVER -m "Refl1d $REFLVER"
 git push --tags # OR MAYBE: git push origin v$REFLVER
@@ -70,7 +60,7 @@ git push --tags -f
 # trigger the build on readthedocs (this should happen automatically now)
 https://readthedocs.org/builds/refl1d/
 
-(8) Build source distribution
+(7) Build source distribution
 
 python setup.py sdist
 
@@ -107,6 +97,7 @@ cd ..
 
 (10) update pypi with new release version
 
+ls dist/refl1d-$REFLVER*.whl dist/refl1d-$REFLVER.tar.gz
 twine upload dist/refl1d-$REFLVER*.whl dist/refl1d-$REFLVER.tar.gz
 
 (11) check that the new pypi version runs (single machine should be fine)

@@ -2,7 +2,12 @@
 Change History
 **************
 
-Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
+Docs available from `<http://refl1d.readthedocs.org>`_
+
+2020-12-15 v0.8.13
+==================
+* update to bumps 0.8.0, with DREAM outlier removal and convergence tests
+* allow garefl to work with DREAM again
 
 2020-10-23 v0.8.12
 ==================
