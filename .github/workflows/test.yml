@@ -39,6 +39,8 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install wheel setuptools
         python -m pip install numpy scipy matplotlib bumps periodictable scikit-learn pytest pytest-cov
+        python setup.py build
+        python setup.py bdist_wheel
 
     - name: Test with pytest
       run: |
@@ -47,10 +49,6 @@ jobs:
     - name: Check examples
       run: |
         python check_examples.py --chisq
-
-    - name: Build wheel
-      run: |
-        python setup.py bdist_wheel
 
     - name: Archive wheel
       uses: actions/upload-artifact@v2
