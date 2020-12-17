@@ -17,14 +17,14 @@ jobs:
           - { os: ubuntu-latest, py: 3.8, doc: 1 }
           # Need mac/windows in all varieties in order to build wheels.
           # TODO: switch to stable abi
-          - { os: windows-latest, py: 3.6 }
-          - { os: windows-latest, py: 3.7 }
-          - { os: windows-latest, py: 3.8 }
-          - { os: windows-latest, py: 3.9 }
-          - { os: macos-latest, py: 3.6 }
-          - { os: macos-latest, py: 3.7 }
+          #- { os: windows-latest, py: 3.6 }
+          #- { os: windows-latest, py: 3.7 }
+          - { os: windows-latest, py: 3.8, exe: 1 }
+          #- { os: windows-latest, py: 3.9 }
+          #- { os: macos-latest, py: 3.6 }
+          #- { os: macos-latest, py: 3.7 }
           - { os: macos-latest, py: 3.8 }
-          - { os: macos-latest, py: 3.9 }
+          #- { os: macos-latest, py: 3.9 }
 
     steps:
     - uses: actions/checkout@v1
@@ -40,15 +40,20 @@ jobs:
         python -m pip install wheel setuptools
         python -m pip install numpy scipy matplotlib bumps periodictable scikit-learn pytest pytest-cov
         python setup.py build_ext --inplace
-        python setup.py bdist_wheel
 
-    - name: Test with pytest
+    - name: Run tests
       run: |
         pytest -v
-
-    - name: Check examples
-      run: |
         python check_examples.py --chisq
+
+    - name: Build wheel
+      run: |
+        python setup.py bdist_wheel
+
+    - name: Build installer
+      if: matrix.cfg.exe == 1
+      run: |
+        pwsh -command ".\$GITHUB_WORKSPACE\extra\build_win_installer.ps1"
 
     - name: Archive wheel
       uses: actions/upload-artifact@v2
