@@ -32,11 +32,16 @@ page.
 Submit requests and pull requests to the project
 `git pages <https://github.com/reflectometry/refl1d>`_
 
-.. image:: https://travis-ci.org/reflectometry/refl1d.svg?branch=master
-    :target: https://travis-ci.org/reflectometry/refl1d
+|CI| |RTD| |DOI|
 
-.. image:: https://ci.appveyor.com/api/projects/status/55ps40bauoqw2q6m?svg=true
-    :target: https://ci.appveyor.com/project/reflectometry/refl1d
+.. |CI| image:: https://github.com/reflectometry/refl1d/workflows/Test/badge.svg
+   :alt: Build status
+   :target: https://github.com/reflectometry/refl1d/actions
 
-.. image:: https://readthedocs.org/projects/refl1d/badge/
-    :target: https://readthedocs.org/projects/refl1d
+.. |DOI| image:: https://zenodo.org/badge/18489/bumps/bumps.svg
+   :alt: DOI tag
+   :target: https://doi.org/10.5281/zenodo.4329338
+
+.. |RTD| image:: https://readthedocs.org/projects/bumps/badge/?version=latest
+   :alt: Documentation status
+   :target: https://bumps.readthedocs.io/en/latest/?badge=latest
