@@ -44,6 +44,7 @@ REFLVER=X.Y.Z
 vi refl1d/__init__.py
 vi rtd-requirements
 git commit -a -m "R $REFLVER"
+git push
 
 (6) tag release
 

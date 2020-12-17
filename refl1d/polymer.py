@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # This program is public domain
 # Authors Paul Kienzle, Richard Sheridan
-"""
+r"""
 Layer models for polymer systems.
 
 Analytic Self-consistent Field (SCF) Brush profile\ [#Zhulina]_\ [#Karim]_
@@ -370,7 +370,7 @@ def smear(z, P, sigma):
     return np.convolve(full, G/np.sum(G), 'valid')
 
 class PolymerMushroom(Layer):
-    """
+    r"""
     Polymer mushrooms in a solvent (volume profile)
 
     :Parameters:

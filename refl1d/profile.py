@@ -170,9 +170,9 @@ class Microslabs(object):
         if ns < self._num_slabs + nadd:
             new_ns = self._num_slabs + nadd + 50
             self._slabs = self._slabs.copy()
-            self._slabs.resize((new_ns, 4))
+            self._slabs.resize((new_ns, 4), refcheck=False)
             self._slabs_rho = self._slabs_rho.copy()
-            self._slabs_rho.resize((new_ns, nl, 2))
+            self._slabs_rho.resize((new_ns, nl, 2), refcheck=False)
 
     def extend(self, w=0, sigma=0, rho=0, irho=0):
         """
