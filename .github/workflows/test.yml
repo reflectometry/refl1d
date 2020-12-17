@@ -45,6 +45,8 @@ jobs:
       run: |
         pytest -v
         python check_examples.py --chisq
+      env:
+        MPLBACKEND: agg
 
     - name: Build wheel
       run: |
