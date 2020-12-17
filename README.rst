@@ -38,10 +38,10 @@ Submit requests and pull requests to the project
    :alt: Build status
    :target: https://github.com/reflectometry/refl1d/actions
 
-.. |DOI| image:: https://zenodo.org/badge/18489/bumps/bumps.svg
+.. |DOI| image:: https://zenodo.org/badge/4329338/refl1d/refl1d.svg
    :alt: DOI tag
    :target: https://doi.org/10.5281/zenodo.4329338
 
-.. |RTD| image:: https://readthedocs.org/projects/bumps/badge/?version=latest
+.. |RTD| image:: https://readthedocs.org/projects/refl1d/badge/?version=latest
    :alt: Documentation status
-   :target: https://bumps.readthedocs.io/en/latest/?badge=latest
+   :target: https://refl1d.readthedocs.io/en/latest
