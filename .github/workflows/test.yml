@@ -49,13 +49,14 @@ jobs:
         python check_examples.py --chisq
 
     - name: Build wheel
+      run: |
         python setup.py bdist_wheel
 
     - name: Archive wheel
       uses: actions/upload-artifact@v2
       with:
-        name: code-coverage-report
-        path: output/test/code-coverage.html
+        name: wheel
+        path: dist/refl1d-*.whl
 
     - name: Check that the docs build (linux only)
       if: matrix.cfg.doc == 1
