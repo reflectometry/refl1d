@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         cfg:
-          - { os: ubuntu-latest, py: 2.7 }
+          #- { os: ubuntu-latest, py: 2.7 }
           - { os: ubuntu-latest, py: 3.8, doc: 1 }
           # Need mac/windows in all varieties in order to build wheels.
           # TODO: switch to stable abi
@@ -44,6 +44,7 @@ jobs:
     - name: Run tests
       run: |
         pytest -v
+        ls build/lib*
         python check_examples.py --chisq
       env:
         MPLBACKEND: agg
