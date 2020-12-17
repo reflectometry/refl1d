@@ -38,7 +38,8 @@ Submit requests and pull requests to the project
    :alt: Build status
    :target: https://github.com/reflectometry/refl1d/actions
 
-.. |DOI| image:: https://zenodo.org/badge/4329338/refl1d/refl1d.svg
+
+.. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.4329338.svg
    :alt: DOI tag
    :target: https://doi.org/10.5281/zenodo.4329338
 
