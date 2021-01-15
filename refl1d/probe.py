@@ -1411,11 +1411,12 @@ def _data_as_probe(entry, probe_args, T, L, dT, dL, dR, FWHM, radiation,
 
     # Get T,dT,L,dL from header if it is not provided as an argument
     def fetch_key(key, override):
+        # Note: pulls header and index pulled from context
         if override is not None:
             return override
         elif key in header:
             v = json.loads(header[key])
-            return np.array(v) if isinstance(v, list) else v
+            return np.array(v)[index] if isinstance(v, list) else v
         else:
             return None
 
