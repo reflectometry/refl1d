@@ -251,12 +251,10 @@ class MagnetismStack(BaseMagnetism):
 
     def parameters(self):
         parameters = BaseMagnetism.parameters(self)
-        parameters.update(
-            rhoM=self.rhoM,
-            thetaM=self.thetaM,
-            # interfaceM=self.interfaceM,
-            weight=self.weight,
-        )
+        parameters.update(rhoM=self.rhoM,
+                          thetaM=self.thetaM,
+                          #interfaceM=self.interfaceM,
+                          weight=self.weight)
         return parameters
 
     def to_dict(self):
