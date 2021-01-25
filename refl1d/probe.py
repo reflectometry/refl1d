@@ -434,6 +434,12 @@ class Probe(object):
             'back_absorption': self.back_absorption,
             'theta_offset': self.theta_offset,
             'sample_broadening': self.sample_broadening,
+            'R': self.R.tolist() if self.R is not None else self.R,
+            'dR': self.dR.tolist() if self.dR is not None else self.dR,
+            'T': self.T.tolist() if self.T is not None else self.T,
+            'dT': self.dT.tolist() if self.dT is not None else self.dT,
+            'L': self.L.tolist() if self.L is not None else self.L,
+            'dL': self.dL.tolist() if self.dL is not None else self.dL,
         })
 
     def scattering_factors(self, material, density):
@@ -1657,8 +1663,8 @@ class PolarizedNeutronProbe(object):
             'pm': pm,
             'mp': mp,
             'mm': mm,
-            'a_guide': self.Aguide,
-            'h': self.H,
+            'Aguide': self.Aguide,
+            'H': self.H,
         })
 
     def resynth_data(self):
