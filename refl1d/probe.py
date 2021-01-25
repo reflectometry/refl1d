@@ -1233,7 +1233,7 @@ class ProbeSet(Probe):
                       resolution=Po.resolution)
 
 
-def load4(filename, keysep=":", sep=None, comment="#", name=None,
+def load4(filename, file_obj=None, keysep=":", sep=None, comment="#", name=None,
           intensity=1, background=0, back_absorption=1,
           back_reflectivity=False, Aguide=BASE_GUIDE_ANGLE, H=0,
           theta_offset=None, sample_broadening=None,
@@ -1330,7 +1330,8 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     *resolution* is 'normal' (default) or 'uniform'. Use uniform if you
     are merging Q points from a finely stepped energy sensitive measurement.
     """
-    entries = parse_multi(filename, keysep=keysep, sep=sep, comment=comment)
+    file = file_obj if file_obj is not None else filename
+    entries = parse_multi(file, keysep=keysep, sep=sep, comment=comment)
     if columns:
         actual = columns.split()
         natural = "Q R dR dQ".split()
