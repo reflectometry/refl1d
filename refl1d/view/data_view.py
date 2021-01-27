@@ -237,7 +237,7 @@ class DataView(wx.Panel):
 
                 try:
                     # If we can calculate chisq, then put it on the graph.
-                    text = "chisq=%g"%self.problem.chisq_str()
+                    text = "chisq=" + self.problem.chisq_str()
                     plt.text(0.01, 0.01, text, transform=plt.gca().transAxes)
                 except Exception:
                     pass
