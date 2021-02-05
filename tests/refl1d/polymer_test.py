@@ -472,7 +472,7 @@ def SCFcache_test():
                      2.63682600e-16, 7.96432707e-17, 2.39335164e-17,
                      7.08353585e-18, 1.98293799e-18, 4.21217798e-19))
     result = SCFcache(chi, chi_s, pdi, sigma, 0, navgsegments, cache=cache)
-    check(result, data)
+    check(result, data, atol=1e-12, rtol=1e-6)
 
     # check that the cache is holding items
     assert cache
