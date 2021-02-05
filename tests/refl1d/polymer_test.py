@@ -762,7 +762,7 @@ if __name__ == '__main__':
     SZdist_test()
     SCFeqns_test()
     SCFsolve_test()
-    SCFcache_test()
+    #SCFcache_test()
     SCFprofile_test()
     EndTetheredPolymer_test()
     PolymerMushroom_test()
