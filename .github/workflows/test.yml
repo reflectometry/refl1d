@@ -60,7 +60,7 @@ jobs:
     - name: Build binary wheel
       if: matrix.config.whl == 1
       run: |
-        python setup.py bdist_wheel
+        python setup.py bdist_wheel --py-limited-api=cp32
 
     - name: Build installer
       if: matrix.config.exe == 1
