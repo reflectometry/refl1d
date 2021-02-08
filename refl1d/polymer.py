@@ -52,33 +52,27 @@ __all__ = ["PolymerBrush", "PolymerMushroom", "EndTetheredPolymer",
            "VolumeProfile", "layer_thickness"]
 
 import inspect
+from time import time
+from collections import OrderedDict
 
 import numpy as np
-
-from bumps.parameter import Parameter, to_dict
-from .model import Layer
-from . import util
-from time import time
-
-try:
-    from collections import OrderedDict
-except ImportError:
-    class OrderedDict(dict):
-        def popitem(self, *args, **kw):
-            return dict.popitem(self, *args)
-
 from numpy import real, imag, exp, log, sqrt, pi, hstack, ones_like
+from bumps.parameter import Parameter, to_dict
 
-# This is okay to use as long as LAMBDA_ARRAY is symmetric,
-# otherwise a slice LAMBDA_ARRAY[::-1] is necessary
-from numpy.core.multiarray import correlate
+from . import util
+from .model import Layer
 
 LAMBDA_1 = 1.0/6.0 #always assume cubic lattice (1/6) for now
 LAMBDA_0 = 1.0 - 2.0*LAMBDA_1
+# Use reverse order for LAMBDA_ARRAY if it is asymmetric since we are using
+# it with correlate().
 LAMBDA_ARRAY = np.array([LAMBDA_1, LAMBDA_0, LAMBDA_1])
 MINLAT = 25
 MINBULK = 5
 SQRT_PI = sqrt(pi)
+
+def correlate_same(a, b):
+    return np.correlate(a, b, 'same')
 
 class PolymerBrush(Layer):
     r"""
@@ -1004,7 +998,7 @@ def SCFeqns(phi_z, chi, chi_s, sigma, n_avg, p_i, phi_b=0):
 
     # calculate new g_z (Boltzmann weighting factors)
     u_prime = log((1.0 - phi_z) / (1.0 - phi_b))
-    u_int = 2 * chi * (correlate(phi_z, LAMBDA_ARRAY, 1) - phi_b)
+    u_int = 2 * chi * (correlate_same(phi_z, LAMBDA_ARRAY) - phi_b)
     u_int[0] += chi_s
     u_z = u_prime + u_int
     g_z = exp(u_z)
@@ -1072,31 +1066,15 @@ def calc_phi_z(g_z, n_avg, sigma, phi_b, u_z_avg=0, p_i=None):
 
     return phi_z_ta + phi_z_free
 
-
 def compose(g_zs, g_zs_ngts, g_z):
     prod = g_zs * np.fliplr(g_zs_ngts)
     prod[np.isnan(prod)] = 0
     return np.sum(prod, axis=1) / g_z
 
-
 class Propagator(object):
-    cex = None
-
     def __init__(self, g_z, segments):
         self.g_z = g_z
         self.shape = int(g_z.size), int(segments)
-        # keep all future instances from retrying this test
-        if self.cex is not None:
-            return
-
-        try:
-            import refl1d.calc_g_zs_cex as cex
-            Propagator.cex = cex
-        except ImportError:
-            import warnings
-            warnings.warn('Could not load C extension for EndTetheredPolymer. Continuing with slower NumPy code.\n'
-                          'Try rebuilding refl1d to remove this warning and speed things up!')
-            Propagator.cex = False
 
     def ta(self):
         # terminally attached beginnings
@@ -1105,7 +1083,7 @@ class Propagator(object):
         g_zs = self._new()
         g_zs[:, 0] = 0.0
         g_zs[0, 0] = self.g_z[0]
-        self._calc_g_zs_uniform(self.g_z, g_zs)
+        _calc_g_zs_uniform(self.g_z, g_zs, LAMBDA_0, LAMBDA_1)
         return g_zs
 
     def free(self):
@@ -1114,7 +1092,7 @@ class Propagator(object):
 
         g_zs = self._new()
         g_zs[:, 0] = self.g_z
-        self._calc_g_zs_uniform(self.g_z, g_zs)
+        _calc_g_zs_uniform(self.g_z, g_zs, LAMBDA_0, LAMBDA_1)
         return g_zs
 
     def ngts_u(self, c):
@@ -1123,7 +1101,7 @@ class Propagator(object):
 
         g_zs = self._new()
         g_zs[:, 0] = c * self.g_z
-        self._calc_g_zs_uniform(self.g_z, g_zs)
+        _calc_g_zs_uniform(self.g_z, g_zs, LAMBDA_0, LAMBDA_1)
         return g_zs
 
     def ngts(self, c_i):
@@ -1132,27 +1110,56 @@ class Propagator(object):
 
         g_zs = self._new()
         g_zs[:, 0] = c_i[-1] * self.g_z
-        self._calc_g_zs(self.g_z, c_i, g_zs)
+        _calc_g_zs(self.g_z, c_i, g_zs, LAMBDA_0, LAMBDA_1)
         return g_zs
 
     def _new(self):
         return np.empty(self.shape, order='F')
 
-    def _calc_g_zs(self, g_z, c_i, g_zs):
-        if self.cex:
-            self.cex._calc_g_zs(g_z, c_i, g_zs, LAMBDA_0, LAMBDA_1, *self.shape)
-        else:
-            pg_zs = g_zs[:, 0]
-            segment_iterator = enumerate(c_i[::-1])
-            next(segment_iterator)
-            for r, c in segment_iterator:
-                g_zs[:, r] = pg_zs = (correlate(pg_zs, LAMBDA_ARRAY, 1) + c) * g_z
+try:
+    from numba import njit, prange
+    USE_NUMBA = True
+except ImportError:
+    USE_NUMBA = False
 
-    def _calc_g_zs_uniform(self, g_z, g_zs):
-        if self.cex:
-            self.cex._calc_g_zs_uniform(g_z, g_zs, LAMBDA_0, LAMBDA_1, *self.shape)
-        else:
-            segments = g_zs.shape[1]
-            pg_zs = g_zs[:, 0]
-            for r in range(1, segments):
-                g_zs[:, r] = pg_zs = correlate(pg_zs, LAMBDA_ARRAY, 1) * g_z
+USE_NUMBA = True # Uncomment when doing timing tests
+
+if USE_NUMBA:
+    @njit('(f8[:], f8[:, :], f8, f8)', cache=True)
+    def _calc_g_zs_uniform(g_z, g_zs, f0, f1):
+        points, segments = g_zs.shape
+        for r in range(segments-1):
+            g_zs[0, r+1] = (g_zs[0, r]*f0 + g_zs[1, r]*f1)*g_z[0]
+            #g_zs[1:-1, r+1] = np.correlate(g_zs[:, r], [f1, f0, f1])*g_z[1:-1]
+            for k in range(1, points-1):
+                g_zs[k, r+1] = (
+                    g_zs[k, r]*f0 + (g_zs[k-1, r] + g_zs[k+1, r])*f1)*g_z[k]
+            g_zs[-1, r+1] = (g_zs[-2, r]*f1 + g_zs[-1, r]*f0)*g_z[-1]
+
+    @njit('(f8[:], f8[:], f8[:, :], f8, f8)', cache=True)
+    def _calc_g_zs(g_z, c_i, g_zs, f0, f1):
+        points, segments = g_zs.shape
+        for r in range(segments-1):
+            c_ir = c_i[segments-(r+1)-1]
+            g_zs[0, r+1] = (g_zs[0, r]*f0 + g_zs[1, r]*f1 + c_ir)*g_z[0]
+            #g_zs[1:-1, r+1] = (np.correlate(g_zs[:, r], fir) + c_ir)*g_z[1:-1]
+            for k in range(1, points-1):
+                g_zs[k, r+1] = (
+                    g_zs[k, r]*f0 + (g_zs[k-1, r] + g_zs[k+1, r])*f1 + c_ir)*g_z[k]
+            g_zs[-1, r+1] = (g_zs[-2, r]*f1 + g_zs[-1, r]*f0 + c_ir)*g_z[-1]
+
+else:
+    def _calc_g_zs(g_z, c_i, g_zs, f0, f1):
+        coeff = np.array([f1, f0, f1])
+        pg_zs = g_zs[:, 0]
+        segment_iterator = enumerate(c_i[::-1])
+        next(segment_iterator)
+        for r, c in segment_iterator:
+            g_zs[:, r] = pg_zs = (correlate(pg_zs, coeff) + c) * g_z
+
+    def _calc_g_zs_uniform(g_z, g_zs, f0, f1):
+        coeff = np.array([f1, f0, f1])
+        segments = g_zs.shape[1]
+        pg_zs = g_zs[:, 0]
+        for r in range(1, segments):
+            g_zs[:, r] = pg_zs = correlate(pg_zs, coeff) * g_z
