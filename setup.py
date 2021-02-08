@@ -64,7 +64,7 @@ def reflmodule_config():
                      sources=sources,
                      depends=depends,
                      language="c++",
-                     #py_limited_api="cp32",
+                     py_limited_api="cp32",
                      )
 
 # SCF extension
@@ -74,7 +74,7 @@ def SCFmodule_config():
                      sources=[os.path.join('refl1d', 'lib', 'calc_g_zs_cex.c')],
                      include_dirs=[get_include()],
                      #language="c++",
-                     #py_limited_api="cp32",
+                     py_limited_api="cp32",
                      )
 
 #TODO: write a proper dependency checker for packages which cannot be
