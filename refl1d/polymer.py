@@ -1115,7 +1115,7 @@ class Propagator(object):
         return np.empty(self.shape, order='F')
 
 try:
-    from numba import njit, prange
+    from numba import njit
     USE_NUMBA = True
 except ImportError:
     USE_NUMBA = False
