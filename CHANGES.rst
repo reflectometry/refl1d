@@ -6,6 +6,7 @@ Docs available from `<http://refl1d.readthedocs.org>`_
 
 2021-02-09 v0.8.14
 ==================
+* numba included in windows zipped executable
 * use numba rather than C++ for fast polymer calculations
 * wheels now built with stable ABI (one wheel per platform for all Python > 3.2)
 * drop py27 support for compiled modules
