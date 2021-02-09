@@ -57,6 +57,7 @@ from collections import OrderedDict
 
 import numpy as np
 from numpy import real, imag, exp, log, sqrt, pi, hstack, ones_like
+from numpy.core.multiarray import correlate as old_correlate
 from bumps.parameter import Parameter, to_dict
 
 from . import util
@@ -70,9 +71,6 @@ LAMBDA_ARRAY = np.array([LAMBDA_1, LAMBDA_0, LAMBDA_1])
 MINLAT = 25
 MINBULK = 5
 SQRT_PI = sqrt(pi)
-
-def correlate_same(a, b):
-    return np.correlate(a, b, 'same')
 
 class PolymerBrush(Layer):
     r"""
@@ -998,7 +996,7 @@ def SCFeqns(phi_z, chi, chi_s, sigma, n_avg, p_i, phi_b=0):
 
     # calculate new g_z (Boltzmann weighting factors)
     u_prime = log((1.0 - phi_z) / (1.0 - phi_b))
-    u_int = 2 * chi * (correlate_same(phi_z, LAMBDA_ARRAY) - phi_b)
+    u_int = 2 * chi * (old_correlate(phi_z, LAMBDA_ARRAY, 1) - phi_b)
     u_int[0] += chi_s
     u_z = u_prime + u_int
     g_z = exp(u_z)
@@ -1122,7 +1120,7 @@ try:
 except ImportError:
     USE_NUMBA = False
 
-USE_NUMBA = True # Uncomment when doing timing tests
+#USE_NUMBA = False # Uncomment when doing timing tests
 
 if USE_NUMBA:
     @njit('(f8[:], f8[:, :], f8, f8)', cache=True)
@@ -1130,7 +1128,7 @@ if USE_NUMBA:
         points, segments = g_zs.shape
         for r in range(segments-1):
             g_zs[0, r+1] = (g_zs[0, r]*f0 + g_zs[1, r]*f1)*g_z[0]
-            #g_zs[1:-1, r+1] = np.correlate(g_zs[:, r], [f1, f0, f1])*g_z[1:-1]
+            #g_zs[1:-1, r+1] = np.correlate(g_zs[:, r], [f1, f0, f1], 'valid')*g_z[1:-1]
             for k in range(1, points-1):
                 g_zs[k, r+1] = (
                     g_zs[k, r]*f0 + (g_zs[k-1, r] + g_zs[k+1, r])*f1)*g_z[k]
@@ -1142,7 +1140,7 @@ if USE_NUMBA:
         for r in range(segments-1):
             c_ir = c_i[segments-(r+1)-1]
             g_zs[0, r+1] = (g_zs[0, r]*f0 + g_zs[1, r]*f1 + c_ir)*g_z[0]
-            #g_zs[1:-1, r+1] = (np.correlate(g_zs[:, r], fir) + c_ir)*g_z[1:-1]
+            #g_zs[1:-1, r+1] = (np.correlate(g_zs[:, r], fir, 'valid') + c_ir)*g_z[1:-1]
             for k in range(1, points-1):
                 g_zs[k, r+1] = (
                     g_zs[k, r]*f0 + (g_zs[k-1, r] + g_zs[k+1, r])*f1 + c_ir)*g_z[k]
@@ -1155,11 +1153,11 @@ else:
         segment_iterator = enumerate(c_i[::-1])
         next(segment_iterator)
         for r, c in segment_iterator:
-            g_zs[:, r] = pg_zs = (correlate(pg_zs, coeff) + c) * g_z
+            g_zs[:, r] = pg_zs = (old_correlate(pg_zs, coeff, 1) + c) * g_z
 
     def _calc_g_zs_uniform(g_z, g_zs, f0, f1):
         coeff = np.array([f1, f0, f1])
         segments = g_zs.shape[1]
         pg_zs = g_zs[:, 0]
         for r in range(1, segments):
-            g_zs[:, r] = pg_zs = correlate(pg_zs, coeff) * g_z
+            g_zs[:, r] = pg_zs = old_correlate(pg_zs, coeff, 1) * g_z
