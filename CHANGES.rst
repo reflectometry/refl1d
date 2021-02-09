@@ -4,6 +4,16 @@ Change History
 
 Docs available from `<http://refl1d.readthedocs.org>`_
 
+2021-02-09 v0.8.14
+==================
+* use numba rather than C++ for fast polymer calculations
+* wheels now built with stable ABI (one wheel per platform for all Python > 3.2)
+* drop py27 support for compiled modules
+* tolerance adjusted on polymer_test to account for sensitivity to input parameters
+* display of chisq in plot window works again
+* fix selection mask for load4 to work on theta and lambda as well as Q and R
+* use github actions to build wheels and deploy
+
 2020-12-15 v0.8.13
 ==================
 * update to bumps 0.8.0, with DREAM outlier removal and convergence tests
