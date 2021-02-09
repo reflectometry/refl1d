@@ -97,6 +97,10 @@ jobs:
     - name: show files
       run: |
         ls * -l
+        echo "WINDOWS_INSTALLER=$(ls release/*.zip)" >> $GITHUB_ENV
+        echo "SRC_DIST=$(ls dist/*.tar.gz)" >> $GITHUB_ENV
+        echo "WINDOWS_WHL=$(ls dist/*win*.whl)" >> $GITHUB_ENV
+        echo "MACOS_WHL=$(ls dist/*macos*.whl)" >> $GITHUB_ENV
 
     - name: Update release
       uses: johnwbyrd/update-release@v1.0.0
@@ -104,7 +108,7 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         release: unstable
         tag: sid
-        files: release/Refl1D_latest.zip
+        files: ${{ env.WINDOWS_INSTALLER }} ${{ env.WINDOWS_WHL }} ${{ env.MACOS_WHL }}
 
     - name: publish distribution to Test PyPI
       uses: pypa/gh-action-pypi-publish@master
