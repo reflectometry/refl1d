@@ -86,7 +86,7 @@ dist = setup(
         'Intended Audience :: Science/Research',
         'License :: Public Domain',
         'Operating System :: OS Independent',
-        'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
         'Topic :: Scientific/Engineering :: Chemistry',
         'Topic :: Scientific/Engineering :: Physics',
         ],
