@@ -213,8 +213,6 @@ class Stack(Layer):
             self.add(base)
         # TODO: can we make this a class variable?
 
-        self._thickness = Function(self._calc_thickness, name="stack thickness")
-
     @property
     def ismagnetic(self):
         return any(p.ismagnetic for p in self._layers)
@@ -255,7 +253,6 @@ class Stack(Layer):
 
     def __setstate__(self, state):
         self.interface, self._layers, self.name = state
-        self._thickness = Function(self._calc_thickness, name="stack thickness")
 
     def __copy__(self):
         stack = Stack()
@@ -291,19 +288,9 @@ class Stack(Layer):
     def penalty(self):
         return sum(L.penalty() for L in self._layers)
 
-    # This is the function which defines the functional parameter that
-    # is attached to _thickness.  Thickness is a property on which defines
-    # _thickness as a read-only parameter.
-    def _calc_thickness(self):
-        """returns the total thickness of the stack"""
-        t = 0
-        for L in self._layers:
-            t += L.thickness.value
-        return t
-
     @property
     def thickness(self):
-        return self._thickness
+        return sum([L.thickness for L in self._layers])
 
     def render(self, probe, slabs):
         """
@@ -561,8 +548,6 @@ class Repeat(Layer):
         self.stack = stack
         self.interface = Par.default(interface, limits=(0, inf),
                                      name=name+" top interface")
-        # Thickness is computed; don't make it a simple attribute
-        self._thickness = Function(self._calc_thickness, name="repeat thickness")
 
     def to_dict(self):
         """
@@ -582,7 +567,6 @@ class Repeat(Layer):
 
     def __setstate__(self, state):
         self.interface, self.repeat, self.name, self.stack = state
-        self._thickness = Function(self._calc_thickness, name="repeat thickness")
 
     def penalty(self):
         return self.stack.penalty()
@@ -632,10 +616,7 @@ class Repeat(Layer):
     # Mark thickness as read only
     @property
     def thickness(self):
-        return self._thickness
-
-    def _calc_thickness(self):
-        return self.stack.thickness.value*self.repeat.value
+        return self.stack.thickness * self.repeat
 
     def render(self, probe, slabs):
         nr = self.repeat.value
