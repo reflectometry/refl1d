@@ -376,7 +376,7 @@ class Experiment(ExperimentBase):
         self.dA = dA
         self.step_interfaces = step_interfaces
         self.interpolation = interpolation
-        num_slabs = len(probe.unique_L) if probe.unique_L is not None else 1
+        num_slabs = len(probe._unique_L) if probe._unique_L is not None else 1
         self._slabs = profile.Microslabs(num_slabs, dz=dz)
         self._probe_cache = material.ProbeCache(probe)
         self._cache = {}  # Cache calculated profiles/reflectivities

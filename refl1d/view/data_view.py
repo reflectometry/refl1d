@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from bumps.gui.util import EmbeddedPylab
 from bumps.fitproblem import MultiFitProblem
 
-from refl1d.probe import Probe
+from refl1d.probe import Probe, ProbeView
 
 
 # ------------------------------------------------------------------------
@@ -56,7 +56,7 @@ class DataView(wx.Panel):
         self.SetSizer(sizer)
         sizer.Fit(self)
 
-        self.view = Probe.view
+        self.view = ProbeView.value
 
         self._need_redraw = False
         self.Bind(wx.EVT_SHOW, self.OnShow)
@@ -73,32 +73,32 @@ class DataView(wx.Panel):
                                           "&Fresnel",
                                           "Plot R/R_F")
         frame.Bind(wx.EVT_MENU, self.OnFresnel, _item)
-        _item.Check(Probe.view == 'fresnel')
+        _item.Check(ProbeView.value == 'fresnel')
         _item = menu.AppendRadioItem(wx.ID_ANY,
                                           "Log Fresnel",
                                           "Plot log R/R_F")
         frame.Bind(wx.EVT_MENU, self.OnLogFresnel, _item)
-        _item.Check(Probe.view == 'logfresnel')
+        _item.Check(ProbeView.value == 'logfresnel')
         _item = menu.AppendRadioItem(wx.ID_ANY,
                                           "Li&near",
                                           "Plot linear R")
         frame.Bind(wx.EVT_MENU, self.OnLinear, _item)
-        _item.Check(Probe.view == 'linear')
+        _item.Check(ProbeView.value == 'linear')
         _item = menu.AppendRadioItem(wx.ID_ANY,
                                           "&Log",
                                           "Plot log R")
         frame.Bind(wx.EVT_MENU, self.OnLog, _item)
-        _item.Check(Probe.view == 'log')
+        _item.Check(ProbeView.value == 'log')
         _item = menu.AppendRadioItem(wx.ID_ANY,
                                           "&Q4",
                                           "Plot R * Q^4")
         frame.Bind(wx.EVT_MENU, self.OnQ4, _item)
-        _item.Check(Probe.view == 'q4')
+        _item.Check(ProbeView.value == 'q4')
         _item = menu.AppendRadioItem(wx.ID_ANY,
                                           "&SA",
                                           "Plot spin asymmetry")
         frame.Bind(wx.EVT_MENU, self.OnSA, _item)
-        _item.Check(Probe.view == 'SA')
+        _item.Check(ProbeView.value == 'SA')
 
         menu.AppendSeparator()
 

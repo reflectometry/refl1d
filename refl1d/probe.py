@@ -46,6 +46,8 @@ import numpy as np
 from numpy import sqrt, pi, inf, sign, log
 import numpy.random
 import numpy.fft
+from typing import Optional, Any, Union
+from pydantic import BaseModel, Field, ValidationError
 
 from periodictable import nsf, xsf
 from bumps.parameter import Parameter, Constant, to_dict
@@ -76,8 +78,10 @@ def make_probe(**kw):
     else:
         return XrayProbe(**kw)
 
+class ProbeView(object):
+    value: str = "log"
 
-class Probe(object):
+class Probe(BaseModel):
     r"""
     Defines the incident beam used to study the material.
 
@@ -171,16 +175,48 @@ class Probe(object):
     """
     polarized = False
     Aguide = BASE_GUIDE_ANGLE  # default guide field for unpolarized measurements
-    view = "log"
+    #view: str = "log"
     plot_shift = 0
     residuals_shift = 0
     show_resolution = True
+    resolution: str = "normal"
+    #name: Optional[str] = None
+
+    name: Optional[str] = None
+    filename: Optional[str] = None
+    intensity: Optional[Parameter] = Parameter.default(1.0)
+    background: Optional[Parameter] = Parameter.default(0.0)
+    back_absorption: Optional[Parameter] = Parameter.default(1.0)
+    theta_offset: Optional[Parameter] = Parameter.default(0.0)
+    sample_broadening: Optional[Parameter] = Parameter.default(0.0)
+    back_reflectivity: bool = False
+    T: Any = None # convert to Union of float and array
+    dT: Any = 0
+    L: Any = None
+    dL: Any = 0
+    R: Any = None
+    dR: Any = None
+
+    _Qo: Any
+    _dQo: Any
+
+    _calc_T: Any
+    _calc_L: Any
+    _calc_Qo: Any
+    _unique_L: Any
+    _L_idx: Any
+
+    class Config:
+        #extra = Extra.allow
+        underscore_attrs_are_private = True
+
 
     def __init__(self, T=None, dT=0, L=None, dL=0, data=None,
                  intensity=1, background=0, back_absorption=1, theta_offset=0,
                  sample_broadening=0,
                  back_reflectivity=False, name=None, filename=None,
                  dQ=None, resolution='normal'):
+        super().__init__()
         if T is None or L is None:
             raise TypeError("T and L required")
         if sample_broadening is None:
@@ -232,7 +268,7 @@ class Probe(object):
         idx = np.argsort(Q)
         self.T, self.dT = T[idx], dT[idx]
         self.L, self.dL = L[idx], dL[idx]
-        self.Qo, self.dQo = Q[idx], dQ[idx]
+        self._Qo, self._dQo = Q[idx], dQ[idx]
         if R is not None:
             R = R[idx]
         if dR is not None:
@@ -367,13 +403,13 @@ class Probe(object):
         Q = TL2Q(T=T, L=L)
 
         idx = np.argsort(Q)
-        self.calc_T = T[idx]
-        self.calc_L = L[idx]
-        self.calc_Qo = Q[idx]
+        self._calc_T = T[idx]
+        self._calc_L = L[idx]
+        self._calc_Qo = Q[idx]
 
         # Only keep the scattering factors that you need
-        self.unique_L = np.unique(self.calc_L)
-        self._L_idx = np.searchsorted(self.unique_L, L)
+        self._unique_L = np.unique(self._calc_L)
+        self._L_idx = np.searchsorted(self._unique_L, L)
 
     @property
     def Q(self):
@@ -381,7 +417,7 @@ class Probe(object):
             Q = TL2Q(T=self.T+self.theta_offset.value, L=self.L)
             # TODO: this may break the Q order on measurements with varying L
         else:
-            Q = self.Qo
+            Q = self._Qo
         return Q
 
     @Q.setter
@@ -390,7 +426,7 @@ class Probe(object):
         # This will cause theta offset != 0 to fail.
         if hasattr(self, 'T'):
             del self.T, self.L
-        self.Qo = Q
+        self._Qo = Q
 
     @property
     def dQ(self):
@@ -408,10 +444,10 @@ class Probe(object):
     @property
     def calc_Q(self):
         if self.theta_offset.value != 0:
-            Q = TL2Q(T=self.calc_T+self.theta_offset.value, L=self.calc_L)
+            Q = TL2Q(T=self._calc_T+self.theta_offset.value, L=self._calc_L)
             # TODO: this may break the Q order on measurements with varying L
         else:
-            Q = self.calc_Qo
+            Q = self._calc_Qo
         return Q if not self.back_reflectivity else -Q
 
     def parameters(self):
@@ -423,7 +459,7 @@ class Probe(object):
             'sample_broadening': self.sample_broadening
             }
 
-    def to_dict(self):
+    def to_dicto(self):
         """ Return a dictionary representation of the parameters """
         return to_dict({
             'type': type(self).__name__,
@@ -463,13 +499,13 @@ class Probe(object):
         """
         # Assumes self contains sorted Qo and associated T, L
         # Note: calc_Qo is already sorted
-        Q = np.arange(self.Qo[0], self.Qo[-1], dQ)
-        idx = np.unique(np.searchsorted(self.Qo, Q))
-        #print len(idx), len(self.Qo)
+        Q = np.arange(self._Qo[0], self._Qo[-1], dQ)
+        idx = np.unique(np.searchsorted(self._Qo, Q))
+        #print len(idx), len(self._Qo)
 
         self.T, self.dT = self.T[idx], self.dT[idx]
         self.L, self.dL = self.L[idx], self.dL[idx]
-        self.Qo, self.dQo = self.Qo[idx], self.dQo[idx]
+        self._Qo, self._dQo = self._Qo[idx], self._dQo[idx]
         if self.R is not None:
             self.R = self.R[idx]
         if self.dR is not None:
@@ -973,7 +1009,7 @@ class XrayProbe(Probe):
         # Note: the real density is calculated as a scale factor applied to
         # the returned sld as computed assuming density=1
         rho, irho = xsf.xray_sld(material,
-                                 wavelength=self.unique_L,
+                                 wavelength=self._unique_L,
                                  density=density)
         # TODO: support wavelength dependent systems
         return rho[0], irho[0], 0
@@ -995,7 +1031,7 @@ class NeutronProbe(Probe):
         # Note: the real density is calculated as a scale factor applied to
         # the returned sld as computed assuming density=1
         rho, irho, rho_incoh = nsf.neutron_sld(material,
-                                               wavelength=self.unique_L,
+                                               wavelength=self._unique_L,
                                                density=density)
         # TODO: support wavelength dependent systems
         return rho, irho[0], rho_incoh
@@ -1068,7 +1104,7 @@ class ProbeSet(Probe):
 
     @property
     def unique_L(self):
-        return np.unique(np.hstack([p.unique_L for p in self.probes]))
+        return np.unique(np.hstack([p._unique_L for p in self.probes]))
 
     def oversample(self, **kw):
         for p in self.probes:
@@ -1524,8 +1560,8 @@ class QProbe(Probe):
         self.Q, self.dQ = Q, dQ
         self.R = R
         self.dR = dR
-        self.unique_L = None
-        self.calc_Qo = self.Qo
+        self._unique_L = None
+        self._calc_Qo = self._Qo
         self.name = name
         self.filename = filename
         self.resolution = resolution
@@ -1542,7 +1578,7 @@ class QProbe(Probe):
         rng = numpy.random.RandomState(seed=seed)
         extra = rng.normal(self.Q, self.dQ, size=(n-1, len(self.Q)))
         calc_Q = np.hstack((self.Q, extra.flatten()))
-        self.calc_Qo = np.sort(calc_Q)
+        self._calc_Qo = np.sort(calc_Q)
     oversample.__doc__ = Probe.oversample.__doc__
 
     def critical_edge(self, substrate=None, surface=None,
@@ -1550,7 +1586,7 @@ class QProbe(Probe):
         Q_c = self.Q_c(substrate, surface)
         extra = np.linspace(Q_c*(1 - delta), Q_c*(1+delta), n)
         calc_Q = np.hstack((self.Q, extra, 0))
-        self.calc_Qo = np.sort(calc_Q)
+        self._calc_Qo = np.sort(calc_Q)
     critical_edge.__doc__ = Probe.critical_edge.__doc__
 
 def measurement_union(xs):
@@ -1730,20 +1766,20 @@ class PolarizedNeutronProbe(object):
 
     @property
     def calc_Q(self):
-        return self.calc_Qo
+        return self._calc_Qo
 
     def _set_calc(self, T, L):
         # TODO: shouldn't clone code from probe
         Q = TL2Q(T=T, L=L)
 
         idx = np.argsort(Q)
-        self.calc_T = T[idx]
-        self.calc_L = L[idx]
-        self.calc_Qo = Q[idx]
+        self._calc_T = T[idx]
+        self._calc_L = L[idx]
+        self._calc_Qo = Q[idx]
 
         # Only keep the scattering factors that you need
-        self.unique_L = np.unique(self.calc_L)
-        self._L_idx = np.searchsorted(self.unique_L, L)
+        self._unique_L = np.unique(self._calc_L)
+        self._L_idx = np.searchsorted(self._unique_L, L)
 
     def apply_beam(self, Q, R, resolution=True, interpolation=0):
         """
@@ -1760,7 +1796,7 @@ class PolarizedNeutronProbe(object):
     def scattering_factors(self, material, density):
         # doc string is inherited from parent (see below)
         rho, irho, rho_incoh = nsf.neutron_sld(material,
-                                               wavelength=self.unique_L,
+                                               wavelength=self._unique_L,
                                                density=density)
         # TODO: support wavelength dependent systems
         #print("sf", str(material), type(rho), type(irho[0]))
@@ -1956,12 +1992,12 @@ class PolarizedQProbe(PolarizedNeutronProbe):
         self._xs = xs
         self._check()
         self.name = name if name is not None else xs[0].name
-        self.unique_L = None
+        self._unique_L = None
         self.Aguide = Parameter.default(Aguide, name="Aguide "+self.name,
                                         limits=[-360, 360])
         self.H = Parameter.default(H, name="H "+self.name)
         self.Q, self.dQ = Qmeasurement_union(xs)
-        self.calc_Qo = self.Q
+        self._calc_Qo = self.Q
 
 # Deprecated old long name
 PolarizedNeutronQProbe = PolarizedQProbe
