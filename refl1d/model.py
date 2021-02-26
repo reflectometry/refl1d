@@ -606,7 +606,7 @@ class Repeat(Layer):
         pars = {
             'stack': self.stack.parameters(),
             'repeat': self.repeat,
-            'thickness': self._thickness,
+            'thickness': self.thickness,
             'interface': self.interface,
         }
         if self.magnetism:
