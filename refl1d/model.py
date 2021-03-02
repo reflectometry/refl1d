@@ -28,6 +28,7 @@ __all__ = ['Repeat', 'Slab', 'Stack', 'Layer']
 from copy import copy, deepcopy
 import json
 
+from typing import Union, List, Optional, Any
 import numpy as np
 from numpy import (inf, nan, pi, sin, cos, tan, sqrt, exp, log, log10,
                    degrees, radians, floor, ceil)
@@ -37,10 +38,27 @@ import periodictable.nsf as nsf
 
 from bumps.parameter import (
     Parameter as Par, IntegerParameter as IntPar, Function, to_dict)
+from bumps.util import dataclass
 
 from . import material
+from .probe import upgrade_to_param
 
-class Layer(object): # Abstract base class
+@dataclass
+class LayerModel:
+    name: str
+    thickness: Par
+    interface: Optional[Par]
+    magnetism: Optional[Any]
+
+#return to_dict({
+        #    'type': type(self).__name__,
+        #    'name': self.name,
+        #    'thickness': self.thickness,
+        #    'interface': self.interface,
+        #    'magnetism': self.magnetism,
+        #})
+
+class Layer(LayerModel): # Abstract base class
     """
     Component of a material description.
 
@@ -196,8 +214,25 @@ def _parcopy(p, v):
         p.set(v)
     return p
 
+def to_dict(self):
+        """
+        Return a dictionary representation of the Stack object
+        """
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'interface': self.interface,
+            'layers': self._layers,
+        })
 
-class Stack(Layer):
+
+@dataclass
+class StackModel:
+    name: str
+    interface: Optional[Any]
+    layers: List[Layer]
+
+class Stack(StackModel, Layer):
     """
     Reflectometry layer stack
 
@@ -205,19 +240,28 @@ class Stack(Layer):
     has an interface describing how the top of the layer interacts with
     the bottom of the overlaying layer. The stack may contain
     """
-    def __init__(self, base=None, name="Stack"):
+    def __init__(self, base=None, layers=None, name="Stack"):
         self.name = name
         self.interface = None
         self._layers = []
+        if layers is not None and base is None:
+            base = layers
         if base is not None:
             self.add(base)
         # TODO: can we make this a class variable?
 
-        self._thickness = Function(self._calc_thickness, name="stack thickness")
-
     @property
     def ismagnetic(self):
         return any(p.ismagnetic for p in self._layers)
+
+    @property
+    def layers(self):
+        return self._layers
+    
+    @layers.setter
+    def layers(self, val):
+        if not hasattr(self, '_layers'):
+            self._layers = val
 
     def find(self, z):
         """
@@ -255,7 +299,6 @@ class Stack(Layer):
 
     def __setstate__(self, state):
         self.interface, self._layers, self.name = state
-        self._thickness = Function(self._calc_thickness, name="stack thickness")
 
     def __copy__(self):
         stack = Stack()
@@ -291,19 +334,9 @@ class Stack(Layer):
     def penalty(self):
         return sum(L.penalty() for L in self._layers)
 
-    # This is the function which defines the functional parameter that
-    # is attached to _thickness.  Thickness is a property on which defines
-    # _thickness as a read-only parameter.
-    def _calc_thickness(self):
-        """returns the total thickness of the stack"""
-        t = 0
-        for L in self._layers:
-            t += L.thickness.value
-        return t
-
     @property
     def thickness(self):
-        return self._thickness
+        return  sum([L.thickness for L in self._layers])
 
     def render(self, probe, slabs):
         """
@@ -540,7 +573,16 @@ def _check_layer(el):
     else:
         raise TypeError("Can only stack materials and layers, not %s"%el)
 
-class Repeat(Layer):
+
+@dataclass
+class RepeatModel:
+    name: str
+    interface: Par
+    magnetism: Optional[Any]
+    repeat: IntPar
+    stack: Stack
+
+class Repeat(RepeatModel, Layer):
     """
     Repeat a layer or stack.
 
@@ -556,13 +598,9 @@ class Repeat(Layer):
         if interface is None: interface = stack[-1].interface.value
         self.magnetism = magnetism
         self.name = name
-        self.repeat = IntPar(repeat, limits=(0, inf),
-                             name=name + " repeats")
+        self.repeat = upgrade_to_param(repeat, name + " repeats", limits=(0, inf), param_factory=IntPar)
         self.stack = stack
-        self.interface = Par.default(interface, limits=(0, inf),
-                                     name=name+" top interface")
-        # Thickness is computed; don't make it a simple attribute
-        self._thickness = Function(self._calc_thickness, name="repeat thickness")
+        self.interface = upgrade_to_param(interface, name + " top interface", limits=(0, inf))
 
     def to_dict(self):
         """
@@ -582,7 +620,6 @@ class Repeat(Layer):
 
     def __setstate__(self, state):
         self.interface, self.repeat, self.name, self.stack = state
-        self._thickness = Function(self._calc_thickness, name="repeat thickness")
 
     def penalty(self):
         return self.stack.penalty()
@@ -622,7 +659,7 @@ class Repeat(Layer):
         pars = {
             'stack': self.stack.parameters(),
             'repeat': self.repeat,
-            'thickness': self._thickness,
+            'thickness': self.thickness,
             'interface': self.interface,
         }
         if self.magnetism:
@@ -632,10 +669,7 @@ class Repeat(Layer):
     # Mark thickness as read only
     @property
     def thickness(self):
-        return self._thickness
-
-    def _calc_thickness(self):
-        return self.stack.thickness.value*self.repeat.value
+        self.stack.thickness * self.repeat
 
     def render(self, probe, slabs):
         nr = self.repeat.value
