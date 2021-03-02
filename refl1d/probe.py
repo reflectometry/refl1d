@@ -47,10 +47,18 @@ from numpy import sqrt, pi, inf, sign, log
 import numpy.random
 import numpy.fft
 from typing import Optional, Any, Union
-from pydantic import BaseModel, Field, ValidationError
+
+try:
+    from typing import Optional, Any, Union, Dict, Callable, Literal
+except ImportError:
+    from typing import Optional, Any, Union, Dict, Callable, List
+    from typing_extensions import Literal
+#from pydantic.dataclasses import dataclass
+#from dataclasses import dataclass, field
+from bumps.util import dataclass, field
 
 from periodictable import nsf, xsf
-from bumps.parameter import Parameter, Constant, to_dict
+from bumps.parameter import Parameter, Constant, BaseParameter, to_dict
 from bumps.plotutil import coordinated_colors, auto_shift
 from bumps.data import parse_multi, strip_quotes
 
@@ -78,10 +86,30 @@ def make_probe(**kw):
     else:
         return XrayProbe(**kw)
 
-class ProbeView(object):
-    value: str = "log"
+def upgrade_to_param(value, name, limits=(-inf,inf)):
+    if isinstance(value, BaseParameter):
+        return value
+    else:
+        return Parameter.default(value, name=name, limits=limits)
 
-class Probe(BaseModel):
+@dataclass(init=False)
+class ProbeModel:
+    name: str
+    filename: str
+    intensity: Parameter
+    background: Parameter
+    back_absorption: Parameter
+    theta_offset: Parameter
+    sample_broadening: Parameter
+    back_reflectivity: bool
+    R: Optional[Any] = None
+    dR: Optional[Any] = 0
+    T: Optional[Any] = None
+    dT: Optional[Any] = 0
+    L: Optional[Any] = None
+    dL: Optional[Any] = 0
+
+class Probe(ProbeModel):
     r"""
     Defines the incident beam used to study the material.
 
@@ -154,69 +182,19 @@ class Probe(BaseModel):
     particularly for samples with significant hydrogen content due to its
     large isotropic incoherent scattering cross section.
 
-    View properties:
-
-        *view* : string
-            One of 'fresnel', 'logfresnel', 'log', 'linear', 'q4', 'residuals'
-        *show_resolution* : bool
-            True if resolution bars should be plotted with each point.
-        *plot_shift* : float
-            The number of pixels to shift each new dataset so
-            datasets can be seen separately
-        *residuals_shift* :
-            The number of pixels to shift each new set of residuals
-            so the residuals plots can be seen separately.
-
-    Normally *view* is set directly in the class rather than the
-    instance since it is not specific to the view.  Fresnel and Q4
-    views are corrected for background and intensity; log and
-    linear views show the uncorrected data.  The Fresnel reflectivity
-    calculation has resolution applied.
     """
     polarized = False
     Aguide = BASE_GUIDE_ANGLE  # default guide field for unpolarized measurements
-    #view: str = "log"
+    view = "log"
     plot_shift = 0
     residuals_shift = 0
     show_resolution = True
-    resolution: str = "normal"
-    #name: Optional[str] = None
-
-    name: Optional[str] = None
-    filename: Optional[str] = None
-    intensity: Optional[Parameter] = Parameter.default(1.0)
-    background: Optional[Parameter] = Parameter.default(0.0)
-    back_absorption: Optional[Parameter] = Parameter.default(1.0)
-    theta_offset: Optional[Parameter] = Parameter.default(0.0)
-    sample_broadening: Optional[Parameter] = Parameter.default(0.0)
-    back_reflectivity: bool = False
-    T: Any = None # convert to Union of float and array
-    dT: Any = 0
-    L: Any = None
-    dL: Any = 0
-    R: Any = None
-    dR: Any = None
-
-    _Qo: Any
-    _dQo: Any
-
-    _calc_T: Any
-    _calc_L: Any
-    _calc_Qo: Any
-    _unique_L: Any
-    _L_idx: Any
-
-    class Config:
-        #extra = Extra.allow
-        underscore_attrs_are_private = True
-
-
+    
     def __init__(self, T=None, dT=0, L=None, dL=0, data=None,
                  intensity=1, background=0, back_absorption=1, theta_offset=0,
                  sample_broadening=0,
                  back_reflectivity=False, name=None, filename=None,
                  dQ=None, resolution='normal'):
-        super().__init__()
         if T is None or L is None:
             raise TypeError("T and L required")
         if sample_broadening is None:
@@ -226,19 +204,16 @@ class Probe(BaseModel):
         if not name and filename:
             name = os.path.splitext(os.path.basename(filename))[0]
         qualifier = " "+name if name is not None else ""
-        self.intensity = Parameter.default(
-            intensity, name="intensity"+qualifier)
-        self.background = Parameter.default(
-            background, name="background"+qualifier, limits=[0., inf])
-        self.back_absorption = Parameter.default(
-            back_absorption, name="back_absorption"+qualifier, limits=[0., 1.])
-        self.theta_offset = Parameter.default(
-            theta_offset, name="theta_offset"+qualifier)
-        self.sample_broadening = Parameter.default(
-            sample_broadening, name="sample_broadening"+qualifier)
+        self.intensity = upgrade_to_param(intensity, "intensity" + qualifier)
+        self.background = upgrade_to_param(background, "background" + qualifier, limits=[0., inf])
+        self.back_absorption = upgrade_to_param(back_absorption, "back_absorption" + qualifier, limits=[0., 1.])
+        self.theta_offset = upgrade_to_param(theta_offset, "theta_offset"+qualifier)
+        self.sample_broadening = upgrade_to_param(sample_broadening, "sample_broadening"+qualifier)
         self.back_reflectivity = back_reflectivity
         if data is not None:
             R, dR = data
+            #R = np.array(R)
+            #dR = np.array(dR)
         else:
             R, dR = None, None
 
@@ -268,7 +243,7 @@ class Probe(BaseModel):
         idx = np.argsort(Q)
         self.T, self.dT = T[idx], dT[idx]
         self.L, self.dL = L[idx], dL[idx]
-        self._Qo, self._dQo = Q[idx], dQ[idx]
+        self.Qo, self.dQo = Q[idx], dQ[idx]
         if R is not None:
             R = R[idx]
         if dR is not None:
@@ -403,13 +378,13 @@ class Probe(BaseModel):
         Q = TL2Q(T=T, L=L)
 
         idx = np.argsort(Q)
-        self._calc_T = T[idx]
-        self._calc_L = L[idx]
-        self._calc_Qo = Q[idx]
+        self.calc_T = T[idx]
+        self.calc_L = L[idx]
+        self.calc_Qo = Q[idx]
 
         # Only keep the scattering factors that you need
-        self._unique_L = np.unique(self._calc_L)
-        self._L_idx = np.searchsorted(self._unique_L, L)
+        self.unique_L = np.unique(self.calc_L)
+        self._L_idx = np.searchsorted(self.unique_L, L)
 
     @property
     def Q(self):
@@ -417,7 +392,7 @@ class Probe(BaseModel):
             Q = TL2Q(T=self.T+self.theta_offset.value, L=self.L)
             # TODO: this may break the Q order on measurements with varying L
         else:
-            Q = self._Qo
+            Q = self.Qo
         return Q
 
     @Q.setter
@@ -426,7 +401,7 @@ class Probe(BaseModel):
         # This will cause theta offset != 0 to fail.
         if hasattr(self, 'T'):
             del self.T, self.L
-        self._Qo = Q
+        self.Qo = Q
 
     @property
     def dQ(self):
@@ -444,10 +419,10 @@ class Probe(BaseModel):
     @property
     def calc_Q(self):
         if self.theta_offset.value != 0:
-            Q = TL2Q(T=self._calc_T+self.theta_offset.value, L=self._calc_L)
+            Q = TL2Q(T=self.calc_T+self.theta_offset.value, L=self.calc_L)
             # TODO: this may break the Q order on measurements with varying L
         else:
-            Q = self._calc_Qo
+            Q = self.calc_Qo
         return Q if not self.back_reflectivity else -Q
 
     def parameters(self):
@@ -459,7 +434,7 @@ class Probe(BaseModel):
             'sample_broadening': self.sample_broadening
             }
 
-    def to_dicto(self):
+    def to_dict(self):
         """ Return a dictionary representation of the parameters """
         return to_dict({
             'type': type(self).__name__,
@@ -499,13 +474,13 @@ class Probe(BaseModel):
         """
         # Assumes self contains sorted Qo and associated T, L
         # Note: calc_Qo is already sorted
-        Q = np.arange(self._Qo[0], self._Qo[-1], dQ)
-        idx = np.unique(np.searchsorted(self._Qo, Q))
-        #print len(idx), len(self._Qo)
+        Q = np.arange(self.Qo[0], self.Qo[-1], dQ)
+        idx = np.unique(np.searchsorted(self.Qo, Q))
+        #print len(idx), len(self.Qo)
 
         self.T, self.dT = self.T[idx], self.dT[idx]
         self.L, self.dL = self.L[idx], self.dL[idx]
-        self._Qo, self._dQo = self._Qo[idx], self._dQo[idx]
+        self.Qo, self.dQo = self.Qo[idx], self.dQo[idx]
         if self.R is not None:
             self.R = self.R[idx]
         if self.dR is not None:
@@ -1009,7 +984,7 @@ class XrayProbe(Probe):
         # Note: the real density is calculated as a scale factor applied to
         # the returned sld as computed assuming density=1
         rho, irho = xsf.xray_sld(material,
-                                 wavelength=self._unique_L,
+                                 wavelength=self.unique_L,
                                  density=density)
         # TODO: support wavelength dependent systems
         return rho[0], irho[0], 0
@@ -1031,7 +1006,7 @@ class NeutronProbe(Probe):
         # Note: the real density is calculated as a scale factor applied to
         # the returned sld as computed assuming density=1
         rho, irho, rho_incoh = nsf.neutron_sld(material,
-                                               wavelength=self._unique_L,
+                                               wavelength=self.unique_L,
                                                density=density)
         # TODO: support wavelength dependent systems
         return rho, irho[0], rho_incoh
@@ -1104,7 +1079,7 @@ class ProbeSet(Probe):
 
     @property
     def unique_L(self):
-        return np.unique(np.hstack([p._unique_L for p in self.probes]))
+        return np.unique(np.hstack([p.unique_L for p in self.probes]))
 
     def oversample(self, **kw):
         for p in self.probes:
@@ -1560,8 +1535,8 @@ class QProbe(Probe):
         self.Q, self.dQ = Q, dQ
         self.R = R
         self.dR = dR
-        self._unique_L = None
-        self._calc_Qo = self._Qo
+        self.unique_L = None
+        self.calc_Qo = self.Qo
         self.name = name
         self.filename = filename
         self.resolution = resolution
@@ -1578,7 +1553,7 @@ class QProbe(Probe):
         rng = numpy.random.RandomState(seed=seed)
         extra = rng.normal(self.Q, self.dQ, size=(n-1, len(self.Q)))
         calc_Q = np.hstack((self.Q, extra.flatten()))
-        self._calc_Qo = np.sort(calc_Q)
+        self.calc_Qo = np.sort(calc_Q)
     oversample.__doc__ = Probe.oversample.__doc__
 
     def critical_edge(self, substrate=None, surface=None,
@@ -1586,7 +1561,7 @@ class QProbe(Probe):
         Q_c = self.Q_c(substrate, surface)
         extra = np.linspace(Q_c*(1 - delta), Q_c*(1+delta), n)
         calc_Q = np.hstack((self.Q, extra, 0))
-        self._calc_Qo = np.sort(calc_Q)
+        self.calc_Qo = np.sort(calc_Q)
     critical_edge.__doc__ = Probe.critical_edge.__doc__
 
 def measurement_union(xs):
@@ -1626,6 +1601,13 @@ def Qmeasurement_union(xs):
         raise ValueError("Q values differ by less than 1e-14")
     return Q, dQ
 
+@dataclass(init=False)
+class PolarizedNeutronProbeModel:
+    xs: List[Optional[NeutronProbe]]
+    name: str
+    H: Parameter
+    Aguide: Parameter
+
 class PolarizedNeutronProbe(object):
     """
     Polarized neutron probe
@@ -1642,7 +1624,7 @@ class PolarizedNeutronProbe(object):
     substrate = surface = None
     polarized = True
     def __init__(self, xs=None, name=None, Aguide=BASE_GUIDE_ANGLE, H=0):
-        self._xs = xs
+        self.xs = xs
 
         if name is None and self.xs[0] is not None:
             name = self.xs[0].name
@@ -1652,12 +1634,17 @@ class PolarizedNeutronProbe(object):
         self._set_calc(self.T, self.L)
         self._check()
         spec = " "+name if name else ""
-        self.H = Parameter.default(H, name="H"+spec)
-        self.Aguide = Parameter.default(Aguide, name="Aguide"+spec,
+        self.H = H if isinstance(H, ParameterBase) else Parameter.default(H, name="H"+spec)
+        self.Aguide = Aguide if isinstance(Aguide, ParameterBase) else Parameter.default(Aguide, name="Aguide"+spec,
                                         limits=[-360, 360])
     @property
     def xs(self):
         return self._xs  # Don't let user replace xs
+
+    @xs.setter
+    def xs(self, val):
+        if not hasattr(self, '_xs'): # set only once, in __init__
+            self._xs = val
 
     @property
     def pp(self):
@@ -1766,20 +1753,20 @@ class PolarizedNeutronProbe(object):
 
     @property
     def calc_Q(self):
-        return self._calc_Qo
+        return self.calc_Qo
 
     def _set_calc(self, T, L):
         # TODO: shouldn't clone code from probe
         Q = TL2Q(T=T, L=L)
 
         idx = np.argsort(Q)
-        self._calc_T = T[idx]
-        self._calc_L = L[idx]
-        self._calc_Qo = Q[idx]
+        self.calc_T = T[idx]
+        self.calc_L = L[idx]
+        self.calc_Qo = Q[idx]
 
         # Only keep the scattering factors that you need
-        self._unique_L = np.unique(self._calc_L)
-        self._L_idx = np.searchsorted(self._unique_L, L)
+        self.unique_L = np.unique(self.calc_L)
+        self._L_idx = np.searchsorted(self.unique_L, L)
 
     def apply_beam(self, Q, R, resolution=True, interpolation=0):
         """
@@ -1796,7 +1783,7 @@ class PolarizedNeutronProbe(object):
     def scattering_factors(self, material, density):
         # doc string is inherited from parent (see below)
         rho, irho, rho_incoh = nsf.neutron_sld(material,
-                                               wavelength=self._unique_L,
+                                               wavelength=self.unique_L,
                                                density=density)
         # TODO: support wavelength dependent systems
         #print("sf", str(material), type(rho), type(irho[0]))
@@ -1992,12 +1979,12 @@ class PolarizedQProbe(PolarizedNeutronProbe):
         self._xs = xs
         self._check()
         self.name = name if name is not None else xs[0].name
-        self._unique_L = None
+        self.unique_L = None
         self.Aguide = Parameter.default(Aguide, name="Aguide "+self.name,
                                         limits=[-360, 360])
         self.H = Parameter.default(H, name="H "+self.name)
         self.Q, self.dQ = Qmeasurement_union(xs)
-        self._calc_Qo = self.Q
+        self.calc_Qo = self.Q
 
 # Deprecated old long name
 PolarizedNeutronQProbe = PolarizedQProbe
