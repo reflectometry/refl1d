@@ -86,11 +86,11 @@ def make_probe(**kw):
     else:
         return XrayProbe(**kw)
 
-def upgrade_to_param(value, name, limits=(-inf,inf)):
+def upgrade_to_param(value, name, limits=(-inf,inf), param_factory=Parameter):
     if isinstance(value, BaseParameter):
         return value
     else:
-        return Parameter.default(value, name=name, limits=limits)
+        return param_factory.default(value, name=name, limits=limits)
 
 @dataclass(init=False)
 class ProbeModel:
