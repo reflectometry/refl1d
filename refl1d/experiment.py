@@ -16,15 +16,19 @@ import traceback
 import json
 from warnings import warn
 
+from typing import Union, List, Optional
 import numpy as np
 from bumps import parameter
 from bumps.parameter import Parameter, to_dict
+from bumps.util import dataclass
 
 from . import material, profile
 from . import __version__
 from .reflectivity import reflectivity_amplitude as reflamp
 from .reflectivity import magnetic_amplitude as reflmag
 from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
+from . import model
+from . import probe
 #print("Using pure python reflectivity calculator")
 #from .abeles import refl as reflamp
 from .util import asbytes
@@ -305,9 +309,18 @@ class ExperimentBase(object):
             self.probe.save(filename=basename+"-refl-interp.dat",
                             theory=theory)
 
+@dataclass
+class ExperimentModel:
+    name: str
+    sample: model.Stack
+    probe: Union[probe.Probe, probe.PolarizedNeutronProbe]
+    roughness_limit: float
+    dz: Optional[float]
+    dA: float
+    step_interfaces: bool
+    interpolation: float
 
-
-class Experiment(ExperimentBase):
+class Experiment(ExperimentModel, ExperimentBase):
     """
     Theory calculator.  Associates sample with data, Sample plus data.
     Associate sample with measurement.
@@ -376,7 +389,7 @@ class Experiment(ExperimentBase):
         self.dA = dA
         self.step_interfaces = step_interfaces
         self.interpolation = interpolation
-        num_slabs = len(probe._unique_L) if probe._unique_L is not None else 1
+        num_slabs = len(probe.unique_L) if probe.unique_L is not None else 1
         self._slabs = profile.Microslabs(num_slabs, dz=dz)
         self._probe_cache = material.ProbeCache(probe)
         self._cache = {}  # Cache calculated profiles/reflectivities
