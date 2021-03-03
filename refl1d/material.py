@@ -47,9 +47,13 @@ from numpy import inf, NaN
 import periodictable
 from periodictable.constants import avogadro_number
 from bumps.parameter import Parameter, to_dict
+from bumps.util import dataclass
 
+@dataclass
+class ScattererModel:
+    name: str = None
 
-class Scatterer(object):
+class Scatterer(ScattererModel):
     """
     A generic scatterer separates the lookup of the scattering factors
     from the calculation of the scattering length density.  This allows
@@ -115,8 +119,13 @@ class Vacuum(Scatterer):
 
 
 # ============================ Unknown scatterer ========================
+@dataclass
+class SLDModel:
+    name: str
+    rho: Parameter
+    irho: Parameter
 
-class SLD(Scatterer):
+class SLD(SLDModel, Scatterer):
     r"""
     Unknown composition.
 
@@ -136,9 +145,10 @@ class SLD(Scatterer):
     time-of-flight measurements should not be fit with a fixed SLD scatterer.
     """
     def __init__(self, name="SLD", rho=0, irho=0):
+        from .probe import upgrade_to_param
         self.name = name
-        self.rho = Parameter.default(rho, name=name+" rho")
-        self.irho = Parameter.default(irho, name=name+" irho")
+        self.rho = upgrade_to_param(rho, name+" rho")
+        self.irho = upgrade_to_param(irho, name+" irho")
 
     def parameters(self):
         return {'rho':self.rho, 'irho':self.irho}
