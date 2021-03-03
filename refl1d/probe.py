@@ -108,6 +108,7 @@ class ProbeModel:
     dT: Optional[Any] = 0
     L: Optional[Any] = None
     dL: Optional[Any] = 0
+    dQ: Optional[Any] = None
 
 class Probe(ProbeModel):
     r"""
@@ -189,6 +190,14 @@ class Probe(ProbeModel):
     plot_shift = 0
     residuals_shift = 0
     show_resolution = True
+
+    @classmethod
+    def from_dict(cls, **kw):
+        R = kw.pop('R', None)
+        dR = kw.pop('dR', None)
+        if R is not None and dR is not None:
+            kw['data'] = (R, dR)
+        return cls(**kw)
     
     def __init__(self, T=None, dT=0, L=None, dL=0, data=None,
                  intensity=1, background=0, back_absorption=1, theta_offset=0,
@@ -212,8 +221,8 @@ class Probe(ProbeModel):
         self.back_reflectivity = back_reflectivity
         if data is not None:
             R, dR = data
-            #R = np.array(R)
-            #dR = np.array(dR)
+            R = np.array(R)
+            dR = np.array(dR)
         else:
             R, dR = None, None
 
@@ -230,6 +239,8 @@ class Probe(ProbeModel):
         #    E = xsf.xray_energy(L)
         #    dE = E * dL/L
 
+        T = np.array(T)
+        L = np.array(L)
         Q = TL2Q(T=T, L=L)
         if dQ is not None:
             dQ = np.asarray(dQ)
