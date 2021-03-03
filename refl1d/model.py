@@ -240,7 +240,7 @@ class Stack(StackModel, Layer):
     has an interface describing how the top of the layer interacts with
     the bottom of the overlaying layer. The stack may contain
     """
-    def __init__(self, base=None, layers=None, name="Stack"):
+    def __init__(self, base=None, layers=None, name="Stack", interface=None):
         self.name = name
         self.interface = None
         self._layers = []
@@ -728,7 +728,11 @@ def _material_stacker():
     material.Scatterer.__call__ = __call__
 _material_stacker()
 
-class Slab(Layer):
+@dataclass
+class SlabModel(LayerModel):
+    material: material.Scatterer
+
+class Slab(SlabModel, Layer):
     """
     A block of material.
     """
