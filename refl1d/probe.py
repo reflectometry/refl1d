@@ -49,9 +49,9 @@ import numpy.fft
 from typing import Optional, Any, Union
 
 try:
-    from typing import Optional, Any, Union, Dict, Callable, Literal
+    from typing import Optional, Any, Union, Dict, Callable, Literal, Tuple
 except ImportError:
-    from typing import Optional, Any, Union, Dict, Callable, List
+    from typing import Optional, Any, Union, Dict, Callable, List, Tuple
     from typing_extensions import Literal
 #from pydantic.dataclasses import dataclass
 #from dataclasses import dataclass, field
@@ -94,6 +94,7 @@ def upgrade_to_param(value, name, limits=(-inf,inf), param_factory=Parameter):
 
 @dataclass(init=False)
 class ProbeModel:
+    type: Literal["Probe"] = field(repr=False)
     name: str
     filename: str
     intensity: Parameter
@@ -1003,7 +1004,11 @@ class XrayProbe(Probe):
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
 
-class NeutronProbe(Probe):
+@dataclass(init=False)
+class NeutronProbeModel(ProbeModel):
+    type: Literal["NeutronProbe"]
+
+class NeutronProbe(Probe, NeutronProbeModel):
     """
     Neutron probe.
 
@@ -1612,14 +1617,16 @@ def Qmeasurement_union(xs):
         raise ValueError("Q values differ by less than 1e-14")
     return Q, dQ
 
+optional_xs = Union[NeutronProbe, Literal[None]]
 @dataclass(init=False)
 class PolarizedNeutronProbeModel:
-    xs: List[Optional[NeutronProbe]]
+    type: Literal["PolarizedNeutronProbe"] = field(repr=False)
     name: str
+    xs: Tuple[optional_xs, optional_xs, optional_xs, optional_xs]
     H: Parameter
     Aguide: Parameter
 
-class PolarizedNeutronProbe(object):
+class PolarizedNeutronProbe(PolarizedNeutronProbeModel):
     """
     Polarized neutron probe
 
@@ -1634,6 +1641,7 @@ class PolarizedNeutronProbe(object):
     show_resolution = None  # Default to Probe.show_resolution when None
     substrate = surface = None
     polarized = True
+    
     def __init__(self, xs=None, name=None, Aguide=BASE_GUIDE_ANGLE, H=0):
         self.xs = xs
 
@@ -1645,8 +1653,8 @@ class PolarizedNeutronProbe(object):
         self._set_calc(self.T, self.L)
         self._check()
         spec = " "+name if name else ""
-        self.H = H if isinstance(H, ParameterBase) else Parameter.default(H, name="H"+spec)
-        self.Aguide = Aguide if isinstance(Aguide, ParameterBase) else Parameter.default(Aguide, name="Aguide"+spec,
+        self.H = H if isinstance(H, BaseParameter) else Parameter.default(H, name="H"+spec)
+        self.Aguide = Aguide if isinstance(Aguide, BaseParameter) else Parameter.default(Aguide, name="Aguide"+spec,
                                         limits=[-360, 360])
     @property
     def xs(self):
@@ -1984,7 +1992,11 @@ def _interpolate_Q(Q, dQ, n):
         dQ = np.interp(subindex, index, dQ)
     return Q, dQ
 
-class PolarizedQProbe(PolarizedNeutronProbe):
+@dataclass
+class PolarizedQProbeModel(PolarizedNeutronProbeModel):
+    type: Literal["PolarizedQProbe"]
+
+class PolarizedQProbe(PolarizedNeutronProbe, PolarizedQProbeModel):
     polarized = True
     def __init__(self, xs=None, name=None, Aguide=BASE_GUIDE_ANGLE, H=0):
         self._xs = xs

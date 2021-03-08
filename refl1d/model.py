@@ -28,7 +28,12 @@ __all__ = ['Repeat', 'Slab', 'Stack', 'Layer']
 from copy import copy, deepcopy
 import json
 
-from typing import Union, List, Optional, Any
+try:
+    from typing import Union, List, Optional, Any, Literal
+except ImportError:
+    from typing import Union, List, Optional, Any
+    from typing_extensions import Literal
+
 import numpy as np
 from numpy import (inf, nan, pi, sin, cos, tan, sqrt, exp, log, log10,
                    degrees, radians, floor, ceil)
@@ -42,13 +47,15 @@ from bumps.util import dataclass
 
 from . import material
 from .probe import upgrade_to_param
+from .magnetism import BaseMagnetism
 
-@dataclass
+
+@dataclass(init=False, eq=False)
 class LayerModel:
     name: str
     thickness: Par
     interface: Optional[Par]
-    magnetism: Optional[Any]
+    magnetism: Union[(Literal[None], *BaseMagnetism.__subclasses__())]
 
 #return to_dict({
         #    'type': type(self).__name__,
@@ -214,23 +221,67 @@ def _parcopy(p, v):
         p.set(v)
     return p
 
-def to_dict(self):
+@dataclass
+class SlabModel(LayerModel):
+    type: Literal["Slab"]
+    material: Union[tuple(material.Scatterer.__subclasses__())]
+
+class Slab(Layer, SlabModel):
+    """
+    A block of material.
+    """
+    def __init__(self, material=None, thickness=0, interface=0, name=None,
+                 magnetism=None):
+        if name is None:
+            name = material.name
+        self.name = name
+        self.material = material
+        self.thickness = Par.default(thickness, limits=(0, inf),
+                                     name=name+" thickness")
+        self.interface = Par.default(interface, limits=(0, inf),
+                                     name=name+" interface")
+        self.magnetism = magnetism
+
+    def parameters(self):
+        return {'material': self.material.parameters()}
+
+    def render(self, probe, slabs):
+        rho, irho = self.material.sld(probe)
+        w = self.thickness.value
+        sigma = self.interface.value
+        #print "rho", rho
+        #print "irho", irho
+        #print "w", w
+        #print "sigma", sigma
+        slabs.append(rho=rho, irho=irho, w=w, sigma=sigma)
+
+    def __str__(self):
+        return self.name
+        #return str(self.material)
+
+    def __repr__(self):
+        return "Slab("+repr(self.material)+")"
+
+    def to_dict(self):
         """
-        Return a dictionary representation of the Stack object
+        Return a dictionary representation of the Slab object
         """
         return to_dict({
             'type': type(self).__name__,
             'name': self.name,
+            'thickness': self.thickness,
             'interface': self.interface,
-            'layers': self._layers,
+            'material': self.material,
+            'magnetism': self.magnetism,
         })
 
 
-@dataclass
+@dataclass(eq=False)
 class StackModel:
+    type: Literal["Stack"]
     name: str
     interface: Optional[Any]
-    layers: List[Layer]
+    layers: List[Union[tuple(Layer.__subclasses__()) + ('Repeat',)]]
 
 class Stack(StackModel, Layer):
     """
@@ -574,8 +625,9 @@ def _check_layer(el):
         raise TypeError("Can only stack materials and layers, not %s"%el)
 
 
-@dataclass
+@dataclass(init=False, repr=False)
 class RepeatModel:
+    type: Literal["Repeat"]
     name: str
     interface: Par
     magnetism: Optional[Any]
@@ -728,55 +780,3 @@ def _material_stacker():
     material.Scatterer.__call__ = __call__
 _material_stacker()
 
-@dataclass
-class SlabModel(LayerModel):
-    material: material.Scatterer
-
-class Slab(SlabModel, Layer):
-    """
-    A block of material.
-    """
-    def __init__(self, material=None, thickness=0, interface=0, name=None,
-                 magnetism=None):
-        if name is None:
-            name = material.name
-        self.name = name
-        self.material = material
-        self.thickness = Par.default(thickness, limits=(0, inf),
-                                     name=name+" thickness")
-        self.interface = Par.default(interface, limits=(0, inf),
-                                     name=name+" interface")
-        self.magnetism = magnetism
-
-    def parameters(self):
-        return {'material': self.material.parameters()}
-
-    def render(self, probe, slabs):
-        rho, irho = self.material.sld(probe)
-        w = self.thickness.value
-        sigma = self.interface.value
-        #print "rho", rho
-        #print "irho", irho
-        #print "w", w
-        #print "sigma", sigma
-        slabs.append(rho=rho, irho=irho, w=w, sigma=sigma)
-
-    def __str__(self):
-        return self.name
-        #return str(self.material)
-
-    def __repr__(self):
-        return "Slab("+repr(self.material)+")"
-
-    def to_dict(self):
-        """
-        Return a dictionary representation of the Slab object
-        """
-        return to_dict({
-            'type': type(self).__name__,
-            'name': self.name,
-            'thickness': self.thickness,
-            'interface': self.interface,
-            'material': self.material,
-            'magnetism': self.magnetism,
-        })

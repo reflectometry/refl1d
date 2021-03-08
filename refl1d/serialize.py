@@ -4,7 +4,7 @@ import bumps.fitproblem
 
 from dataclasses import is_dataclass, fields
 
-def get_dataclass_defs(sources = (refl1d.names, bumps.bounds, bumps.fitproblem)):
+def get_dataclass_defs(sources = (refl1d.names, refl1d.material, bumps.bounds, bumps.parameter)):
     class_defs = {}
     for source in sources:
         names = dir(source)
@@ -31,6 +31,7 @@ class Deserializer(object):
                 hydrated = self.instantiate(t, obj)
                 return hydrated
             else:
+                raise ValueError("type %s not found!" % t, obj)
                 return obj
         elif isinstance(obj, list):
             return [self.rehydrate(v) for v in obj]
@@ -47,7 +48,11 @@ class Deserializer(object):
             class_factory = self.class_defs.get(typename)
             if hasattr(class_factory, 'from_dict'):
                 class_factory = class_factory.from_dict
-            hydrated = class_factory(**s)
+            try:
+                hydrated = class_factory(**s)
+            except Exception as e:
+                print(class_factory, s, typename)
+                raise e
             if id is not None:
                 self.refs[id] = hydrated
         else:
@@ -65,8 +70,9 @@ def to_dict(obj):
     if is_dataclass(obj):
         result = [('type', obj.__class__.__name__)]
         for f in fields(obj):
-            value = to_dict(getattr(obj, f.name))
-            result.append((f.name, value))
+            if f.name != "type":
+                value = to_dict(getattr(obj, f.name))
+                result.append((f.name, value))
         return dict(result)
     elif isinstance(obj, (list, tuple)):
         return type(obj)(to_dict(v) for v in obj)
@@ -76,5 +82,7 @@ def to_dict(obj):
     elif isinstance(obj, np.ndarray):
         #return dict(type="numpy.ndarray", dtype=obj.dtype.name, values=obj.tolist())
         return obj.tolist()
+    elif isinstance(obj, float) or isinstance(obj, int) or isinstance(obj, str) or obj is None:
+        return obj
     else:
-        return copy.deepcopy(obj)
+        raise ValueError("obj %s is not serializable" % str(obj))

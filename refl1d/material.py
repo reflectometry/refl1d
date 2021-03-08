@@ -47,10 +47,15 @@ from numpy import inf, NaN
 import periodictable
 from periodictable.constants import avogadro_number
 from bumps.parameter import Parameter, to_dict
-from bumps.util import dataclass
+from bumps.util import dataclass, field
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
-@dataclass
+@dataclass(init=False)
 class ScattererModel:
+    type: Literal["Scatterer"] = field(repr=False)
     name: str = None
 
 class Scatterer(ScattererModel):
@@ -96,12 +101,18 @@ class Scatterer(ScattererModel):
 
 
 # ============================ No scatterer =============================
+@dataclass(init=False)
+class VacuumModel(ScattererModel):
+    type: Literal["Vacuum"]
 
 class Vacuum(Scatterer):
     """
     Empty layer
     """
     name = 'air'
+
+    def __init__(self, *args, **kw):
+        pass
 
     def parameters(self):
         return []
@@ -119,8 +130,9 @@ class Vacuum(Scatterer):
 
 
 # ============================ Unknown scatterer ========================
-@dataclass
+@dataclass(repr=False)
 class SLDModel:
+    type: Literal["SLD"]
     name: str
     rho: Parameter
     irho: Parameter

@@ -16,7 +16,11 @@ import traceback
 import json
 from warnings import warn
 
-from typing import Union, List, Optional
+try:
+    from typing import Union, List, Optional, Literal
+except:
+    from typing import Union, List, Optional
+    from typing_extensions import Literal
 import numpy as np
 from bumps import parameter
 from bumps.parameter import Parameter, to_dict
@@ -315,8 +319,8 @@ class ExperimentModel:
     sample: model.Stack
     probe: Union[probe.Probe, probe.PolarizedNeutronProbe]
     roughness_limit: float
-    dz: Optional[float]
-    dA: float
+    dz: Union[float, Literal[None]]
+    dA: Union[float, Literal[None]]
     step_interfaces: bool
     interpolation: float
 
@@ -637,6 +641,7 @@ class Experiment(ExperimentModel, ExperimentBase):
 
     def penalty(self):
         return self.sample.penalty()
+
 
 class MixedExperiment(ExperimentBase):
     """

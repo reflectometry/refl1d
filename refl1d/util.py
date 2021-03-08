@@ -38,3 +38,12 @@ def merge_ends(w, p, tol=1e-3):
             return w[0:1], p[0:1]
         else:
             return w, p
+
+from bumps.parameter import BaseParameter, Parameter
+from numpy import inf
+
+def as_param(value, name, limits=(-inf,inf), param_factory=Parameter):
+    if isinstance(value, BaseParameter):
+        return value
+    else:
+        return param_factory.default(value, name=name, limits=limits)

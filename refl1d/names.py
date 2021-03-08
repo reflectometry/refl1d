@@ -21,6 +21,7 @@ from bumps.fitproblem import FitProblem
 from bumps.fitproblem import MultiFitProblem  # deprecated
 
 from .experiment import Experiment, plot_sample, MixedExperiment
+from .fitproblem import BaseFitProblem
 from .flayer import FunctionalProfile, FunctionalMagnetism
 from .material import SLD, Material, Compound, Mixture
 from .model import Slab, Stack

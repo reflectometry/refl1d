@@ -44,10 +44,27 @@ from numpy import inf
 from bumps.parameter import Parameter, flatten, to_dict
 from bumps.mono import monospline
 
-from .model import Layer, Stack
-from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
+try:
+    from typing import Optional, Any, Union, Dict, Callable, Literal, Tuple
+except ImportError:
+    from typing import Optional, Any, Union, Dict, Callable, List, Tuple
+    from typing_extensions import Literal
+from bumps.util import dataclass, field
 
-class BaseMagnetism(object):
+from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
+from .util import upgrade_to_param
+
+@dataclass
+class BaseMagnetismModel:
+    type: str
+    name: str
+    extent: float
+    dead_below: Union[Parameter, Literal[None]]
+    dead_above: Union[Parameter, Literal[None]]
+    interface_below: Union[Parameter, Literal[None]]
+    interface_above: Union[Parameter, Literal[None]]
+
+class BaseMagnetism(BaseMagnetismModel):
     """
     Magnetic properties of the layer.
 
@@ -70,16 +87,12 @@ class BaseMagnetism(object):
                  dead_below=0, dead_above=0,
                  interface_below=None, interface_above=None,
                  name="LAYER"):
-        self.dead_below = Parameter.default(dead_below, limits=(0, inf),
-                                            name=name+" deadM below")
-        self.dead_above = Parameter.default(dead_above, limits=(0, inf),
-                                            name=name+" deadM above")
+        self.dead_below = upgrade_to_param(dead_below, name+" deadM below", limits=(0, inf))
+        self.dead_above = upgrade_to_param(dead_below, name+" deadM above", limits=(0, inf))
         if interface_below is not None:
-            interface_below = Parameter.default(interface_below, limits=(0, inf),
-                                                name=name+" interfaceM below")
+            interface_below = upgrade_to_param(interface_below, name+" interfaceM below", limits=(0, inf))
         if interface_above is not None:
-            interface_above = Parameter.default(interface_above, limits=(0, inf),
-                                                name=name+"  interfaceM above")
+            interface_above = upgrade_to_param(interface_above, name+" interfaceM above", limits=(0, inf))
         self.interface_below = interface_below
         self.interface_above = interface_above
         self.name = name
@@ -115,7 +128,13 @@ class BaseMagnetism(object):
                 p.name = p.name.replace("LAYER", name)
             self.name = name
 
-class Magnetism(BaseMagnetism):
+@dataclass
+class MagnetismModel(BaseMagnetismModel):
+    type: Literal["Magnetism"]
+    rhoM: Parameter
+    thetaM: Parameter
+
+class Magnetism(BaseMagnetism, MagnetismModel):
     """
     Region of constant magnetism.
 
@@ -136,9 +155,8 @@ class Magnetism(BaseMagnetism):
     """
     def __init__(self, rhoM=0, thetaM=DEFAULT_THETA_M, name="LAYER", **kw):
         BaseMagnetism.__init__(self, name=name, **kw)
-        self.rhoM = Parameter.default(rhoM, name=name+" rhoM")
-        self.thetaM = Parameter.default(thetaM, limits=(0, 360),
-                                        name=name+" thetaM")
+        self.rhoM = upgrade_to_param(rhoM, name+" rhoM")
+        self.thetaM = upgrade_to_param(thetaM, name+" thetaM", limits=(0, 360))
 
     def parameters(self):
         parameters = BaseMagnetism.parameters(self)
@@ -165,7 +183,14 @@ class Magnetism(BaseMagnetism):
         return ("Magnetism(rhoM=%g, thetaM=%g)"
                 %(self.rhoM.value, self.thetaM.value))
 
-class MagnetismStack(BaseMagnetism):
+@dataclass
+class MagnetismStackModel(BaseMagnetismModel):
+    type: Literal["MagnetismStack"]
+    weight: List[Parameter]
+    rhoM: List[Parameter]
+    thetaM: List[Parameter]
+
+class MagnetismStack(BaseMagnetism, MagnetismStackModel):
     """
     Magnetic slabs within a magnetic layer.
 
@@ -224,11 +249,11 @@ class MagnetismStack(BaseMagnetism):
         #    interfaceM = [0]
 
         BaseMagnetism.__init__(self, name=name, **kw)
-        self.weight = [Parameter.default(v, name=name+" weight[%d]"%i)
+        self.weight = [upgrade_to_param(v, name+" weight[%d]"%i)
                        for i, v in enumerate(weight)]
-        self.rhoM = [Parameter.default(v, name=name+" rhoM[%d]"%i)
+        self.rhoM = [upgrade_to_param(v, name+" rhoM[%d]"%i)
                      for i, v in enumerate(rhoM)]
-        self.thetaM = [Parameter.default(v, name=name+" thetaM[%d]"%i)
+        self.thetaM = [upgrade_to_param(v, name+" thetaM[%d]"%i)
                        for i, v in enumerate(thetaM)]
         #self.interfaceM = [Parameter.default(v, name=name+" interfaceM[%d]"%i)
         #                   for i, v in enumerate(interfaceM)]
@@ -274,7 +299,13 @@ class MagnetismStack(BaseMagnetism):
         return "MagnetismStack"
 
 
-class MagnetismTwist(BaseMagnetism):
+@dataclass
+class MagnetismTwistModel(BaseMagnetismModel):
+    type: Literal["MagnetismTwist"]
+    rhoM: List[Parameter]
+    thetaM: List[Parameter]
+
+class MagnetismTwist(BaseMagnetism, MagnetismTwistModel):
     """
     Linear change in magnetism throughout layer.
 
@@ -299,9 +330,9 @@ class MagnetismTwist(BaseMagnetism):
                  rhoM=(0, 0), thetaM=(DEFAULT_THETA_M, DEFAULT_THETA_M),
                  name="LAYER", **kw):
         BaseMagnetism.__init__(self, name=name, **kw)
-        self.rhoM = [Parameter.default(v, name=name+" rhoM[%d]"%i)
+        self.rhoM = [upgrade_to_param(v, name+" rhoM[%d]"%i)
                      for i, v in enumerate(rhoM)]
-        self.thetaM = [Parameter.default(v, name=name+" thetaM[%d]"%i)
+        self.thetaM = [upgrade_to_param(v, name+" thetaM[%d]"%i)
                        for i, v in enumerate(thetaM)]
 
     def parameters(self):
@@ -331,7 +362,14 @@ class MagnetismTwist(BaseMagnetism):
         return "MagneticTwist"
 
 
-class FreeMagnetism(BaseMagnetism):
+@dataclass
+class FreeMagnetismModel(BaseMagnetismModel):
+    type: Literal["FreeMagnetism"]
+    z: List[Parameter]
+    rhoM: List[Parameter]
+    thetaM: List[Parameter]
+
+class FreeMagnetism(BaseMagnetism, FreeMagnetismModel):
     """
     Spline change in magnetism throughout layer.
 
@@ -359,7 +397,7 @@ class FreeMagnetism(BaseMagnetism):
                  name="LAYER", **kw):
         BaseMagnetism.__init__(self, name=name, **kw)
         def parvec(vector, name, limits):
-            return [Parameter.default(p, name=name+"[%d]"%i, limits=limits)
+            return [upgrade_to_param(p, name+"[%d]"%i, limits=limits)
                     for i, p in enumerate(vector)]
         self.rhoM, self.thetaM, self.z \
             = [parvec(v, name+" "+part, limits)
