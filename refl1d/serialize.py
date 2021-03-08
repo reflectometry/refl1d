@@ -68,12 +68,13 @@ import numpy as np
 
 def to_dict(obj):
     if is_dataclass(obj):
-        result = [('type', obj.__class__.__name__)]
-        for f in fields(obj):
-            if f.name != "type":
-                value = to_dict(getattr(obj, f.name))
-                result.append((f.name, value))
-        return dict(result)
+        return dict([(f.name, to_dict(getattr(obj, f.name))) for f in fields(obj)])
+        # result = [('type', obj.__class__.__name__)]
+        # for f in fields(obj):
+        #     if f.name != "type":
+        #         value = to_dict(getattr(obj, f.name))
+        #         result.append((f.name, value))
+        # return dict(result)
     elif isinstance(obj, (list, tuple)):
         return type(obj)(to_dict(v) for v in obj)
     elif isinstance(obj, dict):

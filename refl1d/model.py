@@ -43,29 +43,15 @@ import periodictable.nsf as nsf
 
 from bumps.parameter import (
     Parameter as Par, IntegerParameter as IntPar, Function, to_dict)
-from bumps.util import dataclass
+from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
 from . import material
-from .probe import upgrade_to_param
+from .probe import as_param
 from .magnetism import BaseMagnetism
+from .util import as_param
 
-
-@dataclass(init=False, eq=False)
-class LayerModel:
-    name: str
-    thickness: Par
-    interface: Optional[Par]
-    magnetism: Union[(Literal[None], *BaseMagnetism.__subclasses__())]
-
-#return to_dict({
-        #    'type': type(self).__name__,
-        #    'name': self.name,
-        #    'thickness': self.thickness,
-        #    'interface': self.interface,
-        #    'magnetism': self.magnetism,
-        #})
-
-class Layer(LayerModel): # Abstract base class
+@schema(init=False)
+class Layer: # Abstract base class
     """
     Component of a material description.
 
@@ -76,9 +62,10 @@ class Layer(LayerModel): # Abstract base class
     magnetism (Magnetism info)
         Magnetic profile anchored to the layer.
     """
-    thickness = None
-    interface = None
-    name = None
+    name: str
+    #thickness: Par
+    interface: Optional[Par] = None
+    #magnetism: Union[(Literal[None], *BaseMagnetism.__subclasses__())]
 
     # Make magnetism a property so we can update the magnetism parameter
     # names with the layer name when we assign magnetism to the layer
@@ -221,25 +208,24 @@ def _parcopy(p, v):
         p.set(v)
     return p
 
-@dataclass
-class SlabModel(LayerModel):
-    type: Literal["Slab"]
-    material: Union[tuple(material.Scatterer.__subclasses__())]
 
-class Slab(Layer, SlabModel):
+@schema(init=False)
+class Slab(Layer):
     """
     A block of material.
     """
+    thickness: Par
+    magnetism: Union[(Literal[None], *BaseMagnetism.__subclasses__())]
+    material: Union[tuple(material.Scatterer.__subclasses__())]
+
     def __init__(self, material=None, thickness=0, interface=0, name=None,
                  magnetism=None):
         if name is None:
             name = material.name
         self.name = name
         self.material = material
-        self.thickness = Par.default(thickness, limits=(0, inf),
-                                     name=name+" thickness")
-        self.interface = Par.default(interface, limits=(0, inf),
-                                     name=name+" interface")
+        self.thickness = as_param(thickness, name+" thickness", limits=(0, inf))
+        self.interface = as_param(interface, name+" interface", limits=(0, inf))
         self.magnetism = magnetism
 
     def parameters(self):
@@ -276,14 +262,8 @@ class Slab(Layer, SlabModel):
         })
 
 
-@dataclass(eq=False)
-class StackModel:
-    type: Literal["Stack"]
-    name: str
-    interface: Optional[Any]
-    layers: List[Union[tuple(Layer.__subclasses__()) + ('Repeat',)]]
-
-class Stack(StackModel, Layer):
+@schema(init=False)
+class Stack(Layer):
     """
     Reflectometry layer stack
 
@@ -291,10 +271,14 @@ class Stack(StackModel, Layer):
     has an interface describing how the top of the layer interacts with
     the bottom of the overlaying layer. The stack may contain
     """
+    name: str
+    interface: Optional[Any]
+    layers: List[Union[tuple(Layer.__subclasses__()) + ('Repeat',)]] = field(init=False)
+
     def __init__(self, base=None, layers=None, name="Stack", interface=None):
         self.name = name
         self.interface = None
-        self._layers = []
+        self.layers = []
         if layers is not None and base is None:
             base = layers
         if base is not None:
@@ -625,16 +609,8 @@ def _check_layer(el):
         raise TypeError("Can only stack materials and layers, not %s"%el)
 
 
-@dataclass(init=False, repr=False)
-class RepeatModel:
-    type: Literal["Repeat"]
-    name: str
-    interface: Par
-    magnetism: Optional[Any]
-    repeat: IntPar
-    stack: Stack
-
-class Repeat(RepeatModel, Layer):
+@schema(init=False)
+class Repeat(Layer):
     """
     Repeat a layer or stack.
 
@@ -644,15 +620,21 @@ class Repeat(RepeatModel, Layer):
 
     Note: Repeat is not a type of Stack, but it does have a stack inside.
     """
+    name: str
+    interface: Par
+    magnetism: Union[(Literal[None], *BaseMagnetism.__subclasses__())]
+    repeat: IntPar
+    stack: Stack
+
     def __init__(self, stack, repeat=1, interface=None, name=None,
                  magnetism=None):
         if name is None: name = "multilayer"
         if interface is None: interface = stack[-1].interface.value
         self.magnetism = magnetism
         self.name = name
-        self.repeat = upgrade_to_param(repeat, name + " repeats", limits=(0, inf), param_factory=IntPar)
+        self.repeat = as_param(repeat, name + " repeats", limits=(0, inf), param_factory=IntPar)
         self.stack = stack
-        self.interface = upgrade_to_param(interface, name + " top interface", limits=(0, inf))
+        self.interface = as_param(interface, name + " top interface", limits=(0, inf))
 
     def to_dict(self):
         """

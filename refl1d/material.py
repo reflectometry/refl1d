@@ -47,18 +47,11 @@ from numpy import inf, NaN
 import periodictable
 from periodictable.constants import avogadro_number
 from bumps.parameter import Parameter, to_dict
-from bumps.util import dataclass, field
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
+from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
-@dataclass(init=False)
-class ScattererModel:
-    type: Literal["Scatterer"] = field(repr=False)
-    name: str = None
 
-class Scatterer(ScattererModel):
+@schema()
+class Scatterer:
     """
     A generic scatterer separates the lookup of the scattering factors
     from the calculation of the scattering length density.  This allows
@@ -71,7 +64,7 @@ class Scatterer(ScattererModel):
        expressions. It is not done directly to avoid circular dependencies
        between :mod:`model <refl1d.model>` and :mod:`material <refl1d.material>`.
     """
-    name = None
+    name: str = None
 
     def sld(self, sf):
         """
@@ -101,10 +94,7 @@ class Scatterer(ScattererModel):
 
 
 # ============================ No scatterer =============================
-@dataclass(init=False)
-class VacuumModel(ScattererModel):
-    type: Literal["Vacuum"]
-
+@schema(init=False)
 class Vacuum(Scatterer):
     """
     Empty layer
@@ -130,14 +120,8 @@ class Vacuum(Scatterer):
 
 
 # ============================ Unknown scatterer ========================
-@dataclass(repr=False)
-class SLDModel:
-    type: Literal["SLD"]
-    name: str
-    rho: Parameter
-    irho: Parameter
-
-class SLD(SLDModel, Scatterer):
+@schema(init=False)
+class SLD(Scatterer):
     r"""
     Unknown composition.
 
@@ -156,11 +140,15 @@ class SLD(SLDModel, Scatterer):
     rare earths, show wavelength dependence for neutrons, and so
     time-of-flight measurements should not be fit with a fixed SLD scatterer.
     """
+    name: str
+    rho: Parameter
+    irho: Parameter
+
     def __init__(self, name="SLD", rho=0, irho=0):
-        from .probe import upgrade_to_param
+        from .probe import as_param
         self.name = name
-        self.rho = upgrade_to_param(rho, name+" rho")
-        self.irho = upgrade_to_param(irho, name+" irho")
+        self.rho = as_param(rho, name+" rho")
+        self.irho = as_param(irho, name+" irho")
 
     def parameters(self):
         return {'rho':self.rho, 'irho':self.irho}

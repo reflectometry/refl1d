@@ -16,15 +16,10 @@ import traceback
 import json
 from warnings import warn
 
-try:
-    from typing import Union, List, Optional, Literal
-except:
-    from typing import Union, List, Optional
-    from typing_extensions import Literal
 import numpy as np
 from bumps import parameter
 from bumps.parameter import Parameter, to_dict
-from bumps.util import dataclass
+from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
 from . import material, profile
 from . import __version__
@@ -313,18 +308,9 @@ class ExperimentBase(object):
             self.probe.save(filename=basename+"-refl-interp.dat",
                             theory=theory)
 
-@dataclass
-class ExperimentModel:
-    name: str
-    sample: model.Stack
-    probe: Union[probe.Probe, probe.PolarizedNeutronProbe]
-    roughness_limit: float
-    dz: Union[float, Literal[None]]
-    dA: Union[float, Literal[None]]
-    step_interfaces: bool
-    interpolation: float
 
-class Experiment(ExperimentModel, ExperimentBase):
+@schema(init=False)
+class Experiment(ExperimentBase):
     """
     Theory calculator.  Associates sample with data, Sample plus data.
     Associate sample with measurement.
@@ -375,6 +361,15 @@ class Experiment(ExperimentModel, ExperimentBase):
 
     *smoothness* **DEPRECATED** This parameter is not used.
     """
+    name: str
+    sample: model.Stack
+    probe: Union[probe.Probe, probe.PolarizedNeutronProbe]
+    roughness_limit: float
+    dz: Union[float, Literal[None]]
+    dA: Union[float, Literal[None]]
+    step_interfaces: bool
+    interpolation: float
+
     profile_shift = 0
     def __init__(self, sample=None, probe=None, name=None,
                  roughness_limit=0, dz=None, dA=None,
