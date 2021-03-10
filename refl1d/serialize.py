@@ -3,6 +3,8 @@ import bumps.bounds
 import bumps.fitproblem
 
 from dataclasses import is_dataclass, fields
+from typing import List, Tuple, Union
+from types import GeneratorType
 
 def get_dataclass_defs(sources = (refl1d.names, refl1d.material, bumps.bounds, bumps.parameter)):
     class_defs = {}
@@ -23,16 +25,20 @@ class Deserializer(object):
     def rehydrate(self, obj):
         if isinstance(obj, dict):
             obj = obj.copy()
+            has_type = 'type' in obj
             t = obj.pop('type', None)
             for key,value in obj.items():
                 obj[key] = self.rehydrate(value)
                 #print(key)
-            if t in self.class_defs:
+            if not has_type:
+                return obj
+            elif t in self.class_defs:
                 hydrated = self.instantiate(t, obj)
                 return hydrated
             else:
+                # there is a type, but it is not found...
                 raise ValueError("type %s not found!" % t, obj)
-                return obj
+                
         elif isinstance(obj, list):
             return [self.rehydrate(v) for v in obj]
         elif isinstance(obj, tuple):
@@ -66,9 +72,9 @@ def from_dict(serialized):
 import copy
 import numpy as np
 
-def to_dict(obj):
+def to_dict(obj, obj_type=None):
     if is_dataclass(obj):
-        return dict([(f.name, to_dict(getattr(obj, f.name))) for f in fields(obj)])
+        return dict([(f.name, to_dict(getattr(obj, f.name), obj_type=f.type)) for f in fields(obj)])
         # result = [('type', obj.__class__.__name__)]
         # for f in fields(obj):
         #     if f.name != "type":
@@ -77,12 +83,18 @@ def to_dict(obj):
         # return dict(result)
     elif isinstance(obj, (list, tuple)):
         return type(obj)(to_dict(v) for v in obj)
+    elif isinstance(obj, GeneratorType):
+        return list(to_dict(v) for v in obj)
+    # elif isinstance(obj, GeneratorType) and issubclass(obj_type, Tuple):
+    #     return tuple(to_dict(v) for v in obj)
     elif isinstance(obj, dict):
         return type(obj)((to_dict(k), to_dict(v))
                           for k, v in obj.items())
-    elif isinstance(obj, np.ndarray):
+    elif isinstance(obj, np.ndarray) and obj.dtype.kind in ['f', 'i']:
         #return dict(type="numpy.ndarray", dtype=obj.dtype.name, values=obj.tolist())
         return obj.tolist()
+    elif isinstance(obj, np.ndarray) and obj.dtype.kind == 'O':
+        return to_dict(obj.tolist())
     elif isinstance(obj, float) or isinstance(obj, int) or isinstance(obj, str) or obj is None:
         return obj
     else:

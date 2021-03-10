@@ -42,15 +42,16 @@ the end, sld is just the returned scattering factors times density.
 """
 __all__ = ['Material', 'Mixture', 'SLD', 'Vacuum', 'Scatterer', 'ProbeCache']
 
+from refl1d.util import as_param
 import numpy as np
 from numpy import inf, NaN
 import periodictable
 from periodictable.constants import avogadro_number
-from bumps.parameter import Parameter, to_dict
+from bumps.parameter import Operator, Parameter, UnaryOperator, to_dict
 from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
+from periodictable.formulas import Formula as BaseFormula
 
 
-@schema()
 class Scatterer:
     """
     A generic scatterer separates the lookup of the scattering factors
@@ -64,7 +65,7 @@ class Scatterer:
        expressions. It is not done directly to avoid circular dependencies
        between :mod:`model <refl1d.model>` and :mod:`material <refl1d.material>`.
     """
-    name: str = None
+    name: str
 
     def sld(self, sf):
         """
@@ -99,10 +100,10 @@ class Vacuum(Scatterer):
     """
     Empty layer
     """
-    name = 'air'
+    name: str
 
     def __init__(self, *args, **kw):
-        pass
+        self.name = "air"
 
     def parameters(self):
         return []
@@ -165,7 +166,13 @@ class SLD(Scatterer):
         return self.rho.value, self.irho.value
 
 # ============================ Substances =============================
+# TODO: fix and use the real (circular) type definition:
+# FormulaStructure = Tuple['FormulaUnit']
+# FormulaUnit = Tuple[float, Union[str, FormulaStructure]]
+# still have to convert Element to/from string repr
+# ELEMENTS = Enum('elements', [(e.name, e.symbol) for e in periodictable.elements._element.values()])
 
+@schema()
 class Material(Scatterer):
     """
     Description of a solid block of material.
@@ -210,16 +217,27 @@ class Material(Scatterer):
     You can change density representation by calling *material.fitby(type)*.
 
     """
-    def __init__(self, formula=None, name=None, use_incoherent=False,
-                 density=None, natural_density=None,
-                 fitby='bulk_density', value=None):
-        self.formula = periodictable.formula(formula, density=density,
-                                             natural_density=natural_density)
-        self.name = name if name is not None else str(self.formula)
-        self.use_incoherent = use_incoherent
-        self.fitby(type=fitby, value=value)
+    name: str
+    formula: str # Formula
+    formula_density: float
+    formula_natural_density: Union[float, Literal[None]]
+    density: Union[Operator, UnaryOperator]
+    value: Parameter
+    fitby: Union[Literal['bulk_density', 'number_density', 'natural_density', 'relative_density', 'cell_volume']] = 'bulk_density'
+    use_incoherent: bool = False
 
-    def fitby(self, type='bulk_density', value=None):
+    def __init__(self, formula=None, name=None, use_incoherent=False,
+                 formula_density=None, formula_natural_density=None,
+                 fitby='bulk_density', value=None):
+        self._formula = periodictable.formula(formula, density=formula_density,
+                                             natural_density=formula_natural_density)
+        self.formula_density = formula_density
+        self.formula_natural_density = formula_natural_density
+        self.name = name if name is not None else str(self._formula)
+        self.use_incoherent = use_incoherent
+        self._fitby(type=fitby, value=value)
+
+    def _fitby(self, type='bulk_density', value=None):
         """
         Specify the fitting parameter to use for material density.
 
@@ -254,39 +272,27 @@ class Material(Scatterer):
             for *density* is another alternative.
         """
 
-        # Clean out old parameter
-        for attr in ('bulk_density', 'natural_density', 'cell_volume',
-                     'relative_density', 'number_density'):
-            try:
-                delattr(self, attr)
-            except Exception:
-                pass
-
-        # Put in new parameters
         if type == 'bulk_density':
             if value is None:
-                value = self.formula.density
-            self.bulk_density = Parameter.default(
-                value, name=self.name+" density", limits=(0, inf))
-            self.density = self.bulk_density
+                value = self._formula.density
+            self.value = as_param(value, self.name+" density", limits=(0, inf))
+            self.density = self.value
         elif type == "number_density":
             if value is None:
-                value = avogadro_number / self.formula.mass * self.formula.density
-            self.number_density = Parameter.default(
-                value, name=self.name+" number density", limits=(0, inf))
-            self.density = self.number_density / avogadro_number * self.formula.mass
+                value = avogadro_number / self._formula.mass * self._formula.density
+            name = self.name+" number density"
+            self.value = as_param(value, self.name+" number density", limits=(0, inf))
+            self.density = self.value / avogadro_number * self._formula.mass
         elif type == 'natural_density':
             if value is None:
-                value = self.formula.natural_density
-            self.natural_density = Parameter.default(
-                value, name=self.name+" nat. density", limits=(0, inf))
-            self.density = self.natural_density / self.formula.natural_mass_ratio()
+                value = self._formula.natural_density
+            self.value = as_param(value, self.name+" nat. density", limits=(0, inf))
+            self.density = self.value / self._formula.natural_mass_ratio()
         elif type == 'relative_density':
             if value is None:
                 value = 1
-            self.relative_density = Parameter.default(
-                value, name=self.name+" rel. density", limits=(0, inf))
-            self.density = self.formula.density*self.relative_density
+            self.value = as_param(value, name=self.name+" rel. density", limits=(0, inf))
+            self.density = self._formula.density*self.value
         ## packing factor code should be correct, but radii are unreliable
         #elif type is 'packing_factor':
         #    max_density = self.formula.mass/self.formula.volume(packing_factor=1)
@@ -300,21 +306,21 @@ class Material(Scatterer):
             # Mass is in grams.
             # Volume is in A^3 = 1e24*cm^3.
             if value is None:
-                value = (1e24*self.formula.molecular_mass)/self.formula.density
-            self.cell_volume = Parameter.default(
-                value, name=self.name+" cell volume", limits=(0, inf))
-            self.density = (1e24*self.formula.molecular_mass)/self.cell_volume
+                value = (1e24*self._formula.molecular_mass)/self._formula.density
+            self.value = as_param(value, self.name+" cell volume", limits=(0, inf))
+            self.density = (1e24*self._formula.molecular_mass)/self.value
         else:
             raise ValueError("Unknown density calculation type '%s'"%type)
+        self.fitby = type
 
     def parameters(self):
-        return {'density': self.density}
+        return {'density': self.density, "value": self.value}
 
     def to_dict(self):
         return to_dict({
             'type': type(self).__name__,
             'name': self.name,
-            'formula': str(self.formula),
+            'formula': self.formula,
             'density': self.density,
             'use_incoherent': self.use_incoherent,
             # TODO: what about fitby, natural_density and cell_volume?
@@ -322,7 +328,7 @@ class Material(Scatterer):
 
     def sld(self, probe):
         rho, irho, incoh = probe.scattering_factors(
-            self.formula, density=self.density.value)
+            self._formula, density=self.density.value)
         if self.use_incoherent:
             raise NotImplementedError("incoherent scattering not supported")
             #irho += incoh

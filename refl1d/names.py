@@ -18,10 +18,10 @@ from bumps.parameter import Parameter, FreeVariables
 from bumps import pmath
 from bumps.pdfwrapper import PDF
 from bumps.fitproblem import FitProblem
-from bumps.fitproblem import MultiFitProblem  # deprecated
+#from bumps.fitproblem import MultiFitProblem  # deprecated
 
 from .experiment import Experiment, plot_sample, MixedExperiment
-from .fitproblem import BaseFitProblem
+from .fitproblem import BaseFitProblem, MultiFitProblem
 from .flayer import FunctionalProfile, FunctionalMagnetism
 from .material import SLD, Material, Compound, Mixture
 from .model import Slab, Stack

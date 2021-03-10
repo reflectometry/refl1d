@@ -211,13 +211,6 @@ class ExperimentBase(object):
         theory = self.reflectivity(resolution=True)
         self.probe.simulate_data(theory, noise=noise)
 
-    def _set_name(self, name):
-        self._name = name
-
-    def _get_name(self):
-        return self._name if self._name else self.probe.name
-    name = property(_get_name, _set_name)
-
     def save(self, basename):
         self.save_profile(basename)
         #self.save_staj(basename)
@@ -392,7 +385,7 @@ class Experiment(ExperimentBase):
         self._slabs = profile.Microslabs(num_slabs, dz=dz)
         self._probe_cache = material.ProbeCache(probe)
         self._cache = {}  # Cache calculated profiles/reflectivities
-        self._name = name
+        self.name = name if name is not None else probe.name
 
     @property
     def ismagnetic(self):

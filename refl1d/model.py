@@ -50,7 +50,7 @@ from .probe import as_param
 from .magnetism import BaseMagnetism
 from .util import as_param
 
-@schema(init=False)
+#@schema(init=False)
 class Layer: # Abstract base class
     """
     Component of a material description.
@@ -63,23 +63,20 @@ class Layer: # Abstract base class
         Magnetic profile anchored to the layer.
     """
     name: str
-    #thickness: Par
+    thickness: Par
     interface: Optional[Par] = None
-    #magnetism: Union[(Literal[None], *BaseMagnetism.__subclasses__())]
+    magnetism: Union[(Literal[None], *BaseMagnetism.__subclasses__())]
 
-    # Make magnetism a property so we can update the magnetism parameter
+    # Trap calls to set magnetism attr so we can update the magnetism parameter
     # names with the layer name when we assign magnetism to the layer
-    _magnetism = None
-    @property
-    def magnetism(self):
-        return self._magnetism
-    @magnetism.setter
-    def magnetism(self, magnetism):
-        self._magnetism = magnetism
-        if magnetism: magnetism.set_layer_name(str(self))
+    def __setattr__(self, name, value):
+       if name == 'magnetism' and value is not None:
+           value.set_layer_name(str(self))
+       object.__setattr__(self, name, value)
+    
     @property
     def ismagnetic(self):
-        return self._magnetism is not None
+        return self.magnetism is not None
 
     def constraints(self):
         """
@@ -214,9 +211,11 @@ class Slab(Layer):
     """
     A block of material.
     """
+    name: str
     thickness: Par
+    interface: Optional[Par] = None
     magnetism: Union[(Literal[None], *BaseMagnetism.__subclasses__())]
-    material: Union[tuple(material.Scatterer.__subclasses__())]
+    material: Union[material.SLD, material.Material, material.Vacuum]
 
     def __init__(self, material=None, thickness=0, interface=0, name=None,
                  magnetism=None):
@@ -273,30 +272,22 @@ class Stack(Layer):
     """
     name: str
     interface: Optional[Any]
-    layers: List[Union[tuple(Layer.__subclasses__()) + ('Repeat',)]] = field(init=False)
+    layers: List[Union[tuple(Layer.__subclasses__()) + ('Repeat',)]]
 
     def __init__(self, base=None, layers=None, name="Stack", interface=None):
         self.name = name
         self.interface = None
-        self.layers = []
+        self._layers = []
         if layers is not None and base is None:
             base = layers
         if base is not None:
             self.add(base)
         # TODO: can we make this a class variable?
+        self.__class__.layers = property(lambda self: self._layers)
 
     @property
     def ismagnetic(self):
         return any(p.ismagnetic for p in self._layers)
-
-    @property
-    def layers(self):
-        return self._layers
-    
-    @layers.setter
-    def layers(self, val):
-        if not hasattr(self, '_layers'):
-            self._layers = val
 
     def find(self, z):
         """

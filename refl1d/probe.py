@@ -217,6 +217,7 @@ class Probe:
         self.name = name
         self.filename = filename
         self.resolution = resolution
+        self.__class__.dQ = property(self._get_dQ, self._set_dQ)
 
     def _set_TLR(self, T, dT, L, dL, R, dR, dQ):
         #if L is None:
@@ -401,17 +402,17 @@ class Probe:
             del self.T, self.L
         self.Qo = Q
 
-    @property
-    def dQ(self):
+    @staticmethod
+    def _get_dQ(self):
         if self.sample_broadening.value == 0:
             dQ = self.dQo
         else:
             dQ = dQ_broadening(dQ=self.dQo, L=self.L, T=self.T, dT=self.dT,
                                width=self.sample_broadening.value)
         return dQ
-
-    @dQ.setter
-    def dQ(self, dQ):
+        
+    @staticmethod
+    def _set_dQ(self, dQ):
         self.dQo = dQ
 
     @property
@@ -1625,8 +1626,8 @@ class PolarizedNeutronProbe:
     polarized = True
     
     def __init__(self, xs=None, name=None, Aguide=BASE_GUIDE_ANGLE, H=0):
-        self.xs = xs
-
+        self._xs = xs
+        self.__class__.xs = property(lambda self: self._xs)
         if name is None and self.xs[0] is not None:
             name = self.xs[0].name
         self.name = name
@@ -1638,15 +1639,8 @@ class PolarizedNeutronProbe:
         self.H = H if isinstance(H, BaseParameter) else Parameter.default(H, name="H"+spec)
         self.Aguide = Aguide if isinstance(Aguide, BaseParameter) else Parameter.default(Aguide, name="Aguide"+spec,
                                         limits=[-360, 360])
-    @property
-    def xs(self):
-        return self._xs  # Don't let user replace xs
-
-    @xs.setter
-    def xs(self, val):
-        if not hasattr(self, '_xs'): # set only once, in __init__
-            self._xs = val
-
+        
+    
     @property
     def pp(self):
         return self.xs[3]
