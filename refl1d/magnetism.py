@@ -502,7 +502,7 @@ class FreeMagnetismInterface(BaseMagnetism):
             tabove, name=name + " tabove", limits=(0, 360))
         if len(self.dz) != len(self.drhoM):
             raise ValueError("Need one dz for each drhoM")
-        if len(self.dthetaM) > 0 and len(self.drhoM) != len(self.dthetaM):
+        if 0 < len(self.dthetaM) != len(self.drhoM):
             raise ValueError("Need one dthetaM for each drhoM")
 
     def parameters(self):
@@ -532,16 +532,16 @@ class FreeMagnetismInterface(BaseMagnetism):
         rhoM = hstack((0, cumsum(asarray([v.value for v in self.drhoM], 'd'))))
         # AJC added since without the line below FreeMagnetismInterface
         # does not initialise propoerly - fixes strange behaviour at drho=0 on end point
-        if rhoM[-1] == 0:
-            rhoM[-1] = 1
-        if rhoM[-1] > 0:
-            rhoM *= 1/rhoM[-1]
+        if rhoM[-1] == 0: rhoM[-1] = 1
+        # if rhoM[-1] > 0:
+        rhoM *= 1/rhoM[-1]
         PrhoM = clip(monospline(z, rhoM, Pz), 0, 1)
 
         if self.dthetaM:
             thetaM = hstack((0, cumsum(asarray([v.value for v in self.dthetaM], 'd'))))
-            if thetaM[-1] > 0:
-                thetaM *= 1/thetaM[-1]
+            if thetaM[-1] == 0: thetaM[-1] = 1
+            # if thetaM[-1] > 0:
+            thetaM *= 1/thetaM[-1]
             PthetaM = clip(monospline(z, thetaM, Pz), 0, 1)
         else:
             # AJC changed from len(z) to PrhoM - since PrhoM is the length of the vector
