@@ -508,6 +508,10 @@ class FreeMagnetismInterface(BaseMagnetism):
         z *= thickness/z[-1]
 
         rhoM = hstack((0, cumsum(asarray([v.value for v in self.drhoM], 'd'))))
+        # AJC added since without the line below FreeMagnetismInterface
+        # does not initialise propoerly - fixes strange behaviour at drho=0 on end point
+        if rhoM[-1] == 0:
+            rhoM[-1] = 1
         if rhoM[-1] > 0:
             rhoM *= 1/rhoM[-1]
         PrhoM = clip(monospline(z, rhoM, Pz), 0, 1)
@@ -518,7 +522,9 @@ class FreeMagnetismInterface(BaseMagnetism):
                 thetaM *= 1/thetaM[-1]
             PthetaM = clip(monospline(z, thetaM, Pz), 0, 1)
         else:
-            PthetaM = np.linspace(0., 1., len(z))
+            # AJC changed from len(z) to PrhoM - since PrhoM is the length of the vector
+            # we want PthetaM to match - otherwise slabs.add_magnetism throws an error
+            PthetaM = np.linspace(0., 1., len(PrhoM))
 
         return PrhoM, PthetaM
 
