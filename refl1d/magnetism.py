@@ -513,7 +513,7 @@ class FreeMagnetismInterface(BaseMagnetism):
             tabove, name=name + " tabove", limits=(0, 360))
         if len(self.dz) != len(self.drhoM):
             raise ValueError("Need one dz for each drhoM")
-        if len(self.dthetaM) > 0 and len(self.drhoM) != len(self.dthetaM):
+        if 0 < len(self.dthetaM) != len(self.drhoM):
             raise ValueError("Need one dthetaM for each drhoM")
 
     def parameters(self):
