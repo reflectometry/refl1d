@@ -42,12 +42,11 @@ the end, sld is just the returned scattering factors times density.
 """
 __all__ = ['Material', 'Mixture', 'SLD', 'Vacuum', 'Scatterer', 'ProbeCache']
 
-from refl1d.util import as_param
 import numpy as np
 from numpy import inf, NaN
 import periodictable
 from periodictable.constants import avogadro_number
-from bumps.parameter import Operator, Parameter, UnaryOperator, to_dict
+from bumps.parameter import Operator, Parameter, UnaryOperator, PARAMETER_TYPES, to_dict
 from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 from periodictable.formulas import Formula as BaseFormula
 
@@ -142,14 +141,13 @@ class SLD(Scatterer):
     time-of-flight measurements should not be fit with a fixed SLD scatterer.
     """
     name: str
-    rho: Parameter
-    irho: Parameter
+    rho: PARAMETER_TYPES
+    irho: PARAMETER_TYPES
 
-    def __init__(self, name="SLD", rho=0, irho=0):
-        from .probe import as_param
+    def __init__(self, name="SLD", rho: Union[float, PARAMETER_TYPES]=0, irho=0):
         self.name = name
-        self.rho = as_param(rho, name+" rho")
-        self.irho = as_param(irho, name+" irho")
+        self.rho = Parameter.default(rho, name=name+" rho")
+        self.irho = Parameter.default(irho, name=name+" irho")
 
     def parameters(self):
         return {'rho':self.rho, 'irho':self.irho}
@@ -222,7 +220,7 @@ class Material(Scatterer):
     formula_density: float
     formula_natural_density: Union[float, Literal[None]]
     density: Union[Operator, UnaryOperator]
-    value: Parameter
+    value: PARAMETER_TYPES
     fitby: Union[Literal['bulk_density', 'number_density', 'natural_density', 'relative_density', 'cell_volume']] = 'bulk_density'
     use_incoherent: bool = False
 
@@ -275,23 +273,26 @@ class Material(Scatterer):
         if type == 'bulk_density':
             if value is None:
                 value = self._formula.density
-            self.value = as_param(value, self.name+" density", limits=(0, inf))
+            self.value =  Parameter.default(
+                value, name=self.name+" density", limits=(0, inf))
             self.density = self.value
         elif type == "number_density":
             if value is None:
                 value = avogadro_number / self._formula.mass * self._formula.density
-            name = self.name+" number density"
-            self.value = as_param(value, self.name+" number density", limits=(0, inf))
+            self.value = Parameter.default(
+                value, name=self.name+" number density", limits=(0, inf))
             self.density = self.value / avogadro_number * self._formula.mass
         elif type == 'natural_density':
             if value is None:
                 value = self._formula.natural_density
-            self.value = as_param(value, self.name+" nat. density", limits=(0, inf))
+            self.value = Parameter.default(
+                value, name=self.name+" nat. density", limits=(0, inf))
             self.density = self.value / self._formula.natural_mass_ratio()
         elif type == 'relative_density':
             if value is None:
                 value = 1
-            self.value = as_param(value, name=self.name+" rel. density", limits=(0, inf))
+            self.value = Parameter.default(
+                value, name=self.name+" rel. density", limits=(0, inf))
             self.density = self._formula.density*self.value
         ## packing factor code should be correct, but radii are unreliable
         #elif type is 'packing_factor':
@@ -307,7 +308,8 @@ class Material(Scatterer):
             # Volume is in A^3 = 1e24*cm^3.
             if value is None:
                 value = (1e24*self._formula.molecular_mass)/self._formula.density
-            self.value = as_param(value, self.name+" cell volume", limits=(0, inf))
+            self.value = Parameter.default(
+                value, name=self.name+" cell volume", limits=(0, inf))
             self.density = (1e24*self._formula.molecular_mass)/self.value
         else:
             raise ValueError("Unknown density calculation type '%s'"%type)

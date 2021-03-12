@@ -51,7 +51,7 @@ from typing import Optional, Any, Union
 from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
 from periodictable import nsf, xsf
-from bumps.parameter import Parameter, Constant, BaseParameter, to_dict
+from bumps.parameter import Parameter, Constant, BaseParameter, PARAMETER_TYPES, to_dict
 from bumps.plotutil import coordinated_colors, auto_shift
 from bumps.data import parse_multi, strip_quotes
 
@@ -61,7 +61,7 @@ from .resolution import QL2T, QT2L, TL2Q, dQdL2dT, dQdT2dLoL, dTdL2dQ
 from .resolution import sigma2FWHM, FWHM2sigma, dQ_broadening
 from .stitch import stitch
 from .reflectivity import convolve, BASE_GUIDE_ANGLE
-from .util import asbytes, as_param
+from .util import asbytes
 
 PROBE_KW = ('T', 'dT', 'L', 'dL', 'data', 'name', 'filename',
             'intensity', 'background', 'back_absorption', 'sample_broadening',
@@ -157,11 +157,11 @@ class Probe:
     """
     name: str
     filename: str
-    intensity: Parameter
-    background: Parameter
-    back_absorption: Parameter
-    theta_offset: Parameter
-    sample_broadening: Parameter
+    intensity: PARAMETER_TYPES
+    background: PARAMETER_TYPES
+    back_absorption: PARAMETER_TYPES
+    theta_offset: PARAMETER_TYPES
+    sample_broadening: PARAMETER_TYPES
     back_reflectivity: bool
     R: Optional[Any] = None
     dR: Optional[Any] = 0
@@ -200,11 +200,16 @@ class Probe:
         if not name and filename:
             name = os.path.splitext(os.path.basename(filename))[0]
         qualifier = " "+name if name is not None else ""
-        self.intensity = as_param(intensity, "intensity" + qualifier)
-        self.background = as_param(background, "background" + qualifier, limits=[0., inf])
-        self.back_absorption = as_param(back_absorption, "back_absorption" + qualifier, limits=[0., 1.])
-        self.theta_offset = as_param(theta_offset, "theta_offset"+qualifier)
-        self.sample_broadening = as_param(sample_broadening, "sample_broadening"+qualifier)
+        self.intensity = Parameter.default(
+            intensity, name="intensity"+qualifier)
+        self.background = Parameter.default(
+            background, name="background"+qualifier, bounds=[0., inf])
+        self.back_absorption = Parameter.default(
+            back_absorption, name="back_absorption"+qualifier, bounds=[0., 1.])
+        self.theta_offset = Parameter.default(
+            theta_offset, name="theta_offset"+qualifier)
+        self.sample_broadening = Parameter.default(
+            sample_broadening, name="sample_broadening"+qualifier)
         self.back_reflectivity = back_reflectivity
         if data is not None:
             R, dR = data

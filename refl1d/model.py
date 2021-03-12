@@ -42,13 +42,12 @@ import periodictable.xsf as xsf
 import periodictable.nsf as nsf
 
 from bumps.parameter import (
+    PARAMETER_TYPES, BaseParameter as BasePar,
     Parameter as Par, IntegerParameter as IntPar, Function, to_dict)
 from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
-from . import material
-from .probe import as_param
+from . import material as mat
 from .magnetism import BaseMagnetism
-from .util import as_param
 
 #@schema(init=False)
 class Layer: # Abstract base class
@@ -63,8 +62,8 @@ class Layer: # Abstract base class
         Magnetic profile anchored to the layer.
     """
     name: str
-    thickness: Par
-    interface: Optional[Par] = None
+    thickness: PARAMETER_TYPES
+    interface: Optional[PARAMETER_TYPES] = None
     magnetism: Union[(Literal[None], *BaseMagnetism.__subclasses__())]
 
     # Trap calls to set magnetism attr so we can update the magnetism parameter
@@ -212,10 +211,10 @@ class Slab(Layer):
     A block of material.
     """
     name: str
-    thickness: Par
-    interface: Optional[Par] = None
+    thickness: PARAMETER_TYPES
+    interface: Optional[PARAMETER_TYPES] = None
     magnetism: Union[(Literal[None], *BaseMagnetism.__subclasses__())]
-    material: Union[material.SLD, material.Material, material.Vacuum]
+    material: Union[mat.SLD, mat.Material, mat.Vacuum]
 
     def __init__(self, material=None, thickness=0, interface=0, name=None,
                  magnetism=None):
@@ -223,8 +222,10 @@ class Slab(Layer):
             name = material.name
         self.name = name
         self.material = material
-        self.thickness = as_param(thickness, name+" thickness", limits=(0, inf))
-        self.interface = as_param(interface, name+" interface", limits=(0, inf))
+        self.thickness = Par.default(thickness, limits=(0, inf),
+                                     name=name+" thickness")
+        self.interface = Par.default(interface, limits=(0, inf),
+                                     name=name+" interface")
         self.magnetism = magnetism
 
     def parameters(self):
@@ -505,7 +506,7 @@ class Stack(Layer):
             target, count = idx, 1
 
         # Check if lookup by material or by name
-        if isinstance(target, material.Scatterer):
+        if isinstance(target, mat.Scatterer):
             sequence = self._find_by_material(target)
         elif isinstance(target, str):
             sequence = self._find_by_name(target)
@@ -594,7 +595,7 @@ class Stack(Layer):
 def _check_layer(el):
     if isinstance(el, Layer):
         return el
-    elif isinstance(el, material.Scatterer):
+    elif isinstance(el, mat.Scatterer):
         return Slab(el)
     else:
         raise TypeError("Can only stack materials and layers, not %s"%el)
@@ -623,9 +624,11 @@ class Repeat(Layer):
         if interface is None: interface = stack[-1].interface.value
         self.magnetism = magnetism
         self.name = name
-        self.repeat = as_param(repeat, name + " repeats", limits=(0, inf), param_factory=IntPar)
+        self.repeat = IntPar(repeat, bounds=(0, inf),
+                             name=name + " repeats")
         self.stack = stack
-        self.interface = as_param(interface, name + " top interface", limits=(0, inf))
+        self.interface = Par.default(interface, bounds=(0, inf),
+                                     name=name+" top interface")
 
     def to_dict(self):
         """
@@ -749,7 +752,7 @@ def _material_stacker():
                     magnetism=magnetism)
         return slab
 
-    material.Scatterer.__or__ = __or__
-    material.Scatterer.__call__ = __call__
+    mat.Scatterer.__or__ = __or__
+    mat.Scatterer.__call__ = __call__
 _material_stacker()
 
