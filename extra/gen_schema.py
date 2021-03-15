@@ -1,8 +1,8 @@
 import os
 os.environ['BUMPS_USE_PYDANTIC'] = "True"
 
-from pydantic.schema import get_model
-from bumps.parameter import UnaryExpression, Operator
+from pydantic.schema import get_model, schema as make_schema
+from bumps.parameter import UnaryExpression, Expression
 from refl1d.names import *
 from refl1d.model import Repeat, Stack
 
@@ -13,10 +13,10 @@ base_model = get_model(MultiFitProblem)
 #     'from __future__ import annotations'
 # and in python 4.0+ presumably that can be removed as well.
 to_resolve = [
-    UnaryExpression, Operator,
+    UnaryExpression, Expression,
     Repeat, Stack
 ]
 for module in to_resolve:
     get_model(module).update_forward_refs()
 
-schema = base_model.schema()
+schema = make_schema([MultiFitProblem])
