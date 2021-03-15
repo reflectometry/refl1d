@@ -6,7 +6,8 @@ from __future__ import division, with_statement
 import numpy as np
 from numpy import (diff, hstack, sqrt, searchsorted, asarray, cumsum,
                    inf, nonzero, linspace, sort, isnan, clip)
-from bumps.parameter import Parameter as Par, Function as ParFunction, to_dict
+from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
+from bumps.parameter import Parameter as Par, Function as ParFunction, PARAMETER_TYPES, to_dict
 from bumps.mono import monospline, count_inflections
 
 from . import util
@@ -103,7 +104,7 @@ def inflections(dx, dy):
     y = hstack((0, cumsum(dy)))
     return count_inflections(x, y)
 
-
+@schema()
 class FreeInterface(Layer):
     """
     A freeform section of the sample modeled with monotonic splines.
@@ -111,6 +112,15 @@ class FreeInterface(Layer):
     Layers have a slope of zero at the ends, so the automatically blend
     with slabs.
     """
+    name: Optional[str]
+    below: Optional[Any]
+    above: Optional[Any]
+    thickness: PARAMETER_TYPES
+    interface: PARAMETER_TYPES
+    dz: List[Union[float, PARAMETER_TYPES]]
+    dp: List[Union[float, PARAMETER_TYPES]]
+    inflections: List[Any]
+
     def __init__(self, thickness=0, interface=0,
                  below=None, above=None,
                  dz=None, dp=None, name="Interface"):
