@@ -384,7 +384,7 @@ def _draw_overplot(group, index, label):
 
 def _profiles_contour(profiles, contours=CONTOURS, npoints=200):
     for model, group in profiles.items():
-        name = model.name
+        name = model.name if model.name is not None else 'model'
         absorbing = any((L[2] > 1e-4).any() for L in group)
         magnetic = (len(group[0]) > 3)
         # Find limits of all profiles
