@@ -19,6 +19,7 @@ from warnings import warn
 import numpy as np
 from bumps import parameter
 from bumps.parameter import Parameter, to_dict
+from bumps.fitproblem import Fitness
 from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
 from . import material, profile
@@ -27,7 +28,7 @@ from .reflectivity import reflectivity_amplitude as reflamp
 from .reflectivity import magnetic_amplitude as reflmag
 from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
 from . import model
-from . import probe
+from .probe import Probe, NeutronProbe, PolarizedNeutronProbe
 #print("Using pure python reflectivity calculator")
 #from .abeles import refl as reflamp
 from .util import asbytes
@@ -45,8 +46,8 @@ def plot_sample(sample, instrument=None, roughness_limit=0):
                             roughness_limit=roughness_limit)
     experiment.plot()
 
-class ExperimentBase(object):
-    probe = None # type: probe.Probe
+class ExperimentBase(Fitness):
+    probe = None # type: Optional[Probe]
     interpolation = 0
     _probe_cache = None
     _substrate = None
@@ -355,8 +356,8 @@ class Experiment(ExperimentBase):
     *smoothness* **DEPRECATED** This parameter is not used.
     """
     name: str
-    sample: model.Stack
-    probe: Union[probe.Probe, probe.PolarizedNeutronProbe]
+    sample: Optional[model.Stack]
+    probe: Union[Probe, PolarizedNeutronProbe]
     roughness_limit: float
     dz: Union[float, Literal[None]]
     dA: Union[float, Literal[None]]
@@ -364,7 +365,7 @@ class Experiment(ExperimentBase):
     interpolation: float
 
     profile_shift = 0
-    def __init__(self, sample=None, probe=None, name=None,
+    def __init__(self, sample: Optional[model.Stack]=None, probe=None, name=None,
                  roughness_limit=0, dz=None, dA=None,
                  step_interfaces=None, smoothness=None,
                  interpolation=0):
