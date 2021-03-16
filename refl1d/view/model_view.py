@@ -172,12 +172,12 @@ class ModelView(wx.Panel):
                 self.profiles.append( (name, exp, idx) )
         if isinstance(self.model,MultiFitProblem):
             for i,p in enumerate(self.model.models):
-                if hasattr(p.fitness,"reflectivity"):
-                    name = p.fitness.name
+                if hasattr(p, "reflectivity"):
+                    name = p.name
                     if not name: name = "M%d"%(i+1)
-                    add_profiles(name, p.fitness, i)
+                    add_profiles(name, p, i)
         else:
-            add_profiles("", self.model.fitness, -1)
+            add_profiles("", self.model, -1)
 
         self.profile_selector.Clear()
         if len(self.profiles) > 1:
