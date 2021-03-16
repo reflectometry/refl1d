@@ -15,7 +15,7 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
 from bumps.gui.util import EmbeddedPylab
-from bumps.fitproblem import MultiFitProblem
+from bumps.fitproblem import FitProblem
 
 from refl1d.probe import Probe
 
@@ -197,7 +197,7 @@ class DataView(wx.Panel):
             self._cancel_calculate = False
 
             # Preform the calculation
-            if isinstance(self.problem,MultiFitProblem):
+            if isinstance(self.problem,FitProblem):
                 #print "n=",len(self.problem.models)
                 for p in self.problem.models:
                     if hasattr(p, 'reflectivity'):
@@ -221,7 +221,7 @@ class DataView(wx.Panel):
                 plt.clf() # clear the canvas
                 #shift=20 if self.view == 'log' else 0
                 shift=0
-                if isinstance(self.problem,MultiFitProblem):
+                if isinstance(self.problem,FitProblem):
                     for _,p in enumerate(self.problem.models):
                         if hasattr(p, 'reflectivity'):
                             p.plot_reflectivity(view=self.view,

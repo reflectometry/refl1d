@@ -381,7 +381,7 @@ To produce plots, you will need access to the data and the theory.  This
 can be complex depending on how many models you are fitting and how many
 datasets there are per model.  For :class:`refl1d.fitproblem.FitProblem`
 models, the :class:`refl1d.experiment.Experiment` object is referenced
-by *problem.fitness*.  For :class:`refl1d.fitproblem.MultiFitProblem` models,
+by *problem.fitness*.  For :class:`refl1d.fitproblem.FitProblem` models,
 you need to use *problem.models[k].fitness* to access the experiment for
 model *k*.  Profiles and reflectivity theory are returned from methods
 in experiment.  The :class:`refl1d.probe.Probe` data for the experiment is

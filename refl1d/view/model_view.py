@@ -14,7 +14,7 @@ from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wxagg import FigureManager
 from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 
-from bumps.fitproblem import MultiFitProblem
+from bumps.fitproblem import FitProblem
 from bumps.gui import signal
 
 from refl1d.experiment import MixedExperiment
@@ -170,7 +170,7 @@ class ModelView(wx.Panel):
                     self.profiles.append( (name+chr(ord("a")+i), p, idx) )
             else:
                 self.profiles.append( (name, exp, idx) )
-        if isinstance(self.model,MultiFitProblem):
+        if isinstance(self.model,FitProblem):
             for i,p in enumerate(self.model.models):
                 if hasattr(p, "reflectivity"):
                     name = p.name
@@ -204,7 +204,7 @@ class ModelView(wx.Panel):
             signal.update_parameters(model=self.model)
         def force_recalc():
             self.model.model_update()
-        if isinstance(self.model,MultiFitProblem):
+        if isinstance(self.model,FitProblem):
             self.model.set_active_model(idx)
         self.profile.set_experiment(experiment,
                                     force_recalc=force_recalc,

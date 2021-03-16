@@ -6,7 +6,7 @@ from bumps.parameter import UnaryExpression, Expression
 from refl1d.names import *
 from refl1d.model import Repeat, Stack
 
-base_model = get_model(MultiFitProblem)
+base_model = get_model(FitProblem)
 
 # resolve circular dependencies and self-references
 # TODO: this will be unnecessary in python 3.7+ with
@@ -19,4 +19,4 @@ to_resolve = [
 for module in to_resolve:
     get_model(module).update_forward_refs()
 
-schema = make_schema([MultiFitProblem])
+schema = make_schema([FitProblem])
