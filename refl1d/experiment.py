@@ -18,7 +18,7 @@ from warnings import warn
 
 import numpy as np
 from bumps import parameter
-from bumps.parameter import Parameter, to_dict
+from bumps.parameter import Parameter, Constraint
 from bumps.fitproblem import Fitness
 from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
@@ -220,6 +220,7 @@ class ExperimentBase(Fitness):
 
     def save_json(self, basename):
         """ Save the experiment as a json file """
+        from .serialize import to_dict
         try:
             experiment = to_dict(self)
             experiment['refl1d'] = __version__
@@ -368,7 +369,7 @@ class Experiment(ExperimentBase):
     def __init__(self, sample: Optional[model.Stack]=None, probe=None, name=None,
                  roughness_limit=0, dz=None, dA=None,
                  step_interfaces=None, smoothness=None,
-                 interpolation=0):
+                 interpolation=0, constraints=None):
         # Note: smoothness ignored
         self.sample = sample
         self._substrate = self.sample[0].material
@@ -387,6 +388,7 @@ class Experiment(ExperimentBase):
         self._probe_cache = material.ProbeCache(probe)
         self._cache = {}  # Cache calculated profiles/reflectivities
         self.name = name if name is not None else probe.name
+        self.constraints = constraints
 
     @property
     def ismagnetic(self):
