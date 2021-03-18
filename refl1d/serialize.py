@@ -8,7 +8,9 @@ from types import GeneratorType
 from . import names, material, model, magnetism, probe, experiment
 from bumps import bounds, parameter
 
-def get_dataclass_defs(sources = (names, material, model, magnetism, probe, experiment, bounds, parameter)):
+CLASS_SOURCES = (names, material, model, magnetism, probe, experiment, bounds, parameter)
+
+def get_dataclass_defs(sources = CLASS_SOURCES):
     class_defs = {}
     for source in sources:
         names = dir(source)
@@ -16,13 +18,11 @@ def get_dataclass_defs(sources = (names, material, model, magnetism, probe, expe
         class_defs.update(dataclasses)
     return class_defs
 
-CLASS_DEFS = get_dataclass_defs()
-
 class Deserializer(object):
-    def __init__(self, class_defs=CLASS_DEFS):
+    def __init__(self, sources=CLASS_SOURCES):
+        self.class_defs = get_dataclass_defs(sources)
         self.refs = {}
         self.deferred = {}
-        self.class_defs = class_defs
 
     def rehydrate(self, obj):
         if isinstance(obj, dict):
