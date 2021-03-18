@@ -11,6 +11,7 @@ __all__ = ["data_view", "model_view", "new_model", "calc_errors", "show_errors"]
 import numpy as np
 
 from . import names as refl
+from . import __version__
 from .errors import calc_errors, show_errors
 
 # These are names used by the driver
@@ -45,8 +46,26 @@ def load_model(filename):
             for f in zf.filelist:
                 if f.filename.endswith('.py'):
                     return load_problem(f.filename, options=options)
+    elif filename.endswith('.json'):
+        import json
+        from .serialize import from_dict
+        return from_dict(json.loads(open(filename, 'r').read()))
     else:
         return None
+
+def save_json(problem, basename):
+    import json
+    from .serialize import to_dict
+    try:
+        p = to_dict(problem)
+        #p['refl1d'] = __version__
+        json_file = basename + "-expt.json"
+        with open(json_file, 'w') as fid:
+            data = json.dumps(p)
+            fid.write(data)
+    except Exception:
+        traceback.print_exc()
+        warn("failed to create json structure for FitProblem")
 
 def new_model():
     stack = refl.silicon(0, 10) | refl.air
