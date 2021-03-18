@@ -1,4 +1,3 @@
-import refl1d.names
 import bumps.bounds
 import bumps.fitproblem
 
@@ -6,7 +5,10 @@ from dataclasses import is_dataclass, fields
 from typing import List, Tuple, Union
 from types import GeneratorType
 
-def get_dataclass_defs(sources = (refl1d.names, refl1d.material, bumps.bounds, bumps.parameter)):
+from . import names, material, model, magnetism, probe, experiment
+from bumps import bounds, parameter
+
+def get_dataclass_defs(sources = (names, material, model, magnetism, probe, experiment, bounds, parameter)):
     class_defs = {}
     for source in sources:
         names = dir(source)
