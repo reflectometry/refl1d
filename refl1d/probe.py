@@ -41,6 +41,7 @@ from __future__ import with_statement, division, print_function
 import os
 import json
 import warnings
+from enum import Enum
 
 import numpy as np
 from numpy import sqrt, pi, inf, sign, log
@@ -48,7 +49,7 @@ import numpy.random
 import numpy.fft
 from typing import Optional, Any, Union
 
-from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
+from bumps.util import field, field_desc, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
 from periodictable import nsf, xsf
 from bumps.parameter import Parameter, Constant, BaseParameter, PARAMETER_TYPES, to_dict
@@ -67,6 +68,10 @@ PROBE_KW = ('T', 'dT', 'L', 'dL', 'data', 'name', 'filename',
             'intensity', 'background', 'back_absorption', 'sample_broadening',
             'theta_offset', 'back_reflectivity', 'data')
 
+class Radiation(Enum):
+    """ type of radiation for probe """
+    neutron = "neutron"
+    xray = "xray"
 
 def make_probe(**kw):
     """
@@ -155,19 +160,20 @@ class Probe:
     large isotropic incoherent scattering cross section.
 
     """
-    name: str
-    filename: str
-    intensity: PARAMETER_TYPES
-    background: PARAMETER_TYPES
-    back_absorption: PARAMETER_TYPES
-    theta_offset: PARAMETER_TYPES
-    sample_broadening: PARAMETER_TYPES
-    back_reflectivity: bool
+    name: Optional[str] = None
+    filename: Optional[str] = None
+    radiation: Optional[Radiation] = None
+    intensity: PARAMETER_TYPES = 1.0
+    background: PARAMETER_TYPES = 0
+    back_absorption: PARAMETER_TYPES = 0
+    theta_offset: PARAMETER_TYPES = 0
+    sample_broadening: PARAMETER_TYPES = 0
+    back_reflectivity: bool = False
     R: Optional[Any] = None
     dR: Optional[Any] = 0
-    T: Optional[Any] = None
+    T: List[float] = field_desc("List of theta values (incident angle)")
     dT: Optional[Any] = 0
-    L: Optional[Any] = None
+    L: List[float] = field_desc("List of lambda values (wavelength, in Angstroms)")
     dL: Optional[Any] = 0
     dQ: Optional[Any] = None
 
@@ -184,12 +190,16 @@ class Probe:
         dR = kw.pop('dR', None)
         if R is not None and dR is not None:
             kw['data'] = (R, dR)
-        return cls(**kw)
+        radiation = kw.pop('radiation')
+        if radiation == 'neutron':
+            return NeutronProbe(**kw)
+        else:
+            return XrayProbe(**kw)
     
     def __init__(self, T=None, dT=0, L=None, dL=0, data=None,
                  intensity=1, background=0, back_absorption=1, theta_offset=0,
                  sample_broadening=0,
-                 back_reflectivity=False, name=None, filename=None,
+                 back_reflectivity=False, name:Optional[str]=None, filename=None,
                  dQ=None, resolution='normal'):
         if T is None or L is None:
             raise TypeError("T and L required")
@@ -996,7 +1006,6 @@ class XrayProbe(Probe):
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
 
-@schema()
 class NeutronProbe(Probe):
     """
     Neutron probe.
