@@ -273,7 +273,7 @@ class Stack(Layer):
     """
     name: str
     interface: Optional[Any]
-    layers: List[Union[tuple(Layer.__subclasses__()) + ('Repeat',)]]
+    layers: List[Union['Slab', 'Repeat', 'Stack']]
 
     def __init__(self, base=None, layers=None, name="Stack", interface=None):
         self.name = name
