@@ -486,7 +486,7 @@ class FreeMagnetismInterface(BaseMagnetism):
     magnetic = True
     def __init__(self, dz=(), drhoM=(), dthetaM=(),
                  mbelow=0, mabove=0,
-                 tbelow=DEFAULT_THETA_M, tabove=DEFAULT_THETA_M,
+                 tbelow=None, tabove=None,
                  name="MagInterface", **kw):
         BaseMagnetism.__init__(self, name=name, **kw)
         def parvec(vector, name, limits):
@@ -503,6 +503,17 @@ class FreeMagnetismInterface(BaseMagnetism):
             mbelow, name=name + " mbelow", limits=(-inf, inf))
         self.mabove = Parameter.default(
             mabove, name=name + " mabove", limits=(-inf, inf))
+
+        # if only tabove or tbelow is defined then they are made equal
+        # this is to deal with the situation of a non-magnetic
+        # layer next to a magnetic one
+        if tabove is None and tbelow is None:
+            tbelow = tabove = DEFAULT_THETA_M
+        elif tabove is not None and tbelow is None:
+            tbelow = tabove
+        elif tbelow is not None and tabove is None:
+            tabove = tbelow
+
         self.tbelow = Parameter.default(
             tbelow, name=name + " tbelow", limits=(0, 360))
         self.tabove = Parameter.default(
@@ -534,6 +545,8 @@ class FreeMagnetismInterface(BaseMagnetism):
 
     def profile(self, Pz, thickness):
         z = hstack((0, cumsum(asarray([v.value for v in self.dz], 'd'))))
+        if z[-1] == 0:
+            z[-1] = 1
         z *= thickness/z[-1]
 
         rhoM = hstack((0, cumsum(asarray([v.value for v in self.drhoM], 'd'))))
