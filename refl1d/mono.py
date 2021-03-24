@@ -166,8 +166,14 @@ class FreeInterface(Layer):
         thickness = self.thickness.value
         z, p = [hstack((0, cumsum(asarray([v.value for v in vector], 'd'))))
                 for vector in (self.dz, self.dp)]
-        if p[-1] == 0: p[-1] = 1
+        if p[-1] == 0: 
+            p[-1] = 1
         p *= 1/p[-1]
+        # AJC included condition as if z[-1] == 0 then z *= thickness/z[-1] == [nan]*len(z)
+        # This then ends with bumps.mono.Monospline adding an extra element as a result of
+        # line 42 in bumps.mono.Monospline
+        if z[-1] == 0:
+            z[-1] = 1
         z *= thickness/z[-1]
         profile = clip(monospline(z, p, Pz), 0, 1)
         return profile
