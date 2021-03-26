@@ -501,9 +501,9 @@ class FreeMagnetismInterface(BaseMagnetism):
         # layer next to a magnetic one
         if tabove is None and tbelow is None:
             tbelow = tabove = DEFAULT_THETA_M
-        elif tabove is not None and tbelow is None:
+        elif tbelow is None:
             tbelow = tabove
-        elif tbelow is not None and tabove is None:
+        elif tabove is None:
             tabove = tbelow
 
         self.tbelow = Parameter.default(
