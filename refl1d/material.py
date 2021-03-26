@@ -274,25 +274,25 @@ class Material(Scatterer):
             if value is None:
                 value = self._formula.density
             self.value =  Parameter.default(
-                value, name=self.name+" density", limits=(0, inf))
+                value, name=self.name+" density", limits=(0, None))
             self.density = self.value
         elif type == "number_density":
             if value is None:
                 value = avogadro_number / self._formula.mass * self._formula.density
             self.value = Parameter.default(
-                value, name=self.name+" number density", limits=(0, inf))
+                value, name=self.name+" number density", limits=(0, None))
             self.density = self.value / avogadro_number * self._formula.mass
         elif type == 'natural_density':
             if value is None:
                 value = self._formula.natural_density
             self.value = Parameter.default(
-                value, name=self.name+" nat. density", limits=(0, inf))
+                value, name=self.name+" nat. density", limits=(0, None))
             self.density = self.value / self._formula.natural_mass_ratio()
         elif type == 'relative_density':
             if value is None:
                 value = 1
             self.value = Parameter.default(
-                value, name=self.name+" rel. density", limits=(0, inf))
+                value, name=self.name+" rel. density", limits=(0, None))
             self.density = self._formula.density*self.value
         ## packing factor code should be correct, but radii are unreliable
         #elif type is 'packing_factor':
@@ -309,7 +309,7 @@ class Material(Scatterer):
             if value is None:
                 value = (1e24*self._formula.molecular_mass)/self._formula.density
             self.value = Parameter.default(
-                value, name=self.name+" cell volume", limits=(0, inf))
+                value, name=self.name+" cell volume", limits=(0, None))
             self.density = (1e24*self._formula.molecular_mass)/self.value
         else:
             raise ValueError("Unknown density calculation type '%s'"%type)
@@ -360,7 +360,7 @@ class Compound(Scatterer):
         count = [parts[i] for i in range(1, len(parts), 2)]
         # Convert M1, M2, ... to materials if necessary
         formula = [periodictable.formula(p) for p in formula]
-        count = [Parameter.default(w, limits=(0, inf), name=str(f)+" count")
+        count = [Parameter.default(w, limits=(0, None), name=str(f)+" count")
                  for w, f in zip(count, formula)]
         self.parts = formula
         self.count = count

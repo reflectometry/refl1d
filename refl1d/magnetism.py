@@ -79,15 +79,15 @@ class BaseMagnetism:
                  dead_below=0, dead_above=0,
                  interface_below=None, interface_above=None,
                  name="LAYER"):
-        self.dead_below = Parameter.default(dead_below, bounds=(0, inf),
+        self.dead_below = Parameter.default(dead_below, limits=(0, None),
                                             name=name+" deadM below")
-        self.dead_above = Parameter.default(dead_above, bounds=(0, inf),
+        self.dead_above = Parameter.default(dead_above, limits=(0, None),
                                             name=name+" deadM above")
         if interface_below is not None:
-            interface_below = Parameter.default(interface_below, bounds=(0, inf),
+            interface_below = Parameter.default(interface_below, limits=(0, None),
                                                 name=name+" interfaceM below")
         if interface_above is not None:
-            interface_above = Parameter.default(interface_above, bounds=(0, inf),
+            interface_above = Parameter.default(interface_above, limits=(0, None),
                                                 name=name+"  interfaceM above")
         self.interface_below = interface_below
         self.interface_above = interface_above
@@ -395,7 +395,7 @@ class FreeMagnetism(BaseMagnetism):
                for v, part, limits
                in zip((rhoM, thetaM, z),
                       ('rhoM', 'thetaM', 'z'),
-                      ((0, inf), (0, 360), (0, 1)))
+                      ((0, None), (0, 360), (0, 1)))
               ]
         if len(self.z) != len(self.rhoM):
             raise ValueError("must have one position z for each rhoM")

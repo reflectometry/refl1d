@@ -174,10 +174,10 @@ class Layer: # Abstract base class
         # Only set values if they are not None so that defaults
         # carry over from the copied layer
         if thickness is not None:
-            c.thickness = Par.default(thickness, limits=(0, inf),
+            c.thickness = Par.default(thickness, limits=(0, None),
                                       name=self.name+" thickness")
         if interface is not None:
-            c.interface = Par.default(interface, limits=(0, inf),
+            c.interface = Par.default(interface, limits=(0, None),
                                       name=self.name+" interface")
         if magnetism is not None:
             c.magnetism = magnetism
@@ -222,9 +222,9 @@ class Slab(Layer):
             name = material.name
         self.name = name
         self.material = material
-        self.thickness = Par.default(thickness, limits=(0, inf),
+        self.thickness = Par.default(thickness, limits=(0, None),
                                      name=name+" thickness")
-        self.interface = Par.default(interface, limits=(0, inf),
+        self.interface = Par.default(interface, limits=(0, None),
                                      name=name+" interface")
         self.magnetism = magnetism
 
@@ -624,10 +624,10 @@ class Repeat(Layer):
         if interface is None: interface = stack[-1].interface.value
         self.magnetism = magnetism
         self.name = name
-        self.repeat = IntPar(repeat, bounds=(0, inf),
+        self.repeat = IntPar(repeat, limits=(0, None),
                              name=name + " repeats")
         self.stack = stack
-        self.interface = Par.default(interface, bounds=(0, inf),
+        self.interface = Par.default(interface, limits=(0, None),
                                      name=name+" top interface")
 
     def to_dict(self):

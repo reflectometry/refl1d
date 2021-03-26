@@ -213,9 +213,9 @@ class Probe:
         self.intensity = Parameter.default(
             intensity, name="intensity"+qualifier)
         self.background = Parameter.default(
-            background, name="background"+qualifier, bounds=[0., inf])
+            background, name="background"+qualifier, limits=(0., None))
         self.back_absorption = Parameter.default(
-            back_absorption, name="back_absorption"+qualifier, bounds=[0., 1.])
+            back_absorption, name="back_absorption"+qualifier, limits=(0., 1.))
         self.theta_offset = Parameter.default(
             theta_offset, name="theta_offset"+qualifier)
         self.sample_broadening = Parameter.default(
@@ -1189,14 +1189,14 @@ class ProbeSet(Probe):
         intensity = Parameter.default(intensity, name="intensity")
         background = Parameter.default(background,
                                        name="background",
-                                       limits=[0, inf])
+                                       limits=[0, None])
         back_absorption = Parameter.default(back_absorption,
                                             name="back_absorption",
                                             limits=[0, 1])
         theta_offset = Parameter.default(theta_offset, name="theta_offset")
         sample_broadening = Parameter.default(sample_broadening,
                                               name="sample_broadening",
-                                              limits=[0, inf])
+                                              limits=[0, None])
         for p in self.probes:
             p.intensity = intensity
             p.background = background
@@ -1531,7 +1531,7 @@ class QProbe(Probe):
         qualifier = " "+name if name is not None else ""
         self.intensity = Parameter.default(intensity, name="intensity"+qualifier)
         self.background = Parameter.default(background, name="background"+qualifier,
-                                            limits=[0, inf])
+                                            limits=[0, None])
         self.back_absorption = Parameter.default(back_absorption,
                                                  name="back_absorption"+qualifier,
                                                  limits=[0, 1])
@@ -1734,14 +1734,14 @@ class PolarizedNeutronProbe:
         """
         intensity = Parameter.default(intensity, name="intensity")
         background = Parameter.default(background, name="background",
-                                       limits=[0, inf])
+                                       limits=[0, None])
         back_absorption = Parameter.default(back_absorption,
                                             name="back_absorption",
                                             limits=[0, 1])
         theta_offset = Parameter.default(theta_offset, name="theta_offset")
         sample_broadening = Parameter.default(sample_broadening,
                                               name="sample_broadening",
-                                              limits=[0, inf])
+                                              limits=[0, None])
         for x in self.xs:
             if x is not None:
                 x.intensity = intensity
