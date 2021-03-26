@@ -46,7 +46,7 @@ import numpy as np
 from numpy import inf, NaN
 import periodictable
 from periodictable.constants import avogadro_number
-from bumps.parameter import Expression, Parameter, UnaryExpression, PARAMETER_TYPES, to_dict
+from bumps.parameter import Expression, Parameter, to_dict #, PARAMETER_TYPES, UnaryExpression
 from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 from periodictable.formulas import Formula as BaseFormula
 
@@ -141,10 +141,10 @@ class SLD(Scatterer):
     time-of-flight measurements should not be fit with a fixed SLD scatterer.
     """
     name: str
-    rho: PARAMETER_TYPES
-    irho: PARAMETER_TYPES
+    rho: Parameter
+    irho: Parameter
 
-    def __init__(self, name="SLD", rho: Union[float, PARAMETER_TYPES]=0, irho=0):
+    def __init__(self, name="SLD", rho: Union[float, Parameter]=0, irho=0):
         self.name = name
         self.rho = Parameter.default(rho, name=name+" rho")
         self.irho = Parameter.default(irho, name=name+" irho")
@@ -219,8 +219,8 @@ class Material(Scatterer):
     formula: str # Formula
     formula_density: float
     formula_natural_density: Union[float, Literal[None]]
-    density: Union[Expression, UnaryExpression]
-    value: PARAMETER_TYPES
+    density: Expression
+    value: Parameter
     fitby: Union[Literal['bulk_density', 'number_density', 'natural_density', 'relative_density', 'cell_volume']] = 'bulk_density'
     use_incoherent: bool = False
 
