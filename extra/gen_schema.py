@@ -1,4 +1,5 @@
 import os
+import json
 os.environ['BUMPS_USE_PYDANTIC'] = "True"
 
 from pydantic.schema import get_model, schema as make_schema
@@ -23,5 +24,7 @@ schema = {
     "$schema": "https://json-schema.org/draft-07/schema#",
     "$id": "refl1d-draft-01"
 }
-schema.update(make_schema([FitProblem]))
+schema.update(get_model(FitProblem).schema())
+
+open('schema/refl1d.schema.json', 'w').write(json.dumps(schema))
 
