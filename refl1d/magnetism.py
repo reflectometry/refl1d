@@ -502,9 +502,9 @@ class FreeMagnetismInterface(BaseMagnetism):
         # layer next to a magnetic one
         if tabove is None and tbelow is None:
             tbelow = tabove = DEFAULT_THETA_M
-        elif tabove is not None and tbelow is None:
+        elif tbelow is None:
             tbelow = tabove
-        elif tbelow is not None and tabove is None:
+        elif tabove is None:
             tabove = tbelow
 
         self.tbelow = Parameter.default(
@@ -513,7 +513,7 @@ class FreeMagnetismInterface(BaseMagnetism):
             tabove, name=name + " tabove", limits=(0, 360))
         if len(self.dz) != len(self.drhoM):
             raise ValueError("Need one dz for each drhoM")
-        if 0 < len(self.dthetaM) != len(self.drhoM):
+        if len(self.dthetaM) > 0 and len(self.drhoM) != len(self.dthetaM):
             raise ValueError("Need one dthetaM for each drhoM")
 
     def parameters(self):
@@ -542,22 +542,22 @@ class FreeMagnetismInterface(BaseMagnetism):
             z[-1] = 1
         z *= thickness/z[-1]
 
-        rhoM = hstack((0, cumsum(asarray([v.value for v in self.drhoM], 'd'))))
+        rhoM_fraction = hstack((0, cumsum(asarray([v.value for v in self.drhoM], 'd'))))
         # AJC added since without the line below FreeMagnetismInterface
         # does not initialise propoerly - fixes strange behaviour at drho=0 on end point
-        if rhoM[-1] == 0:
-            rhoM[-1] = 1
+        if rhoM_fraction[-1] == 0:
+            rhoM_fraction[-1] = 1
 
-        rhoM *= 1/rhoM[-1]
-        PrhoM = clip(monospline(z, rhoM, Pz), 0, 1)
+        rhoM_fraction *= 1/rhoM_fraction[-1]
+        PrhoM = clip(monospline(z, rhoM_fraction, Pz), 0, 1)
 
         if self.dthetaM:
-            thetaM = hstack((0, cumsum(asarray([v.value for v in self.dthetaM], 'd'))))
-            if thetaM[-1] == 0:
-                thetaM[-1] = 1
+            thetaM_fraction = hstack((0, cumsum(asarray([v.value for v in self.dthetaM], 'd'))))
+            if thetaM_fraction[-1] == 0:
+                thetaM_fraction[-1] = 1
 
-            thetaM *= 1/thetaM[-1]
-            PthetaM = clip(monospline(z, thetaM, Pz), 0, 1)
+            thetaM_fraction *= 1 / thetaM_fraction[-1]
+            PthetaM = clip(monospline(z, thetaM_fraction, Pz), 0, 1)
         else:
             # AJC changed from len(z) to PrhoM - since PrhoM is the length of the vector
             # we want PthetaM to match - otherwise slabs.add_magnetism throws an error
