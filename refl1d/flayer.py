@@ -2,7 +2,7 @@ import inspect
 
 from numpy import real, imag, asarray, broadcast_to
 
-from bumps.parameter import Parameter, BaseParameter, to_dict
+from bumps.parameter import Parameter, to_dict
 from refl1d.material import SLD
 from refl1d.model import Layer
 from refl1d.magnetism import BaseMagnetism, Magnetism, DEFAULT_THETA_M
@@ -241,7 +241,7 @@ def _set_vars(self, name, profile, kw, reserved):
 
     return vars
 
-class _LayerLimit(BaseParameter):
+class _LayerLimit(Parameter):
     def __init__(self, flayer, isend=True, isrho=True):
         self.flayer = flayer
         self.isend = isend
@@ -263,7 +263,7 @@ class _LayerLimit(BaseParameter):
     def __repr__(self):
         return repr(self.flayer) + self._tag
 
-class _MagnetismLimit(BaseParameter):
+class _MagnetismLimit(Parameter):
     def __init__(self, flayer, isend=True, isrhoM=True):
         self.flayer = flayer
         self.isend = isend
