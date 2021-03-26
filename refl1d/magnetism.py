@@ -41,7 +41,7 @@ from __future__ import print_function
 
 import numpy as np
 from numpy import inf
-from bumps.parameter import Parameter, PARAMETER_TYPES, flatten, to_dict
+from bumps.parameter import Parameter, flatten, to_dict
 from bumps.mono import monospline
 from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
@@ -70,10 +70,10 @@ class BaseMagnetism:
     """
     name: str
     extent: float
-    dead_below: Union[PARAMETER_TYPES, Literal[None]]
-    dead_above: Union[PARAMETER_TYPES, Literal[None]]
-    interface_below: Union[PARAMETER_TYPES, Literal[None]]
-    interface_above: Union[PARAMETER_TYPES, Literal[None]]
+    dead_below: Union[Parameter, Literal[None]]
+    dead_above: Union[Parameter, Literal[None]]
+    interface_below: Union[Parameter, Literal[None]]
+    interface_above: Union[Parameter, Literal[None]]
 
     def __init__(self, extent=1,
                  dead_below=0, dead_above=0,
@@ -94,7 +94,7 @@ class BaseMagnetism:
         self.name = name
         self.extent = extent
 
-    def parameters(self) -> Dict[str, Union[PARAMETER_TYPES, List[PARAMETER_TYPES], Literal[None]]]:
+    def parameters(self) -> Dict[str, Union[Parameter, List[Parameter], Literal[None]]]:
         return {
             'dead_below': self.dead_below,
             'dead_above': self.dead_above,
@@ -145,10 +145,10 @@ class Magnetism(BaseMagnetism):
     *interface_above* and *interface_below* define the magnetic interface
     at the boundaries, if it is different from the nuclear interface.
     """
-    rhoM: PARAMETER_TYPES
-    thetaM: PARAMETER_TYPES
+    rhoM: Parameter
+    thetaM: Parameter
 
-    def __init__(self, rhoM: Union[float, PARAMETER_TYPES]=0, thetaM=DEFAULT_THETA_M, name="LAYER", **kw):
+    def __init__(self, rhoM: Union[float, Parameter]=0, thetaM=DEFAULT_THETA_M, name="LAYER", **kw):
         BaseMagnetism.__init__(self, name=name, **kw)
         self.rhoM = Parameter.default(rhoM, name=name+" rhoM")
         self.thetaM = Parameter.default(thetaM, limits=(0, 360),
