@@ -7,7 +7,7 @@ import numpy as np
 from numpy import (diff, hstack, sqrt, searchsorted, asarray, cumsum,
                    inf, nonzero, linspace, sort, isnan, clip)
 from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
-from bumps.parameter import Parameter as Par, Function as ParFunction, PARAMETER_TYPES, to_dict
+from bumps.parameter import Parameter as Par, Function as ParFunction, to_dict
 from bumps.mono import monospline, count_inflections
 
 from . import util
@@ -115,10 +115,10 @@ class FreeInterface(Layer):
     name: Optional[str]
     below: Optional[Any]
     above: Optional[Any]
-    thickness: PARAMETER_TYPES
-    interface: PARAMETER_TYPES
-    dz: List[Union[float, PARAMETER_TYPES]]
-    dp: List[Union[float, PARAMETER_TYPES]]
+    thickness: Par
+    interface: Par
+    dz: List[Union[float, Par]]
+    dp: List[Union[float, Par]]
     inflections: List[Any]
 
     def __init__(self, thickness=0, interface=0,

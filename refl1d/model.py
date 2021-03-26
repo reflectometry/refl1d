@@ -42,7 +42,7 @@ import periodictable.xsf as xsf
 import periodictable.nsf as nsf
 
 from bumps.parameter import (
-    PARAMETER_TYPES, BaseParameter as BasePar,
+    #BaseParameter as BasePar,
     Parameter as Par, IntegerParameter as IntPar, Function, to_dict)
 from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
@@ -62,8 +62,8 @@ class Layer: # Abstract base class
         Magnetic profile anchored to the layer.
     """
     name: str
-    thickness: PARAMETER_TYPES
-    interface: Optional[PARAMETER_TYPES] = None
+    thickness: Par
+    interface: Optional[Par] = None
     magnetism: Union[(Literal[None], *BaseMagnetism.__subclasses__())]
 
     # Trap calls to set magnetism attr so we can update the magnetism parameter
@@ -211,8 +211,8 @@ class Slab(Layer):
     A block of material.
     """
     name: str
-    thickness: PARAMETER_TYPES
-    interface: Optional[PARAMETER_TYPES] = None
+    thickness: Par
+    interface: Optional[Par] = None
     magnetism: Union[(Literal[None], *BaseMagnetism.__subclasses__())]
     material: Union[mat.SLD, mat.Material, mat.Vacuum]
 

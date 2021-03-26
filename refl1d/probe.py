@@ -52,7 +52,7 @@ from typing import Optional, Any, Union
 from bumps.util import field, field_desc, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
 from periodictable import nsf, xsf
-from bumps.parameter import Parameter, Constant, BaseParameter, PARAMETER_TYPES, to_dict
+from bumps.parameter import Parameter, to_dict, Constant
 from bumps.plotutil import coordinated_colors, auto_shift
 from bumps.data import parse_multi, strip_quotes
 
@@ -163,11 +163,11 @@ class Probe:
     name: Optional[str] = None
     filename: Optional[str] = None
     radiation: Optional[Radiation] = None
-    intensity: PARAMETER_TYPES = 1.0
-    background: PARAMETER_TYPES = 0
-    back_absorption: PARAMETER_TYPES = 0
-    theta_offset: PARAMETER_TYPES = 0
-    sample_broadening: PARAMETER_TYPES = 0
+    intensity: Parameter = 1.0
+    background: Parameter = 0
+    back_absorption: Parameter = 0
+    theta_offset: Parameter = 0
+    sample_broadening: Parameter = 0
     back_reflectivity: bool = False
     R: Optional[Any] = None
     dR: Optional[Any] = 0
@@ -1650,8 +1650,8 @@ class PolarizedNeutronProbe:
         self._set_calc(self.T, self.L)
         self._check()
         spec = " "+name if name else ""
-        self.H = H if isinstance(H, BaseParameter) else Parameter.default(H, name="H"+spec)
-        self.Aguide = Aguide if isinstance(Aguide, BaseParameter) else Parameter.default(Aguide, name="Aguide"+spec,
+        self.H = H if isinstance(H, Parameter) else Parameter.default(H, name="H"+spec)
+        self.Aguide = Aguide if isinstance(Aguide, Parameter) else Parameter.default(Aguide, name="Aguide"+spec,
                                         limits=[-360, 360])
         
     
