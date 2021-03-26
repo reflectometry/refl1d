@@ -2,7 +2,7 @@ import os
 os.environ['BUMPS_USE_PYDANTIC'] = "True"
 
 from pydantic.schema import get_model, schema as make_schema
-from bumps.parameter import UnaryExpression, Expression
+from bumps.parameter import Expression, Parameter #, UnaryExpression
 from refl1d.fitproblem import FitProblem
 from refl1d.model import Repeat, Stack
 
@@ -13,7 +13,7 @@ base_model = get_model(FitProblem)
 #     'from __future__ import annotations'
 # and in python 4.0+ presumably that can be removed as well.
 to_resolve = [
-    UnaryExpression, Expression,
+    Expression, Parameter, #UnaryExpression
     Repeat, Stack
 ]
 for module in to_resolve:
