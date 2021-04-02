@@ -100,9 +100,9 @@ class Layer: # Abstract base class
 
     def layer_parameters(self):
         pars = {'thickness': self.thickness}
-        if self.interface:
+        if self.interface is not None:
             pars['interface'] = self.interface
-        if self.magnetism:
+        if self.magnetism is not None:
             pars['magnetism'] = self.magnetism.parameters()
         pars.update(self.parameters())
         return pars
