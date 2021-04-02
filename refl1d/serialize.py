@@ -74,9 +74,9 @@ def from_dict(serialized):
 import copy
 import numpy as np
 
-def to_dict(obj, obj_type=None):
+def to_dict(obj, field_info=None):
     if is_dataclass(obj):
-        return dict([(f.name, to_dict(getattr(obj, f.name), obj_type=f.type)) for f in fields(obj)])
+        return dict([(f.name, to_dict(getattr(obj, f.name), field_info=f)) for f in fields(obj)])
         # result = [('type', obj.__class__.__name__)]
         # for f in fields(obj):
         #     if f.name != "type":
@@ -97,7 +97,9 @@ def to_dict(obj, obj_type=None):
         return obj.tolist()
     elif isinstance(obj, np.ndarray) and obj.dtype.kind == 'O':
         return to_dict(obj.tolist())
-    elif isinstance(obj, float) or isinstance(obj, int) or isinstance(obj, str) or obj is None:
+    elif isinstance(obj, float):
+        return str(obj) if np.isinf(obj) else obj
+    elif isinstance(obj, int) or isinstance(obj, str) or obj is None:
         return obj
     else:
         raise ValueError("obj %s is not serializable" % str(obj))
