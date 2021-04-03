@@ -26,5 +26,5 @@ schema = {
 }
 schema.update(get_model(FitProblem).schema())
 
-open('schema/refl1d.schema.json', 'w').write(json.dumps(schema))
+open('schema/refl1d.schema.json', 'w').write(json.dumps(schema, allow_nan=False))
 
