@@ -8,4 +8,5 @@ from .experiment import Experiment
 
 @schema(eq=False, init=False)
 class FitProblem(_FitProblem):
+    __doc__ =  _FitProblem.__doc__.replace("Fitness", "Experiment")
     models: List[Experiment]
