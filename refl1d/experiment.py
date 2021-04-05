@@ -46,7 +46,7 @@ def plot_sample(sample, instrument=None, roughness_limit=0):
                             roughness_limit=roughness_limit)
     experiment.plot()
 
-class ExperimentBase(Fitness):
+class ExperimentBase:
     probe = None # type: Optional[Probe]
     interpolation = 0
     _probe_cache = None
@@ -633,6 +633,7 @@ class Experiment(ExperimentBase):
     def penalty(self):
         return self.sample.penalty()
 
+assert isinstance(Experiment, Fitness)
 
 class MixedExperiment(ExperimentBase):
     """
