@@ -45,9 +45,10 @@ from enum import Enum
 
 import numpy as np
 from numpy import sqrt, pi, inf, sign, log
+from numpy.linalg.linalg import matrix_power
 import numpy.random
 import numpy.fft
-from typing import Optional, Any, Union
+from typing import NamedTuple, Optional, Any, Union
 
 from bumps.util import field, field_desc, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
@@ -1616,6 +1617,11 @@ def Qmeasurement_union(xs):
     return Q, dQ
 
 optional_xs = Union[NeutronProbe, Literal[None]]
+class CrossSections(NamedTuple):
+    mm: optional_xs
+    mp: optional_xs
+    pm: optional_xs
+    pp: optional_xs
 
 @schema(init=False)
 class PolarizedNeutronProbe:
@@ -1630,7 +1636,7 @@ class PolarizedNeutronProbe:
     *H* (tesla) is the magnitude of the applied field
     """
     name: str
-    xs: Tuple[optional_xs, optional_xs, optional_xs, optional_xs]
+    xs: CrossSections
     H: Parameter
     Aguide: Parameter
 
@@ -1639,8 +1645,8 @@ class PolarizedNeutronProbe:
     substrate = surface = None
     polarized = True
     
-    def __init__(self, xs=None, name=None, Aguide=BASE_GUIDE_ANGLE, H=0):
-        self._xs = xs
+    def __init__(self, xs: Tuple, name=None, Aguide=BASE_GUIDE_ANGLE, H=0):
+        self._xs = CrossSections(*xs)
         self.__class__.xs = property(lambda self: self._xs)
         if name is None and self.xs[0] is not None:
             name = self.xs[0].name
@@ -1657,41 +1663,29 @@ class PolarizedNeutronProbe:
     
     @property
     def pp(self):
-        return self.xs[3]
+        return self.xs.pp
 
     @property
     def pm(self):
-        return self.xs[2]
+        return self.xs.pm
 
     @property
     def mp(self):
-        return self.xs[1]
+        return self.xs.mp
 
     @property
     def mm(self):
-        return self.xs[0]
+        return self.xs.mm
 
     def parameters(self):
-        mm, mp, pm, pp = [(xsi.parameters() if xsi else None)
-                          for xsi in self.xs]
-        return {
-            'pp': pp, 'pm': pm, 'mp': mp, 'mm': mm,
-            'Aguide': self.Aguide, 'H': self.H,
-        }
-
-    def to_dict(self):
-        """ Return a dictionary representation of the parameters """
-        mm, mp, pm, pp = self.xs
-        return to_dict({
-            'type': type(self).__name__,
-            'name': self.name,
-            'pp': pp,
-            'pm': pm,
-            'mp': mp,
-            'mm': mm,
-            'a_guide': self.Aguide,
-            'h': self.H,
-        })
+        output = self.xs._asdict()
+        for xsn, xsi in output.items():
+            if xsi is not None:
+                output[xsn] = xsi.parameters()
+        
+        output['Aguide'] = self.Aguide
+        output['H'] = self.H
+        return output
 
     def resynth_data(self):
         for p in self.xs:
