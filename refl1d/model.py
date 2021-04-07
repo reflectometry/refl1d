@@ -43,7 +43,7 @@ import periodictable.nsf as nsf
 
 from bumps.parameter import (
     #BaseParameter as BasePar,
-    Parameter as Par, IntegerParameter as IntPar, Function, to_dict)
+    Expression, Parameter as Par, IntegerParameter as IntPar, Function, to_dict)
 from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
 from . import material as mat
@@ -273,12 +273,13 @@ class Stack(Layer):
     """
     name: str
     interface: Optional[Any]
-    layers: List[Union['Slab', 'Repeat', 'Stack']]
+    layers: List[Union['Slab', 'Repeat']]
 
     def __init__(self, base=None, layers=None, name="Stack", interface=None):
         self.name = name
         self.interface = None
         self._layers = []
+        self.thickness = Par(0, name=name + " thickness")
         if layers is not None and base is None:
             base = layers
         if base is not None:
@@ -320,17 +321,19 @@ class Stack(Layer):
             except TypeError:
                 L = [other]
             self._layers.extend(_check_layer(el) for el in L)
+        self.thickness.equals(self.thickness_value)
 
     def __getstate__(self):
-        return self.interface, self._layers, self.name
+        return self.interface, self._layers, self.name, self.thickness
 
     def __setstate__(self, state):
-        self.interface, self._layers, self.name = state
+        self.interface, self._layers, self.name, self.thickness = state
 
     def __copy__(self):
         stack = Stack()
         stack.interface = self.interface
         stack._layers = self._layers[:]
+        stack.thickness = self.thickness
         return stack
 
     def __len__(self):
@@ -362,8 +365,8 @@ class Stack(Layer):
         return sum(L.penalty() for L in self._layers)
 
     @property
-    def thickness(self):
-        return  sum([L.thickness for L in self._layers])
+    def thickness_value(self) -> Expression:
+        return sum([L.thickness for L in self._layers])
 
     def render(self, probe, slabs):
         """
