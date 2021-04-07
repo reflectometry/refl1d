@@ -1617,11 +1617,6 @@ def Qmeasurement_union(xs):
     return Q, dQ
 
 optional_xs = Union[NeutronProbe, Literal[None]]
-class CrossSections(NamedTuple):
-    mm: optional_xs
-    mp: optional_xs
-    pm: optional_xs
-    pp: optional_xs
 
 @schema(init=False)
 class PolarizedNeutronProbe:
@@ -1636,7 +1631,10 @@ class PolarizedNeutronProbe:
     *H* (tesla) is the magnitude of the applied field
     """
     name: str
-    xs: CrossSections
+    mm: optional_xs
+    mp: optional_xs
+    pm: optional_xs
+    pp: optional_xs
     H: Parameter
     Aguide: Parameter
 
@@ -1644,15 +1642,30 @@ class PolarizedNeutronProbe:
     show_resolution = None  # Default to Probe.show_resolution when None
     substrate = surface = None
     polarized = True
+    _xs_names = ["mm", "mp", "pm", "pp"]
     
-    def __init__(self, xs: Tuple, name=None, Aguide=BASE_GUIDE_ANGLE, H=0):
-        self._xs = CrossSections(*xs)
-        self.__class__.xs = property(lambda self: self._xs)
-        if name is None and self.xs[0] is not None:
-            name = self.xs[0].name
+    def __init__(self, xs: Optional[Tuple]=None,
+                       mm: optional_xs=None,
+                       mp: optional_xs=None,
+                       pm: optional_xs=None,
+                       pp: optional_xs=None,
+                       name=None, Aguide=BASE_GUIDE_ANGLE, H=0):
+        if any([mm, mp, pm, pp]):
+            if xs is not None:
+                warnings.warn("a cross-section is directly specified - xs argument will be ignored")
+            self.mm = mm
+            self.mp = mp
+            self.pm = pm
+            self.pp = pp
+        else:
+            for index, xs_name in enumerate(self._xs_names):
+                setattr(self, xs_name, xs[index])
+
+        if name is None and self.mm is not None:
+            name = self.mm.name
         self.name = name
         self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
-            = measurement_union(xs)
+            = measurement_union(self.xs)
         self._set_calc(self.T, self.L)
         self._check()
         spec = " "+name if name else ""
@@ -1660,29 +1673,14 @@ class PolarizedNeutronProbe:
         self.Aguide = Aguide if isinstance(Aguide, Parameter) else Parameter.default(Aguide, name="Aguide"+spec,
                                         limits=[-360, 360])
         
+    @property
+    def xs(self):
+        return [getattr(self, xs_name) for xs_name in self._xs_names]
     
-    @property
-    def pp(self):
-        return self.xs.pp
-
-    @property
-    def pm(self):
-        return self.xs.pm
-
-    @property
-    def mp(self):
-        return self.xs.mp
-
-    @property
-    def mm(self):
-        return self.xs.mm
-
     def parameters(self):
-        output = self.xs._asdict()
-        for xsn, xsi in output.items():
-            if xsi is not None:
-                output[xsn] = xsi.parameters()
-        
+        xs_pars = [(xsi.parameters() if xsi else None)
+                   for xsi in self.xs]
+        output = dict(zip(self._xs_names, xs_pars))
         output['Aguide'] = self.Aguide
         output['H'] = self.H
         return output
