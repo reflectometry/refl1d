@@ -108,13 +108,13 @@ class ThicknessInteractor(BaseInteractor):
         # Limit the position according to parameter limits
         if event.shift and self._next is not None:
             # shifting interface between two layers
-            lo_curr,hi_curr = self._curr.bounds.limits
-            lo_next,hi_next = self._next.bounds.limits
+            lo_curr,hi_curr = self._curr.prior.limits
+            lo_next,hi_next = self._next.prior.limits
             lo = min(lo_curr+prev_offset, next_offset-hi_next)
             hi = min(hi_curr+prev_offset, next_offset-lo_next)
         else:
             # resizing a layer
-            lo_curr,hi_curr = self._curr.bounds.limits
+            lo_curr,hi_curr = self._curr.prior.limits
             lo = lo_curr+prev_offset
             hi = hi_curr+prev_offset
         x = clip(event.xdata, lo, hi)
