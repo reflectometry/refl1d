@@ -69,11 +69,6 @@ PROBE_KW = ('T', 'dT', 'L', 'dL', 'data', 'name', 'filename',
             'intensity', 'background', 'back_absorption', 'sample_broadening',
             'theta_offset', 'back_reflectivity', 'data')
 
-class Radiation(Enum):
-    """ type of radiation for probe """
-    neutron = "neutron"
-    xray = "xray"
-
 def make_probe(**kw):
     """
     Return a reflectometry measurement object of the given resolution.
@@ -163,7 +158,7 @@ class Probe:
     """
     name: Optional[str] = None
     filename: Optional[str] = None
-    radiation: Optional[Radiation] = None
+    radiation: Literal["neutron", "xray"] = "xray"
     intensity: Parameter = 1.0
     background: Parameter = 0
     back_absorption: Parameter = 0

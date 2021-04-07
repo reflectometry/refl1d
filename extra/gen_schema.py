@@ -26,5 +26,24 @@ schema = {
 }
 schema.update(get_model(FitProblem).schema())
 
-open('schema/refl1d.schema.json', 'w').write(json.dumps(schema, allow_nan=False))
+def remove_default_typename(schema):
+    properties = schema.get('properties', {})
+    properties.get('type', {}).pop('default', None)
+    subschemas = schema.get('definitions', {}).values()
+    for subschema in subschemas:
+        remove_default_typename(subschema)
+
+def remove_proptitles(schema):
+    properties = schema.get('properties', {})
+    for prop in properties.values():
+        prop.pop('title', None)
+    
+    subschemas = schema.get('definitions', {}).values()
+    for subschema in subschemas:
+        remove_proptitles(subschema)
+
+remove_default_typename(schema)
+remove_proptitles(schema)
+
+open('schema/refl1d.schema.json', 'w').write(json.dumps(schema, allow_nan=False, indent=2))
 
