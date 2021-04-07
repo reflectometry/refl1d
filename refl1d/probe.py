@@ -177,6 +177,7 @@ class Probe:
     L: List[float] = field_desc("List of lambda values (wavelength, in Angstroms)")
     dL: Optional[Any] = 0
     dQ: Optional[Any] = None
+    resolution: Literal["normal", "uniform"] = "uniform"
 
     polarized = False
     Aguide = BASE_GUIDE_ANGLE  # default guide field for unpolarized measurements
