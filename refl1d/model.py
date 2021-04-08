@@ -321,13 +321,16 @@ class Stack(Layer):
             except TypeError:
                 L = [other]
             self._layers.extend(_check_layer(el) for el in L)
-        self.thickness.equals(self.thickness_value)
+         self._reset_thickness_parameter()
 
     def __getstate__(self):
         return self.interface, self._layers, self.name, self.thickness
 
     def __setstate__(self, state):
         self.interface, self._layers, self.name, self.thickness = state
+        # TODO: not clear that this is needed here.  The thickness parameter
+        # from __getstate__ should have a valid expression in it.
+        self._reset_thickness_parameter()
 
     def __copy__(self):
         stack = Stack()
@@ -364,9 +367,9 @@ class Stack(Layer):
     def penalty(self):
         return sum(L.penalty() for L in self._layers)
 
-    @property
-    def thickness_value(self) -> Expression:
-        return sum([L.thickness for L in self._layers])
+    def _reset_thickness_parameter(self):
+        # build a parameter expression using the thickness parameters from the underlying layers
+        self.thickness.equals(sum(L.thickness for L in self._layers))
 
     def render(self, probe, slabs):
         """
@@ -546,11 +549,13 @@ class Stack(Layer):
                 stack._layers[idx] = [_check_layer(el) for el in other]
         else:
             stack._layers[idx] = _check_layer(other)
+        self._reset_thickness_parameter()
 
     def __delitem__(self, idx):
         stack, idx = self._lookup(idx)
         # works the same for slices and individual indices
         del stack._layers[idx]
+        self._reset_thickness_parameter()
 
     def insert(self, idx, other):
         """
@@ -571,6 +576,7 @@ class Stack(Layer):
                 other = [other]
             for i, L in enumerate(other):
                 stack._layers.insert(idx+i, _check_layer(L))
+        self._reset_thickness_parameter()
 
     # Define a little algebra for composing samples
     # Stacks can be repeated or extended
@@ -620,9 +626,10 @@ class Repeat(Layer):
     magnetism: Union[(Literal[None], *BaseMagnetism.__subclasses__())]
     repeat: IntPar
     stack: Stack
+    thickness: Par
 
     def __init__(self, stack, repeat=1, interface=None, name=None,
-                 magnetism=None):
+                 magnetism=None, thickness:Optional[Par]=None):
         if name is None: name = "multilayer"
         if interface is None: interface = stack[-1].interface.value
         self.magnetism = magnetism
@@ -630,6 +637,10 @@ class Repeat(Layer):
         self.repeat = IntPar(repeat, limits=(0, None),
                              name=name + " repeats")
         self.stack = stack
+        # intentionally ignoring what was in thickness argument...
+        # is this a good idea?
+        self.thickness = Par(name=name + " thickness")
+        self.thickness.equals(self.stack.thickness * self.repeat)
         self.interface = Par.default(interface, limits=(0, None),
                                      name=name+" top interface")
 
@@ -696,11 +707,6 @@ class Repeat(Layer):
         if self.magnetism:
             pars['magnetism'] = self.magnetism.parameters()
         return pars
-
-    # Mark thickness as read only
-    @property
-    def thickness(self):
-        self.stack.thickness * self.repeat
 
     def render(self, probe, slabs):
         nr = self.repeat.value
