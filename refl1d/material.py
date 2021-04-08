@@ -64,11 +64,10 @@ class Scatterer:
        expressions. It is not done directly to avoid circular dependencies
        between :mod:`model <refl1d.model>` and :mod:`material <refl1d.material>`.
     """
-    name: str
 
-    def sld(self, sf):
+    def sld(self, sf) -> Tuple[float, float]:
         """
-        Return the scattering length density expected for the given
+        Return the scattering length density pair (rho, irho) expected for the given
         scattering factors, as returned from a call to scattering_factors()
         for a particular probe.
         """
@@ -97,12 +96,11 @@ class Scatterer:
 @schema(init=False)
 class Vacuum(Scatterer):
     """
-    Empty layer
+    Empty layer (all sld = 0)
     """
-    name: str
 
     def __init__(self, *args, **kw):
-        self.name = "air"
+        self.name = "Vacuum"
 
     def parameters(self):
         return []
