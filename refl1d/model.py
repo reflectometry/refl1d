@@ -321,7 +321,7 @@ class Stack(Layer):
             except TypeError:
                 L = [other]
             self._layers.extend(_check_layer(el) for el in L)
-         self._reset_thickness_parameter()
+        self._reset_thickness_parameter()
 
     def __getstate__(self):
         return self.interface, self._layers, self.name, self.thickness
