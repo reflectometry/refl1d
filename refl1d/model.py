@@ -64,7 +64,7 @@ class Layer: # Abstract base class
     name: str
     thickness: Par
     interface: Optional[Par] = None
-    magnetism: Union[(Literal[None], *BaseMagnetism.__subclasses__())]
+    magnetism: Union[(Literal[None], *BaseMagnetism.__subclasses__())] = None
 
     # Trap calls to set magnetism attr so we can update the magnetism parameter
     # names with the layer name when we assign magnetism to the layer
