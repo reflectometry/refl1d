@@ -1562,7 +1562,7 @@ def measurement_union(xs):
     TL = set()
     for x in xs:
         if x is not None:
-            TL |= set(zip(x.T, x.dT, x.L, x.dL))
+            TL |= set(zip(x.T+x.theta_offset.value, x.dT, x.L, x.dL))
     T, dT, L, dL = zip(*[item for item in TL])
     T, dT, L, dL = [np.asarray(v) for v in (T, dT, L, dL)]
 
@@ -1730,6 +1730,10 @@ class PolarizedNeutronProbe(object):
 
     @property
     def calc_Q(self):
+        #print('calculating calc_Q...')
+        self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
+            = measurement_union(self.xs)
+        self._set_calc(self.T, self.L)
         return self.calc_Qo
 
     def _set_calc(self, T, L):
