@@ -1,4 +1,5 @@
 import os
+import math
 import json
 os.environ['BUMPS_USE_PYDANTIC'] = "True"
 
@@ -42,8 +43,23 @@ def remove_proptitles(schema):
     for subschema in subschemas:
         remove_proptitles(subschema)
 
+def convert_inf(obj):
+    if isinstance(obj, (list, tuple)):
+        return type(obj)(convert_inf(v) for v in obj)
+    elif isinstance(obj, dict):
+        return type(obj)((convert_inf(k), convert_inf(v))
+                          for k, v in obj.items())
+    elif isinstance(obj, float):
+        return str(obj) if math.isinf(obj) else obj
+    elif isinstance(obj, int) or isinstance(obj, str) or obj is None:
+        return obj
+    else:
+        raise ValueError("obj %s is not recognized" % str(obj))
+
+
 remove_default_typename(schema)
 remove_proptitles(schema)
+schema = convert_inf(schema)
 
 open('schema/refl1d.schema.json', 'w').write(json.dumps(schema, allow_nan=False, indent=2))
 
