@@ -32,7 +32,7 @@ edges = numpy.linspace(0, 1, 21)
 
 dist = Weights(edges=numpy.linspace(0, 1, 41), truncated=False,
                cdf=mixture_cdf, loc=0.4, scale=0.2)
-DM = DistributionExperiment(experiment=M, P=nickel.relative_density,
+DM = DistributionExperiment(experiment=M, P=nickel.value,
                             distribution=dist)
 DM.simulate_data(0.05)
 #DM.plot_weights()
