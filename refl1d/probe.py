@@ -1607,13 +1607,15 @@ class PolarizedNeutronProbe(object):
     polarized = True
     def __init__(self, xs=None, name=None, Aguide=BASE_GUIDE_ANGLE, H=0):
         self._xs = xs
+        self._shared_offset = None
 
         if name is None and self.xs[0] is not None:
             name = self.xs[0].name
         self.name = name
-        self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
-            = measurement_union(xs)
-        self._set_calc(self.T, self.L)
+        self._calculate_union()
+        # self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
+        #     = measurement_union(xs)
+        # self._set_calc(self.T, self.L)
         self._check()
         spec = " "+name if name else ""
         self.H = Parameter.default(H, name="H"+spec)
@@ -1728,12 +1730,31 @@ class PolarizedNeutronProbe(object):
         self._set_calc(T, L)
     oversample.__doc__ = Probe.oversample.__doc__
 
+    def _calculate_union(self):
+        unique_offsets = np.unique([x.theta_offset.value for x in self.xs if x is not None])
+        shared_offset = unique_offsets[0] if len(unique_offsets) == 1 else None
+        if shared_offset is not None and self._shared_offset is not None:
+            if shared_offset == self._shared_offset:
+                # values previously calculated for current shared offset:
+                # no recalculation needed.
+                return
+            else:
+                # offset was shared, and is shared, but value changed
+                Q = TL2Q(T=self.T + shared_offset, L=self.L)
+                self.calc_T = self.T + shared_offset
+                self.calc_Qo = Q
+                self._shared_offset = shared_offset
+        else:
+            # offsets are not shared, or they weren't previously shared
+            self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
+                = measurement_union(self.xs)
+            self._set_calc(self.T, self.L)
+            self._shared_offset = shared_offset
+
     @property
     def calc_Q(self):
         #print('calculating calc_Q...')
-        self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
-            = measurement_union(self.xs)
-        self._set_calc(self.T, self.L)
+        self._calculate_union()
         return self.calc_Qo
 
     def _set_calc(self, T, L):
