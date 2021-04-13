@@ -1743,7 +1743,6 @@ class PolarizedNeutronProbe(object):
             and len(set(self._theta_offsets)) == 1:
             # offset was shared, and is shared, but value changed
             Q = TL2Q(T=self.T + shared_offset, L=self.L)
-            self.calc_T = self.T + shared_offset
             self.calc_Qo = Q
         else:
             # unshared offsets changed, or union has not been calculated before
