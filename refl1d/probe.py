@@ -1607,7 +1607,7 @@ class PolarizedNeutronProbe(object):
     polarized = True
     def __init__(self, xs=None, name=None, Aguide=BASE_GUIDE_ANGLE, H=0):
         self._xs = xs
-        self._shared_offset = None
+        self._theta_offsets = None
 
         if name is None and self.xs[0] is not None:
             name = self.xs[0].name
@@ -1731,25 +1731,27 @@ class PolarizedNeutronProbe(object):
     oversample.__doc__ = Probe.oversample.__doc__
 
     def _calculate_union(self):
-        unique_offsets = np.unique([x.theta_offset.value for x in self.xs if x is not None])
-        shared_offset = unique_offsets[0] if len(unique_offsets) == 1 else None
-        if shared_offset is not None and self._shared_offset is not None:
-            if shared_offset == self._shared_offset:
-                # values previously calculated for current shared offset:
-                # no recalculation needed.
-                return
-            else:
-                # offset was shared, and is shared, but value changed
-                Q = TL2Q(T=self.T + shared_offset, L=self.L)
-                self.calc_T = self.T + shared_offset
-                self.calc_Qo = Q
-                self._shared_offset = shared_offset
+        theta_offsets = [x.theta_offset.value for x in self.xs if x is not None]
+        if self._theta_offsets is not None and theta_offsets == self._theta_offsets:
+            # no change in offsets: use cached values of measurement union
+            return
+
+        unique_offsets = set(theta_offsets)
+        shared_offset = theta_offsets[0] if len(unique_offsets) == 1 else None
+        if self._theta_offsets is not None \
+            and shared_offset is not None \
+            and len(set(self._theta_offsets)) == 1:
+            # offset was shared, and is shared, but value changed
+            Q = TL2Q(T=self.T + shared_offset, L=self.L)
+            self.calc_T = self.T + shared_offset
+            self.calc_Qo = Q
         else:
-            # offsets are not shared, or they weren't previously shared
+            # unshared offsets changed, or union has not been calculated before
             self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
                 = measurement_union(self.xs)
             self._set_calc(self.T, self.L)
-            self._shared_offset = shared_offset
+
+        self._theta_offsets = theta_offsets
 
     @property
     def calc_Q(self):
