@@ -7,7 +7,7 @@ import numpy as np
 from numpy import (diff, hstack, sqrt, searchsorted, asarray, cumsum,
                    inf, nonzero, linspace, sort, isnan, clip)
 from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
-from bumps.parameter import Parameter as Par, Function as ParFunction, to_dict
+from bumps.parameter import Parameter as Par, Function as ParFunction, to_dict, Constant
 from bumps.mono import monospline, count_inflections
 
 from . import util
@@ -37,9 +37,7 @@ class FreeLayer(Layer):
         self.below, self.above = below, above
         self.thickness = Par.default(
             thickness, name=name+" thickness", limits=(0, inf))
-        self.interface = Par.default(
-            0, name=name+" interface", limits=(0, inf))
-        self.interface.fittable = False
+        self.interface = Constant(0, name=name+" interface")
         def parvec(vector, name, limits):
             return [Par.default(p, name=name+"[%d]"%i, limits=limits)
                     for i, p in enumerate(vector)]
@@ -128,8 +126,7 @@ class FreeInterface(Layer):
         self.below, self.above = below, above
         self.thickness = Par.default(
             thickness, limits=(0, inf), name=name+" thickness")
-        self.interface = Par.default(
-            interface, limits=(0, inf), name=name+" interface")
+        self.interface = Constant(0, name=name+" interface")
 
 
         # Choose reasonable defaults if not given
@@ -148,8 +145,8 @@ class FreeInterface(Layer):
                    for i, p in enumerate(dz)]
         self.dp = [Par.default(p, name=name+" dp[%d]"%i, limits=(0, inf))
                    for i, p in enumerate(dp)]
-        self.inflections = ParFunction(
-            inflections, dx=self.dz, dy=self.dp, name=name+" inflections")
+        self.inflections = Par(ParFunction(
+            inflections, dx=self.dz, dy=self.dp), name=name+" inflections")
 
     def parameters(self):
         return {
@@ -183,7 +180,8 @@ class FreeInterface(Layer):
 
     def render(self, probe, slabs):
         thickness = self.thickness.value
-        interface = self.interface.value
+        # interface ignored for FreeInterface
+        # interface = self.interface.value
         below_rho, below_irho = self.below.sld(probe)
         above_rho, above_irho = self.above.sld(probe)
         # Pz is the center, Pw is the width
