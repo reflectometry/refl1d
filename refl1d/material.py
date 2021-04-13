@@ -217,7 +217,7 @@ class Material(Scatterer):
     formula: str # Formula
     formula_density: float
     formula_natural_density: Union[float, Literal[None]]
-    density: Expression
+    density: Parameter
     value: Parameter
     fitby: Union[Literal['bulk_density', 'number_density', 'natural_density', 'relative_density', 'cell_volume']] = 'bulk_density'
     use_incoherent: bool = False
@@ -230,6 +230,8 @@ class Material(Scatterer):
         self.formula_density = formula_density
         self.formula_natural_density = formula_natural_density
         self.name = name if name is not None else str(self._formula)
+        self.density = Parameter(name=self.name + " density")
+
         self.use_incoherent = use_incoherent
         self._fitby(type=fitby, value=value)
 
@@ -273,25 +275,25 @@ class Material(Scatterer):
                 value = self._formula.density
             self.value =  Parameter.default(
                 value, name=self.name+" density", limits=(0, None))
-            self.density = self.value
+            self.density.equals(self.value)
         elif type == "number_density":
             if value is None:
                 value = avogadro_number / self._formula.mass * self._formula.density
             self.value = Parameter.default(
                 value, name=self.name+" number density", limits=(0, None))
-            self.density = self.value / avogadro_number * self._formula.mass
+            self.density.equals(self.value / avogadro_number * self._formula.mass)
         elif type == 'natural_density':
             if value is None:
                 value = self._formula.natural_density
             self.value = Parameter.default(
                 value, name=self.name+" nat. density", limits=(0, None))
-            self.density = self.value / self._formula.natural_mass_ratio()
+            self.density.equals(self.value / self._formula.natural_mass_ratio())
         elif type == 'relative_density':
             if value is None:
                 value = 1
             self.value = Parameter.default(
                 value, name=self.name+" rel. density", limits=(0, None))
-            self.density = self._formula.density*self.value
+            self.density.equals(self._formula.density*self.value)
         ## packing factor code should be correct, but radii are unreliable
         #elif type is 'packing_factor':
         #    max_density = self.formula.mass/self.formula.volume(packing_factor=1)
@@ -308,7 +310,7 @@ class Material(Scatterer):
                 value = (1e24*self._formula.molecular_mass)/self._formula.density
             self.value = Parameter.default(
                 value, name=self.name+" cell volume", limits=(0, None))
-            self.density = (1e24*self._formula.molecular_mass)/self.value
+            self.density.equals((1e24*self._formula.molecular_mass)/self.value)
         else:
             raise ValueError("Unknown density calculation type '%s'"%type)
         self.fitby = type
