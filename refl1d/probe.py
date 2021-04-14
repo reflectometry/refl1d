@@ -1566,7 +1566,7 @@ def measurement_union(xs):
     TL = set()
     for x in xs:
         if x is not None:
-            TL |= set(zip(x.T, x.dT, x.L, x.dL))
+            TL |= set(zip(x.T+x.theta_offset.value, x.dT, x.L, x.dL))
     T, dT, L, dL = zip(*[item for item in TL])
     T, dT, L, dL = [np.asarray(v) for v in (T, dT, L, dL)]
 
@@ -1611,13 +1611,15 @@ class PolarizedNeutronProbe(object):
     polarized = True
     def __init__(self, xs=None, name=None, Aguide=BASE_GUIDE_ANGLE, H=0):
         self._xs = xs
+        self._theta_offsets = None
 
         if name is None and self.xs[0] is not None:
             name = self.xs[0].name
         self.name = name
-        self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
-            = measurement_union(xs)
-        self._set_calc(self.T, self.L)
+        self._calculate_union()
+        # self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
+        #     = measurement_union(xs)
+        # self._set_calc(self.T, self.L)
         self._check()
         spec = " "+name if name else ""
         self.H = Parameter.default(H, name="H"+spec)
@@ -1732,8 +1734,32 @@ class PolarizedNeutronProbe(object):
         self._set_calc(T, L)
     oversample.__doc__ = Probe.oversample.__doc__
 
+    def _calculate_union(self):
+        theta_offsets = [x.theta_offset.value for x in self.xs if x is not None]
+        if self._theta_offsets is not None and theta_offsets == self._theta_offsets:
+            # no change in offsets: use cached values of measurement union
+            return
+
+        unique_offsets = set(theta_offsets)
+        shared_offset = theta_offsets[0] if len(unique_offsets) == 1 else None
+        if self._theta_offsets is not None \
+            and shared_offset is not None \
+            and len(set(self._theta_offsets)) == 1:
+            # offset was shared, and is shared, but value changed
+            Q = TL2Q(T=self.T + shared_offset, L=self.L)
+            self.calc_Qo = Q
+        else:
+            # unshared offsets changed, or union has not been calculated before
+            self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
+                = measurement_union(self.xs)
+            self._set_calc(self.T, self.L)
+
+        self._theta_offsets = theta_offsets
+
     @property
     def calc_Q(self):
+        #print('calculating calc_Q...')
+        self._calculate_union()
         return self.calc_Qo
 
     def _set_calc(self, T, L):
