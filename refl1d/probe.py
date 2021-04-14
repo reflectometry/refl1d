@@ -981,6 +981,7 @@ class Probe:
         else:
             return suffix+" "+gloss if gloss else None
 
+
 class XrayProbe(Probe):
     """
     X-Ray probe.
@@ -990,16 +991,17 @@ class XrayProbe(Probe):
     """
     radiation = "xray"
 
+    # TODO: remove density from interface since it is always 1.0
+    # Density is handled as a scale factor applied to the returned sld
+    # in material.ProbeCache. This allows us to fit the density without
+    # looking up the sld each time.
     def scattering_factors(self, material, density):
         # doc string is inherited from parent (see below)
-        # Note: the real density is calculated as a scale factor applied to
-        # the returned sld as computed assuming density=1
-        rho, irho = xsf.xray_sld(material,
-                                 wavelength=self.unique_L,
-                                 density=density)
         # TODO: support wavelength dependent systems
-        return rho[0], irho[0], 0
-        #return rho[self._L_idx], irho[self._L_idx], 0
+        rho, irho = xsf.xray_sld(material,
+                                 wavelength=self.unique_L[0],
+                                 density=density)
+        return rho, irho, 0
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
 
@@ -1012,16 +1014,18 @@ class NeutronProbe(Probe):
     """
     radiation = "neutron"
 
+    # TODO: remove density from interface since it is always 1.0
+    # Density is handled as a scale factor applied to the returned sld
+    # in material.ProbeCache. This allows us to fit the density without
+    # looking up the sld each time.
     def scattering_factors(self, material, density):
         # doc string is inherited from parent (see below)
-        # Note: the real density is calculated as a scale factor applied to
-        # the returned sld as computed assuming density=1
-        rho, irho, rho_incoh = nsf.neutron_sld(material,
-                                               wavelength=self.unique_L,
-                                               density=density)
         # TODO: support wavelength dependent systems
-        return rho, irho[0], rho_incoh
-        #return rho, irho[self._L_idx], rho_incoh
+        rho, irho, rho_incoh = nsf.neutron_sld(material,
+                                               wavelength=self.unique_L[0],
+                                               density=density)
+        #print(f"{material}@{density} L={self.unique_L[0]} rho={rho}")
+        return rho, irho, rho_incoh
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
 
