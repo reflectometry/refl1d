@@ -43,8 +43,8 @@ import periodictable.nsf as nsf
 
 from bumps.parameter import (
     #BaseParameter as BasePar,
-    Expression, Parameter as Par, IntegerParameter as IntPar, Function, to_dict)
-from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
+    Calculation, Expression, Parameter as Par, IntegerParameter as IntPar, Function, to_dict)
+from bumps.util import field, field_desc, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
 from . import material as mat
 from .magnetism import BaseMagnetism
@@ -274,12 +274,14 @@ class Stack(Layer):
     name: str
     interface: Optional[Any]
     layers: List[Union['Slab', 'Repeat']]
+    thickness: Par = field_desc("always equals the sum of the layer thicknesses")
 
     def __init__(self, base=None, layers=None, name="Stack", interface=None):
         self.name = name
         self.interface = None
         self._layers = []
-        self.thickness = Par(0, name=name + " thickness")
+        self.thickness = Par(name=name + " thickness")
+        self._set_thickness()
         if layers is not None and base is None:
             base = layers
         if base is not None:
@@ -321,7 +323,6 @@ class Stack(Layer):
             except TypeError:
                 L = [other]
             self._layers.extend(_check_layer(el) for el in L)
-        self._reset_thickness_parameter()
 
     def __getstate__(self):
         return self.interface, self._layers, self.name, self.thickness
@@ -330,7 +331,7 @@ class Stack(Layer):
         self.interface, self._layers, self.name, self.thickness = state
         # TODO: not clear that this is needed here.  The thickness parameter
         # from __getstate__ should have a valid expression in it.
-        self._reset_thickness_parameter()
+        self._set_thickness()
 
     def __copy__(self):
         stack = Stack()
@@ -367,9 +368,14 @@ class Stack(Layer):
     def penalty(self):
         return sum(L.penalty() for L in self._layers)
 
-    def _reset_thickness_parameter(self):
-        # build a parameter expression using the thickness parameters from the underlying layers
-        self.thickness.equals(sum(L.thickness for L in self._layers))
+    def _calculate_thickness(self):
+        return sum(L.thickness.value for L in self._layers)
+
+    def _set_thickness(self):
+        desc = """sum of the thickness of the component layers in the stack"""
+        calculation = Calculation(description=desc)
+        calculation.set_function(self._calculate_thickness)
+        self.thickness.slot = calculation
 
     def render(self, probe, slabs):
         """
@@ -549,13 +555,11 @@ class Stack(Layer):
                 stack._layers[idx] = [_check_layer(el) for el in other]
         else:
             stack._layers[idx] = _check_layer(other)
-        self._reset_thickness_parameter()
 
     def __delitem__(self, idx):
         stack, idx = self._lookup(idx)
         # works the same for slices and individual indices
         del stack._layers[idx]
-        self._reset_thickness_parameter()
 
     def insert(self, idx, other):
         """
@@ -576,7 +580,6 @@ class Stack(Layer):
                 other = [other]
             for i, L in enumerate(other):
                 stack._layers.insert(idx+i, _check_layer(L))
-        self._reset_thickness_parameter()
 
     # Define a little algebra for composing samples
     # Stacks can be repeated or extended
