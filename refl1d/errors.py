@@ -148,59 +148,78 @@ def calc_errors(problem, points):
         Array of (theory-data)/uncertainty for each data point in
         the measurement.  There will be one array returned per error sample.
     """
-    # Grab the individual samples
-    if hasattr(problem, 'models'):
-        models = [m.fitness for m in problem.models]
-    else:
-        models = [problem.fitness]
-
-    experiments = []
-    for m in models:
-        if hasattr(m, 'parts'):
-            experiments.extend(m.parts)
-        else:
-            experiments.append(m)
-    #probes = []
-    #for m in experiments:
-    #    if hasattr(m.probe, 'probes'):
-    #        probes.extend(m.probe.probes)
-    #    elif hasattr(m.probe, 'xs'):
-    #        probes.extend([p for p in m.probe if p])
-    #    else:
-    #        probes.append(p)
-
     # Find Q
-    def residQ(m):
-        if m.probe.polarized:
-            return np.hstack([xs.Q for xs in m.probe.xs if xs is not None])
-        else:
-            return m.probe.Q
-    Q = dict((m, residQ(m)) for m in experiments)
+    Q = [_residQ(m) for m in _experiments(problem)]
 
-    profiles = dict((m, []) for m in experiments)
-    residuals = dict((m, []) for m in experiments)
-    slabs = dict((m, []) for m in experiments)
-    def record_point():
-        problem.chisq_str() # Force reflectivity recalculation
-        for m in experiments:
-            D = m.residuals()
-            residuals[m].append(D+0)
-            slabs_i = [L.thickness.value for L in m.sample[1:-1]]
-            slabs[m].append(np.array(slabs_i))
-            if m.ismagnetic:
-                z, rho, irho, rhoM, thetaM = m.magnetic_step_profile()
-                profiles[m].append((z+0, rho+0, irho+0, rhoM+0, thetaM+0))
-            else:
-                z, rho, irho = m.smooth_profile()
-                profiles[m].append((z+0, rho+0, irho+0))
-    record_point() # Put best at slot 0, no alignment
+    # Put best at slot 0, no alignment
+    data = [_eval_point(problem, problem.getp())]
     for p in points:
-        problem.setp(p)
-        record_point()
+        data.append(_eval_point(problem, p))
 
-    # Turn residuals into arrays
-    residuals = dict((k, np.asarray(v).T) for k, v in residuals.items())
+    profiles, slabs, residuals = zip(*data)
+
+    # TODO: return sane datastructure
+    # Make a hashable version of model which just contains the name
+    # attribute, which is all that the rest of this code accesses.
+    models = [_HashableModel(m) for m in _experiments(problem)]
+
+    profiles = {h: [v[k] for v in profiles] for k, h in enumerate(models)}
+    slabs = {h: [v[k] for v in slabs] for k, h in enumerate(models)}
+    residuals = {h: np.asarray([v[k] for v in residuals]).T for k, h in enumerate(models)}
+    Q = {h: Q[k] for k, h in enumerate(models)}
+
+    #from .pstruct import pstruct, sstruct
+    #print("profiles", sstruct(profiles))
+    #print("slabs", sstruct(slabs))
+    #print("residuals", sstruct(residuals))
+    #print("Q", sstruct(Q))
+    #import sys; sys.exit()
+
     return profiles, slabs, Q, residuals
+
+class _HashableModel:
+    name: str
+    def __init__(self, model):
+        self.name = model.name
+    def __str__(self):
+        return f"model {self.name}"
+
+def _eval_point(problem, p):
+    problem.chisq_str() # Force reflectivity recalculation
+    problem.setp(p)
+    profiles, residuals, slabs = [], [], []
+    for m in _experiments(problem):
+        D = m.residuals()
+        residuals.append(D+0)
+        slabs_i = [L.thickness.value for L in m.sample[1:-1]]
+        slabs.append(np.array(slabs_i))
+        if m.ismagnetic:
+            z, rho, irho, rhoM, thetaM = m.magnetic_step_profile()
+            profiles.append((z+0, rho+0, irho+0, rhoM+0, thetaM+0))
+        else:
+            z, rho, irho = m.smooth_profile()
+            profiles.append((z+0, rho+0, irho+0))
+    return profiles, slabs, residuals
+
+def _experiments(problem):
+    """
+    Cycle through experiments yielding (k, m) pairs for each experiment.
+
+    The iterator is necessary because bumps substitutes the values from the
+    free parameters into the fitness via the model iterator in problem. In
+    order to keep the parametersets in sync we need to repeat that iteration
+    each time.
+    """
+    for m in problem.models:
+        parts = getattr(m, 'parts', [m])
+        for p in parts:
+            yield m
+
+def _residQ(m):
+    if m.probe.polarized:
+        return np.hstack([xs.Q for xs in m.probe.xs if xs is not None])
+    else:
+        return m.probe.Q
 
 def align_profiles(profiles, slabs, align):
     """
@@ -384,7 +403,7 @@ def _draw_overplot(group, index, label):
 
 def _profiles_contour(profiles, contours=CONTOURS, npoints=200):
     for model, group in profiles.items():
-        name = model.name
+        name = model.name if model.name is not None else 'model'
         absorbing = any((L[2] > 1e-4).any() for L in group)
         magnetic = (len(group[0]) > 3)
         # Find limits of all profiles
