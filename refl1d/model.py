@@ -43,7 +43,7 @@ import periodictable.nsf as nsf
 
 from bumps.parameter import (
     #BaseParameter as BasePar,
-    Calculation, Expression, Parameter as Par, IntegerParameter as IntPar, Function, to_dict)
+    Calculation, Parameter, to_dict)
 from bumps.util import field, field_desc, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
 from . import material as mat
@@ -62,8 +62,8 @@ class Layer: # Abstract base class
         Magnetic profile anchored to the layer.
     """
     name: str
-    thickness: Par
-    interface: Optional[Par] = None
+    thickness: Parameter
+    interface: Optional[Parameter] = None
     magnetism: Union[(Literal[None], *BaseMagnetism.__subclasses__())] = None
 
     # Trap calls to set magnetism attr so we can update the magnetism parameter
@@ -174,10 +174,10 @@ class Layer: # Abstract base class
         # Only set values if they are not None so that defaults
         # carry over from the copied layer
         if thickness is not None:
-            c.thickness = Par.default(thickness, limits=(0, None),
+            c.thickness = Parameter.default(thickness, limits=(0, None),
                                       name=self.name+" thickness")
         if interface is not None:
-            c.interface = Par.default(interface, limits=(0, None),
+            c.interface = Parameter.default(interface, limits=(0, None),
                                       name=self.name+" interface")
         if magnetism is not None:
             c.magnetism = magnetism
@@ -187,7 +187,7 @@ def _parinit(p, v):
     """
     If v is a parameter use v, otherwise use p but with value v.
     """
-    if isinstance(v, Par):
+    if isinstance(v, Parameter):
         p = v
     else:
         p.set(v)
@@ -197,7 +197,7 @@ def _parcopy(p, v):
     """
     If v is a parameter use v, otherwise use a copy of p but with value v.
     """
-    if isinstance(v, Par):
+    if isinstance(v, Parameter):
         p = v
     else:
         p = copy(p)
@@ -211,8 +211,8 @@ class Slab(Layer):
     A block of material.
     """
     name: str
-    thickness: Par
-    interface: Optional[Par] = None
+    thickness: Parameter
+    interface: Optional[Parameter] = None
     magnetism: Union[(Literal[None], *BaseMagnetism.__subclasses__())]
     material: Union[mat.SLD, mat.Material, mat.Vacuum]
 
@@ -222,9 +222,9 @@ class Slab(Layer):
             name = material.name
         self.name = name
         self.material = material
-        self.thickness = Par.default(thickness, limits=(0, None),
+        self.thickness = Parameter.default(thickness, limits=(0, None),
                                      name=name+" thickness")
-        self.interface = Par.default(interface, limits=(0, None),
+        self.interface = Parameter.default(interface, limits=(0, None),
                                      name=name+" interface")
         self.magnetism = magnetism
 
@@ -274,13 +274,13 @@ class Stack(Layer):
     name: str
     interface: Optional[Any]
     layers: List[Union['Slab', 'Repeat']]
-    thickness: Par = field_desc("always equals the sum of the layer thicknesses")
+    thickness: Parameter = field_desc("always equals the sum of the layer thicknesses")
 
     def __init__(self, base=None, layers=None, name="Stack", interface=None):
         self.name = name
         self.interface = None
         self._layers = []
-        self.thickness = Par(name=name + " thickness")
+        self.thickness = Parameter(name=name + " thickness")
         self._set_thickness()
         if layers is not None and base is None:
             base = layers
@@ -584,7 +584,7 @@ class Stack(Layer):
     # Define a little algebra for composing samples
     # Stacks can be repeated or extended
     def __mul__(self, other):
-        if isinstance(other, Par):
+        if isinstance(other, Parameter):
             pass
         elif isinstance(other, int) and other > 1:
             pass
@@ -625,26 +625,27 @@ class Repeat(Layer):
     Note: Repeat is not a type of Stack, but it does have a stack inside.
     """
     name: str
-    interface: Par
+    interface: Parameter
     magnetism: Union[(Literal[None], *BaseMagnetism.__subclasses__())]
-    repeat: IntPar
+    repeat: Parameter
     stack: Stack
-    thickness: Par
+    thickness: Parameter
 
     def __init__(self, stack, repeat=1, interface=None, name=None,
-                 magnetism=None, thickness:Optional[Par]=None):
+                 magnetism=None, thickness:Optional[Parameter]=None):
         if name is None: name = "multilayer"
         if interface is None: interface = stack[-1].interface.value
         self.magnetism = magnetism
         self.name = name
-        self.repeat = IntPar(repeat, limits=(0, None),
+        self.repeat = Parameter(repeat, limits=(0, None), 
+                             discrete=True,
                              name=name + " repeats")
         self.stack = stack
         # intentionally ignoring what was in thickness argument...
         # is this a good idea?
-        self.thickness = Par(name=name + " thickness")
+        self.thickness = Parameter(name=name + " thickness")
         self.thickness.equals(self.stack.thickness * self.repeat)
-        self.interface = Par.default(interface, limits=(0, None),
+        self.interface = Parameter.default(interface, limits=(0, None),
                                      name=name+" top interface")
 
     def to_dict(self):
