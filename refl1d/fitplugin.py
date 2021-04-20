@@ -14,6 +14,10 @@ from . import names as refl
 from . import __version__
 from .errors import calc_errors, show_errors
 
+# List of modules that contain dataclasses for the saved json file format
+from . import names, material, model, magnetism, probe, experiment
+SCHEMA_SOURCES = names, material, model, magnetism, probe, experiment
+
 # These are names used by the driver
 def data_view():
     from .view.data_view import DataView
@@ -47,25 +51,15 @@ def load_model(filename):
                 if f.filename.endswith('.py'):
                     return load_problem(f.filename, options=options)
     elif filename.endswith('.json'):
-        import json
-        from .serialize import from_dict
-        return from_dict(json.loads(open(filename, 'r').read()))
+        from bumps.serialize import load
+        return load(filename)
     else:
         return None
 
 def save_json(problem, basename):
-    import json
-    from .serialize import to_dict
-    try:
-        p = to_dict(problem)
-        #p['refl1d'] = __version__
-        json_file = basename + "-expt.json"
-        with open(json_file, 'w') as fid:
-            data = json.dumps(p)
-            fid.write(data)
-    except Exception:
-        traceback.print_exc()
-        warn("failed to create json structure for FitProblem")
+    from bumps.serialize import save
+    json_filename = basename + "-expt.json"
+    save(json_filename, problem)
 
 def new_model():
     stack = refl.silicon(0, 10) | refl.air
