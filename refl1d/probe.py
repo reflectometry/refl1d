@@ -1631,10 +1631,10 @@ class PolarizedNeutronProbe:
     *H* (tesla) is the magnitude of the applied field
     """
     name: str
-    mm: optional_xs
-    mp: optional_xs
-    pm: optional_xs
-    pp: optional_xs
+    mm: optional_xs = None
+    mp: optional_xs = None
+    pm: optional_xs = None
+    pp: optional_xs = None
     H: Parameter
     Aguide: Parameter
 
@@ -1669,8 +1669,8 @@ class PolarizedNeutronProbe:
         self._set_calc(self.T, self.L)
         self._check()
         spec = " "+name if name else ""
-        self.H = H if isinstance(H, Parameter) else Parameter.default(H, name="H"+spec)
-        self.Aguide = Aguide if isinstance(Aguide, Parameter) else Parameter.default(Aguide, name="Aguide"+spec,
+        self.H = Parameter.default(H, name="H"+spec)
+        self.Aguide = Parameter.default(Aguide, name="Aguide"+spec,
                                         limits=[-360, 360])
         
     @property
