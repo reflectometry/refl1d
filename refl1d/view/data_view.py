@@ -215,7 +215,6 @@ class DataView(wx.Panel):
             with self.pylab_interface:
                 ax = plt.gca()
                 #print "reset",reset, ax.get_autoscalex_on(), ax.get_xlim()
-                reset = reset or ax.get_autoscalex_on()
                 range_x = ax.get_xlim()
                 #print "composing"
                 plt.clf() # clear the canvas
