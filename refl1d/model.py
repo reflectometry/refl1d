@@ -64,7 +64,7 @@ class Layer: # Abstract base class
     name: str
     thickness: Parameter
     interface: Optional[Parameter] = None
-    magnetism: Union[(Literal[None], *BaseMagnetism.__subclasses__())] = None
+    magnetism: Optional[BaseMagnetism] = None
 
     # Trap calls to set magnetism attr so we can update the magnetism parameter
     # names with the layer name when we assign magnetism to the layer
@@ -213,7 +213,7 @@ class Slab(Layer):
     name: str
     thickness: Parameter
     interface: Optional[Parameter] = None
-    magnetism: Union[(Literal[None], *BaseMagnetism.__subclasses__())]
+    magnetism: Optional[BaseMagnetism]
     material: Union[mat.SLD, mat.Material, mat.Vacuum]
 
     def __init__(self, material=None, thickness=0, interface=0, name=None,
@@ -272,15 +272,18 @@ class Stack(Layer):
     the bottom of the overlaying layer. The stack may contain
     """
     name: str
-    interface: Optional[Any]
+    interface: Literal[None]
     layers: List[Union['Slab', 'Repeat']]
     thickness: Parameter = field_desc("always equals the sum of the layer thicknesses")
 
-    def __init__(self, base=None, layers=None, name="Stack", interface=None):
+    def __init__(self, base=None, layers=None, name="Stack", interface=None, thickness: Optional[Union[Parameter, float]]=None):
         self.name = name
         self.interface = None
         self._layers = []
-        self.thickness = Parameter(name=name + " thickness")
+        # make sure thickness.id is persistent through serialization:
+        thickness_id = getattr(thickness, 'id', None)
+        thickness = thickness if thickness is not None else 0
+        self.thickness = Parameter.default(thickness, name=name + " thickness", id=thickness_id)
         self._set_thickness()
         if layers is not None and base is None:
             base = layers
@@ -626,7 +629,7 @@ class Repeat(Layer):
     """
     name: str
     interface: Parameter
-    magnetism: Union[(Literal[None], *BaseMagnetism.__subclasses__())]
+    magnetism: Optional[BaseMagnetism]
     repeat: Parameter
     stack: Stack
     thickness: Parameter
