@@ -216,6 +216,7 @@ class DataView(wx.Panel):
                 ax = plt.gca()
                 #print "reset",reset, ax.get_autoscalex_on(), ax.get_xlim()
                 range_x = ax.get_xlim()
+                range_y = ax.get_ylim()
                 #print "composing"
                 plt.clf() # clear the canvas
                 #shift=20 if self.view == 'log' else 0
@@ -243,7 +244,9 @@ class DataView(wx.Panel):
                 #print "drawing"
                 if not reset:
                     self.toolbar.push_current()
-                    set_xrange(plt.gca(), range_x)
+                    ax = plt.gca()
+                    ax.set_xlim(range_x)
+                    ax.set_ylim(range_y)
                     self.toolbar.push_current()
                 plt.draw()
                 #print "done drawing"
@@ -263,6 +266,7 @@ class DataView(wx.Panel):
         wx.Yield()
         if self._cancel_calculate or fitness.is_reset(): return
 
+# DEPRECATED - using fixed y-range
 def set_xrange(ax, range_x):
     miny,maxy = inf,-inf
     for L in ax.get_lines():
