@@ -95,6 +95,9 @@ class ModelView(wx.Panel):
         self._need_interactors = self._need_redraw = False
         self.Bind(wx.EVT_SHOW, self.OnShow)
 
+    def SetTitle(self, *args, **kw):
+        pass
+
     def OnContextMenu(self,event):
         """
         Forward the context menu invocation to profile, if profile exists.
