@@ -11,7 +11,6 @@ import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.axes   import Subplot
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-from matplotlib.backends.backend_wxagg import FigureManager
 from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 
 from bumps.fitproblem import MultiFitProblem
@@ -50,9 +49,6 @@ class ModelView(wx.Panel):
         # Show toolbar or not?
         self.toolbar = NavigationToolbar2WxAgg( self.canvas )
         self.toolbar.Show(True)
-
-        # Create a figure manager to manage things
-        self.figmgr = FigureManager( self.canvas, 1, self )
 
         # Panel layout
         self.profile_selector_label = wx.StaticText(self, label="Sample")
@@ -94,9 +90,6 @@ class ModelView(wx.Panel):
         self.model = None
         self._need_interactors = self._need_redraw = False
         self.Bind(wx.EVT_SHOW, self.OnShow)
-
-    def SetTitle(self, *args, **kw):
-        pass
 
     def OnContextMenu(self,event):
         """
