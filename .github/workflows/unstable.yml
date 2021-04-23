@@ -55,7 +55,7 @@ jobs:
 
     - name: Build installer
       run: |
-        pwsh -command ".\$GITHUB_WORKSPACE\extra\build_win_installer.ps1"
+        pwsh -command ".\$GITHUB_WORKSPACE\extra\build_win_installer_unstable.ps1"
         mv dist\Refl1D*.zip unstable\Refl1D-windows-exe-latest.zip
 
     # See the following for how to upload to a release
@@ -75,6 +75,10 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: artifacts
+
+    - name: show files
+      run: |
+        ls * -l
 
     - name: Update unstable release
       uses: johnwbyrd/update-release@v1.0.0
