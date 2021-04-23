@@ -113,31 +113,31 @@ class DataView(wx.Panel):
     # ==== Views ====
     def OnLog(self, event):
         self.view = "log"
-        self.redraw()
+        self.redraw(reset=True)
 
     def OnLinear(self, event):
         self.view = "linear"
-        self.redraw()
+        self.redraw(reset=True)
 
     def OnFresnel(self, event):
         self.view = "fresnel"
-        self.redraw()
+        self.redraw(reset=True)
 
     def OnLogFresnel(self, event):
         self.view = "logfresnel"
-        self.redraw()
+        self.redraw(reset=True)
 
     def OnQ4(self, event):
         self.view = "q4"
-        self.redraw()
+        self.redraw(reset=True)
 
     def OnSA(self, event):
         self.view = "SA"
-        self.redraw()
+        self.redraw(reset=True)
 
     def OnResiduals(self, event):
         self.view = "residuals"
-        self.redraw()
+        self.redraw(reset=True)
 
     # ==== Model view interface ===
     def OnShow(self, event):
