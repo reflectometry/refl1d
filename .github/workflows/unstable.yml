@@ -86,4 +86,4 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         release: unstable
         tag: sid
-        files: unstable/Refl1D-windows-exe-latest.zip unstable/Refl1D-latest-source.zip
+        files: Refl1D-windows-exe-latest.zip Refl1D-latest-source.zip
