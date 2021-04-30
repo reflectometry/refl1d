@@ -407,15 +407,15 @@ class Stack(Layer):
         end_layer = -1
         for i, layer in enumerate(self._layers):
             # Trigger start of a magnetic layer
-            if layer.magnetism:
-                if magnetism:
+            if layer.magnetism is not None:
+                if magnetism is not None:
                     raise IndexError("magnetic layer %s overlap"%magnetism)
                 magnetism = layer.magnetism
                 #import sys; print >>sys.stderr, "magnetism", magnetism
                 anchor = slabs.thickness() + magnetism.dead_below.value
                 s_below = (nan if i == 0
                            else magnetism.interface_below.value
-                           if magnetism.interface_below
+                           if magnetism.interface_below is not None
                            else slabs.surface_sigma)
                 end_layer = i + magnetism.extent - 1
 
@@ -425,7 +425,7 @@ class Stack(Layer):
             # Wait for end of magnetic layer
             if i == end_layer:
                 s_above = (magnetism.interface_above.value
-                           if magnetism.interface_above
+                           if magnetism.interface_above is not None
                            else slabs.surface_sigma)
                 w = (slabs.thickness() - magnetism.dead_above.value) - anchor
                 magnetism.render(probe, slabs, thickness=w, anchor=anchor,
@@ -721,7 +721,7 @@ class Repeat(Layer):
             return
         mark = len(slabs)
         self.stack.render(probe, slabs)
-        slabs.repeat(mark, nr, interface=self.interface.value)
+        slabs.repeat(mark, int(nr), interface=self.interface.value)
 
     def __str__(self):
         return "(%s)x%d"%(str(self.stack), self.repeat.value)
