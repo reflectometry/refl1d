@@ -145,8 +145,8 @@ class FreeInterface(Layer):
                    for i, p in enumerate(dz)]
         self.dp = [Par.default(p, name=name+" dp[%d]"%i, limits=(0, inf))
                    for i, p in enumerate(dp)]
-        self.inflections = Par(ParFunction(
-            inflections, dx=self.dz, dy=self.dp), name=name+" inflections")
+        self.inflections = Par(name=name+" inflections")
+        self.inflections.equals(ParFunction(inflections, dx=self.dz, dy=self.dp))
 
     def parameters(self):
         return {
