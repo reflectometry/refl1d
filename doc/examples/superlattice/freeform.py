@@ -23,7 +23,7 @@ from refl1d.names import *
 
 chrome = Material('Cr')
 gold = Material('Au')
-solvent = Material('H2O', density=1)
+solvent = Material('H2O', formula_density=1)
 
 
 # The sample description is more complicated.  When we define a freeform
