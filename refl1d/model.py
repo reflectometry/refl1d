@@ -262,8 +262,22 @@ class Slab(Layer):
         })
 
 
+@schema(classname="Stack")
+class StackSchema:
+    """
+    Reflectometry layer stack
+
+    A reflectometry sample is defined by a stack of layers. Each layer
+    has an interface describing how the top of the layer interacts with
+    the bottom of the overlaying layer. The stack may contain Slab or Repeats.
+    """
+    name: str
+    interface: Literal[None]
+    layers: List[Union['Slab', 'Repeat']]
+    thickness: Parameter = field_desc("always equals the sum of the layer thicknesses")
+
 @schema(init=False)
-class Stack(Layer):
+class Stack(Layer, StackSchema):
     """
     Reflectometry layer stack
 
@@ -271,10 +285,6 @@ class Stack(Layer):
     has an interface describing how the top of the layer interacts with
     the bottom of the overlaying layer. The stack may contain
     """
-    name: str
-    interface: Literal[None]
-    layers: List[Union['Slab', 'Repeat']]
-    thickness: Parameter = field_desc("always equals the sum of the layer thicknesses")
 
     def __init__(self, base=None, layers=None, name="Stack", interface=None, thickness: Optional[Union[Parameter, float]]=None):
         self.name = name
@@ -289,8 +299,10 @@ class Stack(Layer):
             base = layers
         if base is not None:
             self.add(base)
-        # TODO: can we make this a class variable?
-        self.__class__.layers = property(lambda self: self._layers)
+
+    @property
+    def layers(self):
+        return self._layers
 
     @property
     def ismagnetic(self):
