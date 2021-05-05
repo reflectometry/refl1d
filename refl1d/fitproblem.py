@@ -11,5 +11,5 @@ class FitProblemSchema(_FitProblemSchema):
     __doc__ =  _FitProblem.__doc__.replace("Fitness", "Experiment")
     models: List[Experiment]
 
-class FitProblem(_FitProblem):
+class FitProblem(_FitProblem, FitProblemSchema):
     ...

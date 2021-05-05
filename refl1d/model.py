@@ -276,7 +276,7 @@ class StackSchema:
     layers: List[Union['Slab', 'Repeat']]
     thickness: Parameter = field_desc("always equals the sum of the layer thicknesses")
 
-@schema(init=False)
+
 class Stack(Layer, StackSchema):
     """
     Reflectometry layer stack
