@@ -1,5 +1,9 @@
 /* This program is public domain. */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
@@ -160,3 +164,7 @@ convolve_sampled(size_t Nin, const double xin[], const double yin[],
     }
   }
 }
+
+#ifdef __cplusplus
+}
+#endif

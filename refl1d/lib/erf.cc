@@ -10,6 +10,10 @@
  * ====================================================
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define erf _local_erf 
 #define erfc _local_erfc 
 double _local_erf(double x); 
@@ -321,3 +325,7 @@ sb7  = -2.24409524465858183362e+01; /* 0xC03670E2, 0x42712D62 */
 	    if(hx>0) return tiny*tiny; else return two-tiny;
 	}
 }
+
+#ifdef __cplusplus
+}
+#endif

@@ -1,5 +1,9 @@
 /* This program is public domain. */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // MSVC 2008 doesn't define erf()
 #if defined(_MSC_VER) && _MSC_VER<=1600
   #define const
@@ -266,3 +270,7 @@ convolve(size_t Nin, const double xin[], const double yin[],
   }
 
 }
+
+#ifdef __cplusplus
+}
+#endif
