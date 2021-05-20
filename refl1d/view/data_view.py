@@ -113,31 +113,31 @@ class DataView(wx.Panel):
     # ==== Views ====
     def OnLog(self, event):
         self.view = "log"
-        self.redraw()
+        self.redraw(reset=True)
 
     def OnLinear(self, event):
         self.view = "linear"
-        self.redraw()
+        self.redraw(reset=True)
 
     def OnFresnel(self, event):
         self.view = "fresnel"
-        self.redraw()
+        self.redraw(reset=True)
 
     def OnLogFresnel(self, event):
         self.view = "logfresnel"
-        self.redraw()
+        self.redraw(reset=True)
 
     def OnQ4(self, event):
         self.view = "q4"
-        self.redraw()
+        self.redraw(reset=True)
 
     def OnSA(self, event):
         self.view = "SA"
-        self.redraw()
+        self.redraw(reset=True)
 
     def OnResiduals(self, event):
         self.view = "residuals"
-        self.redraw()
+        self.redraw(reset=True)
 
     # ==== Model view interface ===
     def OnShow(self, event):
@@ -215,8 +215,8 @@ class DataView(wx.Panel):
             with self.pylab_interface:
                 ax = plt.gca()
                 #print "reset",reset, ax.get_autoscalex_on(), ax.get_xlim()
-                reset = reset or ax.get_autoscalex_on()
                 range_x = ax.get_xlim()
+                range_y = ax.get_ylim()
                 #print "composing"
                 plt.clf() # clear the canvas
                 #shift=20 if self.view == 'log' else 0
@@ -244,7 +244,9 @@ class DataView(wx.Panel):
                 #print "drawing"
                 if not reset:
                     self.toolbar.push_current()
-                    set_xrange(plt.gca(), range_x)
+                    ax = plt.gca()
+                    ax.set_xlim(range_x)
+                    ax.set_ylim(range_y)
                     self.toolbar.push_current()
                 plt.draw()
                 #print "done drawing"
@@ -264,6 +266,7 @@ class DataView(wx.Panel):
         wx.Yield()
         if self._cancel_calculate or fitness.is_reset(): return
 
+# DEPRECATED - using fixed y-range
 def set_xrange(ax, range_x):
     miny,maxy = inf,-inf
     for L in ax.get_lines():

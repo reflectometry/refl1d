@@ -11,7 +11,7 @@ import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.axes   import Subplot
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-from matplotlib.backends.backend_wxagg import FigureManager
+from matplotlib.backend_bases import FigureManagerBase
 from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 
 from bumps.fitproblem import FitProblem
@@ -52,7 +52,7 @@ class ModelView(wx.Panel):
         self.toolbar.Show(True)
 
         # Create a figure manager to manage things
-        self.figmgr = FigureManager( self.canvas, 1, self )
+        self.figmgr = FigureManagerBase( self.canvas, 1 )
 
         # Panel layout
         self.profile_selector_label = wx.StaticText(self, label="Sample")
