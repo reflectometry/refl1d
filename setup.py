@@ -23,7 +23,12 @@ for line in open(os.path.join("refl1d", "__init__.py")):
         version = line.split('"')[1]
 #print("Version: "+version)
 
-extra_compile_args =  {'msvc': ['/EHsc']}
+# TODO: remove c++ version pinning when c++11 is most common gcc standard
+# (i.e. when RHEL7 is not commonly used anymore)
+extra_compile_args =  {
+    'msvc': ['/EHsc'],
+    'unix': ['-std=c++11'],
+}
 extra_link_args =  {}
 
 class build_ext_subclass(build_ext):
@@ -54,10 +59,10 @@ def reflmodule_config():
     S = ("reflmodule.cc", "methods.cc",
          "reflectivity.cc", "magnetic.cc",
          "contract_profile.cc",
-         "convolve.c", "convolve_sampled.c",
+         "convolve.cc", "convolve_sampled.cc",
         )
 
-    Sdeps = ("erf.c", "methods.h", "rebin.h", "rebin2D.h", "reflcalc.h")
+    Sdeps = ("erf.cc", "methods.h", "rebin.h", "rebin2D.h", "reflcalc.h")
     sources = [os.path.join('refl1d', 'lib', f) for f in S]
     depends = [os.path.join('refl1d', 'lib', f) for f in Sdeps]
     return Extension('refl1d.reflmodule',
