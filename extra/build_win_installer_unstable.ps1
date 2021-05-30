@@ -38,7 +38,7 @@ $PTH_PATH = "build\$APP_PATH\$PTH_FILE"
 
 # Use pip to install the app from the binary wheel in the dist directory.
 Write-Host "Installing $APP_NAME-$APP_VERSION into embedded environment"
-& "build\$APP_PATH\Scripts\pip.exe" install --no-warn-script-location periodictable==1.5.3 numba wxpython numpy "git+https://github.com/bumps/bumps.git"
+& "build\$APP_PATH\Scripts\pip.exe" install --no-warn-script-location numba wxpython numpy "git+https://github.com/bumps/bumps.git"
 & "build\$APP_PATH\Scripts\pip.exe" install --no-warn-script-location "$PSScriptRoot\..\dist\$PACKAGE-$APP_VERSION-$WHEEL_TAG.whl"
 
 # Add batch files for starting the application
