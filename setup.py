@@ -69,7 +69,6 @@ def reflmodule_config():
                      sources=sources,
                      depends=depends,
                      language="c++",
-                     py_limited_api="cp32",
                      )
 
 #TODO: write a proper dependency checker for packages which cannot be
