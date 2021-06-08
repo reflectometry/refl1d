@@ -1238,7 +1238,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
           L=None, dL=None, T=None, dT=None, dR=None,
           FWHM=False, radiation=None,
           columns=None, data_range=(None, None),
-          resolution='normal',
+          resolution='normal',oversampling=None,
          ):
     r"""
     Load in four column data Q, R, dR, dQ.
@@ -1327,6 +1327,9 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
 
     *resolution* is 'normal' (default) or 'uniform'. Use uniform if you
     are merging Q points from a finely stepped energy sensitive measurement.
+
+    *oversampling* is None or a positive integer indicating how many points to add
+    between data point to support sparse data with denser theory (for PolarizedNeutronProbe)
     """
     entries = parse_multi(filename, keysep=keysep, sep=sep, comment=comment)
     if columns:
@@ -1368,7 +1371,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
         if any(isinstance(d, QProbe) for d in xs if d is not None):
             probe = PolarizedQProbe(xs, Aguide=Aguide, H=H)
         else:
-            probe = PolarizedNeutronProbe(xs, Aguide=Aguide, H=H)
+            probe = PolarizedNeutronProbe(xs, Aguide=Aguide, H=H, oversampling=oversampling)
     return probe
 
 def _data_as_probe(entry, probe_args, T, L, dT, dL, dR, FWHM, radiation,
@@ -1609,9 +1612,10 @@ class PolarizedNeutronProbe(object):
     show_resolution = None  # Default to Probe.show_resolution when None
     substrate = surface = None
     polarized = True
-    def __init__(self, xs=None, name=None, Aguide=BASE_GUIDE_ANGLE, H=0):
+    def __init__(self, xs=None, name=None, Aguide=BASE_GUIDE_ANGLE, H=0, oversampling=None):
         self._xs = xs
         self._theta_offsets = None
+        self.oversampling = oversampling
 
         if name is None and self.xs[0] is not None:
             name = self.xs[0].name
@@ -1724,7 +1728,7 @@ class PolarizedNeutronProbe(object):
                 x.theta_offset = theta_offset
                 x.sample_broadening = sample_broadening
 
-    def oversample(self, n=6, seed=1):
+    def _oversample(self, n=6, seed=1):
         # doc string is inherited from parent (see below)
         rng = numpy.random.RandomState(seed=seed)
         T = rng.normal(self.T[:, None], self.dT[:, None], size=(len(self.dT), n))
@@ -1732,29 +1736,27 @@ class PolarizedNeutronProbe(object):
         T = T.flatten()
         L = L.flatten()
         self._set_calc(T, L)
-    oversample.__doc__ = Probe.oversample.__doc__
+    _oversample.__doc__ = Probe.oversample.__doc__
 
     def _calculate_union(self):
         theta_offsets = [x.theta_offset.value for x in self.xs if x is not None]
+        # print('theta_offsets', self._theta_offsets, theta_offsets)
         if self._theta_offsets is not None and theta_offsets == self._theta_offsets:
-            # no change in offsets: use cached values of measurement union
-            return
+           # print("no offset change... returning", self._theta_offsets, theta_offsets)
+           # no change in offsets: use cached values of measurement union
+           return
 
-        unique_offsets = set(theta_offsets)
-        shared_offset = theta_offsets[0] if len(unique_offsets) == 1 else None
-        if self._theta_offsets is not None \
-            and shared_offset is not None \
-            and len(set(self._theta_offsets)) == 1:
-            # offset was shared, and is shared, but value changed
-            Q = TL2Q(T=self.T + shared_offset, L=self.L)
-            self.calc_Qo = Q
         else:
             # unshared offsets changed, or union has not been calculated before
             self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
                 = measurement_union(self.xs)
-            self._set_calc(self.T, self.L)
 
-        self._theta_offsets = theta_offsets
+            if self.oversampling is None:
+                self._set_calc(self.T, self.L)
+            else:
+                self._oversample(self.oversampling)
+            
+            self._theta_offsets = theta_offsets
 
     @property
     def calc_Q(self):
