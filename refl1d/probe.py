@@ -1616,6 +1616,7 @@ class PolarizedNeutronProbe(object):
         self._xs = xs
         self._theta_offsets = None
         self.oversampling = oversampling
+        self.oversampling_seed = 1
 
         if name is None and self.xs[0] is not None:
             name = self.xs[0].name
@@ -1728,6 +1729,11 @@ class PolarizedNeutronProbe(object):
                 x.theta_offset = theta_offset
                 x.sample_broadening = sample_broadening
 
+    def oversample(self, n=6, seed=1):
+        self._oversample(n, seed)
+        self.oversampling = n
+        self.oversampling_seed = seed
+
     def _oversample(self, n=6, seed=1):
         # doc string is inherited from parent (see below)
         rng = numpy.random.RandomState(seed=seed)
@@ -1754,7 +1760,7 @@ class PolarizedNeutronProbe(object):
             if self.oversampling is None:
                 self._set_calc(self.T, self.L)
             else:
-                self._oversample(self.oversampling)
+                self._oversample(self.oversampling, self.oversampling_seed)
             
             self._theta_offsets = theta_offsets
 
