@@ -322,6 +322,7 @@ EPS = np.finfo(float).eps
 B2SLD = 2.31604654  # Scattering factor for B field 1e-6
 
 
+@njit
 def _magnetic_amplitude_py(d, sigma, rho, irho,
                                    rhoM, u1, u3, Aguide, KZ, rho_index,
                                    Ra, Rb, Rc, Rd):
@@ -331,14 +332,16 @@ def _magnetic_amplitude_py(d, sigma, rho, irho,
     """
     #assert rho_index is None
     layers = len(d)
-    dummy = np.empty_like(d)
+    points = len(KZ)
+    dummy = np.empty_like(Ra)
     if (np.fabs(rhoM[0]) <= MINIMAL_RHO_M and np.fabs(rhoM[layers-1]) <= MINIMAL_RHO_M):
         # calculations for I+ and I- are the same in the fronting and backing.
         ip = 1
         # ifdef _OPENMP
         # pragma omp parallel for
         # endif
-        for i in prange(layers):
+        
+        for i in prange(points):
           Cr4xa(layers, d, sigma, ip, rho, irho, rhoM, u1, u3,
                 Aguide, KZ, Ra, Rb, Rc, Rd, i)
     else:
@@ -346,7 +349,7 @@ def _magnetic_amplitude_py(d, sigma, rho, irho,
         # ifdef _OPENMP
         # pragma omp parallel for
         # endif
-        for i in prange(layers):
+        for i in prange(points):
             Cr4xa(layers, d, sigma, ip, rho, irho, rhoM, u1, u3,
                 Aguide, KZ, Ra, Rb, dummy, dummy, i)
 
@@ -354,16 +357,16 @@ def _magnetic_amplitude_py(d, sigma, rho, irho,
         # ifdef _OPENMP
         # pragma omp parallel for
         # endif
-        for i in prange(layers):
+        for i in prange(points):
             Cr4xa(layers, d, sigma, ip, rho, irho, rhoM, u1, u3,
                 Aguide, KZ, dummy, dummy, Rc, Rd, i)
 
-
+@njit
 def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3,
                 Aguide, kz_in, YA, YB, YC, YD, i):
 
-    sqrt = np.lib.scimath.sqrt
-    #sqrt = np.sqrt
+    #sqrt = np.lib.scimath.sqrt
+    sqrt = np.sqrt
     exp = np.exp
     fabs = np.fabs
 
@@ -498,7 +501,6 @@ def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3,
         S1LP = -sqrt(complex(PI4*(RHO[LP]+RHOM[LP])-E0, -PI4*(fabs(IRHO[LP])+EPS)))
         S3LP = -sqrt(complex(PI4*(RHO[LP]-RHOM[LP])-E0, -PI4*(fabs(IRHO[LP])+EPS)))
         SIGMAL = SIGMA[L+SIGMA_OFFSET]
-        print(LP, RHO[LP], E0, S1LP*S1L, KZ)
 
         if (abs(U1[LP]) <= 1.0):
             # then Bz >= 0
@@ -535,7 +537,6 @@ def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3,
         A11 = A22 = DBG * (1.0 + FS1S1)
         A11 *= ES1L * ENS1LP
         A22 *= ENS1L * ES1LP
-        #print(DBG, FS1S1, S1L, S1LP, SIGMAL)
         A12 = A21 = DBG * (1.0 - FS1S1) * exp(2.*S1L*S1LP*SIGMAL*SIGMAL)
         A12 *= ENS1L * ENS1LP
         A21 *= ES1L  * ES1LP
@@ -601,15 +602,14 @@ def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3,
         L = LP
     
     #    Done computing B = A(N)*...*A(2)*A(1)*I
-
     DETW=(B44*B22-B24*B42)
 
 
     #    Calculate reflectivity coefficients specified by POLSTAT
-    YA[i] = (B24*B41-B21*B44)/DETW; # ++
-    YB[i] = (B21*B42-B41*B22)/DETW; # +-
-    YC[i] = (B24*B43-B23*B44)/DETW; # -+
-    YD[i] = (B23*B42-B43*B22)/DETW; # --
+    YA[i] = (B24*B41-B21*B44)/DETW # ++
+    YB[i] = (B21*B42-B41*B22)/DETW # +-
+    YC[i] = (B24*B43-B23*B44)/DETW # -+
+    YD[i] = (B23*B42-B43*B22)/DETW # --
 
 @ njit('(f8[:], f8[:], f8[:], f8[:], f8[:])')
 def _convolve_uniform(xi, yi, x, dx, y):
