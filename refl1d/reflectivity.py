@@ -13,7 +13,7 @@ from __future__ import print_function
 
 from six.moves import reduce
 
-#__doc__ = "Fundamental reflectivity calculations"
+# __doc__ = "Fundamental reflectivity calculations"
 __author__ = "Paul Kienzle"
 __all__ = ['reflectivity', 'reflectivity_amplitude',
            'magnetic_reflectivity', 'magnetic_amplitude',
@@ -23,9 +23,10 @@ __all__ = ['reflectivity', 'reflectivity_amplitude',
 import numpy as np
 from numpy import pi, sin, cos, conj, radians
 # delay load so doc build doesn't require compilation
-#from . import reflmodule
+# from . import reflmodule
 
 BASE_GUIDE_ANGLE = 270.0
+
 
 def _dense(x, dtype='d'):
     return np.ascontiguousarray(x, dtype)
@@ -61,6 +62,7 @@ def reflectivity(*args, **kw):
     """
     r = reflectivity_amplitude(*args, **kw)
     return (r*conj(r)).real
+
 
 def reflectivity_amplitude(kz=None,
                            depth=None,
@@ -115,14 +117,13 @@ def reflectivity_amplitude(kz=None,
     else:
         irho = _dense(irho, 'd')
 
-
-    #print(irho.shape, irho[:,0], irho[:,-1])
+    # print(irho.shape, irho[:,0], irho[:,-1])
     irho[irho < 0] = 0.
-    #print depth.shape, rho.shape, irho.shape, sigma.shape
-    #print depth.dtype, rho.dtype, irho.dtype, sigma.dtype
+    # print depth.shape, rho.shape, irho.shape, sigma.shape
+    # print depth.dtype, rho.dtype, irho.dtype, sigma.dtype
     r = np.empty(kz.shape, 'D')
-    #print "amplitude", depth, rho, kz, rho_index
-    #print depth.shape, sigma.shape, rho.shape, irho.shape, kz.shape
+    # print "amplitude", depth, rho, kz, rho_index
+    # print depth.shape, sigma.shape, rho.shape, irho.shape, kz.shape
     reflmodule._reflectivity_amplitude(depth, sigma, rho, irho, kz,
                                        rho_index, r)
     return r
@@ -170,6 +171,7 @@ def magnetic_reflectivity(*args, **kw):
     r = magnetic_amplitude(*args, **kw)
     return [(z*z.conj()).real for z in r]
 
+
 def unpolarized_magnetic(*args, **kw):
     """
     Returns the average of magnetic reflectivity for all cross-sections.
@@ -178,7 +180,9 @@ def unpolarized_magnetic(*args, **kw):
     """
     return reduce(np.add, magnetic_reflectivity(*args, **kw))/2.
 
+
 B2SLD = 2.31604654  # Scattering factor for B field 1e-6/
+
 
 def magnetic_amplitude(kz,
                        depth,
@@ -213,19 +217,24 @@ def magnetic_amplitude(kz,
     if np.isscalar(sigma):
         sigma = sigma*np.ones(n-1, 'd')
 
-    #kz = -kz
-    #depth, rho, irho, sigma, rhoM, thetaM = [v[::-1] for v in (depth, rho, irho, sigma, rhoM, thetaM)]
-    depth, rho, irho, sigma = [_dense(a, 'd') for a in (depth, rho, irho, sigma)]
-    #np.set_printoptions(linewidth=1000)
-    #print(np.vstack((depth, np.hstack((sigma, np.nan)), rho, irho, rhoM, thetaM)).T)
+    # kz = -kz
+    # depth, rho, irho, sigma, rhoM, thetaM = [v[::-1] for v in (depth, rho, irho, sigma, rhoM, thetaM)]
+    depth, rho, irho, sigma = [_dense(a, 'd')
+                                      for a in (depth, rho, irho, sigma)]
+    # np.set_printoptions(linewidth=1000)
+    # print(np.vstack((depth, np.hstack((sigma, np.nan)), rho, irho, rhoM, thetaM)).T)
 
     sld_b, u1, u3 = calculate_u1_u3(H, rhoM, thetaM, Aguide)
 
     R1, R2, R3, R4 = [np.empty(kz.shape, 'D') for pol in (1, 2, 3, 4)]
-    reflmodule._magnetic_amplitude(depth, sigma, rho, irho,
+    # reflmodule._magnetic_amplitude(depth, sigma, rho, irho,
+    #                                sld_b, u1, u3, Aguide, kz, rho_index,
+    #                                R1, R2, R3, R4)
+    _magnetic_amplitude_py(depth, sigma, rho, irho,
                                    sld_b, u1, u3, Aguide, kz, rho_index,
                                    R1, R2, R3, R4)
     return R1, R2, R3, R4
+
 
 def calculate_u1_u3(H, rhoM, thetaM, Aguide):
     from . import reflmodule
@@ -238,33 +247,36 @@ def calculate_u1_u3(H, rhoM, thetaM, Aguide):
 
     return sld_b, u1, u3
 
+
 def calculate_u1_u3_py(H, rhoM, thetaM, Aguide):
     rotate_M = True
 
-    EPS = np.finfo('f').tiny # not 1e-20 # epsilon offset for divisions.
+    EPS = np.finfo('f').tiny  # not 1e-20 # epsilon offset for divisions.
     thetaM = radians(thetaM)
     phiH = radians(Aguide - BASE_GUIDE_ANGLE)
-    thetaH = np.pi/2.0 # by convention, H is in y-z plane so theta = pi/2
+    thetaH = np.pi/2.0  # by convention, H is in y-z plane so theta = pi/2
 
     sld_h = B2SLD * H
     sld_m_x = rhoM * np.cos(thetaM)
     sld_m_y = rhoM * np.sin(thetaM)
-    sld_m_z = 0.0 # by Maxwell's equations, H_demag = mz so we'll just cancel it here
+    sld_m_z = 0.0  # by Maxwell's equations, H_demag = mz so we'll just cancel it here
     # The purpose of AGUIDE is to rotate the z-axis of the sample coordinate
     # system so that it is aligned with the quantization axis z, defined to be
     # the direction of the magnetic field outside the sample.
     if rotate_M:
         # rotate the M vector instead of the transfer matrix!
         # First, rotate the M vector about the x axis:
-        new_my = sld_m_z * sin(radians(Aguide)) + sld_m_y * cos(radians(Aguide))
-        new_mz = sld_m_z * cos(radians(Aguide)) - sld_m_y * sin(radians(Aguide))
+        new_my = sld_m_z * sin(radians(Aguide)) + \
+                               sld_m_y * cos(radians(Aguide))
+        new_mz = sld_m_z * cos(radians(Aguide)) - \
+                               sld_m_y * sin(radians(Aguide))
         sld_m_y, sld_m_z = new_my, new_mz
         sld_h_x = sld_h_y = 0.0
         sld_h_z = sld_h
         # Then, don't rotate the transfer matrix
         Aguide = 0.0
     else:
-        sld_h_x = sld_h * np.cos(thetaH) # zero
+        sld_h_x = sld_h * np.cos(thetaH)  # zero
         sld_h_y = sld_h * np.sin(thetaH) * np.cos(phiH)
         sld_h_z = sld_h * np.sin(thetaH) * np.sin(phiH)
 
@@ -285,17 +297,19 @@ def calculate_u1_u3_py(H, rhoM, thetaM, Aguide):
 
     u1 = u1_num/u1_den
     u3 = u3_num/u3_den
-    #print "u1", u1
-    #print "u3", u3
+    # print "u1", u1
+    # print "u3", u3
     return sld_b, u1, u3
 
+
 try:
-    #raise ImportError() # uncomment to force numba off
-    from numba import njit
+    # raise ImportError() # uncomment to force numba off
+    from numba import njit, prange
     USE_NUMBA = True
 except ImportError:
     USE_NUMBA = False
     # if no numba then njit does nothing
+
     def njit(*args, **kw):
         # Check for bare @njit, in which case we just return the function.
         if len(args) == 1 and callable(args[0]) and not kw:
@@ -303,7 +317,301 @@ except ImportError:
         # Otherwise we have @njit(...), so return the identity decorator.
         return lambda fn: fn
 
-@njit('(f8[:], f8[:], f8[:], f8[:], f8[:])')
+MINIMAL_RHO_M = 1e-2  # in units of 1e-6/A^2
+EPS = np.finfo(float).eps
+B2SLD = 2.31604654  # Scattering factor for B field 1e-6
+
+
+def _magnetic_amplitude_py(d, sigma, rho, irho,
+                                   rhoM, u1, u3, Aguide, KZ, rho_index,
+                                   Ra, Rb, Rc, Rd):
+    """
+    python version of calculation
+    implicit returns: Ra, Rb, Rc, Rd
+    """
+    #assert rho_index is None
+    layers = len(d)
+    dummy = np.empty_like(d)
+    if (np.fabs(rhoM[0]) <= MINIMAL_RHO_M and np.fabs(rhoM[layers-1]) <= MINIMAL_RHO_M):
+        # calculations for I+ and I- are the same in the fronting and backing.
+        ip = 1
+        # ifdef _OPENMP
+        # pragma omp parallel for
+        # endif
+        for i in prange(layers):
+          Cr4xa(layers, d, sigma, ip, rho, irho, rhoM, u1, u3,
+                Aguide, KZ, Ra, Rb, Rc, Rd, i)
+    else:
+        ip = 1;  # plus polarization
+        # ifdef _OPENMP
+        # pragma omp parallel for
+        # endif
+        for i in prange(layers):
+            Cr4xa(layers, d, sigma, ip, rho, irho, rhoM, u1, u3,
+                Aguide, KZ, Ra, Rb, dummy, dummy, i)
+
+        ip = -1;  # minus polarization
+        # ifdef _OPENMP
+        # pragma omp parallel for
+        # endif
+        for i in prange(layers):
+            Cr4xa(layers, d, sigma, ip, rho, irho, rhoM, u1, u3,
+                Aguide, KZ, dummy, dummy, Rc, Rd, i)
+
+
+def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3,
+                Aguide, kz_in, YA, YB, YC, YD, i):
+
+    sqrt = np.lib.scimath.sqrt
+    #sqrt = np.sqrt
+    exp = np.exp
+    fabs = np.fabs
+
+    EPS = 1e-10
+    PI4 = np.pi * 4.0e-6
+    CR = complex(1.0, 0.0)
+    CI = complex(0.0, 1.0)
+
+    KZ = kz_in[i]
+
+    if (KZ <= -1.e-10):
+        L = N-1
+        STEP = -1
+        SIGMA_OFFSET = -1
+    elif (KZ >= 1.e-10):
+        L = 0
+        STEP = 1
+        SIGMA_OFFSET = 0
+    else:
+        YA[i] = -1.
+        YB[i] = 0.
+        YC[i] = 0.
+        YD[i] = -1.
+        return
+
+    #    Changing the target KZ is equivalent to subtracting the fronting
+    #    medium SLD.
+
+    if (IP > 0):
+        # IP = 1 specifies polarization of the incident beam I+
+        E0 = KZ*KZ + PI4*(RHO[L]+RHOM[L])
+    else:
+        # IP = -1 specifies polarization of the incident beam I-
+        E0 = KZ*KZ + PI4*(RHO[L]-RHOM[L])
+
+    Z = 0.0
+    if (N > 1):
+        # chi in layer 1
+        LP = L + STEP
+        # Branch selection:  the -sqrt below for S1 and S3 will be
+        #     +Imag for KZ > Kcrit,
+        #     -Real for KZ < Kcrit
+        # which covers the S1, S3 waves allowed by the boundary conditions in the
+        # fronting and backing medium:
+        # either traveling forward (+Imag) or decaying exponentially forward (-Real).
+        # The decaying exponential only occurs for the transmitted forward wave in the backing:
+        # the root +iKz is automatically chosen for the incident wave in the fronting.
+        #
+        # In the fronting, the -S1 and -S3 waves are either traveling waves backward (-Imag)
+        # or decaying along the -z reflection direction (-Real) * (-z) = (+Real*z).
+        # NB: This decaying reflection only occurs when the reflected wave is below Kcrit
+        # while the incident wave is above Kcrit, so it only happens for spin-flip from
+        # minus to plus (lower to higher potential energy) and the observed R-+ will
+        # actually be zero at large distances from the interface.
+        #
+        # In the backing, the -S1 and -S3 waves are explicitly set to be zero amplitude
+        # by the boundary conditions (neutrons only incident in the fronting medium - no
+        # source of neutrons below).
+        #
+        S1L = -sqrt(complex(PI4*(RHO[L]+RHOM[L]) -
+                    E0, -PI4*(fabs(IRHO[L])+EPS)))
+        S3L = -sqrt(complex(PI4*(RHO[L]-RHOM[L]) -
+                    E0, -PI4*(fabs(IRHO[L])+EPS)))
+        S1LP = -sqrt(complex(PI4*(RHO[LP]+RHOM[LP]) -
+                     E0, -PI4*(fabs(IRHO[LP])+EPS)))
+        S3LP = -sqrt(complex(PI4*(RHO[LP]-RHOM[LP]) -
+                     E0, -PI4*(fabs(IRHO[LP])+EPS)))
+        SIGMAL = SIGMA[L+SIGMA_OFFSET]
+
+        if (abs(U1[L]) <= 1.0):
+            # then Bz >= 0
+            # BL and GL are zero in the fronting.
+            pass
+        else:
+            # then Bz < 0: flip!
+            # This is probably impossible, since Bz defines the +z direction
+            # in the fronting medium, but just in case...
+            SSWAP = S1L
+            S1L = S3L
+            S3L = SSWAP;  # swap S3 and S1
+
+        if (abs(U1[LP]) <= 1.0):
+            # then Bz >= 0
+            BLP = U1[LP]
+            GLP = 1.0/U3[LP]
+        else:
+            # then Bz < 0: flip!
+            BLP = U3[LP]
+            GLP = 1.0/U1[LP]
+            SSWAP = S1LP
+            S1LP = S3LP
+            S3LP = SSWAP;  # swap S3 and S1
+
+        DELTA = 0.5*CR / (1.0 - (BLP*GLP))
+
+        FS1S1 = S1L/S1LP
+        FS1S3 = S1L/S3LP
+        FS3S1 = S3L/S1LP
+        FS3S3 = S3L/S3LP
+
+        B11 = DELTA * 1.0 * (1.0 + FS1S1)
+        B12 = DELTA * 1.0 * (1.0 - FS1S1) * exp(2.*S1L*S1LP*SIGMAL*SIGMAL)
+        B13 = DELTA * -GLP * (1.0 + FS3S1)
+        B14 = DELTA * -GLP * (1.0 - FS3S1) * exp(2.*S3L*S1LP*SIGMAL*SIGMAL)
+
+        B21 = DELTA * 1.0 * (1.0 - FS1S1) * exp(2.*S1L*S1LP*SIGMAL*SIGMAL)
+        B22 = DELTA * 1.0 * (1.0 + FS1S1)
+        B23 = DELTA * -GLP * (1.0 - FS3S1) * exp(2.*S3L*S1LP*SIGMAL*SIGMAL)
+        B24 = DELTA * -GLP * (1.0 + FS3S1)
+
+        B31 = DELTA * -BLP * (1.0 + FS1S3)
+        B32 = DELTA * -BLP * (1.0 - FS1S3) * exp(2.*S1L*S3LP*SIGMAL*SIGMAL)
+        B33 = DELTA * 1.0 * (1.0 + FS3S3)
+        B34 = DELTA * 1.0 * (1.0 - FS3S3) * exp(2.*S3L*S3LP*SIGMAL*SIGMAL)
+
+        B41 = DELTA * -BLP * (1.0 - FS1S3) * exp(2.*S1L*S3LP*SIGMAL*SIGMAL)
+        B42 = DELTA * -BLP * (1.0 + FS1S3)
+        B43 = DELTA * 1.0 * (1.0 - FS3S3) * exp(2.*S3L*S3LP*SIGMAL*SIGMAL)
+        B44 = DELTA * 1.0 * (1.0 + FS3S3)
+
+        Z += D[LP]
+        L = LP
+
+    #    Process the loop once for each interior layer, either from
+    #    front to back or back to front.
+    for I in range(1,N-1):
+        LP = L + STEP
+        S1L = S1LP # copy from the layer before
+        S3L = S3LP #
+        GL = GLP
+        BL = BLP
+        S1LP = -sqrt(complex(PI4*(RHO[LP]+RHOM[LP])-E0, -PI4*(fabs(IRHO[LP])+EPS)))
+        S3LP = -sqrt(complex(PI4*(RHO[LP]-RHOM[LP])-E0, -PI4*(fabs(IRHO[LP])+EPS)))
+        SIGMAL = SIGMA[L+SIGMA_OFFSET]
+        print(LP, RHO[LP], E0, S1LP*S1L, KZ)
+
+        if (abs(U1[LP]) <= 1.0):
+            # then Bz >= 0
+            BLP = U1[LP]
+            GLP = 1.0/U3[LP]
+        else:
+            # then Bz < 0: flip!
+            BLP = U3[LP]
+            GLP = 1.0/U1[LP]
+            SSWAP = S1LP
+            S1LP = S3LP
+            S3LP = SSWAP; # swap S3 and S1
+        
+        DELTA = 0.5*CR / (1.0 - (BLP*GLP))
+        DBB = (BL - BLP) * DELTA; # multiply by delta here?
+        DBG = (1.0 - BL*GLP) * DELTA
+        DGB = (1.0 - GL*BLP) * DELTA
+        DGG = (GL - GLP) * DELTA
+
+        ES1L = exp(S1L*Z)
+        ENS1L = CR / ES1L
+        ES1LP = exp(S1LP*Z)
+        ENS1LP = CR / ES1LP
+        ES3L = exp(S3L*Z)
+        ENS3L = CR / ES3L
+        ES3LP = exp(S3LP*Z)
+        ENS3LP = CR / ES3LP
+
+        FS1S1 = S1L/S1LP
+        FS1S3 = S1L/S3LP
+        FS3S1 = S3L/S1LP
+        FS3S3 = S3L/S3LP
+
+        A11 = A22 = DBG * (1.0 + FS1S1)
+        A11 *= ES1L * ENS1LP
+        A22 *= ENS1L * ES1LP
+        #print(DBG, FS1S1, S1L, S1LP, SIGMAL)
+        A12 = A21 = DBG * (1.0 - FS1S1) * exp(2.*S1L*S1LP*SIGMAL*SIGMAL)
+        A12 *= ENS1L * ENS1LP
+        A21 *= ES1L  * ES1LP
+        A13 = A24 = DGG * (1.0 + FS3S1)
+        A13 *= ES3L  * ENS1LP
+        A24 *= ENS3L * ES1LP
+        A14 = A23 = DGG * (1.0 - FS3S1) * exp(2.*S3L*S1LP*SIGMAL*SIGMAL)
+        A14 *= ENS3L * ENS1LP
+        A23 *= ES3L  * ES1LP
+
+        A31 = A42 = DBB * (1.0 + FS1S3)
+        A31 *= ES1L * ENS3LP
+        A42 *= ENS1L * ES3LP
+        A32 = A41 = DBB * (1.0 - FS1S3) * exp(2.*S1L*S3LP*SIGMAL*SIGMAL)
+        A32 *= ENS1L * ENS3LP
+        A41 *= ES1L  * ES3LP
+        A33 = A44 = DGB * (1.0 + FS3S3)
+        A33 *= ES3L * ENS3LP
+        A44 *= ENS3L * ES3LP
+        A34 = A43 = DGB * (1.0 - FS3S3) * exp(2.*S3L*S3LP*SIGMAL*SIGMAL)
+        A34 *= ENS3L * ENS3LP
+        A43 *= ES3L * ES3LP
+
+
+        #    Matrix update B=A*B
+        C1=A11*B11+A12*B21+A13*B31+A14*B41
+        C2=A21*B11+A22*B21+A23*B31+A24*B41
+        C3=A31*B11+A32*B21+A33*B31+A34*B41
+        C4=A41*B11+A42*B21+A43*B31+A44*B41
+        B11=C1
+        B21=C2
+        B31=C3
+        B41=C4
+
+        C1=A11*B12+A12*B22+A13*B32+A14*B42
+        C2=A21*B12+A22*B22+A23*B32+A24*B42
+        C3=A31*B12+A32*B22+A33*B32+A34*B42
+        C4=A41*B12+A42*B22+A43*B32+A44*B42
+        B12=C1
+        B22=C2
+        B32=C3
+        B42=C4
+
+        C1=A11*B13+A12*B23+A13*B33+A14*B43
+        C2=A21*B13+A22*B23+A23*B33+A24*B43
+        C3=A31*B13+A32*B23+A33*B33+A34*B43
+        C4=A41*B13+A42*B23+A43*B33+A44*B43
+        B13=C1
+        B23=C2
+        B33=C3
+        B43=C4
+
+        C1=A11*B14+A12*B24+A13*B34+A14*B44
+        C2=A21*B14+A22*B24+A23*B34+A24*B44
+        C3=A31*B14+A32*B24+A33*B34+A34*B44
+        C4=A41*B14+A42*B24+A43*B34+A44*B44
+        B14=C1
+        B24=C2
+        B34=C3
+        B44=C4
+
+        Z += D[LP]
+        L = LP
+    
+    #    Done computing B = A(N)*...*A(2)*A(1)*I
+
+    DETW=(B44*B22-B24*B42)
+
+
+    #    Calculate reflectivity coefficients specified by POLSTAT
+    YA[i] = (B24*B41-B21*B44)/DETW; # ++
+    YB[i] = (B21*B42-B41*B22)/DETW; # +-
+    YC[i] = (B24*B43-B23*B44)/DETW; # -+
+    YD[i] = (B23*B42-B43*B22)/DETW; # --
+
+@ njit('(f8[:], f8[:], f8[:], f8[:], f8[:])')
 def _convolve_uniform(xi, yi, x, dx, y):
     root_12_over_2 = np.sqrt(3)
     left_index = 0
@@ -311,7 +619,7 @@ def _convolve_uniform(xi, yi, x, dx, y):
     for k, x_k in enumerate(x):
         # Convert 1-sigma width to 1/2 width of the region
         limit = dx[k] * root_12_over_2
-        #print(f"point {x_k} +/- {limit}")
+        # print(f"point {x_k} +/- {limit}")
         # Find integration limits, bound by the range of the data
         left, right = max(x_k - limit, xi[0]), min(x_k + limit, xi[-1])
         if right < left:
@@ -339,7 +647,7 @@ def _convolve_uniform(xi, yi, x, dx, y):
 
 
         # Subtract the excess from left interval before the left edge.
-        #print(f" left {left} in {(x1, y1)}, {(x2, y2)}")
+        # print(f" left {left} in {(x1, y1)}, {(x2, y2)}")
         if x1 < left:
             # Subtract the area of the rectangle from (x1, 0) to (left, y1)
             # plus 1/2 the rectangle from (x1, y1) to (left, y'),
@@ -355,7 +663,7 @@ def _convolve_uniform(xi, yi, x, dx, y):
             slope = (y2 - y1)/(x2 - x1)
             area = offset * (y1 + 0.5*slope*offset)
             total -= area
-            #print(f" left correction {area}")
+            # print(f" left correction {area}")
 
         # Do trapezoidal integration up to and including the end interval
         while right_index < N-1 and x2 < right:
@@ -363,17 +671,17 @@ def _convolve_uniform(xi, yi, x, dx, y):
             if x1 != x2:
                 area = 0.5*(y1 + y2)*(x2 - x1)
                 total += area
-                #print(f" adding {(x1,y1)}, {(x2, y2)} as {area}")
+                # print(f" adding {(x1,y1)}, {(x2, y2)} as {area}")
             # Move to the next interval
             right_index += 1
             x1, y1, x2, y2 = x2, y2, xi[right_index], yi[right_index]
         if x1 != x2:
             area = 0.5*(y1 + y2)*(x2 - x1)
             total += area
-            #print(f" adding final {(x1,y1)}, {(x2, y2)} as {area}")
+            # print(f" adding final {(x1,y1)}, {(x2, y2)} as {area}")
 
         # Subtract the excess from the right interval after the right edge.
-        #print(f" right {right} in {(x1, y1)}, {(x2, y2)}")
+        # print(f" right {right} in {(x1, y1)}, {(x2, y2)}")
         if x2 > right:
             # Expression for area to subtract using rectangles is as follows:
             #    offset = x2 - right
@@ -386,21 +694,21 @@ def _convolve_uniform(xi, yi, x, dx, y):
             slope = (y2 - y1)/(x2 - x1)
             area = offset * (y2 - 0.5*slope*offset)
             total -= area
-            #print(f" right correction {area}")
+            # print(f" right correction {area}")
 
         # Normalize by interval length
         if left < right:
-            #print(f" normalize by length {right} - {left}")
+            # print(f" normalize by length {right} - {left}")
             y[k] = total / (right - left)
         elif x1 < x2:
             # If dx = 0 using the value interpolated at x (with left=right=x).
-            #print(f" dirac delta at {left} = {right} in {(x1, y1)}, {(x2, y2)}")
+            # print(f" dirac delta at {left} = {right} in {(x1, y1)}, {(x2, y2)}")
             offset = left - x1
             slope = (y2 - y1)/(x2 - x1)
             y[k] = y1 + slope*offset
         else:
             # At an empty interval in the theory function. Average the y.
-            #print(f" empty interval with {left} = {right} in {(x1, y1)}, {(x2, y2)}")
+            # print(f" empty interval with {left} = {right} in {(x1, y1)}, {(x2, y2)}")
             y[k] = 0.5*(y1 + y2)
 
 def convolve(xi, yi, x, dx, resolution='normal'):
@@ -452,63 +760,67 @@ def convolve_sampled(xi, yi, xp, yp, x, dx):
     return y
 
 def test_uniform():
-    xi = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    yi = [1, 3, 1, 2, 7, 3, 1, 2, 1, 3]
-    _check_uniform("uniform aligned", xi, yi, x=[2, 4, 6, 8], dx=1)
-    _check_uniform("uniform unaligned", xi, yi, x=[2.5, 4.5, 6.5, 8.5], dx=1)
-    _check_uniform("uniform wide", xi, yi, x=[2.5, 4.5, 6.5, 8.5], dx=3)
+    xi=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    yi=[1, 3, 1, 2, 7, 3, 1, 2, 1, 3]
+    _check_uniform("uniform aligned", xi, yi, x = [2, 4, 6, 8], dx = 1)
+    _check_uniform("uniform unaligned", xi, yi,
+                   x = [2.5, 4.5, 6.5, 8.5], dx = 1)
+    _check_uniform("uniform wide", xi, yi, x = [2.5, 4.5, 6.5, 8.5], dx = 3)
     # Check bad values
-    ystar = convolve(xi, yi, x=[-3, 13], dx=[1/np.sqrt(3)]*2, resolution='uniform')
+    ystar = convolve(xi, yi, x = [-3, 13], dx = [1/np.sqrt(3)]*2, resolution ='uniform')
     assert (ystar == 0.).all()
 
-    xi = [1.1, 2.3, 2.8, 4.2, 5, 6, 7, 8, 9, 10]
-    yi = [1, 3, 1, 2, 7, 3, 1, 2, 1, 3]
-    _check_uniform("uniform unaligned", xi, yi, x=[2.5, 4.5, 6.5, 8.5], dx=1)
+    xi=[1.1, 2.3, 2.8, 4.2, 5, 6, 7, 8, 9, 10]
+    yi=[1, 3, 1, 2, 7, 3, 1, 2, 1, 3]
+    _check_uniform("uniform unaligned", xi, yi,
+                   x = [2.5, 4.5, 6.5, 8.5], dx = 1)
 
 def _check_uniform(name, xi, yi, x, dx):
     # Note: using fixed dx since that's all _check_spline supports.
-    ystar = convolve(xi, yi, x, [dx/np.sqrt(3)]*len(x), resolution='uniform')
-    #print("xi", xi)
-    #print("yi", yi)
-    #print("x", x, "dx", dx)
-    #print("ystar", ystar)
-    xp = [-dx, -dx, dx, dx]
-    yp = [0, 0.5/dx, 0.5/dx, 0]
+    ystar=convolve(xi, yi, x, [dx/np.sqrt(3)]*len(x), resolution = 'uniform')
+    # print("xi", xi)
+    # print("yi", yi)
+    # print("x", x, "dx", dx)
+    # print("ystar", ystar)
+    xp=[-dx, -dx, dx, dx]
+    yp=[0, 0.5/dx, 0.5/dx, 0]
     _check_spline(name, xi, yi, xp, yp, x, ystar)
 
 def test_convolve_sampled():
-    xi = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    yi = [1, 3, 1, 2, 1, 3, 1, 2, 1, 3]
-    xp = [-1, 0, 1, 2, 3]
-    yp = [1, 4, 3, 2, 1]
-    _check_sampled("sampled aligned", xi, yi, xp, yp, dx=1)
-    _check_sampled("sampled unaligned", xi, yi, _dense(xp) - 0.2000003, yp, dx=1)
-    _check_sampled("sampled wide", xi, yi, xp, yp, dx=2)
-    _check_sampled("sampled super wide", xi, yi, xp, yp, dx=10)
+    xi=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    yi=[1, 3, 1, 2, 1, 3, 1, 2, 1, 3]
+    xp=[-1, 0, 1, 2, 3]
+    yp=[1, 4, 3, 2, 1]
+    _check_sampled("sampled aligned", xi, yi, xp, yp, dx = 1)
+    _check_sampled("sampled unaligned", xi, yi,
+                   _dense(xp) - 0.2000003, yp, dx = 1)
+    _check_sampled("sampled wide", xi, yi, xp, yp, dx = 2)
+    _check_sampled("sampled super wide", xi, yi, xp, yp, dx = 10)
 
 def _check_sampled(name, xi, yi, xp, yp, dx):
-    ystar = convolve_sampled(xi, yi, xp, yp, xi, dx=np.full_like(xi, dx))
-    xp = np.array(xp)*dx
+    ystar= convolve_sampled(xi, yi, xp, yp, xi, dx = np.full_like(xi, dx))
+    xp=np.array(xp)*dx
     _check_spline(name, xi, yi, xp, yp, xi, ystar)
 
 def _check_spline(name, xi, yi, xp, yp, x, ystar):
-    step = 0.0001
-    xpfine = np.arange(xp[0], xp[-1] + step / 10, step)
-    ypfine = np.interp(xpfine, xp, yp)
+    step=0.0001
+    xpfine=np.arange(xp[0], xp[-1] + step / 10, step)
+    ypfine=np.interp(xpfine, xp, yp)
     # make sure xfine is wide enough by adding an extra interval at the ends
-    xfine = np.arange(xi[0] + xpfine[0] - 2*step, xi[-1] + xpfine[-1] + 2*step, step)
-    yfine = np.interp(xfine, xi, yi, left=0, right=0)
-    pidx = np.searchsorted(xfine, np.array(x) + xp[0])
-    left, right = np.searchsorted(xfine, [xi[0], xi[-1]])
+    xfine=np.arange(xi[0] + xpfine[0] - 2*step,
+                    xi[-1] + xpfine[-1] + 2*step, step)
+    yfine = np.interp(xfine, xi, yi, left = 0, right =0)
+    pidx=np.searchsorted(xfine, np.array(x) + xp[0])
+    left, right=np.searchsorted(xfine, [xi[0], xi[-1]])
 
-    conv = []
+    conv=[]
     for pk in pidx:
-        norm_start = max(0, left - pk)
-        norm_end = min(len(xpfine), right - pk)
-        norm = step * np.sum(ypfine[norm_start:norm_end])
+        norm_start=max(0, left - pk)
+        norm_end=min(len(xpfine), right - pk)
+        norm=step * np.sum(ypfine[norm_start:norm_end])
         conv.append(step * np.sum(ypfine * yfine[pk:pk + len(xpfine)]) / norm)
 
-    #print("checking convolution %s"%(name, ))
-    #print(" ".join("%7.4f"%yi for yi in ystar))
-    #print(" ".join("%7.4f"%yi for yi in conv))
+    # print("checking convolution %s"%(name, ))
+    # print(" ".join("%7.4f"%yi for yi in ystar))
+    # print(" ".join("%7.4f"%yi for yi in conv))
     assert all(abs(yi - fi) < 0.0005 for (yi, fi) in zip(ystar, conv)), name
