@@ -327,8 +327,6 @@ CR4XA_SIG = 'void(i8, f8[:], f8[:], f8, f8[:], f8[:], f8[:], c16[:], c16[:], f8,
 def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3, KZ, Y):
     EPS = 1e-10
     PI4 = np.pi * 4.0e-6
-    #CR = complex(1.0, 0.0)
-    CR = 1.0
 
     if (KZ <= -1.e-10):
         L = N-1
@@ -409,7 +407,7 @@ def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3, KZ, Y):
             S1LP = S3LP
             S3LP = SSWAP;  # swap S3 and S1
 
-        DELTA = 0.5*CR / (1.0 - (BLP*GLP))
+        DELTA = 0.5 / (1.0 - (BLP*GLP))
 
         FS1S1 = S1L/S1LP
         FS1S3 = S1L/S3LP
@@ -463,20 +461,20 @@ def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3, KZ, Y):
             S1LP = S3LP
             S3LP = SSWAP; # swap S3 and S1
 
-        DELTA = 0.5*CR / (1.0 - (BLP*GLP))
+        DELTA = 0.5 / (1.0 - (BLP*GLP))
         DBB = (BL - BLP) * DELTA; # multiply by delta here?
         DBG = (1.0 - BL*GLP) * DELTA
         DGB = (1.0 - GL*BLP) * DELTA
         DGG = (GL - GLP) * DELTA
 
         ES1L = exp(S1L*Z)
-        ENS1L = CR / ES1L
+        ENS1L = 1.0 / ES1L
         ES1LP = exp(S1LP*Z)
-        ENS1LP = CR / ES1LP
+        ENS1LP = 1.0 / ES1LP
         ES3L = exp(S3L*Z)
-        ENS3L = CR / ES3L
+        ENS3L = 1.0 / ES3L
         ES3LP = exp(S3LP*Z)
-        ENS3LP = CR / ES3LP
+        ENS3LP = 1.0 / ES3LP
 
         FS1S1 = S1L/S1LP
         FS1S3 = S1L/S3LP
