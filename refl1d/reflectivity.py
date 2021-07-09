@@ -232,7 +232,7 @@ def magnetic_amplitude(kz,
     #                                R1, R2, R3, R4)
 
     magnetic_amplitude_py(depth, sigma, rho, irho,
-                                   sld_b, u1, u3, Aguide, kz, rho_index,
+                                   sld_b, u1, u3, kz, rho_index,
                                    R1, R2, R3, R4)
     return R1, R2, R3, R4
 
@@ -322,13 +322,10 @@ MINIMAL_RHO_M = 1e-2  # in units of 1e-6/A^2
 EPS = np.finfo(float).eps
 B2SLD = 2.31604654  # Scattering factor for B field 1e-6
 
-from numba.pycc import CC
-cc = CC('magnetic_amplitude')
-
-@njit(parallel=False, cache=True)
-@cc.export('Cr4xa', 'void(i8, f8[:], f8[:], i8, f8[:], f8[:], f8[:], c16[:], c16[:], f8[:], f8[:], c16[:], c16[:], c16[:], c16[:], i8)')
+CR4XA_SIG = 'void(i8, f8[:], f8[:], i8, f8[:], f8[:], f8[:], c16[:], c16[:], f8[:], c16[:], c16[:], c16[:], c16[:], i8)'
+@njit(CR4XA_SIG, parallel=False, cache=True)
 def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3,
-                Aguide, kz_in, YA, YB, YC, YD, i):
+          kz_in, YA, YB, YC, YD, i):
 
     sqrt = np.sqrt
     exp = np.exp
@@ -574,10 +571,11 @@ def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3,
     YC[i] = (B24*B43-B23*B44)/DETW # -+
     YD[i] = (B23*B42-B43*B22)/DETW # --
 
-@cc.export('mag_amplitude', 'void(f8[:], f8[:], f8[:], f8[:], f8[:], c16[:], c16[:], f8, f8[:], i4[:], c16[:], c16[:], c16[:], c16[:])')
-@njit(parallel=True, cache=True)
-def _magnetic_amplitude_py(d, sigma, rho, irho,
-                                   rhoM, u1, u3, Aguide, KZ, rho_index,
+#@cc.export('mag_amplitude')
+MAGAMP_SIG = 'void(f8[:], f8[:], f8[:], f8[:], f8[:], c16[:], c16[:], f8[:], i4[:], c16[:], c16[:], c16[:], c16[:])'
+@njit(MAGAMP_SIG, parallel=True, cache=True)
+def magnetic_amplitude_py(d, sigma, rho, irho,
+                                   rhoM, u1, u3, KZ, rho_index,
                                    Ra, Rb, Rc, Rd):
     """
     python version of calculation
@@ -596,7 +594,7 @@ def _magnetic_amplitude_py(d, sigma, rho, irho,
         
         for i in prange(points):
           Cr4xa(layers, d, sigma, ip, rho, irho, rhoM, u1, u3,
-                Aguide, KZ, Ra, Rb, Rc, Rd, i)
+                KZ, Ra, Rb, Rc, Rd, i)
     else:
         ip = 1;  # plus polarization
         # ifdef _OPENMP
@@ -604,7 +602,7 @@ def _magnetic_amplitude_py(d, sigma, rho, irho,
         # endif
         for i in prange(points):
             Cr4xa(layers, d, sigma, ip, rho, irho, rhoM, u1, u3,
-                Aguide, KZ, Ra, Rb, dummy, dummy, i)
+                KZ, Ra, Rb, dummy, dummy, i)
 
         ip = -1;  # minus polarization
         # ifdef _OPENMP
@@ -612,18 +610,23 @@ def _magnetic_amplitude_py(d, sigma, rho, irho,
         # endif
         for i in prange(points):
             Cr4xa(layers, d, sigma, ip, rho, irho, rhoM, u1, u3,
-                Aguide, KZ, dummy, dummy, Rc, Rd, i)
-
-try:
-    from .magnetic_amplitude import mag_amplitude as magnetic_amplitude_py
-    print("loaded from compiled module")
-except ImportError:
-    print('could not load from compiled module, building for next time...')
-    cc.compile()
-    magnetic_amplitude_py = _magnetic_amplitude_py
+                KZ, dummy, dummy, Rc, Rd, i)
 
 
-@ njit('(f8[:], f8[:], f8[:], f8[:], f8[:])')
+#try:
+#    from .magnetic_amplitude import mag_amplitude as magnetic_amplitude_py
+#    print("loaded from compiled module")
+#except ImportError:
+#    from numba.pycc import CC
+#    cc = CC('magnetic_amplitude')
+#    Cr4xa = cc.export('Cr4xa')(Cr4xa)
+#    magnetic_amplitude_py = cc.export('magnetic_amplitude')(magnetic_amplitude_py)
+#    print('could not load from compiled module, building for next time...')
+#    cc.compile()
+#    magnetic_amplitude_py = _magnetic_amplitude_py
+
+
+@njit('(f8[:], f8[:], f8[:], f8[:], f8[:])')
 def _convolve_uniform(xi, yi, x, dx, y):
     root_12_over_2 = np.sqrt(3)
     left_index = 0
