@@ -619,8 +619,8 @@ try:
     from .magnetic_amplitude import mag_amplitude as magnetic_amplitude_py
     print("loaded from compiled module")
 except ImportError:
+    print('could not load from compiled module, building for next time...')
     cc.compile()
-    print('could not load from module, compiled')
     magnetic_amplitude_py = _magnetic_amplitude_py
 
 
