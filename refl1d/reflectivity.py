@@ -230,7 +230,8 @@ def magnetic_amplitude(kz,
     # reflmodule._magnetic_amplitude(depth, sigma, rho, irho,
     #                                sld_b, u1, u3, Aguide, kz, rho_index,
     #                                R1, R2, R3, R4)
-    _magnetic_amplitude_py(depth, sigma, rho, irho,
+
+    magnetic_amplitude_py(depth, sigma, rho, irho,
                                    sld_b, u1, u3, Aguide, kz, rho_index,
                                    R1, R2, R3, R4)
     return R1, R2, R3, R4
@@ -321,47 +322,11 @@ MINIMAL_RHO_M = 1e-2  # in units of 1e-6/A^2
 EPS = np.finfo(float).eps
 B2SLD = 2.31604654  # Scattering factor for B field 1e-6
 
+from numba.pycc import CC
+cc = CC('magnetic_amplitude')
 
-@njit
-def _magnetic_amplitude_py(d, sigma, rho, irho,
-                                   rhoM, u1, u3, Aguide, KZ, rho_index,
-                                   Ra, Rb, Rc, Rd):
-    """
-    python version of calculation
-    implicit returns: Ra, Rb, Rc, Rd
-    """
-    #assert rho_index is None
-    layers = len(d)
-    points = len(KZ)
-    dummy = np.empty_like(Ra)
-    if (np.fabs(rhoM[0]) <= MINIMAL_RHO_M and np.fabs(rhoM[layers-1]) <= MINIMAL_RHO_M):
-        # calculations for I+ and I- are the same in the fronting and backing.
-        ip = 1
-        # ifdef _OPENMP
-        # pragma omp parallel for
-        # endif
-        
-        for i in prange(points):
-          Cr4xa(layers, d, sigma, ip, rho, irho, rhoM, u1, u3,
-                Aguide, KZ, Ra, Rb, Rc, Rd, i)
-    else:
-        ip = 1;  # plus polarization
-        # ifdef _OPENMP
-        # pragma omp parallel for
-        # endif
-        for i in prange(points):
-            Cr4xa(layers, d, sigma, ip, rho, irho, rhoM, u1, u3,
-                Aguide, KZ, Ra, Rb, dummy, dummy, i)
-
-        ip = -1;  # minus polarization
-        # ifdef _OPENMP
-        # pragma omp parallel for
-        # endif
-        for i in prange(points):
-            Cr4xa(layers, d, sigma, ip, rho, irho, rhoM, u1, u3,
-                Aguide, KZ, dummy, dummy, Rc, Rd, i)
-
-@njit
+@njit(parallel=False, cache=True)
+@cc.export('Cr4xa', 'void(i8, f8[:], f8[:], i8, f8[:], f8[:], f8[:], c16[:], c16[:], f8[:], f8[:], c16[:], c16[:], c16[:], c16[:], i8)')
 def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3,
                 Aguide, kz_in, YA, YB, YC, YD, i):
 
@@ -426,8 +391,7 @@ def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3,
         # by the boundary conditions (neutrons only incident in the fronting medium - no
         # source of neutrons below).
         #
-        S1L = -sqrt(complex(PI4*(RHO[L]+RHOM[L]) -
-                    E0, -PI4*(fabs(IRHO[L])+EPS)))
+        S1L = -sqrt(complex(PI4*(RHO[L]+RHOM[L]) - E0, -PI4*(fabs(IRHO[L])+EPS)))
         S3L = -sqrt(complex(PI4*(RHO[L]-RHOM[L]) -
                     E0, -PI4*(fabs(IRHO[L])+EPS)))
         S1LP = -sqrt(complex(PI4*(RHO[LP]+RHOM[LP]) -
@@ -610,6 +574,55 @@ def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3,
     YB[i] = (B21*B42-B41*B22)/DETW # +-
     YC[i] = (B24*B43-B23*B44)/DETW # -+
     YD[i] = (B23*B42-B43*B22)/DETW # --
+
+@cc.export('mag_amplitude', 'void(f8[:], f8[:], f8[:], f8[:], f8[:], c16[:], c16[:], f8, f8[:], i4[:], c16[:], c16[:], c16[:], c16[:])')
+@njit(parallel=True, cache=True)
+def _magnetic_amplitude_py(d, sigma, rho, irho,
+                                   rhoM, u1, u3, Aguide, KZ, rho_index,
+                                   Ra, Rb, Rc, Rd):
+    """
+    python version of calculation
+    implicit returns: Ra, Rb, Rc, Rd
+    """
+    #assert rho_index is None
+    layers = len(d)
+    points = len(KZ)
+    dummy = np.empty_like(Ra)
+    if (np.fabs(rhoM[0]) <= MINIMAL_RHO_M and np.fabs(rhoM[layers-1]) <= MINIMAL_RHO_M):
+        # calculations for I+ and I- are the same in the fronting and backing.
+        ip = 1
+        # ifdef _OPENMP
+        # pragma omp parallel for
+        # endif
+        
+        for i in prange(points):
+          Cr4xa(layers, d, sigma, ip, rho, irho, rhoM, u1, u3,
+                Aguide, KZ, Ra, Rb, Rc, Rd, i)
+    else:
+        ip = 1;  # plus polarization
+        # ifdef _OPENMP
+        # pragma omp parallel for
+        # endif
+        for i in prange(points):
+            Cr4xa(layers, d, sigma, ip, rho, irho, rhoM, u1, u3,
+                Aguide, KZ, Ra, Rb, dummy, dummy, i)
+
+        ip = -1;  # minus polarization
+        # ifdef _OPENMP
+        # pragma omp parallel for
+        # endif
+        for i in prange(points):
+            Cr4xa(layers, d, sigma, ip, rho, irho, rhoM, u1, u3,
+                Aguide, KZ, dummy, dummy, Rc, Rd, i)
+
+try:
+    from .magnetic_amplitude import mag_amplitude as magnetic_amplitude_py
+    print("loaded from compiled module")
+except ImportError:
+    cc.compile()
+    print('could not load from module, compiled')
+    magnetic_amplitude_py = _magnetic_amplitude_py
+
 
 @ njit('(f8[:], f8[:], f8[:], f8[:], f8[:])')
 def _convolve_uniform(xi, yi, x, dx, y):
