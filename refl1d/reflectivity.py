@@ -21,7 +21,7 @@ __all__ = ['reflectivity', 'reflectivity_amplitude',
           ]
 
 import numpy as np
-from numpy import pi, sin, cos, conj, radians
+from numpy import pi, sin, cos, conj, radians, sqrt, exp, fabs
 # delay load so doc build doesn't require compilation
 # from . import reflmodule
 
@@ -322,21 +322,13 @@ MINIMAL_RHO_M = 1e-2  # in units of 1e-6/A^2
 EPS = np.finfo(float).eps
 B2SLD = 2.31604654  # Scattering factor for B field 1e-6
 
-CR4XA_SIG = 'void(i8, f8[:], f8[:], i8, f8[:], f8[:], f8[:], c16[:], c16[:], f8[:], c16[:], c16[:], c16[:], c16[:], i8)'
+CR4XA_SIG = 'void(i8, f8[:], f8[:], f8, f8[:], f8[:], f8[:], c16[:], c16[:], f8, c16[:])'
 @njit(CR4XA_SIG, parallel=False, cache=True)
-def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3,
-          kz_in, YA, YB, YC, YD, i):
-
-    sqrt = np.sqrt
-    exp = np.exp
-    fabs = np.fabs
-
+def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3, KZ, Y):
     EPS = 1e-10
     PI4 = np.pi * 4.0e-6
-    CR = complex(1.0, 0.0)
-    CI = complex(0.0, 1.0)
-
-    KZ = kz_in[i]
+    #CR = complex(1.0, 0.0)
+    CR = 1.0
 
     if (KZ <= -1.e-10):
         L = N-1
@@ -347,21 +339,18 @@ def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3,
         STEP = 1
         SIGMA_OFFSET = 0
     else:
-        YA[i] = -1.
-        YB[i] = 0.
-        YC[i] = 0.
-        YD[i] = -1.
+        Y[0] = -1.
+        Y[1] = 0.
+        Y[2] = 0.
+        Y[3] = -1.
         return
 
     #    Changing the target KZ is equivalent to subtracting the fronting
     #    medium SLD.
 
-    if (IP > 0):
-        # IP = 1 specifies polarization of the incident beam I+
-        E0 = KZ*KZ + PI4*(RHO[L]+RHOM[L])
-    else:
-        # IP = -1 specifies polarization of the incident beam I-
-        E0 = KZ*KZ + PI4*(RHO[L]-RHOM[L])
+    # IP = 1 specifies polarization of the incident beam I+
+    # IP = -1 specifies polarization of the incident beam I-
+    E0 = KZ*KZ + PI4*(RHO[L]+IP*RHOM[L])
 
     Z = 0.0
     if (N > 1):
@@ -473,7 +462,7 @@ def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3,
             SSWAP = S1LP
             S1LP = S3LP
             S3LP = SSWAP; # swap S3 and S1
-        
+
         DELTA = 0.5*CR / (1.0 - (BLP*GLP))
         DBB = (BL - BLP) * DELTA; # multiply by delta here?
         DBG = (1.0 - BL*GLP) * DELTA
@@ -560,16 +549,16 @@ def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3,
 
         Z += D[LP]
         L = LP
-    
+
     #    Done computing B = A(N)*...*A(2)*A(1)*I
-    DETW=(B44*B22-B24*B42)
+    DETW = B44*B22 - B24*B42
 
 
     #    Calculate reflectivity coefficients specified by POLSTAT
-    YA[i] = (B24*B41-B21*B44)/DETW # ++
-    YB[i] = (B21*B42-B41*B22)/DETW # +-
-    YC[i] = (B24*B43-B23*B44)/DETW # -+
-    YD[i] = (B23*B42-B43*B22)/DETW # --
+    Y[0] = (B24*B41 - B21*B44)/DETW # ++
+    Y[1] = (B21*B42 - B41*B22)/DETW # +-
+    Y[2] = (B24*B43 - B23*B44)/DETW # -+
+    Y[3] = (B23*B42 - B43*B22)/DETW # --
 
 #@cc.export('mag_amplitude')
 MAGAMP_SIG = 'void(f8[:], f8[:], f8[:], f8[:], f8[:], c16[:], c16[:], f8[:], i4[:], c16[:], c16[:], c16[:], c16[:])'
@@ -584,33 +573,24 @@ def magnetic_amplitude_py(d, sigma, rho, irho,
     #assert rho_index is None
     layers = len(d)
     points = len(KZ)
-    dummy = np.empty_like(Ra)
     if (np.fabs(rhoM[0]) <= MINIMAL_RHO_M and np.fabs(rhoM[layers-1]) <= MINIMAL_RHO_M):
         # calculations for I+ and I- are the same in the fronting and backing.
-        ip = 1
-        # ifdef _OPENMP
-        # pragma omp parallel for
-        # endif
-        
         for i in prange(points):
-          Cr4xa(layers, d, sigma, ip, rho, irho, rhoM, u1, u3,
-                KZ, Ra, Rb, Rc, Rd, i)
+            Y = np.empty(4, dtype='c16')
+            Cr4xa(layers, d, sigma, 1.0, rho, irho, rhoM, u1, u3, KZ[i], Y)
+            Ra[i], Rb[i], Rc[i], Rd[i] = Y[0], Y[1], Y[2], Y[3]
     else:
-        ip = 1;  # plus polarization
-        # ifdef _OPENMP
-        # pragma omp parallel for
-        # endif
+        # plus polarization
         for i in prange(points):
-            Cr4xa(layers, d, sigma, ip, rho, irho, rhoM, u1, u3,
-                KZ, Ra, Rb, dummy, dummy, i)
+            Y = np.empty(4, dtype='c16')
+            Cr4xa(layers, d, sigma, 1.0, rho, irho, rhoM, u1, u3, KZ[i], Y)
+            Ra[i], Rb[i] = Y[0], Y[1]
 
-        ip = -1;  # minus polarization
-        # ifdef _OPENMP
-        # pragma omp parallel for
-        # endif
+        # minus polarization
         for i in prange(points):
-            Cr4xa(layers, d, sigma, ip, rho, irho, rhoM, u1, u3,
-                KZ, dummy, dummy, Rc, Rd, i)
+            Y = np.empty(4, dtype='c16')
+            Cr4xa(layers, d, sigma, -1.0, rho, irho, rhoM, u1, u3, KZ[i], Y)
+            Rc[i], Rd[i] = Y[2], Y[3]
 
 
 #try:
