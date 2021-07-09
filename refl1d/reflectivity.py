@@ -330,7 +330,6 @@ cc = CC('magnetic_amplitude')
 def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3,
                 Aguide, kz_in, YA, YB, YC, YD, i):
 
-    #sqrt = np.lib.scimath.sqrt
     sqrt = np.sqrt
     exp = np.exp
     fabs = np.fabs
