@@ -225,34 +225,6 @@ def _set_parameters(self, name, profile, kw, reserved):
     dups = [k for k in vars if k in reserved]
     if len(dups) > 0:
         raise TypeError("Profile has conflicting argument %r"%dups[0])
-
-    # Unpacks lists of parameters of inputs into indexed individual parameters, and
-    # saves the original list information in _listvars to be used by _fpars for calling
-    # the profile function.
-    self._listvars = {}      # stores information about list structure for use in _fpars
-    newdict = {}            # stores items that came from lists
-    for k, v in kw.items():
-        if type(v) == list:
-            self._listvars[k] = []
-            for i, subv in enumerate(v):
-                newk = k + '%i' % i
-                # new name adds an integer index to the base parameter name. Alternative would be to use
-                # parameter name <dot> index of list. I think the dot guarantees uniqueness of the name,
-                # but doesn't allow self.parameter_name calling style. This is fine if getattr is always used,
-                # but will break otherwise. Instead, this checks for name uniqueness. For example, if par=[par0,par1]
-                # and the name "par0" already exists, then the TypeError gets thrown. This is probably a fairly rare
-                # occurrence anyway.
-                if newk in vars:
-                    raise TypeError("Can't unpack argument list %r: profile already has argument with name %r"%(k, newk))
-                newdict[newk] = subv
-                vars.append(newk)
-                self._listvars[k].append(newk)
-    for k in self._listvars.keys():
-        kw.pop(k)
-        vars.remove(k)
-    kw = {**kw, **newdict} # merge new dictionary and original dictionary
-    #print(kw, self._listvars)
-    
     for k in vars:
         kw.setdefault(k, 0)
     for k, v in kw.items():
