@@ -574,19 +574,19 @@ def magnetic_amplitude_py(d, sigma, rho, irho,
     if (np.fabs(rhoM[0]) <= MINIMAL_RHO_M and np.fabs(rhoM[layers-1]) <= MINIMAL_RHO_M):
         # calculations for I+ and I- are the same in the fronting and backing.
         for i in prange(points):
-            Y = np.empty(4, dtype='complex128')
+            Y = np.empty(4, dtype=np.complex128)
             Cr4xa(layers, d, sigma, 1.0, rho, irho, rhoM, u1, u3, KZ[i], Y)
             Ra[i], Rb[i], Rc[i], Rd[i] = Y[0], Y[1], Y[2], Y[3]
     else:
         # plus polarization
         for i in prange(points):
-            Y = np.empty(4, dtype='complex128')
+            Y = np.empty(4, dtype=np.complex128)
             Cr4xa(layers, d, sigma, 1.0, rho, irho, rhoM, u1, u3, KZ[i], Y)
             Ra[i], Rb[i] = Y[0], Y[1]
 
         # minus polarization
         for i in prange(points):
-            Y = np.empty(4, dtype='complex128')
+            Y = np.empty(4, dtype=np.complex128)
             Cr4xa(layers, d, sigma, -1.0, rho, irho, rhoM, u1, u3, KZ[i], Y)
             Rc[i], Rd[i] = Y[2], Y[3]
 
