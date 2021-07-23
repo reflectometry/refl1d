@@ -40,6 +40,7 @@ from __future__ import with_statement, division, print_function
 
 import os
 import json
+from typing import TYPE_CHECKING
 import warnings
 
 import numpy as np
@@ -197,7 +198,7 @@ class Probe(object):
         self.back_absorption = Parameter.default(
             back_absorption, name="back_absorption"+qualifier, limits=[0., 1.])
         self.theta_offset = Parameter.default(
-            theta_offset, name="theta_offset"+qualifier)
+            theta_offset, name="theta_offset"+qualifier, bounds=[-1e-10,1e-10])
         self.sample_broadening = Parameter.default(
             sample_broadening, name="sample_broadening"+qualifier)
         self.back_reflectivity = back_reflectivity
@@ -1569,7 +1570,39 @@ def measurement_union(xs):
     TL = set()
     for x in xs:
         if x is not None:
-            TL |= set(zip(x.T+x.theta_offset.value, x.dT, x.L, x.dL))
+            TO_lower, TO_upper = x.theta_offset.bounds.limits
+            # Sort by T
+            idxT = np.argsort(x.T)
+            T = x.T[idxT]
+            dT = x.dT[idxT]
+            L = x.L[idxT]
+            dL = x.dL[idxT]
+
+            if np.isinf(TO_upper) or np.isinf(TO_lower):
+                print(x.theta_offset.bounds, x.theta_offset.bounds.limits)
+                raise ValueError("cannot extend theta range to infinity from theta_offset")
+
+            # this assumes that negative theta values still add theta_offset normally
+            lower_step = T[1] - T[0]
+            upper_step = T[-1] - T[-2]
+            T_lower_extension = np.arange(T[0] - TO_lower, T[0], lower_step, dtype=T.dtype)
+            dT_lower_extension = np.ones_like(T_lower_extension, dtype=dT.dtype) * dT[0]
+            L_lower_extension = np.ones_like(T_lower_extension, dtype=L.dtype) * L[0]
+            dL_lower_extension = np.ones_like(T_lower_extension, dtype=dL.dtype) * dL[0]
+
+            # start at upper end and add steps backward... then reverse.
+            T_upper_extension = np.arange(T[-1] + TO_upper, T[-1], -upper_step, dtype=T.dtype)[::-1]
+            dT_upper_extension = np.ones_like(T_upper_extension, dtype=dT.dtype) * dT[-1]
+            L_upper_extension = np.ones_like(T_upper_extension, dtype=L.dtype) * L[-1]
+            dL_upper_extension = np.ones_like(T_upper_extension, dtype=dL.dtype) * dL[-1]
+
+            T = np.hstack([T_lower_extension, T, T_upper_extension])
+            dT = np.hstack([dT_lower_extension, dT, dT_upper_extension])
+            L = np.hstack([L_lower_extension, L, L_upper_extension])
+            dL = np.hstack([dL_lower_extension, dL, dL_upper_extension])
+
+            TL |= set(zip(T, dT, L, dL))
+
     T, dT, L, dL = zip(*[item for item in TL])
     T, dT, L, dL = [np.asarray(v) for v in (T, dT, L, dL)]
 
@@ -1614,7 +1647,7 @@ class PolarizedNeutronProbe(object):
     polarized = True
     def __init__(self, xs=None, name=None, Aguide=BASE_GUIDE_ANGLE, H=0, oversampling=None):
         self._xs = xs
-        self._theta_offsets = None
+        self._theta_offset_limits = None
         self.oversampling = oversampling
         self.oversampling_seed = 1
 
@@ -1717,7 +1750,9 @@ class PolarizedNeutronProbe(object):
         back_absorption = Parameter.default(back_absorption,
                                             name="back_absorption",
                                             limits=[0, 1])
-        theta_offset = Parameter.default(theta_offset, name="theta_offset")
+        theta_offset = Parameter.default(theta_offset, 
+                                            name="theta_offset", 
+                                            bounds=[-0.0001, 0.0001])
         sample_broadening = Parameter.default(sample_broadening,
                                               name="sample_broadening",
                                               limits=[0, inf])
@@ -1745,15 +1780,14 @@ class PolarizedNeutronProbe(object):
     _oversample.__doc__ = Probe.oversample.__doc__
 
     def _calculate_union(self):
-        theta_offsets = [x.theta_offset.value for x in self.xs if x is not None]
-        # print('theta_offsets', self._theta_offsets, theta_offsets)
-        if self._theta_offsets is not None and theta_offsets == self._theta_offsets:
-           # print("no offset change... returning", self._theta_offsets, theta_offsets)
-           # no change in offsets: use cached values of measurement union
+        theta_offset_limits = [x.theta_offset.bounds.limits for x in self.xs if x is not None]
+        if self._theta_offset_limits is not None and theta_offset_limits == self._theta_offset_limits:
+           # no change in offset limits: use cached values of measurement union
            return
 
         else:
             # unshared offsets changed, or union has not been calculated before
+            # print("calculating measurement union\n")
             self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
                 = measurement_union(self.xs)
 
@@ -1762,7 +1796,7 @@ class PolarizedNeutronProbe(object):
             else:
                 self._oversample(self.oversampling, self.oversampling_seed)
             
-            self._theta_offsets = theta_offsets
+            self._theta_offset_limits = theta_offset_limits
 
     @property
     def calc_Q(self):
