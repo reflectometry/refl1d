@@ -619,6 +619,8 @@ def magnetic_amplitude_driver(d, sigma, rho, irho, rhoM, u1, u3, KZ, R):
     R[:] = gR.copy_to_host(stream=stream)
 
 if USE_CUDA:
+    dev = cuda.select_device(0)
+    print(dev)
     stream = cuda.stream()
     CR4XA_SIG_F = CR4XA_SIG.replace('f8','f4').replace('c16','c8')
     MAGAMP_SIG_F = MAGAMP_SIG.replace('f8','f4').replace('c16','c8')
