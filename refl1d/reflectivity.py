@@ -226,15 +226,10 @@ def magnetic_amplitude(kz,
 
     sld_b, u1, u3 = calculate_u1_u3(H, rhoM, thetaM, Aguide)
 
-    R1, R2, R3, R4 = [np.empty(kz.shape, 'D') for pol in (1, 2, 3, 4)]
-    # reflmodule._magnetic_amplitude(depth, sigma, rho, irho,
-    #                                sld_b, u1, u3, Aguide, kz, rho_index,
-    #                                R1, R2, R3, R4)
-
-    magnetic_amplitude_py(depth, sigma, rho, irho,
-                                   sld_b, u1, u3, kz, rho_index,
-                                   R1, R2, R3, R4)
-    return R1, R2, R3, R4
+    # Note 2021-08-01: return Rpp, Rpm, Rmp, Rmm are no longer contiguous.
+    R = np.empty((kz.size, 4), 'D')
+    magnetic_amplitude_py(depth, sigma, rho, irho, sld_b, u1, u3, kz, R)
+    return R[:, 0], R[:, 1], R[:, 2], R[:, 3]
 
 
 def calculate_u1_u3(H, rhoM, thetaM, Aguide):
@@ -553,17 +548,17 @@ def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3, KZ, Y):
 
 
     #    Calculate reflectivity coefficients specified by POLSTAT
-    Y[0] = (B24*B41 - B21*B44)/DETW # ++
-    Y[1] = (B21*B42 - B41*B22)/DETW # +-
+    # IP = +1 fills in ++, +-, -+, --; IP = -1 only fills in -+, --.
+    if IP > 0:
+        Y[0] = (B24*B41 - B21*B44)/DETW # ++
+        Y[1] = (B21*B42 - B41*B22)/DETW # +-
     Y[2] = (B24*B43 - B23*B44)/DETW # -+
     Y[3] = (B23*B42 - B43*B22)/DETW # --
 
 #@cc.export('mag_amplitude')
-MAGAMP_SIG = 'void(f8[:], f8[:], f8[:], f8[:], f8[:], c16[:], c16[:], f8[:], i4[:], c16[:], c16[:], c16[:], c16[:])'
+MAGAMP_SIG = 'void(f8[:], f8[:], f8[:], f8[:], f8[:], c16[:], c16[:], f8[:], c16[:,:])'
 @njit(MAGAMP_SIG, parallel=True, cache=True)
-def magnetic_amplitude_py(d, sigma, rho, irho,
-                                   rhoM, u1, u3, KZ, rho_index,
-                                   Ra, Rb, Rc, Rd):
+def magnetic_amplitude_py(d, sigma, rho, irho, rhoM, u1, u3, KZ, R):
     """
     python version of calculation
     implicit returns: Ra, Rb, Rc, Rd
@@ -574,22 +569,17 @@ def magnetic_amplitude_py(d, sigma, rho, irho,
     if (np.fabs(rhoM[0]) <= MINIMAL_RHO_M and np.fabs(rhoM[layers-1]) <= MINIMAL_RHO_M):
         # calculations for I+ and I- are the same in the fronting and backing.
         for i in prange(points):
-            Y = np.empty(4, dtype=np.complex128)
-            Cr4xa(layers, d, sigma, 1.0, rho, irho, rhoM, u1, u3, KZ[i], Y)
-            Ra[i], Rb[i], Rc[i], Rd[i] = Y[0], Y[1], Y[2], Y[3]
+            Cr4xa(layers, d, sigma, 1.0, rho, irho, rhoM, u1, u3, KZ[i], R[i])
     else:
-        # plus polarization
+        # plus polarization must be before minus polarization because it
+        # fills in all R++, R+-, R-+, R--, but minus polarization only fills
+        # in R-+, R--.
         for i in prange(points):
-            Y = np.empty(4, dtype=np.complex128)
-            Cr4xa(layers, d, sigma, 1.0, rho, irho, rhoM, u1, u3, KZ[i], Y)
-            Ra[i], Rb[i] = Y[0], Y[1]
+            Cr4xa(layers, d, sigma, 1.0, rho, irho, rhoM, u1, u3, KZ[i], R[i])
 
         # minus polarization
         for i in prange(points):
-            Y = np.empty(4, dtype=np.complex128)
-            Cr4xa(layers, d, sigma, -1.0, rho, irho, rhoM, u1, u3, KZ[i], Y)
-            Rc[i], Rd[i] = Y[2], Y[3]
-
+            Cr4xa(layers, d, sigma, -1.0, rho, irho, rhoM, u1, u3, KZ[i], R[i])
 
 #try:
 #    from .magnetic_amplitude import mag_amplitude as magnetic_amplitude_py
