@@ -198,7 +198,7 @@ class Probe(object):
         self.back_absorption = Parameter.default(
             back_absorption, name="back_absorption"+qualifier, limits=[0., 1.])
         self.theta_offset = Parameter.default(
-            theta_offset, name="theta_offset"+qualifier, bounds=[-1e-10,1e-10])
+            theta_offset, name="theta_offset"+qualifier)
         self.sample_broadening = Parameter.default(
             sample_broadening, name="sample_broadening"+qualifier)
         self.back_reflectivity = back_reflectivity
@@ -1565,7 +1565,7 @@ def measurement_union(xs):
     """
     Determine the unique (T, dT, L, dL) across all datasets.
     """
-
+    print("calculating measurement union")
     # First gather a set of unique tuples in angle and wavelength
     TL = set()
     for x in xs:
@@ -1751,9 +1751,8 @@ class PolarizedNeutronProbe(object):
         back_absorption = Parameter.default(back_absorption,
                                             name="back_absorption",
                                             limits=[0, 1])
-        theta_offset = Parameter.default(theta_offset, 
-                                            name="theta_offset", 
-                                            bounds=[-0.0001, 0.0001])
+        theta_offset = Parameter.default(theta_offset,
+                                            name="theta_offset")
         sample_broadening = Parameter.default(sample_broadening,
                                               name="sample_broadening",
                                               limits=[0, inf])
