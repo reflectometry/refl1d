@@ -1565,7 +1565,6 @@ def measurement_union(xs):
     """
     Determine the unique (T, dT, L, dL) across all datasets.
     """
-    print("calculating measurement union")
     # First gather a set of unique tuples in angle and wavelength
     TL = set()
     for x in xs:
