@@ -1570,7 +1570,8 @@ def measurement_union(xs):
     TL = set()
     for x in xs:
         if x is not None:
-            TO_lower, TO_upper = x.theta_offset.bounds.limits
+            TO = x.theta_offset.value
+            TO_lower, TO_upper = (TO, TO) if x.theta_offset.fixed else x.theta_offset.bounds.limits
             # Sort by T
             idxT = np.argsort(x.T)
             T = x.T[idxT]
@@ -1583,8 +1584,8 @@ def measurement_union(xs):
                 raise ValueError("cannot extend theta range to infinity from theta_offset")
 
             # this assumes that negative theta values still add theta_offset normally
-            lower_step = T[1] - T[0]
-            upper_step = T[-1] - T[-2]
+            lower_step = dT[0] / 5.0
+            upper_step = dT[-1] / 5.0
             T_lower_extension = np.arange(T[0] - TO_lower, T[0], lower_step, dtype=T.dtype)
             dT_lower_extension = np.ones_like(T_lower_extension, dtype=dT.dtype) * dT[0]
             L_lower_extension = np.ones_like(T_lower_extension, dtype=L.dtype) * L[0]
@@ -1780,7 +1781,13 @@ class PolarizedNeutronProbe(object):
     _oversample.__doc__ = Probe.oversample.__doc__
 
     def _calculate_union(self):
-        theta_offset_limits = [x.theta_offset.bounds.limits for x in self.xs if x is not None]
+        theta_offset_limits = []
+        for xs in self.xs:
+            if xs is None or xs.theta_offset.fixed:
+                theta_offset_limits.append(None)
+            else:
+                theta_offset_limits.append(xs.theta_offset.bounds.limits)
+
         if self._theta_offset_limits is not None and theta_offset_limits == self._theta_offset_limits:
            # no change in offset limits: use cached values of measurement union
            return
