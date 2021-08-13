@@ -306,7 +306,10 @@ def calculate_u1_u3_py(H, rhoM, thetaM, Aguide):
 try:
     # raise ImportError() # uncomment to force numba off
     from numba import njit, prange
+    import numba
     USE_NUMBA = True
+    #numba.config.THREADING_LAYER = 'safe'
+    #numba.set_num_threads(8)
 except ImportError:
     USE_NUMBA = False
     # if no numba then njit does nothing
@@ -323,7 +326,24 @@ EPS = np.finfo(float).eps
 B2SLD = 2.31604654  # Scattering factor for B field 1e-6
 
 CR4XA_SIG = 'void(i8, f8[:], f8[:], f8, f8[:], f8[:], f8[:], c16[:], c16[:], f8, c16[:])'
-@njit(CR4XA_SIG, parallel=False, cache=True)
+CR4XA_LOCALS = {
+    "E0": numba.float64,
+    "L": numba.int32,
+    "LP": numba.int32,
+    "STEP": numba.int8,
+    "Z": numba.float64,
+}
+CR4XA_LOCALS.update((s, numba.complex128) for s in [
+    "S1L", "S1LP", "S3", "S3LP", 
+    "FS1S1", "FS1S3", "FS3S1", "FS3S3",
+    "DELTA", "BL", "GL", "BLP", "GLP", "SSWAP", "DETW",
+    "DBB", "DBG", "DGB", "DGG",
+    "ES1L", "ENS1L", "ES1LP", "ENS1LP", "ES3L", "ENS3L", "ES3LP", "ENS3LP"])
+CR4XA_LOCALS.update(("A{i}{j}".format(i=i, j=j), numba.complex128) for i in range(1,5) for j in range(1,5))
+CR4XA_LOCALS.update(("B{i}{j}".format(i=i, j=j), numba.complex128) for i in range(1,5) for j in range(1,5))
+CR4XA_LOCALS.update(("C{i}".format(i=i), numba.complex128) for i in range(1,5))
+
+@njit(CR4XA_SIG, parallel=False, cache=True, locals=CR4XA_LOCALS)
 def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3, KZ, Y):
     EPS = 1e-10
     PI4 = np.pi * 4.0e-6
@@ -558,9 +578,11 @@ def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3, KZ, Y):
     Y[2] = (B24*B43 - B23*B44)/DETW # -+
     Y[3] = (B23*B42 - B43*B22)/DETW # --
 
+#Cr4xa.inspect_types()
+
 #@cc.export('mag_amplitude')
 MAGAMP_SIG = 'void(f8[:], f8[:], f8[:], f8[:], f8[:], c16[:], c16[:], f8[:], i4[:], c16[:], c16[:], c16[:], c16[:])'
-@njit(MAGAMP_SIG, parallel=True, cache=True)
+@njit(MAGAMP_SIG, parallel=False, cache=True, locals={"Y": numba.typeof(np.empty(4, dtype='complex128'))})
 def magnetic_amplitude_py(d, sigma, rho, irho,
                                    rhoM, u1, u3, KZ, rho_index,
                                    Ra, Rb, Rc, Rd):
@@ -604,12 +626,14 @@ def magnetic_amplitude_py(d, sigma, rho, irho,
 #    magnetic_amplitude_py = _magnetic_amplitude_py
 
 
-@njit('(f8[:], f8[:], f8[:], f8[:], f8[:])')
+@njit('(f8[:], f8[:], f8[:], f8[:], f8[:])', cache=True, parallel=False)
 def _convolve_uniform(xi, yi, x, dx, y):
     root_12_over_2 = np.sqrt(3)
     left_index = 0
-    N = len(xi)
-    for k, x_k in enumerate(x):
+    N_xi = len(xi)
+    N_x = len(x)
+    for k in prange(N_x):
+        x_k = x[k]
         # Convert 1-sigma width to 1/2 width of the region
         limit = dx[k] * root_12_over_2
         # print(f"point {x_k} +/- {limit}")
@@ -627,7 +651,7 @@ def _convolve_uniform(xi, yi, x, dx, y):
         # get to the last point before the limit. Make sure we have at
         # least one interval so that we don't have to check edge cases
         # later.
-        while left_index < N-2 and xi[left_index] < left:
+        while left_index < N_xi-2 and xi[left_index] < left:
             left_index += 1
         while left_index > 0 and xi[left_index] > left:
             left_index -= 1
@@ -659,7 +683,7 @@ def _convolve_uniform(xi, yi, x, dx, y):
             # print(f" left correction {area}")
 
         # Do trapezoidal integration up to and including the end interval
-        while right_index < N-1 and x2 < right:
+        while right_index < N_xi-1 and x2 < right:
             # Add the current interval if it isn't empty
             if x1 != x2:
                 area = 0.5*(y1 + y2)*(x2 - x1)
@@ -704,6 +728,200 @@ def _convolve_uniform(xi, yi, x, dx, y):
             # print(f" empty interval with {left} = {right} in {(x1, y1)}, {(x2, y2)}")
             y[k] = 0.5*(y1 + y2)
 
+PI4 =          12.56637061435917295385
+PI_180 =        0.01745329251994329576
+LN256 =         5.54517744447956247533
+SQRT2 =         1.41421356237309504880
+SQRT2PI =       2.50662827463100050241
+LOG_RESLIMIT = -6.90775527898213703123
+
+from math import erf
+@njit('f8(f8[:], f8[:], i8, i8, f8, f8, f8)', cache=True, parallel=False, locals={
+    "z": numba.float64,
+    "Glo": numba.float64,
+    "erflo": numba.float64,
+    "erfmin": numba.float64,
+    "y": numba.float64,
+    "zhi": numba.float64,
+    "Ghi": numba.float64,
+    "erfhi": numba.float64,
+    "m": numba.float64,
+    "b": numba.float64,
+})
+def convolve_gaussian_point(xin, yin, k, n,
+               xo, limit, sigma):
+
+    two_sigma_sq = 2. * sigma * sigma
+    #double z, Glo, erflo, erfmin, y
+
+    z = xo - xin[k]
+    Glo = exp(-z*z/two_sigma_sq)
+    erfmin = erflo = erf(-z/(SQRT2*sigma))
+    y = 0.
+    #/* printf("%5.3f: (%5.3f,%11.5g)",xo,xin[k],yin[k]); */
+    while (k < n):
+        k += 1
+        if (xin[k] != xin[k-1]):
+            #/* No additional contribution from duplicate points. */
+
+            #/* Compute the next endpoint */
+            zhi = xo - xin[k]
+            Ghi = exp(-zhi*zhi/two_sigma_sq)
+            erfhi = erf(-zhi/(SQRT2*sigma))
+            m = (yin[k]-yin[k-1])/(xin[k]-xin[k-1])
+            b = yin[k] - m * xin[k]
+
+            #/* Add the integrals. */
+            y += 0.5*(m*xo+b)*(erfhi-erflo) - sigma/SQRT2PI*m*(Ghi-Glo)
+
+            #/* Debug computation failures. */
+            # if isnan(y) {
+            #     print("NaN from %d: zhi=%g, Ghi=%g, erfhi=%g, m=%g, b=%g\n",
+            #          % (k,zhi,Ghi,erfhi,m,b))
+            # }
+
+            #/* Save the endpoint for next trapezoid. */
+            Glo = Ghi
+            erflo = erfhi
+
+            #/* Check if we've calculated far enough */
+            if (xin[k] >= xo+limit):
+                break
+
+    #/* printf(" (%5.3f,%11.5g)",xin[k<n?k:n-1],yin[k<n?k:n-1]); */
+
+    #/* Normalize by the area of the truncated gaussian */
+    #/* At this point erflo = erfmax */
+    #/* printf ("---> %11.5g\n",2*y/(erflo-erfmin)); */
+    return 2 * y / (erflo - erfmin)
+
+
+# has same performance when using guvectorize instead of njit:
+#@numba.guvectorize("(i8, f8[:], f8[:], i8, f8[:], f8[:], f8[:])", '(),(m),(m),(),(n),(n)->(n)')
+
+@njit("(i8, f8[:], f8[:], i8, f8[:], f8[:], f8[:])", cache=True, parallel=False, locals={
+    "sigma": numba.float64,
+    "xo": numba.float64,
+    "limit": numba.float64,
+    "k_in": numba.int64,
+    "k_out": numba.int64,
+})
+def _convolve_gaussian( Nin, xin, yin, Nout, x, dx, y):
+    # size_t in,out;
+
+    #/* FIXME fails if xin are not sorted; slow if x not sorted */
+    assert(Nin>1)
+
+    #/* Scan through all x values to be calculated */
+    #/* Re: omp, each thread is going through the entire input array,
+    # * independently, computing the resolution from the neighbourhood
+    # * around its individual output points.  The firstprivate(in)
+    # * clause sets each thread to keep its own copy of in, initialized
+    # * at in's initial value of zero.  The "schedule(static,1)" clause
+    # * puts neighbouring points in separate threads, which is a benefit
+    # * since there will be less backtracking if resolution width increases
+    # * from point to point.  Because the schedule is static, this does not
+    # * significantly increase the parallelization overhead.  Because the
+    # * threads are operating on interleaved points, there should be fewer cache
+    # * misses than if each thread were given different stretches of x to
+    # * convolve.
+    # */
+    k_in = 0
+  
+    for k_out in range(Nout):
+        #/* width of resolution window for x is w = 2 dx^2. */
+        sigma = dx[k_out]
+        xo = x[k_out]
+        limit = sqrt(-2.*sigma*sigma* LOG_RESLIMIT)
+
+        #// if (out%20==0)
+
+        # /* Line up the left edge of the convolution window */
+        # /* It is probably forward from the current position, */
+        # /* but if the next dx is a lot higher than the current */
+        # /* dx or if the x are not sorted, then it may be before */
+        # /* the current position. */
+        # /* FIXME verify that the convolution window is just right */
+        while (k_in < Nin-1 and xin[k_in] < xo-limit):
+            k_in += 1
+        while (k_in > 0 and xin[k_in] > xo-limit):
+            k_in -=1
+
+        #/* Special handling to avoid 0/0 for w=0. */
+        if (sigma > 0.):
+            y[k_out] = convolve_gaussian_point(xin,yin,k_in,Nin,xo,limit,sigma)
+        elif (k_in < Nin-1):
+            #/* Linear interpolation */
+            m = (yin[k_in+1]-yin[k_in])/(xin[k_in+1]-xin[k_in])
+            b = yin[k_in] - m*xin[k_in]
+            y[k_out] = m*xo + b
+        elif (k_in > 0):
+            #/* Linear extrapolation */
+            m = (yin[k_in]-yin[k_in-1])/(xin[k_in]-xin[k_in-1])
+            b = yin[k_in] - m*xin[k_in]
+            y[k_out] = m*xo + b
+        else:
+            #/* Can't happen because there is more than one point in xin. */
+            assert(Nin>1)
+
+def _convolve_gaussian_vector( Nin, xin, yin, xo, sigma):
+    # size_t in,out;
+
+    #/* FIXME fails if xin are not sorted; slow if x not sorted */
+    assert(Nin>1)
+
+    #/* Scan through all x values to be calculated */
+    #/* Re: omp, each thread is going through the entire input array,
+    # * independently, computing the resolution from the neighbourhood
+    # * around its individual output points.  The firstprivate(in)
+    # * clause sets each thread to keep its own copy of in, initialized
+    # * at in's initial value of zero.  The "schedule(static,1)" clause
+    # * puts neighbouring points in separate threads, which is a benefit
+    # * since there will be less backtracking if resolution width increases
+    # * from point to point.  Because the schedule is static, this does not
+    # * significantly increase the parallelization overhead.  Because the
+    # * threads are operating on interleaved points, there should be fewer cache
+    # * misses than if each thread were given different stretches of x to
+    # * convolve.
+    # */
+    k_in = 0
+  
+    for k_out in prange(Nout):
+        #/* width of resolution window for x is w = 2 dx^2. */
+        sigma = dx[k_out]
+        xo = x[k_out]
+        limit = sqrt(-2.*sigma*sigma* LOG_RESLIMIT)
+
+        #// if (out%20==0)
+
+        # /* Line up the left edge of the convolution window */
+        # /* It is probably forward from the current position, */
+        # /* but if the next dx is a lot higher than the current */
+        # /* dx or if the x are not sorted, then it may be before */
+        # /* the current position. */
+        # /* FIXME verify that the convolution window is just right */
+        while (k_in < Nin-1 and xin[k_in] < xo-limit):
+            k_in += 1
+        while (k_in > 0 and xin[k_in] > xo-limit):
+            k_in -=1
+
+        #/* Special handling to avoid 0/0 for w=0. */
+        if (sigma > 0.):
+            y[k_out] = convolve_gaussian_point(xin,yin,k_in,Nin,xo,limit,sigma)
+        elif (k_in < Nin-1):
+            #/* Linear interpolation */
+            m = (yin[k_in+1]-yin[k_in])/(xin[k_in+1]-xin[k_in])
+            b = yin[k_in] - m*xin[k_in]
+            y[k_out] = m*xo + b
+        elif (k_in > 0):
+            #/* Linear extrapolation */
+            m = (yin[k_in]-yin[k_in-1])/(xin[k_in]-xin[k_in-1])
+            b = yin[k_in] - m*xin[k_in]
+            y[k_out] = m*xo + b
+        else:
+            #/* Can't happen because there is more than one point in xin. */
+            assert(Nin>1)
+
 def convolve(xi, yi, x, dx, resolution='normal'):
     r"""
     Apply x-dependent gaussian resolution to the theory.
@@ -728,7 +946,8 @@ def convolve(xi, yi, x, dx, resolution='normal'):
     if resolution == 'uniform':
         _convolve_uniform(xi, yi, x, dx, y)
     else:
-        reflmodule.convolve(xi, yi, x, dx, y)
+        #reflmodule.convolve(xi, yi, x, dx, y)
+        _convolve_gaussian(len(xi), xi, yi, len(x), x, dx, y)
     return y
 
 
