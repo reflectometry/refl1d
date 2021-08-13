@@ -852,7 +852,8 @@ def _convolve_gaussian( Nin, xin, yin, Nout, x, dx, y):
             y[k_out] = m*xo + b
         else:
             #/* Can't happen because there is more than one point in xin. */
-            assert(Nin>1)
+            # assert(Nin>1)
+            pass
 
 def convolve(xi, yi, x, dx, resolution='normal'):
     r"""
