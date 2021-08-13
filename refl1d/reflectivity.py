@@ -749,7 +749,7 @@ def convolve_gaussian_point(xin, yin, k, n,
     erfmin = erflo = erf(-z/(SQRT2*sigma))
     y = 0.
     #/* printf("%5.3f: (%5.3f,%11.5g)",xo,xin[k],yin[k]); */
-    while (k < n):
+    while (k < n-1):
         k += 1
         if (xin[k] != xin[k-1]):
             #/* No additional contribution from duplicate points. */
