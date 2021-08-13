@@ -579,7 +579,7 @@ def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3, KZ, Y):
 
 #@cc.export('mag_amplitude')
 MAGAMP_SIG = 'void(f8[:], f8[:], f8[:], f8[:], f8[:], c16[:], c16[:], f8[:], c16[:,:])'
-@njit(MAGAMP_SIG, parallel=True, cache=True)
+@njit(MAGAMP_SIG, parallel=False, cache=True)
 def magnetic_amplitude_py(d, sigma, rho, irho, rhoM, u1, u3, KZ, R):
     """
     python version of calculation
