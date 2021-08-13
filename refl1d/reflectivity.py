@@ -800,7 +800,7 @@ def _convolve_gaussian( Nin, xin, yin, Nout, x, dx, y):
     # size_t in,out;
 
     #/* FIXME fails if xin are not sorted; slow if x not sorted */
-    assert(Nin>1)
+    # assert(Nin>1)
 
     #/* Scan through all x values to be calculated */
     #/* Re: omp, each thread is going through the entire input array,
@@ -819,64 +819,6 @@ def _convolve_gaussian( Nin, xin, yin, Nout, x, dx, y):
     k_in = 0
   
     for k_out in range(Nout):
-        #/* width of resolution window for x is w = 2 dx^2. */
-        sigma = dx[k_out]
-        xo = x[k_out]
-        limit = sqrt(-2.*sigma*sigma* LOG_RESLIMIT)
-
-        #// if (out%20==0)
-
-        # /* Line up the left edge of the convolution window */
-        # /* It is probably forward from the current position, */
-        # /* but if the next dx is a lot higher than the current */
-        # /* dx or if the x are not sorted, then it may be before */
-        # /* the current position. */
-        # /* FIXME verify that the convolution window is just right */
-        while (k_in < Nin-1 and xin[k_in] < xo-limit):
-            k_in += 1
-        while (k_in > 0 and xin[k_in] > xo-limit):
-            k_in -=1
-
-        #/* Special handling to avoid 0/0 for w=0. */
-        if (sigma > 0.):
-            y[k_out] = convolve_gaussian_point(xin,yin,k_in,Nin,xo,limit,sigma)
-        elif (k_in < Nin-1):
-            #/* Linear interpolation */
-            m = (yin[k_in+1]-yin[k_in])/(xin[k_in+1]-xin[k_in])
-            b = yin[k_in] - m*xin[k_in]
-            y[k_out] = m*xo + b
-        elif (k_in > 0):
-            #/* Linear extrapolation */
-            m = (yin[k_in]-yin[k_in-1])/(xin[k_in]-xin[k_in-1])
-            b = yin[k_in] - m*xin[k_in]
-            y[k_out] = m*xo + b
-        else:
-            #/* Can't happen because there is more than one point in xin. */
-            assert(Nin>1)
-
-def _convolve_gaussian_vector( Nin, xin, yin, xo, sigma):
-    # size_t in,out;
-
-    #/* FIXME fails if xin are not sorted; slow if x not sorted */
-    assert(Nin>1)
-
-    #/* Scan through all x values to be calculated */
-    #/* Re: omp, each thread is going through the entire input array,
-    # * independently, computing the resolution from the neighbourhood
-    # * around its individual output points.  The firstprivate(in)
-    # * clause sets each thread to keep its own copy of in, initialized
-    # * at in's initial value of zero.  The "schedule(static,1)" clause
-    # * puts neighbouring points in separate threads, which is a benefit
-    # * since there will be less backtracking if resolution width increases
-    # * from point to point.  Because the schedule is static, this does not
-    # * significantly increase the parallelization overhead.  Because the
-    # * threads are operating on interleaved points, there should be fewer cache
-    # * misses than if each thread were given different stretches of x to
-    # * convolve.
-    # */
-    k_in = 0
-  
-    for k_out in prange(Nout):
         #/* width of resolution window for x is w = 2 dx^2. */
         sigma = dx[k_out]
         xo = x[k_out]
