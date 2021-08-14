@@ -126,7 +126,7 @@ def reflectivity_amplitude(kz=None,
     # print depth.shape, sigma.shape, rho.shape, irho.shape, kz.shape
     # reflmodule._reflectivity_amplitude(depth, sigma, rho, irho, kz,
     #                                    rho_index, r)
-    _reflectivity_amplitude(len(depth), depth, sigma, rho.flatten(), irho.flatten(), len(kz), kz,
+    _reflectivity_amplitude(len(depth), depth, sigma, rho.flatten('C'), irho.flatten('C'), len(kz), kz,
                                        rho_index, r)
     return r
 
@@ -396,7 +396,7 @@ REFLAMP_SIG = 'void(i8, f8[:], f8[:], f8[:], f8[:], i8, f8[:], i4[:], c16[:])'
 def _reflectivity_amplitude(layers, depth, sigma, rho, irho, points, kz, rho_index, r):
     for i in range(points):
         offset = layers * rho_index[i]
-        r[i] = _refl(layers, kz[i], depth, sigma, rho+offset, irho+offset)
+        r[i] = _refl(layers, kz[i], depth, sigma, rho[offset:], irho[offset:])
 
 
 MINIMAL_RHO_M = 1e-2  # in units of 1e-6/A^2
