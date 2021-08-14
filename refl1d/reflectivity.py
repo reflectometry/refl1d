@@ -325,6 +325,7 @@ _REFL_SIG = 'c16(i8, f8, f8[:], f8[:], f8[:], f8[:])'
 _REFL_LOCALS = {
     "cutoff": numba.float64,
     "next": numba.int64,
+    "sigma_offset": numba.int64,
     "step": numba.int8,
     "pi4": numba.float64,
     "kz_sq": numba.float64,
@@ -335,7 +336,7 @@ _REFL_LOCALS = {
 }
 _REFL_LOCALS.update(("B{i}{j}".format(i=i, j=j), numba.complex128) for i in range(1,3) for j in range(1,3))
 _REFL_LOCALS.update(("M{i}{j}".format(i=i, j=j), numba.complex128) for i in range(1,3) for j in range(1,3))
-_REFL_LOCALS.update(("C{i}{j}".format(i=i, j=j), numba.complex128) for i in range(1,3) for j in range(1,3))
+_REFL_LOCALS.update(("C{i}".format(i=i), numba.complex128) for i in range(1,3))
 
 @njit(_REFL_SIG, parallel=False, cache=True, locals=_REFL_LOCALS)
 def _refl(layers, kz, depth, sigma, rho, irho):
@@ -345,15 +346,16 @@ def _refl(layers, kz, depth, sigma, rho, irho):
     #// Check that Q is not too close to zero.
     #// For negative Q, reverse the layers.
     cutoff = 1e-10
+    sigma_offset = 0
     if (kz >= cutoff):
-        next=0
-        step=1
+        next = 0
+        step = 1
     elif (kz <= -cutoff):
-        next=layers-1
-        step=-1
-        sigma -= 1
+        next = layers-1
+        step = -1
+        sigma_offset = -1
     else:
-        return -1
+        return complex(-1, 0)
 
     #// Since sqrt(1/4 * x) = sqrt(x)/2, I'm going to pull the 1/2 into the
     #// sqrt to save a multiplication later.
@@ -369,7 +371,7 @@ def _refl(layers, kz, depth, sigma, rho, irho):
         #// the stack.  Instead, n is set to the incident layer (which may be
         #// first or last) and incremented or decremented each time through.
         k_next = sqrt(kz_sq - pi4*complex(rho[next+step],irho[next+step]))
-        F = (k-k_next)/(k+k_next)*exp(-2.*k*k_next*sigma[next]*sigma[next]);
+        F = (k-k_next)/(k+k_next)*exp(-2.*k*k_next*sigma[sigma_offset + next]*sigma[sigma_offset + next]);
         M11 = exp(J*k*depth[next]) if i>0 else 1.0
         M22 = exp(-J*k*depth[next]) if i>0 else 1.0
         M21 = F*M11
