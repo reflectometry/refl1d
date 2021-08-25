@@ -1566,56 +1566,57 @@ def measurement_union(xs):
     Determine the unique (T, dT, L, dL) across all datasets.
     """
     # First gather a set of unique tuples in angle and wavelength
-    TL = set()
+    Qset = set()
+    dtype = None
     for x in xs:
         if x is not None:
             TO = x.theta_offset.value
             TO_lower, TO_upper = (TO, TO) if x.theta_offset.fixed else x.theta_offset.bounds.limits
-            # Sort by T
-            idxT = np.argsort(x.T)
-            T = x.T[idxT]
-            dT = x.dT[idxT]
-            L = x.L[idxT]
-            dL = x.dL[idxT]
+            # Sort by Q
+            T = x.T
+            dT = x.dT
+            L = x.L
+            dL = x.dL
+            Q = TL2Q(T, L)
+            dQ = dTdL2dQ(T=T, dT=dT, L=L, dL=dL)
+
+            idxQ = np.argsort(Q)
+            Q = Q[idxQ]
+            dQ = dQ[idxQ]
+            dtype = Q.dtype
+            T = T[idxQ]
+            Q_upper = TL2Q(T[-1] + TO_upper, L[-1])
+            Q_lower = max(TL2Q(T[0] - TO_lower, L[0]), 1e-14)
+            
+             # this assumes that negative theta values still add theta_offset normally
+            lower_step = dQ[0] / 5.0
+            upper_step = dQ[-1] / 5.0
 
             if np.isinf(TO_upper) or np.isinf(TO_lower):
                 print(x.theta_offset.bounds, x.theta_offset.bounds.limits)
                 raise ValueError("cannot extend theta range to infinity from theta_offset")
 
-            # this assumes that negative theta values still add theta_offset normally
-            lower_step = dT[0] / 5.0
-            upper_step = dT[-1] / 5.0
-            T_lower_extension = np.arange(T[0] - TO_lower, T[0], lower_step, dtype=T.dtype)
-            dT_lower_extension = np.ones_like(T_lower_extension, dtype=dT.dtype) * dT[0]
-            L_lower_extension = np.ones_like(T_lower_extension, dtype=L.dtype) * L[0]
-            dL_lower_extension = np.ones_like(T_lower_extension, dtype=dL.dtype) * dL[0]
+            Q_lower_extension = np.arange(Q[0] - Q_lower, Q[0], lower_step, dtype=Q.dtype)
+            dQ_lower_extension = np.ones_like(Q_lower_extension, dtype=dQ.dtype) * dQ[0]
 
             # start at upper end and add steps backward... then reverse.
-            T_upper_extension = np.arange(T[-1] + TO_upper, T[-1], -upper_step, dtype=T.dtype)[::-1]
-            dT_upper_extension = np.ones_like(T_upper_extension, dtype=dT.dtype) * dT[-1]
-            L_upper_extension = np.ones_like(T_upper_extension, dtype=L.dtype) * L[-1]
-            dL_upper_extension = np.ones_like(T_upper_extension, dtype=dL.dtype) * dL[-1]
+            Q_upper_extension = np.arange(Q[-1] + Q_upper, Q[-1], -upper_step, dtype=Q.dtype)[::-1]
+            dQ_upper_extension = np.ones_like(Q_upper_extension, dtype=dQ.dtype) * dQ[-1]
 
-            T = np.hstack([T_lower_extension, T, T_upper_extension])
-            dT = np.hstack([dT_lower_extension, dT, dT_upper_extension])
-            L = np.hstack([L_lower_extension, L, L_upper_extension])
-            dL = np.hstack([dL_lower_extension, dL, dL_upper_extension])
+            Q = np.hstack([Q_lower_extension, Q, Q_upper_extension])
+            dQ = np.hstack([dQ_lower_extension, dQ, dQ_upper_extension])
+           
+            Qset |= set(zip(Q, dQ))
 
-            TL |= set(zip(T, dT, L, dL))
-
-    T, dT, L, dL = zip(*[item for item in TL])
-    T, dT, L, dL = [np.asarray(v) for v in (T, dT, L, dL)]
-
-    # Convert to Q, dQ
-    Q = TL2Q(T, L)
-    dQ = dTdL2dQ(T, dT, L, dL)
-
+    Q, dQ = np.asarray(list(Qset), dtype=dtype).T
+    
     # Sort by Q
     idx = np.argsort(Q)
-    T, dT, L, dL, Q, dQ = T[idx], dT[idx], L[idx], dL[idx], Q[idx], dQ[idx]
+    Q, dQ = Q[idx], dQ[idx]
+
     if abs(Q[1:] - Q[:-1]).any() < 1e-14:
         raise ValueError("Q is not unique")
-    return T, dT, L, dL, Q, dQ
+    return Q, dQ
 
 def Qmeasurement_union(xs):
     """
@@ -1645,6 +1646,8 @@ class PolarizedNeutronProbe(object):
     show_resolution = None  # Default to Probe.show_resolution when None
     substrate = surface = None
     polarized = True
+    unique_L = None
+
     def __init__(self, xs=None, name=None, Aguide=BASE_GUIDE_ANGLE, H=0, oversampling=None):
         self._xs = xs
         self._theta_offset_limits = None
@@ -1763,26 +1766,26 @@ class PolarizedNeutronProbe(object):
                 x.theta_offset = theta_offset
                 x.sample_broadening = sample_broadening
 
-    def oversample(self, n=6, seed=1):
+    def oversample(self, n=6, seed=None):
         self._oversample(n, seed)
         self.oversampling = n
         self.oversampling_seed = seed
 
-    def _oversample(self, n=6, seed=1):
+    def _oversample(self, n=6, seed=None):
         # doc string is inherited from parent (see below)
         rng = numpy.random.RandomState(seed=seed)
-        T = rng.normal(self.T[:, None], self.dT[:, None], size=(len(self.dT), n))
-        L = rng.normal(self.L[:, None], self.dL[:, None], size=(len(self.dL), n))
-        T = T.flatten()
-        L = L.flatten()
-        self._set_calc(T, L)
+        Q = rng.normal(self.Q[:, None], self.dQ[:, None], size=(len(self.dQ), n))
+        Q = Q.flatten()
+        self.calc_Qo = Q
     _oversample.__doc__ = Probe.oversample.__doc__
 
     def _calculate_union(self):
         theta_offset_limits = []
         for xs in self.xs:
-            if xs is None or xs.theta_offset.fixed:
+            if xs is None:
                 theta_offset_limits.append(None)
+            elif xs.theta_offset.fixed:
+                theta_offset_limits.append((xs.theta_offset.value, xs.theta_offset.value))
             else:
                 theta_offset_limits.append(xs.theta_offset.bounds.limits)
 
@@ -1793,11 +1796,10 @@ class PolarizedNeutronProbe(object):
         else:
             # unshared offsets changed, or union has not been calculated before
             # print("calculating measurement union\n")
-            self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
-                = measurement_union(self.xs)
+            self.Q, self.dQ = measurement_union(self.xs)
 
             if self.oversampling is None:
-                self._set_calc(self.T, self.L)
+                self.calc_Qo = self.Q
             else:
                 self._oversample(self.oversampling, self.oversampling_seed)
             
@@ -1808,19 +1810,6 @@ class PolarizedNeutronProbe(object):
         #print('calculating calc_Q...')
         self._calculate_union()
         return self.calc_Qo
-
-    def _set_calc(self, T, L):
-        # TODO: shouldn't clone code from probe
-        Q = TL2Q(T=T, L=L)
-
-        idx = np.argsort(Q)
-        self.calc_T = T[idx]
-        self.calc_L = L[idx]
-        self.calc_Qo = Q[idx]
-
-        # Only keep the scattering factors that you need
-        self.unique_L = np.unique(self.calc_L)
-        self._L_idx = np.searchsorted(self.unique_L, L)
 
     def apply_beam(self, Q, R, resolution=True, interpolation=0):
         """
@@ -1837,7 +1826,7 @@ class PolarizedNeutronProbe(object):
     def scattering_factors(self, material, density):
         # doc string is inherited from parent (see below)
         rho, irho, rho_incoh = nsf.neutron_sld(material,
-                                               wavelength=self.unique_L[0],
+                                               wavelength=self.L[0],
                                                density=density)
         # TODO: support wavelength dependent systems
         #print("sf", str(material), type(rho), type(irho[0]))
