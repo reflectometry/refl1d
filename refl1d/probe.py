@@ -1631,6 +1631,10 @@ def Qmeasurement_union(xs):
         raise ValueError("Q values differ by less than 1e-14")
     return Q, dQ
 
+DEFAULT_WAVELENGTH = 5.0 
+# use this in the following class since we don't calculate wavelength-dependent
+# SLD for profiles.
+
 class PolarizedNeutronProbe(object):
     """
     Polarized neutron probe
@@ -1826,7 +1830,7 @@ class PolarizedNeutronProbe(object):
     def scattering_factors(self, material, density):
         # doc string is inherited from parent (see below)
         rho, irho, rho_incoh = nsf.neutron_sld(material,
-                                               wavelength=self.L[0],
+                                               wavelength=DEFAULT_WAVELENGTH,
                                                density=density)
         # TODO: support wavelength dependent systems
         #print("sf", str(material), type(rho), type(irho[0]))
