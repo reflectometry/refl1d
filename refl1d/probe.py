@@ -1562,6 +1562,10 @@ class QProbe(Probe):
         self.filename = filename
         self.resolution = resolution
 
+    def _calculate_q_basis(self):
+        # this is a no-op, as theta_offset has no meaning in Qprobe
+        pass
+
     def scattering_factors(self, material, density):
         raise NotImplementedError(
             "need radiation type and wavelength in <%s> to compute sld for %s"
