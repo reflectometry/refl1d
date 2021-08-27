@@ -181,7 +181,8 @@ class Probe(object):
                  intensity=1, background=0, back_absorption=1, theta_offset=0,
                  sample_broadening=0,
                  back_reflectivity=False, name=None, filename=None,
-                 dQ=None, resolution='normal'):
+                 dQ=None, resolution='normal',
+                 oversampling=None, oversampling_seed=None):
         if T is None or L is None:
             raise TypeError("T and L required")
         if sample_broadening is None:
@@ -207,7 +208,13 @@ class Probe(object):
         else:
             R, dR = None, None
 
+        self.oversampling = oversampling
+        self.oversampling_seed = oversampling_seed
+        self._theta_offset_limits = None
+        self._Q_basis = self._dQ_basis = None
+
         self._set_TLR(T, dT, L, dL, R, dR, dQ)
+        self._calculate_q_basis()
         self.name = name
         self.filename = filename
         self.resolution = resolution
@@ -370,7 +377,6 @@ class Probe(object):
         idx = np.argsort(Q)
         self.calc_T = T[idx]
         self.calc_L = L[idx]
-        self.calc_Qo = Q[idx]
 
         # Only keep the scattering factors that you need
         self.unique_L = np.unique(self.calc_L)
@@ -406,13 +412,29 @@ class Probe(object):
     def dQ(self, dQ):
         self.dQo = dQ
 
+    def _calculate_q_basis(self):
+        t_o = self.theta_offset
+
+        theta_offset_limits = (t_o.value, t_o.value) if t_o.fixed else t_o.bounds.limits
+
+        if self._theta_offset_limits is not None and theta_offset_limits == self._theta_offset_limits:
+           # no change in offset limits: use cached values of q basis
+           return
+
+        else:
+            # theta_offset limits or fixed value changed, or basis has not been calculated before
+            # print("calculating q basis\n")
+            self._Q_basis, self._dQ_basis = extend_q_basis([self])
+            if self.oversampling is None:
+                self.calc_Qo = self._Q_basis
+            else:
+                self._oversample(self.oversampling, self.oversampling_seed)
+            
+            self._theta_offset_limits = theta_offset_limits
+
     @property
     def calc_Q(self):
-        if self.theta_offset.value != 0:
-            Q = TL2Q(T=self.calc_T+self.theta_offset.value, L=self.calc_L)
-            # TODO: this may break the Q order on measurements with varying L
-        else:
-            Q = self.calc_Qo
+        Q = self.calc_Qo
         return Q if not self.back_reflectivity else -Q
 
     def parameters(self):
@@ -532,13 +554,12 @@ class Probe(object):
         the angle $\theta = 0$ is added as well.
         """
         Q_c = self.Q_c(substrate, surface)
+        #dQ_c = np.interp([Q_c], self._Q_basis, self._dQ_basis)[0]
         Q = np.linspace(Q_c*(1 - delta), Q_c*(1+delta), n)
-        L = np.average(self.L)
-        T = QL2T(Q=Q, L=L)
-        T = np.hstack((self.T, T, 0))
-        L = np.hstack((self.L, [L]*(n+1)))
-        #print Q
-        self._set_calc(T, L)
+        Q = np.hstack((self._Q_basis, Q))
+        idx = np.argsort(Q)
+        # order by Q
+        self.calc_Qo = Q[idx]
 
     def oversample(self, n=20, seed=1):
         """
@@ -568,15 +589,17 @@ class Probe(object):
         Note: :meth:`oversample` will remove the extra Q calculation
         points introduced by :meth:`critical_edge`.
         """
-        if n < 5:
-            raise ValueError("Oversampling with n<5 is not useful")
+        self._oversample(n, seed)
+        self.oversampling = n
+        self.oversampling_seed = seed
 
+    def _oversample(self, n=6, seed=None):
+        # doc string is inherited from parent (see below)
         rng = numpy.random.RandomState(seed=seed)
-        T = rng.normal(self.T[:, None], self.dT[:, None], size=(len(self.dT), n-1))
-        L = rng.normal(self.L[:, None], self.dL[:, None], size=(len(self.dL), n-1))
-        T = np.hstack((self.T, T.flatten()))
-        L = np.hstack((self.L, L.flatten()))
-        self._set_calc(T, L)
+        Q = rng.normal(self._Q_basis[:, None], self._dQ_basis[:, None], size=(len(self._dQ_basis), n))
+        Q = Q.flatten()
+        self.calc_Qo = Q
+    _oversample.__doc__ = oversample.__doc__
 
     def _apply_resolution(self, Qin, Rin, interpolation):
         """
@@ -1561,11 +1584,12 @@ class QProbe(Probe):
         self.calc_Qo = np.sort(calc_Q)
     critical_edge.__doc__ = Probe.critical_edge.__doc__
 
-def measurement_union(xs):
+def extend_q_basis(xs):
     """
-    Determine the unique (T, dT, L, dL) across all datasets.
+    Extend Q, dQ to provide calculation support if the experimental Q points
+    are shifted outside the original basis
     """
-    # First gather a set of unique tuples in angle and wavelength
+    # First gather a set of unique tuples in Q and dQ
     Qset = set()
     dtype = None
     for x in xs:
@@ -1631,9 +1655,6 @@ def Qmeasurement_union(xs):
         raise ValueError("Q values differ by less than 1e-14")
     return Q, dQ
 
-DEFAULT_WAVELENGTH = 5.0 
-# use this in the following class since we don't calculate wavelength-dependent
-# SLD for profiles.
 
 class PolarizedNeutronProbe(object):
     """
@@ -1652,16 +1673,16 @@ class PolarizedNeutronProbe(object):
     polarized = True
     unique_L = None
 
-    def __init__(self, xs=None, name=None, Aguide=BASE_GUIDE_ANGLE, H=0, oversampling=None):
+    def __init__(self, xs=None, name=None, Aguide=BASE_GUIDE_ANGLE, H=0, oversampling=None, oversampling_seed=None):
         self._xs = xs
         self._theta_offset_limits = None
         self.oversampling = oversampling
-        self.oversampling_seed = 1
+        self.oversampling_seed = oversampling_seed
 
         if name is None and self.xs[0] is not None:
             name = self.xs[0].name
         self.name = name
-        self._calculate_union()
+        self._calculate_q_basis()
         # self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
         #     = measurement_union(xs)
         # self._set_calc(self.T, self.L)
@@ -1783,24 +1804,27 @@ class PolarizedNeutronProbe(object):
         self.calc_Qo = Q
     _oversample.__doc__ = Probe.oversample.__doc__
 
-    def _calculate_union(self):
+    def _calculate_q_basis(self):
         theta_offset_limits = []
         for xs in self.xs:
             if xs is None:
                 theta_offset_limits.append(None)
-            elif xs.theta_offset.fixed:
-                theta_offset_limits.append((xs.theta_offset.value, xs.theta_offset.value))
             else:
-                theta_offset_limits.append(xs.theta_offset.bounds.limits)
+                # grab wavelengths from cross-sections... last one wins
+                self.L = xs.L
+                if xs.theta_offset.fixed:
+                    theta_offset_limits.append((xs.theta_offset.value, xs.theta_offset.value))
+                else:
+                    theta_offset_limits.append(xs.theta_offset.bounds.limits)
 
         if self._theta_offset_limits is not None and theta_offset_limits == self._theta_offset_limits:
-           # no change in offset limits: use cached values of measurement union
+           # no change in offset limits: use cached values of q basis
            return
 
         else:
-            # unshared offsets changed, or union has not been calculated before
-            # print("calculating measurement union\n")
-            self.Q, self.dQ = measurement_union(self.xs)
+            # unshared offsets changed, or basis has not been calculated before
+            # print("calculating q basis\n")
+            self.Q, self.dQ = extend_q_basis(self.xs)
 
             if self.oversampling is None:
                 self.calc_Qo = self.Q
@@ -1812,7 +1836,7 @@ class PolarizedNeutronProbe(object):
     @property
     def calc_Q(self):
         #print('calculating calc_Q...')
-        self._calculate_union()
+        self._calculate_q_basis()
         return self.calc_Qo
 
     def apply_beam(self, Q, R, resolution=True, interpolation=0):
@@ -1830,7 +1854,7 @@ class PolarizedNeutronProbe(object):
     def scattering_factors(self, material, density):
         # doc string is inherited from parent (see below)
         rho, irho, rho_incoh = nsf.neutron_sld(material,
-                                               wavelength=DEFAULT_WAVELENGTH,
+                                               wavelength=self.L[0],
                                                density=density)
         # TODO: support wavelength dependent systems
         #print("sf", str(material), type(rho), type(irho[0]))
@@ -1846,6 +1870,8 @@ class PolarizedNeutronProbe(object):
         measured Q into theory, since it will land on a node,
         not in an interval.
         """
+        # TODO: we are not evaluating theory at every Q, so this 
+        # method will no longer work.  Where is it being used?
 
         Qth, Rth = theory
         return [None if x_data is None
