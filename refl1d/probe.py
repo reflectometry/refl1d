@@ -434,6 +434,7 @@ class Probe(object):
 
     @property
     def calc_Q(self):
+        self._calculate_q_basis()
         Q = self.calc_Qo
         return Q if not self.back_reflectivity else -Q
 
