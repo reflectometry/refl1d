@@ -98,7 +98,6 @@ def reflectivity_amplitude(kz=None,
 
     This function does not compute any instrument resolution corrections.
     """
-    from . import reflmodule
 
     kz = _dense(kz, 'd')
     if rho_index is None:
@@ -202,7 +201,6 @@ def magnetic_amplitude(kz,
 
     See :class:`magnetic_reflectivity <refl1d.reflectivity.magnetic_reflectivity>` for details.
     """
-    from . import reflmodule
 
     kz = _dense(kz, 'd')
     if rho_index is None:
@@ -226,7 +224,7 @@ def magnetic_amplitude(kz,
     # np.set_printoptions(linewidth=1000)
     # print(np.vstack((depth, np.hstack((sigma, np.nan)), rho, irho, rhoM, thetaM)).T)
 
-    sld_b, u1, u3 = calculate_u1_u3(H, rhoM, thetaM, Aguide)
+    sld_b, u1, u3 = calculate_u1_u3_py(H, rhoM, thetaM, Aguide)
 
     # Note 2021-08-01: return Rpp, Rpm, Rmp, Rmm are no longer contiguous.
     R = np.empty((kz.size, 4), 'D')
@@ -957,7 +955,6 @@ def convolve(xi, yi, x, dx, resolution='normal'):
     distribution uses the $1-\sigma$ equivalent distribution width which is
     $1/\sqrt{3}$ times the width of the rectangle.
     """
-    from . import reflmodule
 
     xi, yi, x, dx = _dense(xi), _dense(yi), _dense(x), _dense(dx)
     y = np.empty_like(x)
