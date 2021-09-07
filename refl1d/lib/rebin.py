@@ -143,14 +143,15 @@ def rebin_intensity(Nold, xold, Iold, dIold, Nnew, xnew, Inew, dInew):
 
 @numba.njit(cache=True)
 def rebin_counts_2D(xold, yold, Iold, xnew, ynew, Inew):
-    Nxold = len(xold)
-    Nyold = len(yold)
-    Nxnew = len(xnew)
-    Nynew = len(ynew)
+    Nxold = len(xold) - 1
+    Nyold = len(yold) - 1
+    Nxnew = len(xnew) - 1
+    Nynew = len(ynew) - 1
 
     # Clear the new bins
-    for i in range(Nxnew * Nynew):
-        Inew[i] = 0
+    for i in range(Nxnew):
+        for j in range(Nynew):
+            Inew[i][j] = 0
 
     # Traverse both sets of bin edges; if there is an overlap, add the portion
     # of the overlapping old bin to the new bin.  Scale this by the portion
@@ -159,13 +160,15 @@ def rebin_counts_2D(xold, yold, Iold, xnew, ynew, Inew):
     _to = BinIter(Nxnew, xnew)
 
     while (not _from.atend and not _to.atend):
-        if (_to.hi <= _from.lo): _to.increment() # new must catch up to old
-        elif (_from.hi <= _to.lo): _from.increment() # old must catch up to new
+        if (_to.hi <= _from.lo):
+            _to.increment() # new must catch up to old
+        elif (_from.hi <= _to.lo):
+            _from.increment() # old must catch up to new
         else:
             overlap = min(_from.hi, _to.hi) - max(_from.lo, _to.lo)
             portion = overlap / (_from.hi - _from.lo)
-            rebin_counts_portion(Nyold, yold, Iold + (_from.bin*Nyold),
-                                Nynew, ynew, Inew + (_to.bin*Nynew),
+            rebin_counts_portion(Nyold, yold, Iold[_from.bin],
+                                Nynew, ynew, Inew[_to.bin],
                                 portion)
             if (_to.hi > _from.hi): _from.increment()
             else: _to.increment()
