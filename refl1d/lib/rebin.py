@@ -55,7 +55,8 @@ def rebin_counts_portion(Nold, vold, Iold, Nnew, vnew, Inew, ND_portion):
     # rather than rates.
 
     # Does not work in place
-    assert(Iold is not Inew)
+    if (Iold is Inew):
+        raise ValueError("does not work in place")
 
     # Traverse both sets of bin edges; if there is an overlap, add the portion
     # of the overlapping old bin to the new bin.
