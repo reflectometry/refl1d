@@ -231,7 +231,7 @@ def magnetic_amplitude(kz,
     magnetic_amplitude_py(depth, sigma, rho, irho, sld_b, u1, u3, kz, R)
     return R[:, 0], R[:, 1], R[:, 2], R[:, 3]
 
-
+# deprecated
 def calculate_u1_u3(H, rhoM, thetaM, Aguide):
     from . import reflmodule
 
@@ -978,11 +978,11 @@ def convolve_sampled(xi, yi, xp, yp, x, dx):
     resolution *(xp, yp)* is also represented as a piece-wise linear
     spline.
     """
-    from . import reflmodule
+    from .lib.convolve_sampled import convolve_sampled
 
     x = _dense(x)
     y = np.empty_like(x)
-    reflmodule.convolve_sampled(_dense(xi), _dense(yi), _dense(xp), _dense(yp),
+    convolve_sampled(_dense(xi), _dense(yi), _dense(xp), _dense(yp),
                                 x, _dense(dx), y)
     return y
 
