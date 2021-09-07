@@ -48,14 +48,7 @@ class BinIter:
                 self.hi = self.edges[self.bin]
         return self
 
-
-REBIN_COUNTS_PORTION_SIGS = [
-    "void(i8, f8[:], i4[:], i8, f8[:], i4[:], f8)",
-    "void(i8, f8[:], f8[:], i8, f8[:], f8[:], f8)",
-]
-
-
-@numba.njit(REBIN_COUNTS_PORTION_SIGS, parallel=False, cache=True)
+@numba.njit(parallel=False, cache=True)
 def rebin_counts_portion(Nold, vold, Iold, Nnew, vnew, Inew, ND_portion):
 
     # Note: inspired by rebin from OpenGenie, but using counts per bin
@@ -84,14 +77,7 @@ def rebin_counts_portion(Nold, vold, Iold, Nnew, vnew, Inew, ND_portion):
             else:
                 _to.increment()
 
-
-REBIN_COUNTS_SIGS = [
-    "void(i8, f8[:], i4[:], i8, f8[:], i4[:])",
-    "void(i8, f8[:], f8[:], i8, f8[:], f8[:])",
-]
-
-
-@numba.njit(REBIN_COUNTS_SIGS, parallel=False, cache=True)
+@numba.njit(parallel=False, cache=True)
 def rebin_counts_old(Nold, xold, Iold, Nnew, xnew, Inew):
 
     # Note: inspired by rebin from OpenGenie, but using counts per bin
@@ -103,14 +89,7 @@ def rebin_counts_old(Nold, xold, Iold, Nnew, xnew, Inew):
 
     rebin_counts_portion(Nold, xold, Iold, Nnew, xnew, Inew, 1.)
 
-
-REBIN_COUNTS_SIGS = [
-    "void(f8[:], i4[:], f8[:], i4[:])",
-    "void(f8[:], f8[:], f8[:], f8[:])",
-]
-
-
-@numba.njit(REBIN_COUNTS_SIGS, parallel=False, cache=True)
+@numba.njit(parallel=False, cache=True)
 def rebin_counts(xold, Iold, xnew, Inew):
 
     # Note: inspired by rebin from OpenGenie, but using counts per bin
@@ -124,10 +103,7 @@ def rebin_counts(xold, Iold, xnew, Inew):
     rebin_counts_portion(Nold, xold, Iold, Nnew, xnew, Inew, 1.)
 
 
-REBIN_INTENSITY_SIG = "void(i4, f8[:], f8[:], f8[:], i4, f8[:], f8[:], f8[:])"
-
-
-@numba.njit(REBIN_INTENSITY_SIG, parallel=False, cache=True)
+@numba.njit(parallel=False, cache=True)
 def rebin_intensity(Nold, xold, Iold, dIold, Nnew, xnew, Inew, dInew):
 
     # Note: inspired by rebin from OpenGenie, but using counts per bin rather than rates.
