@@ -12,8 +12,8 @@ def align_magnetic(nlayers, d, sigma, rho, irho, nlayersM, dM, sigmaM, rhoM, the
     # ignoring thickness d on the first and last layers
     # ignoring interface width sigma on the last layer
     # making sure there are at least two layers
-    assert(nlayers > 1)
-    assert(nlayersM > 1)
+    if nlayers < 2 or nlayersM < 2:
+        raise ValueError("only works with more than one layer")
 
     output = output_flat
     magnetic = 0  # current magnetic layer index
@@ -129,7 +129,6 @@ def contract_mag(n, d, sigma, rho, irho, rhoM, thetaM, dA):
 
         # /* Accumulate slices into layer */
         while True:
-            assert(i < n)
             # /* Accumulate next slice */
             dz += d[i]
             rhoarea += d[i] * rho[i]
@@ -211,7 +210,6 @@ def contract_by_area(n, d, sigma, rho, irho, dA):
 
         # /* Accumulate slices into layer */
         while True:
-            assert(i < n)
             # /* Accumulate next slice */
             dz += d[i]
             rhoarea += d[i]*rho[i]
