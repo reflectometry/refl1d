@@ -3,14 +3,18 @@ import math
 
 Z_EPS = 1e-6
 
-ALIGN_MAGNETIC_SIG = 'i4(i4, f8[:], f8[:], f8[:], f8[:], i4, f8[:], f8[:], f8[:], f8[:], i4, f8[:,:])'
+ALIGN_MAGNETIC_SIG = 'i4(f8[:], f8[:], f8[:], f8[:], f8[:], f8[:], f8[:], f8[:], f8[:,:])'
 
 
 #@numba.njit(ALIGN_MAGNETIC_SIG, parallel=False, cache=True)
 @numba.njit(cache=True)
-def align_magnetic(nlayers, d, sigma, rho, irho, nlayersM, dM, sigmaM, rhoM, thetaM, noutput, output_flat):
+def align_magnetic(d, sigma, rho, irho, dM, sigmaM, rhoM, thetaM, output_flat):
     # ignoring thickness d on the first and last layers
     # ignoring interface width sigma on the last layer
+    nlayers = len(d)
+    nlayersM = len(dM)
+    noutput = nlayers + nlayersM
+
     # making sure there are at least two layers
     if nlayers < 2 or nlayersM < 2:
         raise ValueError("only works with more than one layer")

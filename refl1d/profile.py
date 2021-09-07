@@ -341,7 +341,7 @@ class Microslabs(object):
             for v in (w, sigma, rho, irho, wM, sigmaM, rhoM, thetaM)
             ]
         output = np.empty((len(w)+len(wM), 6), 'd')
-        n = align_magnetic(len(w), w, sigma, rho, irho, len(wM), wM, sigmaM, rhoM, thetaM, len(w) + len(wM), output)
+        n = align_magnetic(w, sigma, rho, irho, wM, sigmaM, rhoM, thetaM, output)
 
         # Store the resulting profile
         self._reserve(n - self._num_slabs)  # make sure there is space
