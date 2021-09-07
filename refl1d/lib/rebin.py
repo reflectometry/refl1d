@@ -139,3 +139,33 @@ def rebin_intensity(Nold, xold, Iold, dIold, Nnew, xnew, Inew, dInew):
     # Convert variance to standard deviation.
     for i in range(Nnew):
         dInew[i] = math.sqrt(dInew[i])
+
+
+@numba.njit(cache=True)
+def rebin_counts_2D(xold, yold, Iold, xnew, ynew, Inew):
+    Nxold = len(xold)
+    Nyold = len(yold)
+    Nxnew = len(xnew)
+    Nynew = len(ynew)
+
+    # Clear the new bins
+    for i in range(Nxnew * Nynew):
+        Inew[i] = 0
+
+    # Traverse both sets of bin edges; if there is an overlap, add the portion
+    # of the overlapping old bin to the new bin.  Scale this by the portion
+    # of the overlap in y.
+    _from = BinIter(Nxold, xold)
+    _to = BinIter(Nxnew, xnew)
+
+    while (not _from.atend and not _to.atend):
+        if (_to.hi <= _from.lo): _to.increment() # new must catch up to old
+        elif (_from.hi <= _to.lo): _from.increment() # old must catch up to new
+        else:
+            overlap = min(_from.hi, _to.hi) - max(_from.lo, _to.lo)
+            portion = overlap / (_from.hi - _from.lo)
+            rebin_counts_portion(Nyold, yold, Iold + (_from.bin*Nyold),
+                                Nynew, ynew, Inew + (_to.bin*Nynew),
+                                portion)
+            if (_to.hi > _from.hi): _from.increment()
+            else: _to.increment()
