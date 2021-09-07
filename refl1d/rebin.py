@@ -92,7 +92,6 @@ def rebin(x, I, xo, Io=None, dtype=np.float64):
     The algorithm uses truncation so total intensity will be down on
     average by half the total number of bins.
     """
-    #from . import reflmodule as _cmodule
     from .lib.rebin import rebin_counts
     
     # Coerce axes to float arrays
@@ -160,7 +159,7 @@ def rebin2d(x, y, I, xo, yo, Io=None, dtype=None):
     TypeError.  This will allow you to rebin the slices of an appropriately
     ordered matrix without making copies.
     """
-    from . import reflmodule as _cmodule
+    from .lib.rebin import rebin_counts_2D
 
     # Coerce axes to float arrays
     x, y, xo, yo = [_input(v, dtype='d') for v in (x, y, xo, yo)]
@@ -180,15 +179,15 @@ def rebin2d(x, y, I, xo, yo, Io=None, dtype=None):
     # Create output vector
     Io = _output(Io, shape_out, dtype=dtype)
 
-    # Call rebin on type if it is available
-    try:
-        rebincore = getattr(_cmodule, 'rebin2d_' + I.dtype.name)
-    except AttributeError:
-        raise TypeError("rebin2d supports uint 8/16/32/64 and float 32/64, not "
-                        + I.dtype.name)
+    # # Call rebin on type if it is available
+    # try:
+    #     rebincore = getattr(_cmodule, 'rebin2d_' + I.dtype.name)
+    # except AttributeError:
+    #     raise TypeError("rebin2d supports uint 8/16/32/64 and float 32/64, not "
+    #                     + I.dtype.name)
     # print x.shape, y.shape, I.shape, xo.shape, yo.shape, Io.shape
     # print x.dtype, y.dtype, I.dtype, xo.dtype, yo.dtype, Io.dtype
-    rebincore(x, y, I, xo, yo, Io)
+    rebin_counts_2D(x, y, I, xo, yo, Io)
     return Io
 
 
