@@ -55,7 +55,7 @@ def rebin_counts_portion(Nold, vold, Iold, Nnew, vnew, Inew, ND_portion):
     # rather than rates.
 
     # Does not work in place
-    #assert(Iold != Inew)
+    assert(Iold is not Inew)
 
     # Traverse both sets of bin edges; if there is an overlap, add the portion
     # of the overlapping old bin to the new bin.
@@ -71,7 +71,7 @@ def rebin_counts_portion(Nold, vold, Iold, Nnew, vnew, Inew, ND_portion):
         else:
             overlap = min(_from.hi, _to.hi) - max(_from.lo, _to.lo)
             portion = overlap/(_from.hi - _from.lo)
-            Inew[_to.bin] += round(Iold[_from.bin]*portion*ND_portion)
+            Inew[_to.bin] += Iold[_from.bin]*portion*ND_portion
             if (_to.hi > _from.hi):
                 _from.increment()
             else:
@@ -127,9 +127,9 @@ def rebin_intensity(Nold, xold, Iold, dIold, Nnew, xnew, Inew, dInew):
             overlap = min(_from.hi, _to.hi) - max(_from.lo, _to.lo)
             portion = overlap/(_from.hi - _from.lo)
 
-            Inew[_to.bin] += round((Iold[_from.bin])*portion)
+            Inew[_to.bin] += (Iold[_from.bin])*portion
             # add in quadrature
-            dInew[_to.bin] += round((dIold[_from.bin]*portion)**2)
+            dInew[_to.bin] += (dIold[_from.bin]*portion)**2
             if (_to.hi > _from.hi):
                 _from.increment()
             else:
