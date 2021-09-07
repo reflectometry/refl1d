@@ -185,8 +185,8 @@ def rebin2d(x, y, I, xo, yo, Io=None, dtype=None):
     # except AttributeError:
     #     raise TypeError("rebin2d supports uint 8/16/32/64 and float 32/64, not "
     #                     + I.dtype.name)
-    # print x.shape, y.shape, I.shape, xo.shape, yo.shape, Io.shape
-    # print x.dtype, y.dtype, I.dtype, xo.dtype, yo.dtype, Io.dtype
+    # print(x.shape, y.shape, I.shape, xo.shape, yo.shape, Io.shape)
+    # print(x.dtype, y.dtype, I.dtype, xo.dtype, yo.dtype, Io.dtype)
     rebin_counts_2D(x, y, I, xo, yo, Io)
     return Io
 
@@ -253,9 +253,9 @@ def _check_all_1d():
 
 
 def _check_one_2d(x, y, z, xo, yo, zo):
-    # print "checking"
-    # print x, y, z
-    # print xo, yo, zo
+    # print("checking")
+    # print(x, y, z)
+    # print(xo, yo, zo)
     result = rebin2d(x, y, z, xo, yo)
     target = np.array(zo, dtype=result.dtype)
     assert np.linalg.norm(target - result) < 1e-14, \
