@@ -60,7 +60,6 @@ MODULES = [
     ('probe', 'Instrument probe'),
     ('profile', 'Model profile'),
     ('reflectivity', 'Reflectivity'),
-    ('reflmodule', 'Low level reflectivity calculations'),
     ('resolution', 'Resolution'),
     ('snsdata', 'SNS Data'),
     ('staj', 'Staj File'),
