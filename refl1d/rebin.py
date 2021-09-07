@@ -92,8 +92,9 @@ def rebin(x, I, xo, Io=None, dtype=np.float64):
     The algorithm uses truncation so total intensity will be down on
     average by half the total number of bins.
     """
-    from . import reflmodule as _cmodule
-
+    #from . import reflmodule as _cmodule
+    from .lib.rebin import rebin_counts
+    
     # Coerce axes to float arrays
     x, xo = _input(x, dtype='d'), _input(xo, dtype='d')
     shape_in = np.array([x.shape[0] - 1])
@@ -113,12 +114,13 @@ def rebin(x, I, xo, Io=None, dtype=np.float64):
     Io = _output(Io, shape_out, dtype=dtype)
 
     # Call rebin on type if it is available
-    try:
-        rebincore = getattr(_cmodule, 'rebin_' + I.dtype.name)
-    except AttributeError:
-        raise TypeError("rebin supports uint 8/16/32/64 and float 32/64, not "
-                        + I.dtype.name)
-    rebincore(x, I, xo, Io)
+    # try:
+    #     rebincore = getattr(_cmodule, 'rebin_' + I.dtype.name)
+    # except AttributeError:
+    #     raise TypeError("rebin supports uint 8/16/32/64 and float 32/64, not "
+    #                     + I.dtype.name)
+    # rebincore(x, I, xo, Io)
+    rebin_counts(x, I, xo, Io)
     return Io
 
 
