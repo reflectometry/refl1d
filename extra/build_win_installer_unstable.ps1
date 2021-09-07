@@ -7,7 +7,7 @@
 # Look in https://www.python.org/ftp/python for the latest python version.
 $PY_VERSION = "3.8.1"
 $PTH_FILE = "python38._pth"
-$WHEEL_TAG = "cp32-abi3-win_amd64"
+$WHEEL_TAG = "py3-none-any"
 $INSTALL_TAG = "exe"  # PAK: renamed from "cp38-embedded-amd64" to make docs clearer
 $PACKAGE = "refl1d"
 $APP_NAME = "Refl1D"
