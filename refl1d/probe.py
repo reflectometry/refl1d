@@ -40,7 +40,7 @@ from __future__ import with_statement, division, print_function
 
 import os
 import json
-from typing import TYPE_CHECKING
+from typing import Optional, Union
 import warnings
 
 import numpy as np
@@ -54,7 +54,7 @@ from bumps.plotutil import coordinated_colors, auto_shift
 from bumps.data import parse_multi, strip_quotes
 
 from . import fresnel
-from .material import Vacuum
+from .material import Vacuum, Scatterer
 from .resolution import QL2T, QT2L, TL2Q, dQdL2dT, dQdT2dLoL, dTdL2dQ
 from .resolution import sigma2FWHM, FWHM2sigma, dQ_broadening
 from .stitch import stitch
@@ -76,6 +76,64 @@ def make_probe(**kw):
         return NeutronProbe(**kw)
     else:
         return XrayProbe(**kw)
+
+
+class Oversampling:
+    r"""
+    Oversampling parameters for a probe.
+    By default, seed is 1 for consistency: set to None for randomness
+    """
+    n: int
+    seed: Optional[int] = 1
+
+    def __init__(self, n, seed=1):
+        self.n = n
+        self.seed = seed
+
+    @classmethod
+    def default(cls, obj):
+        if isinstance(obj, cls) or obj is None:
+            return obj
+        elif isinstance(obj, dict):
+            return cls(**obj)
+        elif isinstance(obj, int):
+            return cls(obj)
+        else:
+            raise ValueError("must supply one of: {\"n\": value, \"seed\": value}, int(n), Oversampling instance or None")
+
+
+class CriticalEdgeOversampling:
+    r"""
+    Define a critical edge for a probe, for oversampling in the vicinity
+    
+    The critical edge is defined by the difference in scattering
+    potential for the *substrate* and *surface* materials, or the
+    reverse if *back_reflectivity* is true.
+
+    *n* is the number of $Q$ points to compute near the critical edge.
+
+    *delta* is the relative uncertainty in the material density,
+    which defines the range of values which are calculated.
+    """
+    n: int = 51
+    delta: float = 0.25
+    substrate: Optional[Scatterer] = None
+    surface: Optional[Scatterer] = None
+
+    def __init__(self, n=51, delta=0.25, substrate=None, surface=None):
+        self.n = n
+        self.delta = delta
+        self.substrate = substrate
+        self.surface = surface
+
+    @classmethod
+    def default(cls, obj):
+        if isinstance(obj, cls) or obj is None:
+            return obj
+        elif isinstance(obj, dict):
+            return cls(**obj)
+        else:
+            raise ValueError("must supply one of: {\"n\": value, \"delta\": value, \"substrate\": value, \"surface\": value}, CriticalEdge instance or None")
 
 
 class Probe(object):
@@ -182,7 +240,8 @@ class Probe(object):
                  sample_broadening=0,
                  back_reflectivity=False, name=None, filename=None,
                  dQ=None, resolution='normal',
-                 oversampling=None, oversampling_seed=None):
+                 oversampling: Optional[Union[float, Oversampling]] = None,
+                 critical_edge_oversampling: Optional[CriticalEdgeOversampling] = None):
         if T is None or L is None:
             raise TypeError("T and L required")
         if sample_broadening is None:
@@ -208,9 +267,9 @@ class Probe(object):
         else:
             R, dR = None, None
 
-        self.oversampling = oversampling
-        self.oversampling_seed = oversampling_seed
-        self._theta_offset_limits = None
+        self.oversampling = Oversampling.default(oversampling)
+        self.critical_edge_oversampling = CriticalEdgeOversampling.default(critical_edge_oversampling)
+        self._q_basis_params = None
         self._Q_basis = self._dQ_basis = None
 
         self._set_TLR(T, dT, L, dL, R, dR, dQ)
@@ -414,11 +473,11 @@ class Probe(object):
 
     def _calculate_q_basis(self):
         t_o = self.theta_offset
-
         theta_offset_limits = (t_o.value, t_o.value) if t_o.fixed else t_o.bounds.limits
+        q_basis_params = (theta_offset_limits, self.oversampling, self.critical_edge_oversampling)
 
-        if self._theta_offset_limits is not None and theta_offset_limits == self._theta_offset_limits:
-           # no change in offset limits: use cached values of q basis
+        if q_basis_params == self._q_basis_params:
+           # no change in parameters that affect q basis: use cached values
            return
 
         else:
@@ -429,8 +488,10 @@ class Probe(object):
                 self.calc_Qo = self._Q_basis
             else:
                 self._oversample(self.oversampling, self.oversampling_seed)
-            
-            self._theta_offset_limits = theta_offset_limits
+
+            if self.critical_edge_oversampling is not None:
+                self._critical_edge() 
+            self._q_basis_params = q_basis_params
 
     @property
     def calc_Q(self):
@@ -519,6 +580,9 @@ class Probe(object):
 
     def critical_edge(self, substrate=None, surface=None,
                       n=51, delta=0.25):
+        self.critical_edge_oversampling = CriticalEdgeOversampling(n, delta, substrate, surface)
+        
+    def _critical_edge(self):
         r"""
         Oversample points near the critical edge.
 
@@ -530,9 +594,6 @@ class Probe(object):
 
         *delta* is the relative uncertainty in the material density,
         which defines the range of values which are calculated.
-
-        Note: :meth:`critical_edge` will remove the extra Q calculation
-        points introduced by :meth:`oversample`.
 
         The $n$ points $Q_i$ are evenly distributed around the critical
         edge in $Q_c \pm \delta Q_c$ by varying angle $\theta$ for a
@@ -554,10 +615,14 @@ class Probe(object):
         back reflectivity to front reflectivity.  For completeness,
         the angle $\theta = 0$ is added as well.
         """
-        Q_c = self.Q_c(substrate, surface)
+        ce = self.critical_edge_oversampling
+        if not isinstance(ce, CriticalEdgeOversampling):
+            return
+
+        Q_c = self.Q_c(ce.substrate, ce.surface)
         #dQ_c = np.interp([Q_c], self._Q_basis, self._dQ_basis)[0]
-        Q = np.linspace(Q_c*(1 - delta), Q_c*(1+delta), n)
-        Q = np.hstack((self._Q_basis, Q))
+        Q = np.linspace(Q_c*(1 - ce.delta), Q_c*(1+ce.delta), ce.n)
+        Q = np.hstack((self.calc_Qo, Q))
         idx = np.argsort(Q)
         # order by Q
         self.calc_Qo = Q[idx]
@@ -1587,7 +1652,7 @@ class QProbe(Probe):
         extra = np.linspace(Q_c*(1 - delta), Q_c*(1+delta), n)
         calc_Q = np.hstack((self.Q, extra, 0))
         self.calc_Qo = np.sort(calc_Q)
-    critical_edge.__doc__ = Probe.critical_edge.__doc__
+    critical_edge.__doc__ = Probe._critical_edge.__doc__
 
 def extend_q_basis(xs):
     """
@@ -1678,11 +1743,11 @@ class PolarizedNeutronProbe(object):
     polarized = True
     unique_L = None
 
-    def __init__(self, xs=None, name=None, Aguide=BASE_GUIDE_ANGLE, H=0, oversampling=None, oversampling_seed=None):
+    def __init__(self, xs=None, name=None, Aguide=BASE_GUIDE_ANGLE, H=0, oversampling=None, critical_edge_oversampling=None):
         self._xs = xs
-        self._theta_offset_limits = None
-        self.oversampling = oversampling
-        self.oversampling_seed = oversampling_seed
+        self._q_basis_params = None
+        self.oversampling = Oversampling.default(oversampling)
+        self.critical_edge_oversampling = CriticalEdgeOversampling.default(critical_edge_oversampling)
 
         if name is None and self.xs[0] is not None:
             name = self.xs[0].name
@@ -1796,17 +1861,30 @@ class PolarizedNeutronProbe(object):
                 x.theta_offset = theta_offset
                 x.sample_broadening = sample_broadening
 
-    def oversample(self, n=6, seed=None):
-        self._oversample(n, seed)
-        self.oversampling = n
-        self.oversampling_seed = seed
+    def _critical_edge(self):
+        ce = self.critical_edge_oversampling
+        if not isinstance(ce, CriticalEdgeOversampling):
+            return
 
-    def _oversample(self, n=6, seed=None):
+        Q_c = self.Q_c(ce.substrate, ce.surface)
+        #dQ_c = np.interp([Q_c], self._Q_basis, self._dQ_basis)[0]
+        Q = np.linspace(Q_c*(1 - ce.delta), Q_c*(1+ce.delta), ce.n)
+        Q = np.hstack((self.calc_Qo, Q))
+        idx = np.argsort(Q)
+        # order by Q
+        self.calc_Qo = Q[idx]
+    _critical_edge.__doc__ = Probe._critical_edge.__doc__
+    
+    def oversample(self, n=6, seed=None):
+        self.oversampling = Oversampling(n, seed)
+
+    def _oversample(self):
         # doc string is inherited from parent (see below)
-        rng = numpy.random.RandomState(seed=seed)
-        Q = rng.normal(self.Q[:, None], self.dQ[:, None], size=(len(self.dQ), n))
-        Q = Q.flatten()
-        self.calc_Qo = Q
+        if self.oversampling is not None:
+            rng = numpy.random.RandomState(seed=self.oversampling.seed)
+            Q = rng.normal(self.Q[:, None], self.dQ[:, None], size=(len(self.dQ), self.oversampling.n))
+            Q = Q.flatten()
+            self.calc_Qo = Q
     _oversample.__doc__ = Probe.oversample.__doc__
 
     def _calculate_q_basis(self):
@@ -1822,8 +1900,9 @@ class PolarizedNeutronProbe(object):
                 else:
                     theta_offset_limits.append(xs.theta_offset.bounds.limits)
 
-        if self._theta_offset_limits is not None and theta_offset_limits == self._theta_offset_limits:
-           # no change in offset limits: use cached values of q basis
+        q_basis_params = (theta_offset_limits, self.oversampling, self.critical_edge_oversampling)
+        if q_basis_params == self._q_basis_params:
+           # no change in parameters that affect q_basis: use cached values
            return
 
         else:
@@ -1834,9 +1913,10 @@ class PolarizedNeutronProbe(object):
             if self.oversampling is None:
                 self.calc_Qo = self.Q
             else:
-                self._oversample(self.oversampling, self.oversampling_seed)
+                self._oversample()
             
-            self._theta_offset_limits = theta_offset_limits
+            self._critical_edge()            
+            self._q_basis_params = q_basis_params
 
     @property
     def calc_Q(self):
