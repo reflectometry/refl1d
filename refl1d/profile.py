@@ -325,7 +325,7 @@ class Microslabs(object):
         Add magnetic information to the nuclear slabs, introducing new
         slabs as necessary where magnetic and nuclear do not match.
         """
-        from .lib.contract_profile import align_magnetic
+        from .reflmodule import _align_magnetic
 
         # Nuclear profile (one wavelength only)
         #if self.rho.shape[0] != 1:
@@ -341,7 +341,7 @@ class Microslabs(object):
             for v in (w, sigma, rho, irho, wM, sigmaM, rhoM, thetaM)
             ]
         output = np.empty((len(w)+len(wM), 6), 'd')
-        n = align_magnetic(w, sigma, rho, irho, wM, sigmaM, rhoM, thetaM, output)
+        n = _align_magnetic(w, sigma, rho, irho, wM, sigmaM, rhoM, thetaM, output)
 
         # Store the resulting profile
         self._reserve(n - self._num_slabs)  # make sure there is space
@@ -396,7 +396,7 @@ class Microslabs(object):
         self._z_offset = self._z_left
 
     def _contract_profile(self, dA):
-        from .lib.contract_profile import contract_by_area
+        from .reflmodule import _contract_by_area
 
         if dA is None:
             return
@@ -412,7 +412,7 @@ class Microslabs(object):
             for v in (self.w, self.sigma, self.rho[0], self.irho[0])
             ]
         #print "final sld before contract", rho[-1]
-        n = contract_by_area(len(w), w, sigma, rho, irho, dA)
+        n = _contract_by_area(w, sigma, rho, irho, dA)
         self._num_slabs = n
         self.w[:] = w[:n]
         self.rho[0, :] = rho[:n]
@@ -421,7 +421,7 @@ class Microslabs(object):
         #print "final sld after contract", rho[n-1], self.rho[0][n-1], n
 
     def _contract_magnetic(self, dA):
-        from .lib.contract_profile import contract_mag
+        from .reflmodule import _contract_mag
 
         if dA is None:
             return
@@ -436,7 +436,7 @@ class Microslabs(object):
             [np.ascontiguousarray(v, 'd')
              for v in (self.w, self.sigma, self.rho[0], self.irho[0], self.rhoM, self.thetaM)]
         #print "final sld before contract", rho[-1]
-        n = contract_mag(len(w), w, sigma, rho, irho, rhoM, thetaM, dA)
+        n = _contract_mag(w, sigma, rho, irho, rhoM, thetaM, dA)
         self._num_slabs = n
         self.w[:] = w[:n]
         self.rho[0][:] = rho[:n]
