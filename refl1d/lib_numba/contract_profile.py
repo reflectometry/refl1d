@@ -201,7 +201,7 @@ CONTRACT_BY_AREA_SIG = 'i4(f8[:], f8[:], f8[:], f8[:], f8)'
 
 #@numba.njit(CONTRACT_BY_AREA_SIG, parallel=False, cache=True)
 @numba.njit(cache=True)
-def contract_by_area(n, d, sigma, rho, irho, dA):
+def contract_by_area(d, sigma, rho, irho, dA):
     n = len(d)
     i = newi = 1  # /* Skip the substrate */
     while (i < n):
