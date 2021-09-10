@@ -1690,11 +1690,11 @@ def extend_q_basis(xs):
                 print(x.theta_offset.bounds, x.theta_offset.bounds.limits)
                 raise ValueError("cannot extend theta range to infinity from theta_offset")
 
-            Q_lower_extension = np.arange(Q[0] - Q_lower, Q[0], lower_step, dtype=Q.dtype)
+            Q_lower_extension = np.arange(Q_lower, Q[0], lower_step, dtype=Q.dtype)
             dQ_lower_extension = np.ones_like(Q_lower_extension, dtype=dQ.dtype) * dQ[0]
 
             # start at upper end and add steps backward... then reverse.
-            Q_upper_extension = np.arange(Q[-1] + Q_upper, Q[-1], -upper_step, dtype=Q.dtype)[::-1]
+            Q_upper_extension = np.arange(Q_upper, Q[-1], -upper_step, dtype=Q.dtype)[::-1]
             dQ_upper_extension = np.ones_like(Q_upper_extension, dtype=dQ.dtype) * dQ[-1]
 
             Q = np.hstack([Q_lower_extension, Q, Q_upper_extension])
