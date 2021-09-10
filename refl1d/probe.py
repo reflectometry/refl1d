@@ -1875,7 +1875,7 @@ class PolarizedNeutronProbe(object):
         self.calc_Qo = Q[idx]
     _critical_edge.__doc__ = Probe._critical_edge.__doc__
     
-    def oversample(self, n=6, seed=None):
+    def oversample(self, n=6, seed=1):
         self.oversampling = Oversampling(n, seed)
 
     def _oversample(self):
