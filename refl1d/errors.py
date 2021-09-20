@@ -228,7 +228,9 @@ def show_errors(errors, contours=CONTOURS, npoints=200,
     *align* is the interface number plus fractional distance within
     the layer following the interface.  For example, use 0 for the
     substrate interface, use -1 for the surface interface, or use 2.5
-    for the center of the second slab above the substrate.
+    for the center of the second slab above the substrate. If *align='auto'*
+    then choose an offset that minimizes the cross-correlation between the
+    first profile and the current profile.
 
     *plots* is the number of plots to use (1, 2, or 'n').
 
