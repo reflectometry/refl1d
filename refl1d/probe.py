@@ -1238,7 +1238,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
           L=None, dL=None, T=None, dT=None, dR=None,
           FWHM=False, radiation=None,
           columns=None, data_range=(None, None),
-          resolution='normal',
+          resolution=None,
          ):
     r"""
     Load in four column data Q, R, dR, dQ.
@@ -1326,7 +1326,8 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     data set.
 
     *resolution* is 'normal' (default) or 'uniform'. Use uniform if you
-    are merging Q points from a finely stepped energy sensitive measurement.
+    are merging Q points from a finely stepped energy sensitive measurement
+    or if you are in scanning mode where each point sweeps over theta.
     """
     entries = parse_multi(filename, keysep=keysep, sep=sep, comment=comment)
     if columns:
@@ -1345,7 +1346,6 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
         back_reflectivity=back_reflectivity,
         theta_offset=theta_offset,
         sample_broadening=sample_broadening,
-        resolution=resolution,
     )
     data_args = dict(
         radiation=radiation,
@@ -1353,6 +1353,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
         T=T, L=L, dT=dT, dL=dL, dR=dR,
         column_order=column_order,
         index=index,
+        resolution=resolution,
     )
     if len(entries) == 1:
         probe = _data_as_probe(entries[0], probe_args, **data_args)
@@ -1372,7 +1373,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     return probe
 
 def _data_as_probe(entry, probe_args, T, L, dT, dL, dR, FWHM, radiation,
-                   column_order, index):
+                   column_order, index, resolution):
     name = probe_args['filename']
     header, data = entry
     if len(data) == 2:
@@ -1414,7 +1415,7 @@ def _data_as_probe(entry, probe_args, T, L, dT, dL, dR, FWHM, radiation,
         make_probe = Probe
 
     # Get T,dT,L,dL from header if it is not provided as an argument
-    def fetch_key(key, override):
+    def fetch_key(key, override, default=None):
         # Note: pulls header and index pulled from context
         if override is not None:
             return override
@@ -1422,7 +1423,7 @@ def _data_as_probe(entry, probe_args, T, L, dT, dL, dR, FWHM, radiation,
             v = json.loads(header[key])
             return np.array(v)[index] if isinstance(v, list) else v
         else:
-            return None
+            return default
 
     # Get T and L, either from user input or from datafile.
     data_T = fetch_key('angle', T)
@@ -1462,6 +1463,9 @@ def _data_as_probe(entry, probe_args, T, L, dT, dL, dR, FWHM, radiation,
         data_dLoL = dQdT2dLoL(data_Q, data_dQ, data_T, data_dT)
         data_dL = data_dLoL * data_L
 
+    # Get resolution from file header if not given on command line.
+    resolution = fetch_key('resolution_shape', resolution, default='normal')
+
     # Check reconstruction if user provided any of T, L, dT, or dL.
     # Also, sample_offset or sample_broadening.
     offset = probe_args['theta_offset']
@@ -1483,13 +1487,17 @@ def _data_as_probe(entry, probe_args, T, L, dT, dL, dR, FWHM, radiation,
             L=data_L, dL=data_dL,
             data=(data_R, data_dR),
             dQ=data_dQ,
+            resolution=resolution,
             **probe_args)
     else:
         # QProbe doesn't accept theta_offset or sample_broadening
         qprobe_args = probe_args.copy()
         qprobe_args.pop('theta_offset')
         qprobe_args.pop('sample_broadening')
-        probe = QProbe(data_Q, data_dQ, data=(data_R, data_dR), **qprobe_args)
+        probe = QProbe(
+            data_Q, data_dQ, data=(data_R, data_dR),
+            resolution=resolution,
+            **qprobe_args)
 
     return probe
 
