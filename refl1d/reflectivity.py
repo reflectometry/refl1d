@@ -230,7 +230,7 @@ def magnetic_amplitude(kz,
     # np.set_printoptions(linewidth=1000)
     # print(np.vstack((depth, np.hstack((sigma, np.nan)), rho, irho, rhoM, thetaM)).T)
 
-    sld_b, u1, u3 = calculate_u1_u3_py(H, rhoM, thetaM, Aguide)
+    sld_b, u1, u3 = calculate_u1_u3(H, rhoM, thetaM, Aguide)
 
     # Note 2021-08-01: return Rpp, Rpm, Rmp, Rmm are no longer contiguous.
     R = np.empty((kz.size, 4), 'D')
