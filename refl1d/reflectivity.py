@@ -18,7 +18,7 @@ __author__ = "Paul Kienzle"
 __all__ = ['reflectivity', 'reflectivity_amplitude',
            'magnetic_reflectivity', 'magnetic_amplitude',
            'unpolarized_magnetic', 'convolve',
-          ]
+           ]
 
 import numpy as np
 from numpy import pi, sin, cos, conj, radians, sqrt, exp, fabs
@@ -70,7 +70,7 @@ def reflectivity_amplitude(kz=None,
                            irho=0,
                            sigma=0,
                            rho_index=None,
-                          ):
+                           ):
     r"""
     Calculate reflectivity amplitude $r(k_z)$ from slab model.
 
@@ -131,7 +131,7 @@ def reflectivity_amplitude(kz=None,
     # print depth.shape, sigma.shape, rho.shape, irho.shape, kz.shape
     reflmodule._reflectivity_amplitude(depth, sigma, rho, irho, kz,
                                        rho_index, r)
-    
+
     return r
 
 
@@ -200,7 +200,7 @@ def magnetic_amplitude(kz,
                        Aguide=-90,
                        H=0,
                        rho_index=None,
-                      ):
+                       ):
     """
     Returns the complex magnetic reflectivity waveform.
 
@@ -225,8 +225,8 @@ def magnetic_amplitude(kz,
 
     # kz = -kz
     # depth, rho, irho, sigma, rhoM, thetaM = [v[::-1] for v in (depth, rho, irho, sigma, rhoM, thetaM)]
-    depth, rho, irho, sigma = [_dense(a, 'd')
-                                      for a in (depth, rho, irho, sigma)]
+    depth, rho, irho, sigma = [
+        _dense(a, 'd') for a in (depth, rho, irho, sigma)]
     # np.set_printoptions(linewidth=1000)
     # print(np.vstack((depth, np.hstack((sigma, np.nan)), rho, irho, rhoM, thetaM)).T)
 
@@ -234,8 +234,10 @@ def magnetic_amplitude(kz,
 
     # Note 2021-08-01: return Rpp, Rpm, Rmp, Rmm are no longer contiguous.
     R = np.empty((kz.size, 4), 'D')
-    reflmodule._magnetic_amplitude(depth, sigma, rho, irho, sld_b, u1, u3, kz, R)
+    reflmodule._magnetic_amplitude(
+        depth, sigma, rho, irho, sld_b, u1, u3, kz, R)
     return R[:, 0], R[:, 1], R[:, 2], R[:, 3]
+
 
 def calculate_u1_u3(H, rhoM, thetaM, Aguide):
     from . import reflmodule
@@ -266,10 +268,10 @@ def calculate_u1_u3_py(H, rhoM, thetaM, Aguide):
     if rotate_M:
         # rotate the M vector instead of the transfer matrix!
         # First, rotate the M vector about the x axis:
-        new_my = sld_m_z * sin(radians(Aguide)) + \
-                               sld_m_y * cos(radians(Aguide))
-        new_mz = sld_m_z * cos(radians(Aguide)) - \
-                               sld_m_y * sin(radians(Aguide))
+        new_my = (sld_m_z * sin(radians(Aguide)) +
+                  sld_m_y * cos(radians(Aguide)))
+        new_mz = (sld_m_z * cos(radians(Aguide)) -
+                  sld_m_y * sin(radians(Aguide)))
         sld_m_y, sld_m_z = new_my, new_mz
         sld_h_x = sld_h_y = 0.0
         sld_h_z = sld_h
@@ -349,65 +351,71 @@ def convolve_sampled(xi, yi, xp, yp, x, dx):
                                 x, _dense(dx), y)
     return y
 
+
 def test_uniform():
-    xi=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    yi=[1, 3, 1, 2, 7, 3, 1, 2, 1, 3]
-    _check_uniform("uniform aligned", xi, yi, x = [2, 4, 6, 8], dx = 1)
+    xi = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    yi = [1, 3, 1, 2, 7, 3, 1, 2, 1, 3]
+    _check_uniform("uniform aligned", xi, yi, x=[2, 4, 6, 8], dx=1)
     _check_uniform("uniform unaligned", xi, yi,
-                   x = [2.5, 4.5, 6.5, 8.5], dx = 1)
-    _check_uniform("uniform wide", xi, yi, x = [2.5, 4.5, 6.5, 8.5], dx = 3)
+                   x=[2.5, 4.5, 6.5, 8.5], dx=1)
+    _check_uniform("uniform wide", xi, yi, x=[2.5, 4.5, 6.5, 8.5], dx=3)
     # Check bad values
-    ystar = convolve(xi, yi, x = [-3, 13], dx = [1/np.sqrt(3)]*2, resolution ='uniform')
+    ystar = convolve(xi, yi, x=[-3, 13],
+                     dx=[1/np.sqrt(3)]*2, resolution='uniform')
     assert (ystar == 0.).all()
 
-    xi=[1.1, 2.3, 2.8, 4.2, 5, 6, 7, 8, 9, 10]
-    yi=[1, 3, 1, 2, 7, 3, 1, 2, 1, 3]
+    xi = [1.1, 2.3, 2.8, 4.2, 5, 6, 7, 8, 9, 10]
+    yi = [1, 3, 1, 2, 7, 3, 1, 2, 1, 3]
     _check_uniform("uniform unaligned", xi, yi,
-                   x = [2.5, 4.5, 6.5, 8.5], dx = 1)
+                   x=[2.5, 4.5, 6.5, 8.5], dx=1)
+
 
 def _check_uniform(name, xi, yi, x, dx):
     # Note: using fixed dx since that's all _check_spline supports.
-    ystar=convolve(xi, yi, x, [dx/np.sqrt(3)]*len(x), resolution = 'uniform')
+    ystar = convolve(xi, yi, x, [dx/np.sqrt(3)]*len(x), resolution='uniform')
     # print("xi", xi)
     # print("yi", yi)
     # print("x", x, "dx", dx)
     # print("ystar", ystar)
-    xp=[-dx, -dx, dx, dx]
-    yp=[0, 0.5/dx, 0.5/dx, 0]
+    xp = [-dx, -dx, dx, dx]
+    yp = [0, 0.5/dx, 0.5/dx, 0]
     _check_spline(name, xi, yi, xp, yp, x, ystar)
 
+
 def test_convolve_sampled():
-    xi=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    yi=[1, 3, 1, 2, 1, 3, 1, 2, 1, 3]
-    xp=[-1, 0, 1, 2, 3]
-    yp=[1, 4, 3, 2, 1]
-    _check_sampled("sampled aligned", xi, yi, xp, yp, dx = 1)
+    xi = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    yi = [1, 3, 1, 2, 1, 3, 1, 2, 1, 3]
+    xp = [-1, 0, 1, 2, 3]
+    yp = [1, 4, 3, 2, 1]
+    _check_sampled("sampled aligned", xi, yi, xp, yp, dx=1)
     _check_sampled("sampled unaligned", xi, yi,
-                   _dense(xp) - 0.2000003, yp, dx = 1)
-    _check_sampled("sampled wide", xi, yi, xp, yp, dx = 2)
-    _check_sampled("sampled super wide", xi, yi, xp, yp, dx = 10)
+                   _dense(xp) - 0.2000003, yp, dx=1)
+    _check_sampled("sampled wide", xi, yi, xp, yp, dx=2)
+    _check_sampled("sampled super wide", xi, yi, xp, yp, dx=10)
+
 
 def _check_sampled(name, xi, yi, xp, yp, dx):
-    ystar= convolve_sampled(xi, yi, xp, yp, xi, dx = np.full_like(xi, dx))
-    xp=np.array(xp)*dx
+    ystar = convolve_sampled(xi, yi, xp, yp, xi, dx=np.full_like(xi, dx))
+    xp = np.array(xp)*dx
     _check_spline(name, xi, yi, xp, yp, xi, ystar)
 
-def _check_spline(name, xi, yi, xp, yp, x, ystar):
-    step=0.0001
-    xpfine=np.arange(xp[0], xp[-1] + step / 10, step)
-    ypfine=np.interp(xpfine, xp, yp)
-    # make sure xfine is wide enough by adding an extra interval at the ends
-    xfine=np.arange(xi[0] + xpfine[0] - 2*step,
-                    xi[-1] + xpfine[-1] + 2*step, step)
-    yfine = np.interp(xfine, xi, yi, left = 0, right =0)
-    pidx=np.searchsorted(xfine, np.array(x) + xp[0])
-    left, right=np.searchsorted(xfine, [xi[0], xi[-1]])
 
-    conv=[]
+def _check_spline(name, xi, yi, xp, yp, x, ystar):
+    step = 0.0001
+    xpfine = np.arange(xp[0], xp[-1] + step / 10, step)
+    ypfine = np.interp(xpfine, xp, yp)
+    # make sure xfine is wide enough by adding an extra interval at the ends
+    xfine = np.arange(xi[0] + xpfine[0] - 2*step,
+                      xi[-1] + xpfine[-1] + 2*step, step)
+    yfine = np.interp(xfine, xi, yi, left=0, right=0)
+    pidx = np.searchsorted(xfine, np.array(x) + xp[0])
+    left, right = np.searchsorted(xfine, [xi[0], xi[-1]])
+
+    conv = []
     for pk in pidx:
-        norm_start=max(0, left - pk)
-        norm_end=min(len(xpfine), right - pk)
-        norm=step * np.sum(ypfine[norm_start:norm_end])
+        norm_start = max(0, left - pk)
+        norm_end = min(len(xpfine), right - pk)
+        norm = step * np.sum(ypfine[norm_start:norm_end])
         conv.append(step * np.sum(ypfine * yfine[pk:pk + len(xpfine)]) / norm)
 
     # print("checking convolution %s"%(name, ))
