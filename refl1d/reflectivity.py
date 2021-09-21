@@ -243,7 +243,7 @@ def calculate_u1_u3(H, rhoM, thetaM, Aguide):
     rhoM, thetaM = _dense(rhoM, 'd'), _dense(np.radians(thetaM), 'd')
     n = len(rhoM)
     u1, u3 = np.empty(n, 'D'), np.empty(n, 'D')
-    refllib._calculate_u1_u3(H, rhoM, thetaM, Aguide, u1, u3)
+    refllib.calculate_u1_u3(H, rhoM, thetaM, Aguide, u1, u3)
 
     return rhoM, u1, u3
 
