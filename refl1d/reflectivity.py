@@ -243,10 +243,9 @@ def calculate_u1_u3(H, rhoM, thetaM, Aguide):
     rhoM, thetaM = _dense(rhoM, 'd'), _dense(np.radians(thetaM), 'd')
     n = len(rhoM)
     u1, u3 = np.empty(n, 'D'), np.empty(n, 'D')
-    sld_b = np.empty(n, 'd')
-    reflmodule._calculate_u1_u3(H, rhoM, thetaM, Aguide, sld_b, u1, u3)
+    reflmodule._calculate_u1_u3(H, rhoM, thetaM, Aguide, u1, u3)
 
-    return sld_b, u1, u3
+    return rhoM, u1, u3
 
 
 def calculate_u1_u3_py(H, rhoM, thetaM, Aguide):

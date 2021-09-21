@@ -57,7 +57,10 @@ def calculate_U1_U3_single(H, rhoM, thetaM, Aguide, U1, U3, index):
 
 @numba.njit(cache=True)
 def calculate_u1_u3(H, rhoM, thetaM, Aguide, u1, u3):
-    """ array version - rhoM, thetaM, u1 and u3 are arrays """
+    """
+    array version - rhoM, thetaM, u1 and u3 are arrays 
+    rhoM, u1 and u3 are modified in-place
+    """
     for i in range(len(rhoM)):
         calculate_U1_U3_single(H, rhoM, thetaM, Aguide, u1, u3, i)
 
