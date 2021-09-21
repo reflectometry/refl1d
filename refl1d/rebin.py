@@ -93,7 +93,7 @@ def rebin(x, I, xo, Io=None, dtype=np.float64):
     The algorithm uses truncation so total intensity will be down on
     average by half the total number of bins.
     """
-    from . import reflmodule
+    from . import refllib
 
     # Coerce axes to float arrays
     x, xo = _input(x, dtype='d'), _input(xo, dtype='d')
@@ -120,7 +120,7 @@ def rebin(x, I, xo, Io=None, dtype=np.float64):
     #     raise TypeError("rebin supports uint 8/16/32/64 and float 32/64, not "
     #                     + I.dtype.name)
     # rebincore(x, I, xo, Io)
-    reflmodule.rebin_counts(x, I, xo, Io)
+    refllib.rebin_counts(x, I, xo, Io)
     return Io
 
 
@@ -160,7 +160,7 @@ def rebin2d(x, y, I, xo, yo, Io=None, dtype=None):
     TypeError.  This will allow you to rebin the slices of an appropriately
     ordered matrix without making copies.
     """
-    from . import reflmodule
+    from . import refllib
 
     # Coerce axes to float arrays
     x, y, xo, yo = [_input(v, dtype='d') for v in (x, y, xo, yo)]
@@ -188,7 +188,7 @@ def rebin2d(x, y, I, xo, yo, Io=None, dtype=None):
     #                     + I.dtype.name)
     # print(x.shape, y.shape, I.shape, xo.shape, yo.shape, Io.shape)
     # print(x.dtype, y.dtype, I.dtype, xo.dtype, yo.dtype, Io.dtype)
-    reflmodule.rebin_counts_2D(x, y, I, xo, yo, Io)
+    refllib.rebin_counts_2D(x, y, I, xo, yo, Io)
     return Io
 
 
