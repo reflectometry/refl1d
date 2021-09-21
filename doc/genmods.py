@@ -59,6 +59,7 @@ MODULES = [
     ('polymer', 'Polymer models'),
     ('probe', 'Instrument probe'),
     ('profile', 'Model profile'),
+    ('refllib', 'Low level reflectivity calculations'),
     ('reflectivity', 'Reflectivity'),
     ('resolution', 'Resolution'),
     ('snsdata', 'SNS Data'),
