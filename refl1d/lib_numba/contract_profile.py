@@ -6,7 +6,7 @@ Z_EPS = 1e-6
 ALIGN_MAGNETIC_SIG = 'i4(f8[:], f8[:], f8[:], f8[:], f8[:], f8[:], f8[:], f8[:], f8[:,:])'
 
 
-#@numba.njit(ALIGN_MAGNETIC_SIG, parallel=False, cache=True)
+# @numba.njit(ALIGN_MAGNETIC_SIG, parallel=False, cache=True)
 @numba.njit(cache=True)
 def align_magnetic(d, sigma, rho, irho, dM, sigmaM, rhoM, thetaM, output_flat):
     # ignoring thickness d on the first and last layers
@@ -116,7 +116,7 @@ def align_magnetic(d, sigma, rho, irho, dM, sigmaM, rhoM, thetaM, output_flat):
 CONTRACT_MAG_SIG = 'i4(f8[:], f8[:], f8[:], f8[:], f8[:], f8[:], f8)'
 
 
-#@numba.njit(CONTRACT_MAG_SIG, parallel=False, cache=True)
+# @numba.njit(CONTRACT_MAG_SIG, parallel=False, cache=True)
 @numba.njit(cache=True)
 def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
     n = len(d)
@@ -199,7 +199,7 @@ def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
 CONTRACT_BY_AREA_SIG = 'i4(f8[:], f8[:], f8[:], f8[:], f8)'
 
 
-#@numba.njit(CONTRACT_BY_AREA_SIG, parallel=False, cache=True)
+# @numba.njit(CONTRACT_BY_AREA_SIG, parallel=False, cache=True)
 @numba.njit(cache=True)
 def contract_by_area(d, sigma, rho, irho, dA):
     n = len(d)

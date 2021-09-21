@@ -1,13 +1,14 @@
 import numba
 from math import erf, sqrt, exp
 
-PI4 =          12.56637061435917295385
-PI_180 =        0.01745329251994329576
-LN256 =         5.54517744447956247533
-SQRT2 =         1.41421356237309504880
-SQRT2PI =       2.50662827463100050241
+PI4 = 12.56637061435917295385
+PI_180 = 0.01745329251994329576
+LN256 = 5.54517744447956247533
+SQRT2 = 1.41421356237309504880
+SQRT2PI = 2.50662827463100050241
 LOG_RESLIMIT = -6.90775527898213703123
 root_12_over_2 = sqrt(3)
+
 
 @numba.njit('(f8[:], f8[:], f8[:], f8[:], f8[:])', cache=True, parallel=False)
 def convolve_uniform(xi, yi, x, dx, y):
@@ -43,7 +44,6 @@ def convolve_uniform(xi, yi, x, dx, y):
         right_index = left_index + 1
         x1, y1 = xi[left_index], yi[left_index]
         x2, y2 = xi[right_index], yi[right_index]
-
 
         # Subtract the excess from left interval before the left edge.
         # print(f" left {left} in {(x1, y1)}, {(x2, y2)}")
@@ -110,6 +110,7 @@ def convolve_uniform(xi, yi, x, dx, y):
             # print(f" empty interval with {left} = {right} in {(x1, y1)}, {(x2, y2)}")
             y[k] = 0.5*(y1 + y2)
 
+
 @numba.njit('f8(f8[:], f8[:], i8, i8, f8, f8, f8)', cache=True, parallel=False, locals={
     "z": numba.float64,
     "Glo": numba.float64,
@@ -123,55 +124,55 @@ def convolve_uniform(xi, yi, x, dx, y):
     "b": numba.float64,
 })
 def convolve_gaussian_point(xin, yin, k, n,
-               xo, limit, sigma):
+                            xo, limit, sigma):
 
     two_sigma_sq = 2. * sigma * sigma
-    #double z, Glo, erflo, erfmin, y
+    # double z, Glo, erflo, erfmin, y
 
     z = xo - xin[k]
     Glo = exp(-z*z/two_sigma_sq)
     erfmin = erflo = erf(-z/(SQRT2*sigma))
     y = 0.
-    #/* printf("%5.3f: (%5.3f,%11.5g)",xo,xin[k],yin[k]); */
+    # /* printf("%5.3f: (%5.3f,%11.5g)",xo,xin[k],yin[k]); */
     while (k < n-1):
         k += 1
         if (xin[k] != xin[k-1]):
-            #/* No additional contribution from duplicate points. */
+            # /* No additional contribution from duplicate points. */
 
-            #/* Compute the next endpoint */
+            # /* Compute the next endpoint */
             zhi = xo - xin[k]
             Ghi = exp(-zhi*zhi/two_sigma_sq)
             erfhi = erf(-zhi/(SQRT2*sigma))
             m = (yin[k]-yin[k-1])/(xin[k]-xin[k-1])
             b = yin[k] - m * xin[k]
 
-            #/* Add the integrals. */
+            # /* Add the integrals. */
             y += 0.5*(m*xo+b)*(erfhi-erflo) - sigma/SQRT2PI*m*(Ghi-Glo)
 
-            #/* Debug computation failures. */
+            # /* Debug computation failures. */
             # if isnan(y) {
             #     print("NaN from %d: zhi=%g, Ghi=%g, erfhi=%g, m=%g, b=%g\n",
             #          % (k,zhi,Ghi,erfhi,m,b))
             # }
 
-            #/* Save the endpoint for next trapezoid. */
+            # /* Save the endpoint for next trapezoid. */
             Glo = Ghi
             erflo = erfhi
 
-            #/* Check if we've calculated far enough */
+            # /* Check if we've calculated far enough */
             if (xin[k] >= xo+limit):
                 break
 
-    #/* printf(" (%5.3f,%11.5g)",xin[k<n?k:n-1],yin[k<n?k:n-1]); */
+    # /* printf(" (%5.3f,%11.5g)",xin[k<n?k:n-1],yin[k<n?k:n-1]); */
 
-    #/* Normalize by the area of the truncated gaussian */
-    #/* At this point erflo = erfmax */
-    #/* printf ("---> %11.5g\n",2*y/(erflo-erfmin)); */
+    # /* Normalize by the area of the truncated gaussian */
+    # /* At this point erflo = erfmax */
+    # /* printf ("---> %11.5g\n",2*y/(erflo-erfmin)); */
     return 2 * y / (erflo - erfmin)
 
 
 # has same performance when using guvectorize instead of njit:
-#@numba.guvectorize("(i8, f8[:], f8[:], i8, f8[:], f8[:], f8[:])", '(),(m),(m),(),(n),(n)->(n)')
+# @numba.guvectorize("(i8, f8[:], f8[:], i8, f8[:], f8[:], f8[:])", '(),(m),(m),(),(n),(n)->(n)')
 
 @numba.njit("(f8[:], f8[:], f8[:], f8[:], f8[:])", cache=True, parallel=False, locals={
     "sigma": numba.float64,
@@ -185,11 +186,11 @@ def convolve_gaussian(xin, yin, x, dx, y):
     Nin = len(xin)
     Nout = len(x)
 
-    #/* FIXME fails if xin are not sorted; slow if x not sorted */
+    # /* FIXME fails if xin are not sorted; slow if x not sorted */
     # assert(Nin>1)
 
-    #/* Scan through all x values to be calculated */
-    #/* Re: omp, each thread is going through the entire input array,
+    # /* Scan through all x values to be calculated */
+    # /* Re: omp, each thread is going through the entire input array,
     # * independently, computing the resolution from the neighbourhood
     # * around its individual output points.  The firstprivate(in)
     # * clause sets each thread to keep its own copy of in, initialized
@@ -203,14 +204,14 @@ def convolve_gaussian(xin, yin, x, dx, y):
     # * convolve.
     # */
     k_in = 0
-  
+
     for k_out in range(Nout):
-        #/* width of resolution window for x is w = 2 dx^2. */
+        # /* width of resolution window for x is w = 2 dx^2. */
         sigma = dx[k_out]
         xo = x[k_out]
-        limit = sqrt(-2.*sigma*sigma* LOG_RESLIMIT)
+        limit = sqrt(-2.*sigma*sigma * LOG_RESLIMIT)
 
-        #// if (out%20==0)
+        # // if (out%20==0)
 
         # /* Line up the left edge of the convolution window */
         # /* It is probably forward from the current position, */
@@ -221,22 +222,23 @@ def convolve_gaussian(xin, yin, x, dx, y):
         while (k_in < Nin-1 and xin[k_in] < xo-limit):
             k_in += 1
         while (k_in > 0 and xin[k_in] > xo-limit):
-            k_in -=1
+            k_in -= 1
 
-        #/* Special handling to avoid 0/0 for w=0. */
+        # /* Special handling to avoid 0/0 for w=0. */
         if (sigma > 0.):
-            y[k_out] = convolve_gaussian_point(xin,yin,k_in,Nin,xo,limit,sigma)
+            y[k_out] = convolve_gaussian_point(
+                xin, yin, k_in, Nin, xo, limit, sigma)
         elif (k_in < Nin-1):
-            #/* Linear interpolation */
+            # /* Linear interpolation */
             m = (yin[k_in+1]-yin[k_in])/(xin[k_in+1]-xin[k_in])
             b = yin[k_in] - m*xin[k_in]
             y[k_out] = m*xo + b
         elif (k_in > 0):
-            #/* Linear extrapolation */
+            # /* Linear extrapolation */
             m = (yin[k_in]-yin[k_in-1])/(xin[k_in]-xin[k_in-1])
             b = yin[k_in] - m*xin[k_in]
             y[k_out] = m*xo + b
         else:
-            #/* Can't happen because there is more than one point in xin. */
+            # /* Can't happen because there is more than one point in xin. */
             # assert(Nin>1)
             pass

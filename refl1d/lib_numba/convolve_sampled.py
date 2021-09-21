@@ -158,4 +158,3 @@ def convolve_sampled(xin, yin, xp, yp, x, dx, y):
             # /* Can't happen because there is more than one point in xin. */
             if not Nin > 1:
                 raise ValueError("should be more than one point in Nin")
-

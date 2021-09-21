@@ -48,6 +48,7 @@ class BinIter:
                 self.hi = self.edges[self.bin]
         return self
 
+
 @numba.njit(parallel=False, cache=True)
 def rebin_counts_portion(Nold, vold, Iold, Nnew, vnew, Inew, ND_portion):
 
@@ -78,6 +79,7 @@ def rebin_counts_portion(Nold, vold, Iold, Nnew, vnew, Inew, ND_portion):
             else:
                 _to.increment()
 
+
 @numba.njit(parallel=False, cache=True)
 def rebin_counts_old(Nold, xold, Iold, Nnew, xnew, Inew):
 
@@ -89,6 +91,7 @@ def rebin_counts_old(Nold, xold, Iold, Nnew, xnew, Inew):
         Inew[i] = 0
 
     rebin_counts_portion(Nold, xold, Iold, Nnew, xnew, Inew, 1.)
+
 
 @numba.njit(parallel=False, cache=True)
 def rebin_counts(xold, Iold, xnew, Inew):
@@ -161,14 +164,16 @@ def rebin_counts_2D(xold, yold, Iold, xnew, ynew, Inew):
 
     while (not _from.atend and not _to.atend):
         if (_to.hi <= _from.lo):
-            _to.increment() # new must catch up to old
+            _to.increment()  # new must catch up to old
         elif (_from.hi <= _to.lo):
-            _from.increment() # old must catch up to new
+            _from.increment()  # old must catch up to new
         else:
             overlap = min(_from.hi, _to.hi) - max(_from.lo, _to.lo)
             portion = overlap / (_from.hi - _from.lo)
             rebin_counts_portion(Nyold, yold, Iold[_from.bin],
-                                Nynew, ynew, Inew[_to.bin],
-                                portion)
-            if (_to.hi > _from.hi): _from.increment()
-            else: _to.increment()
+                                 Nynew, ynew, Inew[_to.bin],
+                                 portion)
+            if (_to.hi > _from.hi):
+                _from.increment()
+            else:
+                _to.increment()
