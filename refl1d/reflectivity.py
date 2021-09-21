@@ -22,8 +22,6 @@ __all__ = ['reflectivity', 'reflectivity_amplitude',
 
 import numpy as np
 from numpy import pi, sin, cos, conj, radians, sqrt, exp, fabs
-# delay load so doc build doesn't require compilation
-# from . import reflmodule
 
 BASE_GUIDE_ANGLE = 270.0
 
@@ -98,7 +96,7 @@ def reflectivity_amplitude(kz=None,
 
     This function does not compute any instrument resolution corrections.
     """
-    from . import reflmodule
+    from . import refllib
 
     kz = _dense(kz, 'd')
     if rho_index is None:
@@ -129,8 +127,8 @@ def reflectivity_amplitude(kz=None,
     r = np.empty(kz.shape, 'D')
     # print "amplitude", depth, rho, kz, rho_index
     # print depth.shape, sigma.shape, rho.shape, irho.shape, kz.shape
-    reflmodule._reflectivity_amplitude(depth, sigma, rho, irho, kz,
-                                       rho_index, r)
+    refllib._reflectivity_amplitude(depth, sigma, rho, irho, kz,
+                                    rho_index, r)
 
     return r
 
@@ -206,7 +204,7 @@ def magnetic_amplitude(kz,
 
     See :class:`magnetic_reflectivity <refl1d.reflectivity.magnetic_reflectivity>` for details.
     """
-    from . import reflmodule
+    from . import refllib
 
     kz = _dense(kz, 'd')
     if rho_index is None:
@@ -234,18 +232,18 @@ def magnetic_amplitude(kz,
 
     # Note 2021-08-01: return Rpp, Rpm, Rmp, Rmm are no longer contiguous.
     R = np.empty((kz.size, 4), 'D')
-    reflmodule._magnetic_amplitude(
+    refllib._magnetic_amplitude(
         depth, sigma, rho, irho, sld_b, u1, u3, kz, R)
     return R[:, 0], R[:, 1], R[:, 2], R[:, 3]
 
 
 def calculate_u1_u3(H, rhoM, thetaM, Aguide):
-    from . import reflmodule
+    from . import refllib
 
     rhoM, thetaM = _dense(rhoM, 'd'), _dense(np.radians(thetaM), 'd')
     n = len(rhoM)
     u1, u3 = np.empty(n, 'D'), np.empty(n, 'D')
-    reflmodule._calculate_u1_u3(H, rhoM, thetaM, Aguide, u1, u3)
+    refllib._calculate_u1_u3(H, rhoM, thetaM, Aguide, u1, u3)
 
     return rhoM, u1, u3
 
@@ -321,13 +319,13 @@ def convolve(xi, yi, x, dx, resolution='normal'):
     distribution uses the $1-\sigma$ equivalent distribution width which is
     $1/\sqrt{3}$ times the width of the rectangle.
     """
-    from . import reflmodule
+    from . import refllib
     xi, yi, x, dx = _dense(xi), _dense(yi), _dense(x), _dense(dx)
     y = np.empty_like(x)
     if resolution == 'uniform':
-        reflmodule.convolve_uniform(xi, yi, x, dx, y)
+        refllib.convolve_uniform(xi, yi, x, dx, y)
     else:
-        reflmodule.convolve_gaussian(xi, yi, x, dx, y)
+        refllib.convolve_gaussian(xi, yi, x, dx, y)
     return y
 
 
@@ -343,12 +341,12 @@ def convolve_sampled(xi, yi, xp, yp, x, dx):
     resolution *(xp, yp)* is also represented as a piece-wise linear
     spline.
     """
-    from . import reflmodule
+    from . import refllib
 
     x = _dense(x)
     y = np.empty_like(x)
-    reflmodule.convolve_sampled(_dense(xi), _dense(yi), _dense(xp), _dense(yp),
-                                x, _dense(dx), y)
+    refllib.convolve_sampled(_dense(xi), _dense(yi), _dense(xp), _dense(yp),
+                             x, _dense(dx), y)
     return y
 
 

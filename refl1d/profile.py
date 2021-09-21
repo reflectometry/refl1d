@@ -325,7 +325,7 @@ class Microslabs(object):
         Add magnetic information to the nuclear slabs, introducing new
         slabs as necessary where magnetic and nuclear do not match.
         """
-        from .reflmodule import _align_magnetic
+        from .refllib import _align_magnetic
 
         # Nuclear profile (one wavelength only)
         #if self.rho.shape[0] != 1:
@@ -396,7 +396,7 @@ class Microslabs(object):
         self._z_offset = self._z_left
 
     def _contract_profile(self, dA):
-        from .reflmodule import _contract_by_area
+        from .refllib import _contract_by_area
 
         if dA is None:
             return
@@ -421,7 +421,7 @@ class Microslabs(object):
         #print "final sld after contract", rho[n-1], self.rho[0][n-1], n
 
     def _contract_magnetic(self, dA):
-        from .reflmodule import _contract_mag
+        from .refllib import _contract_mag
 
         if dA is None:
             return
