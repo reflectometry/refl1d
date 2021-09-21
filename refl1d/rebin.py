@@ -6,6 +6,7 @@ __all__ = ["bin_edges", "logbin_edges", "rebin", "rebin2d"]
 
 import numpy as np
 
+
 def bin_edges(C):
     r"""
     Construct bin edges *E* from equally spaced bin centers *C*.
@@ -93,7 +94,7 @@ def rebin(x, I, xo, Io=None, dtype=np.float64):
     average by half the total number of bins.
     """
     from . import reflmodule
-    
+
     # Coerce axes to float arrays
     x, xo = _input(x, dtype='d'), _input(xo, dtype='d')
     shape_in = np.array([x.shape[0] - 1])
@@ -301,7 +302,7 @@ def _check_all_2d():
                       np.array([[0, 0, 0, 0], [0, 4, 4, 0],
                                 [0, 4, 4, 0], [0, 0, 0, 0]],
                                dtype=dtype)
-                     )
+                      )
     # non-square test
     _check_uniform_2d([1, 2.5, 4, 0.5], [3, 1, 2.5, 1, 3.5])
     _check_uniform_2d([3, 2], [1, 2])
@@ -321,6 +322,7 @@ def test():
     _check_all_1d()
     _check_all_2d()
     _check_bin_edges()
+
 
 if __name__ == "__main__":
     test()
