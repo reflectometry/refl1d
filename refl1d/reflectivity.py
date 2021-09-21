@@ -127,7 +127,7 @@ def reflectivity_amplitude(kz=None,
     r = np.empty(kz.shape, 'D')
     # print "amplitude", depth, rho, kz, rho_index
     # print depth.shape, sigma.shape, rho.shape, irho.shape, kz.shape
-    refllib._reflectivity_amplitude(depth, sigma, rho, irho, kz,
+    refllib.reflectivity_amplitude(depth, sigma, rho, irho, kz,
                                     rho_index, r)
 
     return r
@@ -232,7 +232,7 @@ def magnetic_amplitude(kz,
 
     # Note 2021-08-01: return Rpp, Rpm, Rmp, Rmm are no longer contiguous.
     R = np.empty((kz.size, 4), 'D')
-    refllib._magnetic_amplitude(
+    refllib.magnetic_amplitude(
         depth, sigma, rho, irho, sld_b, u1, u3, kz, R)
     return R[:, 0], R[:, 1], R[:, 2], R[:, 3]
 
