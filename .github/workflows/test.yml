@@ -14,9 +14,9 @@ jobs:
     strategy:
       matrix:
         config:
-          - { os: ubuntu-latest, py: 3.8, doc: 1, whl: 1 }
-          - { os: windows-latest, py: 3.8, exe: 1, whl: 1 }
-          # all using to stable abi
+          - { os: ubuntu-latest, py: 3.7, doc: 1, whl: 1 }
+          - { os: windows-latest, py: 3.7, exe: 1, whl: 1 }
+          # pure python wheels
 
     steps:
     - uses: actions/checkout@v1
