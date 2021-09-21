@@ -240,10 +240,10 @@ C * Converted to subroutine from GEPORE.f
         // by the boundary conditions (neutrons only incident in the fronting medium - no
         // source of neutrons below).
         //
-        S1L = -sqrt(Cplx(PI4*(RHO[L]+RHOM[L])-E0, PI4*(fabs(IRHO[L])+EPS)));
-        S3L = -sqrt(Cplx(PI4*(RHO[L]-RHOM[L])-E0, PI4*(fabs(IRHO[L])+EPS)));
-        S1LP = -sqrt(Cplx(PI4*(RHO[LP]+RHOM[LP])-E0, PI4*(fabs(IRHO[LP])+EPS)));
-        S3LP = -sqrt(Cplx(PI4*(RHO[LP]-RHOM[LP])-E0, PI4*(fabs(IRHO[LP])+EPS)));
+        S1L = -sqrt(Cplx(PI4*(RHO[L]+RHOM[L])-E0, -PI4*(fabs(IRHO[L])+EPS)));
+        S3L = -sqrt(Cplx(PI4*(RHO[L]-RHOM[L])-E0, -PI4*(fabs(IRHO[L])+EPS)));
+        S1LP = -sqrt(Cplx(PI4*(RHO[LP]+RHOM[LP])-E0, -PI4*(fabs(IRHO[LP])+EPS)));
+        S3LP = -sqrt(Cplx(PI4*(RHO[LP]-RHOM[LP])-E0, -PI4*(fabs(IRHO[LP])+EPS)));
         SIGMAL = SIGMA[L+SIGMA_OFFSET];
 
         if (abs(U1[L]) <= 1.0) {
