@@ -3,7 +3,7 @@ from __future__ import division, print_function
 import numpy as np
 from numpy import inf, nan
 
-from refl1d.reflmodule import _align_magnetic
+from refl1d.refllib import _align_magnetic
 
 # thickness, interface, rho, irho
 substrate = [[nan, 10, 2, 0.2]]
