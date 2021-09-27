@@ -55,8 +55,7 @@ def refl(layers, kz, depth, sigma, rho, irho):
         # // the stack.  Instead, n is set to the incident layer (which may be
         # // first or last) and incremented or decremented each time through.
         k_next = sqrt(kz_sq - pi4*complex(rho[next+step], irho[next+step]))
-        F = (k-k_next)/(k+k_next)*exp(-2.*k*k_next *
-                                      sigma[sigma_offset + next]*sigma[sigma_offset + next])
+        F = (k-k_next)/(k+k_next)*exp(-2.*k*k_next * sigma[sigma_offset + next]**2)
         M11 = exp(J*k*depth[next]) if i > 0 else 1.0
         M22 = exp(-J*k*depth[next]) if i > 0 else 1.0
         M21 = F*M11
