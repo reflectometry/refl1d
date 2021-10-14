@@ -1569,13 +1569,12 @@ def measurement_union(xs):
     TL = set()
     for x in xs:
         if x is not None:
-            TL |= set(zip(x.T+x.theta_offset.value, x.dT, x.L, x.dL))
-    T, dT, L, dL = zip(*[item for item in TL])
-    T, dT, L, dL = [np.asarray(v) for v in (T, dT, L, dL)]
+            TL |= set(zip(x.T+x.theta_offset.value, x.dT, x.L, x.dL, x.dQ))
+    T, dT, L, dL, dQ = zip(*[item for item in TL])
+    T, dT, L, dL, dQ = [np.asarray(v) for v in (T, dT, L, dL, dQ)]
 
     # Convert to Q, dQ
     Q = TL2Q(T, L)
-    dQ = dTdL2dQ(T, dT, L, dL)
 
     # Sort by Q
     idx = np.argsort(Q)
