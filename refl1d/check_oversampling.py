@@ -123,7 +123,7 @@ def main():
       """,
         formatter_class=argparse.RawTextHelpFormatter,
         )
-    parser.add_argument('--plot', type=bool, default=False, help='plot optimal oversampling for each probe (default = False)')  
+    parser.add_argument('--plot', action='store_true', help='plot optimal oversampling for each probe (default = False)')  
     parser.add_argument('-t', '--tolerance', type=float, default=0.05, help='Tolerance for expression: (R - R_ideal)/dR < tolerance (default=0.05)')
     parser.add_argument('-m', '--max_oversampling', type=int, default=201, help='Max oversampling (also used to calculate R_ideal; default=201)')
     parser.add_argument('-p', '--pars', type=str, default="", help='retrieve starting point from .par file')
