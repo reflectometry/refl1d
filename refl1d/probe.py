@@ -567,9 +567,7 @@ class Probe(object):
         Note: :meth:`oversample` will remove the extra Q calculation
         points introduced by :meth:`critical_edge`.
         """
-        if n < 5:
-            raise ValueError("Oversampling with n<5 is not useful")
-
+        
         rng = numpy.random.RandomState(seed=seed)
         T = rng.normal(self.T[:, None], self.dT[:, None], size=(len(self.dT), n-1))
         L = rng.normal(self.L[:, None], self.dL[:, None], size=(len(self.dL), n-1))
@@ -1544,8 +1542,6 @@ class QProbe(Probe):
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
     def oversample(self, n=20, seed=1):
-        if n < 5:
-            raise ValueError("Oversampling with n<5 is not useful")
         rng = numpy.random.RandomState(seed=seed)
         extra = rng.normal(self.Q, self.dQ, size=(n-1, len(self.Q)))
         calc_Q = np.hstack((self.Q, extra.flatten()))
