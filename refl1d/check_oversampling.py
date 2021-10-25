@@ -101,7 +101,11 @@ def check_fitproblem(problem, tolerance=0.05, max_oversampling=201, plot=True):
                 plt.title("model: {:d}, part: {:d}".format(i_model, i_part))
                 plt.xlabel("Q (inv. A)")
                 plt.ylabel("required oversampling")
-                plt.legend()    
+                plt.legend()
+                
+        # there is one probe instance shared between parts in MixedExperiment: use
+        # largest recommended oversampling.
+        parts[0].probe.oversample(max(oversampling_i))
     
     if plot:
         plt.show()
