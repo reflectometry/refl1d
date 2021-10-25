@@ -44,6 +44,8 @@ def get_optimal_single_oversampling(model, tolerance=0.05, max_oversampling=201,
         model.probe.oversample(oversampling)
         model._cache = {}
         R = model.reflectivity()
+        if not isinstance(R, list):
+            R = [R]
         current_max_diff = 0
         for oos, p, r, r_ref in zip(optimal_oversampling, probes, R, R_ref):
             if p is None:
