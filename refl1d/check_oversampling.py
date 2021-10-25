@@ -36,8 +36,9 @@ def get_optimal_single_oversampling(model, tolerance=0.05, max_oversampling=201,
         R_ref = [R_ref]
     
     max_diff = np.inf
-    oversampling = 1
-    while max_diff > tolerance and oversampling <= max_oversampling:
+    oversampling = 0
+    while max_diff > tolerance and oversampling < max_oversampling:
+        oversampling += 1
         if verbose:
             print("trying oversampling = {:d}".format(oversampling), end='\r')
         model.probe.oversample(oversampling)
@@ -67,7 +68,6 @@ def get_optimal_single_oversampling(model, tolerance=0.05, max_oversampling=201,
             oos[to_reset] = max_oversampling
             
         max_diff = current_max_diff # to be checked against tolerance on the next iteration
-        oversampling += 1
 
     # reset model cache again before leaving
     model._cache = {}
