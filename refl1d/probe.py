@@ -407,12 +407,13 @@ class Probe(object):
 
     @property
     def calc_Q(self):
-        if self.theta_offset.value != 0:
-            Q = TL2Q(T=self.calc_T+self.theta_offset.value, L=self.calc_L)
-            # TODO: this may break the Q order on measurements with varying L
-        else:
-            Q = self.calc_Qo
+        min_Q = (self.Q - 3.0 * self.dQ).min()
+        max_Q = (self.Q + 3.0 * self.dQ).max()
+        Q_steps = len(self.Q)
+        oversampling = self.oversampling if self.oversampling is not None else 1
+        Q = np.linspace(min_Q, max_Q, Q_steps * oversampling)
         return Q if not self.back_reflectivity else -Q
+    
 
     def parameters(self):
         return {
@@ -567,13 +568,7 @@ class Probe(object):
         Note: :meth:`oversample` will remove the extra Q calculation
         points introduced by :meth:`critical_edge`.
         """
-        
-        rng = numpy.random.RandomState(seed=seed)
-        T = rng.normal(self.T[:, None], self.dT[:, None], size=(len(self.dT), n-1))
-        L = rng.normal(self.L[:, None], self.dL[:, None], size=(len(self.dL), n-1))
-        T = np.hstack((self.T, T.flatten()))
-        L = np.hstack((self.L, L.flatten()))
-        self._set_calc(T, L)
+        self.oversampling = n
 
     def _apply_resolution(self, Qin, Rin, interpolation):
         """
@@ -998,7 +993,7 @@ class NeutronProbe(Probe):
         # doc string is inherited from parent (see below)
         # TODO: support wavelength dependent systems
         rho, irho, rho_incoh = nsf.neutron_sld(material,
-                                               wavelength=self.unique_L[0],
+                                               wavelength=self.L[0],
                                                density=density)
         #print(f"{material}@{density} L={self.unique_L[0]} rho={rho}")
         return rho, irho, rho_incoh
@@ -1616,7 +1611,8 @@ class PolarizedNeutronProbe(object):
         if name is None and self.xs[0] is not None:
             name = self.xs[0].name
         self.name = name
-        self._calculate_union()
+        self.unique_L = np.unique(np.hstack([xs.L for xs in self.xs if xs is not None]))
+        #self._calculate_union()
         # self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
         #     = measurement_union(xs)
         # self._set_calc(self.T, self.L)
@@ -1725,18 +1721,19 @@ class PolarizedNeutronProbe(object):
                 x.sample_broadening = sample_broadening
 
     def oversample(self, n=6, seed=1):
-        self._oversample(n, seed)
+        #self._oversample(n, seed)
         self.oversampling = n
         self.oversampling_seed = seed
 
     def _oversample(self, n=6, seed=1):
         # doc string is inherited from parent (see below)
-        rng = numpy.random.RandomState(seed=seed)
-        T = rng.normal(self.T[:, None], self.dT[:, None], size=(len(self.dT), n))
-        L = rng.normal(self.L[:, None], self.dL[:, None], size=(len(self.dL), n))
-        T = T.flatten()
-        L = L.flatten()
-        self._set_calc(T, L)
+        # rng = numpy.random.RandomState(seed=seed)
+        # T = rng.normal(self.T[:, None], self.dT[:, None], size=(len(self.dT), n))
+        # L = rng.normal(self.L[:, None], self.dL[:, None], size=(len(self.dL), n))
+        # T = T.flatten()
+        # L = L.flatten()
+        # self._set_calc(T, L)
+        self.calc_Qo = np.linspace(self.Q.min() - self.dQ[0] * 3.0, self.Q.max() + self.dQ[-1] * 3.0, n * len(self.Q))
     _oversample.__doc__ = Probe.oversample.__doc__
 
     def _calculate_union(self):
@@ -1758,12 +1755,18 @@ class PolarizedNeutronProbe(object):
                 self._oversample(self.oversampling, self.oversampling_seed)
             
             self._theta_offsets = theta_offsets
-
+    
     @property
     def calc_Q(self):
+        min_Q = min([(xs.Q - 3.0 * xs.dQ).min() for xs in self.xs if xs is not None])
+        max_Q = max([(xs.Q + 3.0 * xs.dQ).max() for xs in self.xs if xs is not None])
+        Q_steps = max([len(xs.Q) for xs in self.xs if xs is not None])
+        oversampling = self.oversampling if self.oversampling is not None else 1
+        return np.linspace(min_Q, max_Q, Q_steps * oversampling)
+
         #print('calculating calc_Q...')
-        self._calculate_union()
-        return self.calc_Qo
+        #self._calculate_union()
+        #return self.calc_Qo
 
     def _set_calc(self, T, L):
         # TODO: shouldn't clone code from probe
@@ -1793,7 +1796,7 @@ class PolarizedNeutronProbe(object):
     def scattering_factors(self, material, density):
         # doc string is inherited from parent (see below)
         rho, irho, rho_incoh = nsf.neutron_sld(material,
-                                               wavelength=self.unique_L[0],
+                                               wavelength=self.L[0],
                                                density=density)
         # TODO: support wavelength dependent systems
         #print("sf", str(material), type(rho), type(irho[0]))
