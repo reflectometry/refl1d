@@ -25,7 +25,6 @@ def get_optimal_single_oversampling(model, tolerance=0.05, max_oversampling=201,
     """
     # get a list of probes, which will have length one for unpolarized:
     probes = model.probe.xs if hasattr(model.probe, 'xs') else [model.probe]
-    sample = model.sample
     
     # initialize the per-Q recommended oversampling to max_oversampling
     optimal_oversampling = [None if p is None else np.ones_like(p.dR, dtype=int) * max_oversampling for p in probes]
@@ -44,6 +43,8 @@ def get_optimal_single_oversampling(model, tolerance=0.05, max_oversampling=201,
         model.probe.oversample(oversampling)
         model._cache = {}
         R = model.reflectivity()
+        if not isinstance(R, list):
+            R = [R]
         current_max_diff = 0
         for oos, p, r, r_ref in zip(optimal_oversampling, probes, R, R_ref):
             if p is None:
@@ -102,7 +103,7 @@ def check_fitproblem(problem, tolerance=0.05, max_oversampling=201, plot=True):
                 plt.xlabel("Q (inv. A)")
                 plt.ylabel("required oversampling")
                 plt.legend()
-                
+
         # there is one probe instance shared between parts in MixedExperiment: use
         # largest recommended oversampling.
         parts[0].probe.oversample(max(oversampling_i))
