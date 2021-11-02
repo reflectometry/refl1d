@@ -4,6 +4,16 @@ Change History
 
 Docs available from `<http://refl1d.readthedocs.org>`_
 
+2021-11-?? v0.8.15
+==================
+* preliminary support for theta_offset in PolarizedNeutronProbe
+* preserve manual zoom view on R during fits
+* fix wx and matplotlib bug (setTitle)
+* use numba JIT for reflectometry kernel, convolve, etc (replacing all uses of C/C++ extensions)
+  * (this results in a pure Python wheel)
+* use magnetic_smooth_profile in "record_point", same as is done for non-magnetic profiles
+* FunctionalLayer can now accept lists of parameters
+
 2021-02-09 v0.8.14
 ==================
 * numba included in windows zipped executable
