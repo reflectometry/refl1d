@@ -10,6 +10,7 @@ Docs available from `<http://refl1d.readthedocs.org>`_
 * preserve manual zoom view on R during fits
 * fix wx and matplotlib bug (setTitle)
 * use numba JIT for reflectometry kernel, convolve, etc (replacing all uses of C/C++ extensions)
+
   * (this results in a pure Python wheel)
 * use magnetic_smooth_profile in "record_point", same as is done for non-magnetic profiles
 * FunctionalLayer can now accept lists of parameters
