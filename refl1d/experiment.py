@@ -220,7 +220,7 @@ class ExperimentBase:
 
     def save_json(self, basename):
         """ Save the experiment as a json file """
-        from .serialize import to_dict
+        from bumps.serialize import to_dict
         try:
             experiment = to_dict(self)
             experiment['refl1d'] = __version__
