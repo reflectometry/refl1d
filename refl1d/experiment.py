@@ -415,7 +415,7 @@ class Experiment(ExperimentBase):
         """
         Build a slab description of the model from the individual layers.
         """
-        key = 'rendered'
+        key = 'rendered', self.step_interfaces, self.dA
         if key not in self._cache:
             self._slabs.clear()
             self.sample.render(self._probe_cache, self._slabs)
@@ -539,7 +539,7 @@ class Experiment(ExperimentBase):
         """
         Return the nuclear and magnetic scattering potential for the sample.
         """
-        key = 'magnetic_smooth_profile'
+        key = 'magnetic_smooth_profile', '{:.6f}'.format(dz)
         if key not in self._cache:
             slabs = self._render_slabs()
             prof = slabs.magnetic_smooth_profile(dz=dz)
