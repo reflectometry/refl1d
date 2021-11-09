@@ -241,7 +241,7 @@ def magnetic_amplitude(kz,
 def calculate_u1_u3(H, rhoM, thetaM, Aguide):
     from . import refllib
 
-    rhoM, thetaM = _dense(rhoM, 'd'), _dense(np.radians(thetaM), 'd')
+    rhoM, thetaM = (_dense(rhoM, 'd')).copy(), _dense(np.radians(thetaM), 'd')
     n = len(rhoM)
     u1, u3 = np.empty(n, 'D'), np.empty(n, 'D')
     refllib.calculate_u1_u3(H, rhoM, thetaM, Aguide, u1, u3)
