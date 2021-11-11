@@ -475,9 +475,10 @@ def _align_profile_pair(z1, r1, t1_offset, z2, r2, t2, align):
     Use crosscorrelation to align r1 and r2.
     """
     if align == 'auto':
+        import scipy.signal
         # Assume z1, z2 have the same step size
         n2 = len(r2)
-        idx = np.argmax(np.correlate(r1, r2, 'full'))
+        idx = np.argmax(scipy.signal.correlate(r1, r2, 'full'))
         if idx < n2:
             offset = z2[(n2-1)-idx] - z1[0]
         else:
