@@ -88,6 +88,7 @@ def check_fitproblem(problem, tolerance=0.05, max_oversampling=201, plot=True):
         oversampling_i = []
         local_oversampling_i = []
         oversampling.append(oversampling_i)
+        local_oversampling.append(local_oversampling_i)
         fitness = model.fitness
         parts = fitness.parts if hasattr(fitness, 'parts') else [fitness]
         for i_part, part in enumerate(parts):
