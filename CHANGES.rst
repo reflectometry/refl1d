@@ -14,6 +14,9 @@ Docs available from `<http://refl1d.readthedocs.org>`_
   * (this results in a pure Python wheel)
 * use magnetic_smooth_profile in "record_point", same as is done for non-magnetic profiles
 * FunctionalLayer can now accept lists of parameters
+* oversampling helper added (currently called refl1d.check_oversampling)
+* much faster "Model Uncertainty" view calculation for large profiles
+* update to bumps 0.8.1
 
 2021-02-09 v0.8.14
 ==================
