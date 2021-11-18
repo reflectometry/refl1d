@@ -4,7 +4,7 @@ Change History
 
 Docs available from `<http://refl1d.readthedocs.org>`_
 
-2021-11-?? v0.8.15
+2021-11-18 v0.8.15
 ==================
 * preliminary support for theta_offset in PolarizedNeutronProbe
 * preserve manual zoom view on R during fits
