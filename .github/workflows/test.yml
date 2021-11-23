@@ -115,29 +115,3 @@ jobs:
       uses: pypa/gh-action-pypi-publish@master
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
-
-
-  advanceSidTag:
-    needs: publish
-    runs-on: ubuntu-latest
-    steps:
-    - name: Advance sid tag
-      uses: actions/github-script@v3
-      with:
-        github-token: ${{secrets.GITHUB_TOKEN}}          
-        script: |
-          try {
-              await github.git.deleteRef({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                ref: "tags/sid"
-              })
-          } catch (e) {
-            console.log("The sid tag doesn't exist yet: " + e)
-          }
-          await github.git.createRef({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            ref: "refs/tags/sid",
-            sha: context.sha
-          })
