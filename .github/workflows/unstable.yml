@@ -86,3 +86,24 @@ jobs:
         release: unstable
         tag: sid
         files: Refl1D-windows-exe-latest.zip Refl1D-latest-source.zip
+
+  updateUnstableText:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+    - name: Show last updated
+      uses: actions/github-script@v3
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}          
+        script: |
+          let sid_release = await github.repos.getReleaseByTag({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            tag: "sid"
+          });
+          await github.repos.updateRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            release_id: sid_release.data.id,
+            body: "A persistent prerelease where build artifacts for the current tip will be deposited\n\n## Last updated: " + (new Date()).toDateString()
+          });
