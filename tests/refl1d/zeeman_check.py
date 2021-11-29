@@ -99,12 +99,12 @@ def gepore(layers, QS, DQ, NQ, EPS, H):
 
 def magnetic_cc(layers, kz, Aguide, H):
     depth, rho, rhoM, thetaM, phiM = list(zip(*layers))
-    R = refl(kz, depth, rho, 0, rhoM, thetaM, 0, Aguide, H, rotate_M=True)
+    R = refl(kz, depth, rho, 0, rhoM, thetaM, 0, Aguide, H)
     return R
 
 def Rplot(title, Qz, R, format, dataset):
     """plot reflectivity"""
-    plt.hold(True)
+    #plt.hold(True)
     for name,xs in zip(('++','+-','-+','--'),R):
     #for name,xs in zip(('--','-+','+-','++'),R):
         Rxs = abs(xs)**2
@@ -118,7 +118,7 @@ def Rplot(title, Qz, R, format, dataset):
 
 def rplot(Qz, R, format):
     """plot real and imaginary"""
-    plt.hold(True)
+    # plt.hold(True)
     plt.figure()
     for name,xs in zip(('++','+-','-+','--'),R):
         rr = xs.real
@@ -144,8 +144,8 @@ def profile_plot(layers):
     z = np.cumsum([np.hstack((-dz[0],dz))])
     rho, rhoM, thetaM = [np.hstack((v[0],v)) for v in (rho, rhoM, thetaM)]
     plt.step(z, rho, label='rho')
-    plt.step(z, rhoM, label='rhoM', hold=True)
-    plt.step(z, thetaM*2*np.pi/360., label='thetaM', hold=True)
+    plt.step(z, rhoM, label='rhoM')
+    plt.step(z, thetaM*2*np.pi/360., label='thetaM')
     plt.legend()
 
 

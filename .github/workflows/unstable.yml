@@ -1,4 +1,4 @@
-name: Test
+name: Build_Unstable
 
 on:
   push:
@@ -33,7 +33,6 @@ jobs:
         python -m pip install wheel setuptools
         python -m pip install numpy scipy matplotlib periodictable scikit-learn pytest pytest-cov numba
         pip install git+https://github.com/bumps/bumps.git
-        python setup.py build_ext --inplace
         python setup.py build
         mkdir unstable
 
@@ -46,7 +45,7 @@ jobs:
 
     - name: Build binary wheel
       run: |
-        python setup.py bdist_wheel --py-limited-api=cp32
+        python setup.py bdist_wheel
 
     - name: Build source distribution
       run: |
@@ -87,3 +86,24 @@ jobs:
         release: unstable
         tag: sid
         files: Refl1D-windows-exe-latest.zip Refl1D-latest-source.zip
+
+  updateUnstableText:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+    - name: Show last updated
+      uses: actions/github-script@v3
+      with:
+        github-token: ${{secrets.GITHUB_TOKEN}}          
+        script: |
+          let sid_release = await github.repos.getReleaseByTag({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            tag: "sid"
+          });
+          await github.repos.updateRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            release_id: sid_release.data.id,
+            body: "A persistent prerelease where build artifacts for the current tip will be deposited\n\n## Last updated: " + (new Date()).toDateString()
+          });

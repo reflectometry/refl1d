@@ -6,6 +6,7 @@ __all__ = ["bin_edges", "logbin_edges", "rebin", "rebin2d"]
 
 import numpy as np
 
+
 def bin_edges(C):
     r"""
     Construct bin edges *E* from equally spaced bin centers *C*.
@@ -92,7 +93,7 @@ def rebin(x, I, xo, Io=None, dtype=np.float64):
     The algorithm uses truncation so total intensity will be down on
     average by half the total number of bins.
     """
-    from . import reflmodule as _cmodule
+    from . import refllib
 
     # Coerce axes to float arrays
     x, xo = _input(x, dtype='d'), _input(xo, dtype='d')
@@ -113,12 +114,13 @@ def rebin(x, I, xo, Io=None, dtype=np.float64):
     Io = _output(Io, shape_out, dtype=dtype)
 
     # Call rebin on type if it is available
-    try:
-        rebincore = getattr(_cmodule, 'rebin_' + I.dtype.name)
-    except AttributeError:
-        raise TypeError("rebin supports uint 8/16/32/64 and float 32/64, not "
-                        + I.dtype.name)
-    rebincore(x, I, xo, Io)
+    # try:
+    #     rebincore = getattr(_cmodule, 'rebin_' + I.dtype.name)
+    # except AttributeError:
+    #     raise TypeError("rebin supports uint 8/16/32/64 and float 32/64, not "
+    #                     + I.dtype.name)
+    # rebincore(x, I, xo, Io)
+    refllib.rebin_counts(x, I, xo, Io)
     return Io
 
 
@@ -158,7 +160,7 @@ def rebin2d(x, y, I, xo, yo, Io=None, dtype=None):
     TypeError.  This will allow you to rebin the slices of an appropriately
     ordered matrix without making copies.
     """
-    from . import reflmodule as _cmodule
+    from . import refllib
 
     # Coerce axes to float arrays
     x, y, xo, yo = [_input(v, dtype='d') for v in (x, y, xo, yo)]
@@ -178,15 +180,15 @@ def rebin2d(x, y, I, xo, yo, Io=None, dtype=None):
     # Create output vector
     Io = _output(Io, shape_out, dtype=dtype)
 
-    # Call rebin on type if it is available
-    try:
-        rebincore = getattr(_cmodule, 'rebin2d_' + I.dtype.name)
-    except AttributeError:
-        raise TypeError("rebin2d supports uint 8/16/32/64 and float 32/64, not "
-                        + I.dtype.name)
-    # print x.shape, y.shape, I.shape, xo.shape, yo.shape, Io.shape
-    # print x.dtype, y.dtype, I.dtype, xo.dtype, yo.dtype, Io.dtype
-    rebincore(x, y, I, xo, yo, Io)
+    # # Call rebin on type if it is available
+    # try:
+    #     rebincore = getattr(_cmodule, 'rebin2d_' + I.dtype.name)
+    # except AttributeError:
+    #     raise TypeError("rebin2d supports uint 8/16/32/64 and float 32/64, not "
+    #                     + I.dtype.name)
+    # print(x.shape, y.shape, I.shape, xo.shape, yo.shape, Io.shape)
+    # print(x.dtype, y.dtype, I.dtype, xo.dtype, yo.dtype, Io.dtype)
+    refllib.rebin_counts_2D(x, y, I, xo, yo, Io)
     return Io
 
 
@@ -252,9 +254,9 @@ def _check_all_1d():
 
 
 def _check_one_2d(x, y, z, xo, yo, zo):
-    # print "checking"
-    # print x, y, z
-    # print xo, yo, zo
+    # print("checking")
+    # print(x, y, z)
+    # print(xo, yo, zo)
     result = rebin2d(x, y, z, xo, yo)
     target = np.array(zo, dtype=result.dtype)
     assert np.linalg.norm(target - result) < 1e-14, \
@@ -300,7 +302,7 @@ def _check_all_2d():
                       np.array([[0, 0, 0, 0], [0, 4, 4, 0],
                                 [0, 4, 4, 0], [0, 0, 0, 0]],
                                dtype=dtype)
-                     )
+                      )
     # non-square test
     _check_uniform_2d([1, 2.5, 4, 0.5], [3, 1, 2.5, 1, 3.5])
     _check_uniform_2d([3, 2], [1, 2])
@@ -320,6 +322,7 @@ def test():
     _check_all_1d()
     _check_all_2d()
     _check_bin_edges()
+
 
 if __name__ == "__main__":
     test()

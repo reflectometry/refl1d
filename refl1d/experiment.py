@@ -114,12 +114,15 @@ class ExperimentBase:
 
     def residuals(self):
         if 'residuals' not in self._cache:
+            # Trigger reflectivity calculation even if there is no data to
+            # compare against so that we can profile simulation code, and
+            # so that simulation smoke tests are run more thoroughly.
+            QR = self.reflectivity()
             if ((self.probe.polarized
                  and all(x is None or x.R is None for x in self.probe.xs))
                     or (not self.probe.polarized and self.probe.R is None)):
                 resid = np.zeros(0)
             else:
-                QR = self.reflectivity()
                 if self.probe.polarized:
                     resid = np.hstack([(xs.R - QRi[1])/xs.dR
                                        for xs, QRi in zip(self.probe.xs, QR)
@@ -420,7 +423,7 @@ class Experiment(ExperimentBase):
         """
         Build a slab description of the model from the individual layers.
         """
-        key = 'rendered'
+        key = 'rendered', self.step_interfaces, self.dA
         if key not in self._cache:
             self._slabs.clear()
             self.sample.render(self._probe_cache, self._slabs)
@@ -544,7 +547,7 @@ class Experiment(ExperimentBase):
         """
         Return the nuclear and magnetic scattering potential for the sample.
         """
-        key = 'magnetic_smooth_profile'
+        key = 'magnetic_smooth_profile', '{:.6f}'.format(dz)
         if key not in self._cache:
             slabs = self._render_slabs()
             prof = slabs.magnetic_smooth_profile(dz=dz)

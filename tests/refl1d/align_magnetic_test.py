@@ -3,8 +3,7 @@ from __future__ import division, print_function
 import numpy as np
 from numpy import inf, nan
 
-from refl1d.reflmodule import _align_magnetic
-
+from refl1d.refllib import align_magnetic
 
 # thickness, interface, rho, irho
 substrate = [[nan, 10, 2, 0.2]]
@@ -95,7 +94,7 @@ def check_one(nuclear, magnetic, expected):
     wM, sigmaM, rhoM, thetaM = [np.ascontiguousarray(v, 'd') for v in zip(*magnetic)]
     result = np.empty((len(w)+len(wM), 6), 'd')
     #print("sigmaM", sigmaM)
-    k = _align_magnetic(w, sigma[:-1], rho, irho, wM, sigmaM[:-1], rhoM, thetaM, result)
+    k = align_magnetic(w, sigma[:-1], rho, irho, wM, sigmaM[:-1], rhoM, thetaM, result)
     good = all((np.isnan(c2) and c1 == 0.) or (not np.isnan(c2) and abs(c1-c2) < 1e-10)
                for r1, r2 in zip(result[:k], expected)
                for c1, c2 in zip(r1, r2))

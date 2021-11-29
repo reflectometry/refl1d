@@ -247,7 +247,9 @@ def show_errors(errors, contours=CONTOURS, npoints=200,
     *align* is the interface number plus fractional distance within
     the layer following the interface.  For example, use 0 for the
     substrate interface, use -1 for the surface interface, or use 2.5
-    for the center of the second slab above the substrate.
+    for the center of the second slab above the substrate. If *align='auto'*
+    then choose an offset that minimizes the cross-correlation between the
+    first profile and the current profile.
 
     *plots* is the number of plots to use (1, 2, or 'n').
 
@@ -492,9 +494,10 @@ def _align_profile_pair(z1, r1, t1_offset, z2, r2, t2, align):
     Use crosscorrelation to align r1 and r2.
     """
     if align == 'auto':
+        import scipy.signal
         # Assume z1, z2 have the same step size
         n2 = len(r2)
-        idx = np.argmax(np.correlate(r1, r2, 'full'))
+        idx = np.argmax(scipy.signal.correlate(r1, r2, 'full'))
         if idx < n2:
             offset = z2[(n2-1)-idx] - z1[0]
         else:

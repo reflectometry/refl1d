@@ -7,7 +7,7 @@
 # Look in https://www.python.org/ftp/python for the latest python version.
 $PY_VERSION = "3.8.1"
 $PTH_FILE = "python38._pth"
-$WHEEL_TAG = "cp32-abi3-win_amd64"
+$WHEEL_TAG = "py3-none-any"
 $INSTALL_TAG = "exe"  # PAK: renamed from "cp38-embedded-amd64" to make docs clearer
 $PACKAGE = "refl1d"
 $APP_NAME = "Refl1D"
@@ -38,7 +38,7 @@ $PTH_PATH = "build\$APP_PATH\$PTH_FILE"
 
 # Use pip to install the app from the binary wheel in the dist directory.
 Write-Host "Installing $APP_NAME-$APP_VERSION into embedded environment"
-& "build\$APP_PATH\Scripts\pip.exe" install --no-warn-script-location numba wxpython numpy==1.19.3 "$PSScriptRoot\..\dist\$PACKAGE-$APP_VERSION-$WHEEL_TAG.whl"
+& "build\$APP_PATH\Scripts\pip.exe" install --no-warn-script-location numba wxpython numpy "$PSScriptRoot\..\dist\$PACKAGE-$APP_VERSION-$WHEEL_TAG.whl"
 
 # Add batch files for starting the application
 Copy-Item "$PSScriptRoot\*.bat" "build\$APP_PATH"

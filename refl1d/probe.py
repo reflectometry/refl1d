@@ -589,9 +589,7 @@ class Probe:
         Note: :meth:`oversample` will remove the extra Q calculation
         points introduced by :meth:`critical_edge`.
         """
-        if n < 5:
-            raise ValueError("Oversampling with n<5 is not useful")
-
+        
         rng = numpy.random.RandomState(seed=seed)
         T = rng.normal(self.T[:, None], self.dT[:, None], size=(len(self.dT), n-1))
         L = rng.normal(self.L[:, None], self.dL[:, None], size=(len(self.dL), n-1))
@@ -1260,7 +1258,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
           L=None, dL=None, T=None, dT=None, dR=None,
           FWHM=False, radiation=None,
           columns=None, data_range=(None, None),
-          resolution='normal',
+          resolution='normal',oversampling=None,
          ):
     r"""
     Load in four column data Q, R, dR, dQ.
@@ -1349,6 +1347,9 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
 
     *resolution* is 'normal' (default) or 'uniform'. Use uniform if you
     are merging Q points from a finely stepped energy sensitive measurement.
+
+    *oversampling* is None or a positive integer indicating how many points to add
+    between data point to support sparse data with denser theory (for PolarizedNeutronProbe)
     """
     entries = parse_multi(filename, keysep=keysep, sep=sep, comment=comment)
     if columns:
@@ -1390,7 +1391,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
         if any(isinstance(d, QProbe) for d in xs if d is not None):
             probe = PolarizedQProbe(xs, Aguide=Aguide, H=H)
         else:
-            probe = PolarizedNeutronProbe(xs, Aguide=Aguide, H=H)
+            probe = PolarizedNeutronProbe(xs, Aguide=Aguide, H=H, oversampling=oversampling)
     return probe
 
 def _data_as_probe(entry, probe_args, T, L, dT, dL, dR, FWHM, radiation,
@@ -1563,8 +1564,6 @@ class QProbe(Probe):
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
     def oversample(self, n=20, seed=1):
-        if n < 5:
-            raise ValueError("Oversampling with n<5 is not useful")
         rng = numpy.random.RandomState(seed=seed)
         extra = rng.normal(self.Q, self.dQ, size=(n-1, len(self.Q)))
         calc_Q = np.hstack((self.Q, extra.flatten()))
@@ -1588,13 +1587,12 @@ def measurement_union(xs):
     TL = set()
     for x in xs:
         if x is not None:
-            TL |= set(zip(x.T+x.theta_offset.value, x.dT, x.L, x.dL))
-    T, dT, L, dL = zip(*[item for item in TL])
-    T, dT, L, dL = [np.asarray(v) for v in (T, dT, L, dL)]
+            TL |= set(zip(x.T+x.theta_offset.value, x.dT, x.L, x.dL, x.dQ))
+    T, dT, L, dL, dQ = zip(*[item for item in TL])
+    T, dT, L, dL, dQ = [np.asarray(v) for v in (T, dT, L, dL, dQ)]
 
     # Convert to Q, dQ
     Q = TL2Q(T, L)
-    dQ = dTdL2dQ(T, dT, L, dL)
 
     # Sort by Q
     idx = np.argsort(Q)
@@ -1660,6 +1658,9 @@ class PolarizedNeutronProbe:
         else:
             for index, xs_name in enumerate(self._xs_names):
                 setattr(self, xs_name, xs[index])
+
+        self.oversampling = oversampling
+        self.oversampling_seed = 1
 
         self._theta_offsets = None
         if name is None and self.mm is not None:
@@ -1745,6 +1746,11 @@ class PolarizedNeutronProbe:
                 x.sample_broadening = sample_broadening
 
     def oversample(self, n=6, seed=1):
+        self._oversample(n, seed)
+        self.oversampling = n
+        self.oversampling_seed = seed
+
+    def _oversample(self, n=6, seed=1):
         # doc string is inherited from parent (see below)
         rng = numpy.random.RandomState(seed=seed)
         T = rng.normal(self.T[:, None], self.dT[:, None], size=(len(self.dT), n))
@@ -1752,7 +1758,27 @@ class PolarizedNeutronProbe:
         T = T.flatten()
         L = L.flatten()
         self._set_calc(T, L)
-    oversample.__doc__ = Probe.oversample.__doc__
+    _oversample.__doc__ = Probe.oversample.__doc__
+
+    def _calculate_union(self):
+        theta_offsets = [x.theta_offset.value for x in self.xs if x is not None]
+        # print('theta_offsets', self._theta_offsets, theta_offsets)
+        if self._theta_offsets is not None and theta_offsets == self._theta_offsets:
+           # print("no offset change... returning", self._theta_offsets, theta_offsets)
+           # no change in offsets: use cached values of measurement union
+           return
+
+        else:
+            # unshared offsets changed, or union has not been calculated before
+            self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
+                = measurement_union(self.xs)
+
+            if self.oversampling is None:
+                self._set_calc(self.T, self.L)
+            else:
+                self._oversample(self.oversampling, self.oversampling_seed)
+            
+            self._theta_offsets = theta_offsets
 
     def _calculate_union(self):
         theta_offsets = [x.theta_offset.value for x in self.xs if x is not None]
@@ -1810,11 +1836,11 @@ class PolarizedNeutronProbe:
     def scattering_factors(self, material, density):
         # doc string is inherited from parent (see below)
         rho, irho, rho_incoh = nsf.neutron_sld(material,
-                                               wavelength=self.unique_L,
+                                               wavelength=self.unique_L[0],
                                                density=density)
         # TODO: support wavelength dependent systems
         #print("sf", str(material), type(rho), type(irho[0]))
-        return rho, irho[0], rho_incoh
+        return rho, irho, rho_incoh
         #return rho, irho[self._L_idx], rho_incoh
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
