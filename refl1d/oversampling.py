@@ -25,7 +25,7 @@ def get_optimal_single_oversampling(model, tolerance=0.05, max_oversampling=201,
     """
     # get a list of probes, which will have length one for unpolarized:
     probes = model.probe.xs if hasattr(model.probe, 'xs') else [model.probe]
-    sample = model.sample
+    #sample = model.sample
     
     # initialize the per-Q recommended oversampling to max_oversampling
     optimal_oversampling = [None if p is None else np.ones_like(p.dR, dtype=int) * max_oversampling for p in probes]
@@ -89,8 +89,7 @@ def analyze_fitproblem(problem, tolerance=0.05, max_oversampling=201, plot=False
         local_oversampling_i = []
         oversampling.append(oversampling_i)
         local_oversampling.append(local_oversampling_i)
-        fitness = model.fitness
-        parts = fitness.parts if hasattr(fitness, 'parts') else [fitness]
+        parts = model.parts if hasattr(model, 'parts') else [model]
         for i_part, part in enumerate(parts):
             # print(part)
             oversampling_ii, local_oversampling_ii, Q = get_optimal_single_oversampling(part, tolerance, max_oversampling)
