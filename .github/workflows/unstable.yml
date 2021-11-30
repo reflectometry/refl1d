@@ -79,13 +79,22 @@ jobs:
       run: |
         ls * -l
 
+    - name: repack self-extracting
+      run: |
+        sudo apt-get install -y p7zip-full
+        mkdir self_extracting
+        curl -L https://www.7-zip.org/a/7z2106-x64.exe --output 7z.exe
+        7z e 7z.exe -aoa -oself_extracting 7z.sfx
+        unzip Refl1D-windows-exe-latest.zip -d self_extracting
+        cd self_extracting && 7z a -mhe=on -mx=1 -sfx7z.sfx ../Refl1D-latest-self-extracting.exe Refl1D*/
+
     - name: Update unstable release
       uses: johnwbyrd/update-release@v1.0.0
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         release: unstable
         tag: sid
-        files: Refl1D-windows-exe-latest.zip Refl1D-latest-source.zip
+        files: Refl1D-windows-exe-latest.zip Refl1D-latest-source.zip Refl1D-latest-self-extracting.exe
 
   updateUnstableText:
     needs: publish
