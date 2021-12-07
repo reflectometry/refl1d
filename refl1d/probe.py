@@ -1228,6 +1228,38 @@ class ProbeSet(Probe):
                       back_reflectivity=Po.back_reflectivity,
                       resolution=Po.resolution)
 
+def parse_orso(filename, *args, **kwargs):
+    """load an ORSO text file (.ort)"""
+    from orsopy.fileio.orso import load_orso
+
+    POL_CONVERSION = {
+        "p": "+",
+        "m": "-",
+        "mm": "--",
+        "mp": "-+",
+        "pm": "+-",
+        "pp": "++",
+    }
+
+    entries = load_orso(filename)
+    entries_out = []
+    for entry in entries:
+        header = entry.info
+        data = entry.data
+        settings = header.data_source.measurement.instrument_settings
+        polarization = POL_CONVERSION.get(settings.polarization, "unpolarized")
+        header_out = {"polarization": polarization}
+
+        angular_resolution = settings.get("angular_resolution", None)
+        if hasattr(angular_resolution, "magnitude"):
+            header_out["angular_resolution"] = angular_resolution.magnitude
+
+        wavelength_resolution = settings.get("wavelength_resolution", None)
+        if hasattr(wavelength_resolution, "magnitude"):
+            header_out["wavelength_resolution"] = wavelength_resolution.magnitude
+
+        entries_out.append((header_out, data))
+    return entries_out
 
 def load4(filename, keysep=":", sep=None, comment="#", name=None,
           intensity=1, background=0, back_absorption=1,
@@ -1329,7 +1361,12 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     *oversampling* is None or a positive integer indicating how many points to add
     between data point to support sparse data with denser theory (for PolarizedNeutronProbe)
     """
-    entries = parse_multi(filename, keysep=keysep, sep=sep, comment=comment)
+    json_header_encoding = False
+    if filename.endswith('.ort'):
+        entries = parse_orso(filename)
+    else:
+        entries = parse_multi(filename, keysep=keysep, sep=sep, comment=comment)
+        json_header_encoding = True
     if columns:
         actual = columns.split()
         natural = "Q R dR dQ".split()
@@ -1347,6 +1384,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
         theta_offset=theta_offset,
         sample_broadening=sample_broadening,
         resolution=resolution,
+        json_header_encoding=json_header_encoding,
     )
     data_args = dict(
         radiation=radiation,
@@ -1374,6 +1412,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
 
 def _data_as_probe(entry, probe_args, T, L, dT, dL, dR, FWHM, radiation,
                    column_order, index):
+    decoder = lambda x: json.loads(x) if probe_args['json_header_encoding'] else lambda x: x
     name = probe_args['filename']
     header, data = entry
     if len(data) == 2:
@@ -1401,7 +1440,7 @@ def _data_as_probe(entry, probe_args, T, L, dT, dL, dR, FWHM, radiation,
     if radiation is not None:
         data_radiation = radiation
     elif 'radiation' in header:
-        data_radiation = json.loads(header['radiation'])
+        data_radiation = decoder(header['radiation'])
     else:
         # Default to neutron data if radiation not given in head.
         data_radiation = 'neutron'
@@ -1420,7 +1459,7 @@ def _data_as_probe(entry, probe_args, T, L, dT, dL, dR, FWHM, radiation,
         if override is not None:
             return override
         elif key in header:
-            v = json.loads(header[key])
+            v = decoder(header[key])
             return np.array(v)[index] if isinstance(v, list) else v
         else:
             return None
