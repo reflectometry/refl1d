@@ -1250,15 +1250,17 @@ def parse_orso(filename, *args, **kwargs):
         polarization = POL_CONVERSION.get(settings.polarization, "unpolarized")
         header_out = {"polarization": polarization}
 
-        angular_resolution = settings.get("angular_resolution", None)
-        if hasattr(angular_resolution, "magnitude"):
-            header_out["angular_resolution"] = angular_resolution.magnitude
+        def get_key(orso_name, refl1d_name):
+            v = getattr(settings, orso_name, None)
+            if hasattr(v, 'magnitude'):
+                header_out[refl1d_name] = v.magnitude
 
-        wavelength_resolution = settings.get("wavelength_resolution", None)
-        if hasattr(wavelength_resolution, "magnitude"):
-            header_out["wavelength_resolution"] = wavelength_resolution.magnitude
+        get_key("incident_angle", "angle")
+        get_key("wavelength", "wavelength")
+        get_key("angular_resolution", "angular_resolution")
+        get_key("wavelength_resolution", "wavelength_resolution")
 
-        entries_out.append((header_out, data))
+        entries_out.append((header_out, np.array(data).T))
     return entries_out
 
 def load4(filename, keysep=":", sep=None, comment="#", name=None,
@@ -1384,7 +1386,6 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
         theta_offset=theta_offset,
         sample_broadening=sample_broadening,
         resolution=resolution,
-        json_header_encoding=json_header_encoding,
     )
     data_args = dict(
         radiation=radiation,
@@ -1394,10 +1395,10 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
         index=index,
     )
     if len(entries) == 1:
-        probe = _data_as_probe(entries[0], probe_args, **data_args)
+        probe = _data_as_probe(entries[0], json_header_encoding, probe_args, **data_args)
     else:
         data_by_xs = {strip_quotes(entry[0]["polarization"])
-                      : _data_as_probe(entry, probe_args, **data_args)
+                      : _data_as_probe(entry, json_header_encoding, probe_args, **data_args)
                       for entry in entries}
         if not set(data_by_xs.keys()) <= set('-- -+ +- ++'.split()):
             raise ValueError("Unknown cross sections in: "
@@ -1410,11 +1411,13 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
             probe = PolarizedNeutronProbe(xs, Aguide=Aguide, H=H, oversampling=oversampling)
     return probe
 
-def _data_as_probe(entry, probe_args, T, L, dT, dL, dR, FWHM, radiation,
+def _data_as_probe(entry, json_header_encoding, probe_args, T, L, dT, dL, dR, FWHM, radiation,
                    column_order, index):
-    decoder = lambda x: json.loads(x) if probe_args['json_header_encoding'] else lambda x: x
+    decoder = lambda x: json.loads(x) if json_header_encoding else lambda x: x
     name = probe_args['filename']
     header, data = entry
+    print('header:', header)
+    print('data: ', data)
     if len(data) == 2:
         data_Q, data_R = (data[k][index] for k in column_order[:2])
         data_dR, data_dQ = None, None
