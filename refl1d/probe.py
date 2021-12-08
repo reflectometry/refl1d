@@ -1247,13 +1247,18 @@ def parse_orso(filename, *args, **kwargs):
         header = entry.info
         data = entry.data
         settings = header.data_source.measurement.instrument_settings
+        columns = header.columns
         polarization = POL_CONVERSION.get(settings.polarization, "unpolarized")
         header_out = {"polarization": polarization}
 
         def get_key(orso_name, refl1d_name):
-            v = getattr(settings, orso_name, None)
-            if hasattr(v, 'magnitude'):
-                header_out[refl1d_name] = v.magnitude
+            column_index = next((i for i,c in enumerate(columns) if c.name == orso_name), None)
+            if column_index is not None:
+                header_out[refl1d_name] = data[:,column_index]
+            else:
+                v = getattr(settings, orso_name, None)
+                if hasattr(v, 'magnitude'):
+                    header_out[refl1d_name] = v.magnitude
 
         get_key("incident_angle", "angle")
         get_key("wavelength", "wavelength")
