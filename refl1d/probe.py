@@ -250,6 +250,17 @@ class Probe:
         # Make sure that we are dealing with vectors
         T, dT, L, dL = [np.ones_like(Q)*v for v in (T, dT, L, dL)]
 
+        # remove nan
+        nan_indices = set()
+        for column in [T, dT, L, dL, R, dR, Q, dQ]:
+            if column is not None:
+                indices = np.argwhere(np.isnan(column)).flatten()
+                nan_indices.update(indices)
+
+        nan_indices = list(nan_indices)
+        T, dT, L, dL, R, dR, Q, dQ = (
+            np.delete(c, nan_indices) if c is not None else None for c in [T, dT, L, dL, R, dR, Q, dQ])
+
         # Probe stores sorted values for convenience of resolution calculator
         idx = np.argsort(Q)
         self.T, self.dT = T[idx], dT[idx]
