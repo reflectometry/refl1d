@@ -1955,6 +1955,10 @@ class PolarizedNeutronProbe(object):
                          label=pp.label(prefix=label, gloss='data'),
                          transform=trans,
                          color=c['light'])
+            # Set limits based on max theoretical SA, which is in (-1.0, 1.0)
+            # If the error bars are bigger than that, you usually don't care.
+            ylim_low, ylim_high = plt.ylim()
+            plt.ylim(max(ylim_low, -2.5), min(ylim_high, 2.5))
         if theory is not None:
             mm, mp, pm, pp = theory
             Q, SA, _ = spin_asymmetry(pp[0], pp[1], None, mm[0], mm[1], None)
