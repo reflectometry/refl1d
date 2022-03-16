@@ -1265,7 +1265,8 @@ def parse_orso(filename, *args, **kwargs):
         def get_key(orso_name, refl1d_name):
             column_index = next((i for i,c in enumerate(columns) if c.name == orso_name), None)
             if column_index is not None:
-                header_out[refl1d_name] = data[:,column_index]
+                # NOTE: this is dependent on acceptance of column-first indexing in ORSO
+                header_out[refl1d_name] = data[column_index]
             else:
                 v = getattr(settings, orso_name, None)
                 if hasattr(v, 'magnitude'):
@@ -1276,7 +1277,7 @@ def parse_orso(filename, *args, **kwargs):
         get_key("angular_resolution", "angular_resolution")
         get_key("wavelength_resolution", "wavelength_resolution")
 
-        entries_out.append((header_out, np.array(data).T))
+        entries_out.append((header_out, np.array(data)))
     return entries_out
 
 def load4(filename, keysep=":", sep=None, comment="#", name=None,
@@ -1380,11 +1381,13 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     between data point to support sparse data with denser theory (for PolarizedNeutronProbe)
     """
     json_header_encoding = False
+
     if filename.endswith('.ort'):
         entries = parse_orso(filename)
     else:
+        json_header_encoding = True # for .refl files, header values are json-encoded
         entries = parse_multi(filename, keysep=keysep, sep=sep, comment=comment)
-        json_header_encoding = True
+
     if columns:
         actual = columns.split()
         natural = "Q R dR dQ".split()
@@ -1429,7 +1432,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
 
 def _data_as_probe(entry, json_header_encoding, probe_args, T, L, dT, dL, dR, FWHM, radiation,
                    column_order, index):
-    decoder = lambda x: json.loads(x) if json_header_encoding else lambda x: x
+    decoder = json.loads if json_header_encoding else lambda x: x
     name = probe_args['filename']
     header, data = entry
     if len(data) == 2:
