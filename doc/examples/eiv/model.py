@@ -45,7 +45,10 @@ def marginalized_residuals(Q, FQ, R, dR, angle_uncertainty=0.002):
     Returns the residuals from an error-in-variables model marginalized over
     the variables.
 
-    *angular_uncertainty* from motor jitter in degrees. Use the
+    **Warning** Assumes F(Q) is smoothly varying. If neighboring points have
+    vastly different resolution then this assumption may not hold.
+
+    *angular_uncertainty* from motor jitter in degrees, 1-$\sigma$.
 
     For error in variables fits with normal uncertainty, start with the
     following model:
@@ -73,10 +76,10 @@ def marginalized_residuals(Q, FQ, R, dR, angle_uncertainty=0.002):
     .. math::
 
         y_o &~& f(x_o) + f'(x_o)N(0, \Delta x^2) + N(0, \Delta y^2) \\
-            &~& N(f(x_o), f'(x_o)\Delta x^2 + \Delta y^2)
+            &~& N(f(x_o), [f'(x_o)\Delta x]^2 + \Delta y^2)
 
     That is, assuming that f(x) is approximately linear over $\Delta x$, then
-    simply add $f'(x_o)\Delta x^2)$ to the variance in the data. Furthermore,
+    simply add $[f'(x_o)\Delta x]^2$ to the variance in the data. Furthermore,
     assuming that we are sampling $x$ densely enough, then we can approximate
     $f'(x)$ using the center point formula
 
