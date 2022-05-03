@@ -133,7 +133,7 @@ pip install --user --no-deps periodictable bumps refl1d
 
 (13) announce release
 
-update reflectometry.org web pages
+update web pages
 send message to reflectometry announcement list
 
 EOF
