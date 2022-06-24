@@ -427,11 +427,11 @@ class Probe(object):
 
     def parameters(self):
         return {
-            'intensity': self.intensity,
-            'background': self.background,
-            'back_absorption': self.back_absorption,
-            'theta_offset': self.theta_offset,
-            'sample_broadening': self.sample_broadening
+            'intensity': self.intensity.parameters(),
+            'background': self.background.parameters(),
+            'back_absorption': self.back_absorption.parameters(),
+            'theta_offset': self.theta_offset.parameters(),
+            'sample_broadening': self.sample_broadening.parameters()
             }
 
     def to_dict(self):
