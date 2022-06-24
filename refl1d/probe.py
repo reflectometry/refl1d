@@ -578,7 +578,7 @@ class Probe(object):
         Note: :meth:`oversample` will remove the extra Q calculation
         points introduced by :meth:`critical_edge`.
         """
-        
+
         rng = numpy.random.RandomState(seed=seed)
         T = rng.normal(self.T[:, None], self.dT[:, None], size=(len(self.dT), n-1))
         L = rng.normal(self.L[:, None], self.dL[:, None], size=(len(self.dL), n-1))
@@ -743,8 +743,8 @@ class Probe(object):
             self.plot_residuals(**kwargs)
         elif view == 'fft':
             self.plot_fft(**kwargs)
-        elif view == 'SA': # SA uses default plot
-            self.plot(view=None, **kwargs)
+        elif view == 'SA': # SA does not plot since it does not exist
+            pass
         else:
             raise TypeError("incorrect reflectivity view '%s'"%view)
 
@@ -1767,7 +1767,7 @@ class PolarizedNeutronProbe(object):
                 self._set_calc(self.T, self.L)
             else:
                 self._oversample(self.oversampling, self.oversampling_seed)
-            
+
             self._theta_offsets = theta_offsets
 
     @property
