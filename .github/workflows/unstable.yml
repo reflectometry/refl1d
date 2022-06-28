@@ -67,6 +67,7 @@ jobs:
           unstable/*
 
   publish:
+    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
     needs: test_and_build
     runs-on: ubuntu-latest
     steps:
