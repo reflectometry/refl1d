@@ -22,11 +22,11 @@ function activateTab(index) {
   panelContainers.value.forEach((el, i) => {
     if (i === index) {
       el.classList.add('active');
-      panelVisible.value[index] = true;
+      panelVisible.value[i] = true;
     }
     else {
       el.classList.remove('active');
-      panelVisible.value[index] = false;
+      panelVisible.value[i] = false;
     }
   });
 }
