@@ -130,6 +130,7 @@ def get_profile_plot(sid: str):
     import mpld3
     import matplotlib.pyplot as plt
     fitProblem: refl1d.fitproblem.FitProblem = app["problem"]["fitProblem"]
+    fig = plt.figure()
     for model in iter(fitProblem.models):
         model.plot_profile()
     return mpld3.fig_to_dict(plt.gcf())
@@ -164,6 +165,7 @@ async def set_parameter01(sid: str, parameter_name: str, parameter_value01: floa
     new_value  = parameter.prior.put01(parameter_value01)
     nice_new_value = nice(new_value, digits=VALUE_PRECISION)
     parameter.value = nice_new_value
+    fitProblem.model_update()
     await sio.emit("plot_update_ready", True)
     return new_value
 
