@@ -5,13 +5,22 @@ import type { Socket } from 'socket.io-client';
 
 const title = "Reflectivity";
 const plot_div = ref<HTMLDivElement>();
+const plot = ref(null);
 
 const props = defineProps<{
   socket: Socket,
-  visible: Boolean
+  visible: boolean
 }>();
 
-props.socket.on('plot_update_ready', () => {
+onMounted(() => {
+  props.socket.on('plot_update_ready', () => {
+    if (props.visible) {
+      fetch_and_draw();
+    }
+  });
+});
+
+function fetch_and_draw() {
   props.socket.emit('get_plot_data', 'linear', (payload) => {
 
     let theory_traces = [];
@@ -40,10 +49,25 @@ props.socket.on('plot_update_ready', () => {
       }
     };
 
-    Plotly.newPlot("plot_div", [...theory_traces, ...data_traces], layout);
-
+    if (plot.value) {
+      const update = {
+        x: [...theory_traces.map((t) => t.x), ...data_traces.map((t) => t.x)],
+        y: [...theory_traces.map((t) => t.y), ...data_traces.map((t) => t.y)],       
+      }
+      Plotly.update(plot_div.value, update);
+    }
+    else {
+      plot.value = Plotly.react(plot_div.value, [...theory_traces, ...data_traces], layout);
+    }
+    // console.log(plot.value);
     // mpld3.draw_figure("plot_div", payload);
   });
+}
+
+watch(() => props.visible, (value) => {
+  if (value) {
+    fetch_and_draw();
+  }
 });
 
 defineExpose({
@@ -52,7 +76,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="container h-100">
+  <div class="container d-flex flex-grow-1">
     <div ref="plot_div" id="plot_div">
 
     </div>
