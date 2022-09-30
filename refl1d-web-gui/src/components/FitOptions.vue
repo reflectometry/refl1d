@@ -1,33 +1,17 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, onUpdated, computed, shallowRef } from 'vue';
-// import { Modal } from 'bootstrap';
+import { ref, onMounted, computed, shallowRef } from 'vue';
 import { Modal } from 'bootstrap/dist/js/bootstrap.esm';
-import { isArray } from '@vue/shared';
+import type { Socket } from 'socket.io-client';
 
-const props = defineProps({
-  fitter_defaults: {
-    type: Object,
-    default: {}
-  },
-  fitter_settings: {
-    type: Object,
-    default: {}
-  },
-  active_fitter: {
-    type: String,
-    default: 'amoeba'
-  }
-});
+const props = defineProps<{socket: Socket}>();
 
-const emit = defineEmits<{
-  (e: 'close'): void
-  (e: 'update', value: Object): void
-  (e: 'active-fitter', value: string): void
-  (e: 'active-settings', value: Object): void
-}>();
-
-const dialog = ref(null);
+type FitSetting = { name: string, settings: object };
+const dialog = ref<HTMLDivElement>();
 const isOpen = ref(false);
+const fitter_defaults = shallowRef<{ [fit_name: string]: FitSetting }>({});
+const fitter_settings = shallowRef<{ [fit_name: string]: FitSetting }>({});
+const fitter_active = ref<string>("amoeba");
+const fitter_active_local = ref("amoeba");
 
 const FIT_FIELDS = {
   'starts': ['Starts', 'integer'],
@@ -51,17 +35,35 @@ const FIT_FIELDS = {
   'outliers': ['Outliers', ["none", "iqr", "grubbs", "mahal"]]
 }
 
-const active_fitter = ref('amoeba');
-// work with a copy of the fitter definitions, which will
-// still get used as defaults
-
 // make another working copy for editing:
+// const active_settings = ref<{ name: string, settings: object}>({name: "", settings: {}});
 const active_settings = ref({});
+
+props.socket.on('fitter_settings', () => {
+  props.socket.emit('get_last_message', 'fitter_settings', (payload) => {
+    fitter_settings.value = payload;
+  });
+});
+props.socket.on('fitter_defaults', () => {
+  props.socket.emit('get_last_message', 'fitter_defaults', (payload) => {
+    fitter_defaults.value = payload;
+  });
+});
+props.socket.on('fitter_active', () => {
+  props.socket.emit('get_last_message', 'fitter_active', (payload) => {
+    fitter_active.value = payload;
+  });
+});
+
+props.socket.emit('subscribe', 'fitter_settings');
+props.socket.emit('subscribe', 'fitter_defaults');
+props.socket.emit('subscribe', 'fitter_active');
 
 let modal: Modal;
 
 onMounted(() => {
   modal = new Modal(dialog.value, { backdrop: 'static', keyboard: false });
+
 });
 
 function close() {
@@ -69,35 +71,22 @@ function close() {
 }
 
 function open() {
-  // copy the active_fitter from the server state:
-  active_fitter.value = props.active_fitter;
+  // copy the  fitter_active_local from the server state:
+  fitter_active_local.value = fitter_active.value;
   changeActiveFitter();
   modal?.show();
 }
 
-const fit_names = computed(() => Object.keys(props.fitter_defaults));
+const fit_names = computed(() => Object.keys(fitter_defaults?.value));
 
 function changeActiveFitter() {
-  active_settings.value = structuredClone(props.fitter_settings[active_fitter.value]?.settings);
+  active_settings.value = structuredClone(fitter_settings.value[fitter_active_local.value]?.settings) ?? {};
 }
-
-// watch(isOpen, (newState, oldState) => {
-//   if (newState == true && modal) {
-//     modal.show();
-//   }
-//   else {
-//     modal.hide();
-//   }
-// })
-
-// watch(() => props.fitter_settings, (newState, oldState) => {
-//   // fit_names.value = Object.keys(newState);
-// })
 
 function process_settings() {
   return Object.fromEntries(Object.entries(active_settings.value).map(([sname, value]) => {
     const field_type = FIT_FIELDS[sname][1];
-    let processed_value = value;
+    let processed_value: any = value;
     if (field_type === 'integer') {
       processed_value = Math.round(Number(value));
     }
@@ -114,19 +103,19 @@ function process_settings() {
 
 function save() {
   const new_settings = {};
-  new_settings[active_fitter.value] = {settings: process_settings()};
-  emit('active-settings', new_settings);
-  emit('active-fitter', active_fitter.value);
+  new_settings[fitter_active_local.value] = { settings: process_settings() };
+  props.socket.emit("publish", "fitter_settings", new_settings);
+  props.socket.emit("publish", "fitter_active", fitter_active_local.value);
   close();
 }
 
 function reset() {
-  active_settings.value = structuredClone(props.fitter_defaults[props.active_fitter].settings);
+  active_settings.value = structuredClone(fitter_defaults.value[fitter_active_local.value].settings) ?? {};
 }
 
 function validate(value, field_name) {
   const field_type = FIT_FIELDS[field_name][1];
-  if (isArray(field_type) || field_type === 'boolean') {
+  if (Array.isArray(field_type) || field_type === 'boolean') {
     // there's no way to get an incorrect option.
     return true;
   }
@@ -164,19 +153,19 @@ defineExpose({
             <div class="row border-bottom">
               <div class="col">
                 <div class="form-check" v-for="fname in fit_names.slice(0,3)" :key="fname">
-                  <input class="form-check-input" v-model="active_fitter" type="radio" name="flexRadio" :id="fname"
-                    :value="fname" @change="changeActiveFitter">
+                  <input class="form-check-input" v-model="fitter_active_local" type="radio" name="flexRadio"
+                    :id="fname" :value="fname" @change="changeActiveFitter">
                   <label class="form-check-label" :for="fname">
-                    {{props.fitter_defaults[fname].name}}
+                    {{fitter_defaults[fname].name}}
                   </label>
                 </div>
               </div>
               <div class="col">
                 <div class="form-check" v-for="fname in fit_names.slice(3)" :key="fname">
-                  <input class="form-check-input" v-model="active_fitter" type="radio" name="flexRadio" :id="fname"
-                    :value="fname" @change="changeActiveFitter">
+                  <input class="form-check-input" v-model="fitter_active_local" type="radio" name="flexRadio"
+                    :id="fname" :value="fname" @change="changeActiveFitter">
                   <label class="form-check-label" :for="fname">
-                    {{props.fitter_defaults[fname].name}}
+                    {{fitter_defaults[fname].name}}
                   </label>
                 </div>
               </div>
@@ -185,18 +174,22 @@ defineExpose({
               <div class="row p-1" v-for="(value, sname, index) in active_settings" :key="sname">
                 <label class="col-sm-4 col-form-label" :for="'setting_' + index">{{FIT_FIELDS[sname][0]}}</label>
                 <div class="col-sm-8">
-                  <select v-if="isArray(FIT_FIELDS[sname][1])" v-model="active_settings[sname]" class="form-select">
+                  <select v-if="Array.isArray(FIT_FIELDS[sname][1])" v-model="active_settings[sname]" class="form-select">
                     <option v-for="opt in FIT_FIELDS[sname][1]">{{opt}}</option>
                   </select>
-                  <input v-else-if="FIT_FIELDS[sname][1]==='boolean'" class="form-check-input m-2" type="checkbox" v-model="active_settings[sname]" />
-                  <input v-else :class="{'form-control': true, 'is-invalid': !validate(active_settings[sname], sname)}" type="text" v-model="active_settings[sname]" /></div>
+                  <input v-else-if="FIT_FIELDS[sname][1]==='boolean'" class="form-check-input m-2" type="checkbox"
+                    v-model="active_settings[sname]" />
+                  <input v-else :class="{'form-control': true, 'is-invalid': !validate(active_settings[sname], sname)}"
+                    type="text" v-model="active_settings[sname]" />
+                </div>
               </div>
             </div>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" @click="reset">Reset Defaults</button>
-          <button type="button" class="btn btn-primary" :class="{disabled: anyIsInvalid}" @click="save">Save Changes</button>
+          <button type="button" class="btn btn-primary" :class="{disabled: anyIsInvalid}" @click="save">Save
+            Changes</button>
         </div>
       </div>
     </div>
