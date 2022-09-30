@@ -8,7 +8,7 @@ const plot_div = ref<HTMLDivElement>();
 
 const props = defineProps<{
   socket: Socket,
-  visible: Boolean
+  visible: boolean
 }>();
 
 onMounted(() => {
@@ -26,13 +26,15 @@ function fetch_and_draw() {
     payload.height = plot_div.value?.clientHeight ?? 480;
     // delete payload.width;
     // delete payload.height;
-    console.log(payload, plot_div.value);
-    mpld3.draw_figure("profile_div", payload);
+    /* Data Parsing Functions */
+    // mpld3.draw_figure = function(figid, spec, process, clearElem) {}
+    mpld3.draw_figure("profile_div", payload, false, true);
   });
 }
 
 watch(() => props.visible, (value) => {
   if (value) {
+    console.log('visible', value);
     fetch_and_draw();
   }
 });
