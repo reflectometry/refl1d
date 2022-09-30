@@ -166,7 +166,14 @@ onMounted(() => {
         </div>
       </div>
     </nav>
-    <PanelTabContainer :panels="[DataView, ModelView, SummaryView]" :socket="socket" />
+    <div class="flex-grow-1 d-flex flex-row">
+      <div class="flex-grow-1 d-flex flex-column">
+        <PanelTabContainer :panels="[DataView, ModelView, SummaryView]" :socket="socket" />
+      </div>
+      <div class="flex-grow-1 d-flex flex-column">
+        <PanelTabContainer :panels="[DataView, ModelView, SummaryView]" :socket="socket" />
+      </div>
+    </div>
   </div>
   <FitOptions ref="fitOptions" :socket="socket" />
   <FileBrowser ref="fileBrowser" :socket="socket" title="Load Model File" :callback="fileBrowserSelectCallback" />
