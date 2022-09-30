@@ -1,21 +1,36 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, onUpdated, computed, shallowRef } from 'vue';
+import { ref, onMounted, watch, onUpdated, computed, shallowRef, nextTick } from 'vue';
 import type { Socket } from 'socket.io-client';
 
 const title = "Summary";
+const active_parameter = ref("");
 
 const props = defineProps<{
   socket: Socket,
   visible: Boolean
 }>();
 
-const parameters = shallowRef<{
+type parameter_info = {
   name: string,
   value01: number,
   value_str: string,
   min: string,
-  max: string
+  max: string,
+  active?: boolean,
+  value01_local?: number
+}
+
+const parameters = ref<{
+  name: string,
+  value01: number,
+  value_str: string,
+  min: string,
+  max: string,
+  active?: boolean,
+  value01_local?: number,
 }[]>([]);
+
+const parameters_local = ref<parameter_info[]>([]);
 
 const parameters_old = [{
   name: 'background',
@@ -34,10 +49,26 @@ onMounted(() => {
 });
 
 function fetch_and_draw() {
-  props.socket.emit('get_parameters', (payload) => {
-    console.log(payload);
-    parameters.value = payload;
+  props.socket.emit('get_parameters', (payload: parameter_info[]) => {
+    // console.log(payload);
+    const pv = parameters.value;
+    payload.forEach((p,i) => {
+      if (!(pv[i]?.active)) {
+        pv.splice(i, 1, {...p, value01_local: p.value01});
+      }
+    });
+    pv.splice(payload.length);
   });
+}
+
+function onMove(param) {
+  props.socket.emit('set_parameter01', param.name, param.value01_local);
+}
+
+async function onInactive(param) {
+  param.active = false;
+  console.log("change");
+  fetch_and_draw();
 }
 
 watch(() => props.visible, (value) => {
@@ -63,7 +94,13 @@ defineExpose({
     </div>
     <div class="row" v-for="param in parameters" :key="param.name">
       <div class="col-2">{{param.name}}</div>
-      <div class="col-6"><input type="range" class="form-range" min="0" max="1.0" step="0.005" v-model="param.value01"/></div>
+      <div class="col-6">
+        <input type="range" class="form-range" min="0" max="1.0" step="0.005" v-model.number="param.value01_local"
+        @mousedown="param.active=true"
+        @input="onMove(param)"
+        @mouseup="onMouseup"
+        @change="onInactive(param)"/>
+      </div>
       <div class="col-2">{{param.value_str}}</div>
       <div class="col-1">{{param.min}}</div>
       <div class="col-1">{{param.max}}</div>
