@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button } from 'bootstrap/dist/js/bootstrap.esm.js';
-import { onMounted, ref, shallowRef, VNodeRef } from 'vue';
+import { onMounted, ref } from 'vue';
 import { api } from './server_api';
 import { io, Socket } from 'socket.io-client';
 import FitOptions from './components/FitOptions.vue';
@@ -27,7 +27,7 @@ const connected = ref(false);
 const menuToggle = ref<HTMLButtonElement>();
 const fitOptions = ref<typeof FitOptions>();
 const fileBrowser = ref<typeof FileBrowser>();
-const fileBrowserSelectCallback = ref((pathlist: string[], filename: string) =>  {});
+const fileBrowserSelectCallback = ref((pathlist: string[], filename: string) => { });
 const file_picker = ref<HTMLInputElement>();
 
 function set_reflectivity(refl_type: ReflectivityPlot) {
@@ -71,15 +71,6 @@ function selectOpenFile() {
   // file_picker.value?.click();
 }
 
-function load_model_path(event: Event) {
-  console.log(event);
-  const { files } = event.target;
-  console.log(files);
-  // socket.emit("load_model_file", files[0]);
-  window.testevent = event;
-}
-
-
 function openFitOptions() {
   fitOptions.value?.open();
 }
@@ -92,10 +83,10 @@ onMounted(() => {
 
 <template>
   <div class="h-100 d-flex flex-column">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark p-2">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
       <div class="container-fluid">
         <div class="navbar-brand">
-          <img src="./assets/refl1d-icon_256x256x32.png" alt="" height="36" class="d-inline-block align-text-middle">
+          <img src="./assets/refl1d-icon_256x256x32.png" alt="" height="24" class="d-inline-block align-text-middle">
           Refl1D
         </div>
         <button ref="menuToggle" class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -166,22 +157,25 @@ onMounted(() => {
         </div>
       </div>
     </nav>
-    <div class="flex-grow-1 d-flex flex-row">
-      <div class="flex-grow-1 d-flex flex-column">
+    <div class="flex-grow-1 row">
+      <div class="col d-flex flex-column">
         <PanelTabContainer :panels="[DataView, ModelView, SummaryView]" :socket="socket" />
       </div>
-      <div class="flex-grow-1 d-flex flex-column">
+      <div class="col d-flex flex-column">
         <PanelTabContainer :panels="[DataView, ModelView, SummaryView]" :socket="socket" />
       </div>
     </div>
   </div>
   <FitOptions ref="fitOptions" :socket="socket" />
   <FileBrowser ref="fileBrowser" :socket="socket" title="Load Model File" :callback="fileBrowserSelectCallback" />
-  <input ref="file_picker" type="file" multiple="false" id="file_picker" style="display:none;" @change="load_model_path" />
+  <input ref="file_picker" type="file" multiple="false" id="file_picker" style="display:none;"
+    @change="load_model_path" />
 </template>
 
 <style>
-html, body, #app {
+html,
+body,
+#app {
   height: 100%;
 }
 
