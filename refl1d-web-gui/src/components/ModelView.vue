@@ -1,12 +1,14 @@
 <script setup lang="ts">
+/// <reference types="@types/uuid"/>
 import { ref, onMounted, watch, onUpdated, computed, shallowRef } from 'vue';
 import { Socket } from 'socket.io-client';
+import { v4 as uuidv4 } from 'uuid';
 import mpld3 from 'mpld3';
 
 const title = "Profile";
 const plot_div = ref<HTMLDivElement>();
 const draw_requested = ref(false);
-
+const plot_div_id = ref(uuidv4());
 const props = defineProps<{
   socket: Socket,
   visible: boolean
@@ -26,21 +28,21 @@ function fetch_and_draw() {
     if (props.visible) {
       let plotdata = { ...payload };
       console.log(plotdata, plot_div.value);
-      plotdata.width = Math.round(plot_div.value?.clientWidth ?? 640) - 32;
-      plotdata.height = Math.round(plot_div.value?.clientHeight ?? 480) - 32;
+      plotdata.width = Math.round(plot_div.value?.clientWidth ?? 640) - 16;
+      plotdata.height = Math.round(plot_div.value?.clientHeight ?? 480) - 16;
       // delete payload.width;
       // delete payload.height;
       /* Data Parsing Functions */
       // mpld3.draw_figure = function(figid, spec, process, clearElem) {}
-      mpld3.draw_figure("profile_div", plotdata, false, true);
+      mpld3.draw_figure(plot_div_id.value, plotdata, false, true);
     }
   });
 }
 
 function draw_if_needed(timestamp: number) {
   if (draw_requested.value) {
-    draw_requested.value = false;
     fetch_and_draw();
+    draw_requested.value = false;
   }
   window.requestAnimationFrame(draw_if_needed);
 }
@@ -60,13 +62,13 @@ defineExpose({
     
 <template>
   <div class="container d-flex flex-grow-1">
-    <div class="flex-grow-1" ref="plot_div" id="profile_div">
+    <div class="flex-grow-1" ref="plot_div" :id="plot_div_id">
     </div>
   </div>
 </template>
 
 <style scoped>
-  svg {
-    width: 100%;
-  }
+svg {
+  width: 100%;
+}
 </style>
