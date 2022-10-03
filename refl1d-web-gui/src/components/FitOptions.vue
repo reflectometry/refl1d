@@ -41,17 +41,17 @@ const active_settings = ref({});
 
 props.socket.on('fitter_settings', () => {
   props.socket.emit('get_last_message', 'fitter_settings', (payload) => {
-    fitter_settings.value = payload;
+    fitter_settings.value = payload?.message;
   });
 });
 props.socket.on('fitter_defaults', () => {
   props.socket.emit('get_last_message', 'fitter_defaults', (payload) => {
-    fitter_defaults.value = payload;
+    fitter_defaults.value = payload?.message;
   });
 });
 props.socket.on('fitter_active', () => {
   props.socket.emit('get_last_message', 'fitter_active', (payload) => {
-    fitter_active.value = payload;
+    fitter_active.value = payload?.message;
   });
 });
 
