@@ -1,11 +1,12 @@
 <script setup lang="ts">
+/// <reference types="@types/plotly.js" />
 import { ref, onMounted, watch, onUpdated, computed, shallowRef } from 'vue';
 import Plotly from 'plotly.js/src/core';
 import type { Socket } from 'socket.io-client';
 
 const title = "Reflectivity";
-const plot_div = ref<HTMLDivElement>();
-const plot = ref(null);
+const plot_div = ref<HTMLDivElement | null>(null);
+const plot = ref<HTMLDivElement>();
 
 const props = defineProps<{
   socket: Socket,
@@ -21,8 +22,10 @@ onMounted(() => {
 });
 
 function fetch_and_draw() {
-  props.socket.emit('get_plot_data', 'linear', (payload) => {
-
+  props.socket.emit('get_plot_data', 'linear', async (payload) => {
+    if (plot_div.value === null) {
+      return
+    }
     let theory_traces = [];
     let data_traces = [];
     for (let model of payload) {
@@ -49,15 +52,15 @@ function fetch_and_draw() {
       }
     };
 
-    if (plot.value) {
-      const update = {
+    if (plot.value !== undefined) {
+      const trace_updates = {
         x: [...theory_traces.map((t) => t.x), ...data_traces.map((t) => t.x)],
         y: [...theory_traces.map((t) => t.y), ...data_traces.map((t) => t.y)],       
       }
-      Plotly.update(plot_div.value, update);
+      await Plotly.update(plot_div.value, trace_updates);
     }
     else {
-      plot.value = Plotly.react(plot_div.value, [...theory_traces, ...data_traces], layout);
+      plot.value = await Plotly.react(plot_div.value, [...theory_traces, ...data_traces], layout);
     }
     // console.log(plot.value);
     // mpld3.draw_figure("plot_div", payload);
@@ -76,7 +79,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="container d-flex flex-grow-1">
+  <div class="">
     <div ref="plot_div" id="plot_div">
 
     </div>
