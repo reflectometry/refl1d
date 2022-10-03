@@ -14,6 +14,7 @@
     "vue": "^3.2.38"
   },
   "devDependencies": {
+    "@types/plotly.js": "^2.12.5",
     "@vitejs/plugin-vue": "^3.0.3",
     "vite": "^3.0.9"
   }
