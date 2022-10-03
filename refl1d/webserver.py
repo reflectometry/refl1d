@@ -126,14 +126,19 @@ def get_plot_data(sid: str, view: str = 'linear'):
     return to_dict(result)
 
 @sio.event
-def get_profile_plot(sid: str):
+async def get_profile_plot(sid: str):
     import mpld3
     import matplotlib.pyplot as plt
+    import time
+    print('queueing new profile plot...', time.time())
     fitProblem: refl1d.fitproblem.FitProblem = app["problem"]["fitProblem"]
     fig = plt.figure()
     for model in iter(fitProblem.models):
         model.plot_profile()
-    return mpld3.fig_to_dict(plt.gcf())
+    dfig = mpld3.fig_to_dict(plt.gcf())
+    plt.close(fig)
+    # await sio.emit("profile_plot", dfig, to=sid)
+    return dfig
 
 @sio.event
 def get_parameters(sid: str):
@@ -183,7 +188,7 @@ def unsubscribe(sid: str, topic: str):
 @sio.event
 async def publish(sid: str, topic: str, message):
     timestamp = datetime.now().timestamp()
-    topics[topic] = {"message": message, "timestamp": timestamp}
+    topics[topic] = {"message": message, "timestamp": f"{timestamp:.6f}"}
     await sio.emit(topic, timestamp, room=topic)
 
 @sio.event
@@ -191,7 +196,7 @@ def get_last_message(sid: str, topic: str):
     # this is a GET request in disguise -
     # emitter must handle the response in a callback,
     # as no separate response event is emitted.  
-    return topics.get(topic, {}).get("message", None)
+    return topics.get(topic, {})
 
 @sio.event
 def get_dirlisting(sid: str, pathlist: List[str]):
