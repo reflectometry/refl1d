@@ -73,23 +73,31 @@ defineExpose({
 <template>
   <div class="">
     <div class="row border-bottom py-1">
-      <div class="col-3">Fit Parameter</div>
-      <div class="col-6"></div>
-      <div class="col-1">Value</div>
-      <div class="col-1">Min</div>
-      <div class="col-1">Max</div>
+      <div class="col-2">Fit Parameter</div>
+      <div class="col-5"></div>
+      <div class="col-5">
+        <div class="row">
+          <div class="col-4">Value</div>
+          <div class="col-4">Min.</div>
+          <div class="col-4">Max</div>
+        </div>
+      </div>
     </div>
-    <div class="row px-1" v-for="(param, index) in parameters" :key="param.name">
-      <div class="col-2">{{param.name}}</div>
-      <div class="col-4">
+    <div class="row align-items-center px-1" v-for="(param, index) in parameters" :key="param.name">
+      <div class="col-2 border-bottom">{{param.name}}</div>
+      <div class="col-5">
         <input type="range" class="form-range" min="0" max="1.0" step="0.005" v-model.number="parameters_local01[index]"
         @mousedown="param.active=true"
         @input="onMove(index)"
         @change="onInactive(param)"/>
       </div>
-      <div class="col-1 mr-2">{{parameters_localstr[index]}}</div>
-      <div class="col-1 mr-2">{{param.min}}</div>
-      <div class="col-1">{{param.max}}</div>
+      <div class="col-5">
+        <div class="row">
+          <div class="col-4">{{parameters_localstr[index]}}</div>
+          <div class="col-4">{{param.min}}</div>
+          <div class="col-4">{{param.max}}</div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
