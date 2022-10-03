@@ -1,12 +1,12 @@
 <script setup lang="ts">
 /// <reference types="@types/plotly.js" />
 import { ref, onMounted, watch, onUpdated, computed, shallowRef } from 'vue';
-import Plotly from 'plotly.js/src/core';
+import * as Plotly from 'plotly.js/lib/core';
 import type { Socket } from 'socket.io-client';
 
 const title = "Reflectivity";
 const plot_div = ref<HTMLDivElement | null>(null);
-const plot = ref<HTMLDivElement>();
+const plot = ref<Plotly.PlotlyHTMLElement>();
 
 const props = defineProps<{
   socket: Socket,
@@ -26,8 +26,8 @@ function fetch_and_draw() {
     if (plot_div.value === null) {
       return
     }
-    let theory_traces = [];
-    let data_traces = [];
+    let theory_traces: Plotly.Data[] = [];
+    let data_traces: Plotly.Data[] = [];
     for (let model of payload) {
       for (let xs of model) {
         theory_traces.push({ x: xs.Q, y: xs.theory, mode: 'lines', name: xs.label + ' theory', line: {width: 2}});
@@ -35,7 +35,7 @@ function fetch_and_draw() {
       }
     }
 
-    const layout = {
+    const layout: Partial<Plotly.Layout> = {
       xaxis: {
         title: {
           text: '$Q (Å^{-1})$'
@@ -57,7 +57,7 @@ function fetch_and_draw() {
         x: [...theory_traces.map((t) => t.x), ...data_traces.map((t) => t.x)],
         y: [...theory_traces.map((t) => t.y), ...data_traces.map((t) => t.y)],       
       }
-      await Plotly.update(plot_div.value, trace_updates);
+      await Plotly.update(plot_div.value, trace_updates, layout);
     }
     else {
       plot.value = await Plotly.react(plot_div.value, [...theory_traces, ...data_traces], layout);
