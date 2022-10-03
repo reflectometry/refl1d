@@ -17,28 +17,11 @@ type parameter_info = {
   min: string,
   max: string,
   active?: boolean,
-  value01_local?: number
 }
 
-const parameters = ref<{
-  name: string,
-  value01: number,
-  value_str: string,
-  min: string,
-  max: string,
-  active?: boolean,
-  value01_local?: number,
-}[]>([]);
-
-const parameters_local = ref<parameter_info[]>([]);
-
-const parameters_old = [{
-  name: 'background',
-  value01: 0.75,
-  value_str: '1.7e-6',
-  min: '1e-11',
-  max: '1e-6'
-}];
+const parameters = ref<parameter_info[]>([]);
+const parameters_local01 = ref<number[]>([]);
+const parameters_localstr = ref<string[]>([]);
 
 onMounted(() => {
   props.socket.on('plot_update_ready', () => {
@@ -53,16 +36,20 @@ function fetch_and_draw() {
     // console.log(payload);
     const pv = parameters.value;
     payload.forEach((p,i) => {
+      parameters_localstr.value[i] = p.value_str;
       if (!(pv[i]?.active)) {
-        pv.splice(i, 1, {...p, value01_local: p.value01});
+        pv.splice(i, 1, p);
+        parameters_local01.value[i] = p.value01;
       }
     });
     pv.splice(payload.length);
+    parameters_local01.value.splice(payload.length);
+    parameters_localstr.value.splice(payload.length);
   });
 }
 
-function onMove(param) {
-  props.socket.emit('set_parameter01', param.name, param.value01_local);
+function onMove(param_index) {
+  props.socket.volatile.emit('set_parameter01', parameters.value[param_index].name, parameters_local01.value[param_index]);
 }
 
 async function onInactive(param) {
@@ -84,25 +71,24 @@ defineExpose({
 </script>
         
 <template>
-  <div class="container flex-grow-1">
+  <div class="">
     <div class="row border-bottom py-1">
-      <div class="col-2">Fit Parameter</div>
+      <div class="col-3">Fit Parameter</div>
       <div class="col-6"></div>
-      <div class="col-2">Value</div>
-      <div class="col-1">Minimum</div>
-      <div class="col-1">Maximum</div>
+      <div class="col-1">Value</div>
+      <div class="col-1">Min</div>
+      <div class="col-1">Max</div>
     </div>
-    <div class="row" v-for="param in parameters" :key="param.name">
+    <div class="row px-1" v-for="(param, index) in parameters" :key="param.name">
       <div class="col-2">{{param.name}}</div>
-      <div class="col-6">
-        <input type="range" class="form-range" min="0" max="1.0" step="0.005" v-model.number="param.value01_local"
+      <div class="col-4">
+        <input type="range" class="form-range" min="0" max="1.0" step="0.005" v-model.number="parameters_local01[index]"
         @mousedown="param.active=true"
-        @input="onMove(param)"
-        @mouseup="onMouseup"
+        @input="onMove(index)"
         @change="onInactive(param)"/>
       </div>
-      <div class="col-2">{{param.value_str}}</div>
-      <div class="col-1">{{param.min}}</div>
+      <div class="col-1 mr-2">{{parameters_localstr[index]}}</div>
+      <div class="col-1 mr-2">{{param.min}}</div>
       <div class="col-1">{{param.max}}</div>
     </div>
   </div>
