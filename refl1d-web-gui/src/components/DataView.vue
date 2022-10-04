@@ -79,8 +79,8 @@ defineExpose({
 </script>
 
 <template>
-  <div class="">
-    <div ref="plot_div" id="plot_div">
+  <div class="container d-flex flex-grow-1">
+    <div class="flex-grow-1" ref="plot_div" id="plot_div">
 
     </div>
   </div>
