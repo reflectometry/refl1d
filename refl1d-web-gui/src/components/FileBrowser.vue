@@ -16,7 +16,8 @@ const emit = defineEmits<{
 
 const dialog = ref<HTMLDivElement>();
 const isOpen = ref(false);
-const pathlist = ref(["/", "home", "bbm", "dev", "refl1d-modelbuilder"]);
+// const pathlist = ref(["/", "home", "bbm", "dev", "refl1d-modelbuilder"]);
+const pathlist = ref(["/", "Users", "bbm", "dev", "refl1d-modelbuilder"]);
 const subdirlist = shallowRef<string[]>([])
 const filelist = shallowRef<string[]>([])
 const chosenFile = ref("");
@@ -97,14 +98,16 @@ defineExpose({
           <div class="container border-bottom">
             <h3>Files:</h3>
             <div class="row row-cols-3">
-              <div class="btn col overflow-hidden border" :class="{'btn-warning': filename === chosenFile}" v-for="filename in filelist" :key="filename" @click="chosenFile = filename">
+              <div class="btn col overflow-hidden border" :class="{'btn-warning': filename === chosenFile}"
+                v-for="filename in filelist" :key="filename" @click="chosenFile = filename" @dblclick="chosenFile=filename;chooseFile()">
                 {{filename}}
               </div>
             </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" @click="close">Cancel</button>
-            <button type="button" class="btn btn-primary" :class="{disabled: chosenFile==''}" @click="chooseFile">OK</button>
+            <button type="button" class="btn btn-primary" :class="{disabled: chosenFile==''}"
+              @click="chooseFile">OK</button>
           </div>
         </div>
       </div>
@@ -113,7 +116,7 @@ defineExpose({
 </template>
 
 <style scoped>
-  .active {
-    background-color: light
-  }
+.active {
+  background-color: light
+}
 </style>
