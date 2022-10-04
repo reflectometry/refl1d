@@ -8,7 +8,7 @@ import mpld3 from 'mpld3';
 const title = "Profile";
 const plot_div = ref<HTMLDivElement>();
 const draw_requested = ref(false);
-const plot_div_id = ref(uuidv4());
+const plot_div_id = ref(`div-${uuidv4()}`);
 const props = defineProps<{
   socket: Socket,
   visible: boolean
