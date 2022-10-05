@@ -219,7 +219,7 @@ class Material(Scatterer):
     formula_natural_density: Union[float, Literal[None]]
     density: Parameter
     value: Parameter
-    fitby: Union[Literal['bulk_density', 'number_density', 'natural_density', 'relative_density', 'cell_volume']] = 'bulk_density'
+    fitby: Literal['bulk_density', 'number_density', 'natural_density', 'relative_density', 'cell_volume'] = 'bulk_density'
     use_incoherent: bool = False
 
     def __init__(self, formula=None, name=None, use_incoherent=False,
@@ -229,6 +229,7 @@ class Material(Scatterer):
                                              natural_density=formula_natural_density)
         self.formula_density = formula_density
         self.formula_natural_density = formula_natural_density
+        self.formula = formula
         self.name = name if name is not None else str(self._formula)
         self.density = Parameter(name=self.name + " density")
 
