@@ -26,6 +26,7 @@ for fitter in FITTERS:
 # fitter_settings = deepcopy(FITTER_DEFAULTS)
 # active_fitter = "amoeba"
 
+# sio = socketio.AsyncServer(cors_allowed_origins="*", serializer='msgpack')
 sio = socketio.AsyncServer(cors_allowed_origins="*")
 app = web.Application()
 static_dir_path = Path(__file__).parent / 'webview'
@@ -68,7 +69,7 @@ async def index(request):
     return web.HTTPFound('/static/index.html')
     
 @sio.event
-async def connect(sid, environ):
+async def connect(sid, environ, data=None):
     print("connect ", sid)
 
 @sio.event
@@ -124,6 +125,12 @@ def get_plot_data(sid: str, view: str = 'linear'):
         #     output = dict(Q = probe.Q, dQ = probe.dQ, R = R, fresnel = FQ)
         # result.append(output)
     return to_dict(result)
+
+@sio.event
+async def get_model(sid: str):
+    from bumps.serialize import to_dict
+    fitProblem: refl1d.fitproblem.FitProblem = app["problem"]["fitProblem"]
+    return to_dict(fitProblem)
 
 @sio.event
 async def get_profile_plot(sid: str):
