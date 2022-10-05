@@ -1,19 +1,18 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, onUpdated, computed, shallowRef } from 'vue';
-import type { Component } from 'vue';
+import type { DefineComponent, Component } from 'vue';
 import type { Socket } from 'socket.io-client';
 import { Tab } from 'bootstrap/dist/js/bootstrap.esm';
 
-type PanelComponent = Component & { title: string };
+// type PanelComponent = DefineComponent<{socket: Socket, visible: boolean}, any>;
 
 const tabTriggers = ref<HTMLAnchorElement[]>([]);
-const panelComponents = ref<PanelComponent[]>([]);
 const panelContainers = ref<HTMLDivElement[]>([]);
 const panelVisible = ref<boolean[]>([]);
 
 const props = defineProps<{
   socket: Socket,
-  panels: PanelComponent[]
+  panels: {title: string, component: unknown}[],
 }>();
 
 let triggers: Tab[] = [];
@@ -46,13 +45,13 @@ onMounted(() => {
 <template>
   <ul class="nav nav-tabs">
     <li class="nav-item" v-for="(panel, index) in props.panels" :key="index">
-      <a ref="tabTriggers" class="nav-link" href="#" @click="activateTab(index)">{{panelComponents[index]?.title}}</a>
+      <a ref="tabTriggers" class="nav-link" href="#" @click="activateTab(index)">{{panels[index]?.title}}</a>
     </li>
   </ul>
   <div class="tab-content d-flex flex-column flex-grow-1">
     <div ref="panelContainers" class="tab-pane flex-column flex-grow-1" v-for="(panel, index) in props.panels"
       :key="index">
-      <component :is="panel" :socket="props.socket" ref="panelComponents" :visible="panelVisible[index]"></component>
+      <component :is="panel.component" :socket="props.socket" :visible="panelVisible[index]"></component>
     </div>
   </div>
 </template>
@@ -61,6 +60,7 @@ onMounted(() => {
 .tab-content>.tab-pane {
   display: none;
 }
+
 .tab-content>.tab-pane.active {
   display: flex !important;
 }
