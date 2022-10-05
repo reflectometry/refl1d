@@ -638,6 +638,7 @@ class Experiment(ExperimentBase):
 
 assert isinstance(Experiment, Fitness)
 
+@schema(init=False)
 class MixedExperiment(ExperimentBase):
     """
     Support composite sample reflectivity measurements.
@@ -663,6 +664,13 @@ class MixedExperiment(ExperimentBase):
     profiles can be accessed from the underlying experiments
     using composite.parts[i] for the various samples.
     """
+    name: str
+    ratio: List[Union[float, Parameter]]
+    samples: Optional[List[model.Stack]]
+    probe: Union[Probe, PolarizedNeutronProbe]
+    coherent: bool
+    interpolation: float
+
     def __init__(self, samples=None, ratio=None, probe=None,
                  name=None, coherent=False, interpolation=0, **kw):
         self.samples = samples
@@ -675,7 +683,7 @@ class MixedExperiment(ExperimentBase):
         self._substrate = self.samples[0][0].material
         self._surface = self.samples[0][-1].material
         self._cache = {}
-        self._name = name
+        self.name = name if name is not None else probe.name
 
     def update(self):
         self._cache = {}
