@@ -91,9 +91,6 @@ function resolve_diffpath(o: object, diffpath: string) {
   return {target, parent, key};
 }
 
-defineExpose({
-  title
-});
 </script>
 
 <template>
