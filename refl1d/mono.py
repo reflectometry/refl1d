@@ -117,7 +117,7 @@ class FreeInterface(Layer):
     interface: Par
     dz: List[Union[float, Par]]
     dp: List[Union[float, Par]]
-    inflections: List[Any]
+    # inflections: List[Any]
 
     def __init__(self, thickness=0, interface=0,
                  below=None, above=None,
