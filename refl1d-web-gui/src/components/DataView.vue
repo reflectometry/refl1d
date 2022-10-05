@@ -62,8 +62,6 @@ function fetch_and_draw() {
     else {
       plot.value = await Plotly.react(plot_div.value, [...theory_traces, ...data_traces], layout);
     }
-    // console.log(plot.value);
-    // mpld3.draw_figure("plot_div", payload);
   });
 }
 

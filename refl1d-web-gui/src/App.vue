@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Button } from 'bootstrap/dist/js/bootstrap.esm.js';
 import { onMounted, ref } from 'vue';
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
 import FitOptions from './components/FitOptions.vue';
 import DataView from './components/DataView.vue';
 import ModelView from './components/ModelView.vue';
