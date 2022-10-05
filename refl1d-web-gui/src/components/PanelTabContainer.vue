@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, onUpdated, computed, shallowRef, Component } from 'vue';
+import { ref, onMounted, watch, onUpdated, computed, shallowRef } from 'vue';
+import type { Component } from 'vue';
 import type { Socket } from 'socket.io-client';
 import { Tab } from 'bootstrap/dist/js/bootstrap.esm';
 
