@@ -21,8 +21,7 @@ const props = defineProps<{
   visible: Boolean
 }>();
 
-const modelJson = ref<json>(null);
-window.model = modelJson;
+const modelJson = ref<json>();
 
 onMounted(() => {
   props.socket.on('plot_update_ready', fetch_and_draw);
@@ -31,20 +30,19 @@ onMounted(() => {
 function fetch_and_draw() {
   if (props.visible) {
       props.socket.emit('get_model', (payload: json) => {
-        const diff = getDiff(modelJson.value, payload);
+        const old_model: json = modelJson.value as Record<string, any>;
+        const new_model: json = payload as Record<string, any>;
+        const diff = getDiff(old_model, new_model);
         for (let [path, oldval, newval] of diff.edited) {
-          const {target, parent, key} = resolve_diffpath(modelJson.value, path);
-          console.log({target, parent, key}, oldval, newval);
+          const {target, parent, key} = resolve_diffpath(old_model, path);
           // trigger reactive update;
-          if (key instanceof Number) {
+          if (typeof(key) === 'number' && Array.isArray(parent)) {
             parent.splice(key, 1, newval);
           }
           else {
             parent[key] = newval;
           }
         }
-        // modelJson.value = Object.assign({}, modelJson.value, payload);
-        // console.log(modelJson);
       });
     }
 }
@@ -57,31 +55,31 @@ watch(() => props.visible, (value) => {
   }
 });
 
-function* traverse(o: object, path: string[]=[]) {
-    for (var i of Object.keys(o)) {
-        const itemPath = path.concat(i);
-        yield [i,o[i],itemPath,o];
-        if (o[i] !== null && typeof(o[i])=="object") {
-            //going one step down in the object tree!!
-            yield* traverse(o[i],itemPath);
-        }
-    }
-}
+// function* traverse(o: object, path: string[]=[]) {
+//     for (var i of Object.keys(o)) {
+//         const itemPath = path.concat(i);
+//         yield [i,o[i],itemPath,o];
+//         if (o[i] !== null && typeof(o[i])=="object") {
+//             //going one step down in the object tree!!
+//             yield* traverse(o[i],itemPath);
+//         }
+//     }
+// }
 
-function resolve(o: object, path: string[] = []) {
-  let target = o;
-  for (let pfrag of path) {
-    target = target[pfrag];
-  }
-  return target;
-}
+// function resolve(o: object, path: string[] = []) {
+//   let target = o;
+//   for (let pfrag of path) {
+//     target = target[pfrag];
+//   }
+//   return target;
+// }
 
 const ARRAY_PATH_RE = /^([0-9]+)\[\]$/;
 function resolve_diffpath(o: object, diffpath: string) {
   const pathitems = diffpath.split('/');
   let target = o;
-  let parent = null;
-  let key = null;
+  let parent: object = o;
+  let key: number | string = "";
   for (let pathitem of pathitems) {
     const array_path = pathitem.match(ARRAY_PATH_RE);
     parent = target;
