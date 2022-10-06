@@ -16,8 +16,8 @@ const emit = defineEmits<{
 
 const dialog = ref<HTMLDivElement>();
 const isOpen = ref(false);
-// const pathlist = ref(["/", "home", "bbm", "dev", "refl1d-modelbuilder"]);
-const pathlist = ref(["/", "Users", "bbm", "dev", "refl1d-modelbuilder"]);
+const pathlist = ref(["/"]);
+// const pathlist = ref(["/", "Users", "bbm", "dev", "refl1d-modelbuilder"]);
 const subdirlist = shallowRef<string[]>([])
 const filelist = shallowRef<string[]>([])
 const chosenFile = ref("");
@@ -25,6 +25,13 @@ const chosenFile = ref("");
 let modal: Modal;
 onMounted(() => {
   modal = new Modal(dialog.value, { backdrop: 'static', keyboard: false });
+  props.socket.on('local_file_path', () => {
+    props.socket.emit('get_last_message', 'local_file_path', ({message: new_pathlist, timestamp}) => {
+      console.log(new_pathlist);
+      pathlist.value = new_pathlist;
+    });
+  });
+  props.socket.emit('subscribe', 'local_file_path');
 });
 
 function close() {
