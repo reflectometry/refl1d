@@ -245,4 +245,5 @@ def nice(v, digits=4):
     
 
 if __name__ == '__main__':
+    app.on_startup.append(lambda App: publish('', 'local_file_path', Path().absolute().parts))
     web.run_app(app)
