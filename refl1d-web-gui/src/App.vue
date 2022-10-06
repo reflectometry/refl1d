@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Button } from 'bootstrap/dist/js/bootstrap.esm.js';
 import { onMounted, ref } from 'vue';
-import { api } from './server_api';
 import { io, Socket } from 'socket.io-client';
 import FitOptions from './components/FitOptions.vue';
 import DataView from './components/DataView.vue';
@@ -9,6 +8,7 @@ import ModelView from './components/ModelView.vue';
 import PanelTabContainer from './components/PanelTabContainer.vue';
 import FileBrowser from './components/FileBrowser.vue';
 import SummaryView from './components/SummaryView.vue';
+import ModelInspect from './components/ModelInspect.vue';
 // import { FITTERS as FITTER_DEFAULTS } from './fitter_defaults';
 
 const REFLECTIVITY_PLOTS = [
@@ -22,13 +22,19 @@ const REFLECTIVITY_PLOTS = [
 type ReflectivityPlotEnum = typeof REFLECTIVITY_PLOTS;
 type ReflectivityPlot = ReflectivityPlotEnum[number];
 
+const panels = [
+  {title: 'Reflectivity', component: DataView},
+  {title: 'Parameters', component: SummaryView},
+  {title: 'Profile', component: ModelView},
+  {title: 'Model', component: ModelInspect}
+];
+
 const reflectivity_type = ref<ReflectivityPlot>("Linear");
 const connected = ref(false);
 const menuToggle = ref<HTMLButtonElement>();
 const fitOptions = ref<typeof FitOptions>();
 const fileBrowser = ref<typeof FileBrowser>();
 const fileBrowserSelectCallback = ref((pathlist: string[], filename: string) => { });
-const file_picker = ref<HTMLInputElement>();
 
 function set_reflectivity(refl_type: ReflectivityPlot) {
   reflectivity_type.value = refl_type;
@@ -159,17 +165,15 @@ onMounted(() => {
     </nav>
     <div class="flex-grow-1 row">
       <div class="col d-flex flex-column">
-        <PanelTabContainer :panels="[DataView, ModelView, SummaryView]" :socket="socket" />
+        <PanelTabContainer :panels="panels" :socket="socket" />
       </div>
       <div class="col d-flex flex-column">
-        <PanelTabContainer :panels="[DataView, ModelView, SummaryView]" :socket="socket" />
+        <PanelTabContainer :panels="panels" :socket="socket" />
       </div>
     </div>
   </div>
   <FitOptions ref="fitOptions" :socket="socket" />
   <FileBrowser ref="fileBrowser" :socket="socket" title="Load Model File" :callback="fileBrowserSelectCallback" />
-  <input ref="file_picker" type="file" multiple="false" id="file_picker" style="display:none;"
-    @change="load_model_path" />
 </template>
 
 <style>

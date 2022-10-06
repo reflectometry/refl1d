@@ -54,10 +54,6 @@ watch(() => props.visible, (value) => {
   }
 });
 
-defineExpose({
-  title
-});
-
 </script>
     
 <template>
