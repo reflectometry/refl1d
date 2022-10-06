@@ -102,7 +102,7 @@ function process_settings() {
 }
 
 function save() {
-  const new_settings = structuredClone(fitter_settings);
+  const new_settings = structuredClone(fitter_settings.value);
   new_settings[fitter_active_local.value] = { settings: process_settings() };
   props.socket.emit("publish", "fitter_settings", new_settings);
   props.socket.emit("publish", "fitter_active", fitter_active_local.value);

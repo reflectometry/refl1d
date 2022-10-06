@@ -10,6 +10,15 @@ from pathlib import Path, PurePath
 import json
 from copy import deepcopy
 
+import mimetypes
+mimetypes.add_type("text/css", ".css")
+mimetypes.add_type("text/html", ".html")
+mimetypes.add_type("application/json", ".json")
+mimetypes.add_type("text/javascript", ".js")
+mimetypes.add_type("text/javascript", ".mjs")
+mimetypes.add_type("image/png", ".png")
+mimetypes.add_type("image/svg+xml", ".svg")
+
 from bumps.fitters import DreamFit, LevenbergMarquardtFit, SimplexFit, DEFit, MPFit, BFGSFit
 from bumps.serialize import to_dict
 import refl1d.fitproblem, refl1d.probe
@@ -215,7 +224,8 @@ def get_dirlisting(sid: str, pathlist: List[str]):
         if p.is_dir():
             subfolders.append(p.name)
         else:
-            files.append(p.resolve().name)
+            # files.append(p.resolve().name)
+            files.append(p.name)
     return dict(subfolders=subfolders, files=files)
 
 app.on_startup.append(lambda App: publish('', 'fitter_defaults', FITTER_DEFAULTS))
@@ -245,4 +255,5 @@ def nice(v, digits=4):
     
 
 if __name__ == '__main__':
+    app.on_startup.append(lambda App: publish('', 'local_file_path', Path().absolute().parts))
     web.run_app(app)
