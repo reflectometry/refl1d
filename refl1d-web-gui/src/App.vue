@@ -11,17 +11,6 @@ import SummaryView from './components/SummaryView.vue';
 import ModelInspect from './components/ModelInspect.vue';
 // import { FITTERS as FITTER_DEFAULTS } from './fitter_defaults';
 
-const REFLECTIVITY_PLOTS = [
-  "Fresnel",
-  "Log Fresnel",
-  "Linear",
-  "Log",
-  "Q4",
-  "SA"
-] as const;
-type ReflectivityPlotEnum = typeof REFLECTIVITY_PLOTS;
-type ReflectivityPlot = ReflectivityPlotEnum[number];
-
 const panels = [
   {title: 'Reflectivity', component: DataView},
   {title: 'Parameters', component: SummaryView},
@@ -29,16 +18,11 @@ const panels = [
   {title: 'Model', component: ModelInspect}
 ];
 
-const reflectivity_type = ref<ReflectivityPlot>("Linear");
 const connected = ref(false);
 const menuToggle = ref<HTMLButtonElement>();
 const fitOptions = ref<typeof FitOptions>();
 const fileBrowser = ref<typeof FileBrowser>();
 const fileBrowserSelectCallback = ref((pathlist: string[], filename: string) => { });
-
-function set_reflectivity(refl_type: ReflectivityPlot) {
-  reflectivity_type.value = refl_type;
-}
 
 // Create a SocketIO connection, to be passed to child components
 // so that they can do their own communications with the host.
