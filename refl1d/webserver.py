@@ -116,6 +116,8 @@ def get_probe_data(theory, probe, substrate=None, surface=None):
 
 @sio.event
 def get_plot_data(sid: str, view: str = 'linear'):
+    # TODO: implement view-dependent return instead of doing this in JS
+    # (calculate x,y,dy.dx for given view, excluding log)
     fitProblem: refl1d.fitproblem.FitProblem = app["problem"]["fitProblem"]
     result = []
     for model in fitProblem.models:
