@@ -43,7 +43,7 @@ function generate_new_traces(model_data, view: ReflectivityPlot) {
       for (let model of model_data) {
         for (let xs of model) {
           theory_traces.push({ x: xs.Q, y: xs.theory, mode: 'lines', name: xs.label + ' theory', line: { width: 2 } });
-          data_traces.push({ x: xs.Q, y: xs.R, /*error_y: {type: 'data', array: xs.dR, visible: true},*/ mode: 'markers', name: xs.label + ' data' });
+          data_traces.push({ x: xs.Q, y: xs.R, error_y: {type: 'data', array: xs.dR, visible: true}, mode: 'markers', name: xs.label + ' data' });
         }
       }
       break;
@@ -88,47 +88,27 @@ function fetch_and_draw() {
     }
     // console.log(payload);
     const { theory_traces, data_traces } = generate_new_traces(payload, reflectivity_type.value)
-    // let theory_traces: (Plotly.Data & { x: number, y: number })[] = [];
-    // let data_traces: (Plotly.Data & { x: number, y: number })[] = [];
-    // for (let model of payload) {
-    //   for (let xs of model.data) {
-    //     theory_traces.push({ x: xs.Q, y: xs.theory, mode: 'lines', name: xs.label + ' theory', line: { width: 2 } });
-    //     data_traces.push({ x: xs.Q, y: xs.R, mode: 'markers', name: xs.label + ' data' });
-    //   }
-    // }
 
     const layout: Partial<Plotly.Layout> = {
+      uirevision: reflectivity_type.value,
       xaxis: {
         title: {
           text: '$Q (Å^{-1})$'
         },
         type: 'linear',
-        // autorange: true
+        autorange: true,
       },
       yaxis: {
         title: { text: 'Reflectivity' },
         exponentformat: 'e',
         showexponent: 'all',
-        // type: (/^(Log|Q4)/.test(reflectivity_type.value)) ? 'log' : 'linear',
-        type: 'log',
-        // autorange: true
+        type: (/^(Log|Q4)/.test(reflectivity_type.value)) ? 'log' : 'linear',
+        autorange: true,
       },
     };
 
-    if (plot.value !== undefined) {
-      console.log('update');
-      const trace_updates = {
-        x: [...theory_traces.map((t) => t.x), ...data_traces.map((t) => t.x)],
-        y: [...theory_traces.map((t) => t.y), ...data_traces.map((t) => t.y)],
-      }
-      // if (["Log", "Linear"].includes(reflectivity_type.value)) {
-      //   trace_updates.error_y = [...theory_traces.map((t) => null), ...data_traces.map((t) => t.error_y.array)]
-      // }
-      await Plotly.update(plot_div.value, trace_updates, layout);
-    }
-    else {
-      plot.value = await Plotly.react(plot_div.value, [...theory_traces, ...data_traces], layout);
-    }
+    plot.value = await Plotly.react(plot_div.value, [...theory_traces, ...data_traces], layout);
+    
   });
 }
 

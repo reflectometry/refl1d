@@ -27,7 +27,6 @@ onMounted(() => {
   modal = new Modal(dialog.value, { backdrop: 'static', keyboard: false });
   props.socket.on('local_file_path', () => {
     props.socket.emit('get_last_message', 'local_file_path', ({message: new_pathlist, timestamp}) => {
-      console.log(new_pathlist);
       pathlist.value = new_pathlist;
     });
   });
