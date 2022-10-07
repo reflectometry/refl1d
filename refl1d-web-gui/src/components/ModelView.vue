@@ -15,7 +15,7 @@ const props = defineProps<{
 }>();
 
 onMounted(() => {
-  props.socket.on('plot_update_ready', ({ message, timestamp }) => {
+  props.socket.on('update_parameters', ({ message, timestamp }) => {
     if (props.visible) {
       draw_requested.value = true;
     }

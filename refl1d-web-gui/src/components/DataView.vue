@@ -14,20 +14,21 @@ const props = defineProps<{
 }>();
 
 onMounted(() => {
-  props.socket.on('plot_update_ready', () => {
-    if (props.visible) {
-      fetch_and_draw();
-    }
+  props.socket.on('update_parameters', () => {
+    fetch_and_draw();
   });
 });
 
 function fetch_and_draw() {
+  if (!props.visible) {
+    return
+  }
   props.socket.emit('get_plot_data', 'linear', async (payload) => {
     if (plot_div.value === null) {
       return
     }
-    let theory_traces: (Plotly.Data & {x: number, y: number})[] = [];
-    let data_traces: (Plotly.Data & {x: number, y: number})[] = [];
+    let theory_traces: (Plotly.Data & { x: number, y: number })[] = [];
+    let data_traces: (Plotly.Data & { x: number, y: number })[] = [];
     for (let model of payload) {
       for (let xs of model) {
         theory_traces.push({ x: xs.Q, y: xs.theory, mode: 'lines', name: xs.label + ' theory', line: { width: 2 } });

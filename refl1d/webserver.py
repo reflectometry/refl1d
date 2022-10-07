@@ -86,7 +86,8 @@ async def load_model_file(sid: str, pathlist: List[str], filename: str):
     from bumps.cli import load_model
     path = Path(*pathlist, filename)
     app["problem"]["fitProblem"] = load_model(str(path))
-    await sio.emit("plot_update_ready", True)
+    await sio.emit("update_model", True)
+    await sio.emit("update_parameters", True)
 
 def get_single_probe_data(theory, probe, substrate=None, surface=None, label=''):
     fresnel_calculator = probe.fresnel(substrate, surface)
@@ -187,7 +188,7 @@ async def set_parameter01(sid: str, parameter_name: str, parameter_value01: floa
     nice_new_value = nice(new_value, digits=VALUE_PRECISION)
     parameter.value = nice_new_value
     fitProblem.model_update()
-    await sio.emit("plot_update_ready", True)
+    await sio.emit("update_parameters", True)
     return new_value
 
 @sio.event

@@ -47,6 +47,7 @@ const socket = io('', {
   // this is mostly here to test what happens on server fail:
   reconnectionAttempts: 10
 });
+
 socket.on('connect', () => {
   console.log(socket.id);
   connected.value = true;

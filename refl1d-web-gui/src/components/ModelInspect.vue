@@ -6,12 +6,12 @@ import type { Socket } from 'socket.io-client';
 
 // from https://github.com/microsoft/TypeScript/issues/1897#issuecomment-1228063688
 type json =
-    | string
-    | number
-    | boolean
-    | null
-    | json[]
-    | { [key: string]: json };
+  | string
+  | number
+  | boolean
+  | null
+  | json[]
+  | { [key: string]: json };
 
 const title = "Model";
 const active_parameter = ref("");
@@ -23,28 +23,26 @@ const props = defineProps<{
 
 const modelJson = ref<json>();
 
-onMounted(() => {
-  props.socket.on('plot_update_ready', fetch_and_draw);
-});
+props.socket.on('update_parameters', fetch_and_draw);
 
 function fetch_and_draw() {
   if (props.visible) {
-      props.socket.emit('get_model', (payload: json) => {
-        const old_model: json = modelJson.value as Record<string, any>;
-        const new_model: json = payload as Record<string, any>;
-        const diff = getDiff(old_model, new_model);
-        for (let [path, oldval, newval] of diff.edited) {
-          const {target, parent, key} = resolve_diffpath(old_model, path);
-          // trigger reactive update;
-          if (typeof(key) === 'number' && Array.isArray(parent)) {
-            parent.splice(key, 1, newval);
-          }
-          else {
-            parent[key] = newval;
-          }
+    props.socket.emit('get_model', (payload: json) => {
+      const old_model: json = modelJson.value as Record<string, any>;
+      const new_model: json = payload as Record<string, any>;
+      const diff = getDiff(old_model, new_model);
+      for (let [path, oldval, newval] of diff.edited) {
+        const { target, parent, key } = resolve_diffpath(old_model, path);
+        // trigger reactive update;
+        if (typeof (key) === 'number' && Array.isArray(parent)) {
+          parent.splice(key, 1, newval);
         }
-      });
-    }
+        else {
+          parent[key] = newval;
+        }
+      }
+    });
+  }
 }
 
 watch(() => props.visible, (value) => {
@@ -86,7 +84,7 @@ function resolve_diffpath(o: object, diffpath: string) {
     key = (array_path) ? Number(array_path[1]) : pathitem;
     target = target[key];
   }
-  return {target, parent, key};
+  return { target, parent, key };
 }
 
 </script>
