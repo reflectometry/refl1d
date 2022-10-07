@@ -98,7 +98,7 @@ def get_single_probe_data(theory, probe, substrate=None, surface=None, label='')
         # Saving interpolated data
         output = dict(Q = Q, theory = R, fresnel=np.interp(Q, probe.Q, FQ))
     elif getattr(probe, 'R', None) is not None:
-        output = dict(Q = probe.Q, dQ = probe.dQ, R = probe.R, dR = probe.dR, theory = R, fresnel = FQ)
+        output = dict(Q = probe.Q, dQ = probe.dQ, R = probe.R, dR = probe.dR, theory = R, fresnel = FQ, background=probe.background.value, intensity=probe.intensity.value)
     else:
         output = dict(Q = probe.Q, dQ = probe.dQ, theory = R, fresnel = FQ)
     output['label'] = label
