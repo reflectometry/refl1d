@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Button } from 'bootstrap/dist/js/bootstrap.esm.js';
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, shallowRef } from 'vue';
 import { io } from 'socket.io-client';
 import FitOptions from './components/FitOptions.vue';
 import DataView from './components/DataView.vue';
@@ -23,6 +23,7 @@ const menuToggle = ref<HTMLButtonElement>();
 const fitOptions = ref<typeof FitOptions>();
 const fileBrowser = ref<typeof FileBrowser>();
 const fileBrowserSelectCallback = ref((pathlist: string[], filename: string) => { });
+const model_loaded = shallowRef<{pathlist: string[], filename: string}>();
 
 // Create a SocketIO connection, to be passed to child components
 // so that they can do their own communications with the host.
@@ -40,6 +41,10 @@ socket.on('connect', () => {
 socket.on('disconnect', (payload) => {
   console.log("disconnected!", payload);
   // connected.value = false;
+})
+
+socket.on('model_loaded', ({message: {pathlist, filename}}) => {
+  model_loaded.value = {pathlist, filename};
 })
 
 function disconnect() {
@@ -60,6 +65,13 @@ function selectOpenFile() {
   //   socket.emit("load_model_file", defaulted_path);
   // }
   // file_picker.value?.click();
+}
+
+function reloadModel() {
+  if (model_loaded.value) {
+    const {pathlist, filename} = model_loaded.value;
+    socket.emit("load_model_file", pathlist, filename);
+  }
 }
 
 function openFitOptions() {
@@ -106,6 +118,7 @@ onMounted(() => {
               <ul class="dropdown-menu">
                 <li><a class="dropdown-item" href="#" @click="selectOpenFile">Open</a></li>
                 <li><a class="dropdown-item" href="#">Save</a></li>
+                <li><a class="dropdown-item" :class="{disabled: model_loaded === undefined}" href="#" @click="reloadModel">Reload</a></li>
                 <li>
                   <hr class="dropdown-divider">
                 </li>

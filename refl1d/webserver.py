@@ -73,6 +73,7 @@ async def load_model_file(sid: str, pathlist: List[str], filename: str):
     from bumps.cli import load_model
     path = Path(*pathlist, filename)
     app["problem"]["fitProblem"] = load_model(str(path))
+    await publish("", "model_loaded", {"pathlist": pathlist, "filename": filename})
     await publish("", "update_model", True)
     await publish("", "update_parameters", True)
 
