@@ -55,7 +55,7 @@ function disconnect() {
 function selectOpenFile() {
   if (fileBrowser.value) {
     fileBrowserSelectCallback.value = (pathlist, filename) => {
-      socket.emit("load_model_file", pathlist, filename);
+      socket.emit("load_problem_file", pathlist, filename);
     }
     fileBrowser.value.open();
   }
@@ -70,7 +70,7 @@ function selectOpenFile() {
 function reloadModel() {
   if (model_loaded.value) {
     const {pathlist, filename} = model_loaded.value;
-    socket.emit("load_model_file", pathlist, filename);
+    socket.emit("load_problem_file", pathlist, filename);
   }
 }
 

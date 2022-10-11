@@ -69,11 +69,16 @@ async def connect(sid, environ, data=None):
     print("connect ", sid)
 
 @sio.event
-async def load_model_file(sid: str, pathlist: List[str], filename: str):
+async def load_problem_file(sid: str, pathlist: List[str], filename: str):
     from bumps.cli import load_model
     path = Path(*pathlist, filename)
-    app["problem"]["fitProblem"] = load_model(str(path))
-    await publish("", "model_loaded", {"pathlist": pathlist, "filename": filename})
+    print('model loading: ', str(path))
+    problem = load_model(str(path))
+    app["problem"]["fitProblem"] = problem
+    print('model loaded: ', str(path))
+
+    model_names = [getattr(m, 'name', None) for m in list(problem.models)]
+    await publish("", "model_loaded", {"pathlist": pathlist, "filename": filename, "model_names": model_names})
     await publish("", "update_model", True)
     await publish("", "update_parameters", True)
 
@@ -137,7 +142,7 @@ async def get_model(sid: str=""):
 
 @sio.event
 @rest_get
-async def get_profile_plot(sid: str=""):
+async def get_profile_plot(sid: str="", model_index: int=0):
     import mpld3
     import matplotlib.pyplot as plt
     import time
@@ -145,9 +150,12 @@ async def get_profile_plot(sid: str=""):
     fitProblem: refl1d.fitproblem.FitProblem = app["problem"]["fitProblem"]
     if fitProblem is None:
         return None
+    models = list(fitProblem.models)
+    if (model_index > len(models)):
+        return None
     fig = plt.figure()
-    for model in iter(fitProblem.models):
-        model.plot_profile()
+    model = models[model_index]
+    model.plot_profile()
     dfig = mpld3.fig_to_dict(plt.gcf())
     plt.close(fig)
     # await sio.emit("profile_plot", dfig, to=sid)
