@@ -131,7 +131,9 @@ const anyIsInvalid = computed(() => {
 
 defineExpose({
   close,
-  open
+  open,
+  fitter_settings,
+  fitter_active
 })
 </script>
 

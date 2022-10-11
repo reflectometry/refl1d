@@ -78,6 +78,16 @@ function openFitOptions() {
   fitOptions.value?.open();
 }
 
+function startFit() {
+  const fitter_active = fitOptions.value?.fitter_active;
+  const fitter_settings = fitOptions.value?.fitter_settings;
+
+  if (fitter_active && fitter_settings) {
+    const fit_args = fitter_settings[fitter_active];
+    socket.emit("start_fit", fitter_active, fit_args);
+  }
+}
+
 onMounted(() => {
   const menuToggleButton = new Button(menuToggle.value);
 });
@@ -131,7 +141,7 @@ onMounted(() => {
                 Fitting
               </a>
               <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="#">Start</a></li>
+                <li><a class="dropdown-item" href="#" @click="startFit">Start</a></li>
                 <li><a class="dropdown-item" href="#">Stop</a></li>
                 <li>
                   <hr class="dropdown-divider">
