@@ -1,6 +1,6 @@
 # from .main import setup_bumps
 
-from typing import Any, Dict, List
+from typing import Dict, List, Optional, Union
 from datetime import datetime
 from aiohttp import web
 import numpy as np
@@ -31,46 +31,30 @@ for fitter in FITTERS:
         "settings": dict(fitter.settings)
     }
 
-# set up mutable state of fitters:
-# fitter_settings = deepcopy(FITTER_DEFAULTS)
-# active_fitter = "amoeba"
 
+routes = web.RouteTableDef()
 # sio = socketio.AsyncServer(cors_allowed_origins="*", serializer='msgpack')
 sio = socketio.AsyncServer(cors_allowed_origins="*")
 app = web.Application()
 static_dir_path = Path(__file__).parent / 'webview'
 sio.attach(app)
 
-# class TopicManager:
-#     topics: Dict[str, Any] = {}
-
-#     def subscribe(self, sid: str, topic: str):
-#         sio.enter_room(sid, topic)
-
-#     def unsubscribe(self, sid: str, topic: str):
-#         sio.leave_room(sid, topic)
-
-#     def get(self, topic: str):
-#         return self.topics.get(topic, None)
-
-#     async def publish(self, topic: str, message):
-#         timestamp = datetime.now().timestamp()
-#         self.topics[topic] = {"message": message, "timestamp": timestamp}
-#         await sio.emit("message-available", timestamp, room=topic)
-
-# topicManager = TopicManager()
-
-# use context storage: within the aiohttp app, see 
-# class TopicData(TypedDict):
-#     message: Any
-#     timestamp: float
-
-# topic_buffers: Dict[str, TopicData] = {}
-
 topics: Dict[str, Dict] = {}
 app["topics"] = topics
 app["problem"] = {"fitProblem": None, "filepath": None}
 problem = None
+
+def rest_get(fn):
+    """
+    Add a REST (GET) route for the function, which can also be used for 
+    """
+    @routes.get(f"/{fn.__name__}")
+    async def handler(request: web.Request):
+        result = await fn(**request.query)
+        return web.json_response(result)
+    
+    # pass the function to the next decorator unchanged...
+    return fn
 
 async def index(request):
     """Serve the client-side application."""
@@ -79,6 +63,9 @@ async def index(request):
     
 @sio.event
 async def connect(sid, environ, data=None):
+    # re-send last message for all topics
+    for topic, contents in topics.items():
+        await sio.emit(topic, contents, to=sid)
     print("connect ", sid)
 
 @sio.event
@@ -86,13 +73,14 @@ async def load_model_file(sid: str, pathlist: List[str], filename: str):
     from bumps.cli import load_model
     path = Path(*pathlist, filename)
     app["problem"]["fitProblem"] = load_model(str(path))
-    await sio.emit("update_model", True)
-    await sio.emit("update_parameters", True)
+    await publish("", "update_model", True)
+    await publish("", "update_parameters", True)
 
 def get_single_probe_data(theory, probe, substrate=None, surface=None, label=''):
     fresnel_calculator = probe.fresnel(substrate, surface)
     Q, FQ = probe.apply_beam(probe.calc_Q, fresnel_calculator(probe.calc_Q))
     Q, R = theory
+    output: Dict[str, Union[str, np.ndarray]]
     assert isinstance(FQ, np.ndarray)
     if len(Q) != len(probe.Q):
         # Saving interpolated data
@@ -115,7 +103,8 @@ def get_probe_data(theory, probe, substrate=None, surface=None):
         return [get_single_probe_data(theory, probe, substrate, surface)]
 
 @sio.event
-def get_plot_data(sid: str, view: str = 'linear'):
+@rest_get
+async def get_plot_data(sid: str="", view: str = 'linear'):
     # TODO: implement view-dependent return instead of doing this in JS
     # (calculate x,y,dy.dx for given view, excluding log)
     fitProblem: refl1d.fitproblem.FitProblem = app["problem"]["fitProblem"]
@@ -139,18 +128,22 @@ def get_plot_data(sid: str, view: str = 'linear'):
     return to_dict(result)
 
 @sio.event
-async def get_model(sid: str):
+@rest_get
+async def get_model(sid: str=""):
     from bumps.serialize import to_dict
     fitProblem: refl1d.fitproblem.FitProblem = app["problem"]["fitProblem"]
     return to_dict(fitProblem)
 
 @sio.event
-async def get_profile_plot(sid: str):
+@rest_get
+async def get_profile_plot(sid: str=""):
     import mpld3
     import matplotlib.pyplot as plt
     import time
     print('queueing new profile plot...', time.time())
     fitProblem: refl1d.fitproblem.FitProblem = app["problem"]["fitProblem"]
+    if fitProblem is None:
+        return None
     fig = plt.figure()
     for model in iter(fitProblem.models):
         model.plot_profile()
@@ -160,7 +153,8 @@ async def get_profile_plot(sid: str):
     return dfig
 
 @sio.event
-def get_parameters(sid: str):
+@rest_get
+async def get_parameters(sid: str = ""):
     fitProblem: refl1d.fitproblem.FitProblem = app["problem"]["fitProblem"]
     if fitProblem is None:
         return []
@@ -190,37 +184,35 @@ async def set_parameter01(sid: str, parameter_name: str, parameter_value01: floa
     nice_new_value = nice(new_value, digits=VALUE_PRECISION)
     parameter.value = nice_new_value
     fitProblem.model_update()
-    await sio.emit("update_parameters", True)
+    await publish("", "update_parameters", True)
     return new_value
 
 @sio.event
-async def subscribe(sid: str, topic: str):
-    sio.enter_room(sid, topic)
-    last_timestamp = topics.get(topic, {}).get("timestamp", None)
-    if last_timestamp is not None:
-        await sio.emit(topic, last_timestamp, to=sid)
-
-@sio.event
-def unsubscribe(sid: str, topic: str):
-    sio.leave_room(sid, topic)
-
-@sio.event
 async def publish(sid: str, topic: str, message):
-    timestamp = datetime.now().timestamp()
-    topics[topic] = {"message": message, "timestamp": f"{timestamp:.6f}"}
-    await sio.emit(topic, timestamp, room=topic)
+    timestamp_str = f"{datetime.now().timestamp():.6f}"
+    contents = {"message": message, "timestamp": timestamp_str}
+    topics[topic] = contents
+    await sio.emit(topic, contents)
 
 @sio.event
-def get_last_message(sid: str, topic: str):
+@rest_get
+async def get_last_message(sid: str="", topic: str=""):
     # this is a GET request in disguise -
     # emitter must handle the response in a callback,
     # as no separate response event is emitted.  
     return topics.get(topic, {})
 
+@rest_get
+async def get_all_messages():
+    return topics
+
 @sio.event
-def get_dirlisting(sid: str, pathlist: List[str]):
+@rest_get
+async def get_dirlisting(sid: str="", pathlist: Optional[List[str]]=None):
     # GET request
     # TODO: use psutil to get disk listing as well?
+    if pathlist is None:
+        pathlist = []
     subfolders = []
     files = []
     for p in Path(*pathlist).iterdir():
@@ -231,9 +223,10 @@ def get_dirlisting(sid: str, pathlist: List[str]):
             files.append(p.name)
     return dict(subfolders=subfolders, files=files)
 
-app.on_startup.append(lambda App: publish('', 'fitter_defaults', FITTER_DEFAULTS))
-app.on_startup.append(lambda App: publish('', 'fitter_settings', deepcopy(FITTER_DEFAULTS)))
-app.on_startup.append(lambda App: publish('', 'fitter_active', 'amoeba'))
+@sio.event
+@rest_get
+async def get_fitter_defaults(sid: str=""):
+    return FITTER_DEFAULTS
 
 @sio.event
 def disconnect(sid):
@@ -259,4 +252,5 @@ def nice(v, digits=4):
 
 if __name__ == '__main__':
     app.on_startup.append(lambda App: publish('', 'local_file_path', Path().absolute().parts))
+    app.add_routes(routes)
     web.run_app(app)
