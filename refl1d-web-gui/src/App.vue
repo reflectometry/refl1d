@@ -40,7 +40,7 @@ socket.on('connect', () => {
 
 socket.on('disconnect', (payload) => {
   console.log("disconnected!", payload);
-  // connected.value = false;
+  connected.value = false;
 })
 
 socket.on('model_loaded', ({message: {pathlist, filename}}) => {
@@ -163,10 +163,10 @@ onMounted(() => {
     </nav>
     <div class="flex-grow-1 row">
       <div class="col d-flex flex-column">
-        <PanelTabContainer :panels="panels" :socket="socket" />
+        <PanelTabContainer :panels="panels" :socket="socket" :initially_active="0"/>
       </div>
       <div class="col d-flex flex-column">
-        <PanelTabContainer :panels="panels" :socket="socket" />
+        <PanelTabContainer :panels="panels" :socket="socket" :initially_active="1"/>
       </div>
     </div>
   </div>

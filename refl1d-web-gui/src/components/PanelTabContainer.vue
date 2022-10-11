@@ -13,6 +13,7 @@ const panelVisible = ref<boolean[]>([]);
 const props = defineProps<{
   socket: Socket,
   panels: {title: string, component: unknown}[],
+  initially_active?: number
 }>();
 
 let triggers: Tab[] = [];
@@ -37,7 +38,7 @@ onMounted(() => {
     triggers.push(tabTrigger);
   }
   if (triggers.length > 0) {
-    activateTab(0);
+    activateTab(props.initially_active ?? 0);
   }
 });
 </script>
