@@ -22,15 +22,13 @@ const subdirlist = shallowRef<string[]>([])
 const filelist = shallowRef<string[]>([])
 const chosenFile = ref("");
 
+props.socket.on('local_file_path', ({message: new_pathlist, timestamp}) => {
+  pathlist.value = new_pathlist;
+})
+
 let modal: Modal;
 onMounted(() => {
   modal = new Modal(dialog.value, { backdrop: 'static', keyboard: false });
-  props.socket.on('local_file_path', () => {
-    props.socket.emit('get_last_message', 'local_file_path', ({message: new_pathlist, timestamp}) => {
-      pathlist.value = new_pathlist;
-    });
-  });
-  props.socket.emit('subscribe', 'local_file_path');
 });
 
 function close() {
@@ -105,7 +103,8 @@ defineExpose({
             <h3>Files:</h3>
             <div class="row row-cols-3">
               <div class="btn col overflow-hidden border" :class="{'btn-warning': filename === chosenFile}"
-                v-for="filename in filelist" :key="filename" @click="chosenFile = filename" @dblclick="chosenFile=filename;chooseFile()">
+                v-for="filename in filelist" :key="filename" @click="chosenFile = filename"
+                @dblclick="chosenFile=filename;chooseFile()">
                 {{filename}}
               </div>
             </div>

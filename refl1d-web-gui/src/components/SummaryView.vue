@@ -50,8 +50,9 @@ function fetch_and_draw() {
   });
 }
 
-function onMove(param_index) {
-  props.socket.volatile.emit('set_parameter01', parameters.value[param_index].name, parameters_local01.value[param_index]);
+async function onMove(param_index) {
+  // props.socket.volatile.emit('set_parameter01', parameters.value[param_index].name, parameters_local01.value[param_index]);
+  props.socket.emit('set_parameter01', parameters.value[param_index].name, parameters_local01.value[param_index]);
 }
 
 async function onInactive(param) {

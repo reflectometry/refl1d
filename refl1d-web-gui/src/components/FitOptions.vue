@@ -39,25 +39,18 @@ const FIT_FIELDS = {
 // const active_settings = ref<{ name: string, settings: object}>({name: "", settings: {}});
 const active_settings = ref({});
 
-props.socket.on('fitter_settings', () => {
-  props.socket.emit('get_last_message', 'fitter_settings', (payload) => {
-    fitter_settings.value = payload?.message;
-  });
-});
-props.socket.on('fitter_defaults', () => {
-  props.socket.emit('get_last_message', 'fitter_defaults', (payload) => {
-    fitter_defaults.value = payload?.message;
-  });
-});
-props.socket.on('fitter_active', () => {
-  props.socket.emit('get_last_message', 'fitter_active', (payload) => {
-    fitter_active.value = payload?.message;
-  });
+props.socket.emit("get_fitter_defaults", (new_fitter_defaults) => {
+  fitter_defaults.value = new_fitter_defaults;
+  fitter_settings.value = structuredClone(new_fitter_defaults);
+})
+
+props.socket.on('fitter_settings', ({timestamp, message: new_fitter_settings}) => {
+    fitter_settings.value = new_fitter_settings
 });
 
-props.socket.emit('subscribe', 'fitter_settings');
-props.socket.emit('subscribe', 'fitter_defaults');
-props.socket.emit('subscribe', 'fitter_active');
+props.socket.on('fitter_active', ({timestamp, message: new_fitter_active}) => {
+    fitter_active.value = new_fitter_active
+});
 
 let modal: Modal;
 
@@ -102,6 +95,9 @@ function process_settings() {
 }
 
 function save() {
+  if (anyIsInvalid.value) {
+    return;
+  }
   const new_settings = structuredClone(fitter_settings.value);
   new_settings[fitter_active_local.value] = { settings: process_settings() };
   props.socket.emit("publish", "fitter_settings", new_settings);
@@ -180,7 +176,7 @@ defineExpose({
                   <input v-else-if="FIT_FIELDS[sname][1]==='boolean'" class="form-check-input m-2" type="checkbox"
                     v-model="active_settings[sname]" />
                   <input v-else :class="{'form-control': true, 'is-invalid': !validate(active_settings[sname], sname)}"
-                    type="text" v-model="active_settings[sname]" />
+                    type="text" v-model="active_settings[sname]" @keydown.enter="save" />
                 </div>
               </div>
             </div>

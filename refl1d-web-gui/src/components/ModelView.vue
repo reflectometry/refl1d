@@ -15,10 +15,8 @@ const props = defineProps<{
 }>();
 
 onMounted(() => {
-  props.socket.on('update_parameters', ({ message, timestamp }) => {
-    if (props.visible) {
-      draw_requested.value = true;
-    }
+  props.socket.on('update_parameters', () => {
+    draw_requested.value = true;
   });
   window.requestAnimationFrame(draw_if_needed);
 });
@@ -27,11 +25,8 @@ function fetch_and_draw() {
   props.socket.emit('get_profile_plot', (payload) => {
     if (props.visible) {
       let plotdata = { ...payload };
-      console.log(plotdata, plot_div.value);
       plotdata.width = Math.round(plot_div.value?.clientWidth ?? 640) - 16;
       plotdata.height = Math.round(plot_div.value?.clientHeight ?? 480) - 16;
-      // delete payload.width;
-      // delete payload.height;
       /* Data Parsing Functions */
       // mpld3.draw_figure = function(figid, spec, process, clearElem) {}
       mpld3.draw_figure(plot_div_id.value, plotdata, false, true);
@@ -40,19 +35,19 @@ function fetch_and_draw() {
 }
 
 function draw_if_needed(timestamp: number) {
-  if (draw_requested.value) {
+  if (draw_requested.value && props.visible) {
     fetch_and_draw();
     draw_requested.value = false;
   }
   window.requestAnimationFrame(draw_if_needed);
 }
 
-watch(() => props.visible, (value) => {
-  if (value) {
-    console.log('visible', value);
-    fetch_and_draw();
-  }
-});
+// watch(() => props.visible, (value) => {
+//   if (value) {
+//     console.log('visible', value);
+//     fetch_and_draw();
+//   }
+// });
 
 </script>
     
