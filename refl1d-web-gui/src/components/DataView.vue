@@ -6,7 +6,7 @@ import type { Socket } from 'socket.io-client';
 
 const title = "Reflectivity";
 const plot_div = ref<HTMLDivElement | null>(null);
-const draw_requested = ref(true);
+const draw_requested = ref(false);
 const plot = ref<Plotly.PlotlyHTMLElement>();
 
 const props = defineProps<{
