@@ -19,11 +19,14 @@ mimetypes.add_type("text/javascript", ".mjs")
 mimetypes.add_type("image/png", ".png")
 mimetypes.add_type("image/svg+xml", ".svg")
 
-from bumps.fitters import DreamFit, LevenbergMarquardtFit, SimplexFit, DEFit, MPFit, BFGSFit
+from bumps.fitters import DreamFit, LevenbergMarquardtFit, SimplexFit, DEFit, MPFit, BFGSFit, FitDriver, fit
 from bumps.serialize import to_dict
+from bumps.mapper import MPMapper
 import refl1d.fitproblem, refl1d.probe
 
 FITTERS = (DreamFit, LevenbergMarquardtFit, SimplexFit, DEFit, MPFit, BFGSFit)
+FITTERS_BY_ID = dict([(fitter.id, fitter) for fitter in FITTERS])
+print(FITTERS_BY_ID)
 FITTER_DEFAULTS = {}
 for fitter in FITTERS:
     FITTER_DEFAULTS[fitter.id] = {
@@ -81,6 +84,18 @@ async def load_problem_file(sid: str, pathlist: List[str], filename: str):
     await publish("", "model_loaded", {"pathlist": pathlist, "filename": filename, "model_names": model_names})
     await publish("", "update_model", True)
     await publish("", "update_parameters", True)
+
+@sio.event
+async def start_fit(sid: str="", fitter_id: str="", kwargs=None):
+    kwargs = {} if kwargs is None else kwargs
+    fitProblem: refl1d.fitproblem.FitProblem = app["problem"]["fitProblem"]
+    mapper = MPMapper.start_mapper(fitProblem, None, cpus=0)
+    monitors = []
+    fitclass = FITTERS_BY_ID[fitter_id]
+    driver = FitDriver(fitclass=fitclass, mapper=mapper, problem=fitProblem, monitors=monitors, **kwargs)
+    x, fx = driver.fit()
+    driver.show()
+
 
 def get_single_probe_data(theory, probe, substrate=None, surface=None, label=''):
     fresnel_calculator = probe.fresnel(substrate, surface)
@@ -144,6 +159,8 @@ async def get_model(sid: str=""):
 @rest_get
 async def get_profile_plot(sid: str="", model_index: int=0):
     import mpld3
+    import matplotlib
+    matplotlib.use("agg")
     import matplotlib.pyplot as plt
     import time
     print('queueing new profile plot...', time.time())
@@ -153,13 +170,39 @@ async def get_profile_plot(sid: str="", model_index: int=0):
     models = list(fitProblem.models)
     if (model_index > len(models)):
         return None
-    fig = plt.figure()
     model = models[model_index]
+    fig = plt.figure()
     model.plot_profile()
-    dfig = mpld3.fig_to_dict(plt.gcf())
+    dfig = mpld3.fig_to_dict(fig)
     plt.close(fig)
     # await sio.emit("profile_plot", dfig, to=sid)
     return dfig
+
+@sio.event
+@rest_get
+async def get_profile_data(sid: str="", model_index: int=0):
+    fitProblem: refl1d.fitproblem.FitProblem = app["problem"]["fitProblem"]
+    if fitProblem is None:
+        return None
+    models = list(fitProblem.models)
+    if (model_index > len(models)):
+        return None
+    model = models[model_index]
+    output = {}
+    output["ismagnetic"] = model.ismagnetic
+    if model.ismagnetic:
+        if not model.step_interfaces:
+            z, rho, irho, rhoM, thetaM = model.magnetic_step_profile()
+            output['step_profile'] = dict(z=z, rho=rho, irho=irho, rhoM=rhoM, thetaM=thetaM)
+        z, rho, irho, rhoM, thetaM = model.magnetic_smooth_profile()
+        output['smooth_profile'] = dict(z=z, rho=rho, irho=irho, rhoM=rhoM, thetaM=thetaM)
+    else:
+        if not model.step_interfaces:
+            z, rho, irho = model.step_profile()
+            output['step_profile'] = dict(z=z, rho=rho, irho=irho)
+        z, rho, irho = model.smooth_profile()
+        output['smooth_profile'] = dict(z=z, rho=rho, irho=irho)
+    return to_dict(output)
 
 @sio.event
 @rest_get
