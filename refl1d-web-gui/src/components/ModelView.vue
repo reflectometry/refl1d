@@ -8,6 +8,7 @@ import mpld3 from 'mpld3';
 const title = "Profile";
 const plot_div = ref<HTMLDivElement>();
 const draw_requested = ref(false);
+const drawing_busy = ref(false);
 const plot_div_id = ref(`div-${uuidv4()}`);
 const model_names = ref<string[]>([]);
 const current_model = ref(0);
@@ -37,13 +38,18 @@ function fetch_and_draw() {
       // mpld3.draw_figure = function(figid, spec, process, clearElem) {}
       mpld3.draw_figure(plot_div_id.value, plotdata, false, true);
     }
+    drawing_busy.value = false;
   });
 }
 
 function draw_if_needed(timestamp: number) {
-  if (draw_requested.value && props.visible) {
-    fetch_and_draw();
+  if (drawing_busy.value) {
+    console.log("busy!");
+  }
+  if (draw_requested.value && props.visible && !drawing_busy.value) {
+    drawing_busy.value = true;
     draw_requested.value = false;
+    fetch_and_draw();
   }
   window.requestAnimationFrame(draw_if_needed);
 }
