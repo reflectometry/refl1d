@@ -66,7 +66,7 @@ jobs:
         path: |
           unstable/*
 
-  publish:
+  updateUnstable:
     needs: test_and_build
     runs-on: ubuntu-latest
     steps:
@@ -79,31 +79,49 @@ jobs:
       run: |
         ls * -l
 
-    - name: Update unstable release
-      uses: johnwbyrd/update-release@v1.0.0
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        release: unstable
-        tag: sid
-        files: Refl1D-windows-exe-latest.zip Refl1D-latest-source.zip
+    - name: repack self-extracting
+      run: |
+        sudo apt-get install -y p7zip-full
+        mkdir self_extracting
+        curl -L https://www.7-zip.org/a/7z2106-x64.exe --output 7z.exe
+        7z e 7z.exe -aoa -oself_extracting 7z.sfx
+        unzip Refl1D-windows-exe-latest.zip -d self_extracting
+        cd self_extracting && 7z a -mhe=on -mx=1 -sfx7z.sfx ../Refl1D-latest-self-extracting.exe Refl1D*/
 
-  updateUnstableText:
-    needs: publish
-    runs-on: ubuntu-latest
-    steps:
-    - name: Show last updated
+    - name: Update release assets and text
       uses: actions/github-script@v6
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}          
         script: |
+          const fs = require('fs');
+          const { owner, repo } = context.repo;
           let sid_release = await github.rest.repos.getReleaseByTag({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
+            owner,
+            repo,
             tag: "sid"
           });
           await github.rest.repos.updateRelease({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
+            owner,
+            repo,
             release_id: sid_release.data.id,
             body: "A persistent prerelease where build artifacts for the current tip will be deposited\n\n## Last updated: " + (new Date()).toDateString()
           });
+          // delete existing release assets (if needed) and upload new ones:
+          const to_update = ["Refl1D-windows-exe-latest.zip", "Refl1D-latest-source.zip", "Refl1D-latest-self-extracting.exe"];
+          for (let fn of to_update) {
+            let asset_id = (sid_release.data.assets.find((a) => (a.name == fn)) ?? {}).id;
+            if (asset_id) {
+              await github.rest.repos.deleteReleaseAsset({
+                owner,
+                repo,
+                asset_id
+              });
+            }
+            await github.rest.repos.uploadReleaseAsset({
+              owner,
+              repo,
+              release_id: sid_release.data.id,
+              name: fn,
+              data: await fs.readFileSync(fn)
+            });
+          }
