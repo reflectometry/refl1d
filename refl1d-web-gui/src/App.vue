@@ -9,13 +9,15 @@ import PanelTabContainer from './components/PanelTabContainer.vue';
 import FileBrowser from './components/FileBrowser.vue';
 import SummaryView from './components/SummaryView.vue';
 import ModelInspect from './components/ModelInspect.vue';
+import ModelViewPlotly from './components/ModelViewPlotly.vue';
 // import { FITTERS as FITTER_DEFAULTS } from './fitter_defaults';
 
 const panels = [
   {title: 'Reflectivity', component: DataView},
   {title: 'Parameters', component: SummaryView},
   {title: 'Profile', component: ModelView},
-  {title: 'Model', component: ModelInspect}
+  {title: 'Model', component: ModelInspect},
+  {title: 'Profile2', component: ModelViewPlotly}
 ];
 
 const connected = ref(false);
