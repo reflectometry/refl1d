@@ -96,12 +96,12 @@ jobs:
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}          
         script: |
-          let sid_release = await github.repos.getReleaseByTag({
+          let sid_release = await github.rest.repos.getReleaseByTag({
             owner: context.repo.owner,
             repo: context.repo.repo,
             tag: "sid"
           });
-          await github.repos.updateRelease({
+          await github.rest.repos.updateRelease({
             owner: context.repo.owner,
             repo: context.repo.repo,
             release_id: sid_release.data.id,
