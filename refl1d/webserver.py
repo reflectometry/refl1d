@@ -1,6 +1,6 @@
 # from .main import setup_bumps
 
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Literal, Optional, Union
 from datetime import datetime
 from aiohttp import web
 import numpy as np
@@ -22,6 +22,7 @@ mimetypes.add_type("image/svg+xml", ".svg")
 from bumps.fitters import DreamFit, LevenbergMarquardtFit, SimplexFit, DEFit, MPFit, BFGSFit, FitDriver, fit
 from bumps.serialize import to_dict
 from bumps.mapper import MPMapper
+from bumps.parameter import Parameter
 import refl1d.fitproblem, refl1d.probe
 
 FITTERS = (DreamFit, LevenbergMarquardtFit, SimplexFit, DEFit, MPFit, BFGSFit)
@@ -224,20 +225,35 @@ async def get_parameters(sid: str = ""):
     return to_dict(parameters)
 
 @sio.event
-async def set_parameter01(sid: str, parameter_name: str, parameter_value01: float):
+async def set_parameter(sid: str, parameter_name: str, property: Literal["value01", "value", "min", "max"], value: Union[float, str]):
     fitProblem: refl1d.fitproblem.FitProblem = app["problem"]["fitProblem"]
     if fitProblem is None:
         return
     parameter_matches = [p for p in fitProblem._parameters if p.name == parameter_name]
     if len(parameter_matches) < 1:
         return
-    parameter = parameter_matches[0]
-    new_value  = parameter.prior.put01(parameter_value01)
-    nice_new_value = nice(new_value, digits=VALUE_PRECISION)
-    parameter.value = nice_new_value
+    parameter: Parameter = parameter_matches[0]
+    if property == "value01":
+        new_value  = parameter.prior.put01(value)
+        nice_new_value = nice(new_value, digits=VALUE_PRECISION)
+        parameter.clip_set(nice_new_value)
+    elif property == "value":
+        new_value = float(value)
+        nice_new_value = nice(new_value, digits=VALUE_PRECISION)
+        parameter.clip_set(nice_new_value)
+    elif property == "min":
+        lo = float(value)
+        hi = parameter.prior.limits[1]
+        parameter.range(lo, hi)
+        parameter.add_prior()
+    elif property == "max":
+        lo = parameter.prior.limits[0]
+        hi = float(value)
+        parameter.range(lo, hi)
+        parameter.add_prior()
     fitProblem.model_update()
     await publish("", "update_parameters", True)
-    return new_value
+    return
 
 @sio.event
 async def publish(sid: str, topic: str, message):
