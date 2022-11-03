@@ -99,7 +99,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="h-100 d-flex flex-column">
+  <div class="h-100 w-100 m-0 d-flex flex-column">
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
       <div class="container-fluid">
         <div class="navbar-brand">
@@ -175,11 +175,11 @@ onMounted(() => {
         </div>
       </div>
     </nav>
-    <div class="flex-grow-1 row">
-      <div class="col d-flex flex-column">
+    <div class="flex-grow-1 row overflow-hidden">
+      <div class="col d-flex flex-column mh-100 overflow-auto">
         <PanelTabContainer :panels="panels" :socket="socket" :initially_active="0"/>
       </div>
-      <div class="col d-flex flex-column">
+      <div class="col d-flex flex-column mh-100 overflow-auto">
         <PanelTabContainer :panels="panels" :socket="socket" :initially_active="1"/>
       </div>
     </div>
