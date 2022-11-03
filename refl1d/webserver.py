@@ -1,7 +1,8 @@
 # from .main import setup_bumps
 
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Literal, Optional, Union, TypedDict
 from datetime import datetime
+import warnings
 from aiohttp import web
 import numpy as np
 import asyncio
@@ -22,7 +23,10 @@ mimetypes.add_type("image/svg+xml", ".svg")
 from bumps.fitters import DreamFit, LevenbergMarquardtFit, SimplexFit, DEFit, MPFit, BFGSFit, FitDriver, fit
 from bumps.serialize import to_dict
 from bumps.mapper import MPMapper
+from bumps.parameter import Parameter, unique
+import bumps.fitproblem
 import refl1d.fitproblem, refl1d.probe
+from refl1d.experiment import Experiment
 
 FITTERS = (DreamFit, LevenbergMarquardtFit, SimplexFit, DEFit, MPFit, BFGSFit)
 FITTERS_BY_ID = dict([(fitter.id, fitter) for fitter in FITTERS])
@@ -131,6 +135,7 @@ async def get_plot_data(sid: str="", view: str = 'linear'):
     fitProblem: refl1d.fitproblem.FitProblem = app["problem"]["fitProblem"]
     result = []
     for model in fitProblem.models:
+        assert(isinstance(model, Experiment))
         theory = model.reflectivity()
         probe = model.probe
         result.append(get_probe_data(theory, probe, model._substrate, model._surface))
@@ -171,6 +176,7 @@ async def get_profile_plot(sid: str="", model_index: int=0):
     if (model_index > len(models)):
         return None
     model = models[model_index]
+    assert(isinstance(model, Experiment))
     fig = plt.figure()
     model.plot_profile()
     dfig = mpld3.fig_to_dict(fig)
@@ -188,6 +194,7 @@ async def get_profile_data(sid: str="", model_index: int=0):
     if (model_index > len(models)):
         return None
     model = models[model_index]
+    assert(isinstance(model, Experiment))
     output = {}
     output["ismagnetic"] = model.ismagnetic
     if model.ismagnetic:
@@ -206,38 +213,62 @@ async def get_profile_data(sid: str="", model_index: int=0):
 
 @sio.event
 @rest_get
-async def get_parameters(sid: str = ""):
+async def get_parameters(sid: str = "", only_fittable: bool = False):
     fitProblem: refl1d.fitproblem.FitProblem = app["problem"]["fitProblem"]
     if fitProblem is None:
         return []
-    raw_parameters = fitProblem._parameters
-    parameters = []
-    for rp in raw_parameters:
-        p = {}
-        low, high = (v for v in rp.prior.limits)
-        p['min'] = VALUE_FORMAT.format(nice(low))
-        p['max'] = VALUE_FORMAT.format(nice(high))
-        p['value_str'] = VALUE_FORMAT.format(nice(rp.value))
-        p['value01'] = rp.prior.get01(rp.value)
-        p['name'] = rp.name
-        parameters.append(p)
-    return to_dict(parameters)
+
+    all_parameters = fitProblem.model_parameters()
+    if only_fittable:
+        parameter_infos = params_to_list(unique(all_parameters))
+        # only include params with priors:
+        parameter_infos = [pi for pi in parameter_infos if pi['fittable'] and not pi['fixed']]
+    else:
+        parameter_infos = params_to_list(all_parameters)
+        
+    return to_dict(parameter_infos)
 
 @sio.event
-async def set_parameter01(sid: str, parameter_name: str, parameter_value01: float):
-    fitProblem: refl1d.fitproblem.FitProblem = app["problem"]["fitProblem"]
+async def set_parameter(sid: str, parameter_id: str, property: Literal["value01", "value", "min", "max"], value: Union[float, str, bool]):
+    fitProblem: bumps.fitproblem.FitProblem = app["problem"]["fitProblem"]
     if fitProblem is None:
         return
-    parameter_matches = [p for p in fitProblem._parameters if p.name == parameter_name]
-    if len(parameter_matches) < 1:
+
+    parameter = fitProblem._parameters_by_id.get(parameter_id, None)
+    if parameter is None:
+        warnings.warn(f"Attempting to update parameter that doesn't exist: {parameter_id}")
         return
-    parameter = parameter_matches[0]
-    new_value  = parameter.prior.put01(parameter_value01)
-    nice_new_value = nice(new_value, digits=VALUE_PRECISION)
-    parameter.value = nice_new_value
+
+    if parameter.prior is None:
+        warnings.warn(f"Attempting to set prior properties on parameter without priors: {parameter}")
+        return
+
+    if property == "value01":
+        new_value  = parameter.prior.put01(value)
+        nice_new_value = nice(new_value, digits=VALUE_PRECISION)
+        parameter.clip_set(nice_new_value)
+    elif property == "value":
+        new_value = float(value)
+        nice_new_value = nice(new_value, digits=VALUE_PRECISION)
+        parameter.clip_set(nice_new_value)
+    elif property == "min":
+        lo = float(value)
+        hi = parameter.prior.limits[1]
+        parameter.range(lo, hi)
+        parameter.add_prior()
+    elif property == "max":
+        lo = parameter.prior.limits[0]
+        hi = float(value)
+        parameter.range(lo, hi)
+        parameter.add_prior()
+    elif property == "fixed":
+        if parameter.fittable:
+            parameter.fixed = bool(value)
+            fitProblem.model_reset()
+            print(f"setting parameter: {parameter}.fixed to {value}")
     fitProblem.model_update()
     await publish("", "update_parameters", True)
-    return new_value
+    return
 
 @sio.event
 async def publish(sid: str, topic: str, message):
@@ -301,6 +332,77 @@ def nice(v, digits=4):
         scale = 10**(place-(digits-1))
         return sign*floor(abs(v)/scale+0.5)*scale
     
+
+class ParamInfo(TypedDict, total=False):
+    id: str
+    name: str
+    paths: List[str]
+    value_str: str
+    fittable: bool
+    fixed: bool
+    value01: Optional[float]
+    min_str: Optional[str]
+    max_str: Optional[str]
+
+
+def params_to_dict(params, output=None, pathlist=None, links=None) -> Dict[str, ParamInfo]:
+    output: Dict[str, ParamInfo] = {} if output is None else output
+    pathlist = [] if pathlist is None else pathlist
+    if isinstance(params,dict):
+        for k in sorted(params.keys()):
+            params_to_dict(params[k], output=output, pathlist=pathlist + [k])
+    elif isinstance(params, tuple) or isinstance(params, list):
+        for i, v in enumerate(params):
+            params_to_dict(v, output=output, pathlist=pathlist + [f"[{i:d}]"])
+    elif isinstance(params, Parameter):
+        path = ".".join(pathlist)
+        existing = output.get(params.id, None)
+        if existing is not None:
+            existing["paths"].append(".".join(pathlist))
+        else:
+            value_str = VALUE_FORMAT.format(nice(params.value))
+            has_prior = params.has_prior()
+            new_item: ParamInfo = { 
+                "id": params.id,
+                "name": str(params.name),
+                "paths": [path],
+                "value_str": value_str, "fittable": params.fittable, "fixed": params.fixed }
+            if has_prior:
+                assert(params.prior is not None)
+                lo, hi = params.prior.limits
+                new_item['value01'] = params.prior.get01(params.value)
+                new_item['min_str'] = VALUE_FORMAT.format(nice(lo))
+                new_item['max_str'] = VALUE_FORMAT.format(nice(hi))
+            output[params.id] = new_item
+    return output
+
+def params_to_list(params, output=None, pathlist=None, links=None) -> List[ParamInfo]:
+    output = [] if output is None else output
+    links = {} if links is None else links
+    pathlist = [] if pathlist is None else pathlist
+    if isinstance(params,dict):
+        for k in sorted(params.keys()):
+            params_to_list(params[k], output=output, pathlist=pathlist + [k], links=links)
+    elif isinstance(params, tuple) or isinstance(params, list):
+        for i, v in enumerate(params):
+            params_to_list(v, output=output, pathlist=pathlist + [f"[{i:d}]"], links=links)
+    elif isinstance(params, Parameter):
+        link_path = links.get(params.id, "")
+        if link_path == "":
+            links[params.id] = pathlist
+        value_str = VALUE_FORMAT.format(nice(params.value))
+        link = ".".join(link_path)
+        path = ".".join(pathlist)
+        has_prior = params.has_prior()
+        new_item = {"id": params.id, "name": params.name, "path": path, "link": link, "value_str": value_str, "fittable": params.fittable, "fixed": params.fixed, "has_prior": has_prior}
+        if has_prior:
+            assert(params.prior is not None)
+            lo, hi = params.prior.limits
+            new_item['value01'] = params.prior.get01(params.value)
+            new_item['min_str'] = VALUE_FORMAT.format(nice(lo))
+            new_item['max_str'] = VALUE_FORMAT.format(nice(hi))
+        output.append(new_item)
+    return output
 
 if __name__ == '__main__':
     app.on_startup.append(lambda App: publish('', 'local_file_path', Path().absolute().parts))
