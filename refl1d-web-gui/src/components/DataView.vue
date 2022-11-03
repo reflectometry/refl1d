@@ -105,9 +105,18 @@ function fetch_and_draw() {
         type: (/^(Log|Q4)/.test(reflectivity_type.value)) ? 'log' : 'linear',
         autorange: true,
       },
+      margin: {
+        l: 75,
+        r: 50,
+        t: 25,
+        b: 75,
+        pad: 4
+      }
     };
 
-    plot.value = await Plotly.react(plot_div.value, [...theory_traces, ...data_traces], layout);
+    const config = {responsive: true}
+
+    plot.value = await Plotly.react(plot_div.value, [...theory_traces, ...data_traces], layout, config);
     
   });
 }

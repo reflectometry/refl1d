@@ -75,9 +75,18 @@ function fetch_and_draw() {
         type: 'linear',
         autorange: true,
       },
+      margin: {
+        l: 75,
+        r: 50,
+        t: 25,
+        b: 75,
+        pad: 4
+      }
     };
 
-    await Plotly.react(plot_div.value, [...traces], layout);
+    const config = {responsive: true}
+
+    await Plotly.react(plot_div.value, [...traces], layout, config);
     
   });
 }
