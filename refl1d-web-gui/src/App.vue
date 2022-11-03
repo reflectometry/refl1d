@@ -193,6 +193,8 @@ html,
 body,
 #app {
   height: 100%;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 div#connection_status {
