@@ -17,6 +17,7 @@ type parameter_info = {
   fixed: boolean,
   path: string,
   link: string,
+  writable: boolean,
   value_str: string,
   min_str: string,
   max_str: string,
@@ -84,39 +85,33 @@ watch(() => props.visible, (value) => {
   <table class="table">
     <thead class="border-bottom py-1">
       <tr>
-      <th scope="col">Fit?</th>
-      <th scope="col">Name</th>
-      <th scope="col">Value</th>
-      <th scope="col">Path</th>
-      <th scope="col">Linked</th>
+        <th scope="col">Fit?</th>
+        <th scope="col">Name</th>
+        <th scope="col">Value</th>
+        <th scope="col">Paths</th>
       </tr>
     </thead>
     <tbody>
       <tr class="py-1" v-for="(param, index) in parameters_local" :key="param.id">
         <td>
-          <input class="form-check-input" type="checkbox" :checked="!param.fixed"
-          :disabled="!param.fittable" @click.prevent="setFittable($event, index)" />
+          <input class="form-check-input" v-if="param.fittable" type="checkbox" :checked="!param.fixed"
+            @click.prevent="setFittable($event, index)" />
         </td>
         <td>{{ param.name }}</td>
-        <td contenteditable="true" spellcheck="false" @blur="editItem($event, 'value', index)" @keydown.enter="$event?.target?.blur()">{{ param.value_str }}
+        <td :contenteditable="param.writable" spellcheck="false" @blur="editItem($event, 'value', index)"
+          @keydown.enter="$event?.target?.blur()">{{ param.value_str }}
         </td>
-      <td >{{ param.path }}</td>
-      <td :title="param.link">{{ (param.link) ? 'true' : '' }}</td>
+        <td>
+          <p class="my-0" v-for="path in param.paths" :key="path">{{ path }}</p>
+        </td>
       </tr>
     </tbody>
   </table>
 </template>
     
 <style scoped>
-span.value {
-  text-align: right;
-}
 
-div.param-name {
-  word-break: break-word;
-}
-
-.scroll-x {
-  overflow-x: auto;
+table {
+  white-space: nowrap;
 }
 </style>
