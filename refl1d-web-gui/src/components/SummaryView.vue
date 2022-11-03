@@ -88,41 +88,46 @@ watch(() => props.visible, (value) => {
 </script>
         
 <template>
-  <div class="">
-    <div class="row border-bottom py-1">
-      <div class="col-2">Fit Parameter</div>
-      <div class="col-5"></div>
-      <div class="col-5">
-        <div class="row">
-          <div class="col-4">Value</div>
-          <div class="col-4">Min</div>
-          <div class="col-4">Max</div>
-        </div>
-      </div>
-    </div>
-    <div class="row align-items-center px-1" v-for="(param, index) in parameters" :key="param.name">
-      <div class="col-2 border-bottom">{{ param.name }}</div>
-      <div class="col-5">
-        <input type="range" class="form-range" min="0" max="1.0" step="0.005" v-model.number="parameters_local01[index]"
-          @mousedown="param.active = true" @input="onMove(index)" @change="onInactive(param)"
-          @wheel="scrollParam($event, index)" />
-      </div>
-      <div class="col-5">
-        <div class="row">
-          <div class="col-4" contenteditable="true" spellcheck="false" @blur="editItem($event, 'value', index)"
-            @keydown.enter="$event?.target?.blur()">{{ parameters_localstr[index] }}</div>
-          <div class="col-4" contenteditable="true" spellcheck="false" @blur="editItem($event, 'min', index)"
-            @keydown.enter="$event?.target?.blur()">{{ param.min_str }}</div>
-          <div class="col-4" contenteditable="true" spellcheck="false" @blur="editItem($event, 'max', index)"
-            @keydown.enter="$event?.target?.blur()">{{ param.max_str }}</div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <table class="table">
+    <thead class="border-bottom py-1">
+      <tr>
+        <th scope="col">Fit Parameter</th>
+        <th scope="col"></th>
+        <th scope="col">Value</th>
+        <th scope="col">Min</th>
+        <th scope="col">Max</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="py-1" v-for="(param, index) in parameters" :key="param.id">
+        <td>{{ param.name }}</td>
+        <td>
+          <input type="range" class="form-range" min="0" max="1.0" step="0.005"
+            v-model.number="parameters_local01[index]" @mousedown="param.active = true" @input="onMove(index)"
+            @change="onInactive(param)" @wheel="scrollParam($event, index)" />
+        </td>
+        <td class="editable" contenteditable="true" spellcheck="false" @blur="editItem($event, 'value', index)"
+          @keydown.enter="$event?.target?.blur()">{{ parameters_localstr[index] }}</td>
+        <td class="editable" contenteditable="true" spellcheck="false" @blur="editItem($event, 'min', index)"
+          @keydown.enter="$event?.target?.blur()">{{ param.min_str }}</td>
+        <td class="editable" contenteditable="true" spellcheck="false" @blur="editItem($event, 'max', index)"
+          @keydown.enter="$event?.target?.blur()">{{ param.max_str }}</td>
+      </tr>
+    </tbody>
+  </table>
 </template>
     
 <style scoped>
 svg {
   width: 100%;
+  white-space: nowrap;
+}
+
+td.editable {
+  min-width: 5em;
+}
+
+td > input {
+  min-width: 5em;
 }
 </style>
