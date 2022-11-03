@@ -63,13 +63,13 @@ function fetch_and_draw() {
       uirevision: 1,
       xaxis: {
         title: {
-          text: 'z'
+          text: 'z (Å)'
         },
         type: 'linear',
         autorange: true,
       },
       yaxis: {
-        title: { text: 'SLD (10^6 / A^{-2})' },
+        title: { text: '$\\text{SLD} (10^6 / Å^{-2})$' },
         exponentformat: 'e',
         showexponent: 'all',
         type: 'linear',
