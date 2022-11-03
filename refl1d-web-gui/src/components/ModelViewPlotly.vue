@@ -32,20 +32,20 @@ function generate_new_traces(profile_data) {
   const { step_profile, smooth_profile } = profile_data;
   console.log(profile_data);
 
-  traces.push({ x: step_profile.z, y: step_profile.rho, mode: 'lines', name: 'rho', line: { color: "green", width: 2, dash: "dot" }, showlegend: false });
-  traces.push({ x: smooth_profile.z, y: smooth_profile.rho, mode: 'lines', name: 'rho', line: { color: "green", width: 2 } });
+  traces.push({ x: step_profile.z, y: step_profile.rho, mode: 'lines', name: 'rho', legendgroup: 'rho', line: { color: "green", width: 2, dash: "dot" }, showlegend: false });
+  traces.push({ x: smooth_profile.z, y: smooth_profile.rho, mode: 'lines', name: 'rho', legendgroup: 'rho', line: { color: "green", width: 2 } });
 
-  traces.push({ x: step_profile.z, y: step_profile.irho, mode: 'lines', name: 'irho', line: { color: "blue", width: 2, dash: "dot" }, showlegend: false });
-  traces.push({ x: smooth_profile.z, y: smooth_profile.irho, mode: 'lines', name: 'irho', line: { color: "blue", width: 2 } });
+  traces.push({ x: step_profile.z, y: step_profile.irho, mode: 'lines', name: 'irho', legendgroup: 'irho', line: { color: "blue", width: 2, dash: "dot" }, showlegend: false });
+  traces.push({ x: smooth_profile.z, y: smooth_profile.irho, mode: 'lines', name: 'irho', legendgroup: 'irho', line: { color: "blue", width: 2 } });
 
   if (step_profile.rhoM && smooth_profile.rhoM) {
-    traces.push({ x: step_profile.z, y: step_profile.rhoM, mode: 'lines', name: 'rhoM', line: { color: "red", width: 2, dash: "dot" }, showlegend: false });
-    traces.push({ x: smooth_profile.z, y: smooth_profile.rhoM, mode: 'lines', name: 'rhoM', line: { color: "red", width: 2 } });
+    traces.push({ x: step_profile.z, y: step_profile.rhoM, mode: 'lines', name: 'rhoM', legendgroup: 'rhoM', line: { color: "red", width: 2, dash: "dot" }, showlegend: false });
+    traces.push({ x: smooth_profile.z, y: smooth_profile.rhoM, mode: 'lines', name: 'rhoM', legendgroup: 'rhoM', line: { color: "red", width: 2 } });
   }
 
   if (step_profile.thetaM && smooth_profile.thetaM) {
-    traces.push({ x: step_profile.z, y: step_profile.thetaM, mode: 'lines', name: 'thetaM', yaxis: "y2", line: { color: "gold", width: 2, dash: "dot" }, showlegend: false });
-    traces.push({ x: smooth_profile.z, y: smooth_profile.thetaM, mode: 'lines', name: 'thetaM', yaxis: "y2", line: { color: "gold", width: 2 } });
+    traces.push({ x: step_profile.z, y: step_profile.thetaM, mode: 'lines', name: 'thetaM', legendgroup: 'thetaM', yaxis: "y2", line: { color: "gold", width: 2, dash: "dot" }, showlegend: false });
+    traces.push({ x: smooth_profile.z, y: smooth_profile.thetaM, mode: 'lines', name: 'thetaM', legendgroup: 'thetaM', yaxis: "y2", line: { color: "gold", width: 2 } });
   }
 
   return traces;
@@ -101,43 +101,6 @@ function fetch_and_draw() {
     const config = { responsive: true }
 
     const plot = await Plotly.react(plot_div.value, [...traces], layout, config);
-
-    let legend_click_timeout: number | undefined;
-
-    plot.removeAllListeners('plotly_legendclick');
-    plot.on('plotly_legendclick', (ev) => {
-      // match visibility of step and smooth profiles:
-      const dbl_clicked = (legend_click_timeout !== undefined);
-      if (dbl_clicked) {
-        clearTimeout(legend_click_timeout);
-        legend_click_timeout = undefined;
-      }
-      const { config, curveNumber, data } = ev;
-      const visibility = data.map((d) => d.visible ?? true);
-      const current_is_visible = (visibility[curveNumber] === true);
-      if (dbl_clicked) {
-        // algorithm is to make all visible if any are hidden, 
-        // or hide all but clicked if all are visible.
-        const some_hidden = visibility.some(v => (v !== true));
-        let visibility_update: (boolean | 'legendonly' | undefined)[];
-        if (!some_hidden) {
-          visibility_update = data.map((_, i) => ((i === curveNumber - 1) || (i === curveNumber)) ? true : 'legendonly');
-        }
-        else {
-          visibility_update = data.map((_, i) => true);
-        }
-        Plotly.restyle(plot, { visible: visibility_update });
-      }
-      else {
-        const new_visibility = current_is_visible ? 'legendonly' : true;
-        const visibility_update = [new_visibility, new_visibility];
-        legend_click_timeout = setTimeout(() => {
-          Plotly.restyle(plot, { visible: visibility_update }, [curveNumber - 1, curveNumber]);
-          legend_click_timeout = undefined;
-        }, config.doubleClickDelay);
-      }
-      return false;
-    });
 
   });
 }
