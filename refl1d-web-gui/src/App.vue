@@ -10,14 +10,16 @@ import FileBrowser from './components/FileBrowser.vue';
 import SummaryView from './components/SummaryView.vue';
 import ModelInspect from './components/ModelInspect.vue';
 import ModelViewPlotly from './components/ModelViewPlotly.vue';
+import ParameterView from './components/ParameterView.vue';
 // import { FITTERS as FITTER_DEFAULTS } from './fitter_defaults';
 
 const panels = [
   {title: 'Reflectivity', component: DataView},
-  {title: 'Parameters', component: SummaryView},
+  {title: 'Summary', component: SummaryView},
   {title: 'Profile', component: ModelView},
   {title: 'Model', component: ModelInspect},
-  {title: 'Profile2', component: ModelViewPlotly}
+  {title: 'Profile2', component: ModelViewPlotly},
+  {title: 'Parameters', component: ParameterView},
 ];
 
 const connected = ref(false);
