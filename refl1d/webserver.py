@@ -23,7 +23,7 @@ mimetypes.add_type("image/svg+xml", ".svg")
 from bumps.fitters import DreamFit, LevenbergMarquardtFit, SimplexFit, DEFit, MPFit, BFGSFit, FitDriver, fit
 from bumps.serialize import to_dict
 from bumps.mapper import MPMapper
-from bumps.parameter import Parameter, unique
+from bumps.parameter import Parameter, Variable, unique
 import bumps.fitproblem
 import refl1d.fitproblem, refl1d.probe
 from refl1d.experiment import Experiment
@@ -333,30 +333,31 @@ def nice(v, digits=4):
         return sign*floor(abs(v)/scale+0.5)*scale
     
 
-class ParamInfo(TypedDict, total=False):
+class ParamInfo(TypedDict):
     id: str
     name: str
     paths: List[str]
     value_str: str
     fittable: bool
     fixed: bool
+    writable: bool
     value01: Optional[float]
     min_str: Optional[str]
     max_str: Optional[str]
 
 
-def params_to_dict(params, output=None, pathlist=None, links=None) -> Dict[str, ParamInfo]:
-    output: Dict[str, ParamInfo] = {} if output is None else output
+def params_to_list(params, lookup=None, pathlist=None, links=None) -> List[ParamInfo]:
+    lookup: Dict[str, ParamInfo] = {} if lookup is None else lookup
     pathlist = [] if pathlist is None else pathlist
     if isinstance(params,dict):
         for k in sorted(params.keys()):
-            params_to_dict(params[k], output=output, pathlist=pathlist + [k])
+            params_to_list(params[k], lookup=lookup, pathlist=pathlist + [k])
     elif isinstance(params, tuple) or isinstance(params, list):
         for i, v in enumerate(params):
-            params_to_dict(v, output=output, pathlist=pathlist + [f"[{i:d}]"])
+            params_to_list(v, lookup=lookup, pathlist=pathlist + [f"[{i:d}]"])
     elif isinstance(params, Parameter):
         path = ".".join(pathlist)
-        existing = output.get(params.id, None)
+        existing = lookup.get(params.id, None)
         if existing is not None:
             existing["paths"].append(".".join(pathlist))
         else:
@@ -366,6 +367,7 @@ def params_to_dict(params, output=None, pathlist=None, links=None) -> Dict[str, 
                 "id": params.id,
                 "name": str(params.name),
                 "paths": [path],
+                "writable": type(params.slot) in [Variable, Parameter], 
                 "value_str": value_str, "fittable": params.fittable, "fixed": params.fixed }
             if has_prior:
                 assert(params.prior is not None)
@@ -373,36 +375,8 @@ def params_to_dict(params, output=None, pathlist=None, links=None) -> Dict[str, 
                 new_item['value01'] = params.prior.get01(params.value)
                 new_item['min_str'] = VALUE_FORMAT.format(nice(lo))
                 new_item['max_str'] = VALUE_FORMAT.format(nice(hi))
-            output[params.id] = new_item
-    return output
-
-def params_to_list(params, output=None, pathlist=None, links=None) -> List[ParamInfo]:
-    output = [] if output is None else output
-    links = {} if links is None else links
-    pathlist = [] if pathlist is None else pathlist
-    if isinstance(params,dict):
-        for k in sorted(params.keys()):
-            params_to_list(params[k], output=output, pathlist=pathlist + [k], links=links)
-    elif isinstance(params, tuple) or isinstance(params, list):
-        for i, v in enumerate(params):
-            params_to_list(v, output=output, pathlist=pathlist + [f"[{i:d}]"], links=links)
-    elif isinstance(params, Parameter):
-        link_path = links.get(params.id, "")
-        if link_path == "":
-            links[params.id] = pathlist
-        value_str = VALUE_FORMAT.format(nice(params.value))
-        link = ".".join(link_path)
-        path = ".".join(pathlist)
-        has_prior = params.has_prior()
-        new_item = {"id": params.id, "name": params.name, "path": path, "link": link, "value_str": value_str, "fittable": params.fittable, "fixed": params.fixed, "has_prior": has_prior}
-        if has_prior:
-            assert(params.prior is not None)
-            lo, hi = params.prior.limits
-            new_item['value01'] = params.prior.get01(params.value)
-            new_item['min_str'] = VALUE_FORMAT.format(nice(lo))
-            new_item['max_str'] = VALUE_FORMAT.format(nice(hi))
-        output.append(new_item)
-    return output
+            lookup[params.id] = new_item
+    return list(lookup.values())
 
 if __name__ == '__main__':
     app.on_startup.append(lambda App: publish('', 'local_file_path', Path().absolute().parts))
