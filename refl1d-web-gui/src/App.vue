@@ -11,11 +11,14 @@ import SummaryView from './components/SummaryView.vue';
 import ModelInspect from './components/ModelInspect.vue';
 import ModelViewPlotly from './components/ModelViewPlotly.vue';
 import ParameterView from './components/ParameterView.vue';
+import LogView from './components/LogView.vue';
+
 // import { FITTERS as FITTER_DEFAULTS } from './fitter_defaults';
 
 const panels = [
   {title: 'Reflectivity', component: DataView},
   {title: 'Summary', component: SummaryView},
+  {title: 'Log', component: LogView},
   {title: 'Profile', component: ModelView},
   {title: 'Model', component: ModelInspect},
   {title: 'Profile2', component: ModelViewPlotly},
@@ -88,8 +91,12 @@ function startFit() {
 
   if (fitter_active && fitter_settings) {
     const fit_args = fitter_settings[fitter_active];
-    socket.emit("start_fit", fitter_active, fit_args);
+    socket.emit("start_fit_thread", fitter_active, fit_args);
   }
+}
+
+function stopFit() {
+  socket.emit("stop_fit")
 }
 
 onMounted(() => {
@@ -146,7 +153,7 @@ onMounted(() => {
               </a>
               <ul class="dropdown-menu">
                 <li><a class="dropdown-item" href="#" @click="startFit">Start</a></li>
-                <li><a class="dropdown-item" href="#">Stop</a></li>
+                <li><a class="dropdown-item" href="#" @click="stopFit">Stop</a></li>
                 <li>
                   <hr class="dropdown-divider">
                 </li>
