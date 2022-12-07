@@ -12,6 +12,11 @@ import ModelInspect from './components/ModelInspect.vue';
 import ModelViewPlotly from './components/ModelViewPlotly.vue';
 import ParameterView from './components/ParameterView.vue';
 import LogView from './components/LogView.vue';
+import ConvergenceView from './components/ConvergenceView.vue';
+import CorrelationView from './components/CorrelationView.vue';
+import ParameterTraceView from './components/ParameterTraceView.vue';
+import ModelUncertaintyView from './components/ModelUncertaintyView.vue';
+import UncertaintyView from './components/UncertaintyView.vue';
 
 // import { FITTERS as FITTER_DEFAULTS } from './fitter_defaults';
 
@@ -19,10 +24,15 @@ const panels = [
   {title: 'Reflectivity', component: DataView},
   {title: 'Summary', component: SummaryView},
   {title: 'Log', component: LogView},
+  {title: 'Convergence', component: ConvergenceView},
   {title: 'Profile', component: ModelView},
   {title: 'Model', component: ModelInspect},
   {title: 'Profile2', component: ModelViewPlotly},
   {title: 'Parameters', component: ParameterView},
+  {title: 'Correlations', component: CorrelationView},
+  {title: 'Trace', component: ParameterTraceView},
+  {title: 'Model Uncertainty', component: ModelUncertaintyView},
+  {title: 'Uncertainty', component: UncertaintyView},
 ];
 
 const connected = ref(false);
@@ -34,10 +44,12 @@ const model_loaded = shallowRef<{pathlist: string[], filename: string}>();
 
 // Create a SocketIO connection, to be passed to child components
 // so that they can do their own communications with the host.
+const base_path = window.location.pathname;
 
 const socket = io('', {
-  // this is mostly here to test what happens on server fail:
-  reconnectionAttempts: 10
+   // this is mostly here to test what happens on server fail:
+   path: `${base_path}socket.io`,
+   reconnectionAttempts: 10
 });
 
 socket.on('connect', () => {
@@ -91,7 +103,7 @@ function startFit() {
 
   if (fitter_active && fitter_settings) {
     const fit_args = fitter_settings[fitter_active];
-    socket.emit("start_fit_thread", fitter_active, fit_args);
+    socket.emit("start_fit_thread", fitter_active, fit_args.settings);
   }
 }
 
@@ -121,54 +133,54 @@ onMounted(() => {
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
             <!-- <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+              <div class="nav-link dropdown-toggle"  role="button" data-bs-toggle="dropdown"
                 aria-expanded="false">
                 Session
-              </a>
+              </div>
               <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="#" @click="connect">New</a></li>
-                <li><a class="dropdown-item" href="#" @click="disconnect">Disconnect</a></li>
-                <li><a class="dropdown-item" href="#" @click="reconnect">Existing</a></li>
+                <li><button class="btn btn-link dropdown-item"  @click="connect">New</div></li>
+                <li><button class="btn btn-link dropdown-item"  @click="disconnect">Disconnect</div></li>
+                <li><button class="btn btn-link dropdown-item"  @click="reconnect">Existing</div></li>
               </ul>
             </li> -->
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+              <button class="btn btn-link nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"
                 aria-expanded="false">
                 File
-              </a>
+              </button>
               <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="#" @click="selectOpenFile">Open</a></li>
-                <li><a class="dropdown-item" href="#">Save</a></li>
-                <li><a class="dropdown-item" :class="{disabled: model_loaded === undefined}" href="#" @click="reloadModel">Reload</a></li>
+                <li><button class="btn btn-link dropdown-item" @click="selectOpenFile">Open</button></li>
+                <li><button class="btn btn-link dropdown-item" >Save</button></li>
+                <li><button class="btn btn-link dropdown-item" :class="{disabled: model_loaded === undefined}"  @click="reloadModel">Reload</button></li>
                 <li>
                   <hr class="dropdown-divider">
                 </li>
-                <li><a class="dropdown-item" href="#">Quit</a></li>
+                <li><button class="btn btn-link dropdown-item" >Quit</button></li>
               </ul>
             </li>
             <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+              <button class="btn btn-link nav-link dropdown-toggle"  role="button" data-bs-toggle="dropdown"
                 aria-expanded="false">
                 Fitting
-              </a>
+              </button>
               <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="#" @click="startFit">Start</a></li>
-                <li><a class="dropdown-item" href="#" @click="stopFit">Stop</a></li>
+                <li><button class="btn btn-link dropdown-item"  @click="startFit">Start</button></li>
+                <li><button class="btn btn-link dropdown-item"  @click="stopFit">Stop</button></li>
                 <li>
                   <hr class="dropdown-divider">
                 </li>
-                <li><a class="dropdown-item" href="#" @click="openFitOptions">Options...</a></li>
+                <li><button class="btn btn-link dropdown-item"  @click="openFitOptions">Options...</button></li>
               </ul>
             </li>
             <!-- <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
+              <div class="nav-link dropdown-toggle"  role="button" data-bs-toggle="dropdown"
                 aria-expanded="false">
                 Reflectivity
-              </a>
+              </div>
               <ul class="dropdown-menu">
                 <li v-for="plot_type in REFLECTIVITY_PLOTS" :key="plot_type">
-                  <a :class="{'dropdown-item': true, active: (plot_type === reflectivity_type)}" href="#"
-                    @click="set_reflectivity(plot_type)">{{plot_type}}</a>
+                  <div :class="{'dropdown-item': true, active: (plot_type === reflectivity_type)}" 
+                    @click="set_reflectivity(plot_type)">{{plot_type}}</div>
                 </li>
               </ul>
             </li> -->

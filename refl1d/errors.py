@@ -229,7 +229,7 @@ def align_profiles(profiles, slabs, align):
                 for m in profiles.keys())
 
 def show_errors(errors, contours=CONTOURS, npoints=200,
-                align='auto', plots=1, save=None):
+                align='auto', plots=1, save=None, fig=None):
     """
     Plot the aligned profiles and the distribution of the residuals for
     profiles and residuals returned from calc_errors.
@@ -259,15 +259,20 @@ def show_errors(errors, contours=CONTOURS, npoints=200,
     """
     import matplotlib.pyplot as plt
 
+    if fig is not None and plots != 1:
+        raise ValueError("can only pass in a figure object if exactly 1 plot is requested")
+
     if plots == 0: # Don't create plots, just save the data
         _save_profile_data(errors, contours=contours, npoints=npoints,
                            align=align, save=save)
         _save_residual_data(errors, contours=contours, save=save)
     elif plots == 1: # Subplots for profiles/residuals
-        plt.subplot(211)
-        show_profiles(errors, contours=contours, npoints=npoints, align=align)
-        plt.subplot(212)
-        show_residuals(errors, contours=contours)
+        if fig is None:
+            fig = plt.gcf()
+        ax_profiles = fig.add_subplot(211)
+        show_profiles(errors, contours=contours, npoints=npoints, align=align, axes=ax_profiles)
+        ax_residuals = fig.add_subplot(212)
+        show_residuals(errors, contours=contours, axes=ax_residuals)
         if save:
             plt.savefig(save+"-err.png")
     elif plots == 2:  # Separate plots for profiles/residuals
@@ -296,24 +301,24 @@ def show_errors(errors, contours=CONTOURS, npoints=200,
                 plt.savefig(save+"-err%d.png"%fignum)
             fignum += 1
 
-def show_profiles(errors, align, contours, npoints):
+def show_profiles(errors, align, contours, npoints, axes=None):
     profiles, slabs, _, _ = errors
     if align is not None:
         profiles = align_profiles(profiles, slabs, align)
 
     if contours:
-        _profiles_contour(profiles, contours, npoints)
+        _profiles_contour(profiles, contours, npoints, axes=axes)
     else:
-        _profiles_overplot(profiles)
+        _profiles_overplot(profiles, axes=axes)
 
 
-def show_residuals(errors, contours):
+def show_residuals(errors, contours, axes=None):
     _, _, Q, residuals = errors
 
     if False and contours:
         _residuals_contour(Q, residuals, contours=contours)
     else:
-        _residuals_overplot(Q, residuals)
+        _residuals_overplot(Q, residuals, axes=axes)
 
 
 def _save_profile_data(errors, align, contours, npoints, save):
@@ -376,34 +381,36 @@ def _write_file(path, data, title, columns):
 def dark(color):
     return dhsv(color, dv=-0.2)
 
-def _profiles_overplot(profiles):
+def _profiles_overplot(profiles, axes=None):
     for model, group in profiles.items():
         name = model.name
         absorbing = any((L[2] != 1e-4).any() for L in group)
         magnetic = (len(group[0]) > 3)
         # Note: Use 3 colours per dataset for consistency
-        _draw_overplot(group, 1, name + ' rho')
+        _draw_overplot(group, 1, name + ' rho', axes=axes)
         if absorbing:
-            _draw_overplot(group, 2, name + ' irho')
+            _draw_overplot(group, 2, name + ' irho', axes=axes)
         else:
-            next_color()
+            next_color(axes=axes)
         if magnetic:
-            _draw_overplot(group, 3, name + ' rhoM')
+            _draw_overplot(group, 3, name + ' rhoM', axes=axes)
         else:
-            next_color()
-    _profile_labels()
+            next_color(axes=axes)
+    _profile_labels(axes=axes)
 
-def _draw_overplot(group, index, label):
+def _draw_overplot(group, index, label, axes=None):
     import matplotlib.pyplot as plt
+    if axes is None:
+        axes = plt.gca()
     alpha = 0.1
-    color = next_color()
+    color = next_color(axes=axes)
     for L in group[1:]:
-        plt.plot(L[0], L[index], '-', color=color, alpha=alpha)
+        axes.plot(L[0], L[index], '-', color=color, alpha=alpha)
     # Plot best
     L = group[0]
-    plt.plot(L[0], L[index], '-', label=label, color=dark(color))
+    axes.plot(L[0], L[index], '-', label=label, color=dark(color))
 
-def _profiles_contour(profiles, contours=CONTOURS, npoints=200):
+def _profiles_contour(profiles, contours=CONTOURS, npoints=200, axes=None):
     for model, group in profiles.items():
         name = model.name if model.name is not None else 'model'
         absorbing = any((L[2] > 1e-4).any() for L in group)
@@ -412,46 +419,52 @@ def _profiles_contour(profiles, contours=CONTOURS, npoints=200):
         z = np.hstack([line[0] for line in group])
         zp = np.linspace(np.min(z), np.max(z), npoints)
         # Note: Use 3 colours per dataset for consistency
-        _draw_contours(group, 1, name + ' rho', zp, contours)
+        _draw_contours(group, 1, name + ' rho', zp, contours, axes=axes)
         if absorbing:
-            _draw_contours(group, 2, name + ' irho', zp, contours)
+            _draw_contours(group, 2, name + ' irho', zp, contours, axes=axes)
         else:
-            next_color()
+            next_color(axes=axes)
         if magnetic:
-            _draw_contours(group, 3, name + ' rhoM', zp, contours)
+            _draw_contours(group, 3, name + ' rhoM', zp, contours, axes=axes)
         else:
-            next_color()
-    _profile_labels()
+            next_color(axes=axes)
+    _profile_labels(axes=axes)
 
-def _draw_contours(group, index, label, zp, contours):
+def _draw_contours(group, index, label, zp, contours, axes=None):
     import matplotlib.pyplot as plt
-    color = next_color()
+    if axes is None:
+        axes = plt.gca()
+    color = next_color(axes=axes)
     # Interpolate on common z
     fp = np.vstack([np.interp(zp, L[0], L[index]) for L in group])
     # Plot the quantiles
-    plot_quantiles(zp, fp, contours, color)
+    plot_quantiles(zp, fp, contours, color, axes=axes)
     # Plot the best
-    plt.plot(zp, fp[0], '-', label=label, color=dark(color))
+    axes.plot(zp, fp[0], '-', label=label, color=dark(color))
 
-def _profile_labels():
+def _profile_labels(axes=None):
     import matplotlib.pyplot as plt
-    plt.legend()
-    plt.xlabel(u'z (Å)')
-    plt.ylabel(u'SLD (10⁻⁶/Å²)')
+    if axes is None:
+        axes = plt.gca()
+    axes.legend()
+    axes.set_xlabel(u'z (Å)')
+    axes.set_ylabel(u'SLD (10⁻⁶/Å²)')
 
-def _residuals_overplot(Q, residuals):
+def _residuals_overplot(Q, residuals, axes=None):
     import matplotlib.pyplot as plt
+    if axes is None:
+        axes = plt.gca()
     alpha = 0.4
     shift = 0
     for m, r in residuals.items():
-        color = next_color()
-        plt.plot(Q[m], shift+r[:, 1:], '.', markersize=1, color=color, alpha=alpha)
-        plt.plot(Q[m], shift+r[:, 0], '.', label=m.name, markersize=1, color=dark(color))
+        color = next_color(axes=axes)
+        axes.plot(Q[m], shift+r[:, 1:], '.', markersize=1, color=color, alpha=alpha)
+        axes.plot(Q[m], shift+r[:, 0], '.', label=m.name, markersize=1, color=dark(color))
         # Use 3 colours from cycle so reflectivity matches rho for each dataset
-        next_color()
-        next_color()
+        next_color(axes=axes)
+        next_color(axes=axes)
         shift += 5
-    _residuals_labels()
+    _residuals_labels(axes=axes)
 
 def _residuals_contour(Q, residuals, contours=CONTOURS):
     import matplotlib.pyplot as plt
@@ -466,11 +479,13 @@ def _residuals_contour(Q, residuals, contours=CONTOURS):
         shift += 5
     _residuals_labels()
 
-def _residuals_labels():
+def _residuals_labels(axes=None):
     import matplotlib.pyplot as plt
-    plt.legend()
-    plt.xlabel(u'Q (1/Å)')
-    plt.ylabel(u'Residuals')
+    if axes is None:
+        axes = plt.gca()
+    axes.legend()
+    axes.set_xlabel(u'Q (1/Å)')
+    axes.set_ylabel(u'Residuals')
 
 # ==== Helper functions =====
 

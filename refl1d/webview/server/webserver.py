@@ -27,8 +27,17 @@ from bumps.serialize import to_dict
 from bumps.mapper import MPMapper
 from bumps.parameter import Parameter, Variable, unique
 import bumps.fitproblem
+import bumps.plotutil
+import bumps.dream.views, bumps.dream.varplot, bumps.dream.stats
+import bumps.errplot
+import refl1d.errors
 import refl1d.fitproblem, refl1d.probe
 from refl1d.experiment import Experiment
+
+# Register the refl1d model loader
+import refl1d.fitplugin
+import bumps.cli
+bumps.cli.install_plugin(refl1d.fitplugin)
 
 from .fit_thread import FitThread, EVT_FIT_COMPLETE, EVT_FIT_PROGRESS
 
@@ -50,7 +59,9 @@ routes = web.RouteTableDef()
 # sio = socketio.AsyncServer(cors_allowed_origins="*", serializer='msgpack')
 sio = socketio.AsyncServer(cors_allowed_origins="*")
 app = web.Application()
-static_dir_path = Path(__file__).parent.parent / 'client' / 'dist'
+index_path = Path(__file__).parent.parent / 'client' / 'dist'
+static_assets_path = index_path / 'assets'
+
 sio.attach(app)
 
 topics: Dict[str, Dict] = {}
@@ -60,6 +71,7 @@ app["fitting"] = {
     "fit_thread": None,
     "abort": False,
     "uncertainty_state": None,
+    "population": None,
     "abort_queue": Queue(),
 }
 problem = None
@@ -80,7 +92,7 @@ def rest_get(fn):
 async def index(request):
     """Serve the client-side application."""
     # redirect to static built site:
-    return web.HTTPFound('/static/index.html')
+    return web.FileResponse(index_path / 'index.html')
     
 @sio.event
 async def connect(sid, environ, data=None):
@@ -153,21 +165,27 @@ async def start_fit_thread(sid: str="", fitter_id: str="", options=None):
     fit_thread.start()
     await publish("", "fit_active", True)
 
-def fit_progress_handler(event):
-    print("event: ", event)
+def fit_progress_handler(event: Dict):
+    print("progress event message: ", event.get("message", ""))
+    fitProblem: refl1d.fitproblem.FitProblem = app["problem"]["fitProblem"]
     message = event.get("message", None)
     if message == 'complete' or message == 'improvement':
-        fitProblem: refl1d.fitproblem.FitProblem = app["problem"]["fitProblem"]
         fitProblem.setp(event["point"])
         fitProblem.model_update()
-        asyncio.run_coroutine_threadsafe(publish("", "update_parameters", True), app.loop)
-    if message == 'complete':
-        asyncio.run_coroutine_threadsafe(publish("", "fit_active", False), app.loop)
+        publish_sync("", "update_parameters")
+        if message == 'complete':
+            publish_sync("", "fit_active", False)
+    elif message == 'convergence_update':
+        app["fitting"]["population"] = event["pop"]
+        publish_sync("", "convergence_update")
+    elif message == 'uncertainty_update' or message == 'uncertainty_final':
+        app["fitting"]["uncertainty_state"] = event["uncertainty_state"]
+        publish_sync("", "uncertainty_update")
 
 EVT_FIT_PROGRESS.connect(fit_progress_handler)
 
 def fit_complete_handler(event):
-    print("event: ", event)
+    print("complete event: ", event.get("message", ""))
     message = event.get("message", None)
     fit_thread = app["fitting"]["fit_thread"]
     if fit_thread is not None:
@@ -179,14 +197,14 @@ def fit_complete_handler(event):
     chisq = nice(2*event["value"]/problem.dof)
     problem.setp(event["point"])
     problem.model_update()
-    asyncio.run_coroutine_threadsafe(publish("", "update_parameters", True), app.loop)
+    publish_sync("", "update_parameters", True)
     EVT_LOG.send("done with chisq %g"%chisq)
     EVT_LOG.send(event["info"])
 
 EVT_FIT_COMPLETE.connect(fit_complete_handler)
 
 def log_handler(message):
-    asyncio.run_coroutine_threadsafe(publish("", "log", message), app.loop)
+    publish_sync("", "log", message)
 
 EVT_LOG.connect(log_handler)
 
@@ -302,6 +320,182 @@ async def get_profile_data(sid: str="", model_index: int=0):
 
 @sio.event
 @rest_get
+async def get_convergence_plot(sid: str=""):
+    # NOTE: this is slow.  Creating the figure takes around 0.15 seconds, 
+    # and converting to mpld3 can take as much as 0.5 seconds.
+    # Might want to replace with plotting on the client side (normalizing population takes around 1 ms)
+    fitProblem: refl1d.fitproblem.FitProblem = app["problem"]["fitProblem"]
+    population = app["fitting"]["population"]
+    if population is not None and fitProblem is not None:
+        import mpld3
+        import matplotlib
+        matplotlib.use("agg")
+        import matplotlib.pyplot as plt
+        import time
+        start_time = time.time()
+        print('queueing new convergence plot...', start_time)
+
+        normalized_pop = 2*population/fitProblem.dof
+        best, pop = normalized_pop[:, 0], normalized_pop[:, 1:]
+        print("time to normalize population: ", time.time() - start_time)
+        fig = plt.figure()
+        axes = fig.add_subplot(111)
+
+        ni,npop = pop.shape
+        iternum = np.arange(1,ni+1)
+        tail = int(0.25*ni)
+        c = bumps.plotutil.coordinated_colors(base=(0.4,0.8,0.2))
+        if npop==5:
+            axes.fill_between(iternum[tail:], pop[tail:,1], pop[tail:,3],
+                                color=c['light'], label='_nolegend_')
+            axes.plot(iternum[tail:],pop[tail:,2],
+                        label="80% range", color=c['base'])
+            axes.plot(iternum[tail:],pop[tail:,0],
+                        label="_nolegend_", color=c['base'])
+        axes.plot(iternum[tail:], best[tail:], label="best",
+                    color=c['dark'])
+        axes.set_xlabel('iteration number')
+        axes.set_ylabel('chisq')
+        axes.legend()
+        #plt.gca().set_yscale('log')
+        # fig.draw()
+        print("time to render but not serialize...", time.time() - start_time)
+        dfig = mpld3.fig_to_dict(fig)
+        plt.close(fig)
+        # await sio.emit("profile_plot", dfig, to=sid)
+        end_time = time.time()
+        print("time to draw convergence plot:", end_time - start_time)
+        return dfig
+    else:
+        return None
+
+@sio.event
+@rest_get
+async def get_correlation_plot(sid: str = ""):
+    uncertainty_state = app["fitting"].get("uncertainty_state", None)
+    if uncertainty_state is not None:
+        import mpld3
+        import matplotlib
+        matplotlib.use("agg")
+        import matplotlib.pyplot as plt
+        import time
+        start_time = time.time()
+        print('queueing new correlation plot...', start_time)
+
+        fig = plt.figure()
+        axes = fig.add_subplot(111)
+        bumps.dream.views.plot_corrmatrix(uncertainty_state.draw(), fig=fig)
+        print("time to render but not serialize...", time.time() - start_time)
+        fig.canvas.draw()
+        dfig = mpld3.fig_to_dict(fig)
+        plt.close(fig)
+        # await sio.emit("profile_plot", dfig, to=sid)
+        end_time = time.time()
+        print("time to draw correlation plot:", end_time - start_time)
+        return dfig
+    else:
+        return None
+
+@sio.event
+@rest_get
+async def get_uncertainty_plot(sid: str = ""):
+    uncertainty_state = app["fitting"].get("uncertainty_state", None)
+    if uncertainty_state is not None:
+        import mpld3
+        import matplotlib
+        matplotlib.use("agg")
+        import matplotlib.pyplot as plt
+        import time
+        start_time = time.time()
+        print('queueing new correlation plot...', start_time)
+
+        fig = plt.figure()
+        draw = uncertainty_state.draw()
+        stats = bumps.dream.stats.var_stats(draw)
+        bumps.dream.varplot.plot_vars(draw, stats, fig=fig)
+        print("time to render but not serialize...", time.time() - start_time)
+        fig.canvas.draw()
+        dfig = mpld3.fig_to_dict(fig)
+        plt.close(fig)
+        # await sio.emit("profile_plot", dfig, to=sid)
+        end_time = time.time()
+        print("time to draw correlation plot:", end_time - start_time)
+        return dfig
+    else:
+        return None
+
+@sio.event
+@rest_get
+async def get_model_uncertainty_plot(sid: str = ""):
+    fitProblem: refl1d.fitproblem.FitProblem = app["problem"]["fitProblem"]
+    uncertainty_state = app["fitting"].get("uncertainty_state", None)
+    if uncertainty_state is not None:
+        import mpld3
+        import matplotlib
+        matplotlib.use("agg")
+        import matplotlib.pyplot as plt
+        import time
+        start_time = time.time()
+        print('queueing new model uncertainty plot...', start_time)
+
+        fig = plt.figure()
+        errs = bumps.errplot.calc_errors_from_state(fitProblem, uncertainty_state)
+        print('errors calculated: ', time.time() - start_time)
+        bumps.errplot.show_errors(errs, fig=fig)
+        print("time to render but not serialize...", time.time() - start_time)
+        fig.canvas.draw()
+        dfig = mpld3.fig_to_dict(fig)
+        plt.close(fig)
+        # await sio.emit("profile_plot", dfig, to=sid)
+        end_time = time.time()
+        print("time to draw model uncertainty plot:", end_time - start_time)
+        return dfig
+    else:
+        return None
+
+@sio.event
+@rest_get
+async def get_parameter_trace_plot(sid: str=""):
+    uncertainty_state = app["fitting"].get("uncertainty_state", None)
+    if uncertainty_state is not None:
+        import mpld3
+        import matplotlib
+        matplotlib.use("agg")
+        import matplotlib.pyplot as plt
+        import time
+
+        start_time = time.time()
+        print('queueing new parameter_trace plot...', start_time)
+
+        fig = plt.figure()
+        axes = fig.add_subplot(111)
+
+        # begin plotting:
+        var = 0
+        portion = None
+        draw, points, _ = uncertainty_state.chains()
+        label = uncertainty_state.labels[var]
+        start = int((1-portion)*len(draw)) if portion else 0
+        genid = np.arange(uncertainty_state.generation-len(draw)+start, uncertainty_state.generation)+1
+        axes.plot(genid*uncertainty_state.thinning,
+             np.squeeze(points[start:, uncertainty_state._good_chains, var]))
+        axes.set_xlabel('Generation number')
+        axes.set_ylabel(label)
+        fig.canvas.draw()
+
+        print("time to render but not serialize...", time.time() - start_time)
+        dfig = mpld3.fig_to_dict(fig)
+        plt.close(fig)
+        # await sio.emit("profile_plot", dfig, to=sid)
+        end_time = time.time()
+        print("time to draw parameter_trace plot:", end_time - start_time)
+        return dfig
+    else:
+        return None
+    
+
+@sio.event
+@rest_get
 async def get_parameters(sid: str = "", only_fittable: bool = False):
     fitProblem: refl1d.fitproblem.FitProblem = app["problem"]["fitProblem"]
     if fitProblem is None:
@@ -354,18 +548,21 @@ async def set_parameter(sid: str, parameter_id: str, property: Literal["value01"
         if parameter.fittable:
             parameter.fixed = bool(value)
             fitProblem.model_reset()
-            print(f"setting parameter: {parameter}.fixed to {value}")
+            # print(f"setting parameter: {parameter}.fixed to {value}")
     fitProblem.model_update()
     await publish("", "update_parameters", True)
     return
 
 @sio.event
-async def publish(sid: str, topic: str, message):
+async def publish(sid: str, topic: str, message=None):
     timestamp_str = f"{datetime.now().timestamp():.6f}"
     contents = {"message": message, "timestamp": timestamp_str}
     topics[topic] = contents
     await sio.emit(topic, contents)
     # print("emitted: ", topic, contents)
+
+def publish_sync(sid: str, topic: str, message=None):
+    return asyncio.run_coroutine_threadsafe(publish(sid, topic, message), app.loop)
 
 @sio.event
 @rest_get
@@ -405,7 +602,7 @@ async def get_fitter_defaults(sid: str=""):
 def disconnect(sid):
     print('disconnect ', sid)
 
-app.router.add_static('/static', static_dir_path)
+app.router.add_static('/assets', static_assets_path)
 app.router.add_get('/', index)
 
 VALUE_PRECISION = 6
@@ -468,10 +665,21 @@ def params_to_list(params, lookup=None, pathlist=None, links=None) -> List[Param
             lookup[params.id] = new_item
     return list(lookup.values())
 
+import argparse
+
 def main():
+    parser = argparse.ArgumentParser()
+    # parser.add_argument('-d', '--debug', action='store_true', help='autoload modules on change')
+    # parser.add_argument('-x', '--headless', action='store_true', help='do not automatically load client in browser')
+    parser.add_argument('--external', action='store_true', help='listen on all interfaces, including external (local connections only if not set)')
+    parser.add_argument('-p', '--port', default=None, type=int, help='port on which to start the server')
+    # parser.add_argument('-c', '--config-file', type=str, help='path to JSON configuration to load')
+    args = parser.parse_args()
+
     app.on_startup.append(lambda App: publish('', 'local_file_path', Path().absolute().parts))
     app.add_routes(routes)
-    web.run_app(app)
+    hostname = 'localhost' if not args.external else '0.0.0.0'
+    web.run_app(app, host=hostname, port=args.port)
 
 if __name__ == '__main__':
     main()
