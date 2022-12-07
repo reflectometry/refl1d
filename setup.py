@@ -15,7 +15,7 @@ if sys.argv[1] == 'test':
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 
-packages = ['refl1d', 'refl1d.view', 'refl1d.lib_numba']
+packages = ['refl1d', 'refl1d.view', 'refl1d.lib_numba', 'refl1d.webview']
 
 version = None
 for line in open(os.path.join("refl1d", "__init__.py")):
