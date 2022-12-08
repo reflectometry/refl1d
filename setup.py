@@ -49,6 +49,7 @@ dist = setup(
         ],
     packages=packages,
     #package_data=gui_resources.package_data(),
+    include_package_data=True,
     scripts=['bin/refl1d_cli.py', 'bin/refl1d_gui.py'],
     entry_points={
         'console_scripts': ['refl1d=refl1d.main:cli'],
