@@ -15,6 +15,9 @@ include refl1d.iss
 include setup_py2exe.py
 include refl1d/lib/*.h refl1d/lib/erf.c
 recursive-include refl1d/webview/client/dist *.html *.js *.css *.svg *.png
-
+recursive-include refl1d/webview/client/src *.html *.js *.css *.svg *.png *.vue
+include refl1d/webview/client/*.html
+include refl1d/webview/client/*.js
+include refl1d/webview/client/*.json
 # Delete files
 #prune this that
