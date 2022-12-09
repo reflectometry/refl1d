@@ -12,6 +12,7 @@
 *.swp
 *.so
 *.bak
+refl1d-webview-client*.tgz
 /build/
 /dist/
 /refl1d.egg-info/
