@@ -19,5 +19,6 @@ recursive-include refl1d/webview/client/src *.html *.js *.css *.svg *.png *.vue
 include refl1d/webview/client/*.html
 include refl1d/webview/client/*.js
 include refl1d/webview/client/*.json
+include refl1d/webview/client/*.txt
 # Delete files
 #prune this that
