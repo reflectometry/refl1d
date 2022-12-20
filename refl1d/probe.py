@@ -1695,7 +1695,7 @@ class PolarizedNeutronProbe:
                        mp: optional_xs=None,
                        pm: optional_xs=None,
                        pp: optional_xs=None,
-                       name=None, Aguide=BASE_GUIDE_ANGLE, H=0):
+                       name=None, Aguide=BASE_GUIDE_ANGLE, H=0, oversampling=None):
         if any([mm, mp, pm, pp]):
             if xs is not None:
                 warnings.warn("a cross-section is directly specified - xs argument will be ignored")
