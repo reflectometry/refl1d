@@ -9,6 +9,7 @@
 .idea
 *.pyd
 *.pyc
+**/__pycache__/
 *.swp
 *.so
 *.bak
