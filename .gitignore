@@ -10,6 +10,8 @@
 *.pyd
 *.pyc
 **/__pycache__/
+**/node_modules/
+/refl1d/webview/client/dist/
 *.swp
 *.so
 *.bak
