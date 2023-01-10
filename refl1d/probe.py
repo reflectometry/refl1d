@@ -80,9 +80,28 @@ def make_probe(**kw):
     else:
         return XrayProbe(**kw)
 
+@schema(classname="Probe", init=False, eq=False)
+class ProbeSchema:
+    name: Optional[str] = None
+    filename: Optional[str] = None
+    radiation: Literal["neutron", "xray"] = "xray"
+    intensity: Parameter = 1.0
+    background: Parameter = 0
+    back_absorption: Parameter = 0
+    theta_offset: Parameter = 0
+    sample_broadening: Parameter = 0
+    back_reflectivity: bool = False
+    R: Optional[Any] = None
+    dR: Optional[Any] = 0
+    T: List[float] = field_desc("List of theta values (incident angle)")
+    dT: Optional[Any] = 0
+    L: List[float] = field_desc("List of lambda values (wavelength, in Angstroms)")
+    dL: Optional[Any] = 0
+    dQ: Optional[Any] = None
+    resolution: Literal["normal", "uniform"] = "uniform"
 
 @schema()
-class Probe:
+class Probe(ProbeSchema):
     r"""
     Defines the incident beam used to study the material.
 
@@ -156,23 +175,6 @@ class Probe:
     large isotropic incoherent scattering cross section.
 
     """
-    name: Optional[str] = None
-    filename: Optional[str] = None
-    radiation: Literal["neutron", "xray"] = "xray"
-    intensity: Parameter = 1.0
-    background: Parameter = 0
-    back_absorption: Parameter = 0
-    theta_offset: Parameter = 0
-    sample_broadening: Parameter = 0
-    back_reflectivity: bool = False
-    R: Optional[Any] = None
-    dR: Optional[Any] = 0
-    T: List[float] = field_desc("List of theta values (incident angle)")
-    dT: Optional[Any] = 0
-    L: List[float] = field_desc("List of lambda values (wavelength, in Angstroms)")
-    dL: Optional[Any] = 0
-    dQ: Optional[Any] = None
-    resolution: Literal["normal", "uniform"] = "uniform"
 
     polarized = False
     Aguide = BASE_GUIDE_ANGLE  # default guide field for unpolarized measurements
@@ -229,7 +231,6 @@ class Probe:
         self.name = name
         self.filename = filename
         self.resolution = resolution
-        self.__class__.dQ = property(self._get_dQ, self._set_dQ)
 
     def _set_TLR(self, T, dT, L, dL, R, dR, dQ):
         #if L is None:
@@ -425,8 +426,9 @@ class Probe:
             del self.T, self.L
         self.Qo = Q
 
-    @staticmethod
-    def _get_dQ(self):
+    @property
+    def dQ(self):
+        print('getting dQ')
         if self.sample_broadening.value == 0:
             dQ = self.dQo
         else:
@@ -434,8 +436,8 @@ class Probe:
                                width=self.sample_broadening.value)
         return dQ
         
-    @staticmethod
-    def _set_dQ(self, dQ):
+    @dQ.setter
+    def dQ(self, dQ):
         self.dQo = dQ
 
     @property
