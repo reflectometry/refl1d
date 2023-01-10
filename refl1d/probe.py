@@ -428,7 +428,6 @@ class Probe(ProbeSchema):
 
     @property
     def dQ(self):
-        print('getting dQ')
         if self.sample_broadening.value == 0:
             dQ = self.dQo
         else:
