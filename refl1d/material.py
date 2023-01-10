@@ -217,7 +217,7 @@ class Material(Scatterer):
     formula: str # Formula
     formula_density: float
     formula_natural_density: Union[float, Literal[None]]
-    density: Parameter
+    # density: Parameter
     value: Parameter
     fitby: Literal['bulk_density', 'number_density', 'natural_density', 'relative_density', 'cell_volume'] = 'bulk_density'
     use_incoherent: bool = False
