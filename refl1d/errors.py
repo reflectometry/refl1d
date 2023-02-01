@@ -161,7 +161,7 @@ def calc_errors(problem, points):
     # TODO: return sane datastructure
     # Make a hashable version of model which just contains the name
     # attribute, which is all that the rest of this code accesses.
-    models = [_HashableModel(m) for m in _experiments(problem)]
+    models = [_HashableModel(m, i) for i, m in enumerate(_experiments(problem))]
 
     profiles = {h: [v[k] for v in profiles] for k, h in enumerate(models)}
     slabs = {h: [v[k] for v in slabs] for k, h in enumerate(models)}
@@ -179,8 +179,8 @@ def calc_errors(problem, points):
 
 class _HashableModel:
     name: str
-    def __init__(self, model):
-        self.name = model.name
+    def __init__(self, model, index):
+        self.name = model.name if model.name is not None else f"M{index}"
     def __str__(self):
         return f"model {self.name}"
 
