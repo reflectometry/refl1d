@@ -97,7 +97,7 @@ class ProbeSchema:
     dT: Optional[Any] = 0
     L: List[float] = field_desc("List of lambda values (wavelength, in Angstroms)")
     dL: Optional[Any] = 0
-    dQ: Optional[Any] = None
+    dQo: Optional[ArrayLike] = None
     resolution: Literal["normal", "uniform"] = "uniform"
 
 @schema()
@@ -199,7 +199,8 @@ class Probe(ProbeSchema):
                  intensity=1, background=0, back_absorption=1, theta_offset=0,
                  sample_broadening=0,
                  back_reflectivity=False, name:Optional[str]=None, filename=None,
-                 dQ=None, resolution='normal'):
+                 dQo=None, resolution:Literal['normal', 'uniform']='normal',
+                 oversampling=None, oversampling_seed=1):
         if T is None or L is None:
             raise TypeError("T and L required")
         if sample_broadening is None:
@@ -227,7 +228,7 @@ class Probe(ProbeSchema):
         else:
             R, dR = None, None
 
-        self._set_TLR(T, dT, L, dL, R, dR, dQ)
+        self._set_TLR(T, dT, L, dL, R, dR, dQo)
         self.name = name
         self.filename = filename
         self.resolution = resolution
@@ -1845,7 +1846,7 @@ class PolarizedNeutronProbe:
             self.calc_Qo = Q
         else:
             # unshared offsets changed, or union has not been calculated before
-            self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
+            self.T, self.dT, self.L, self.dL, self.Q, self.dQo \
                 = measurement_union(self.xs)
             self._set_calc(self.T, self.L)
 
