@@ -1812,26 +1812,6 @@ class PolarizedNeutronProbe:
 
     def _calculate_union(self):
         theta_offsets = [x.theta_offset.value for x in self.xs if x is not None]
-        # print('theta_offsets', self._theta_offsets, theta_offsets)
-        if self._theta_offsets is not None and theta_offsets == self._theta_offsets:
-           # print("no offset change... returning", self._theta_offsets, theta_offsets)
-           # no change in offsets: use cached values of measurement union
-           return
-
-        else:
-            # unshared offsets changed, or union has not been calculated before
-            self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
-                = measurement_union(self.xs)
-
-            if self.oversampling is None:
-                self._set_calc(self.T, self.L)
-            else:
-                self._oversample(self.oversampling, self.oversampling_seed)
-            
-            self._theta_offsets = theta_offsets
-
-    def _calculate_union(self):
-        theta_offsets = [x.theta_offset.value for x in self.xs if x is not None]
         if self._theta_offsets is not None and theta_offsets == self._theta_offsets:
             # no change in offsets: use cached values of measurement union
             return
