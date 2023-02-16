@@ -45,10 +45,11 @@ from enum import Enum
 
 import numpy as np
 from numpy import sqrt, pi, inf, sign, log
+from numpy.typing import ArrayLike, NDArray
 from numpy.linalg.linalg import matrix_power
 import numpy.random
 import numpy.fft
-from typing import NamedTuple, Optional, Any, Union
+from typing import NamedTuple, Optional, Any, Sequence, Union
 
 from bumps.util import field, field_desc, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
@@ -93,12 +94,14 @@ class ProbeSchema:
     back_reflectivity: bool = False
     R: Optional[Any] = None
     dR: Optional[Any] = 0
-    T: List[float] = field_desc("List of theta values (incident angle)")
+    T: NDArray[np.float64] = field_desc("List of theta values (incident angle)")
     dT: Optional[Any] = 0
-    L: List[float] = field_desc("List of lambda values (wavelength, in Angstroms)")
+    L: NDArray[np.float64] = field_desc("List of lambda values (wavelength, in Angstroms)")
     dL: Optional[Any] = 0
-    dQ: Optional[Any] = None
+    dQo: Optional[ArrayLike] = None
     resolution: Literal["normal", "uniform"] = "uniform"
+    oversampling: Optional[int] = None
+    oversampling_seed: int = 1
 
 @schema()
 class Probe(ProbeSchema):
@@ -199,7 +202,8 @@ class Probe(ProbeSchema):
                  intensity=1, background=0, back_absorption=1, theta_offset=0,
                  sample_broadening=0,
                  back_reflectivity=False, name:Optional[str]=None, filename=None,
-                 dQ=None, resolution='normal'):
+                 dQo=None, resolution:Literal['normal', 'uniform']='normal',
+                 oversampling=None, oversampling_seed=1):
         if T is None or L is None:
             raise TypeError("T and L required")
         if sample_broadening is None:
@@ -227,10 +231,12 @@ class Probe(ProbeSchema):
         else:
             R, dR = None, None
 
-        self._set_TLR(T, dT, L, dL, R, dR, dQ)
+        self._set_TLR(T, dT, L, dL, R, dR, dQo)
         self.name = name
         self.filename = filename
         self.resolution = resolution
+        if oversampling is not None:
+            self.oversample(oversampling, oversampling_seed)
 
     def _set_TLR(self, T, dT, L, dL, R, dR, dQ):
         #if L is None:
@@ -240,8 +246,8 @@ class Probe(ProbeSchema):
         #    E = xsf.xray_energy(L)
         #    dE = E * dL/L
 
-        T = np.array(T)
-        L = np.array(L)
+        T = np.array(T, np.float64)
+        L = np.array(L, np.float64)
         Q = TL2Q(T=T, L=L)
         if dQ is not None:
             dQ = np.asarray(dQ)
@@ -608,6 +614,8 @@ class Probe(ProbeSchema):
         T = np.hstack((self.T, T.flatten()))
         L = np.hstack((self.L, L.flatten()))
         self._set_calc(T, L)
+        self.oversampling = n
+        self.oversampling_seed = seed
 
     def _apply_resolution(self, Qin, Rin, interpolation):
         """
@@ -1695,6 +1703,8 @@ class PolarizedNeutronProbe:
     pp: optional_xs = None
     H: Parameter
     Aguide: Parameter
+    oversampling: Optional[int] = None
+    oversampling_seed: int = 1
 
     view = None  # Default to Probe.view when None
     show_resolution = None  # Default to Probe.show_resolution when None
@@ -1707,7 +1717,8 @@ class PolarizedNeutronProbe:
                        mp: optional_xs=None,
                        pm: optional_xs=None,
                        pp: optional_xs=None,
-                       name=None, Aguide=BASE_GUIDE_ANGLE, H=0, oversampling=None):
+                       name=None, Aguide=BASE_GUIDE_ANGLE, H=0,
+                       oversampling=None, oversampling_seed=1):
         if any([mm, mp, pm, pp]):
             if xs is not None:
                 warnings.warn("a cross-section is directly specified - xs argument will be ignored")
@@ -1718,9 +1729,6 @@ class PolarizedNeutronProbe:
         else:
             for index, xs_name in enumerate(self._xs_names):
                 setattr(self, xs_name, xs[index])
-
-        self.oversampling = oversampling
-        self.oversampling_seed = 1
 
         self._theta_offsets = None
         if name is None and self.mm is not None:
@@ -1735,6 +1743,8 @@ class PolarizedNeutronProbe:
         self.H = Parameter.default(H, name="H"+spec)
         self.Aguide = Parameter.default(Aguide, name="Aguide"+spec,
                                         limits=[-360, 360])
+        if oversampling is not None:
+            self.oversample(oversampling, oversampling_seed)
         
     @property
     def xs(self):
@@ -1822,26 +1832,6 @@ class PolarizedNeutronProbe:
 
     def _calculate_union(self):
         theta_offsets = [x.theta_offset.value for x in self.xs if x is not None]
-        # print('theta_offsets', self._theta_offsets, theta_offsets)
-        if self._theta_offsets is not None and theta_offsets == self._theta_offsets:
-           # print("no offset change... returning", self._theta_offsets, theta_offsets)
-           # no change in offsets: use cached values of measurement union
-           return
-
-        else:
-            # unshared offsets changed, or union has not been calculated before
-            self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
-                = measurement_union(self.xs)
-
-            if self.oversampling is None:
-                self._set_calc(self.T, self.L)
-            else:
-                self._oversample(self.oversampling, self.oversampling_seed)
-            
-            self._theta_offsets = theta_offsets
-
-    def _calculate_union(self):
-        theta_offsets = [x.theta_offset.value for x in self.xs if x is not None]
         if self._theta_offsets is not None and theta_offsets == self._theta_offsets:
             # no change in offsets: use cached values of measurement union
             return
@@ -1856,7 +1846,7 @@ class PolarizedNeutronProbe:
             self.calc_Qo = Q
         else:
             # unshared offsets changed, or union has not been calculated before
-            self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
+            self.T, self.dT, self.L, self.dL, self.Q, self.dQo \
                 = measurement_union(self.xs)
             self._set_calc(self.T, self.L)
 

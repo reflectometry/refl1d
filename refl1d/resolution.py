@@ -6,6 +6,8 @@ Resolution calculations
 from numpy import pi, sqrt, log, degrees, radians, cos, sin, tan
 from numpy import arcsin as asin, ceil
 from numpy import ones_like, arange, isscalar, asarray, hstack
+from numpy import float64
+from numpy.typing import ArrayLike
 
 
 def QL2T(Q=None, L=None):
@@ -36,7 +38,7 @@ def QT2L(Q=None, T=None):
     return 4 * pi * sin(T) / Q
 
 
-def TL2Q(T=None, L=None):
+def TL2Q(T:ArrayLike, L:ArrayLike):
     r"""
     Compute $Q$ from angle and wavelength.
 
@@ -50,8 +52,8 @@ def TL2Q(T=None, L=None):
     return 4 * pi * sin(T) / L
 
 
-_FWHM_scale = sqrt(log(256))
-def FWHM2sigma(s):
+_FWHM_scale: float64 = sqrt(log(256))
+def FWHM2sigma(s:ArrayLike):
     return asarray(s, 'd')/_FWHM_scale
 
 
@@ -59,7 +61,7 @@ def sigma2FWHM(s):
     return asarray(s, 'd')*_FWHM_scale
 
 
-def dTdL2dQ(T=None, dT=None, L=None, dL=None):
+def dTdL2dQ(T:ArrayLike, dT:ArrayLike, L:ArrayLike, dL:ArrayLike):
     r"""
     Convert wavelength dispersion and angular divergence to $Q$ resolution.
 
@@ -87,8 +89,8 @@ def dTdL2dQ(T=None, dT=None, L=None, dL=None):
     """
 
     # Compute dQ from wavelength dispersion (dL) and angular divergence (dT)
-    T, dT = radians(asarray(T, 'd')), radians(asarray(dT, 'd'))
-    L, dL = asarray(L, 'd'), asarray(dL, 'd')
+    T, dT = radians(asarray(T, float64)), radians(asarray(dT, float64))
+    L, dL = asarray(L, float64), asarray(dL, float64)
     #print T, dT, L, dL
     dQ = (4*pi/L) * sqrt((sin(T)*dL/L)**2 + (cos(T)*dT)**2)
 
