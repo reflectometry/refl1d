@@ -25,6 +25,7 @@ from . import __version__
 from .reflectivity import reflectivity_amplitude as reflamp
 from .reflectivity import magnetic_amplitude as reflmag
 from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
+from .probe import PolarizedNeutronProbeSumDiff, meanreflectivity, splitting
 #print("Using pure python reflectivity calculator")
 #from .abeles import refl as reflamp
 from .util import asbytes
@@ -1013,6 +1014,15 @@ class SumDiffExperiment(Experiment):
         self._cache['residuals'] = resid
         return resid
 
+    #probes contain dummy variables for calculating the correct Q - do not want to include
+    def numpoints(self):
+        if isinstance(self.probe, PolarizedNeutronProbeSumDiff):
+            return sum(len(xs.Q) for xs in (self.probe.sm, self.probe.df) if xs is not None)
+        elif self.probe.polarized:
+            return sum(len(xs.Q) for xs in self.probe.xs if xs is not None)
+        else:
+            return len(self.probe.Q) if self.probe.Q is not None else 0
+
 
 class SumDiffEIVExperiment(Experiment):
 
@@ -1042,4 +1052,14 @@ class SumDiffEIVExperiment(Experiment):
         for xs, QRi in zip([self.probe.sm,self.probe.df], [QRmean,QRdf]) if xs is not None])
         # print(resid)
         self._cache['residuals'] = resid
+        print("resid", np.sum(resid**2)/2)
         return resid
+
+    #probes contain dummy variables for calculating the correct Q - do not want to include
+    def numpoints(self):
+        if isinstance(self.probe, PolarizedNeutronProbeSumDiff):
+            return sum(len(xs.Q) for xs in (self.probe.sm, self.probe.df) if xs is not None)
+        elif self.probe.polarized:
+            return sum(len(xs.Q) for xs in self.probe.xs if xs is not None)
+        else:
+            return len(self.probe.Q) if self.probe.Q is not None else 0
