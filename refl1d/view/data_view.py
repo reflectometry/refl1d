@@ -94,19 +94,46 @@ class DataView(wx.Panel):
                                           "Plot R * Q^4")
         frame.Bind(wx.EVT_MENU, self.OnQ4, _item)
         _item.Check(Probe.view == 'q4')
+
+        menu.Break()
+        # menu.AppendSeparator()
+
         _item = menu.AppendRadioItem(wx.ID_ANY,
                                           "&SA",
                                           "Plot spin asymmetry")
         frame.Bind(wx.EVT_MENU, self.OnSA, _item)
         _item.Check(Probe.view == 'SA')
 
-        menu.AppendSeparator()
+        _item = menu.AppendRadioItem(wx.ID_ANY,
+                                          "Difference",
+                                          "Plot difference")
+        frame.Bind(wx.EVT_MENU, self.OnDiff, _item)
+        _item.Check(Probe.view == 'diff')
 
-        _item = menu.Append(wx.ID_ANY,
+        _item = menu.AppendRadioItem(wx.ID_ANY,
+                                          "Fresnel Difference",
+                                          "Plot difference/R_F")
+        frame.Bind(wx.EVT_MENU, self.OnFresnelDiff, _item)
+        _item.Check(Probe.view == 'fresnelDiff')
+
+        _item = menu.AppendRadioItem(wx.ID_ANY,
+                                          "Difference Q4",
+                                          "Plot difference * Q^4")
+        frame.Bind(wx.EVT_MENU, self.OnDiffQ4, _item)
+        _item.Check(Probe.view == 'diffq4')
+
+        # menu.AppendSeparator()
+
+        _item = menu.AppendRadioItem(wx.ID_ANY,
                                  "&Residuals",
                                  "Plot residuals (R_theory - R)/dR")
         frame.Bind(wx.EVT_MENU, self.OnResiduals, _item)
+        _item.Check(Probe.view == 'residuals')
+
+        # menu.InsertSeparator(size_t 6)
+
         menu.Enable(id=_item.GetId(), enable=True)
+
 
         return menu
 
@@ -133,6 +160,18 @@ class DataView(wx.Panel):
 
     def OnSA(self, event):
         self.view = "SA"
+        self.redraw(reset=True)
+
+    def OnDiff(self, event):
+        self.view = "diff"
+        self.redraw(reset=True)
+
+    def OnFresnelDiff(self, event):
+        self.view = "fresnelDiff"
+        self.redraw(reset=True)
+
+    def OnDiffQ4(self, event):
+        self.view = "diffq4"
         self.redraw(reset=True)
 
     def OnResiduals(self, event):

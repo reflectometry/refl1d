@@ -743,7 +743,14 @@ class Probe(object):
             self.plot_residuals(**kwargs)
         elif view == 'fft':
             self.plot_fft(**kwargs)
-        elif view == 'SA': # SA does not plot since it does not exist
+        # SA and difference (undefined if not polarized) do not plot since they don't exist
+        elif view == 'SA':
+            pass
+        elif view == 'diff':
+            pass
+        elif view == 'fresnelDiff':
+            pass
+        elif view == 'diffq4':
             pass
         else:
             raise TypeError("incorrect reflectivity view '%s'"%view)
@@ -763,7 +770,8 @@ class Probe(object):
         Plot the data associated with probe.
         """
         import matplotlib.pyplot as plt
-        self._plot_pair(ylabel='Reflectivity', **kwargs)
+        kwargs.setdefault('ylabel', 'Reflectivity')
+        self._plot_pair(**kwargs)
         plt.yscale('linear')
 
     def plot_log(self, **kwargs):
@@ -771,7 +779,8 @@ class Probe(object):
         Plot the data associated with probe.
         """
         import matplotlib.pyplot as plt
-        self._plot_pair(ylabel='Reflectivity', **kwargs)
+        kwargs.setdefault('ylabel','Reflectivity')
+        self._plot_pair(**kwargs)
         plt.yscale('log')
 
     def plot_logfresnel(self, *args, **kw):
@@ -864,7 +873,7 @@ class Probe(object):
             # reflectivity.
             # Issues with current implementation:
             # * If the resolution is too tight, there won't be sufficient
-            #   support from _calc_Q to compute theory at Q interpolated.
+            #   support from _cal c_Q to compute theory at Q interpolated.
             # * dQ for the interpolated points uses linear interpolation
             #   of dQ between neighbours.  If measurements with tight and
             #   loose resolution are interleaved the result will look very
@@ -1607,7 +1616,7 @@ class PolarizedNeutronProbe(object):
     """
     Polarized neutron probe
 
-    *xs* (4 x NeutronProbe) is a sequence pp, pm, mp and mm.
+    *xs* (4 x NeutronProbe) is a sequence mm, mp, pm, and pp.
 
     *Aguide* (degrees) is the angle of the applied field relative
     to the plane of the sample, with angle 270º in the plane of the sample.
@@ -1859,6 +1868,12 @@ class PolarizedNeutronProbe(object):
             self.plot_residuals(**kwargs)
         elif view == 'SA':
             self.plot_SA(**kwargs)
+        elif view == 'diff':
+            self.plot_Diff(**kwargs)
+        elif view == 'fresnelDiff':
+            self.plot_FresnelDiff(**kwargs)
+        elif view == 'diffq4':
+            self.plot_DiffQ4(**kwargs)
         elif view == 'resolution':
             self.plot_resolution(**kwargs)
         else:
@@ -1925,6 +1940,125 @@ class PolarizedNeutronProbe(object):
         plt.ylabel(r'spin asymmetry $(R^{++} -\, R^{--}) / (R^{++} +\, R^{--})$')
         plt.legend(numpoints=1)
 
+    def plot_Diff(self, theory=None, label=None, plot_shift=None,
+                **kwargs):
+        import matplotlib.pyplot as plt
+        if self.pp is None or self.mm is None:
+            raise TypeError("cannot form difference plot without ++ and --")
+
+        plot_shift = plot_shift if plot_shift is not None else Probe.plot_shift
+        trans = auto_shift(plot_shift)
+        pp, mm = self.pp, self.mm
+        c = coordinated_colors()
+        if hasattr(pp, 'R') and hasattr(mm, 'R') and pp.R is not None and mm.R is not None:
+            Q, diff, ddiff = splitting(pp.Q, pp.R, pp.dR, mm.Q, mm.R, mm.dR)
+            if ddiff is not None:
+                res = (self.show_resolution if self.show_resolution is not None
+                       else Probe.show_resolution)
+                dQ = pp.dQ if res else None
+                plt.errorbar(pp.Q, diff, yerr=ddiff, xerr=dQ, fmt='.', capsize=0,
+                             label=pp.label(prefix=label, gloss='data'),
+                             transform=trans,
+                             color=c['light'])
+            else:
+                plt.plot(pp.Q, diff, '.',
+                         label=pp.label(prefix=label, gloss='data'),
+                         transform=trans,
+                         color=c['light'])
+        if theory is not None:
+            mm, mp, pm, pp = theory
+            Q, diff, ddiff = splitting(pp[0], pp[1], None, mm[0], mm[1], None)
+            plt.plot(Q, diff,
+                     label=self.pp.label(prefix=label, gloss='theory'),
+                     transform=trans,
+                     color=c['dark'])
+        plt.xlabel(r'Q (\AA^{-1})')
+        plt.ylabel(r'Difference $(R^{++} -\, R^{--})$')
+        plt.legend(numpoints=1)
+
+    def plot_DiffQ4(self, theory=None, label=None, plot_shift=None,
+                **kwargs):
+        import matplotlib.pyplot as plt
+        if self.pp is None or self.mm is None:
+            raise TypeError("cannot form difference plot without ++ and --")
+        plot_shift = plot_shift if plot_shift is not None else Probe.plot_shift
+        trans = auto_shift(plot_shift)
+        pp, mm = self.pp, self.mm
+        c = coordinated_colors()
+        Q4 = 1e-8*self.pp.Q**-4*self.pp.intensity.value + self.pp.background.value
+        if hasattr(pp, 'R') and hasattr(mm, 'R') and pp.R is not None and mm.R is not None:
+            Q, diff, ddiff = splitting(pp.Q, pp.R, pp.dR, mm.Q, mm.R, mm.dR)
+            if ddiff is not None:
+                res = (self.show_resolution if self.show_resolution is not None
+                       else Probe.show_resolution)
+                dQ = pp.dQ if res else None
+                plt.errorbar(Q, diff/Q4, yerr=ddiff/Q4, xerr=dQ, fmt='.', capsize=0,
+                             label=pp.label(prefix=label, gloss='data'),
+                             transform=trans,
+                             color=c['light'])
+            else:
+                plt.plot(Q, diff/Q4, '.',
+                         label=pp.label(prefix=label, gloss='data'),
+                         transform=trans,
+                         color=c['light'])
+        if theory is not None:
+            mm, mp, pm, pp = theory
+            Q, diff, _ = splitting(pp[0], pp[1], None, mm[0], mm[1], None)
+            plt.plot(Q, diff/Q4,
+                     label=self.pp.label(prefix=label, gloss='theory'),
+                     transform=trans,
+                     color=c['dark'])
+        plt.xlabel(r'Q (\AA^{-1})')
+        plt.ylabel(r'Difference $(R^{++} -\, R^{--}) (100 Q)^4$')
+        plt.legend(numpoints=1)
+
+    def plot_FresnelDiff(self, substrate=None, surface=None, theory=None, label=None, plot_shift=None,
+                **kwargs):
+        import matplotlib.pyplot as plt
+        if self.pp is None or self.mm is None:
+            raise TypeError("cannot form difference plot without ++ and --")
+        if substrate is None and surface is None:
+            raise TypeError("Fresnel-normalized reflectivity needs substrate or surface")
+        F = self.fresnel(substrate=substrate, surface=surface)
+        #cross-sections could have different intensities - should allow for this
+        Q,fresnelm = self.mm.apply_beam(self.calc_Q, F(self.calc_Q),interpolation=0)
+        Q,fresnelp = self.pp.apply_beam(self.calc_Q, F(self.calc_Q),interpolation=0)
+        if substrate is None:
+            name = "air:%s" % surface.name
+        elif surface is None or isinstance(surface, Vacuum):
+            name = substrate.name
+        else:
+            name = "%s:%s" % (substrate.name, surface.name)
+        plot_shift = plot_shift if plot_shift is not None else Probe.plot_shift
+        trans = auto_shift(plot_shift)
+        pp, mm = self.pp, self.mm
+        c = coordinated_colors()
+        if hasattr(pp, 'R') and hasattr(mm, 'R') and pp.R is not None and mm.R is not None:
+            Q, diffF, ddiffF = splitting(pp.Q, pp.R/fresnelp, pp.dR/fresnelp, mm.Q, mm.R/fresnelm, mm.dR/fresnelm) # each cross section could have a different intensity or background theoretically, so divide first before calculating difference
+            if ddiffF is not None:
+                res = (self.show_resolution if self.show_resolution is not None
+                       else Probe.show_resolution)
+                dQ = pp.dQ if res else None
+                plt.errorbar(Q, diffF, yerr=ddiffF, xerr=dQ, fmt='.', capsize=0,
+                             label=pp.label(prefix=label, gloss='data'),
+                             transform=trans,
+                             color=c['light'])
+            else:
+                plt.plot(Q, diffF, '.',
+                         label=pp.label(prefix=label, gloss='data'),
+                         transform=trans,
+                         color=c['light'])
+        if theory is not None:
+            mm, mp, pm, pp = theory
+            Q, diffF, _ = splitting(pp[0], pp[1]/fresnelp, None, mm[0], mm[1]/fresnelm, None)
+            plt.plot(Q, diffF,
+                     label=self.pp.label(prefix=label, gloss='theory'),
+                     transform=trans,
+                     color=c['dark'])
+        plt.xlabel(r'Q (\AA^{-1})')
+        plt.ylabel(r'Difference $(R^{++} -\, R^{--})/R($'+name+')')
+        plt.legend(numpoints=1)
+
     def _xs_plot(self, plotter, theory=None, **kwargs):
         import matplotlib.pyplot as plt
         # Plot available cross sections
@@ -1966,7 +2100,7 @@ def spin_asymmetry(Qp, Rp, dRp, Qm, Rm, dRm):
 
     .. math::
 
-        \Delta S_A^2 = \frac{4(R_{++}^2\Delta R_{--}^2+R_{--}^2\Delta R_{++})}
+        \Delta S_A^2 = \frac{4(R_{++}^2\Delta R_{--}^2+R_{--}^2\Delta R_{++}^2)}
                             {(R_{++} + R_{--})^4}
 
     """
@@ -1980,7 +2114,357 @@ def spin_asymmetry(Qp, Rp, dRp, Qm, Rm, dRm):
     else:
         return Qp, v, None
 
+# based on A.J.Caruana Footprint correction probe / experiment
+class PolarizedNeutronProbeSumDiff(PolarizedNeutronProbe):
+    """
+    Polarized neutron probe WITH Sum and Difference
 
+    *xs* (6 x NeutronProbe) is a sequence mm, mp, pm, pp, sum, difference
+
+    *Aguide* (degrees) is the angle of the applied field relative
+    to the plane of the sample, with angle 270º in the plane of the sample.
+
+    *H* (tesla) is the magnitude of the applied field
+    """
+    view = None  # Default to Probe.view when None
+    show_resolution = None  # Default to Probe.show_resolution when None
+    substrate = surface = None
+    polarized = True
+    radiation = 'neutron'
+
+    @property
+    def sm(self):
+        return self.xs[4]
+
+    @property
+    def df(self):
+        return self.xs[5]
+
+    @property
+    def xs(self):
+        return self._xs  # Don't let user replace xs
+
+    def parameters(self):
+        mm, mp, pm, pp, sm, df = [(xsi.parameters() if xsi else None)
+                          for xsi in self.xs]
+        return {
+            'pp': pp, 'pm': pm, 'mp': mp, 'mm': mm, 'sm': sm, 'df': df,
+            'Aguide': self.Aguide, 'H': self.H,
+        }
+
+
+    def to_dict(self):
+        """ Return a dictionary representation of the parameters """
+        mm, mp, pm, pp, sm, df = self.xs
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'pp': pp,
+            'pm': pm,
+            'mp': mp,
+            'mm': mm,
+            'sm': sm,
+            'df': df,
+            'a_guide': self.Aguide,
+            'h': self.H,
+        })
+
+
+
+    def save(self, filename, theory, substrate=None, surface=None):
+        # for xsi, xsi_th, suffix in zip(self.xs, theory, ('A', 'B', 'C', 'D', 'SM', 'DF')):
+        xsi_df = self.df
+        mm, mp, pm, pp = theory
+        Q, DF, _ = splitting(pp[0], pp[1], None, mm[0], mm[1], None)
+        xsi_th_df = [Q,DF]
+        suffix = 'DF'
+        if xsi_df is not None:
+            xsi_df.save(filename+suffix, xsi_th_df,
+                     substrate=substrate, surface=surface)
+        xsi_sm = self.sm
+        mm, mp, pm, pp = theory
+        Q, SM, _ = meanreflectivity(pp[0], pp[1], None, mm[0], mm[1], None)
+        xsi_th_sm = [Q,SM]
+        suffix = 'SM'
+        if xsi_sm is not None:
+            xsi_sm.save(filename+suffix, xsi_th_sm,
+                     substrate=substrate, surface=surface)
+
+#    save.__doc__ = PolarizedNeutronProbe.save.__doc__
+
+
+    def plot_resolution(self, **kwargs):
+        self._xs_plot('plot_resolution', **kwargs)
+
+
+    def plot_linear(self, **kwargs):
+        self._sm_plot('plot_linear', **kwargs)
+
+
+    def plot_log(self, **kwargs):
+        self._sm_plot('plot_log', **kwargs)
+
+
+    def plot_fresnel(self, **kwargs):
+        self._sm_plot('plot_fresnel', **kwargs)
+
+
+    def plot_logfresnel(self, **kwargs):
+        self._sm_plot('plot_logfresnel', **kwargs)
+
+
+    def plot_Q4(self, **kwargs):
+        self._sm_plot('plot_Q4', **kwargs)
+
+    def plot_residuals(self, **kwargs):
+        self._xs_plot('plot_residuals', **kwargs)
+
+    def plot_Diff(self, **kwargs):
+        self._df_plot('plot_linear', ylabel=r'Difference $(R^{++} -\, R^{--})$', **kwargs)
+
+    def plot_FresnelDiff(self, **kwargs):
+        import matplotlib.pyplot as plt
+        self._df_plot('plot_fresnel', **kwargs)
+        ylabel = plt.gca().get_ylabel()
+        plt.ylabel(ylabel.replace('R/',r'Difference $(R^{++} -\, R^{--})$/'))
+
+    def plot_DiffQ4(self, **kwargs):
+        import matplotlib.pyplot as plt
+        self._df_plot('plot_Q4', **kwargs)
+        plt.ylabel(ylabel=r'Difference $(R^{++} -\, R^{--}) (100 Q)^4$')
+
+    def plot_SA(self, theory=None, label=None, plot_shift=None,
+                **kwargs):
+        import matplotlib.pyplot as plt
+        # print('plotting Difference')
+        if self.df is None or self.sm is None:# and (self.pp is None or self.mm is None):
+            # raise TypeError("cannot form difference plot without difference")
+            raise TypeError("cannot form SA plot without sum and difference")
+
+        plot_shift = plot_shift if plot_shift is not None else Probe.plot_shift
+        trans = auto_shift(plot_shift)
+        df = self.df
+        sm = self.sm
+        c = coordinated_colors()
+        if hasattr(df, 'R') and df.R is not None: #plot measured DF (not from pp, mm)
+            Q = df.Q
+            Rd = df.R
+            Rs = np.interp(Q, sm.Q, sm.R)
+            SA = Rd/Rs
+            dRd = df.dR
+            if dRd is not None:
+                dRs = np.interp(Q, sm.Q, sm.dR)
+                dvsq = (dRd/Rs)**2 + (dRs*Rd)**2/(Rs)**4
+                dvsq[dvsq < 0] = 0
+                dSA = sqrt(dvsq)
+            else:
+                dSA = None
+
+            if dSA is not None:
+                res = (self.show_resolution if self.show_resolution is not None
+                       else Probe.show_resolution)
+                dQ = df.dQ if res else None
+                plt.errorbar(Q, SA, yerr=dSA, xerr=dQ, fmt='.', capsize=0,
+                             label=df.label(prefix=label, gloss='data'),
+                             transform=trans,
+                             color=c['light'])
+            else:
+                plt.plot(Q, SA, '.',
+                         label=df.label(prefix=label, gloss='data'),
+                         transform=trans,
+                         color=c['light'])
+        if theory is not None: #plot theory curve
+            mm, mp, pm, pp = theory
+            Q, SA, _ = spin_asymmetry(pp[0], pp[1], None, mm[0], mm[1], None)
+            plt.plot(Q, SA,
+                     label=self.pp.label(prefix=label, gloss='theory'),
+                     transform=trans,
+                     color=c['dark'])
+        plt.xlabel(r'Q (\AA^{-1})')
+        plt.ylabel(r'spin asymmetry $(R^{++} -\, R^{--}) / (R^{++} +\, R^{--})$')
+        plt.legend(numpoints=1)
+
+    def _sm_plot(self, plotter, theory=None, **kwargs):
+        import matplotlib.pyplot as plt
+        if theory is None:
+            theory = (None, None, None, None)
+        #only first four cross-sections
+        x_data = self.sm
+        mm, mp, pm, pp = theory
+        Q,SM,_ = meanreflectivity(pp[0], pp[1], None, mm[0], mm[1], None)
+        suffix = 'SM'
+        if x_data is not None:
+            fn = getattr(x_data, plotter)
+            fn(theory=[Q,SM], suffix=suffix, **kwargs)
+
+    def _df_plot(self, plotter, theory=None, **kwargs):
+        import matplotlib.pyplot as plt
+        if theory is None:
+            theory = (None, None, None, None)
+        #only first four cross-sections
+        x_data = self.df
+        mm, mp, pm, pp = theory
+        Q,DF,_ = splitting(pp[0], pp[1], None, mm[0], mm[1], None)
+        suffix = 'DF'
+        if x_data is not None:
+            fn = getattr(x_data, plotter)
+            fn(theory=[Q,DF], suffix=suffix, **kwargs)
+
+    def _xs_plot(self, plotter, theory=None, **kwargs):
+        import matplotlib.pyplot as plt
+        # plot DF residuals rather than other xs residuals
+        # print(plotter)
+        if plotter == 'plot_residuals':
+            # plot_shift = plot_shift if plot_shift is not None else Probe.residuals_shift
+            plot_shift = Probe.residuals_shift
+            trans = auto_shift(plot_shift)
+            if theory is not None and self.sm.R is not None:
+                c = coordinated_colors()
+                mm, mp, pm, pp = theory
+                Q, SM, _ = meanreflectivity(pp[0], pp[1], None, mm[0], mm[1], None)
+                # In case theory curve is evaluated at more/different points...
+                R = np.interp(self.sm.Q, Q, SM)
+                residual = (SM - self.sm.R)/self.sm.dR
+                plt.plot(self.sm.Q, residual,
+                         '.', color=c['light'],
+                         transform=trans,
+                         label=self.sm.label(prefix='', suffix='SM', gloss='resid'))
+            if theory is not None and self.df.R is not None:
+                c = coordinated_colors()
+                mm, mp, pm, pp = theory
+                Q, DF, _ = splitting(pp[0], pp[1], None, mm[0], mm[1], None)
+                # In case theory curve is evaluated at more/different points...
+                R = np.interp(self.df.Q, Q, DF)
+                residual = (DF - self.df.R)/self.df.dR
+                plt.plot(self.df.Q, residual,
+                         '.', color=c['light'],
+                         transform=trans,
+                         label=self.df.label(prefix='', suffix='DF', gloss='resid'))
+            plt.axhline(1, color='black', ls='--', lw=1)
+            plt.axhline(0, color='black', lw=1)
+            plt.axhline(-1, color='black', ls='--', lw=1)
+            plt.xlabel('Q (inv A)')
+            plt.ylabel('(theory-data)/error')
+            plt.legend(numpoints=1)
+        #don't plot other cross sections which are placeholders
+        # else: #don't plot DF on normal plot
+            # if theory is None:
+                # theory = (None, None, None, None)
+            # #only first four cross-sections
+            # for x_data, x_th, suffix in zip(self.xs[:4], theory,
+                                            # ('$^{--}$', '$^{-+}$', '$^{+-}$', '$^{++}$')):
+                # if x_data is not None:
+                    # fn = getattr(x_data, plotter)
+                    # fn(theory=x_th, suffix=suffix, **kwargs)
+        elif 'Diff' in plotter: # plot difference not other xs
+            if theory is None:
+                theory = (None, None, None, None)
+            #only first four cross-sections
+            x_data = self.df
+            mm, mp, pm, pp = theory
+            Q,DF,_ = splitting(pp[0], pp[1], None, mm[0], mm[1], None)
+            suffix = 'DF'
+            if x_data is not None:
+                fn = getattr(x_data, plotter)
+                fn(theory=[Q,DF], suffix=suffix, **kwargs)
+        else: # plot NR not other xs
+            if theory is None:
+                theory = (None, None, None, None)
+            #only first four cross-sections
+            x_data = self.sm
+            mm, mp, pm, pp = theory
+            Q,SM,_ = meanreflectivity(pp[0], pp[1], None, mm[0], mm[1], None)
+            suffix = 'SM'
+            if x_data is not None:
+                fn = getattr(x_data, plotter)
+                fn(theory=[Q,SM], suffix=suffix, **kwargs)
+
+def meanreflectivity(Qp, Rp, dRp, Qm, Rm, dRm):
+    r"""
+    Compute average reflectivity for R++, R--.
+
+    **Parameters:**
+
+    *Qp*, *Rp*, *dRp* : vector
+        Measured ++ cross section and uncertainty.
+    *Qm*, *Rm*, *dRm* : vector
+        Measured -- cross section and uncertainty.
+
+    If *dRp*, *dRm* are None then the returned uncertainty will also be None.
+
+    **Returns:**
+
+    *Q*, *R*, *dR* : vector
+        Computed reflectivity and uncertainty.
+
+    **Algorithm:**
+
+    Mean Reflectivity, $R$, is:
+
+    .. math::
+
+        S_A = \frac{R_{++} + R_{--}}{2}
+
+    Uncertainty $\Delta R$ follows from propagation of error:
+
+    .. math::
+
+        \Delta S_A^2 = \frac{\Delta R_{--}^2+\Delta R_{++}^2)}{4}
+
+    """
+    Rm = np.interp(Qp, Qm, Rm)
+    v = (Rp+Rm)/2
+    if dRp is not None:
+        dRm = np.interp(Qp, Qm, dRm)
+        dvsq = (dRm**2 + dRp**2) / 4
+        dvsq[dvsq < 0] = 0
+        return Qp, v, np.sqrt(dvsq)
+    else:
+        return Qp, v, None
+
+
+def splitting(Qp, Rp, dRp, Qm, Rm, dRm):
+    r"""
+    Compute splitting for R++, R--.
+
+    **Parameters:**
+
+    *Qp*, *Rp*, *dRp* : vector
+        Measured ++ cross section and uncertainty.
+    *Qm*, *Rm*, *dRm* : vector
+        Measured -- cross section and uncertainty.
+
+    If *dRp*, *dRm* are None then the returned uncertainty will also be None.
+
+    **Returns:**
+
+    *Q*, *D*, *dD* : vector
+        Computed difference and uncertainty.
+
+    **Algorithm:**
+
+    Difference, $D$, is:
+
+    .. math::
+
+        D = R_{++} - R_{--}
+
+    Uncertainty $\Delta S_A$ follows from propagation of error:
+
+    .. math::
+
+        \Delta D^2 = \Delta R_{--}^2+\Delta R_{++}^2
+
+    """
+    Rm = np.interp(Qp, Qm, Rm)
+    v = (Rp-Rm)
+    if dRp is not None:
+        dRm = np.interp(Qp, Qm, dRm)
+        dvsq = (dRm)**2 + (dRp)**2
+        dvsq[dvsq < 0] = 0
+        return Qp, v, sqrt(dvsq)
+    else:
+        return Qp, v, None
 
 def _interpolate_Q(Q, dQ, n):
     """

@@ -25,6 +25,7 @@ from . import __version__
 from .reflectivity import reflectivity_amplitude as reflamp
 from .reflectivity import magnetic_amplitude as reflmag
 from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
+from .probe import PolarizedNeutronProbeSumDiff, meanreflectivity, splitting
 #print("Using pure python reflectivity calculator")
 #from .abeles import refl as reflamp
 from .util import asbytes
@@ -830,3 +831,235 @@ def nice(v, digits=2):
     place = floor(log10(abs(v)))
     scale = 10**(place-(digits-1))
     return sign*floor(abs(v)/scale+0.5)*scale
+
+#EIV marginalized_residuals from Paul
+def marginalized_residuals(Q, FQ, R, dR, angle_uncertainty=0.002, wavelength=None):
+    r"""
+    Returns the residuals from an error-in-variables model marginalized over
+    the variables.
+
+    *angular_uncertainty* from motor jitter in degrees.
+
+    For error in variables fits with normal uncertainty, start with the
+    following model:
+
+    .. math::
+
+        x &=& x_o + \epsilon_1 \text{for} \epsilon_1 ~ N(0, \Delta x^2) \\
+        y &=& f(x) + \epsilon_2 \text{for} \epsilon_2 ~ N(0, \Delta y^2) \\
+
+    Use a linear approximation at the nominal measurement location $x_o$ then
+
+    .. math::
+
+        f(x) \approx f'(x_?)(x - x_o) + f(x_o)
+
+    and so
+
+    .. math::
+
+        y &\approx& f'(x_o)(x_o + \epsilon_1 - x_o) + f(x_o) + \epsilon_2 \\
+          &=& f(x_o) + f'(x_o)\epsilon_1 + \epsilon_2
+
+    Therefore, measured $y_o$ is distributed as
+
+    .. math::
+
+        y_o &~& f(x_o) + f'(x_o)N(0, \Delta x^2) + N(0, \Delta y^2) \\
+            &~& N(f(x_o), (f'(x_o)\Delta x)^2 + \Delta y^2)
+
+    That is, assuming that f(x) is approximately linear over $\Delta x$, then
+    simply add $f'(x_o)\Delta x^2$ to the variance in the data.
+
+    We should be sampling $x$ densely enough that we can approximate
+    $f'(x)$ using the center point formula,
+
+    .. math::
+
+        f'(x) \approx \frac{f(x_{k+1}) - f(x_{k-1})}{x_{k+1} - x_{k-1}}
+
+    For reflectometry specifically the motor uncertainty $\delta\theta$ is
+    in angle and the theory is in $Q$, so we use the following
+
+    .. math::
+
+        Q &=& \frac{4 \pi}{\lambda} \sin(\theta + \delta\theta) \\
+          &=& \frac{4 \pi}{\lambda} (\cos \delta\theta \sin \theta
+              + \sin \delta\theta \cos \theta)
+
+    Using the small angle approximation and $\cos \theta > 0.96$
+    for $\theta < 15^o$, then
+
+    .. math::
+
+        Q &\approx& \frac{4 \pi}{\lambda} (\sin \theta + \delta\theta\cos\theta)
+          &\approx& \frac{4 \pi}{\lambda} (\sin \theta + \delta\theta)
+          &=$ Q + \frac{4 \pi}{\lambda}\delta\theta
+
+    and so
+
+    .. math::
+
+        $\epsilon_1 = \delta Q = \frac{4 \pi}{\lambda}\delta\theta
+
+    This means that we can compute the residual using
+
+    .. math::
+
+        \frac{dR}{dQ} &\approx& \frac{R_{k+1} - R_{k-1}}{Q_{k+1} - Q_{k-1}} \\
+        \Delta R' &=& \sqrt{\Delta R^2
+            + \left(\frac{4\pi\delta\theta}{\lambda} \frac{dR}{dQ}\right)^2 }
+
+    You can arrive at the same expression using marginalization over the
+    possible incident angles $\theta + \delta\theta$ for each $Q$ point
+
+    .. math::
+
+        P(R | Q) = \int  P(R | Q, \theta) P(\theta)\,\mathrm{d}\theta
+
+    where $P(R | Q, \theta)$ is the usual Gaussian residual for the measurement
+    and $P(\theta)$ is a Gaussian uncertainty in angle.
+    """
+
+    # slope from center point formula
+    if angle_uncertainty == 0.0:
+        return (R - FQ)/dR
+    # Using small angle approximation to Q = 4 pi/L sin(T + d)
+    #    Q = 4 pi / L (cos d sin T + sin d cos T)
+    #      ~ 4 pi / L (sin T + d cos T)    since d is small
+    #      ~ 4 pi / L (sin T + d)          since cos T > 0.96 for T < 15 degrees
+    #      = Q + 4 pi / L d
+    #      ~ Q + 2.5 d                     since L in [4, 6] angstroms
+    DQ = 4*np.pi/wavelength*np.radians(angle_uncertainty)
+
+    # Quick approx to [ log integral P(R,dR;Q') P(Q') dQ'] for motor position
+    # uncertainty P(Q') and gaussian measurement uncertainty P(R;Q') is to
+    # increase the size of dR based on the slope at Q and the motor uncertainty.
+    dRdQ = (R[2:] - R[:-2])/(Q[2:] - Q[:-2])
+    # Leave dR untouched for the initial and final point
+    dRp = dR.copy()
+    dRp[1:-1] = np.sqrt((dR[1:-1])**2 + (DQ[1:-1]*dRdQ)**2)  # add in quadrature
+    return (R - FQ)/(dRp)
+
+# TODO: check curvature in marginalized_residuals()
+#
+# If $|f(x_k) - \hat f(x_k)| \gtrsim |\delta x f'(x_k)|$ where $\hat f(x)$ is
+# the line connecting $f(x_k-\delta x)$ to $f(x_k+\delta x)$ then the curvature
+# at $x_k$ is too large for the correction factor. Depending on whether it is
+# curving toward or away from the measured data point the scaled residuals
+# will be too large or too small.
+#
+# Better:
+# Check $(f(x_k) - \hat f(x_k))^2 > C (\delta x f'(x_k))^2 + \delta y^2$.
+# That way we ignore the curvature if it is less than some fraction $C$ of
+# the combined uncertainty in x and y together.
+#
+# What should we do when the curvature check fails?  Maybe warn the user,
+# or maybe further tweak the mean and variance used to compute the residuals.
+#
+# Perhaps an additional term in the Taylor series around $f(x_k)$ will
+# do the trick, adding $f''(x_0) \epsilon_1^2 / 2$ to the approximation of $y$.
+# That is, $Z = f''/2 X + f' X + f + Y$. Completing the square, this is
+# $Z = f''/2 (X + f'/f'')^2 + f - (f'/f'')^2 + Y$. The X expression
+# corresponds to a non-central $\chi'^2_1$ distribution.[1] Using the
+# gaussian approximation (i.e., the mean and variance) for this distribution[2],
+# we can then find $Z = X' + Y$, and combine them into a single gaussian
+# approximation as before. Or use the generalized $\chi^2$ distribution,
+# though that may be more difficult to work with numerically.[3]
+#
+# [1] https://stats.stackexchange.com/questions/127612/polynomial-transform-of-a-gaussian-random-variable#comment244825_127612
+# [2] https://en.wikipedia.org/wiki/Noncentral_chi-squared_distribution
+# [3] https://en.wikipedia.org/wiki/Generalized_chi-squared_distribution
+
+
+class SumDiffExperiment(Experiment):
+
+    def residuals(self):
+        if 'residuals' in self._cache:
+            return self._cache['residuals']
+
+        if self.probe.polarized:
+            have_data = not all(x is None or x.R is None for x in self.probe.xs)
+        else:
+            have_data = not (self.probe.R is None)
+        if not have_data:
+            resid = np.zeros(0)
+            self._cache['residuals'] = resid
+            return resid
+
+        QR = self.reflectivity()
+        # print('in residuals')
+        # print(len(QR))
+        # for q in QR:
+        #     if q is not None:
+        #         print(len(q[0]))
+        #     else:
+        #         print('None')
+        # print(len(QR[0][0]))
+        # print(len(QR[3][0]))
+        # QRmean = meanreflectivity(self.probe.pp.Q,QR[0][0],None,self.probe.pp.Q,QR[3][0],None)
+        # print('from data')
+        # print(len(measRmean[1]))
+        mm, mp, pm, pp = QR
+        QRmean = meanreflectivity(pp[0],pp[1],None,mm[0],mm[1],None)
+        # print(len(QRmean[1]))
+        QRdf = splitting(pp[0],pp[1],None,mm[0],mm[1],None)
+        # print(len(QRsa[1]))
+        # print(len(self.probe.sa.Q))
+#        print(self.probe.df.Q)
+        resid = np.hstack([(xs[1] - QRi[1])/xs[2]
+            for xs, QRi in zip([(self.probe.sm.Q,self.probe.sm.R,self.probe.sm.dR),(self.probe.df.Q,self.probe.df.R,self.probe.df.dR)], [QRmean,QRdf])
+            if xs is not None])
+        # print(resid)
+        self._cache['residuals'] = resid
+        return resid
+
+    #probes contain dummy variables for calculating the correct Q - do not want to include
+    def numpoints(self):
+        if isinstance(self.probe, PolarizedNeutronProbeSumDiff):
+            return sum(len(xs.Q) for xs in (self.probe.sm, self.probe.df) if xs is not None)
+        elif self.probe.polarized:
+            return sum(len(xs.Q) for xs in self.probe.xs if xs is not None)
+        else:
+            return len(self.probe.Q) if self.probe.Q is not None else 0
+
+
+class SumDiffEIVExperiment(Experiment):
+
+    def residuals(self):
+        if 'residuals' in self._cache:
+            return self._cache['residuals']
+
+        if self.probe.polarized:
+            have_data = not all([x is None or x.R is None for x in self.probe.xs])
+#            print(have_data)
+        else:
+            have_data = not (self.probe.R is None)
+        if not have_data:
+            resid = np.zeros(0)
+            self._cache['residuals'] = resid
+            return resid
+
+        QR = self.reflectivity()
+
+        mm, mp, pm, pp = QR
+
+        QRmean = meanreflectivity(pp[0],pp[1],None,mm[0],mm[1],None)
+        QRdf = splitting(pp[0],pp[1],None,mm[0],mm[1],None)
+
+
+        resid = np.hstack([marginalized_residuals(QRi[0], QRi[1], xs.R, xs.dR, angle_uncertainty=getattr(xs, 'angle_uncertainty', 0.0), wavelength=xs.L)
+        for xs, QRi in zip([self.probe.sm,self.probe.df], [QRmean,QRdf]) if xs is not None])
+        # print(resid)
+        self._cache['residuals'] = resid
+        print("resid", np.sum(resid**2)/2)
+        return resid
+
+    #probes contain dummy variables for calculating the correct Q - do not want to include
+    def numpoints(self):
+        if isinstance(self.probe, PolarizedNeutronProbeSumDiff):
+            return sum(len(xs.Q) for xs in (self.probe.sm, self.probe.df) if xs is not None)
+        elif self.probe.polarized:
+            return sum(len(xs.Q) for xs in self.probe.xs if xs is not None)
+        else:
+            return len(self.probe.Q) if self.probe.Q is not None else 0
