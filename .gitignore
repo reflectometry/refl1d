@@ -1,26 +1,43 @@
-.settings
-.coverage
-.pytest_cache
-.ipynb_checkpoints
+# Refl1d/Bumps specific
 .mplconfig
-.project
-.pydevproject
-.spyderproject
-.idea
-*.pyd
-*.pyc
-*.swp
-*.so
-*.bak
-/build/
-/dist/
-/refl1d.egg-info/
-/EGG-INFO
 /doc/_build/
 /doc/api/
 /doc/tutorial/
 /refl1d-*
 /bumps-*
 /Refl1D.pdf
+
+# Build
+*.so
+__pycache__/
+*.py[cod]
+/build/
+/dist/
+/*.egg-info/
+/EGG-INFO
 /.eggs
-*__pycache__*
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+
+
+# Test droppings
+.coverage
+.pytest_cache
+
+# Editor droppings
+.settings
+.ipynb_checkpoints
+.project
+.pydevproject
+.spyderproject
+.idea
+*.swp
+*.bak
