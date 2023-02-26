@@ -1563,7 +1563,7 @@ def _data_as_probe(entry, json_header_encoding, probe_args, T, L, dT, dL, dR, FW
             T=data_T, dT=data_dT,
             L=data_L, dL=data_dL,
             data=(data_R, data_dR),
-            dQ=data_dQ,
+            dQo=data_dQ,
             **probe_args)
     else:
         # QProbe doesn't accept theta_offset or sample_broadening
