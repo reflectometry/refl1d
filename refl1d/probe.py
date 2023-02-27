@@ -95,9 +95,9 @@ class ProbeSchema:
     back_reflectivity: bool = False
     R: Optional[Any] = None
     dR: Optional[Any] = 0
-    T: 'NDArray'[np.float64] = field_desc("List of theta values (incident angle)")
+    T: 'NDArray[np.float64]' = field_desc("List of theta values (incident angle)")
     dT: Optional[Any] = 0
-    L: 'NDArray'[np.float64] = field_desc("List of lambda values (wavelength, in Angstroms)")
+    L: 'NDArray[np.float64]' = field_desc("List of lambda values (wavelength, in Angstroms)")
     dL: Optional[Any] = 0
     dQo: Optional['ArrayLike'] = None
     resolution: Literal["normal", "uniform"] = "uniform"
