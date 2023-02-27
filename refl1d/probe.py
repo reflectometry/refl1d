@@ -45,11 +45,12 @@ from enum import Enum
 
 import numpy as np
 from numpy import sqrt, pi, inf, sign, log
-from numpy.typing import ArrayLike, NDArray
 from numpy.linalg.linalg import matrix_power
 import numpy.random
 import numpy.fft
-from typing import NamedTuple, Optional, Any, Sequence, Union
+from typing import NamedTuple, Optional, Any, Sequence, Union, TYPE_CHECKING
+if TYPE_CHECKING:
+    from numpy.typing import ArrayLike, NDArray
 
 from bumps.util import field, field_desc, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
@@ -94,11 +95,11 @@ class ProbeSchema:
     back_reflectivity: bool = False
     R: Optional[Any] = None
     dR: Optional[Any] = 0
-    T: NDArray[np.float64] = field_desc("List of theta values (incident angle)")
+    T: 'NDArray'[np.float64] = field_desc("List of theta values (incident angle)")
     dT: Optional[Any] = 0
-    L: NDArray[np.float64] = field_desc("List of lambda values (wavelength, in Angstroms)")
+    L: 'NDArray'[np.float64] = field_desc("List of lambda values (wavelength, in Angstroms)")
     dL: Optional[Any] = 0
-    dQo: Optional[ArrayLike] = None
+    dQo: Optional['ArrayLike'] = None
     resolution: Literal["normal", "uniform"] = "uniform"
     oversampling: Optional[int] = None
     oversampling_seed: int = 1
