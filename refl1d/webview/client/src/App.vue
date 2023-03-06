@@ -53,11 +53,16 @@ const fit_progress = ref<{ chisq?: string, step?: number, value?: number }>({});
 
 // Create a SocketIO connection, to be passed to child components
 // so that they can do their own communications with the host.
-const base_path = window.location.pathname;
+const queryString = window.location.search;
+const urlParams = new URLSearchParams(queryString);
 
-const socket = io('', {
+const sio_host = urlParams.get('hostname') ?? window.location.hostname;
+const sio_port = urlParams.get('port') ?? window.location.port;
+const sio_base_path = urlParams.get('base_path') ?? window.location.pathname;
+
+const socket = io(`${sio_host}:${sio_port}`, {
    // this is mostly here to test what happens on server fail:
-   path: `${base_path}socket.io`,
+   path: `${sio_base_path}socket.io`,
    reconnectionAttempts: 10
 });
 
