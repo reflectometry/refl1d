@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ENV_NAME="refl1d-webview-packed"
+ENV_NAME="isolated-base"
 PYTHON_VERSION="3.10"
 DIRNAME="refl1d"
 
@@ -18,16 +18,15 @@ mkdir "$destdir"
 tar -xzf "$ENV_NAME.tar.gz" -C "$destdir"
 
 # activate the unpacked environment and install pip packages
+conda deactivate
 WORKING_DIRECTORY=$(pwd)
 cd "$tmpdir"
 source "$DIRNAME/bin/activate"
-pip install numba
-pip install git+https://github.com/bumps/bumps@dataclass_overlay
-pip install git+https://github.com/reflectometry/refl1d@webview
+pip install --no-input numba
+pip install --no-input git+https://github.com/bumps/bumps@dataclass_overlay
+pip install --no-input git+https://github.com/reflectometry/refl1d@webview
 pip install -r https://raw.githubusercontent.com/reflectometry/refl1d/webview/webview-requirements
+source "$DIRNAME/bin/deactivate"
 
 # zip it back up
-zip -y -r "$WORKING_DIRECTORY/refl1d-webview-$(uname -s)-$(uname -m).zip" "$DIRNAME"
-
-
-
+tar -czf "$WORKING_DIRECTORY/refl1d-webview-$(uname -s)-$(uname -m).tar.gz" "$DIRNAME"
