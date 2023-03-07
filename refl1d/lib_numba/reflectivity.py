@@ -4,7 +4,7 @@ from numpy import fabs, sqrt, exp
 _REFL_SIG = 'c16(i8, f8, f8[:], f8[:], f8[:], f8[:])'
 _REFL_LOCALS = {
     "cutoff": numba.float64,
-    "next": numba.int64,
+    "i_next": numba.int64,
     "sigma_offset": numba.int64,
     "step": numba.int8,
     "pi4": numba.float64,
@@ -32,10 +32,10 @@ def refl(layers, kz, depth, sigma, rho, irho):
     cutoff = 1e-10
     sigma_offset = 0
     if (kz >= cutoff):
-        next = 0
+        i_next = 0
         step = 1
     elif (kz <= -cutoff):
-        next = layers-1
+        i_next = layers-1
         step = -1
         sigma_offset = -1
     else:
@@ -44,7 +44,7 @@ def refl(layers, kz, depth, sigma, rho, irho):
     # // Since sqrt(1/4 * x) = sqrt(x)/2, I'm going to pull the 1/2 into the
     # // sqrt to save a multiplication later.
     pi4 = 12.566370614359172e-6  # // 1e-6 * 4 pi
-    kz_sq = kz*kz + pi4*rho[next]  # // kz^2 + 4 pi Vrho
+    kz_sq = kz*kz + pi4*rho[i_next]  # // kz^2 + 4 pi Vrho
     k = fabs(kz)
 
     B11 = B22 = 1
@@ -54,10 +54,10 @@ def refl(layers, kz, depth, sigma, rho, irho):
         # // The loop index is not the layer number because we may be reversing
         # // the stack.  Instead, n is set to the incident layer (which may be
         # // first or last) and incremented or decremented each time through.
-        k_next = sqrt(kz_sq - pi4*complex(rho[next+step], irho[next+step]))
-        F = (k-k_next)/(k+k_next)*exp(-2.*k*k_next * sigma[sigma_offset + next]**2)
-        M11 = exp(J*k*depth[next]) if i > 0 else 1.0
-        M22 = exp(-J*k*depth[next]) if i > 0 else 1.0
+        k_next = sqrt(kz_sq - pi4*complex(rho[i_next+step], irho[i_next+step]))
+        F = (k-k_next)/(k+k_next)*exp(-2.*k*k_next * sigma[sigma_offset + i_next]**2)
+        M11 = exp(J*k*depth[i_next]) if i > 0 else 1.0
+        M22 = exp(-J*k*depth[i_next]) if i > 0 else 1.0
         M21 = F*M11
         M12 = F*M22
 
@@ -71,7 +71,7 @@ def refl(layers, kz, depth, sigma, rho, irho):
         C2 = B12*M21 + B22*M22
         B12 = C1
         B22 = C2
-        next += step
+        i_next += step
         k = k_next
 
     # // And we are done.
