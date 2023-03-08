@@ -49,8 +49,6 @@ from numpy.linalg.linalg import matrix_power
 import numpy.random
 import numpy.fft
 from typing import NamedTuple, Optional, Any, Sequence, Union, TYPE_CHECKING
-if TYPE_CHECKING:
-    from numpy.typing import ArrayLike, NDArray
 
 from bumps.util import field, field_desc, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
@@ -58,6 +56,10 @@ from periodictable import nsf, xsf
 from bumps.parameter import Parameter, to_dict, Constant
 from bumps.plotutil import coordinated_colors, auto_shift
 from bumps.data import parse_multi, strip_quotes
+from bumps.util import USE_PYDANTIC
+
+if USE_PYDANTIC or TYPE_CHECKING:
+    from bumps.util import NDArray
 
 from . import fresnel
 from .material import Vacuum
@@ -95,11 +97,11 @@ class ProbeSchema:
     back_reflectivity: bool = False
     R: Optional[Any] = None
     dR: Optional[Any] = 0
-    T: 'NDArray[np.float64]' = field_desc("List of theta values (incident angle)")
+    T: 'NDArray' = field_desc("List of theta values (incident angle)")
     dT: Optional[Any] = 0
-    L: 'NDArray[np.float64]' = field_desc("List of lambda values (wavelength, in Angstroms)")
+    L: 'NDArray' = field_desc("List of lambda values (wavelength, in Angstroms)")
     dL: Optional[Any] = 0
-    dQo: Optional['ArrayLike'] = None
+    dQo: Optional[Union[Sequence, 'NDArray']] = None
     resolution: Literal["normal", "uniform"] = "uniform"
     oversampling: Optional[int] = None
     oversampling_seed: int = 1
