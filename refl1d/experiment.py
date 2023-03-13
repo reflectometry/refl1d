@@ -677,7 +677,7 @@ class MixedExperiment(ExperimentBase):
         self.probe = probe
         self.ratio = [Parameter.default(r, name="ratio %d"%i)
                       for i, r in enumerate(ratio)]
-        self.parts = [Experiment(s, probe, **kw) for s in samples]
+        self.parts = [Experiment(s, probe, name=s.name, **kw) for s in samples]
         self.coherent = coherent
         self.interpolation = interpolation
         self._substrate = self.samples[0][0].material
