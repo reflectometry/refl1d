@@ -1,0 +1,76 @@
+name: Build change-of-basis branch
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Ex1 (${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["windows-latest"]
+        python-version: ["3.10"]
+    steps:
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-activate-base: true
+          mamba-version: "*"
+          channels: conda-forge
+          python-version: ${{ matrix.python-version }}
+      - name: Conda pack
+        shell: pwsh
+        run: |
+          mamba install -y conda-pack
+          mamba create -n "isolated" -y python=${{ matrix.python-version }}
+          conda-pack -n "isolated" -f -o "isolated.tar.gz"
+          mkdir "refl1d"
+          tar -xzf "isolated.tar.gz" -C "refl1d"
+          
+          refl1d\Scripts\pip.exe install --no-input wxpython numba dill matplotlib
+          refl1d\Scripts\pip.exe install --no-input git+https://github.com/bumps/bumps
+          refl1d\Scripts\pip.exe install --no-input git+https://github.com/reflectometry/refl1d@change-of-basis
+          
+          tar -czf "refl1d-change-of-basis-windows.tar.gz" "refl1d"
+      - uses: actions/upload-artifact@v3
+        with:
+          name: upload
+          path: "refl1d-change-of-basis-windows.tar.gz"
+      - name: Update release assets and text
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}          
+          script: |
+            const fs = require('fs');
+            const { owner, repo } = context.repo;
+            let sid_release = await github.rest.repos.getReleaseByTag({
+              owner,
+              repo,
+              tag: "sid"
+            });
+            await github.rest.repos.updateRelease({
+              owner,
+              repo,
+              release_id: sid_release.data.id,
+              body: "A persistent prerelease where build artifacts for the current tip will be deposited\n\n## Last updated: " + (new Date()).toDateString()
+            });
+            // delete existing release assets (if needed) and upload new ones:
+            const to_update = ["refl1d-change-of-basis-windows.tar.gz"];
+            for (let fn of to_update) {
+              let asset_id = (sid_release.data.assets.find((a) => (a.name == fn)) ?? {}).id;
+              if (asset_id) {
+                await github.rest.repos.deleteReleaseAsset({
+                  owner,
+                  repo,
+                  asset_id
+                });
+              }
+              await github.rest.repos.uploadReleaseAsset({
+                owner,
+                repo,
+                release_id: sid_release.data.id,
+                name: fn,
+                data: await fs.readFileSync(fn)
+              });
+            }
