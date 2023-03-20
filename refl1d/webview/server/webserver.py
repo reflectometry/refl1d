@@ -1,7 +1,7 @@
 from aiohttp import web
 import json
 from pathlib import Path
-from typing import Union, Dict
+from typing import Union, Dict, List
 
 import numpy as np
 import bumps.webview.server.webserver as server
@@ -109,6 +109,18 @@ def get_probe_data(theory, probe, substrate=None, surface=None):
     else:
         return [get_single_probe_data(theory, probe, substrate, surface)]
 
-
+@sio.event
+async def get_model_names(sid: str=""):
+    problem = state.problem.fitProblem
+    if problem is None:
+        return None
+    output: List[Dict] = []
+    for model_index, model in enumerate(problem.models):
+        if isinstance(model, Experiment):
+            output.append(dict(name=model.name, part_name=None, model_index=model_index, part_index=0))
+        elif isinstance(model, MixedExperiment):
+            for part_index, part in enumerate(model.parts):
+                output.append(dict(name=model.name, part_name=part.name, model_index=model_index, part_index=part_index))
+    return output
 
 main(index=index, static_assets_path=static_assets_path, arg_defaults={"serializer": "dataclass"})
