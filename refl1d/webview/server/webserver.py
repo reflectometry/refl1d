@@ -4,8 +4,7 @@ from pathlib import Path
 from typing import Union, Dict, List
 
 import numpy as np
-import bumps.webview.server.webserver as server
-from bumps.webview.server.webserver import app, main, sio, rest_get, state, get_chisq, to_json_compatible_dict
+from bumps.webview.server.webserver import app, main as bumps_main, sio, rest_get, state, get_chisq, to_json_compatible_dict
 from refl1d.experiment import Experiment, ExperimentBase, MixedExperiment
 import refl1d.probe
 
@@ -123,4 +122,9 @@ async def get_model_names(sid: str=""):
                 output.append(dict(name=model.name, part_name=part.name, model_index=model_index, part_index=part_index))
     return output
 
-main(index=index, static_assets_path=static_assets_path, arg_defaults={"serializer": "dataclass"})
+
+def main():
+    bumps_main(index=index, static_assets_path=static_assets_path, arg_defaults={"serializer": "dataclass"})
+
+if __name__ == '__main__':
+    main()
