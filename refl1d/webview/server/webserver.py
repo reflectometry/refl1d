@@ -8,6 +8,11 @@ from bumps.webview.server.webserver import app, main as bumps_main, sio, rest_ge
 from refl1d.experiment import Experiment, ExperimentBase, MixedExperiment
 import refl1d.probe
 
+# Register the refl1d model loader
+import refl1d.fitplugin
+import bumps.cli
+bumps.cli.install_plugin(refl1d.fitplugin)
+
 from .profile_plot import plot_sld_profile_plotly
 
 client_path = Path(__file__).parent.parent / 'client'
