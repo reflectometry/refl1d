@@ -169,165 +169,37 @@ class SLD(Scatterer):
 # ELEMENTS = Enum('elements', [(e.name, e.symbol) for e in periodictable.elements._element.values()])
 
 @schema()
-class Material(Scatterer):
+class BaseMaterial(Scatterer):
     """
     Description of a solid block of material.
 
     :Parameters:
+        *name* : string
+
         *formula* : Formula
 
             Composition can be initialized from either a string or a chemical
             formula.  Valid values are defined in periodictable.formula.
 
-        *density* : float | |g/cm^3|
-
-            If specified, set the bulk density for the material.
-
-        *natural_density* : float | |g/cm^3|
-
-            If specified, set the natural bulk density for the material.
-
         *use_incoherent* = False : boolean
 
             True if incoherent scattering should be interpreted as absorption.
 
-        *fitby* = 'bulk_density' : string
-
-            Which density parameter is the fitting parameter.  The choices
-            are *bulk_density*, *natural_density*, *relative_density* or
-            *cell_volume*.  See :meth:`fitby` for details.
-
-        *value* : Parameter or float | units depends on fitby type
-
-            Initial value for the fitted density parameter.  If None, the
-            value will be initialized from the material density.
-
-    For example, to fit Pd by cell volume use::
-
-        >>> m = Material('Pd', fitby='cell_volume')
-        >>> m.cell_volume.range(1, 10)
-        Parameter(Pd cell volume)
-        >>> print("%.2f %.2f"%(m.density.value, m.cell_volume.value))
-        12.02 14.70
-
-    You can change density representation by calling *material.fitby(type)*.
-
     """
     name: str
     formula: str # Formula
-    formula_density: float
-    formula_natural_density: Union[float, Literal[None]]
-    # density: Parameter
-    value: Parameter
-    fitby: Literal['bulk_density', 'number_density', 'natural_density', 'relative_density', 'cell_volume'] = 'bulk_density'
     use_incoherent: bool = False
+    density: Union[Parameter, Expression] # to be filled in by inheriting classes
 
-    def __init__(self, formula=None, name=None, use_incoherent=False,
-                 formula_density=None, formula_natural_density=None,
-                 fitby='bulk_density', value=None):
-        self._formula = periodictable.formula(formula, density=formula_density,
-                                             natural_density=formula_natural_density)
-        self.formula_density = formula_density
-        self.formula_natural_density = formula_natural_density
-        self.formula = formula
+    # not in the schema:
+    _formula: BaseFormula
+
+    def __init__(self, formula: Union[str, BaseFormula], density=None, natural_density=None, name=None, use_incoherent=False):
+        # coerce formula to string repr:
+        self.formula = str(formula)
+        self._formula: BaseFormula = periodictable.formula(formula, density=density, natural_density=natural_density)
         self.name = name if name is not None else str(self._formula)
-        self.density = Parameter(name=self.name + " density")
-
         self.use_incoherent = use_incoherent
-        self._fitby(type=fitby, value=value)
-
-    def _fitby(self, type='bulk_density', value=None):
-        """
-        Specify the fitting parameter to use for material density.
-
-        :Parameters:
-            *type* : string
-                Density representation
-            *value* : Parameter
-                Initial value, or associated parameter.
-
-        Density type can be one of the following:
-
-            *bulk_density* : |g/cm^3| or kg/L
-                Density is *bulk_density*
-            *natural_density* : |g/cm^3| or kg/L
-                Density is *natural_density* / (natural mass/isotope mass)
-            *relative_density* : unitless
-                Density is *relative_density* * formula density
-            *cell_volume* : |Ang^3|
-                Density is mass / *cell_volume*
-            *number_density*: [atoms/cm^3]
-                Density is *number_density* * molar mass / avogadro constant
-
-        The resulting material will have a *density* attribute with the
-        computed material density in addition to the *fitby*
-        attribute specified.
-
-        .. Note::
-
-            Calling *fitby* replaces the *density* parameter in the
-            material, so be sure to do so before using *density* in a
-            parameter expression.  Using *bumps.parameter.WrappedParameter*
-            for *density* is another alternative.
-        """
-
-        if type == 'bulk_density':
-            if value is None:
-                value = self._formula.density
-            self.value =  Parameter.default(
-                value, name=self.name+" density", limits=(0, None))
-            self.density.equals(self.value)
-        elif type == "number_density":
-            if value is None:
-                value = avogadro_number / self._formula.mass * self._formula.density
-            self.value = Parameter.default(
-                value, name=self.name+" number density", limits=(0, None))
-            self.density.equals(self.value / avogadro_number * self._formula.mass)
-        elif type == 'natural_density':
-            if value is None:
-                value = self._formula.natural_density
-            self.value = Parameter.default(
-                value, name=self.name+" nat. density", limits=(0, None))
-            self.density.equals(self.value / self._formula.natural_mass_ratio())
-        elif type == 'relative_density':
-            if value is None:
-                value = 1
-            self.value = Parameter.default(
-                value, name=self.name+" rel. density", limits=(0, None))
-            self.density.equals(self._formula.density*self.value)
-        ## packing factor code should be correct, but radii are unreliable
-        #elif type is 'packing_factor':
-        #    max_density = self.formula.mass/self.formula.volume(packing_factor=1)
-        #    if value is None:
-        #        value = self.formula.density/max_density
-        #    self.packing_factor = Parameter.default(
-        #        value, name=self.name+" packing factor")
-        #    self.density = self.packing_factor * max_density
-        elif type == 'cell_volume':
-            # Density is in grams/cm^3.
-            # Mass is in grams.
-            # Volume is in A^3 = 1e24*cm^3.
-            if value is None:
-                value = (1e24*self._formula.molecular_mass)/self._formula.density
-            self.value = Parameter.default(
-                value, name=self.name+" cell volume", limits=(0, None))
-            self.density.equals((1e24*self._formula.molecular_mass)/self.value)
-        else:
-            raise ValueError("Unknown density calculation type '%s'"%type)
-        self.fitby = type
-
-    def parameters(self):
-        return {'density': self.density, "value": self.value}
-
-    def to_dict(self):
-        return to_dict({
-            'type': type(self).__name__,
-            'name': self.name,
-            'formula': self.formula,
-            'density': self.density,
-            'use_incoherent': self.use_incoherent,
-            # TODO: what about fitby, natural_density and cell_volume?
-        })
 
     def sld(self, probe):
         rho, irho, incoh = probe.scattering_factors(
@@ -340,6 +212,211 @@ class Material(Scatterer):
         return self.name
     def __repr__(self):
         return "Material(%s)"%self.name
+
+
+FitByChoices = Literal["bulk_density", "natural_density", "relative_density", "number_density", "cell_volume"]
+
+def Material(
+        formula: Union[str, BaseFormula],
+        density: Optional[float]=None,
+        natural_density: Optional[float]=None,
+        name: Optional[str]=None,
+        use_incoherent: bool=False,
+        fitby: FitByChoices="bulk_density",
+        **kw):
+    if fitby == "bulk_density":
+        return BulkDensityMaterial(formula, density=density, name=name, use_incoherent=use_incoherent)
+    elif fitby == "natural_density":
+        return NaturalDensityMaterial(formula, natural_density=natural_density, name=name, use_incoherent=use_incoherent)
+    elif fitby == "relative_density":
+        return RelativeDensityMaterial(formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent, **kw)
+    elif fitby == "number_density":
+        return NumberDensityMaterial(formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent, **kw)
+    elif fitby == "cell_volume":
+        return CellVolumeMaterial(formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent, **kw)
+    else:
+        raise ValueError(f'unknown value "{fitby}" of fitby: should be one of ["bulk_density", "natural_density", "relative_density", "number_density", "cell_volume"]')
+
+
+@schema()
+class BulkDensityMaterial(BaseMaterial):
+    """
+    A solid block of material, described by its bulk density
+
+    :Parameters:
+        *density* : float | |g/cm^3|
+            the bulk density for the material.
+    """
+    bulk_density: Parameter
+    density: Parameter
+
+    def __init__(self,
+                 formula: Union[str, BaseFormula],
+                 density: Optional[Union[float, Parameter]]=None,
+                 name=None,
+                 use_incoherent=False):
+        BaseMaterial.__init__(self, formula, density=density, name=name, use_incoherent=use_incoherent)
+        if density is None:
+            if self._formula.density is not None:
+                density = self._formula.density
+            else:
+                raise ValueError(f"material {self._formula} does not have known density: please provide it in arguments")
+        self.density = Parameter.default(density, name=self.name+" density", limits=(0, inf))
+        self.bulk_density = self.density
+
+    def parameters(self):
+        return dict(density=self.density)
+
+
+@schema()
+class NaturalDensityMaterial(BaseMaterial):
+    """
+    A solid block of material, described by its natural density
+
+    :Parameters:
+        *natural_density* : float | |g/cm^3|
+            the natural bulk density for the material.
+    """
+    natural_density: Parameter
+    density: Expression
+
+    def __init__(self,
+                 formula: Union[str, BaseFormula],
+                 natural_density: Optional[Union[float, Parameter]]=None,
+                 name=None,
+                 use_incoherent=False):
+        BaseMaterial.__init__(self, formula, natural_density=natural_density, name=name, use_incoherent=use_incoherent)
+        if natural_density is None:
+            if self._formula.density is not None:
+                natural_density = self._formula.density
+            else:
+                raise ValueError(f"material {self._formula} does not have known natural_density: please provide it in arguments")
+        self.natural_density = Parameter.default(natural_density, name=self.name+" nat. density", limits=(0, inf))
+        self.density = self.natural_density / self._formula.natural_mass_ratio()
+
+    def parameters(self):
+        return dict(density=self.density, natural_density=self.natural_density)
+
+
+@schema()
+class NumberDensityMaterial(BaseMaterial):
+    """
+    A solid block of material, described by its number density
+
+    :Parameters:
+        *number_density*: [atoms/cm^3]
+                Density is *number_density* * molar mass / avogadro constant
+
+        *density* : float | |g/cm^3|
+            if specified, the bulk density for the material.
+
+        *natural_density* : float | |g/cm^3|
+            if specified, the natural bulk density for the material.
+    """
+    number_density: Parameter
+    density: Expression
+
+    def __init__(self,
+                 formula: Union[str, BaseFormula],
+                 number_density: Optional[Union[float, Parameter]]=None,
+                 density: Optional[float]=None,
+                 natural_density: Optional[float]=None,
+                 name=None,
+                 use_incoherent=False):
+        BaseMaterial.__init__(self, formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent)
+        if number_density is None:
+            if self._formula.density is not None:
+                number_density = avogadro_number / self._formula.mass * self._formula.density
+            else:
+                raise ValueError(f"material {self._formula} does not have known density: please provide density or natural_density argument")
+        self.number_density = Parameter.default(number_density, name=self.name+" number density", limits=(0, inf))
+        self.density = self.number_density / avogadro_number * self._formula.mass
+        self._formula.density = float(self.density)
+
+    def parameters(self):
+        return dict(density=self.density, number_density=self.number_density)
+
+
+@schema()
+class RelativeDensityMaterial(BaseMaterial):
+    """
+    A solid block of material, described by its relative density
+
+    :Parameters:
+        *relative_density* : unitless
+            Density is *relative_density* * formula density
+
+        *density* : float | |g/cm^3|
+            if specified, the bulk density for the material.
+
+        *natural_density* : float | |g/cm^3|
+            if specified, the natural bulk density for the material.
+    """
+    relative_density: Parameter
+
+    def __init__(self, 
+                 formula: Union[str, BaseFormula],
+                 relative_density: Optional[Union[float, Parameter]]=None,
+                 density: Optional[float]=None,
+                 natural_density: Optional[float]=None,
+                 name=None,
+                 use_incoherent=False):
+        BaseMaterial.__init__(self, formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent)
+        if self._formula.density is None and density is None and natural_density is None:
+            raise ValueError(f"material {self._formula} does not have known density: please provide density or natural_density argument")
+        if relative_density is None:
+            relative_density = 1
+        self.relative_density = Parameter.default(relative_density, name=self.name+" rel. density", limits=(0, inf))
+        self.density = self._formula.density*self.relative_density
+
+    def parameters(self):
+        return dict(density=self.density, relative_density=self.relative_density)
+
+
+@schema()
+class CellVolumeMaterial(BaseMaterial):
+    """
+    A solid block of material, described by the volume of one unit cell
+
+    :Parameters:
+        *cell_volume* : |Ang^3|
+                Density is mass / *cell_volume*
+
+        *density* : float | |g/cm^3|
+            if specified, the bulk density for the material.
+
+        *natural_density* : float | |g/cm^3|
+            if specified, the natural bulk density for the material.
+
+
+    For example, to fit Pd by cell volume use::
+        >>> m = Material('Pd', fitby='cell_volume')
+        >>> m.cell_volume.range(1, 10)
+        Parameter(Pd cell volume)
+        >>> print("%.2f %.2f"%(m.density.value, m.cell_volume.value))
+        12.02 14.70
+
+    """
+    cell_volume: Parameter
+
+    def __init__(self,
+                 formula: Union[str, BaseFormula],
+                 cell_volume: Optional[Union[float, Parameter]]=None,
+                 density: Optional[float]=None,
+                 natural_density: Optional[float]=None,
+                 name=None,
+                 use_incoherent=False):
+        BaseMaterial.__init__(self, formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent)
+        if self._formula.density is None and density is None and natural_density is None:
+            raise ValueError(f"material {self._formula} does not have known density: please provide density or natural_density argument")
+        if cell_volume is None:
+            cell_volume = (1e24*self._formula.molecular_mass)/self._formula.density
+        self.cell_volume = Parameter.default(cell_volume, name=self.name+" cell volume", limits=(0, inf))
+        self.density = (1e24*self._formula.molecular_mass)/self.cell_volume
+
+    def parameters(self):
+        return dict(density=self.density, cell_volume=self.cell_volume)
+
 
 class Compound(Scatterer):
     """
