@@ -168,7 +168,7 @@ class SLD(Scatterer):
 # still have to convert Element to/from string repr
 # ELEMENTS = Enum('elements', [(e.name, e.symbol) for e in periodictable.elements._element.values()])
 
-schema()
+@schema()
 class BaseMaterial(Scatterer):
     """
     Description of a solid block of material.
@@ -194,9 +194,10 @@ class BaseMaterial(Scatterer):
     # not in the schema:
     _formula: BaseFormula
 
-    def __init__(self, formula: Union[str, BaseFormula], name=None, use_incoherent=False):
+    def __init__(self, formula: Union[str, BaseFormula], density=None, natural_density=None, name=None, use_incoherent=False):
         # coerce formula to string repr:
         self.formula = str(formula)
+        self._formula: BaseFormula = periodictable.formula(formula, density=density, natural_density=natural_density)
         self.name = name if name is not None else str(self._formula)
         self.use_incoherent = use_incoherent
 
@@ -212,8 +213,33 @@ class BaseMaterial(Scatterer):
     def __repr__(self):
         return "Material(%s)"%self.name
 
+
+FitByChoices = Literal["bulk_density", "natural_density", "relative_density", "number_density", "cell_volume"]
+
+def Material(
+        formula: Union[str, BaseFormula],
+        density: Optional[float]=None,
+        natural_density: Optional[float]=None,
+        name: Optional[str]=None,
+        use_incoherent: bool=False,
+        fitby: FitByChoices="bulk_density", 
+        **kw):
+    if fitby == "bulk_density":
+        return BulkDensityMaterial(formula, density=density, name=name, use_incoherent=use_incoherent)
+    elif fitby == "natural_density":
+        return NaturalDensityMaterial(formula, natural_density=natural_density, name=name, use_incoherent=use_incoherent)
+    elif fitby == "relative_density":
+        return RelativeDensityMaterial(formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent, **kw)
+    elif fitby == "number_density":
+        return NumberDensityMaterial(formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent, **kw)
+    elif fitby == "cell_volume":
+        return CellVolumeMaterial(formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent, **kw)
+    else:
+        raise ValueError(f'unknown value "{fitby}" of fitby: should be one of ["bulk_density", "natural_density", "relative_density", "number_density", "cell_volume"]')
+
+
 @schema()
-class Material(BaseMaterial):
+class BulkDensityMaterial(BaseMaterial):
     """
     A solid block of material, described by its bulk density
 
@@ -221,9 +247,20 @@ class Material(BaseMaterial):
         *density* : float | |g/cm^3|
             the bulk density for the material.
     """
-    def __init__(self, formula: Union[str, BaseFormula], density: Union[float, Parameter], name=None, use_incoherent=False):
-        BaseMaterial.__init__(self, formula, name=name, use_incoherent=use_incoherent)
-        self._formula = periodictable.formula(formula, density=density)
+    bulk_density: Parameter
+    density: Parameter
+
+    def __init__(self,
+                 formula: Union[str, BaseFormula],
+                 density: Optional[Union[float, Parameter]]=None,
+                 name=None,
+                 use_incoherent=False):
+        BaseMaterial.__init__(self, formula, density=density, name=name, use_incoherent=use_incoherent)
+        if density is None:
+            if self._formula.density is not None:
+                density = self._formula.density
+            else:
+                raise ValueError(f"material {self._formula} does not have known density: please provide it in arguments")
         self.density = Parameter.default(density, name=self.name+" density", limits=(0, inf))
         self.bulk_density = self.density
 
@@ -237,9 +274,20 @@ class NaturalDensityMaterial(BaseMaterial):
         *natural_density* : float | |g/cm^3|
             the natural bulk density for the material.
     """
-    def __init__(self, formula: Union[str, BaseFormula], natural_density: Union[float, Parameter], name=None, use_incoherent=False):
-        BaseMaterial.__init__(self, formula, name=name, use_incoherent=use_incoherent)
-        self._formula: BaseFormula = periodictable.formula(formula, natural_density=natural_density)
+    natural_density: Parameter
+    density: Expression
+
+    def __init__(self,
+                 formula: Union[str, BaseFormula],
+                 natural_density: Optional[Union[float, Parameter]]=None,
+                 name=None,
+                 use_incoherent=False):
+        BaseMaterial.__init__(self, formula, natural_density=natural_density, name=name, use_incoherent=use_incoherent)
+        if natural_density is None:
+            if self._formula.density is not None:
+                natural_density = self._formula.density
+            else:
+                raise ValueError(f"material {self._formula} does not have known natural_density: please provide it in arguments")
         self.natural_density = Parameter.default(natural_density, name=self.name+" nat. density", limits=(0, inf))
         self.density = self.natural_density / self._formula.natural_mass_ratio()
 
@@ -250,12 +298,31 @@ class NumberDensityMaterial(BaseMaterial):
     A solid block of material, described by its number density
 
     :Parameters:
+        *number_density*: [atoms/cm^3]
+                Density is *number_density* * molar mass / avogadro constant
+
+        *density* : float | |g/cm^3|
+            if specified, the bulk density for the material.
+
         *natural_density* : float | |g/cm^3|
-            the natural bulk density for the material.
+            if specified, the natural bulk density for the material.
     """
-    def __init__(self, formula: Union[str, BaseFormula], number_density: Union[float, Parameter], name=None, use_incoherent=False):
-        BaseMaterial.__init__(self, formula, name=name, use_incoherent=use_incoherent)
-        self._formula: BaseFormula = periodictable.formula(formula)
+    number_density: Parameter
+    density: Expression
+
+    def __init__(self,
+                 formula: Union[str, BaseFormula],
+                 number_density: Optional[Union[float, Parameter]]=None,
+                 density: Optional[float]=None,
+                 natural_density: Optional[float]=None,
+                 name=None,
+                 use_incoherent=False):
+        BaseMaterial.__init__(self, formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent)
+        if number_density is None:
+            if self._formula.density is not None:
+                number_density = avogadro_number / self._formula.mass * self._formula.density
+            else:
+                raise ValueError(f"material {self._formula} does not have known density: please provide density or natural_density argument")
         self.number_density = Parameter.default(number_density, name=self.name+" number density", limits=(0, inf))
         self.density = self.number_density / avogadro_number * self._formula.mass
         self._formula.density = float(self.density)
@@ -276,17 +343,20 @@ class RelativeDensityMaterial(BaseMaterial):
         *natural_density* : float | |g/cm^3|
             if specified, the natural bulk density for the material.
     """
+    relative_density: Parameter
+
     def __init__(self, 
                  formula: Union[str, BaseFormula],
-                 relative_density: Union[float, Parameter],
+                 relative_density: Optional[Union[float, Parameter]]=None,
                  density: Optional[float]=None,
                  natural_density: Optional[float]=None,
                  name=None,
                  use_incoherent=False):
-        if density is None and natural_density is None:
-            raise ValueError("must specify one of density or natural_density")
-        BaseMaterial.__init__(self, formula, name=name, use_incoherent=use_incoherent)
-        self._formula: BaseFormula = periodictable.formula(formula, density=density, natural_density=natural_density)
+        BaseMaterial.__init__(self, formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent)
+        if self._formula.density is None and density is None and natural_density is None:
+            raise ValueError(f"material {self._formula} does not have known density: please provide density or natural_density argument")
+        if relative_density is None:
+            relative_density = 1
         self.relative_density = Parameter.default(relative_density, name=self.name+" rel. density", limits=(0, inf))
         self.density = self._formula.density*self.relative_density
 
@@ -315,17 +385,20 @@ class CellVolumeMaterial(BaseMaterial):
         12.02 14.70
     
     """
+    cell_volume: Parameter
+
     def __init__(self, 
                  formula: Union[str, BaseFormula],
-                 cell_volume: Union[float, Parameter],
+                 cell_volume: Optional[Union[float, Parameter]]=None,
                  density: Optional[float]=None,
                  natural_density: Optional[float]=None,
                  name=None,
                  use_incoherent=False):
-        if density is None and natural_density is None:
-            raise ValueError("must specify one of density or natural_density")
-        BaseMaterial.__init__(self, formula, name=name, use_incoherent=use_incoherent)
-        self._formula: BaseFormula = periodictable.formula(formula, density=density, natural_density=natural_density)
+        BaseMaterial.__init__(self, formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent)
+        if self._formula.density is None and density is None and natural_density is None:
+            raise ValueError(f"material {self._formula} does not have known density: please provide density or natural_density argument")
+        if cell_volume is None:
+            cell_volume = (1e24*self._formula.molecular_mass)/self._formula.density
         self.cell_volume = Parameter.default(cell_volume, name=self.name+" cell volume", limits=(0, inf))
         self.density = (1e24*self._formula.molecular_mass)/self.cell_volume
 
