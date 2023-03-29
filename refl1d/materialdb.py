@@ -32,10 +32,10 @@ rho_D2O = periodictable.formula('D2O').mass/periodictable.formula('H2O').mass
 rho_DHO = periodictable.formula('DHO').mass/periodictable.formula('H2O').mass
 
 air = Vacuum()
-water = H2O = Material('H2O', formula_density=1, name='water')
-heavywater = D2O = Material('D2O', formula_density=rho_D2O)
-lightheavywater = DHO = Material('DHO', formula_density=rho_DHO)
+water = H2O = Material('H2O', density=1, name='water')
+heavywater = D2O = Material('D2O', density=rho_D2O)
+lightheavywater = DHO = Material('DHO', density=rho_DHO)
 silicon = Si = Material('Si')
-sapphire = Al2O3 = Material('Al2O3', formula_density=3.965, name='sapphire')
+sapphire = Al2O3 = Material('Al2O3', density=3.965, name='sapphire')
 gold = Au = Material('Au', name='gold')
-permalloy = Ni8Fe2 = Material('Ni8Fe2', formula_density=8.692, name='permalloy')
+permalloy = Ni8Fe2 = Material('Ni8Fe2', density=8.692, name='permalloy')
