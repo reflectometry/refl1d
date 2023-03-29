@@ -21,12 +21,10 @@ tar -xzf "$ENV_NAME.tar.gz" -C "$destdir"
 conda deactivate
 WORKING_DIRECTORY=$(pwd)
 cd "$tmpdir"
-source "$DIRNAME/bin/activate"
-pip install --no-input numba
-pip install --no-input git+https://github.com/bumps/bumps@dataclass_overlay
-pip install --no-input git+https://github.com/reflectometry/refl1d@webview
-pip install -r https://raw.githubusercontent.com/reflectometry/refl1d/webview/webview-requirements
-source "$DIRNAME/bin/deactivate"
+$destdir/bin/python -m pip install --no-input numba
+$destdir/bin/python -m pip install --no-input git+https://github.com/bumps/bumps@webview
+$destdir/bin/python -m pip install --no-input git+https://github.com/reflectometry/refl1d@webview
+$destdir/bin/python -m pip install -r https://raw.githubusercontent.com/reflectometry/refl1d/webview/webview-requirements
 
 # zip it back up
 tar -czf "$WORKING_DIRECTORY/refl1d-webview-$(uname -s)-$(uname -m).tar.gz" "$DIRNAME"
