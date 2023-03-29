@@ -264,6 +264,9 @@ class BulkDensityMaterial(BaseMaterial):
         self.density = Parameter.default(density, name=self.name+" density", limits=(0, inf))
         self.bulk_density = self.density
 
+    def parameters(self):
+        return dict(density=self.density)
+
 
 @schema()
 class NaturalDensityMaterial(BaseMaterial):
@@ -290,6 +293,9 @@ class NaturalDensityMaterial(BaseMaterial):
                 raise ValueError(f"material {self._formula} does not have known natural_density: please provide it in arguments")
         self.natural_density = Parameter.default(natural_density, name=self.name+" nat. density", limits=(0, inf))
         self.density = self.natural_density / self._formula.natural_mass_ratio()
+
+    def parameters(self):
+        return dict(density=self.density, natural_density=self.natural_density)
 
 
 @schema()
@@ -327,6 +333,9 @@ class NumberDensityMaterial(BaseMaterial):
         self.density = self.number_density / avogadro_number * self._formula.mass
         self._formula.density = float(self.density)
 
+    def parameters(self):
+        return dict(density=self.density, number_density=self.number_density)
+
 
 @schema()
 class RelativeDensityMaterial(BaseMaterial):
@@ -359,6 +368,9 @@ class RelativeDensityMaterial(BaseMaterial):
             relative_density = 1
         self.relative_density = Parameter.default(relative_density, name=self.name+" rel. density", limits=(0, inf))
         self.density = self._formula.density*self.relative_density
+
+    def parameters(self):
+        return dict(density=self.density, relative_density=self.relative_density)
 
 
 @schema()
@@ -401,6 +413,9 @@ class CellVolumeMaterial(BaseMaterial):
             cell_volume = (1e24*self._formula.molecular_mass)/self._formula.density
         self.cell_volume = Parameter.default(cell_volume, name=self.name+" cell volume", limits=(0, inf))
         self.density = (1e24*self._formula.molecular_mass)/self.cell_volume
+
+    def parameters(self):
+        return dict(density=self.density, cell_volume=self.cell_volume)
 
 
 class Compound(Scatterer):
