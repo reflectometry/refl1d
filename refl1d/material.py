@@ -210,8 +210,6 @@ class BaseMaterial(Scatterer):
         return rho, irho
     def __str__(self):
         return self.name
-    def __repr__(self):
-        return "Material(%s)"%self.name
 
 
 FitByChoices = Literal["bulk_density", "natural_density", "relative_density", "number_density", "cell_volume"]
