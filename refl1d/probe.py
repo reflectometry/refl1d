@@ -85,227 +85,29 @@ def make_probe(**kw):
         return XrayProbe(**kw)
 
 
-@schema(init=False, eq=False)
-class Probe:
-    r"""
-    Defines the incident beam used to study the material.
-
-    For calculation purposes, probe needs to return the values $Q_\text{calc}$
-    at which the model is evaluated.  This is normally going to be the measured
-    points only, but for some systems, such as those with very thick layers,
-    oversampling is needed to avoid aliasing effects.
-
-    A measurement point consists of incident angle, angular resolution,
-    incident wavelength, FWHM wavelength resolution, reflectivity and
-    uncertainty in reflectivity.
-
-    A probe is a set of points, defined by vectors for point attribute.  For
-    convenience, the attribute can be initialized with a scalar if it is
-    constant throughout the measurement, but will be set to a vector in
-    the probe.  The attributes are initialized as follows:
-
-        *T* : float or [float] | degrees
-            Incident angle
-        *dT* : float or [float] | degrees
-            FWHM angular divergence
-        *L* : float or [float] | |Ang|
-            Incident wavelength
-        *dL* : float or [float] | |Ang|
-            FWHM wavelength dispersion
-        *data* : ([float], [float])
-            R, dR reflectivity measurement and uncertainty
-        *dQ* : [float] or None | |1/Ang|
-            1-\$sigma$ Q resolution when it cannot be computed directly
-            from angular divergence and wavelength dispersion.
-        *resolution* : 'normal' or 'uniform'
-            Distribution function for Q resolution.
-
-    Measurement properties:
-
-        *intensity* : float or Parameter
-           Beam intensity
-        *background* : float or Parameter
-           Constant background
-        *back_absorption* : float or Parameter
-           Absorption through the substrate relative to beam intensity.
-           A value of 1.0 means complete transmission; a value of 0.0
-           means complete absorption.
-        *theta_offset* : float or Parameter
-           Offset of the sample from perfect alignment
-        *sample_broadening* : float or Parameter
-           Additional FWHM angular divergence from sample curvature.
-           Scale 1-$\sigma$ rms by $2 \surd(2 \ln 2) \approx 2.35$ to convert
-           to FWHM.
-        *back_reflectivity* : True or False
-           True if the beam enters through the substrate
-
-    Measurement properties are fittable parameters.  *theta_offset* in
-    particular should be set using *probe.theta_offset.dev(dT)*, with *dT*
-    equal to the FWHM uncertainty in the peak position for the rocking curve,
-    as measured in radians. Changes to *theta_offset* will then be penalized
-    in the cost function for the fit as if it were another measurement.  Use
-    :meth:`alignment_uncertainty` to compute dT from the shape of the
-    rocking curve.
-
-    Sample broadening adjusts the existing Q resolution rather than
-    recalculating it. This allows it the resolution to describe more
-    complicated effects than a simple gaussian distribution of wavelength
-    and angle will allow. The calculation uses the mean wavelength, angle
-    and angular divergence. See :func:`resolution.dQ_broadening` for details.
-
-    *intensity* and *back_absorption* are generally not needed --- scaling
-    the reflected signal by an appropriate intensity measurement will correct
-    for both of these during reduction.  *background* may be needed,
-    particularly for samples with significant hydrogen content due to its
-    large isotropic incoherent scattering cross section.
-
-    """
-    # Fields:
-    name: Optional[str] = None
-    filename: Optional[str] = None
-    radiation: Literal["neutron", "xray"] = "xray"
+class BaseProbe:
     intensity: Parameter
     background: Parameter
     back_absorption: Parameter
-    theta_offset: Parameter
-    sample_broadening: Parameter
+    Q: 'NDArray'
+    R: 'NDArray'
+    name: Optional[str] = None
+    dR: Optional[Union[Sequence, 'NDArray']] = None
+    dQ: Optional[Union[Sequence, 'NDArray']] = None
     back_reflectivity: bool = False
-    R: Optional[Any] = None
-    dR: Optional[Any] = 0
-    T: 'NDArray' = field_desc("List of theta values (incident angle)")
-    dT: Optional[Any] = 0
-    L: 'NDArray' = field_desc("List of lambda values (wavelength, in Angstroms)")
-    dL: Optional[Any] = 0
-    dQo: Optional[Union[Sequence, 'NDArray']] = None
     resolution: Literal["normal", "uniform"] = "uniform"
-    oversampling: Optional[int] = None
-    oversampling_seed: int = 1
 
-    polarized = False
-    Aguide = BASE_GUIDE_ANGLE  # default guide field for unpolarized measurements
+    _Ro: Optional[Union[Sequence, 'NDArray']] = field(init=False)
+
     view = "log"
     plot_shift = 0
     residuals_shift = 0
     show_resolution = True
-
-    @classmethod
-    def from_dict(cls, **kw):
-        R = kw.pop('R', None)
-        dR = kw.pop('dR', None)
-        if R is not None and dR is not None:
-            kw['data'] = (R, dR)
-        radiation = kw.pop('radiation')
-        if radiation == 'neutron':
-            return NeutronProbe(**kw)
-        else:
-            return XrayProbe(**kw)
     
-    def __init__(self, T=None, dT=0, L=None, dL=0, data=None,
-                 intensity=1, background=0, back_absorption=1, theta_offset=0,
-                 sample_broadening=0,
-                 back_reflectivity=False, name:Optional[str]=None, filename=None,
-                 dQo=None, resolution:Literal['normal', 'uniform']='normal',
-                 oversampling=None, oversampling_seed=1):
-        if T is None or L is None:
-            raise TypeError("T and L required")
-        if sample_broadening is None:
-            sample_broadening = 0
-        if theta_offset is None:
-            theta_offset = 0
-        if not name and filename:
-            name = os.path.splitext(os.path.basename(filename))[0]
-        qualifier = " "+name if name is not None else ""
-        self.intensity = Parameter.default(
-            intensity, name="intensity"+qualifier)
-        self.background = Parameter.default(
-            background, name="background"+qualifier, limits=(0., None))
-        self.back_absorption = Parameter.default(
-            back_absorption, name="back_absorption"+qualifier, limits=(0., 1.))
-        self.theta_offset = Parameter.default(
-            theta_offset, name="theta_offset"+qualifier)
-        self.sample_broadening = Parameter.default(
-            sample_broadening, name="sample_broadening"+qualifier)
-        self.back_reflectivity = back_reflectivity
-        if data is not None:
-            R, dR = data
-            R = np.array(R)
-            dR = np.array(dR)
-        else:
-            R, dR = None, None
-
-        self._set_TLR(T, dT, L, dL, R, dR, dQo)
-        self.name = name
-        self.filename = filename
-        self.resolution = resolution
-        if oversampling is not None:
-            self.oversample(oversampling, oversampling_seed)
-
-    def _set_TLR(self, T, dT, L, dL, R, dR, dQ):
-        #if L is None:
-        #    L = xsf.xray_wavelength(E)
-        #    dL = L * dE/E
-        #else:
-        #    E = xsf.xray_energy(L)
-        #    dE = E * dL/L
-
-        T = np.array(T, np.float64)
-        L = np.array(L, np.float64)
-        Q = TL2Q(T=T, L=L)
-        if dQ is not None:
-            dQ = np.asarray(dQ)
-        else:
-            dQ = dTdL2dQ(T=T, dT=dT, L=L, dL=dL)
-
-        # Make sure that we are dealing with vectors
-        T, dT, L, dL = [np.ones_like(Q)*v for v in (T, dT, L, dL)]
-
-        # remove nan
-        nan_indices = set()
-        for column in [T, dT, L, dL, R, dR, Q, dQ]:
-            if column is not None:
-                indices = np.argwhere(np.isnan(column)).flatten()
-                nan_indices.update(indices)
-
-        nan_indices = list(nan_indices)
-        T, dT, L, dL, R, dR, Q, dQ = (
-            np.delete(c, nan_indices) if c is not None else None for c in [T, dT, L, dL, R, dR, Q, dQ])
-
-        # Probe stores sorted values for convenience of resolution calculator
-        idx = np.argsort(Q)
-        self.T, self.dT = T[idx], dT[idx]
-        self.L, self.dL = L[idx], dL[idx]
-        self.Qo, self.dQo = Q[idx], dQ[idx]
-        if R is not None:
-            R = R[idx]
-        if dR is not None:
-            dR = dR[idx]
-        self.R = R
-        self.dR = dR
-
-        # By default the calculated points are the measured points.  Use
-        # oversample() for a more accurate resolution calculations.
-        self._set_calc(self.T, self.L)
-
-    @staticmethod
-    def alignment_uncertainty(w, I, d=0):
-        r"""
-        Compute alignment uncertainty.
-
-        **Parameters:**
-
-        *w* : float | degrees
-            Rocking curve full width at half max.
-        *I* : float | counts
-            Rocking curve integrated intensity.
-        *d* = 0: float | degrees
-            Motor step size
-
-        **Returns:**
-
-        *dtheta* : float | degrees
-            uncertainty in alignment angle
-        """
-        return sqrt(w**2/I + d**2/12.)
+    @property
+    def calc_Q(self):
+        """ define in derived classes """
+        raise NotImplemented
 
     def log10_to_linear(self):
         """
@@ -387,136 +189,12 @@ class Probe:
         # Add noise according to dR.
         self.R += numpy.random.randn(*self.R.shape)*self.dR
 
-    def write_data(self, filename,
-                   columns=('Q', 'R', 'dR'),
-                   header=None):
-        """
-        Save the data to a file.
-
-        *header* is a string with trailing \\n containing the file header.
-        *columns* is a list of column names from Q, dQ, R, dR, L, dL, T, dT.
-
-        The default is to write Q, R, dR data.
-        """
-        if header is None:
-            header = "# %s\n"%' '.join(columns)
-        with open(filename, 'wb') as fid:
-            fid.write(asbytes(header))
-            data = np.vstack([getattr(self, c) for c in columns])
-            np.savetxt(fid, data.T)
-
-    def _set_calc(self, T, L):
-        Q = TL2Q(T=T, L=L)
-
-        idx = np.argsort(Q)
-        self.calc_T = T[idx]
-        self.calc_L = L[idx]
-        self.calc_Qo = Q[idx]
-
-        # Only keep the scattering factors that you need
-        self.unique_L = np.unique(self.calc_L)
-        self._L_idx = np.searchsorted(self.unique_L, L)
-
-    @property
-    def Q(self):
-        if self.theta_offset.value != 0:
-            Q = TL2Q(T=self.T+self.theta_offset.value, L=self.L)
-            # TODO: this may break the Q order on measurements with varying L
-        else:
-            Q = self.Qo
-        return Q
-
-    @Q.setter
-    def Q(self, Q):
-        # If we explicity set Q, then forget what we know about T and L.
-        # This will cause theta offset != 0 to fail.
-        if hasattr(self, 'T'):
-            del self.T, self.L
-        self.Qo = Q
-
-    @property
-    def dQ(self):
-        if self.sample_broadening.value == 0:
-            dQ = self.dQo
-        else:
-            dQ = dQ_broadening(dQ=self.dQo, L=self.L, T=self.T, dT=self.dT,
-                               width=self.sample_broadening.value)
-        return dQ
-        
-    @dQ.setter
-    def dQ(self, dQ):
-        self.dQo = dQ
-
-    @property
-    def calc_Q(self):
-        if self.theta_offset.value != 0:
-            Q = TL2Q(T=self.calc_T+self.theta_offset.value, L=self.calc_L)
-            # TODO: this may break the Q order on measurements with varying L
-        else:
-            Q = self.calc_Qo
-        return Q if not self.back_reflectivity else -Q
-
-    def parameters(self):
-        return {
-            'intensity': self.intensity,
-            'background': self.background,
-            'back_absorption': self.back_absorption,
-            'theta_offset': self.theta_offset,
-            'sample_broadening': self.sample_broadening
-            }
-
-    def to_dict(self):
-        """ Return a dictionary representation of the parameters """
-        return to_dict({
-            'type': type(self).__name__,
-            'name': self.name,
-            'filename': self.filename,
-            'intensity': self.intensity,
-            'background': self.background,
-            'back_absorption': self.back_absorption,
-            'theta_offset': self.theta_offset,
-            'sample_broadening': self.sample_broadening,
-        })
-
-    def scattering_factors(self, material, density):
-        """
-        Returns the scattering factors associated with the material given
-        the range of wavelengths/energies used in the probe.
-        """
-        raise NotImplementedError(
-            "need radiation type in <%s> to compute sld for %s"
-            % (self.filename, material))
-
-    def subsample(self, dQ):
-        """
-        Select points at most every dQ.
-
-        Use this to speed up computation early in the fitting process.
-
-        This changes the data object, and is not reversible.
-
-        The current algorithm is not picking the "best" Q value, just the
-        nearest, so if you have nearby Q points with different quality
-        statistics (as happens in overlapped regions from spallation
-        source measurements at different angles), then it may choose
-        badly.  Simple solutions based on the smallest relative error dR/R
-        will be biased toward peaks, and smallest absolute error dR will
-        be biased toward valleys.
-        """
-        # Assumes self contains sorted Qo and associated T, L
-        # Note: calc_Qo is already sorted
-        Q = np.arange(self.Qo[0], self.Qo[-1], dQ)
-        idx = np.unique(np.searchsorted(self.Qo, Q))
-        #print len(idx), len(self.Qo)
-
-        self.T, self.dT = self.T[idx], self.dT[idx]
-        self.L, self.dL = self.L[idx], self.dL[idx]
-        self.Qo, self.dQo = self.Qo[idx], self.dQo[idx]
-        if self.R is not None:
-            self.R = self.R[idx]
-        if self.dR is not None:
-            self.dR = self.dR[idx]
-        self._set_calc(self.T, self.L)
+    def Q_c(self, substrate=None, surface=None):
+        Srho, Sirho = (0, 0) if substrate is None else substrate.sld(self)[:2]
+        Vrho, Virho = (0, 0) if surface is None else surface.sld(self)[:2]
+        drho = Srho-Vrho if not self.back_reflectivity else Vrho-Srho
+        Q_c = sign(drho)*sqrt(16*pi*abs(drho)*1e-6)
+        return Q_c
 
     def resolution_guard(self):
         r"""
@@ -527,97 +205,6 @@ class Probe:
         """
         raise NotImplementedError
         # TODO: implement resolution guard.
-
-    def Q_c(self, substrate=None, surface=None):
-        Srho, Sirho = (0, 0) if substrate is None else substrate.sld(self)[:2]
-        Vrho, Virho = (0, 0) if surface is None else surface.sld(self)[:2]
-        drho = Srho-Vrho if not self.back_reflectivity else Vrho-Srho
-        Q_c = sign(drho)*sqrt(16*pi*abs(drho)*1e-6)
-        return Q_c
-
-    def critical_edge(self, substrate=None, surface=None,
-                      n=51, delta=0.25):
-        r"""
-        Oversample points near the critical edge.
-
-        The critical edge is defined by the difference in scattering
-        potential for the *substrate* and *surface* materials, or the
-        reverse if *back_reflectivity* is true.
-
-        *n* is the number of $Q$ points to compute near the critical edge.
-
-        *delta* is the relative uncertainty in the material density,
-        which defines the range of values which are calculated.
-
-        Note: :meth:`critical_edge` will remove the extra Q calculation
-        points introduced by :meth:`oversample`.
-
-        The $n$ points $Q_i$ are evenly distributed around the critical
-        edge in $Q_c \pm \delta Q_c$ by varying angle $\theta$ for a
-        fixed wavelength $< \lambda >$, the average of all wavelengths
-        in the probe.
-
-        Specifically:
-
-        .. math::
-
-            Q_c^2 &= 16 \pi (\rho - \rho_\text{incident}) \\
-            Q_i &= Q_c - \delta_i Q_c (i - (n-1)/2)
-                \qquad \text{for} \; i \in 0 \ldots n-1 \\
-            \lambda_i &= < \lambda > \\
-            \theta_i &= \sin^{-1}(Q_i \lambda_i / 4 \pi)
-
-        If $Q_c$ is imaginary, then $-|Q_c|$ is used instead, so this
-        routine can be used for reflectivity signals which scan from
-        back reflectivity to front reflectivity.  For completeness,
-        the angle $\theta = 0$ is added as well.
-        """
-        Q_c = self.Q_c(substrate, surface)
-        Q = np.linspace(Q_c*(1 - delta), Q_c*(1+delta), n)
-        L = np.average(self.L)
-        T = QL2T(Q=Q, L=L)
-        T = np.hstack((self.T, T, 0))
-        L = np.hstack((self.L, [L]*(n+1)))
-        #print Q
-        self._set_calc(T, L)
-
-    def oversample(self, n=20, seed=1):
-        """
-        Generate an over-sampling of Q to avoid aliasing effects.
-
-        Oversampling is needed for thick layers, in which the underlying
-        reflectivity oscillates so rapidly in Q that a single measurement
-        has contributions from multiple Kissig fringes.
-
-        Sampling will be done using a pseudo-random generator so that
-        accidental structure in the function does not contribute to the
-        aliasing.  The generator will usually be initialized with a fixed
-        *seed* so that the point selection will not change from run to run,
-        but a *seed* of None will choose a different set of points each time
-        oversample is called.
-
-        The value *n* is the number of points that should contribute to
-        each Q value when computing the resolution.   These will be
-        distributed about the nominal measurement value, but varying in
-        both angle and energy according to the resolution function.  This
-        will yield more points near the measurement and fewer farther away.
-        The measurement point itself will not be used to avoid accidental
-        bias from uniform Q steps.  Depending on the problem, a value of
-        *n* between 20 and 100 should lead to stable values for the convolved
-        reflectivity.
-
-        Note: :meth:`oversample` will remove the extra Q calculation
-        points introduced by :meth:`critical_edge`.
-        """
-        
-        rng = numpy.random.RandomState(seed=seed)
-        T = rng.normal(self.T[:, None], self.dT[:, None], size=(len(self.dT), n-1))
-        L = rng.normal(self.L[:, None], self.dL[:, None], size=(len(self.dL), n-1))
-        T = np.hstack((self.T, T.flatten()))
-        L = np.hstack((self.L, L.flatten()))
-        self._set_calc(T, L)
-        self.oversampling = n
-        self.oversampling_seed = seed
 
     def _apply_resolution(self, Qin, Rin, interpolation):
         """
@@ -631,7 +218,7 @@ class Probe:
         else:
             R = convolve(Qin, Rin, Q, dQ, resolution=self.resolution)
         return Q, R
-
+    
     def apply_beam(self, calc_Q, calc_R, resolution=True, interpolation=0):
         r"""
         Apply factors such as beam intensity, background, backabsorption,
@@ -751,6 +338,7 @@ class Probe:
             fid.write(asbytes(header))
             np.savetxt(fid, A.T, fmt="%20.15g")
 
+
     def plot(self, view=None, **kwargs):
         """
         Plot theory against data.
@@ -781,7 +369,6 @@ class Probe:
         else:
             raise TypeError("incorrect reflectivity view '%s'"%view)
 
-
     def plot_resolution(self, suffix='', label=None, **kwargs):
         import matplotlib.pyplot as plt
         plt.plot(self.Q, self.dQ,
@@ -789,7 +376,6 @@ class Probe:
         plt.xlabel(r'Q ($\AA^{-1}$)')
         plt.ylabel(r'Q resolution ($1-\sigma \AA^{-1}$)')
         plt.title('Measurement resolution')
-
 
     def plot_linear(self, **kwargs):
         """
@@ -1000,6 +586,455 @@ class Probe:
             return " ".join((prefix+suffix, gloss)) if gloss else prefix
         else:
             return suffix+" "+gloss if gloss else None
+
+@schema(init=False, eq=False)
+class Probe(BaseProbe):
+    r"""
+    Defines the incident beam used to study the material.
+
+    For calculation purposes, probe needs to return the values $Q_\text{calc}$
+    at which the model is evaluated.  This is normally going to be the measured
+    points only, but for some systems, such as those with very thick layers,
+    oversampling is needed to avoid aliasing effects.
+
+    A measurement point consists of incident angle, angular resolution,
+    incident wavelength, FWHM wavelength resolution, reflectivity and
+    uncertainty in reflectivity.
+
+    A probe is a set of points, defined by vectors for point attribute.  For
+    convenience, the attribute can be initialized with a scalar if it is
+    constant throughout the measurement, but will be set to a vector in
+    the probe.  The attributes are initialized as follows:
+
+        *T* : float or [float] | degrees
+            Incident angle
+        *dT* : float or [float] | degrees
+            FWHM angular divergence
+        *L* : float or [float] | |Ang|
+            Incident wavelength
+        *dL* : float or [float] | |Ang|
+            FWHM wavelength dispersion
+        *data* : ([float], [float])
+            R, dR reflectivity measurement and uncertainty
+        *dQ* : [float] or None | |1/Ang|
+            1-\$sigma$ Q resolution when it cannot be computed directly
+            from angular divergence and wavelength dispersion.
+        *resolution* : 'normal' or 'uniform'
+            Distribution function for Q resolution.
+
+    Measurement properties:
+
+        *intensity* : float or Parameter
+           Beam intensity
+        *background* : float or Parameter
+           Constant background
+        *back_absorption* : float or Parameter
+           Absorption through the substrate relative to beam intensity.
+           A value of 1.0 means complete transmission; a value of 0.0
+           means complete absorption.
+        *theta_offset* : float or Parameter
+           Offset of the sample from perfect alignment
+        *sample_broadening* : float or Parameter
+           Additional FWHM angular divergence from sample curvature.
+           Scale 1-$\sigma$ rms by $2 \surd(2 \ln 2) \approx 2.35$ to convert
+           to FWHM.
+        *back_reflectivity* : True or False
+           True if the beam enters through the substrate
+
+    Measurement properties are fittable parameters.  *theta_offset* in
+    particular should be set using *probe.theta_offset.dev(dT)*, with *dT*
+    equal to the FWHM uncertainty in the peak position for the rocking curve,
+    as measured in radians. Changes to *theta_offset* will then be penalized
+    in the cost function for the fit as if it were another measurement.  Use
+    :meth:`alignment_uncertainty` to compute dT from the shape of the
+    rocking curve.
+
+    Sample broadening adjusts the existing Q resolution rather than
+    recalculating it. This allows it the resolution to describe more
+    complicated effects than a simple gaussian distribution of wavelength
+    and angle will allow. The calculation uses the mean wavelength, angle
+    and angular divergence. See :func:`resolution.dQ_broadening` for details.
+
+    *intensity* and *back_absorption* are generally not needed --- scaling
+    the reflected signal by an appropriate intensity measurement will correct
+    for both of these during reduction.  *background* may be needed,
+    particularly for samples with significant hydrogen content due to its
+    large isotropic incoherent scattering cross section.
+
+    """
+    # Fields:
+    
+    intensity: Parameter
+    background: Parameter
+    back_absorption: Parameter
+    theta_offset: Parameter
+    sample_broadening: Parameter
+    name: Optional[str] = None
+    filename: Optional[str] = None
+    back_reflectivity: bool = False
+    R: Optional[Any] = None
+    dR: Optional[Any] = 0
+    T: 'NDArray' = field_desc("List of theta values (incident angle)")
+    dT: Optional[Any] = 0
+    L: 'NDArray' = field_desc("List of lambda values (wavelength, in Angstroms)")
+    dL: Optional[Any] = 0
+    dQo: Optional[Union[Sequence, 'NDArray']] = None
+    resolution: Literal["normal", "uniform"] = "uniform"
+    oversampling: Optional[int] = None
+    oversampling_seed: int = 1
+    radiation: Literal["neutron", "xray"] = "xray"
+
+
+    polarized = False
+    Aguide = BASE_GUIDE_ANGLE  # default guide field for unpolarized measurements
+    view = "log"
+    plot_shift = 0
+    residuals_shift = 0
+    show_resolution = True
+
+    @classmethod
+    def from_dict(cls, **kw):
+        R = kw.pop('R', None)
+        dR = kw.pop('dR', None)
+        if R is not None and dR is not None:
+            kw['data'] = (R, dR)
+        radiation = kw.pop('radiation')
+        if radiation == 'neutron':
+            return NeutronProbe(**kw)
+        else:
+            return XrayProbe(**kw)
+    
+    def __init__(self, T=None, dT=0, L=None, dL=0, data=None,
+                 intensity=1, background=0, back_absorption=1, theta_offset=0,
+                 sample_broadening=0,
+                 back_reflectivity=False, name:Optional[str]=None, filename=None,
+                 dQo=None, resolution:Literal['normal', 'uniform']='normal',
+                 oversampling=None, oversampling_seed=1):
+        if T is None or L is None:
+            raise TypeError("T and L required")
+        if sample_broadening is None:
+            sample_broadening = 0
+        if theta_offset is None:
+            theta_offset = 0
+        if not name and filename:
+            name = os.path.splitext(os.path.basename(filename))[0]
+        qualifier = " "+name if name is not None else ""
+        self.intensity = Parameter.default(
+            intensity, name="intensity"+qualifier)
+        self.background = Parameter.default(
+            background, name="background"+qualifier, limits=(0., None))
+        self.back_absorption = Parameter.default(
+            back_absorption, name="back_absorption"+qualifier, limits=(0., 1.))
+        self.theta_offset = Parameter.default(
+            theta_offset, name="theta_offset"+qualifier)
+        self.sample_broadening = Parameter.default(
+            sample_broadening, name="sample_broadening"+qualifier)
+        self.back_reflectivity = back_reflectivity
+        if data is not None:
+            R, dR = data
+            R = np.array(R)
+            dR = np.array(dR)
+        else:
+            R, dR = None, None
+
+        self._set_TLR(T, dT, L, dL, R, dR, dQo)
+        self.name = name
+        self.filename = filename
+        self.resolution = resolution
+        if oversampling is not None:
+            self.oversample(oversampling, oversampling_seed)
+
+    def _set_TLR(self, T, dT, L, dL, R, dR, dQ):
+        #if L is None:
+        #    L = xsf.xray_wavelength(E)
+        #    dL = L * dE/E
+        #else:
+        #    E = xsf.xray_energy(L)
+        #    dE = E * dL/L
+
+        T = np.array(T, np.float64)
+        L = np.array(L, np.float64)
+        Q = TL2Q(T=T, L=L)
+        if dQ is not None:
+            dQ = np.asarray(dQ)
+        else:
+            dQ = dTdL2dQ(T=T, dT=dT, L=L, dL=dL)
+
+        # Make sure that we are dealing with vectors
+        T, dT, L, dL = [np.ones_like(Q)*v for v in (T, dT, L, dL)]
+
+        # remove nan
+        nan_indices = set()
+        for column in [T, dT, L, dL, R, dR, Q, dQ]:
+            if column is not None:
+                indices = np.argwhere(np.isnan(column)).flatten()
+                nan_indices.update(indices)
+
+        nan_indices = list(nan_indices)
+        T, dT, L, dL, R, dR, Q, dQ = (
+            np.delete(c, nan_indices) if c is not None else None for c in [T, dT, L, dL, R, dR, Q, dQ])
+
+        # Probe stores sorted values for convenience of resolution calculator
+        idx = np.argsort(Q)
+        self.T, self.dT = T[idx], dT[idx]
+        self.L, self.dL = L[idx], dL[idx]
+        self.Qo, self.dQo = Q[idx], dQ[idx]
+        if R is not None:
+            R = R[idx]
+        if dR is not None:
+            dR = dR[idx]
+        self.R = R
+        self.dR = dR
+
+        # By default the calculated points are the measured points.  Use
+        # oversample() for a more accurate resolution calculations.
+        self._set_calc(self.T, self.L)
+
+    @staticmethod
+    def alignment_uncertainty(w, I, d=0):
+        r"""
+        Compute alignment uncertainty.
+
+        **Parameters:**
+
+        *w* : float | degrees
+            Rocking curve full width at half max.
+        *I* : float | counts
+            Rocking curve integrated intensity.
+        *d* = 0: float | degrees
+            Motor step size
+
+        **Returns:**
+
+        *dtheta* : float | degrees
+            uncertainty in alignment angle
+        """
+        return sqrt(w**2/I + d**2/12.)
+
+
+
+    def write_data(self, filename,
+                   columns=('Q', 'R', 'dR'),
+                   header=None):
+        """
+        Save the data to a file.
+
+        *header* is a string with trailing \\n containing the file header.
+        *columns* is a list of column names from Q, dQ, R, dR, L, dL, T, dT.
+
+        The default is to write Q, R, dR data.
+        """
+        if header is None:
+            header = "# %s\n"%' '.join(columns)
+        with open(filename, 'wb') as fid:
+            fid.write(asbytes(header))
+            data = np.vstack([getattr(self, c) for c in columns])
+            np.savetxt(fid, data.T)
+
+    def _set_calc(self, T, L):
+        Q = TL2Q(T=T, L=L)
+
+        idx = np.argsort(Q)
+        self.calc_T = T[idx]
+        self.calc_L = L[idx]
+        self.calc_Qo = Q[idx]
+
+        # Only keep the scattering factors that you need
+        self.unique_L = np.unique(self.calc_L)
+        self._L_idx = np.searchsorted(self.unique_L, L)
+
+    @property
+    def Q(self):
+        if self.theta_offset.value != 0:
+            Q = TL2Q(T=self.T+self.theta_offset.value, L=self.L)
+            # TODO: this may break the Q order on measurements with varying L
+        else:
+            Q = self.Qo
+        return Q
+
+    @Q.setter
+    def Q(self, Q):
+        # If we explicity set Q, then forget what we know about T and L.
+        # This will cause theta offset != 0 to fail.
+        if hasattr(self, 'T'):
+            del self.T, self.L
+        self.Qo = Q
+
+    @property
+    def dQ(self):
+        if self.sample_broadening.value == 0:
+            dQ = self.dQo
+        else:
+            dQ = dQ_broadening(dQ=self.dQo, L=self.L, T=self.T, dT=self.dT,
+                               width=self.sample_broadening.value)
+        return dQ
+        
+    @dQ.setter
+    def dQ(self, dQ):
+        self.dQo = dQ
+
+    @property
+    def calc_Q(self):
+        if self.theta_offset.value != 0:
+            Q = TL2Q(T=self.calc_T+self.theta_offset.value, L=self.calc_L)
+            # TODO: this may break the Q order on measurements with varying L
+        else:
+            Q = self.calc_Qo
+        return Q if not self.back_reflectivity else -Q
+
+    def parameters(self):
+        return {
+            'intensity': self.intensity,
+            'background': self.background,
+            'back_absorption': self.back_absorption,
+            'theta_offset': self.theta_offset,
+            'sample_broadening': self.sample_broadening
+            }
+
+    def to_dict(self):
+        """ Return a dictionary representation of the parameters """
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'filename': self.filename,
+            'intensity': self.intensity,
+            'background': self.background,
+            'back_absorption': self.back_absorption,
+            'theta_offset': self.theta_offset,
+            'sample_broadening': self.sample_broadening,
+        })
+
+    def scattering_factors(self, material, density):
+        """
+        Returns the scattering factors associated with the material given
+        the range of wavelengths/energies used in the probe.
+        """
+        raise NotImplementedError(
+            "need radiation type in <%s> to compute sld for %s"
+            % (self.filename, material))
+
+    def subsample(self, dQ):
+        """
+        Select points at most every dQ.
+
+        Use this to speed up computation early in the fitting process.
+
+        This changes the data object, and is not reversible.
+
+        The current algorithm is not picking the "best" Q value, just the
+        nearest, so if you have nearby Q points with different quality
+        statistics (as happens in overlapped regions from spallation
+        source measurements at different angles), then it may choose
+        badly.  Simple solutions based on the smallest relative error dR/R
+        will be biased toward peaks, and smallest absolute error dR will
+        be biased toward valleys.
+        """
+        # Assumes self contains sorted Qo and associated T, L
+        # Note: calc_Qo is already sorted
+        Q = np.arange(self.Qo[0], self.Qo[-1], dQ)
+        idx = np.unique(np.searchsorted(self.Qo, Q))
+        #print len(idx), len(self.Qo)
+
+        self.T, self.dT = self.T[idx], self.dT[idx]
+        self.L, self.dL = self.L[idx], self.dL[idx]
+        self.Qo, self.dQo = self.Qo[idx], self.dQo[idx]
+        if self.R is not None:
+            self.R = self.R[idx]
+        if self.dR is not None:
+            self.dR = self.dR[idx]
+        self._set_calc(self.T, self.L)
+
+
+    def critical_edge(self, substrate=None, surface=None,
+                      n=51, delta=0.25):
+        r"""
+        Oversample points near the critical edge.
+
+        The critical edge is defined by the difference in scattering
+        potential for the *substrate* and *surface* materials, or the
+        reverse if *back_reflectivity* is true.
+
+        *n* is the number of $Q$ points to compute near the critical edge.
+
+        *delta* is the relative uncertainty in the material density,
+        which defines the range of values which are calculated.
+
+        Note: :meth:`critical_edge` will remove the extra Q calculation
+        points introduced by :meth:`oversample`.
+
+        The $n$ points $Q_i$ are evenly distributed around the critical
+        edge in $Q_c \pm \delta Q_c$ by varying angle $\theta$ for a
+        fixed wavelength $< \lambda >$, the average of all wavelengths
+        in the probe.
+
+        Specifically:
+
+        .. math::
+
+            Q_c^2 &= 16 \pi (\rho - \rho_\text{incident}) \\
+            Q_i &= Q_c - \delta_i Q_c (i - (n-1)/2)
+                \qquad \text{for} \; i \in 0 \ldots n-1 \\
+            \lambda_i &= < \lambda > \\
+            \theta_i &= \sin^{-1}(Q_i \lambda_i / 4 \pi)
+
+        If $Q_c$ is imaginary, then $-|Q_c|$ is used instead, so this
+        routine can be used for reflectivity signals which scan from
+        back reflectivity to front reflectivity.  For completeness,
+        the angle $\theta = 0$ is added as well.
+        """
+        Q_c = self.Q_c(substrate, surface)
+        Q = np.linspace(Q_c*(1 - delta), Q_c*(1+delta), n)
+        L = np.average(self.L)
+        T = QL2T(Q=Q, L=L)
+        T = np.hstack((self.T, T, 0))
+        L = np.hstack((self.L, [L]*(n+1)))
+        #print Q
+        self._set_calc(T, L)
+
+    def oversample(self, n=20, seed=1):
+        """
+        Generate an over-sampling of Q to avoid aliasing effects.
+
+        Oversampling is needed for thick layers, in which the underlying
+        reflectivity oscillates so rapidly in Q that a single measurement
+        has contributions from multiple Kissig fringes.
+
+        Sampling will be done using a pseudo-random generator so that
+        accidental structure in the function does not contribute to the
+        aliasing.  The generator will usually be initialized with a fixed
+        *seed* so that the point selection will not change from run to run,
+        but a *seed* of None will choose a different set of points each time
+        oversample is called.
+
+        The value *n* is the number of points that should contribute to
+        each Q value when computing the resolution.   These will be
+        distributed about the nominal measurement value, but varying in
+        both angle and energy according to the resolution function.  This
+        will yield more points near the measurement and fewer farther away.
+        The measurement point itself will not be used to avoid accidental
+        bias from uniform Q steps.  Depending on the problem, a value of
+        *n* between 20 and 100 should lead to stable values for the convolved
+        reflectivity.
+
+        Note: :meth:`oversample` will remove the extra Q calculation
+        points introduced by :meth:`critical_edge`.
+        """
+        
+        rng = numpy.random.RandomState(seed=seed)
+        T = rng.normal(self.T[:, None], self.dT[:, None], size=(len(self.dT), n-1))
+        L = rng.normal(self.L[:, None], self.dL[:, None], size=(len(self.dL), n-1))
+        T = np.hstack((self.T, T.flatten()))
+        L = np.hstack((self.L, L.flatten()))
+        self._set_calc(T, L)
+        self.oversampling = n
+        self.oversampling_seed = seed
+
+
+
+
+
+
+
 
 
 class XrayProbe(Probe):
@@ -1587,7 +1622,8 @@ def _data_as_probe(entry, json_header_encoding, probe_args, T, L, dT, dL, dR, FW
     return probe
 
 
-class QProbe(Probe):
+@schema()
+class QProbe(BaseProbe):
     """
     A pure Q, R probe
 
@@ -1595,9 +1631,23 @@ class QProbe(Probe):
     scattering length density based on wavelength, or adjusting for
     alignment errors.
     """
+    Q: 'NDArray'
+    dQ: 'NDArray'
+    name: Optional[str]
+    filename: Optional[str]
+    intensity: Parameter
+    back_absorption: Parameter
+    background: Parameter
+    back_reflectivity: bool
+    R: 'NDArray'
+    dR: 'NDArray'
+    resolution: Literal['normal', 'uniform']
+
+    polarized = False
+
     def __init__(self, Q, dQ, data=None, name=None, filename=None,
                  intensity=1, background=0, back_absorption=1,
-                 back_reflectivity=False, resolution='normal'):
+                 back_reflectivity=False, resolution: Literal['normal', 'uniform']='normal'):
         if not name and filename:
             name = os.path.splitext(os.path.basename(filename))[0]
         qualifier = " "+name if name is not None else ""
@@ -1607,7 +1657,6 @@ class QProbe(Probe):
         self.back_absorption = Parameter.default(back_absorption,
                                                  name="back_absorption"+qualifier,
                                                  limits=[0, 1])
-        self.theta_offset = Constant(0, name="theta_offset"+qualifier)
         self.sample_broadening = Constant(0, name="sample_broadening"+qualifier)
 
         self.back_reflectivity = back_reflectivity
@@ -1622,10 +1671,14 @@ class QProbe(Probe):
         self.R = R
         self.dR = dR
         self.unique_L = None
-        self.calc_Qo = self.Qo
+        self.calc_Qo = self.Q
         self.name = name
         self.filename = filename
         self.resolution = resolution
+
+    @property
+    def calc_Q(self):
+        return self.calc_Qo
 
     def scattering_factors(self, material, density):
         raise NotImplementedError(
