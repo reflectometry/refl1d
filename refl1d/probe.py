@@ -84,30 +84,9 @@ def make_probe(**kw):
     else:
         return XrayProbe(**kw)
 
-@schema(classname="Probe", init=False, eq=False)
-class ProbeSchema:
-    name: Optional[str] = None
-    filename: Optional[str] = None
-    radiation: Literal["neutron", "xray"] = "xray"
-    intensity: Parameter = 1.0
-    background: Parameter = 0
-    back_absorption: Parameter = 0
-    theta_offset: Parameter = 0
-    sample_broadening: Parameter = 0
-    back_reflectivity: bool = False
-    R: Optional[Any] = None
-    dR: Optional[Any] = 0
-    T: 'NDArray' = field_desc("List of theta values (incident angle)")
-    dT: Optional[Any] = 0
-    L: 'NDArray' = field_desc("List of lambda values (wavelength, in Angstroms)")
-    dL: Optional[Any] = 0
-    dQo: Optional[Union[Sequence, 'NDArray']] = None
-    resolution: Literal["normal", "uniform"] = "uniform"
-    oversampling: Optional[int] = None
-    oversampling_seed: int = 1
 
-@schema()
-class Probe(ProbeSchema):
+@schema(init=False, eq=False)
+class Probe:
     r"""
     Defines the incident beam used to study the material.
 
@@ -181,6 +160,26 @@ class Probe(ProbeSchema):
     large isotropic incoherent scattering cross section.
 
     """
+    # Fields:
+    name: Optional[str] = None
+    filename: Optional[str] = None
+    radiation: Literal["neutron", "xray"] = "xray"
+    intensity: Parameter
+    background: Parameter
+    back_absorption: Parameter
+    theta_offset: Parameter
+    sample_broadening: Parameter
+    back_reflectivity: bool = False
+    R: Optional[Any] = None
+    dR: Optional[Any] = 0
+    T: 'NDArray' = field_desc("List of theta values (incident angle)")
+    dT: Optional[Any] = 0
+    L: 'NDArray' = field_desc("List of lambda values (wavelength, in Angstroms)")
+    dL: Optional[Any] = 0
+    dQo: Optional[Union[Sequence, 'NDArray']] = None
+    resolution: Literal["normal", "uniform"] = "uniform"
+    oversampling: Optional[int] = None
+    oversampling_seed: int = 1
 
     polarized = False
     Aguide = BASE_GUIDE_ANGLE  # default guide field for unpolarized measurements
