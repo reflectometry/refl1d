@@ -214,7 +214,7 @@ class Slab(Layer):
     thickness: Parameter
     interface: Optional[Parameter] = None
     magnetism: Optional[BaseMagnetism]
-    material: Union[mat.SLD, mat.Material, mat.Vacuum]
+    material: Union[mat.SLD, mat.MaterialTypes, mat.Vacuum]
 
     def __init__(self, material=None, thickness=0, interface=0, name=None,
                  magnetism=None):

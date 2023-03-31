@@ -415,6 +415,7 @@ class CellVolumeMaterial(BaseMaterial):
     def parameters(self):
         return dict(density=self.density, cell_volume=self.cell_volume)
 
+MaterialTypes = Union[BulkDensityMaterial, NaturalDensityMaterial, NumberDensityMaterial, RelativeDensityMaterial, CellVolumeMaterial]
 
 class Compound(Scatterer):
     """
