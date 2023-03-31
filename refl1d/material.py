@@ -40,7 +40,7 @@ type and energy.  Unlike the normally tabulated scattering factors f', f''
 for X-ray, there is no need to scale by probe by electron radius.  In
 the end, sld is just the returned scattering factors times density.
 """
-__all__ = ['Material', 'Mixture', 'SLD', 'Vacuum', 'Scatterer', 'ProbeCache']
+__all__ = ['Material', 'Mixture', 'SLD', 'Vacuum', 'Scatterer', 'ProbeCache', 'BulkDensityMaterial', 'NaturalDensityMaterial', 'NumberDensityMaterial', 'RelativeDensityMaterial', 'CellVolumeMaterial']
 
 import numpy as np
 from numpy import inf, NaN
@@ -168,7 +168,6 @@ class SLD(Scatterer):
 # still have to convert Element to/from string repr
 # ELEMENTS = Enum('elements', [(e.name, e.symbol) for e in periodictable.elements._element.values()])
 
-@schema()
 class BaseMaterial(Scatterer):
     """
     Description of a solid block of material.
@@ -189,7 +188,6 @@ class BaseMaterial(Scatterer):
     name: str
     formula: str # Formula
     use_incoherent: bool = False
-    density: Union[Parameter, Expression] # to be filled in by inheriting classes
 
     # not in the schema:
     _formula: BaseFormula
@@ -236,7 +234,7 @@ def Material(
         raise ValueError(f'unknown value "{fitby}" of fitby: should be one of ["bulk_density", "natural_density", "relative_density", "number_density", "cell_volume"]')
 
 
-@schema()
+@schema(init=False)
 class BulkDensityMaterial(BaseMaterial):
     """
     A solid block of material, described by its bulk density
@@ -245,7 +243,9 @@ class BulkDensityMaterial(BaseMaterial):
         *density* : float | |g/cm^3|
             the bulk density for the material.
     """
-    bulk_density: Parameter
+    name: str
+    formula: str # Formula
+    use_incoherent: bool = False
     density: Parameter
 
     def __init__(self,
@@ -275,6 +275,9 @@ class NaturalDensityMaterial(BaseMaterial):
         *natural_density* : float | |g/cm^3|
             the natural bulk density for the material.
     """
+    name: str
+    formula: str # Formula
+    use_incoherent: bool = False
     natural_density: Parameter
     density: Expression
 
@@ -311,6 +314,9 @@ class NumberDensityMaterial(BaseMaterial):
         *natural_density* : float | |g/cm^3|
             if specified, the natural bulk density for the material.
     """
+    name: str
+    formula: str # Formula
+    use_incoherent: bool = False
     number_density: Parameter
     density: Expression
 
@@ -350,7 +356,11 @@ class RelativeDensityMaterial(BaseMaterial):
         *natural_density* : float | |g/cm^3|
             if specified, the natural bulk density for the material.
     """
+    name: str
+    formula: str # Formula
+    use_incoherent: bool = False
     relative_density: Parameter
+    density: Expression
 
     def __init__(self, 
                  formula: Union[str, BaseFormula],
@@ -395,7 +405,11 @@ class CellVolumeMaterial(BaseMaterial):
         12.02 14.70
 
     """
+    name: str
+    formula: str # Formula
+    use_incoherent: bool = False
     cell_volume: Parameter
+    density: Expression
 
     def __init__(self,
                  formula: Union[str, BaseFormula],
