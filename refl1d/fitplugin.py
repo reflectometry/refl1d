@@ -16,7 +16,6 @@ from .errors import calc_errors, show_errors
 
 # List of modules that contain dataclasses for the saved json file format
 from . import names, material, model, magnetism, probe, experiment
-SCHEMA_SOURCES = names, material, model, magnetism, probe, experiment
 
 # These are names used by the driver
 def data_view():
