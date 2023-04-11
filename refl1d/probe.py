@@ -1657,7 +1657,6 @@ class QProbe(BaseProbe):
         self.back_absorption = Parameter.default(back_absorption,
                                                  name="back_absorption"+qualifier,
                                                  limits=[0, 1])
-        self.sample_broadening = Constant(0, name="sample_broadening"+qualifier)
 
         self.back_reflectivity = back_reflectivity
 
@@ -1679,6 +1678,13 @@ class QProbe(BaseProbe):
     @property
     def calc_Q(self):
         return self.calc_Qo
+
+    def parameters(self):
+        return {
+            'intensity': self.intensity,
+            'background': self.background,
+            'back_absorption': self.back_absorption,
+        }
 
     def scattering_factors(self, material, density):
         raise NotImplementedError(
