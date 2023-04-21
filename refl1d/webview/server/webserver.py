@@ -1,5 +1,6 @@
 import asyncio
 from aiohttp import web
+from dataclasses import dataclass
 import json
 from pathlib import Path
 import socket
@@ -7,7 +8,10 @@ from typing import Union, Dict, List, Optional
 
 import numpy as np
 from bumps.webview.server import webserver
-from bumps.webview.server.webserver import app, sio, rest_get, state, get_chisq, to_json_compatible_dict, get_commandline_options
+from bumps.webview.server.webserver import (
+    app, sio, rest_get, state, get_chisq, to_json_compatible_dict, get_commandline_options,
+    set_problem
+)
 from refl1d.experiment import Experiment, ExperimentBase, MixedExperiment
 import refl1d.probe
 
@@ -22,9 +26,10 @@ client_path = Path(__file__).parent.parent / 'client'
 index_path = client_path / 'dist'
 static_assets_path = index_path / 'assets'
 
-
+@dataclass
 class Options(webserver.Options):
-    serializer: "dataclass"
+    serializer: webserver.SERIALIZERS = "dataclass"
+    headless: bool = True
 
 
 async def index(request):
@@ -136,10 +141,10 @@ async def get_model_names(sid: str=""):
     return output
 
 def main(options: Optional[Options] = None, sock: Optional[socket.socket] = None):
-    options = get_commandline_options(arg_defaults={"serializer": "dataclass"}) if options is None else options
+    options = get_commandline_options(arg_defaults={"serializer": "dataclass", "headless": False}) if options is None else options
     asyncio.run(start_app(options, sock))
 
-async def start_app(options: Options, sock: socket.socket):
+async def start_app(options: Options = Options(), sock: Optional[socket.socket] = None):
     runsock = webserver.setup_app(options=options, static_assets_path=static_assets_path, index=index, sock=sock)
     await web._run_app(app, sock=runsock)
 
