@@ -15,4 +15,4 @@ A graphical interface allows direct manipulation of the model profiles.
 See http://refl1d.readthedocs.org for online manuals.
 """
 
-__version__ = "0.8.15"
+__version__ = "0.8.16"
