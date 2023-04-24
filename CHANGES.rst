@@ -3,6 +3,7 @@ Change History
 **************
 
 Docs available from `<http://refl1d.readthedocs.org>`_
+
 2023-04-24 v0.8.16
 ==================
 * fixed PolarizedQProbe.calc_Q (should not call PolarizedNeutronProbe._calculate_union)
