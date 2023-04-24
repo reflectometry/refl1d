@@ -2011,5 +2011,9 @@ class PolarizedQProbe(PolarizedNeutronProbe):
         self.Q, self.dQ = Qmeasurement_union(xs)
         self.calc_Qo = self.Q
 
+    @property
+    def calc_Q(self):
+        return self.calc_Qo
+
 # Deprecated old long name
 PolarizedNeutronQProbe = PolarizedQProbe
