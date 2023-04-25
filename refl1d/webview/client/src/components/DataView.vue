@@ -117,10 +117,21 @@ async function fetch_and_draw() {
         showarrow: false,
         font: {size: 16}, 
       }
-    ]
+    ],
+    legend: {
+      x: 0.95,
+      y: 0.95,
+      xanchor: 'left',
+      yanchor: 'top'
+    }
   };
 
-  const config = {responsive: true}
+  const config: Partial<Plotly.Config> = {
+    responsive: true,
+    edits: {
+      legendPosition: true
+    }
+  }
   await Plotly.react(plot_div.value as HTMLDivElement, [...theory_traces, ...data_traces], layout, config);
 }
 
