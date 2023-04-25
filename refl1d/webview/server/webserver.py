@@ -1,10 +1,17 @@
+import asyncio
 from aiohttp import web
+from dataclasses import dataclass
 import json
 from pathlib import Path
-from typing import Union, Dict, List
+import socket
+from typing import Union, Dict, List, Optional
 
 import numpy as np
-from bumps.webview.server.webserver import app, main as bumps_main, sio, rest_get, state, get_chisq, to_json_compatible_dict
+from bumps.webview.server import webserver
+from bumps.webview.server.webserver import (
+    app, sio, rest_get, state, get_chisq, to_json_compatible_dict, get_commandline_options,
+    set_problem
+)
 from refl1d.experiment import Experiment, ExperimentBase, MixedExperiment
 import refl1d.probe
 
@@ -18,6 +25,12 @@ from .profile_plot import plot_sld_profile_plotly
 client_path = Path(__file__).parent.parent / 'client'
 index_path = client_path / 'dist'
 static_assets_path = index_path / 'assets'
+
+@dataclass
+class Options(webserver.Options):
+    serializer: webserver.SERIALIZERS = "dataclass"
+    headless: bool = True
+
 
 async def index(request):
     """Serve the client-side application."""
@@ -130,9 +143,13 @@ async def get_model_names(sid: str=""):
                 output.append(dict(name=model.name, part_name=part.name, model_index=model_index, part_index=part_index))
     return output
 
+def main(options: Optional[Options] = None, sock: Optional[socket.socket] = None):
+    options = get_commandline_options(arg_defaults={"serializer": "dataclass", "headless": False}) if options is None else options
+    asyncio.run(start_app(options, sock))
 
-def main():
-    bumps_main(index=index, static_assets_path=static_assets_path, arg_defaults={"serializer": "dataclass"})
+async def start_app(options: Options = Options(), sock: Optional[socket.socket] = None):
+    runsock = webserver.setup_app(options=options, static_assets_path=static_assets_path, index=index, sock=sock)
+    await web._run_app(app, sock=runsock)
 
 if __name__ == '__main__':
     main()
