@@ -84,7 +84,10 @@ async def get_profile_plot(sid: str="", model_index: int=0, sample_index: int=0)
     if isinstance(model, MixedExperiment):
         model = model.parts[sample_index]
     fig = plot_sld_profile_plotly(model)
-    return to_json_compatible_dict(fig.to_dict())
+    output = to_json_compatible_dict(fig.to_dict())
+    del fig
+    return output
+
 
 
 def get_single_probe_data(theory, probe, substrate=None, surface=None, label=''):
