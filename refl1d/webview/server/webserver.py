@@ -30,6 +30,7 @@ static_assets_path = index_path / 'assets'
 class Options(webserver.Options):
     serializer: webserver.SERIALIZERS = "dataclass"
     headless: bool = True
+    app_name: str = "Refl1D"
 
 
 async def index(request):
@@ -142,6 +143,7 @@ async def get_model_names(sid: str=""):
 
 def main(options: Optional[Options] = None, sock: Optional[socket.socket] = None):
     options = get_commandline_options(arg_defaults={"serializer": "dataclass", "headless": False}) if options is None else options
+    options.app_name = "Refl1D"
     asyncio.run(start_app(options, sock))
 
 async def start_app(options: Options = Options(), sock: Optional[socket.socket] = None):
