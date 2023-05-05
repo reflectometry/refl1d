@@ -147,7 +147,10 @@ async def get_model_names(sid: str=""):
 def main(options: Optional[Options] = None, sock: Optional[socket.socket] = None):
     options = get_commandline_options(arg_defaults={"serializer": "dataclass", "headless": False}) if options is None else options
     options.app_name = "Refl1D"
-    asyncio.run(start_app(options, sock))
+    try:
+        asyncio.run(start_app(options, sock))
+    except KeyboardInterrupt:
+        print("stopped by KeyboardInterrupt.")
 
 async def start_app(options: Options = Options(), sock: Optional[socket.socket] = None):
     runsock = webserver.setup_app(options=options, static_assets_path=static_assets_path, index=index, sock=sock)
