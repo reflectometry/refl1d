@@ -26,4 +26,5 @@ $WORKING_DIRECTORY="$pwd"
 Copy-Item "$PSScriptRoot\refl1d_webview.bat" "$destdir"
 
 # zip it back up
-tar -czf "$WORKING_DIRECTORY/Refl1D-webview-Windows-x86_64.tar.gz" "$DIRNAME"
+mkdir "$WORKING_DIRECTORY\dist" -ErrorAction SilentlyContinue
+tar -czf "$WORKING_DIRECTORY\dist\Refl1D-webview-Windows-x86_64.tar.gz" "$DIRNAME"
