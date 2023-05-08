@@ -2,7 +2,7 @@ $ENV_NAME="isolated-base"
 $PYTHON_VERSION="3.10"
 $DIRNAME="refl1d"
 
-conda activate "base"
+$CONDA\Scripts\conda.exe activate "base"
 
 conda install -y conda-pack
 conda create -n "$ENV_NAME" -q --force -y "python=$PYTHON_VERSION"
