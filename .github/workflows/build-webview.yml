@@ -35,6 +35,7 @@ jobs:
     - name: Build installer
       run: |
         pwsh -command ".\$GITHUB_WORKSPACE\extra\build_conda_packed.ps1"
+        mkdir unstable
         mv dist\Refl1D*.tar.gz "unstable\Refl1D-windows-exe-$($env:branch_name).tar.gz"
 
     # See the following for how to upload to a release
