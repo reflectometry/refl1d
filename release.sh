@@ -10,6 +10,10 @@ Refl1D Release Process
 # the version number.  Maybe separate pip requirements from binary
 # distribution requirements?  Or maybe don't worry about it.
 
+Check dependencies in various locations:
+  requirements.txt, setup.py, doc/requirements.txt, .readthedocs.yaml
+  .github/workflows/*
+
 (1) check that all changes have been pushed
   [bumps, refl1d, periodictable] X [windows, mac, linux boxen]
    # Note: linux boxen includes ~/dev as well as ~/src on the shared machines
