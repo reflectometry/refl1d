@@ -27,6 +27,11 @@ jobs:
       with:
         python-version: ${{ matrix.config.py }}
 
+    - uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          python-version: ${{ matrix.config.py }}
+
     - name: Build installer
       run: |
         pwsh -command ".\$GITHUB_WORKSPACE\extra\build_conda_packed.ps1"
