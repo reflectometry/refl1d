@@ -1,6 +1,6 @@
 $ENV_NAME="isolated-base"
 $PYTHON_VERSION="3.10"
-$DIRNAME="refl1d-webview"
+$DIRNAME="Refl1D-webview"
 
 conda activate "base"
 
