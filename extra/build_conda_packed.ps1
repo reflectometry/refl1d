@@ -1,6 +1,6 @@
 $ENV_NAME="isolated-base"
 $PYTHON_VERSION="3.10"
-$DIRNAME="refl1d"
+$DIRNAME="refl1d-webview"
 
 conda activate "base"
 
@@ -10,7 +10,7 @@ conda-pack -n "$ENV_NAME" -f -o "$ENV_NAME.tar.gz"
 
 # unpack the new environment, that contains only python + pip
 $destdir="$DIRNAME"
-Remove-Item -r "$DIRNAME"
+Remove-Item -r "$DIRNAME" -ErrorAction SilentlyContinue
 mkdir "$destdir"
 tar -xzf "$ENV_NAME.tar.gz" -C "$destdir"
 
@@ -23,7 +23,7 @@ $WORKING_DIRECTORY="$pwd"
 & "$destdir\python.exe" -m pip install -r https://raw.githubusercontent.com/bumps/bumps/webview/webview-requirements
 
 # add our batch script:
-Copy-Item .\refl1d_webview.bat .\refl1d\
+Copy-Item "$PSScriptRoot\refl1d_webview.bat" "$destdir"
 
 # zip it back up
 tar -czf "$WORKING_DIRECTORY/Refl1D-webview-Windows-x86_64.tar.gz" "$DIRNAME"
