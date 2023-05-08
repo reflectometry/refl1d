@@ -28,9 +28,9 @@ jobs:
         python-version: ${{ matrix.config.py }}
 
     - uses: conda-incubator/setup-miniconda@v2
-        with:
-          auto-update-conda: true
-          python-version: ${{ matrix.config.py }}
+      with:
+        auto-update-conda: true
+        python-version: ${{ matrix.config.py }}
 
     - name: Build installer
       run: |
