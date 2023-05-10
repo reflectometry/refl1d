@@ -1308,19 +1308,23 @@ class ProbeSet(Probe):
                       resolution=Po.resolution)
 
 def parse_orso(filename, *args, **kwargs):
-    """load an ORSO text file (.ort)"""
-    from orsopy.fileio.orso import load_orso
+    """load an ORSO text (.ort) or binary (.orb) file"""
+    if filename.endswith('.ort'):
+        from orsopy.fileio.orso import load_orso
+        entries = load_orso(filename)
+    elif filename.endswith('.orb'):
+        from orsopy.fileio.orso import load_nexus
+        entries = load_nexus(filename)
 
     POL_CONVERSION = {
-        "p": "+",
-        "m": "-",
+        "po": "++",
+        "mo": "--",
         "mm": "--",
         "mp": "-+",
         "pm": "+-",
         "pp": "++",
     }
 
-    entries = load_orso(filename)
     entries_out = []
     for entry in entries:
         header = entry.info
@@ -1330,22 +1334,26 @@ def parse_orso(filename, *args, **kwargs):
         polarization = POL_CONVERSION.get(settings.polarization, "unpolarized")
         header_out = {"polarization": polarization}
 
-        def get_key(orso_name, refl1d_name):
-            column_index = next((i for i,c in enumerate(columns) if c.name == orso_name), None)
+        def get_key(orso_name, refl1d_name, refl1d_resolution_name):
+            column_index = next((i for i,c in enumerate(columns) if getattr(c, 'physical_quantity', None) == orso_name), None)
             if column_index is not None:
-                # NOTE: this is dependent on acceptance of column-first indexing in ORSO
-                header_out[refl1d_name] = data[column_index]
+                # NOTE: this is based on column being second index (under debate in ORSO)
+                header_out[refl1d_name] = data[:, column_index]
+                cname = columns[column_index].name
+                resolution_index = next((i for i,c in enumerate(columns) if getattr(c, 'error_of', None) == cname), None)
+                if resolution_index is not None:
+                    header_out[refl1d_resolution_name] = data[:, resolution_index]
             else:
                 v = getattr(settings, orso_name, None)
                 if hasattr(v, 'magnitude'):
                     header_out[refl1d_name] = v.magnitude
+                if hasattr(v, 'error'):
+                    header_out[refl1d_resolution_name] = v.error.error_value
 
-        get_key("incident_angle", "angle")
-        get_key("wavelength", "wavelength")
-        get_key("angular_resolution", "angular_resolution")
-        get_key("wavelength_resolution", "wavelength_resolution")
+        get_key("incident_angle", "angle", "angular_resolution")
+        get_key("wavelength", "wavelength", "wavelength_resolution")
 
-        entries_out.append((header_out, np.array(data)))
+        entries_out.append((header_out, np.array(data).T))
     return entries_out
 
 def load4(filename, keysep=":", sep=None, comment="#", name=None,
@@ -1450,7 +1458,7 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
     """
     json_header_encoding = False
 
-    if filename.endswith('.ort'):
+    if filename.endswith('.ort') or filename.endswith('.orb'):
         entries = parse_orso(filename)
     else:
         json_header_encoding = True # for .refl files, header values are json-encoded
