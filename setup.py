@@ -48,6 +48,7 @@ dist = setup(
         'Topic :: Scientific/Engineering :: Physics',
         ],
     packages=packages,
+    data_files=[('share/icons', ['extra/refl1d-icon.svg'])],
     #package_data=gui_resources.package_data(),
     include_package_data=True,
     scripts=['bin/refl1d_cli.py', 'bin/refl1d_gui.py'],
