@@ -20,5 +20,7 @@ include refl1d/webview/client/*.html
 include refl1d/webview/client/*.js
 include refl1d/webview/client/*.json
 include refl1d/webview/client/*.txt
+include extra/*.svg extra/*.png
 # Delete files
 #prune this that
+prune refl1d/webview/client/node_modules
