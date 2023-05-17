@@ -104,7 +104,7 @@ async def get_profile_plot(sid: str="", model_index: int=0, sample_index: int=0)
 
 
 
-def get_single_probe_data(theory, probe, substrate=None, surface=None, label=''):
+def get_single_probe_data(theory, probe, substrate=None, surface=None, polarization=""):
     fresnel_calculator = probe.fresnel(substrate, surface)
     Q, FQ = probe.apply_beam(probe.calc_Q, fresnel_calculator(probe.calc_Q))
     Q, R = theory
@@ -117,7 +117,8 @@ def get_single_probe_data(theory, probe, substrate=None, surface=None, label='')
         output = dict(Q = probe.Q, dQ = probe.dQ, R = probe.R, dR = probe.dR, theory = R, fresnel = FQ, background=probe.background.value, intensity=probe.intensity.value)
     else:
         output = dict(Q = probe.Q, dQ = probe.dQ, theory = R, fresnel = FQ)
-    output['label'] = f"{probe.label()} {label}"
+    output["polarization"] = polarization
+    output["label"] = probe.label()
     return output
 
 def get_probe_data(theory, probe, substrate=None, surface=None):
