@@ -1,6 +1,5 @@
-import numba
-import numba.experimental
 import math
+from . import numba
 
 # Define a bin iterator to adapt to either forward or reversed inputs.
 spec = [

@@ -1,5 +1,5 @@
-import numba
 from math import erf, sqrt, exp
+from . import numba
 
 PI4 = 12.56637061435917295385
 PI_180 = 0.01745329251994329576

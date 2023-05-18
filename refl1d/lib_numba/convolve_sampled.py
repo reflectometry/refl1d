@@ -1,4 +1,4 @@
-import numba
+from . import numba
 
 
 @numba.njit(cache=True)
