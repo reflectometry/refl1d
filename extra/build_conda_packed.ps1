@@ -17,10 +17,10 @@ tar -xzf "$ENV_NAME.tar.gz" -C "$destdir"
 # activate the unpacked environment and install pip packages
 conda deactivate
 $WORKING_DIRECTORY="$pwd"
-& "$destdir\python.exe" -m pip install --no-input numba
-& "$destdir\python.exe" -m pip install --no-input git+https://github.com/bumps/bumps@webview
-& "$destdir\python.exe" -m pip install --no-input git+https://github.com/reflectometry/refl1d@webview
-& "$destdir\python.exe" -m pip install -r https://raw.githubusercontent.com/bumps/bumps/webview/webview-requirements
+& "$destdir\python.exe" -m pip install --no-input --no-compile numba
+& "$destdir\python.exe" -m pip install --no-input --no-compile git+https://github.com/bumps/bumps@webview
+& "$destdir\python.exe" -m pip install --no-input --no-compile git+https://github.com/reflectometry/refl1d@webview
+& "$destdir\python.exe" -m pip install --no-compile -r https://raw.githubusercontent.com/bumps/bumps/webview/webview-requirements
 
 # add our batch script:
 Copy-Item "$PSScriptRoot\refl1d_webview.bat" "$destdir"
