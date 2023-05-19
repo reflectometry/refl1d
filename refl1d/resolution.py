@@ -118,7 +118,9 @@ def dQ_broadening(dQ, L, T, dT, width):
     width = FWHM2sigma(radians(width))
     dQsq = dQ**2 + (4*pi/L*cos(T))**2*(2*width*dT + width**2)
 
-    return sqrt(dQsq)
+    # If width < -dT, need to take abs(dQsq) before taking the sqrt
+    # (focusing past zero)
+    return sqrt(abs(dQsq))
 
 
 def dQdT2dLoL(Q, dQ, T, dT):

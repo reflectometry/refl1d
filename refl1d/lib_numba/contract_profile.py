@@ -1,5 +1,5 @@
-import numba
 import math
+from . import numba
 
 Z_EPS = 1e-6
 

@@ -1,6 +1,6 @@
 {
   "name": "refl1d-webview-client",
-  "version": "0.0.5",
+  "version": "0.0.9",
   "scripts": {
     "dev": "vite",
     "build": "vite build --emptyOutDir -m development",
@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "bootstrap": "^5.2.1",
-    "bumps-webview-client": "^0.0.5",
+    "bumps-webview-client": "^0.0.8",
     "json-difference": "^1.8.2",
     "mpld3": "^0.5.8",
     "plotly.js": "^2.20.0",

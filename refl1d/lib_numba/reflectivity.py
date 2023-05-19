@@ -1,5 +1,5 @@
-import numba
 from numpy import fabs, sqrt, exp
+from . import numba
 
 _REFL_SIG = 'c16(i8, f8, f8[:], f8[:], f8[:], f8[:])'
 _REFL_LOCALS = {

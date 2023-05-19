@@ -1,6 +1,6 @@
-import numba
 import sys
 from numpy import pi, sin, cos, conj, radians, sqrt, exp, fabs
+from . import numba
 
 EPS = sys.float_info.epsilon
 M_PI = pi
