@@ -226,7 +226,6 @@ class ExperimentBase:
         from bumps.serialize import to_dict
         try:
             experiment = to_dict(self)
-            experiment['refl1d'] = __version__
             json_file = basename + "-expt.json"
             with open(json_file, 'w') as fid:
                 data = json.dumps(experiment)
@@ -367,6 +366,7 @@ class Experiment(ExperimentBase):
     dA: Union[float, Literal[None]]
     step_interfaces: bool
     interpolation: float
+    version: str
 
     profile_shift = 0
     def __init__(self, sample: Optional[model.Stack]=None, probe=None, name=None,
@@ -392,6 +392,7 @@ class Experiment(ExperimentBase):
         self._cache = {}  # Cache calculated profiles/reflectivities
         self.name = name if name is not None else probe.name
         self.constraints = constraints
+        self.version = __version__
 
     @property
     def ismagnetic(self):
