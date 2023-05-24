@@ -9,7 +9,7 @@ from bumps.webview.server.api import (
 from .profile_plot import plot_sld_profile_plotly
 
 @register
-async def get_plot_data(sid: str="", view: str = 'linear'):
+async def get_plot_data(view: str = 'linear'):
     # TODO: implement view-dependent return instead of doing this in JS
     # (calculate x,y,dy.dx for given view, excluding log)
     if state.problem is None or state.problem.fitProblem is None:
@@ -27,7 +27,7 @@ async def get_plot_data(sid: str="", view: str = 'linear'):
     return to_json_compatible_dict(result)
 
 @register
-async def get_profile_plot(sid: str="", model_index: int=0, sample_index: int=0):
+async def get_profile_plot(model_index: int=0, sample_index: int=0):
     if state.problem is None or state.problem.fitProblem is None:
         return None
     fitProblem = state.problem.fitProblem
@@ -73,7 +73,7 @@ def get_probe_data(theory, probe, substrate=None, surface=None):
         return [get_single_probe_data(theory, probe, substrate, surface)]
 
 @register
-async def get_model_names(sid: str=""):
+async def get_model_names():
     problem = state.problem.fitProblem
     if problem is None:
         return None
