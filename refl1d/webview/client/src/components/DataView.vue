@@ -2,14 +2,14 @@
 /// <reference types="@types/plotly.js" />
 import { ref, onMounted, watch, onUpdated, computed, shallowRef, ssrContextKey } from 'vue';
 import * as Plotly from 'plotly.js/lib/core';
-import type { Socket } from 'socket.io-client';
+import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket';
 import { setupDrawLoop } from '../setupDrawLoop';
 
 const title = "Reflectivity";
 const plot_div = ref<HTMLDivElement | null>(null);
 
 const props = defineProps<{
-  socket: Socket,
+  socket: AsyncSocket,
 }>();
 
 setupDrawLoop('update_parameters', props.socket, fetch_and_draw);

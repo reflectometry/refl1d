@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /// <reference types="@types/uuid"/>
 import { ref, onMounted, watch, onUpdated, computed, shallowRef } from 'vue';
-import { Socket } from 'socket.io-client';
+import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket';
 import { v4 as uuidv4 } from 'uuid';
 import * as Plotly from 'plotly.js/lib/core';
 import { setupDrawLoop } from '../setupDrawLoop';
@@ -13,7 +13,7 @@ const model_names = ref<string[]>([]);
 const current_model = ref(0);
 
 const props = defineProps<{
-  socket: Socket,
+  socket: AsyncSocket,
 }>();
 
 const { draw_requested, drawing_busy, mounted } = setupDrawLoop('update_parameters', props.socket, fetch_and_draw);
@@ -23,7 +23,7 @@ props.socket.on('model_loaded', ({ message: { model_names: new_model_names } }) 
 });
 
 onMounted(() => {
-  props.socket.emit('get_topic_messages', 'model_loaded', (messages) => {
+  props.socket.asyncEmit('get_topic_messages', 'model_loaded', (messages) => {
     const new_model_names = messages?.[0]?.message?.model_names;
     if (new_model_names != null) {
       model_names.value = new_model_names;
