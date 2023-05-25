@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /// <reference types="@types/plotly.js" />
-import { ref, onMounted, watch, onUpdated, computed, shallowRef, ssrContextKey } from 'vue';
+import { ref } from 'vue';
 import * as Plotly from 'plotly.js/lib/core';
 import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket';
-import { setupDrawLoop } from '../setupDrawLoop';
+import { setupDrawLoop } from 'bumps-webview-client/src/setupDrawLoop';
 
 const title = "Reflectivity";
 const plot_div = ref<HTMLDivElement | null>(null);
