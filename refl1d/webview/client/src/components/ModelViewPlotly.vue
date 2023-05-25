@@ -4,7 +4,7 @@ import { ref, onMounted, watch, onUpdated, computed, shallowRef } from 'vue';
 import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket';
 import { v4 as uuidv4 } from 'uuid';
 import * as Plotly from 'plotly.js/lib/core';
-import { setupDrawLoop } from '../setupDrawLoop';
+import { setupDrawLoop } from 'bumps-webview-client/src/setupDrawLoop';
 
 const title = "Profile";
 const plot_div = ref<HTMLDivElement>();
