@@ -5,14 +5,17 @@
     "dev": "vite",
     "build": "vite build --emptyOutDir -m development",
     "build_prod": "vite build --emptyOutDir -m production",
+    "build_standalone": "vite build --emptyOutDir -m standalone",
     "preview": "vite preview --port 4173"
   },
   "dependencies": {
     "bootstrap": "^5.2.1",
     "bumps-webview-client": "^0.0.8",
+    "comlink": "^4.4.1",
     "json-difference": "^1.8.2",
     "mpld3": "^0.5.8",
     "plotly.js": "^2.20.0",
+    "pyodide": "^0.23.2",
     "socket.io-client": "^4.5.2",
     "uuid": "^9.0.0",
     "vue": "^3.2.38",
@@ -22,7 +25,6 @@
     "@types/plotly.js": "^2.12.5",
     "@types/uuid": "^8.3.4",
     "@vitejs/plugin-vue": "^3.0.3",
-    "vite": "^3.2.5",
-    "vite-plugin-generate-file": "^0.0.4"
+    "vite": "^3.2.5"
   }
 }

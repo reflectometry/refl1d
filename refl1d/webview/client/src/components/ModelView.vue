@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /// <reference types="@types/uuid"/>
 import { ref, onMounted, onBeforeUnmount, watch, onUpdated, computed, shallowRef } from 'vue';
-import { Socket } from 'socket.io-client';
+import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket';
 import { v4 as uuidv4 } from 'uuid';
-import { setupDrawLoop } from '../setupDrawLoop';
+import { setupDrawLoop } from 'bumps-webview-client/src/setupDrawLoop';
 import * as Plotly from 'plotly.js/lib/core';
 
 const title = "Profile";
@@ -13,7 +13,7 @@ const model_names = ref<{name: string, part_name: string, model_index: number, p
 const current_model = ref<[number, number]>([0, 0]);
 
 const props = defineProps<{
-  socket: Socket,
+  socket: AsyncSocket,
 }>();
 
 const { draw_requested } = setupDrawLoop('update_parameters', props.socket, fetch_and_draw, title);
