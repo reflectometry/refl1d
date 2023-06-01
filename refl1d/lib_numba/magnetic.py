@@ -67,7 +67,7 @@ def calculate_u1_u3(H, rhoM, thetaM, Aguide, u1, u3):
 
 B2SLD = 2.31604654  # Scattering factor for B field 1e-6
 
-CR4XA_SIG = 'void(i8, f8[:], f8[:], f8, f8[:], f8[:], f8[:], c16[:], c16[:], f8, c16[:])'
+CR4XA_SIG = 'void(i8, f8[:], f8[:], f8, f8[:], f8[:], f8[:], c16[:], c16[:], f8, i4, c16[:], c16[:], c16[:], c16[:])'
 CR4XA_LOCALS = {
     "E0": numba.float64,
     "L": numba.int32,
@@ -90,7 +90,7 @@ CR4XA_LOCALS.update(("C{i}".format(i=i), numba.complex128)
 
 
 @numba.njit(CR4XA_SIG, parallel=False, cache=True, locals=CR4XA_LOCALS)
-def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3, KZ, Y):
+def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3, KZ, POINT, YA, YB, YC, YD):
     EPS = 1e-10
 
     if (KZ <= -1.e-10):
@@ -102,10 +102,10 @@ def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3, KZ, Y):
         STEP = 1
         SIGMA_OFFSET = 0
     else:
-        Y[0] = -1.
-        Y[1] = 0.
-        Y[2] = 0.
-        Y[3] = -1.
+        YA[POINT] = -1.
+        YB[POINT] = 0.
+        YC[POINT] = 0.
+        YD[POINT] = -1.
         return
 
     #    Changing the target KZ is equivalent to subtracting the fronting
@@ -321,17 +321,17 @@ def Cr4xa(N, D, SIGMA, IP, RHO, IRHO, RHOM, U1, U3, KZ, Y):
     #    Calculate reflectivity coefficients specified by POLSTAT
     # IP = +1 fills in ++, +-, -+, --; IP = -1 only fills in -+, --.
     if IP > 0:
-        Y[0] = (B24*B41 - B21*B44)/DETW  # ++
-        Y[1] = (B21*B42 - B41*B22)/DETW  # +-
-    Y[2] = (B24*B43 - B23*B44)/DETW  # -+
-    Y[3] = (B23*B42 - B43*B22)/DETW  # --
+        YA[POINT] = (B24*B41 - B21*B44)/DETW  # ++
+        YB[POINT] = (B21*B42 - B41*B22)/DETW  # +-
+    YC[POINT] = (B24*B43 - B23*B44)/DETW  # -+
+    YD[POINT] = (B23*B42 - B43*B22)/DETW  # --
 
 
-MAGAMP_SIG = 'void(f8[:], f8[:], f8[:], f8[:], f8[:], c16[:], c16[:], f8[:], c16[:,:])'
+MAGAMP_SIG = 'void(f8[:], f8[:], f8[:], f8[:], f8[:], c16[:], c16[:], f8[:], i4[:], c16[:], c16[:], c16[:], c16[:])'
 
 
 @numba.njit(MAGAMP_SIG, parallel=False, cache=True)
-def magnetic_amplitude(d, sigma, rho, irho, rhoM, u1, u3, KZ, R):
+def magnetic_amplitude(d, sigma, rho, irho, rhoM, u1, u3, KZ, rho_index, Ra, Rb, Rc, Rd):
     """
     python version of calculation
     implicit returns: Ra, Rb, Rc, Rd
@@ -342,17 +342,17 @@ def magnetic_amplitude(d, sigma, rho, irho, rhoM, u1, u3, KZ, R):
     if (fabs(rhoM[0]) <= MINIMAL_RHO_M and fabs(rhoM[layers-1]) <= MINIMAL_RHO_M):
         # calculations for I+ and I- are the same in the fronting and backing.
         for i in numba.prange(points):
-            Cr4xa(layers, d, sigma, 1.0, rho, irho, rhoM, u1, u3, KZ[i], R[i])
+            Cr4xa(layers, d, sigma, 1.0, rho, irho, rhoM, u1, u3, KZ[i], i, Ra, Rb, Rc, Rd)
     else:
         # plus polarization must be before minus polarization because it
         # fills in all R++, R+-, R-+, R--, but minus polarization only fills
         # in R-+, R--.
         for i in numba.prange(points):
-            Cr4xa(layers, d, sigma, 1.0, rho, irho, rhoM, u1, u3, KZ[i], R[i])
+            Cr4xa(layers, d, sigma, 1.0, rho, irho, rhoM, u1, u3, KZ[i], i, Ra, Rb, Rc, Rd)
 
         # minus polarization
         for i in numba.prange(points):
-            Cr4xa(layers, d, sigma, -1.0, rho, irho, rhoM, u1, u3, KZ[i], R[i])
+            Cr4xa(layers, d, sigma, -1.0, rho, irho, rhoM, u1, u3, KZ[i], i, Ra, Rb, Rc, Rd)
 
 
 BASE_GUIDE_ANGLE = 270.0
