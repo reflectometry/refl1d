@@ -15,4 +15,19 @@ A graphical interface allows direct manipulation of the model profiles.
 See http://www.reflectometry.org/danse/reflectometry for online manuals.
 """
 
+import sys
+from typing import Literal
+
 __version__ = "0.8.15"
+
+
+BACKEND_NAMES = Literal['numba', 'c_ext']
+BACKEND_NAME: BACKEND_NAMES = 'numba'
+
+def use(backend_name: BACKEND_NAMES):
+    global BACKEND_NAME
+    BACKEND_NAME = backend_name
+    if 'refl1d.refllib' in sys.modules:
+        # then it's already been imported:
+        import refl1d.refllib
+        refl1d.refllib.set_backend(backend_name)
