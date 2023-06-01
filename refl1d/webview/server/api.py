@@ -3,10 +3,12 @@ import numpy as np
 from refl1d.experiment import Experiment, ExperimentBase, MixedExperiment
 import refl1d.probe
 from bumps.webview.server.api import (
-    register, get_chisq, state, to_json_compatible_dict
+    register, get_chisq, state, to_json_compatible_dict, set_problem
 )
 
 from .profile_plot import plot_sld_profile_plotly
+
+state.problem.serializer = "dataclass"
 
 @register
 async def get_plot_data(view: str = 'linear'):
