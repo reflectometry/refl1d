@@ -109,7 +109,7 @@ regular spacing when you are undersampling?
 
 /* Trapezoid rule for numerical integration of convolution */
 double
-convolve_point(const double xin[], const double yin[], size_t k, size_t n,
+convolve_gaussian_point(const double xin[], const double yin[], size_t k, size_t n,
         double xo, double limit, double sigma)
 {
   const double two_sigma_sq = 2. * sigma * sigma;
@@ -151,7 +151,7 @@ convolve_point(const double xin[], const double yin[], size_t k, size_t n,
 /* Analytic convolution of gaussian with linear spline */
 /* More expensive but more reliable */
 double
-convolve_point(const double xin[], const double yin[], size_t k, size_t n,
+convolve_gaussian_point(const double xin[], const double yin[], size_t k, size_t n,
                double xo, double limit, double sigma)
 {
   const double two_sigma_sq = 2. * sigma * sigma;
@@ -207,7 +207,7 @@ convolve_point(const double xin[], const double yin[], size_t k, size_t n,
 #endif /* !USE_TRAPEZOID_RULE */
 
 void
-convolve(size_t Nin, const double xin[], const double yin[],
+convolve_gaussian(size_t Nin, const double xin[], const double yin[],
          size_t Nout, const double x[], const double dx[], double y[])
 {
   size_t in,out;
@@ -252,7 +252,7 @@ convolve(size_t Nin, const double xin[], const double yin[],
 
     /* Special handling to avoid 0/0 for w=0. */
     if (sigma > 0.) {
-      y[out] = convolve_point(xin,yin,in,Nin,xo,limit,sigma);
+      y[out] = convolve_gaussian_point(xin,yin,in,Nin,xo,limit,sigma);
     } else if (in < Nin-1) {
       /* Linear interpolation */
       double m = (yin[in+1]-yin[in])/(xin[in+1]-xin[in]);

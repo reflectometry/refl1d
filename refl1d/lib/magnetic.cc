@@ -74,7 +74,7 @@ Cr4xa(const int &N, const double D[], const double SIGMA[],
       const int &IP,
       const double RHO[], const double IRHO[],
       const double RHOM[], const Cplx U1[], const Cplx U3[],
-      const double &AGUIDE, const double &KZ,
+      const double &KZ,
       Cplx &YA, Cplx &YB, Cplx &YC, Cplx &YD)
 
 {
@@ -432,7 +432,6 @@ magnetic_amplitude(const int layers,
                       const double d[], const double sigma[],
                       const double rho[], const double irho[],
                       const double rhoM[], const Cplx u1[], const Cplx u3[],
-                      const double Aguide,
                       const int points, const double KZ[], const int rho_index[],
                       Cplx Ra[], Cplx Rb[], Cplx Rc[], Cplx Rd[])
 {
@@ -446,7 +445,7 @@ magnetic_amplitude(const int layers,
     for (int i=0; i < points; i++) {
       const int offset = layers*(rho_index != NULL?rho_index[i]:0);
       Cr4xa(layers,d,sigma,ip,rho+offset,irho+offset,rhoM,u1,u3,
-            Aguide,KZ[i],Ra[i],Rb[i],Rc[i],Rd[i]);
+            KZ[i],Ra[i],Rb[i],Rc[i],Rd[i]);
     }
   } else {
     ip = 1; // plus polarization
@@ -456,7 +455,7 @@ magnetic_amplitude(const int layers,
     for (int i=0; i < points; i++) {
       const int offset = layers*(rho_index != NULL?rho_index[i]:0);
       Cr4xa(layers,d,sigma,ip,rho+offset,irho+offset,rhoM,u1,u3,
-            Aguide,KZ[i],Ra[i],Rb[i],dummy1,dummy2);
+            KZ[i],Ra[i],Rb[i],dummy1,dummy2);
     }
     ip = -1; // minus polarization
     #ifdef _OPENMP
@@ -465,7 +464,7 @@ magnetic_amplitude(const int layers,
     for (int i=0; i < points; i++) {
       const int offset = layers*(rho_index != NULL?rho_index[i]:0);
       Cr4xa(layers,d,sigma,ip,rho+offset,irho+offset,rhoM,u1,u3,
-            Aguide,KZ[i],dummy1,dummy2,Rc[i],Rd[i]);
+            KZ[i],dummy1,dummy2,Rc[i],Rd[i]);
     }
   }
 }

@@ -21,35 +21,33 @@ typedef int Py_ssize_t;
 
 PyObject* Pcalculate_u1_u3(PyObject*obj,PyObject*args)
 {
-  PyObject *rhom_obj, *thetam_obj, *sldb_obj, *u1_obj, *u3_obj;
-  Py_ssize_t nrhom, nthetam, nsldb, nu1, nu3;
-  const double *rhom, *thetam;
-  double *sldb;
+  PyObject *rhom_obj, *thetam_obj, *u1_obj, *u3_obj;
+  Py_ssize_t nrhom, nthetam, nu1, nu3;
+  double *rhom;
+  const double *thetam;
   Cplx *u1, *u3;
   double H, Aguide;
   DECLARE_VECTORS(5);
 
-  if (!PyArg_ParseTuple(args, "dOOdOOO:calculate_u1_u3",
-      &H, &rhom_obj, &thetam_obj, &Aguide, &sldb_obj, &u1_obj, &u3_obj))
+  if (!PyArg_ParseTuple(args, "dOOdOO:calculate_u1_u3",
+      &H, &rhom_obj, &thetam_obj, &Aguide, &u1_obj, &u3_obj))
     return NULL;
   INVECTOR(rhom_obj,rhom,nrhom);
   INVECTOR(thetam_obj,thetam,nthetam);
-  OUTVECTOR(sldb_obj,sldb,nsldb);
   OUTVECTOR(u1_obj,u1,nu1);
   OUTVECTOR(u3_obj,u3,nu3);
-  if (nrhom != nthetam || nrhom != nsldb || nrhom != nu1 || nrhom != nu3) {
+  if (nrhom != nthetam || nrhom != nu1 || nrhom != nu3) {
     //printf("%ld %ld %ld %ld %ld %ld\n",
     //    long(nd), long(nsigma), long(nrho), long(nirho), long(nrhom), long(nu1));
 #ifndef BROKEN_EXCEPTIONS
-    PyErr_SetString(PyExc_ValueError, "rhom,thetam,sldb,u1,u3 have different lengths");
+    PyErr_SetString(PyExc_ValueError, "rhom,thetam,u1,u3 have different lengths");
 #endif
     FREE_VECTORS();
     return NULL;
   }
 
   for (Py_ssize_t i=0; i<nrhom; i++) {
-    sldb[i] = rhom[i];
-    calculate_U1_U3(H, sldb[i], thetam[i], Aguide, u1[i], u3[i]);
+    calculate_U1_U3(H, rhom[i], thetam[i], Aguide, u1[i], u3[i]);
     //sldb[i] = fabs(sldb[i]);
   }
 
@@ -68,14 +66,13 @@ PyObject* Pmagnetic_amplitude(PyObject*obj,PyObject*args)
   const double *kz, *d, *sigma, *rho, *irho, *rhom;
   const Cplx *u1, *u3;
   const int *rho_index;
-  double Aguide;
   Cplx *r1, *r2, *r3, *r4;
   DECLARE_VECTORS(13);
 
-  if (!PyArg_ParseTuple(args, "OOOOOOOdOOOOOO:magnetic_amplitude",
+  if (!PyArg_ParseTuple(args, "OOOOOOOOOOOOO:magnetic_amplitude",
       &d_obj, &sigma_obj,
       &rho_obj, &irho_obj, &rhom_obj,&u1_obj, &u3_obj,
-      &Aguide,&kz_obj,&rho_index_obj,
+      &kz_obj,&rho_index_obj,
       &r1_obj,&r2_obj,&r3_obj,&r4_obj))
     return NULL;
   INVECTOR(d_obj,d,nd);
@@ -110,7 +107,7 @@ PyObject* Pmagnetic_amplitude(PyObject*obj,PyObject*args)
     return NULL;
   }
   magnetic_amplitude((int)nd, d, sigma, rho, irho, rhom, u1, u3,
-                     Aguide, (int)nkz, kz, rho_index, r1, r2, r3, r4);
+                     (int)nkz, kz, rho_index, r1, r2, r3, r4);
   FREE_VECTORS();
   return Py_BuildValue("");
 }
@@ -318,7 +315,7 @@ PyObject* Pcontract_by_step(PyObject*obj,PyObject*args)
 }
 
 
-PyObject* Pconvolve(PyObject *obj, PyObject *args)
+PyObject* Pconvolve_gaussian(PyObject *obj, PyObject *args)
 {
   PyObject *xi_obj,*yi_obj,*x_obj,*dx_obj,*y_obj;
   const double *xi, *yi, *x, *dx;
@@ -326,7 +323,7 @@ PyObject* Pconvolve(PyObject *obj, PyObject *args)
   Py_ssize_t nxi, nyi, nx, ndx, ny;
   DECLARE_VECTORS(5);
 
-  if (!PyArg_ParseTuple(args, "OOOOO:convolve",
+  if (!PyArg_ParseTuple(args, "OOOOO:convolve_gaussian",
 			&xi_obj,&yi_obj,&x_obj,&dx_obj,&y_obj)) return NULL;
   INVECTOR(xi_obj,xi,nxi);
   INVECTOR(yi_obj,yi,nyi);
@@ -335,19 +332,19 @@ PyObject* Pconvolve(PyObject *obj, PyObject *args)
   OUTVECTOR(y_obj,y,ny);
   if (nxi != nyi) {
 #ifndef BROKEN_EXCEPTIONS
-    PyErr_SetString(PyExc_ValueError, "convolve: xi and yi have different lengths");
+    PyErr_SetString(PyExc_ValueError, "convolve_gaussian: xi and yi have different lengths");
 #endif
     FREE_VECTORS();
     return NULL;
   }
   if (nx != ndx || nx != ny) {
 #ifndef BROKEN_EXCEPTIONS
-    PyErr_SetString(PyExc_ValueError, "convolve: x, dx and y have different lengths");
+    PyErr_SetString(PyExc_ValueError, "convolve_gaussian: x, dx and y have different lengths");
 #endif
     FREE_VECTORS();
     return NULL;
   }
-  convolve(nxi,xi,yi,nx,x,dx,y);
+  convolve_gaussian(nxi,xi,yi,nx,x,dx,y);
   FREE_VECTORS();
   return Py_BuildValue("");
 }

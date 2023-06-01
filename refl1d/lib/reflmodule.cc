@@ -83,45 +83,45 @@ PyObject* Prebin2d(PyObject *obj, PyObject *args)
 
 static PyMethodDef methods[] = {
 
-	{"_reflectivity_amplitude",
+	{"reflectivity_amplitude",
 	 Preflectivity_amplitude,
 	 METH_VARARGS,
-	 "_reflectivity_amplitude(d,sigma,rho,irho,Q,rho_offset,R): compute reflectivity putting it into vector R of len(Q)"},
+	 "reflectivity_amplitude(d,sigma,rho,irho,Q,rho_offset,R): compute reflectivity putting it into vector R of len(Q)"},
 
-	{"_magnetic_amplitude",
+	{"magnetic_amplitude",
 	 Pmagnetic_amplitude,
 	 METH_VARARGS,
-	 "_magnetic_amplitude(d,sigma,rho,irho,sld_b,U1,U3,Aguide,Q,rho_offset,R1,R2,R3,R4): compute amplitude putting it into vector R of len(Q)"},
+	 "magnetic_amplitude(d,sigma,rho,irho,sld_b,U1,U3,Q,rho_offset,R1,R2,R3,R4): compute amplitude putting it into vector R of len(Q)"},
 
-	{"_calculate_u1_u3",
+	{"calculate_u1_u3",
 	 Pcalculate_u1_u3,
 	 METH_VARARGS,
-	 "_calculate_u1_u3(H,rhoM,thetaM,Aguide,sld_b,U1,U3): compute sld_b,U1,U3 from rhoM,thetaM to pass to magnetic amplitude"},
+	 "calculate_u1_u3(H,rhoM,thetaM,Aguide,U1,U3): compute sld_b,U1,U3 from rhoM,thetaM to pass to magnetic amplitude"},
 
-	{"_contract_by_area",
+	{"contract_by_area",
 	 Pcontract_by_area,
 	 METH_VARARGS,
-	 "_contract_by_area(d,sigma,rho,irho,dA): join layers in microstep profile, keeping error under control"},
+	 "contract_by_area(d,sigma,rho,irho,dA): join layers in microstep profile, keeping error under control"},
 
-	{"_contract_mag",
+	{"contract_mag",
 	 Pcontract_mag,
 	 METH_VARARGS,
-	 "_contract_mag(d,sigma,rho,irho,rhom,thetam,da): join layers in microstep profile, keeping error under control"},
+	 "contract_mag(d,sigma,rho,irho,rhom,thetam,da): join layers in microstep profile, keeping error under control"},
 
-	{"_contract_by_step",
+	{"contract_by_step",
 	 Pcontract_by_step,
 	 METH_VARARGS,
-	 "_contract_by_step(d,sigma,rho,irho,dv): join layers in microstep profile, keeping error under control"},
+	 "contract_by_step(d,sigma,rho,irho,dv): join layers in microstep profile, keeping error under control"},
 
-	{"_align_magnetic",
+	{"align_magnetic",
 	 Palign_magnetic,
 	 METH_VARARGS,
-	 "_align_magnetic(d,sigma,rho,irho,dm,sigmam,rhom,thetam,result): align the interfaces between nuclear and magnetic profiles"},
+	 "align_magnetic(d,sigma,rho,irho,dm,sigmam,rhom,thetam,result): align the interfaces between nuclear and magnetic profiles"},
 
-	{"convolve",
-	 Pconvolve,
+	{"convolve_gaussian",
+	 Pconvolve_gaussian,
 	 METH_VARARGS,
-	 "convolve(xi,yi,x,dx,y): compute convolution of width dx[k] at points x[k],\nreturned in y[k]"},
+	 "convolve_gaussian(xi,yi,x,dx,y): compute convolution of width dx[k] at points x[k],\nreturned in y[k]"},
 
 	{"convolve_sampled",
 	 Pconvolve_sampled,

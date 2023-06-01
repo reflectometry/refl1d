@@ -128,7 +128,6 @@ magnetic_amplitude(const int layers,
                    const double d[], const double sigma[],
                    const double rho[], const double irho[],
                    const double rhoM[], const Cplx u1[], const Cplx u3[],
-                   const double Aguide,
                    const int points,
                    const double kz[], const int rho_offset[],
                    Cplx Ra[], Cplx Rb[], Cplx Rc[], Cplx Rd[]);
@@ -158,7 +157,7 @@ contract_mag(int n, double d[], double sigma[], double rho[], double irho[],
              double rhoM[], double thetaM[], double dA);
 
 void
-convolve(size_t Nin, const double xin[], const double yin[],
+convolve_gaussian(size_t Nin, const double xin[], const double yin[],
          size_t N, const double x[], const double dx[], double y[]);
 
 void
