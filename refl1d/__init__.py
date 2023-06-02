@@ -21,7 +21,7 @@ from typing import Literal
 __version__ = "0.8.15"
 
 
-BACKEND_NAMES = Literal['numba', 'c_ext']
+BACKEND_NAMES = Literal['numba', 'c_ext', 'python']
 BACKEND_NAME: BACKEND_NAMES = 'numba'
 
 def use(backend_name: BACKEND_NAMES):
