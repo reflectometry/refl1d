@@ -17,7 +17,7 @@ if sys.argv[1] == 'test':
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 
-packages = ['refl1d', 'refl1d.view', 'refl1d.lib_numba', 'refl1d.webview.server']
+packages = ['refl1d', 'refl1d.view', 'refl1d.lib.numba', 'refl1d.webview.server']
 
 version = None
 for line in open(os.path.join("refl1d", "__init__.py")):
@@ -68,8 +68,8 @@ def reflmodule_config():
         )
 
     Sdeps = ("erf.cc", "methods.h", "rebin.h", "rebin2D.h", "reflcalc.h")
-    sources = [os.path.join('refl1d', 'lib', f) for f in S]
-    depends = [os.path.join('refl1d', 'lib', f) for f in Sdeps]
+    sources = [os.path.join('refl1d', 'lib', 'c', f) for f in S]
+    depends = [os.path.join('refl1d', 'lib', 'c', f) for f in Sdeps]
     return Extension('refl1d.reflmodule',
                      sources=sources,
                      depends=depends,
