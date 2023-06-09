@@ -8,6 +8,7 @@ from . import BACKEND_NAME, BACKEND_NAMES
 
 BACKEND_MODULE_NAMES = {
     'numba': 'refl1d.lib.numba',
+    'numba_cuda': 'refl1d.lib.numba_cuda',
     'c_ext': 'refl1d.reflmodule',
     'python': 'refl1d.lib.python',
 }
