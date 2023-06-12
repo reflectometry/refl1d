@@ -1,4 +1,5 @@
 import numba
+import numpy as np
 from .clone_module import clone_module
 
 MODULE = clone_module('refl1d.lib.python.convolve')
@@ -7,24 +8,51 @@ MODULE.prange = numba.prange
 
 convolve_uniform = numba.njit('(f8[:], f8[:], f8[:], f8[:], f8[:])', cache=True, parallel=False)(MODULE.convolve_uniform)
 
+convolve_gaussian_point = numba.njit('f8(f8[:], f8[:], i8, i8, f8, f8, f8)', cache=True, parallel=False, locals={
+    "z": numba.float64,
+    "Glo": numba.float64,
+    "erflo": numba.float64,
+    "erfmin": numba.float64,
+    "y": numba.float64,
+    "zhi": numba.float64,
+    "Ghi": numba.float64,
+    "erfhi": numba.float64,
+    "m": numba.float64,
+    "b": numba.float64,
+})(MODULE.convolve_gaussian_point)
+MODULE.convolve_gaussian_point = convolve_gaussian_point
+
+# has same performance when using guvectorize instead of njit:
+# @numba.guvectorize("(i8, f8[:], f8[:], i8, f8[:], f8[:], f8[:])", '(),(m),(m),(),(n),(n)->(n)')
+
+convolve_gaussian = numba.njit("(f8[:], f8[:], f8[:], f8[:], f8[:])", cache=True, parallel=False, locals={
+    "sigma": numba.float64,
+    "xo": numba.float64,
+    "limit": numba.float64,
+    "k_in": numba.int64,
+    "k_out": numba.int64,
+})(MODULE.convolve_gaussian)
+
+
 from math import erf, sqrt, exp, ceil, log2
 
 PI4 = 12.56637061435917295385
 PI_180 = 0.01745329251994329576
 LN256 = 5.54517744447956247533
-SQRT2 = 1.41421356237309504880
-SQRT2PI = 2.50662827463100050241
+SQRT2 = numba.float32(1.41421356237309504880)
+SQRT2PI = numba.float32(2.50662827463100050241)
 LOG_RESLIMIT = -6.90775527898213703123
+SQRT_NEG2_LOG_RESLIMIT = numba.float32(sqrt(-2 * LOG_RESLIMIT))
 root_12_over_2 = sqrt(3)
 
 # cuda implementation:
 from numba import cuda
 
 @cuda.jit
-def convolve_gaussian_cuda(xin, yin, x, dx, y):
+def convolve_gaussian_cuda_kernel(xin, yin, x, dx, y):
     # size_t in,out;
-    Nin = len(xin)
-    Nout = len(x)
+    Nin = numba.int32(len(xin))
+    Nout = numba.int32(len(x))
     
     k_out = cuda.grid(1)
     # /* FIXME fails if xin are not sorted; slow if x not sorted */
@@ -44,13 +72,15 @@ def convolve_gaussian_cuda(xin, yin, x, dx, y):
     # * misses than if each thread were given different stretches of x to
     # * convolve.
     # */
-    k_in = 0
+    k_in = numba.int32(0)
     
     if k_out < Nout:
         # /* width of resolution window for x is w = 2 dx^2. */
+        NIN_MINUS_1 = numba.int32(Nin - numba.int32(1))
         sigma = dx[k_out]
         xo = x[k_out]
-        limit = sqrt(-2.*sigma*sigma * LOG_RESLIMIT)
+        limit = sigma * SQRT_NEG2_LOG_RESLIMIT
+        XO_LOWER_LIMIT = numba.float32(xo - limit)
 
         # // if (out%20==0)
 
@@ -60,34 +90,42 @@ def convolve_gaussian_cuda(xin, yin, x, dx, y):
         # /* dx or if the x are not sorted, then it may be before */
         # /* the current position. */
         # /* FIXME verify that the convolution window is just right */
-        while (k_in < Nin-1 and xin[k_in] < xo-limit):
-            k_in += 1
-        while (k_in > 0 and xin[k_in] > xo-limit):
-            k_in -= 1
+        xx = xin[k_in]
+        prev_xx = xx
+        while (k_in < NIN_MINUS_1 and xx < XO_LOWER_LIMIT):
+            k_in += numba.int32(1)
+            prev_xx = xx
+            xx = xin[k_in]
+        while (k_in > 0 and xx > XO_LOWER_LIMIT):
+            k_in -= numba.int32(1)
+            prev_xx = xx
+            xx = xin[k_in]
 
         # /* Special handling to avoid 0/0 for w=0. */
-        if (sigma > 0.):
-            two_sigma_sq = 2. * sigma * sigma
+        if (sigma > numba.float32(0.)):
+            two_sigma_sq = numba.float32(2.) * sigma * sigma
             # double z, Glo, erflo, erfmin, y
 
-            z = xo - xin[k_in]
-            Glo = exp(-z*z/two_sigma_sq)
-            erfmin = erflo = erf(-z/(SQRT2*sigma))
-            yy = 0.
-            while (k_in < Nin-1):
-                k_in += 1
-                if (xin[k_in] != xin[k_in-1]):
+            z = xo - xx
+            Glo = cuda.libdevice.expf(-z*z/two_sigma_sq)
+            erfmin = erflo = cuda.libdevice.erff(-z/(SQRT2*sigma))
+            yy = numba.float32(0.)
+            while (k_in < NIN_MINUS_1):
+                k_in += numba.int32(1)
+                prev_xx = xx
+                xx = xin[k_in]
+                if (xx != prev_xx):
                     # /* No additional contribution from duplicate points. */
 
                     # /* Compute the next endpoint */
-                    zhi = xo - xin[k_in]
-                    Ghi = exp(-zhi*zhi/two_sigma_sq)
-                    erfhi = erf(-zhi/(SQRT2*sigma))
-                    m = (yin[k_in]-yin[k_in-1])/(xin[k_in]-xin[k_in-1])
-                    b = yin[k_in] - m * xin[k_in]
+                    zhi = xo - xx
+                    Ghi = cuda.libdevice.expf(-zhi*zhi/two_sigma_sq)
+                    erfhi = cuda.libdevice.erff(-zhi/(SQRT2*sigma))
+                    m = (yin[k_in]-yin[k_in-1])/(xx - prev_xx)
+                    b = yin[k_in] - m * xx
 
                     # /* Add the integrals. */
-                    yy += 0.5*(m*xo+b)*(erfhi-erflo) - sigma/SQRT2PI*m*(Ghi-Glo)
+                    yy += numba.float32(0.5)*(m*xo+b)*(erfhi-erflo) - sigma/SQRT2PI*m*(Ghi-Glo)
 
                     # /* Debug computation failures. */
                     # if isnan(y) {
@@ -100,21 +138,21 @@ def convolve_gaussian_cuda(xin, yin, x, dx, y):
                     erflo = erfhi
 
                     # /* Check if we've calculated far enough */
-                    if (xin[k_in] >= xo+limit):
+                    if (xx >= xo+limit):
                         break
                         
             y[k_out] = 2 * yy / (erflo - erfmin)
 
             # y[k_out] = convolve_gaussian_point(
             #     xin, yin, k_in, Nin, xo, limit, sigma)
-        elif (k_in < Nin-1):
+        elif (k_in < Nin-numba.int32(1)):
             # /* Linear interpolation */
-            m = (yin[k_in+1]-yin[k_in])/(xin[k_in+1]-xin[k_in])
+            m = (yin[k_in+numba.int32(1)]-yin[k_in])/(xin[k_in+numba.int32(1)]-xin[k_in])
             b = yin[k_in] - m*xin[k_in]
             y[k_out] = m*xo + b
-        elif (k_in > 0):
+        elif (k_in > numba.int32(0)):
             # /* Linear extrapolation */
-            m = (yin[k_in]-yin[k_in-1])/(xin[k_in]-xin[k_in-1])
+            m = (yin[k_in]-yin[k_in-numba.int32(1)])/(xin[k_in]-xin[k_in-numba.int32(1)])
             b = yin[k_in] - m*xin[k_in]
             y[k_out] = m*xo + b
         else:
@@ -249,14 +287,14 @@ def convolve_gaussian_cuda_local(xin, yin, x, dx, y):
     if k_out < Nout:
         y[k_out] = (2 * integrated_result / (erflo - erfmin)) + interpolated_result
 
-def convolve_gaussian(xi, yi, x, dx, y):
+def convolve_gaussian_cuda(xi, yi, x, dx, y):
     # import time
     # transfer_start = time.time()
-    xi_d = cuda.to_device(xi)
-    yi_d = cuda.to_device(yi)
-    x_d = cuda.to_device(x)
-    dx_d = cuda.to_device(dx)
-    y_d = cuda.to_device(y)
+    xi_d = cuda.to_device(xi.astype(np.float32))
+    yi_d = cuda.to_device(yi.astype(np.float32))
+    x_d = cuda.to_device(x.astype(np.float32))
+    dx_d = cuda.to_device(dx.astype(np.float32))
+    y_d = cuda.to_device(y.astype(np.float32))
     # transfer_end = time.time()
     # print(f"transfer to gpu time: {transfer_end - transfer_start}")
     
@@ -264,7 +302,7 @@ def convolve_gaussian(xi, yi, x, dx, y):
     blockspergrid = (y.shape[0] + (threadsperblock - 1)) // threadsperblock
     # print(blockspergrid)
     
-    convolve_gaussian_cuda[blockspergrid, threadsperblock](xi_d, yi_d, x_d, dx_d, y_d)
+    convolve_gaussian_cuda_kernel[blockspergrid, threadsperblock](xi_d, yi_d, x_d, dx_d, y_d)
     # convolve_gaussian_cuda_newton[blockspergrid, threadsperblock](xi_d, yi_d, x_d, dx_d, y_d)
     # convolve_gaussian_cuda_local[blockspergrid, threadsperblock](xi_d, yi_d, x_d, dx_d, y_d)
     # calc_end = time.time()
