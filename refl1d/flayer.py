@@ -213,7 +213,7 @@ class FunctionalMagnetism(BaseMagnetism):
 
 def _set_parameters(self, name, profile, kw, reserved):
     # Query profile function for the list of arguments
-    vars = inspect.getargspec(profile)[0]
+    vars = inspect.getfullargspec(profile)[0]
     #print "vars", vars
     if inspect.ismethod(profile):
         vars = vars[1:]  # Chop self
