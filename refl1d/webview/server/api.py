@@ -8,7 +8,7 @@ from bumps.webview.server.api import (
 
 from .profile_plot import plot_sld_profile_plotly
 
-state.problem.serializer = "dataclass"
+# state.problem.serializer = "dataclass"
 
 @register
 async def get_plot_data(view: str = 'linear'):
