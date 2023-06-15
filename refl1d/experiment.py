@@ -386,7 +386,10 @@ class Experiment(ExperimentBase):
         self.dA = dA
         self.step_interfaces = step_interfaces
         self.interpolation = interpolation
-        num_slabs = len(probe.unique_L) if probe.unique_L is not None else 1
+        # TODO: proper 2D mesh resolution over L, T 
+        # (currently R is only calculated for first L anyway)
+        # num_slabs = len(probe.unique_L) if probe.unique_L is not None else 1
+        num_slabs = 1
         self._slabs = profile.Microslabs(num_slabs, dz=dz)
         self._probe_cache = material.ProbeCache(probe)
         self._cache = {}  # Cache calculated profiles/reflectivities
