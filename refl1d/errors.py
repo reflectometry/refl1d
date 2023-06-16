@@ -194,7 +194,7 @@ def _eval_point(problem, p):
         slabs_i = [L.thickness.value for L in m.sample[1:-1]]
         slabs.append(np.array(slabs_i))
         if m.ismagnetic:
-            z, rho, irho, rhoM, thetaM = m.magnetic_step_profile()
+            z, rho, irho, rhoM, thetaM = m.magnetic_smooth_profile()
             profiles.append((z+0, rho+0, irho+0, rhoM+0, thetaM+0))
         else:
             z, rho, irho = m.smooth_profile()
