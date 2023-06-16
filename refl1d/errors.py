@@ -213,7 +213,7 @@ def _experiments(problem):
     for m in problem.models:
         parts = getattr(m, 'parts', [m])
         for p in parts:
-            yield m
+            yield p
 
 def _residQ(m):
     if m.probe.polarized:
