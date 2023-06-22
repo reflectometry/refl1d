@@ -2,7 +2,7 @@ import inspect
 
 from numpy import real, imag, asarray, broadcast_to
 
-from bumps.parameter import Parameter, to_dict
+from bumps.parameter import Parameter, to_dict, Calculation
 from refl1d.material import SLD
 from refl1d.model import Layer
 from refl1d.magnetism import BaseMagnetism, Magnetism, DEFAULT_THETA_M
@@ -250,7 +250,7 @@ def _get_values(self):
     return vals
 
 
-class _LayerLimit(Parameter):
+class _LayerLimit(Calculation):
     def __init__(self, flayer, isend=True, isrho=True):
         self.flayer = flayer
         self.isend = isend
@@ -260,10 +260,9 @@ class _LayerLimit(Parameter):
                      + ("end" if isend else "start"))
 
     def parameters(self):
-        return None
+        return []
 
-    @property
-    def value(self):
+    def _function(self):
         z = asarray([0., self.flayer.thickness.value])
         P = self.flayer.profile(asarray(z), **_get_values(self.flayer))
         index = 1 if self.isend else 0
@@ -272,7 +271,7 @@ class _LayerLimit(Parameter):
     def __repr__(self):
         return repr(self.flayer) + self._tag
 
-class _MagnetismLimit(Parameter):
+class _MagnetismLimit(Calculation):
     def __init__(self, flayer, isend=True, isrhoM=True):
         self.flayer = flayer
         self.isend = isend
@@ -282,10 +281,9 @@ class _MagnetismLimit(Parameter):
                      + ("end" if isend else "start"))
 
     def parameters(self):
-        return None
+        return []
 
-    @property
-    def value(self):
+    def _function(self):
         zmax = self.flayer._calc_thickness()
         z = asarray([0., zmax])
         P = self.flayer.profile(z, **_get_values(self.flayer))
