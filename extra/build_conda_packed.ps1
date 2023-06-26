@@ -17,7 +17,7 @@ tar -xzf "$ENV_NAME.tar.gz" -C "$destdir"
 # activate the unpacked environment and install pip packages
 conda deactivate
 $WORKING_DIRECTORY="$pwd"
-pwd
+echo "WORKING_DIRECTORY=$WORKING_DIRECTORY"
 dir ..
 dir ...
 # add our batch script:
