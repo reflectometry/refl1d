@@ -252,6 +252,7 @@ def _get_values(self):
 
 class _LayerLimit(Calculation):
     def __init__(self, flayer, isend=True, isrho=True):
+        self.description = f"{'rho' if isrho else 'irho'} Layer Limit, isend={isend}"
         self.flayer = flayer
         self.isend = isend
         self.isrho = isrho
@@ -273,6 +274,7 @@ class _LayerLimit(Calculation):
 
 class _MagnetismLimit(Calculation):
     def __init__(self, flayer, isend=True, isrhoM=True):
+        self.description = f"{'rhoM' if isrhoM else 'thetaM'} Magnetism Limit, isend={isend}"
         self.flayer = flayer
         self.isend = isend
         self.isrhoM = isrhoM
