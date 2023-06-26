@@ -21,7 +21,7 @@ pwd
 dir ..
 dir ...
 # add our batch script:
-Copy-Item ...\extra\refl1d_webview.bat "$destdir"
+Copy-Item .\extra\refl1d_webview.bat "$destdir"
 
 & "$destdir\python.exe" -m pip install --no-input numba
 & "$destdir\python.exe" -m pip install --no-input git+https://github.com/bumps/bumps@webview
