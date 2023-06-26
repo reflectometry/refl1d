@@ -29,4 +29,4 @@ Copy-Item .\extra\refl1d_webview.bat "$destdir"
 & "$destdir\python.exe" -m pip install -r https://raw.githubusercontent.com/bumps/bumps/webview/webview-requirements
 
 # zip it back up
-tar -czf "$WORKING_DIRECTORY/refl1d-webview-Windows-x86_64.tar.gz" "$destdir"
+tar -czf "dist\refl1d-webview-Windows-x86_64.tar.gz" "$destdir"
