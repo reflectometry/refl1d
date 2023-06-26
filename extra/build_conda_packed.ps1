@@ -9,7 +9,7 @@ conda create -n "$ENV_NAME" -q --force -y "python=$PYTHON_VERSION"
 conda-pack -n "$ENV_NAME" -f -o "$ENV_NAME.tar.gz"
 
 # unpack the new environment, that contains only python + pip
-$destdir="$DIRNAME"
+$destdir="dist\$DIRNAME"
 Remove-Item -r "$DIRNAME"
 mkdir "$destdir"
 tar -xzf "$ENV_NAME.tar.gz" -C "$destdir"
@@ -17,13 +17,16 @@ tar -xzf "$ENV_NAME.tar.gz" -C "$destdir"
 # activate the unpacked environment and install pip packages
 conda deactivate
 $WORKING_DIRECTORY="$pwd"
+echo "WORKING_DIRECTORY=$WORKING_DIRECTORY"
+dir ..
+dir ...
+# add our batch script:
+Copy-Item .\extra\refl1d_webview.bat "$destdir"
+
 & "$destdir\python.exe" -m pip install --no-input numba
 & "$destdir\python.exe" -m pip install --no-input git+https://github.com/bumps/bumps@webview
 & "$destdir\python.exe" -m pip install --no-input git+https://github.com/reflectometry/refl1d@webview
 & "$destdir\python.exe" -m pip install -r https://raw.githubusercontent.com/bumps/bumps/webview/webview-requirements
 
-# add our batch script:
-Copy-Item .\refl1d_webview.bat .\refl1d\
-
 # zip it back up
-tar -czf "$WORKING_DIRECTORY/refl1d-webview-Windows-x86_64.tar.gz" "$DIRNAME"
+tar -czf "dist\refl1d-webview-Windows-x86_64.tar.gz" "$destdir"
