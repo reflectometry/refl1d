@@ -10,7 +10,7 @@ conda-pack -n "$ENV_NAME" -f -o "$ENV_NAME.tar.gz"
 
 # unpack the new environment, that contains only python + pip
 $destdir="dist\$DIRNAME"
-Remove-Item -r "$DIRNAME"
+Remove-Item -r "$destdir"
 mkdir "$destdir"
 tar -xzf "$ENV_NAME.tar.gz" -C "$destdir"
 
