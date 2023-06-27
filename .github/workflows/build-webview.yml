@@ -39,7 +39,7 @@ jobs:
         pwd
         dir dist
         dir extra
-        mv dist\Refl1D*.tar.gz "unstable\Refl1D-windows-exe-$($env:branch_name).tar.gz"
+        mv dist\refl1d*.tar.gz "unstable\Refl1D-windows-exe-$($env:branch_name).tar.gz"
 
     # See the following for how to upload to a release
     #  https://eugene-babichenko.github.io/blog/2020/05/09/github-actions-cross-platform-auto-releases/
