@@ -5,6 +5,8 @@ import refl1d.probe
 from bumps.webview.server.api import (
     register, get_chisq, state, to_json_compatible_dict, set_problem
 )
+from bumps.errplot import calc_errors_from_state
+from refl1d.errors import show_errors
 
 from .profile_plot import plot_sld_profile_plotly
 
@@ -87,3 +89,34 @@ async def get_model_names():
             for part_index, part in enumerate(model.parts):
                 output.append(dict(name=model.name, part_name=part.name, model_index=model_index, part_index=part_index))
     return output
+
+
+@register
+async def get_profile_uncertainty_plot(auto_align: bool=True, align: float=0., nshown: int=5000, npoints: int=5000, random: bool=True):
+    if state.problem is None or state.problem.fitProblem is None:
+        return None
+    fitProblem = state.problem.fitProblem
+    uncertainty_state = state.fitting.uncertainty_state
+    align_arg = 'auto' if auto_align else align
+    if uncertainty_state is not None:
+        import mpld3
+        import matplotlib
+        matplotlib.use("agg")
+        import matplotlib.pyplot as plt
+        import time
+        start_time = time.time()
+        print('queueing new profile uncertainty plot...', start_time)
+
+        fig = plt.figure()
+        errs = calc_errors_from_state(fitProblem, uncertainty_state, nshown=nshown, random=random, portion=1.0)
+        print('errors calculated: ', time.time() - start_time)
+        show_errors(errs, npoints=npoints, align=align_arg, plots=1, fig=fig)
+        print("time to render but not serialize...", time.time() - start_time)
+        fig.canvas.draw()
+        dfig = mpld3.fig_to_dict(fig)
+        plt.close(fig)
+        end_time = time.time()
+        print("time to draw profile uncertainty plot:", end_time - start_time)
+        return dfig
+    else:
+        return None
