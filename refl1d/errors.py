@@ -179,8 +179,10 @@ def calc_errors(problem, points):
 
 class _HashableModel:
     name: str
+    index: int
     def __init__(self, model, index):
         self.name = model.name if model.name is not None else f"M{index}"
+        self.index = index
     def __str__(self):
         return f"model {self.name}"
 
@@ -326,7 +328,7 @@ def _save_profile_data(errors, align, contours, npoints, save):
     if align is not None:
         profiles = align_profiles(profiles, slabs, align)
     k = 1
-    for title, group in sorted((m.name, group) for m, group in profiles.items()):
+    for title, _, group in sorted(((m.name, m.index, group) for m, group in profiles.items()), key=lambda x: (x[0], x[1])):
         # Find limits of all profiles
         z = np.hstack([line[0] for line in group])
         zp = np.linspace(np.min(z), np.max(z), npoints)
@@ -361,7 +363,7 @@ def _build_profile_matrix(group, index, zp, contours):
 def _save_residual_data(errors, contours, save):
     _, _, Q, residuals = errors
     k = 1
-    for title, x, r in sorted((m.name, Q[m], v) for m, v in residuals.items()):
+    for title, _, x, r in sorted([(m.name, m.index, Q[m], v) for m, v in residuals.items()], key=lambda x: (x[0], x[1])):
         q, qval = form_quantiles(r.T, contours)
         # TODO: should have columns for R, dR as well.
         data = np.vstack((x, r[:, 0], np.reshape(qval, (-1, qval.shape[2]))))
