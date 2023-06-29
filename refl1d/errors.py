@@ -530,6 +530,6 @@ def _find_offset(v, align):
     -1.5 to specify the middle of the final layer.
     """
     idx = int(align)
-    offset = np.sum(v[:idx]) + (align-idx)*v[idx]
+    offset = np.sum(v[:idx]) + np.sum((align-idx)*v[idx:idx+1])
     #print offset, idx, v[:idx], align
     return offset
