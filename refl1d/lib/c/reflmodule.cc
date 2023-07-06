@@ -128,6 +128,11 @@ static PyMethodDef methods[] = {
 	 METH_VARARGS,
 	 "convolve_sampled(xi,yi,xp,yp,x,dx,y): compute convolution with sampled\ndistribution of width dx[k] at points x[k], returned in y[k]"},
 
+	{"build_profile",
+	 Pbuild_profile,
+	 METH_VARARGS,
+	 "build_profile(z,offset,roughness,contrast,initial_value,profiles): compute a smooth profile for each contrast at each z"},
+
 	{"rebin_uint8",
 	 &Prebin<uint8_t>,
 	 METH_VARARGS,

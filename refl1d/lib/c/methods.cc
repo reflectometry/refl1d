@@ -392,3 +392,24 @@ PyObject* Pconvolve_sampled(PyObject *obj, PyObject *args)
   return Py_BuildValue("");
 }
 
+PyObject* Pbuild_profile(PyObject *obj, PyObject *args)
+{
+  PyObject *z_obj,*offset_obj,*roughness_obj,*contrast_obj,*initial_value_obj,*profiles_obj;
+  const double *z, *offset, *roughness, *contrast, *initial_value;
+  double *profiles;
+  Py_ssize_t nz, no, nr, nc, niv, np;
+  DECLARE_VECTORS(6);
+
+  if (!PyArg_ParseTuple(args, "OOOOOO:build_profile",
+	   &z_obj,&offset_obj,&roughness_obj,&contrast_obj,&initial_value_obj,&profiles_obj)) return NULL;
+  INVECTOR(z_obj,z,nz);
+  INVECTOR(offset_obj,offset,no);
+  INVECTOR(roughness_obj,roughness,nr);
+  INVECTOR(contrast_obj,contrast,nc);
+  INVECTOR(initial_value_obj,initial_value,niv);
+  OUTVECTOR(profiles_obj,profiles,np);
+
+  build_profile(nz, niv, no, z, offset, roughness, contrast, initial_value, profiles);
+  FREE_VECTORS();
+  return Py_BuildValue("");
+}

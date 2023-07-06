@@ -165,6 +165,16 @@ convolve_sampled(size_t Nin, const double xin[], const double yin[],
          size_t Np, const double xp[], const double yp[],
          size_t N, const double x[], const double dx[], double y[]);
 
+void
+build_profile(size_t NZ, size_t NP, size_t NI,
+              const double z[], /* length NZ */
+              const double offset[],  /* length NI */
+              const double roughness[], /* length NI */
+              const double contrast[], /* length NP * NI */ 
+              const double initial_value[], /* length NP */
+              double profile[] /* length NP * NZ (num profiles * num z) */
+              );
+
 #ifdef __cplusplus
 }
 #endif
