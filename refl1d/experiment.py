@@ -372,7 +372,7 @@ class Experiment(ExperimentBase):
     def __init__(self, sample: Optional[model.Stack]=None, probe=None, name=None,
                  roughness_limit=0, dz=None, dA=None,
                  step_interfaces=None, smoothness=None,
-                 interpolation=0, constraints=None):
+                 interpolation=0, constraints=None, version: Optional[str]=None):
         # Note: smoothness ignored
         self.sample = sample
         self._substrate = self.sample[0].material
@@ -395,7 +395,7 @@ class Experiment(ExperimentBase):
         self._cache = {}  # Cache calculated profiles/reflectivities
         self.name = name if name is not None else probe.name
         self.constraints = constraints
-        self.version = __version__
+        self.version = __version__ if version is None else version
 
     @property
     def ismagnetic(self):
