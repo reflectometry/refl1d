@@ -370,15 +370,22 @@ class Microslabs(object):
         offsets = np.cumsum(self.w[:-1])  # assumes w[0] == 0 in _set_z_range
 
         # generate profiles
-        rho = np.empty((n_profiles, n_slabs), 'd')
-        irho = np.empty((n_profiles, n_slabs), 'd')
-        for k in range(n_profiles):
-            # Gd support: cycle through wavelength dependent rho/irho
-            rho[k] = build_profile(z, offsets, self.sigma, self.rho[k])
-            irho[k] = build_profile(z, offsets, self.sigma, self.irho[k])
+        Nrho = len(self.rho)
+        Nirho = len(self.irho)
+        # assume that irho has the same shape...
+        to_stack = [self.rho, self.irho]
         if self.ismagnetic:
-            rhoM = build_profile(z, offsets, self.sigma, self.rhoM)
-            thetaM = build_profile(z, offsets, self.sigma, self.thetaM)
+            to_stack.extend([self.rhoM[None, :], self.thetaM[None, :]])
+
+        value = np.vstack(to_stack)
+
+        profiles = _build_profiles_backend(z, offsets, self.sigma, value)
+
+        rho = profiles[0:Nrho]
+        # print('rho:', self.rho.shape, rho.shape)
+        irho = profiles[Nrho:Nrho+Nirho]
+        rhoM = profiles[Nrho+Nirho]
+        thetaM = profiles[Nrho+Nirho+1]
 
         w = self.dz * np.ones(n_slabs)
         w[0] = w[-1] = 0.
@@ -388,8 +395,8 @@ class Microslabs(object):
         self._num_slabs = n_slabs
         self.w[:] = w
         self.sigma[:] = 0
-        self.rho[:,:] = rho
-        self.irho[:,:] = irho
+        self.rho[:] = rho
+        self.irho[:] = irho
         if self.ismagnetic:
             self.rhoM = rhoM
             self.thetaM = thetaM
@@ -514,9 +521,10 @@ class Microslabs(object):
         The returned profile has uniform step size *dz*.
         """
         z = np.arange(self._z_left, self._z_right + 0.5*dz, dz)
-        offsets = np.cumsum(self.w) + self._z_offset
-        irho = build_profile(z, offsets, self.sigma, self.irho[0])
-        rho = build_profile(z, offsets, self.sigma, self.rho[0])
+        offsets = np.cumsum(self.w[:-1]) + self._z_offset
+        values = np.vstack([self.rho[0], self.irho[0]])
+        profiles = _build_profiles_backend(z, offsets, self.sigma, values)
+        rho, irho = profiles
         return z, rho, irho
 
     def magnetic_smooth_profile(self, dz=0.1):
@@ -524,11 +532,10 @@ class Microslabs(object):
         Return a profile representation of the magnetic microslab structure.
         """
         z = np.arange(self._z_left, self._z_right + 0.5*dz, dz)
-        offsets = np.cumsum(self.w) + self._z_offset
-        irho = build_profile(z, offsets, self.sigma, self.irho[0])
-        rho = build_profile(z, offsets, self.sigma, self.rho[0])
-        rhoM = build_profile(z, offsets, self.sigma, self.rhoM)
-        thetaM = build_profile(z, offsets, self.sigma, self.thetaM)
+        offsets = np.cumsum(self.w[:-1]) + self._z_offset
+        values = np.vstack([self.rho[0], self.irho[0], self.rhoM, self.thetaM])
+        profiles = _build_profiles_backend(z, offsets, self.sigma, values)
+        rho, irho, rhoM, thetaM = profiles
         return z, rho, irho, rhoM, thetaM
 
     def _join_magnetic_sections(self, gap_size):
@@ -610,6 +617,19 @@ def compute_limited_sigma(thickness, roughness, limit):
         s[-1] = thickness[-2] / limit
         roughness = np.where(roughness < s, roughness, s)
     return roughness
+
+
+def _build_profiles_backend(z, offsets, roughness, value):
+    from .refllib import backend
+    contrast = (value[:, 1:] - value[:, :-1]).ravel(order="C")
+    initial_value = value[:, 0].copy() # contiguous
+
+    NZ = len(z)
+    # Number of profiles:
+    NP = initial_value.shape[0]
+    profiles = np.zeros((NP, NZ), dtype=float).ravel("C")
+    backend.build_profile(z, offsets.copy(), roughness.copy(), contrast, initial_value, profiles)
+    return profiles.reshape((NP, NZ))
 
 
 def build_profile(z, offset, roughness, value):
