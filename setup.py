@@ -65,6 +65,7 @@ def reflmodule_config():
          "reflectivity.cc", "magnetic.cc",
          "contract_profile.cc",
          "convolve.cc", "convolve_sampled.cc",
+         "build_profile.cc",
         )
 
     Sdeps = ("erf.cc", "methods.h", "rebin.h", "rebin2D.h", "reflcalc.h")
