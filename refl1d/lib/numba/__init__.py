@@ -2,6 +2,7 @@ __all__ = [
     "reflectivity_amplitude",
     "magnetic_amplitude",
     "calculate_u1_u3",
+    "build_profile",
     "convolve_gaussian",
     "convolve_uniform",
     "convolve_sampled",
@@ -15,6 +16,7 @@ __all__ = [
 from .reflectivity import reflectivity_amplitude
 from .magnetic import magnetic_amplitude
 from .magnetic import calculate_u1_u3
+from .build_profile import build_profile
 from .convolve import convolve_gaussian
 from .convolve import convolve_uniform
 from .convolve_sampled import convolve_sampled
