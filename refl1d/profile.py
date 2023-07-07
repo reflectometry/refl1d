@@ -384,8 +384,9 @@ class Microslabs(object):
         rho = profiles[0:Nrho]
         # print('rho:', self.rho.shape, rho.shape)
         irho = profiles[Nrho:Nrho+Nirho]
-        rhoM = profiles[Nrho+Nirho]
-        thetaM = profiles[Nrho+Nirho+1]
+        if self.ismagnetic:
+            rhoM = profiles[Nrho+Nirho]
+            thetaM = profiles[Nrho+Nirho+1]
 
         w = self.dz * np.ones(n_slabs)
         w[0] = w[-1] = 0.
