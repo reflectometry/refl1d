@@ -18,7 +18,7 @@ from warnings import warn
 
 import numpy as np
 from bumps import parameter
-from bumps.parameter import Parameter, Constraint
+from bumps.parameter import Parameter, Constraint, tag_all
 from bumps.fitproblem import Fitness
 from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
@@ -372,7 +372,8 @@ class Experiment(ExperimentBase):
     def __init__(self, sample: Optional[model.Stack]=None, probe=None, name=None,
                  roughness_limit=0, dz=None, dA=None,
                  step_interfaces=None, smoothness=None,
-                 interpolation=0, constraints=None, version: Optional[str]=None):
+                 interpolation=0, constraints=None, version: Optional[str]=None,
+                 auto_tag=False):
         # Note: smoothness ignored
         self.sample = sample
         self._substrate = self.sample[0].material
@@ -396,6 +397,9 @@ class Experiment(ExperimentBase):
         self.name = name if name is not None else probe.name
         self.constraints = constraints
         self.version = __version__ if version is None else version
+        if auto_tag:
+            tag_all(self.probe.parameters(), 'probe')
+            tag_all(self.sample.parameters(), 'sample')
 
     @property
     def ismagnetic(self):
