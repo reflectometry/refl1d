@@ -14,7 +14,9 @@ const auto_align = ref(true);
 const nshown = ref(50);
 const npoints = ref(200);
 const random = ref(true);
-
+// don't use the one from setupDrawLoop because we are calling
+// fetch_and_draw locally:
+const drawing_busy = ref(false);
 
 const props = defineProps<{
   socket: AsyncSocket,
@@ -29,6 +31,11 @@ type MplD3PlotData = {
 
 async function fetch_and_draw(latest_timestamp: string) {
   let { timestamp, plotdata } = cache[title] as { timestamp: string, plotdata: MplD3PlotData } ?? {};
+  const loading_delay = 50; // ms
+  // if the plot loads faster than the timeout, don't show spinner
+  const show_loader = setTimeout(() => {
+    drawing_busy.value = true;
+  }, loading_delay);
   if (timestamp !== latest_timestamp) {
     console.log("fetching new profile uncertainty plot", timestamp, latest_timestamp);
     const payload = await props.socket.asyncEmit('get_profile_uncertainty_plot', auto_align.value, align.value, nshown.value, npoints.value, random.value) as MplD3PlotData;
@@ -38,6 +45,8 @@ async function fetch_and_draw(latest_timestamp: string) {
   plotdata.width = Math.round(plot_div.value?.clientWidth ?? 640) - 16;
   plotdata.height = Math.round(plot_div.value?.clientHeight ?? 480) - 16;
   mpld3.draw_figure(plot_div_id.value, plotdata, false, true);
+  clearTimeout(show_loader);
+  drawing_busy.value = false;
 }
 
 </script>
@@ -71,7 +80,11 @@ async function fetch_and_draw(latest_timestamp: string) {
         </div>
     </div>
     <!-- </details> -->
-    <div class="flex-grow-1" ref="plot_div" :id="plot_div_id">
+    <div class="flex-grow-1 position-relative">
+      <div class="w-100 h-100 plot-div" ref="plot_div" :id="plot_div_id"></div>
+      <div class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center loading" v-if="drawing_busy">
+        <span class="spinner-border text-primary"></span>
+      </div>
     </div>
   </div>
 </template>
@@ -79,5 +92,9 @@ async function fetch_and_draw(latest_timestamp: string) {
 <style scoped>
 svg {
   width: 100%;
+}
+span.spinner-border {
+  width: 3rem;
+  height: 3rem;
 }
 </style>
