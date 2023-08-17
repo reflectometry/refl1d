@@ -39,6 +39,8 @@ const COLORS = [
   '#17becf'   // blue-teal
 ];
 
+const MARKER_OPACITY = 0.5;
+
 function generate_new_traces(model_data, view: ReflectivityPlot) {
   let theory_traces: (Plotly.Data & { x: number, y: number })[] = [];
   let data_traces: (Plotly.Data & { x: number, y: number })[] = [];
@@ -51,7 +53,7 @@ function generate_new_traces(model_data, view: ReflectivityPlot) {
           const label = `${xs.label} ${xs.polarization}`;
           theory_traces.push({ x: xs.Q, y: xs.theory, mode: 'lines', name: label + ' theory', line: { width: 2, color: COLORS[color_index] }});
           if (xs.R !== undefined) {
-            const data_trace = { x: xs.Q, y: xs.R, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }};
+            const data_trace = { x: xs.Q, y: xs.R, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }, opacity: MARKER_OPACITY};
             if (xs.dR !== undefined) {
               data_trace.error_y = {type: 'data', array: xs.dR, visible: true};
             }
@@ -72,7 +74,7 @@ function generate_new_traces(model_data, view: ReflectivityPlot) {
           theory_traces.push({ x: xs.Q, y: theory, mode: 'lines', name: label + ' theory', line: { width: 2, color: COLORS[color_index] }});
           if (xs.R !== undefined) {
             const R = xs.R.map((y, i) => (y / (xs.fresnel[i])));
-            data_traces.push({ x: xs.Q, y: R, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }});
+            data_traces.push({ x: xs.Q, y: R, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }, opacity: MARKER_OPACITY});
           }
           color_index = (color_index + 1) % COLORS.length;
         }
@@ -90,7 +92,7 @@ function generate_new_traces(model_data, view: ReflectivityPlot) {
           const theory = xs.theory.map((t, i) => (t / Q4[i]));
           const R = xs.R.map((r, i) => (r / Q4[i]));
           theory_traces.push({ x: xs.Q, y: theory, mode: 'lines', name: label + ' theory', line: { width: 2, color: COLORS[color_index] }});
-          data_traces.push({ x: xs.Q, y: R, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }});
+          data_traces.push({ x: xs.Q, y: R, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }, opacity: MARKER_OPACITY});
           color_index = (color_index + 1) % COLORS.length;
         }
       }
@@ -125,7 +127,7 @@ function generate_new_traces(model_data, view: ReflectivityPlot) {
           }
       
           theory_traces.push({ x: pp.Q, y: TSA, mode: 'lines', name: label + ' theory', line: { width: 2, color: COLORS[color_index] }});
-          const data_trace = { x: pp.Q, y: SA, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }};
+          const data_trace = { x: pp.Q, y: SA, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }, opacity: MARKER_OPACITY};
           if (dSA.length > 0) {
               data_trace.error_y = {type: 'data', array: dSA, visible: true};
             }
