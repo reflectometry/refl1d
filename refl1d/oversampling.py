@@ -1,7 +1,7 @@
 import numpy as np
 import argparse
 
-def get_optimal_single_oversampling(model, tolerance=0.05, max_oversampling=201, verbose=False):
+def get_optimal_single_oversampling(model, tolerance=0.05, max_oversampling=201, seed=1, verbose=False):
     """
     Determine how much oversampling is required to adequately calculate resolution smearing
 
@@ -30,7 +30,7 @@ def get_optimal_single_oversampling(model, tolerance=0.05, max_oversampling=201,
     # initialize the per-Q recommended oversampling to max_oversampling
     optimal_oversampling = [None if p is None else np.ones_like(p.dR, dtype=int) * max_oversampling for p in probes]
     Q = []
-    model.probe.oversample(max_oversampling)
+    model.probe.oversample(max_oversampling, seed=seed)
     model._cache = {}
     R_ref = model.reflectivity()
     if not isinstance(R_ref, list):
@@ -77,7 +77,7 @@ def get_optimal_single_oversampling(model, tolerance=0.05, max_oversampling=201,
     
     return oversampling, optimal_oversampling, Q
 
-def analyze_fitproblem(problem, tolerance=0.05, max_oversampling=201, plot=False):
+def analyze_fitproblem(problem, tolerance=0.05, max_oversampling=201, seed=1, plot=False):
     if plot:
         from matplotlib import pyplot as plt
     models = problem.models if hasattr(problem, 'models') else [problem]
@@ -92,7 +92,7 @@ def analyze_fitproblem(problem, tolerance=0.05, max_oversampling=201, plot=False
         parts = model.parts if hasattr(model, 'parts') else [model]
         for i_part, part in enumerate(parts):
             # print(part)
-            oversampling_ii, local_oversampling_ii, Q = get_optimal_single_oversampling(part, tolerance, max_oversampling)
+            oversampling_ii, local_oversampling_ii, Q = get_optimal_single_oversampling(part, tolerance, max_oversampling, seed=seed)
             print("\tpart: {:d}, oversampling: {:d}".format(i_part, oversampling_ii))
             oversampling_i.append(oversampling_ii)
             local_oversampling_i.append(local_oversampling_ii)
