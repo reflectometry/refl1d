@@ -44,6 +44,8 @@ const MARKER_OPACITY = 0.5;
 function generate_new_traces(model_data, view: ReflectivityPlot) {
   let theory_traces: (Plotly.Data & { x: number, y: number })[] = [];
   let data_traces: (Plotly.Data & { x: number, y: number })[] = [];
+  let yaxis_label: string = "Reflectivity";
+  let xaxis_label: string = "Q (Å<sup>-1</sup>)";
   switch (view) {
     case "Log":
     case "Linear": {
@@ -79,6 +81,7 @@ function generate_new_traces(model_data, view: ReflectivityPlot) {
           color_index = (color_index + 1) % COLORS.length;
         }
       }
+      yaxis_label = "Fresnel Reflectivity"
       break;
     }
     case "Q4": {
@@ -87,15 +90,20 @@ function generate_new_traces(model_data, view: ReflectivityPlot) {
       for (let model of model_data) {
         for (let xs of model) {
           const label = `${xs.label} ${xs.polarization}`;
-          const {intensity, background} = xs;
+          const {intensity_in, background_in} = xs;
+          const intensity = intensity_in ?? 1.0;
+          const background = background_in ?? 0.0;
           const Q4 = xs.Q.map((qq) => (1e-8*Math.pow(qq, -4)*intensity + background));
           const theory = xs.theory.map((t, i) => (t / Q4[i]));
-          const R = xs.R.map((r, i) => (r / Q4[i]));
           theory_traces.push({ x: xs.Q, y: theory, mode: 'lines', name: label + ' theory', line: { width: 2, color: COLORS[color_index] }});
-          data_traces.push({ x: xs.Q, y: R, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }, opacity: MARKER_OPACITY});
-          color_index = (color_index + 1) % COLORS.length;
+          if (xs.R !== undefined) {
+            const R = xs.R.map((r, i) => (r / Q4[i]));
+            data_traces.push({ x: xs.Q, y: R, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }, opacity: MARKER_OPACITY});
+          }
+            color_index = (color_index + 1) % COLORS.length;
         }
       }
+      yaxis_label = "Reflectivity / Q<sup>4</sup>";
       break;
     }
     case "Spin Asymmetry": {
@@ -103,59 +111,65 @@ function generate_new_traces(model_data, view: ReflectivityPlot) {
       for (let model of model_data) {
         const pp = model.find((xs) => xs.polarization === '++');
         const mm = model.find((xs) => xs.polarization === '--');
+
         if (pp !== undefined && mm !== undefined) {
           const label = pp.label;
-          const Rm = interp(pp.Q, mm.Q, mm.R);
-          const SA = Rm.map((m, i) => {
-            const p = pp.R[i];
-            return (p - m) / (p + m);
-          });
+
           const Tm = interp(pp.Q, mm.Q, mm.theory);
           const TSA = Tm.map((m, i) => {
             const p = pp.theory[i];
             return (p - m) / (p + m);
           });
-          let dSA: number[] = [];
-          if (pp.dR !== undefined && mm.dR !== undefined) {
-            const dRm = interp(pp.Q, mm.Q, mm.dR);
-            dSA = dRm.map((dm, i) => {
-              const dp = pp.dR[i];
-              const p = pp.R[i];
-              const m = Rm[i];
-              return Math.sqrt(4 * ((p*dm)**2 + (m*dm)**2) / (p+m)**4)
-            });
-          }
-      
+
           theory_traces.push({ x: pp.Q, y: TSA, mode: 'lines', name: label + ' theory', line: { width: 2, color: COLORS[color_index] }});
-          const data_trace = { x: pp.Q, y: SA, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }, opacity: MARKER_OPACITY};
-          if (dSA.length > 0) {
+
+          if (pp.R !== undefined && mm.R !== undefined) {
+            const Rm = interp(pp.Q, mm.Q, mm.R);
+            const SA = Rm.map((m, i) => {
+              const p = pp.R[i];
+              return (p - m) / (p + m);
+            });
+            const data_trace = { x: pp.Q, y: SA, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }, opacity: MARKER_OPACITY};
+
+            if (pp.dR !== undefined && mm.dR !== undefined) {
+              const dRm = interp(pp.Q, mm.Q, mm.dR);
+              const dSA = dRm.map((dm, i) => {
+                const dp = pp.dR[i];
+                const p = pp.R[i];
+                const m = Rm[i];
+                return Math.sqrt(4 * ((p*dm)**2 + (m*dm)**2) / (p+m)**4)
+              });
               data_trace.error_y = {type: 'data', array: dSA, visible: true};
             }
-          data_traces.push(data_trace);
+
+            data_traces.push(data_trace);
+          }
+
           color_index = (color_index + 1) % COLORS.length;
         }
       }
+      yaxis_label = "Spin Asymmetry (pp - mm) / (pp + mm)"
     }
 
   }
-  return {theory_traces, data_traces};
+  return {theory_traces, data_traces, xaxis_label, yaxis_label};
 }
 
 async function fetch_and_draw() {
   const payload = await props.socket.asyncEmit('get_plot_data', 'linear');
   // console.log(payload);
-  const { theory_traces, data_traces } = generate_new_traces(payload.plotdata, reflectivity_type.value)
+  const { theory_traces, data_traces, xaxis_label, yaxis_label } = generate_new_traces(payload.plotdata, reflectivity_type.value)
   const layout: Partial<Plotly.Layout> = {
     uirevision: reflectivity_type.value,
     xaxis: {
       title: {
-        text: 'Q (Å<sup>-1</sup>)'
+        text: xaxis_label,
       },
       type: 'linear',
       autorange: true,
     },
     yaxis: {
-      title: { text: 'Reflectivity' },
+      title: { text: yaxis_label },
       exponentformat: 'e',
       showexponent: 'all',
       type: (/^(Log|Q4)/.test(reflectivity_type.value)) ? 'log' : 'linear',
