@@ -1685,7 +1685,7 @@ class QProbe(BaseProbe):
 
     @property
     def calc_Q(self):
-        return self.calc_Qo
+        return self.calc_Qo if not self.back_reflectivity else -self.calc_Qo
 
     def parameters(self):
         return {
@@ -1925,7 +1925,7 @@ class PolarizedNeutronProbe:
     def calc_Q(self):
         #print('calculating calc_Q...')
         self._calculate_union()
-        return self.calc_Qo
+        return self.calc_Qo if not self.back_reflectivity else -self.calc_Qo
 
     def _set_calc(self, T, L):
         # TODO: shouldn't clone code from probe
