@@ -1,4 +1,4 @@
-from typing import Union, Dict, List
+from typing import Union, Dict, List, TypedDict
 import numpy as np
 from refl1d.experiment import Experiment, ExperimentBase, MixedExperiment
 import refl1d.probe
@@ -8,7 +8,7 @@ from bumps.webview.server.api import (
 from bumps.errplot import calc_errors_from_state
 from refl1d.errors import show_errors
 
-from .profile_plot import plot_sld_profile_plotly
+from .profile_plot import plot_multiple_sld_profiles, ModelSpec
 
 # state.problem.serializer = "dataclass"
 
@@ -31,18 +31,24 @@ async def get_plot_data(view: str = 'linear'):
     return to_json_compatible_dict(result)
 
 @register
-async def get_profile_plot(model_index: int=0, sample_index: int=0):
+async def get_profile_plots(model_specs: List[ModelSpec]):
     if state.problem is None or state.problem.fitProblem is None:
         return None
     fitProblem = state.problem.fitProblem
     models = list(fitProblem.models)
-    if model_index > len(models):
-        return None
-    model = models[model_index]
-    assert (isinstance(model, Union[Experiment, MixedExperiment]))
-    if isinstance(model, MixedExperiment):
-        model = model.parts[sample_index]
-    fig = plot_sld_profile_plotly(model)
+    plot_items = []
+    for spec in model_specs:
+        model_index = spec["model_index"]
+        sample_index = spec["sample_index"]
+        if model_index > len(models):
+            return None
+        model = models[model_index]
+        assert (isinstance(model, Union[Experiment, MixedExperiment]))
+        if isinstance(model, MixedExperiment):
+            model = model.parts[sample_index]
+        plot_item = dict(model=model, spec=spec)
+        plot_items.append(plot_item)
+    fig = plot_multiple_sld_profiles(plot_items)
     output = to_json_compatible_dict(fig.to_dict())
     del fig
     return output

@@ -10,7 +10,8 @@ const title = "Profile";
 const plot_div = ref<HTMLDivElement>();
 const plot_div_id = ref(`div-${uuidv4()}`);
 const model_names = ref<{name: string, part_name: string, model_index: number, part_index: number}[]>([]);
-const current_model = ref<[number, number]>([0, 0]);
+const show_multiple = ref(false);
+const current_models = ref<Array<[number, number]>>([[0, 0]]);
 
 const props = defineProps<{
   socket: AsyncSocket,
@@ -29,19 +30,49 @@ onMounted(async () => {
 });
 
 async function fetch_and_draw() {
-  const [model_index, sample_index] = current_model.value;
-  const payload = await props.socket.asyncEmit('get_profile_plot', model_index, sample_index);
+  const specs = current_models.value.map(([model_index, sample_index]) => (
+    {model_index, sample_index}
+  ));
+  const payload = await props.socket.asyncEmit('get_profile_plots', specs);
   let plotdata = { ...payload };
   const { data, layout } = plotdata;
-  const config = { responsive: true }
+  const config: Partial<Plotly.Config> = {
+    responsive: true,
+    edits: {
+      legendPosition: true
+    }
+  }
   await Plotly.react(plot_div_id.value, [...data], layout, config);
+}
+
+function toggle_multiple(value) {
+  if (!show_multiple.value) {
+    // then we're toggling from multiple to single...
+    current_models.value.splice(0, current_models.value.length -1);
+    draw_requested.value = true;
+  }
 }
 
 </script>
 
 <template>
   <div class="container d-flex flex-grow-1 flex-column">
-    <select v-model="current_model" @change="draw_requested = true">
+    <div class="form-check">
+      <label class="form-check-label pe-2" for="multiple">Show multiple</label>
+      <input class="form-check-input" type="checkbox" v-model="show_multiple" id="multiple" @change="toggle_multiple"/>
+    </div>
+    <select v-if="show_multiple"
+      v-model="current_models"
+      @change="draw_requested = true"
+      multiple
+      >
+      <option v-for="{name, part_name, model_index, part_index} in model_names" :key="`${model_index}:${part_index}`" :value="[model_index, part_index]">
+        {{ model_index }}:{{ part_index }} --- {{ name ?? "" }}:{{ part_name ?? "" }}</option>
+    </select>
+    <select v-else
+      v-model="current_models[0]"
+      @change="draw_requested = true"
+      >
       <option v-for="{name, part_name, model_index, part_index} in model_names" :key="`${model_index}:${part_index}`" :value="[model_index, part_index]">
         {{ model_index }}:{{ part_index }} --- {{ name ?? "" }}:{{ part_name ?? "" }}</option>
     </select>
