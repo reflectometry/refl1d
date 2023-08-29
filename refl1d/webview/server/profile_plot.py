@@ -18,6 +18,8 @@ SINGLE_PLOT_STYLES = ["solid"] * 4
 MULTI_PLOT_STYLES = ["solid", "dash", "dashdot", "dot"]
 
 # === Sample information ===
+
+
 class FindLayers:
     def __init__(self, experiment, axes=None, x_offset=0):
 
@@ -62,7 +64,8 @@ class FindLayers:
         """
         # self.clear_markers()
         if not isinstance(self.axes, go.Figure):
-            raise ValueError("reset_markers_plotly can only be used with type: axes=plotly.graph_objs.Figure")
+            raise ValueError(
+                "reset_markers_plotly can only be used with type: axes=plotly.graph_objs.Figure")
 
         fig = self.axes
 
@@ -110,6 +113,7 @@ def generate_best_profile(model: Experiment):
 # Plotting script below
 # ============================================================================= #
 
+
 class ModelSpec(TypedDict):
     model_index: int
     sample_index: int
@@ -135,60 +139,60 @@ def plot_multiple_sld_profiles(plot_items: List[PlotItem]):
         model_index = spec["model_index"]
         sample_index = spec["sample_index"]
         legendgroup = f"{model_index}:{sample_index} ({model.name})" if multiplot else None
-        plot_sld_profile_plotly(model, fig, colors=colors, line_styles=line_styles, legendgroup=legendgroup)
+        plot_sld_profile_plotly(model, fig, colors=colors,
+                                line_styles=line_styles, legendgroup=legendgroup)
     return fig
+
 
 def plot_sld_profile_plotly(model, fig, colors=SINGLE_PLOT_COLORS, line_styles=SINGLE_PLOT_STYLES, legendgroup=None):
     if model.ismagnetic:
-        z_best, rho_best, irho_best, rhoM_best, thetaM_best = generate_best_profile(model)
+        z_best, rho_best, irho_best, rhoM_best, thetaM_best = generate_best_profile(
+            model)
         yaxis_title = 'SLD: ρ, ρ<sub>i</sub>, ρ<sub>M</sub> / 10<sup>-6</sup> Å<sup>-2</sup>'
     else:
         z_best, rho_best, irho_best = generate_best_profile(model)
         yaxis_title = 'SLD: ρ, ρ<sub>i</sub> / 10<sup>-6</sup> Å<sup>-2</sup>'
 
-    fig.add_scatter(x=z_best, y=rho_best, name="ρ",
-                      legendgroup=legendgroup,
-                      legendgrouptitle_text=legendgroup,
-                      hovertemplate='(%{x}, %{y})<br>'
-                                    'SLD'
-                                    '<extra></extra>',
-                      line={
+    hovertemplate = f"(%{{x}}, %{{y}})<br>{legendgroup if legendgroup is not None else ''} %{{data.hovertext}}<extra></extra>"
+
+    fig.add_scatter(x=z_best, y=rho_best, name='ρ',
+                    legendgroup=legendgroup,
+                    legendgrouptitle_text=legendgroup,
+                    hovertemplate=hovertemplate,
+                    hovertext="SLD",
+                    line={
                         "color": colors[0],
                         "dash": line_styles[0],
-                        })
+                    })
 
     fig.add_scatter(x=z_best, y=irho_best, name="ρ<sub>i</sub>",
-                      legendgroup=legendgroup,
-                      hovertemplate='(%{x}, %{y})<br>'
-                                    'Im SLD'
-                                    '<extra></extra>',
-                      line={
+                    legendgroup=legendgroup,
+                    hovertemplate=hovertemplate,
+                    hovertext="Im. SLD",
+                    line={
                         "color": colors[1],
                         "dash": line_styles[1],
-                        })
+                    })
 
     if model.ismagnetic:
         fig.add_scatter(x=z_best, y=rhoM_best, name="ρ<sub>M</sub>",
-                          legendgroup=legendgroup,
-                          hovertemplate='(%{x}, %{y})<br>'
-                                        'M SLD'
-                                        '<extra></extra>',
-                          line={
-                              "color": colors[2],
-                              "dash": line_styles[2],
-                            })
+                        legendgroup=legendgroup,
+                        hovertemplate=hovertemplate,
+                        hovertext="Mag. SLD",
+                        line={
+                            "color": colors[2],
+                            "dash": line_styles[2],
+                        })
 
         fig.add_scatter(x=z_best, y=thetaM_best,
-                          name="θ<sub>M</sub>", yaxis="y2",
-                          legendgroup=legendgroup,
-                          hovertemplate='(%{x}, %{y})<br>'
-                                        'Theta M'
-                                        '<extra></extra>',
-                          line={
-                              "color": colors[3],
-                              "dash": line_styles[3],
-                            })
-
+                        name="θ<sub>M</sub>", yaxis="y2",
+                        legendgroup=legendgroup,
+                        hovertemplate=hovertemplate,
+                        hovertext="Theta M",
+                        line={
+                            "color": colors[3],
+                            "dash": line_styles[3],
+                        })
 
         # TODO: need to make axis scaling for thetaM dependent on if thetaM exceeds 0-360
         fig.update_layout(yaxis2={
@@ -202,8 +206,6 @@ def plot_sld_profile_plotly(model, fig, colors=SINGLE_PLOT_COLORS, line_styles=S
             'ticks': "inside",
             # 'ticklen': 20,
         })
-
-
 
     fig.update_layout(uirevision=1, plot_bgcolor="white")
     fig.update_layout(xaxis={
@@ -246,7 +248,7 @@ def plot_sld_profile_plotly(model, fig, colors=SINGLE_PLOT_COLORS, line_styles=S
     fig.update_layout(legend={
         "x": -0.1,
         "bgcolor": "rgba(255,215,0,0.15)",
-        #"traceorder": "reversed"
+        # "traceorder": "reversed"
     })
 
     marker_positions = FindLayers(model, axes=fig)
