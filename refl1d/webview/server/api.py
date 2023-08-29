@@ -35,19 +35,16 @@ async def get_profile_plots(model_specs: List[ModelSpec]):
     if state.problem is None or state.problem.fitProblem is None:
         return None
     fitProblem = state.problem.fitProblem
-    models = list(fitProblem.models)
     plot_items = []
-    for spec in model_specs:
-        model_index = spec["model_index"]
-        sample_index = spec["sample_index"]
-        if model_index > len(models):
-            return None
-        model = models[model_index]
-        assert (isinstance(model, Union[Experiment, MixedExperiment]))
-        if isinstance(model, MixedExperiment):
-            model = model.parts[sample_index]
-        plot_item = dict(model=model, spec=spec)
-        plot_items.append(plot_item)
+    color_index = 0
+    for model_index, model in enumerate(fitProblem.models):
+        for sample_index, part in enumerate(getattr(model, 'parts', [model])):
+            spec = dict(model_index=model_index, sample_index=sample_index)
+            if spec in model_specs:
+                plot_item = dict(model=part, spec=spec, color_index=color_index)
+                plot_items.append(plot_item)
+            color_index += 1
+
     fig = plot_multiple_sld_profiles(plot_items)
     output = to_json_compatible_dict(fig.to_dict())
     del fig

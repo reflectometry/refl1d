@@ -12,7 +12,10 @@ import plotly.graph_objs as go
 import plotly.io as pio
 
 SINGLE_PLOT_COLORS = ("black", "blue", "green", "gold")
-MULTI_PLOT_COLORS = pio.templates['plotly'].layout.colorway
+# Colorblind-friendly colors, as per https://gist.github.com/thriveth/8560036
+MULTI_PLOT_COLORS = ['#377eb8', '#ff7f00', '#4daf4a',
+                  '#f781bf', '#a65628', '#984ea3',
+                  '#999999', '#e41a1c', '#dede00']
 
 SINGLE_PLOT_STYLES = ["solid"] * 4
 MULTI_PLOT_STYLES = ["solid", "dash", "dashdot", "dot"]
@@ -122,22 +125,24 @@ class ModelSpec(TypedDict):
 class PlotItem(TypedDict):
     model: Experiment
     spec: ModelSpec
+    color_index: int
 
 
 def plot_multiple_sld_profiles(plot_items: List[PlotItem]):
     fig = go.Figure()
     nplots = len(plot_items)
     multiplot = nplots > 1
-    for pindex, plot_item in enumerate(plot_items):
+    for plot_item in plot_items:
+        model = plot_item["model"]
+        spec = plot_item["spec"]
+        color_index = plot_item["color_index"]
+        model_index = spec["model_index"]
+        sample_index = spec["sample_index"]
         if multiplot:
-            colors = [MULTI_PLOT_COLORS[pindex % len(MULTI_PLOT_COLORS)]] * 4
+            colors = [MULTI_PLOT_COLORS[color_index % len(MULTI_PLOT_COLORS)]] * 4
         else:
             colors = SINGLE_PLOT_COLORS
         line_styles = MULTI_PLOT_STYLES if multiplot else SINGLE_PLOT_STYLES
-        model = plot_item["model"]
-        spec = plot_item["spec"]
-        model_index = spec["model_index"]
-        sample_index = spec["sample_index"]
         legendgroup = f"{model_index}:{sample_index} ({model.name})" if multiplot else None
         plot_sld_profile_plotly(model, fig, colors=colors,
                                 line_styles=line_styles, legendgroup=legendgroup)
