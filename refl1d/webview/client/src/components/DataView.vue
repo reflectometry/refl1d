@@ -26,18 +26,10 @@ type ReflectivityPlotEnum = typeof REFLECTIVITY_PLOTS;
 type ReflectivityPlot = ReflectivityPlotEnum[number];
 const reflectivity_type = ref<ReflectivityPlot>("Log");
 
-const COLORS = [
-  '#1f77b4',  // muted blue
-  '#ff7f0e',  // safety orange
-  '#2ca02c',  // cooked asparagus green
-  '#d62728',  // brick red
-  '#9467bd',  // muted purple
-  '#8c564b',  // chestnut brown
-  '#e377c2',  // raspberry yogurt pink
-  '#7f7f7f',  // middle gray
-  '#bcbd22',  // curry yellow-green
-  '#17becf'   // blue-teal
-];
+// Colorblind-friendly colors, as per https://gist.github.com/thriveth/8560036
+const COLORS = ['#377eb8', '#ff7f00', '#4daf4a',
+                  '#f781bf', '#a65628', '#984ea3',
+                  '#999999', '#e41a1c', '#dede00']
 
 const MARKER_OPACITY = 0.5;
 
