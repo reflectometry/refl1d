@@ -184,7 +184,7 @@ class _HashableModel:
         self.name = model.name if model.name is not None else f"M{index}"
         self.index = index
     def __str__(self):
-        return f"model {self.name}"
+        return f"model {self.name}: {self.index}"
 
 def _eval_point(problem, p):
     problem.chisq_str() # Force reflectivity recalculation
@@ -307,6 +307,8 @@ def show_profiles(errors, align, contours, npoints, axes=None):
     profiles, slabs, _, _ = errors
     if align is not None:
         profiles = align_profiles(profiles, slabs, align)
+        _profiles_draw_align_lines(profiles, slabs, align, axes)
+
 
     if contours:
         _profiles_contour(profiles, contours, npoints, axes=axes)
@@ -488,6 +490,12 @@ def _residuals_labels(axes=None):
     axes.legend()
     axes.set_xlabel(u'Q (1/Å)')
     axes.set_ylabel(u'Residuals')
+
+def _profiles_draw_align_lines(profiles, slabs, align, axes):
+    for i, m in enumerate(profiles.keys()):
+        t1_offset = _find_offset(slabs[m][0], align) if align != 'auto' else None
+        if t1_offset is not None:
+            axes.axvline(x=t1_offset, color='grey', label=f"{m}:{i}")
 
 # ==== Helper functions =====
 

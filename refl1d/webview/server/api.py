@@ -6,7 +6,8 @@ from bumps.webview.server.api import (
     register, get_chisq, state, to_json_compatible_dict, set_problem
 )
 from bumps.errplot import calc_errors_from_state
-from refl1d.errors import show_errors
+# from refl1d.errors import show_errors
+from .profile_uncertainty import show_errors
 
 from .profile_plot import plot_multiple_sld_profiles, ModelSpec
 
@@ -113,7 +114,7 @@ async def get_profile_uncertainty_plot(auto_align: bool=True, align: float=0., n
         fig = plt.figure()
         errs = calc_errors_from_state(fitProblem, uncertainty_state, nshown=nshown, random=random, portion=1.0)
         print('errors calculated: ', time.time() - start_time)
-        show_errors(errs, npoints=npoints, align=align_arg, plots=1, fig=fig)
+        fig = show_errors(errs, npoints=npoints, align=align_arg)
         print("time to render but not serialize...", time.time() - start_time)
         fig.canvas.draw()
         dfig = mpld3.fig_to_dict(fig)
