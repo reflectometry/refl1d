@@ -1,6 +1,6 @@
 {
   "name": "refl1d-webview-client",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "scripts": {
     "dev": "vite",
     "build": "vite build --emptyOutDir -m development",
@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "bootstrap": "^5.2.1",
-    "bumps-webview-client": "^0.1.5",
+    "bumps-webview-client": "^0.1.6",
     "comlink": "^4.4.1",
     "json-difference": "^1.8.2",
     "mpld3": "^0.5.8",
