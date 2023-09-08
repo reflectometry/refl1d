@@ -32,10 +32,23 @@ const COLORS = ['#377eb8', '#ff7f00', '#4daf4a',
                   '#999999', '#e41a1c', '#dede00']
 
 const MARKER_OPACITY = 0.5;
+type Trace = Partial<Plotly.PlotData>;
+type PolarizationString = '' | '--' | '-+' | '+-' | '++' | 'unpolarized';
+type ModelData = {
+  label: string,
+  polarization: PolarizationString,
+  Q: number[],
+  theory: number[],
+  fresnel: number[],
+  intensity_in: number,
+  background_in: number,
+  R?: number[],
+  dR?: number[]
+};
 
-function generate_new_traces(model_data, view: ReflectivityPlot) {
-  let theory_traces: (Plotly.Data & { x: number, y: number })[] = [];
-  let data_traces: (Plotly.Data & { x: number, y: number })[] = [];
+function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) {
+  let theory_traces: Trace[] = [];
+  let data_traces: Trace[] = [];
   let yaxis_label: string = "Reflectivity";
   let xaxis_label: string = "Q (Å<sup>-1</sup>)";
   switch (view) {
@@ -47,7 +60,7 @@ function generate_new_traces(model_data, view: ReflectivityPlot) {
           const label = `${xs.label} ${xs.polarization}`;
           theory_traces.push({ x: xs.Q, y: xs.theory, mode: 'lines', name: label + ' theory', line: { width: 2, color: COLORS[color_index] }});
           if (xs.R !== undefined) {
-            const data_trace = { x: xs.Q, y: xs.R, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }, opacity: MARKER_OPACITY};
+            const data_trace: Trace = { x: xs.Q, y: xs.R, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }, opacity: MARKER_OPACITY};
             if (xs.dR !== undefined) {
               data_trace.error_y = {type: 'data', array: xs.dR, visible: true};
             }
@@ -68,7 +81,12 @@ function generate_new_traces(model_data, view: ReflectivityPlot) {
           theory_traces.push({ x: xs.Q, y: theory, mode: 'lines', name: label + ' theory', line: { width: 2, color: COLORS[color_index] }});
           if (xs.R !== undefined) {
             const R = xs.R.map((y, i) => (y / (xs.fresnel[i])));
-            data_traces.push({ x: xs.Q, y: R, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }, opacity: MARKER_OPACITY});
+            const data_trace: Trace = { x: xs.Q, y: R, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }, opacity: MARKER_OPACITY};
+            if (xs.dR !== undefined) {
+              const dR = xs.dR.map((dy, i) => (dy / (xs.fresnel[i])));
+              data_trace.error_y = {type: 'data', array: dR, visible: true};
+            }
+            data_traces.push(data_trace);
           }
           color_index = (color_index + 1) % COLORS.length;
         }
@@ -90,9 +108,14 @@ function generate_new_traces(model_data, view: ReflectivityPlot) {
           theory_traces.push({ x: xs.Q, y: theory, mode: 'lines', name: label + ' theory', line: { width: 2, color: COLORS[color_index] }});
           if (xs.R !== undefined) {
             const R = xs.R.map((r, i) => (r / Q4[i]));
-            data_traces.push({ x: xs.Q, y: R, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }, opacity: MARKER_OPACITY});
+            const data_trace: Trace = { x: xs.Q, y: R, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }, opacity: MARKER_OPACITY};
+            if (xs.dR !== undefined) {
+              const dR = xs.dR.map((dy, i) => (dy / Q4[i]));
+              data_trace.error_y = {type: 'data', array: dR, visible: true};
+            }
+            data_traces.push(data_trace);
           }
-            color_index = (color_index + 1) % COLORS.length;
+          color_index = (color_index + 1) % COLORS.length;
         }
       }
       yaxis_label = "Reflectivity / Q<sup>4</sup>";
@@ -121,7 +144,7 @@ function generate_new_traces(model_data, view: ReflectivityPlot) {
               const p = pp.R[i];
               return (p - m) / (p + m);
             });
-            const data_trace = { x: pp.Q, y: SA, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }, opacity: MARKER_OPACITY};
+            const data_trace: Trace = { x: pp.Q, y: SA, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }, opacity: MARKER_OPACITY};
 
             if (pp.dR !== undefined && mm.dR !== undefined) {
               const dRm = interp(pp.Q, mm.Q, mm.dR);
@@ -209,7 +232,7 @@ async function fetch_and_draw() {
   await Plotly.react(plot_div.value as HTMLDivElement, [...theory_traces, ...data_traces], layout, config);
 }
 
-function interp(x: number[], xp: number[], fp: number[]) {
+function interp(x: number[], xp: number[], fp: number[]): number[] {
   // assume x and xp are sorted, monotonically increasing
   if (xp.length != fp.length) {
     throw new Error(`lengths of xp (${xp.length}) and fp (${fp.length}) must match`);
