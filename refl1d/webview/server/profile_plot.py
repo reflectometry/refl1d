@@ -10,12 +10,9 @@ from numpy import inf
 import numpy as np
 import plotly.graph_objs as go
 import plotly.io as pio
+from .colors import COLORS as MULTI_PLOT_COLORS
 
 SINGLE_PLOT_COLORS = ("black", "blue", "green", "gold")
-# Colorblind-friendly colors, as per https://gist.github.com/thriveth/8560036
-MULTI_PLOT_COLORS = ['#377eb8', '#ff7f00', '#4daf4a',
-                  '#f781bf', '#a65628', '#984ea3',
-                  '#999999', '#e41a1c', '#dede00']
 
 SINGLE_PLOT_STYLES = ["solid"] * 4
 MULTI_PLOT_STYLES = ["solid", "dash", "dashdot", "dot"]
@@ -107,7 +104,7 @@ class FindLayers:
 
 def generate_best_profile(model: Experiment):
     if model.ismagnetic:
-        best = model.magnetic_smooth_profile()
+        best = model.magnetic_smooth_profile(dz=0.5)
     else:
         best = model.smooth_profile()
     return best
