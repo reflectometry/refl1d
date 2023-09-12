@@ -103,24 +103,17 @@ async def get_profile_uncertainty_plot(auto_align: bool=True, align: float=0., n
     uncertainty_state = state.fitting.uncertainty_state
     align_arg = 'auto' if auto_align else align
     if uncertainty_state is not None:
-        import mpld3
-        import matplotlib
-        matplotlib.use("agg")
-        import matplotlib.pyplot as plt
         import time
         start_time = time.time()
         print('queueing new profile uncertainty plot...', start_time)
-
-        fig = plt.figure()
         errs = calc_errors_from_state(fitProblem, uncertainty_state, nshown=nshown, random=random, portion=1.0)
         print('errors calculated: ', time.time() - start_time)
         fig = show_errors(errs, npoints=npoints, align=align_arg)
         print("time to render but not serialize...", time.time() - start_time)
-        fig.canvas.draw()
-        dfig = mpld3.fig_to_dict(fig)
-        plt.close(fig)
+        output = to_json_compatible_dict(fig.to_dict())
+        del fig
         end_time = time.time()
         print("time to draw profile uncertainty plot:", end_time - start_time)
-        return dfig
+        return output
     else:
         return None
