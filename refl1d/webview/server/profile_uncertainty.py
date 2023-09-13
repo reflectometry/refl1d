@@ -3,7 +3,7 @@ import numpy as np
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
-from refl1d.errors import align_profiles, form_quantiles
+from refl1d.errors import align_profiles, form_quantiles, _find_offset
 from .colors import COLORS
 
 CONTOURS = (68, 95)
@@ -22,13 +22,15 @@ def show_profiles(errors, align, contours, npoints, fig: go.Figure, row: Optiona
     profiles, slabs, _, _ = errors
     if align is not None:
         profiles = align_profiles(profiles, slabs, align)
-        # _profiles_draw_align_lines(profiles, slabs, align, axes)
 
     if contours is not None:
         _profiles_contour(profiles, contours, npoints, fig=fig, row=row, col=col)
     else:
         _profiles_overplot(profiles, fig=fig, row=row, col=col)
     
+    if align != 'auto':
+        _profiles_draw_align_lines(profiles, slabs, align, fig=fig, row=row, col=col)
+
     return
 
 def show_residuals(errors, contours, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
@@ -88,23 +90,20 @@ def _draw_contours(group, index, label, zp, contours, fig: go.Figure, color_inde
 
 def _profile_labels(fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
     fig.update_layout(legend=dict(visible=True), template='simple_white')
-    fig.update_xaxes(title_text='z (Å)')
-    fig.update_yaxes(title_text='SLD (10⁻⁶/Å²)')
+    fig.update_xaxes(title_text='z (Å)', row=row, col=col, showline=True, zeroline=False)
+    fig.update_yaxes(title_text='SLD (10⁻⁶/Å²)', row=row, col=col, showline=True)
 
 def _residuals_overplot(Q, residuals, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
-    alpha = 0.4
+    alpha = 0.6
     shift = 0
     for m_index, (m, r) in enumerate(residuals.items()):
         color_index = m_index * 3
         color = get_color(color_index)
         pop_size = r.shape[1] - 1
-        print("residuals shape: ", r.shape)
         qq = np.tile(Q[m], pop_size)
-        rr = shift + r[:, 1:].flatten()
-        fig.add_scattergl(x=qq, y=rr, showlegend=False, mode="markers", marker=dict(color=color), opacity=alpha, row=row, col=col, hoverinfo="skip")
-        # for rr in r[:, 1:]:
-            # fig.add_scattergl(x=Q[m], y=shift+rr, showlegend=False, mode="markers", marker=dict(color=color), opacity=alpha, row=row, col=col, hoverinfo="skip")
-        fig.add_scattergl(x=Q[m], y=shift+r[:, 0],  name=m.name, mode="markers", marker=dict(color=color), row=row, col=col, hoverinfo="skip")
+        rr = shift + r[:, 1:].ravel(order="F")
+        fig.add_scattergl(x=qq, y=rr, showlegend=False, mode="markers", marker=dict(color=color, size=1), opacity=alpha, row=row, col=col, hoverinfo="skip")
+        fig.add_scattergl(x=Q[m], y=shift+r[:, 0],  name=m.name, mode="markers", marker=dict(color=color, size=3), row=row, col=col, hoverinfo="skip")
         shift += 5
     _residuals_labels(fig, row=row, col=col)
 
@@ -122,15 +121,15 @@ def _residuals_contour(Q, residuals, contours=CONTOURS):
     _residuals_labels()
 
 def _residuals_labels(fig, row=None, col=None):
-    fig.update_layout(legend=dict(visible=True))
-    fig.update_xaxes(title_text='Q (1/Å)', row=row, col=col)
-    fig.update_yaxes(title_text='Residuals', row=row, col=col)
+    fig.update_layout(legend=dict(visible=True), template=None)
+    fig.update_xaxes(title_text='Q (1/Å)', row=row, col=col, showline=True, zeroline=False)
+    fig.update_yaxes(title_text='Residuals', row=row, col=col, showline=True)
 
-def _profiles_draw_align_lines(profiles, slabs, align, axes):
+def _profiles_draw_align_lines(profiles, slabs, align, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
     for i, m in enumerate(profiles.keys()):
         t1_offset = _find_offset(slabs[m][0], align) if align != 'auto' else None
         if t1_offset is not None:
-            axes.axvline(x=t1_offset, color='grey', label=f"{m}:{i}")
+            fig.add_vline(x=t1_offset, line=dict(dash="dash"), row=row, col=col)
 
 def _plot_quantiles(x, y, contours, color, alpha, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
     """
