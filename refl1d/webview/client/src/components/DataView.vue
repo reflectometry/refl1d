@@ -4,6 +4,7 @@ import { ref } from 'vue';
 import * as Plotly from 'plotly.js/lib/core';
 import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket';
 import { setupDrawLoop } from 'bumps-webview-client/src/setupDrawLoop';
+import { COLORS } from '../colors.mjs';
 
 const title = "Reflectivity";
 const plot_div = ref<HTMLDivElement | null>(null);
@@ -25,11 +26,6 @@ const REFLECTIVITY_PLOTS = [
 type ReflectivityPlotEnum = typeof REFLECTIVITY_PLOTS;
 type ReflectivityPlot = ReflectivityPlotEnum[number];
 const reflectivity_type = ref<ReflectivityPlot>("Log");
-
-// Colorblind-friendly colors, as per https://gist.github.com/thriveth/8560036
-const COLORS = ['#377eb8', '#ff7f00', '#4daf4a',
-                  '#f781bf', '#a65628', '#984ea3',
-                  '#999999', '#e41a1c', '#dede00']
 
 const MARKER_OPACITY = 0.5;
 type Trace = Partial<Plotly.PlotData>;

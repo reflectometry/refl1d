@@ -4,7 +4,7 @@ import { ref } from 'vue';
 import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket';import { v4 as uuidv4 } from 'uuid';
 import { setupDrawLoop } from 'bumps-webview-client/src/setupDrawLoop';
 import { cache } from '../plotcache';
-import mpld3 from 'mpld3';
+import * as Plotly from 'plotly.js/lib/core';
 
 const title = "Profile Uncertainty"
 const plot_div = ref<HTMLDivElement>();
@@ -24,13 +24,13 @@ const props = defineProps<{
 
 setupDrawLoop('uncertainty_update', props.socket, fetch_and_draw, title);
 
-type MplD3PlotData = {
-  width?: number,
-  height?: number,
+type PlotData = {
+  data: Partial<Plotly.PlotData>[],
+  layout: Partial<Plotly.Layout>,
 }
 
 async function fetch_and_draw(latest_timestamp: string) {
-  let { timestamp, plotdata } = cache[title] as { timestamp: string, plotdata: MplD3PlotData } ?? {};
+  let { timestamp, plotdata } = cache[title] as { timestamp: string, plotdata: PlotData } ?? {};
   const loading_delay = 50; // ms
   // if the plot loads faster than the timeout, don't show spinner
   const show_loader = setTimeout(() => {
@@ -38,13 +38,20 @@ async function fetch_and_draw(latest_timestamp: string) {
   }, loading_delay);
   if (timestamp !== latest_timestamp) {
     console.log("fetching new profile uncertainty plot", timestamp, latest_timestamp);
-    const payload = await props.socket.asyncEmit('get_profile_uncertainty_plot', auto_align.value, align.value, nshown.value, npoints.value, random.value) as MplD3PlotData;
+    const payload = await props.socket.asyncEmit('get_profile_uncertainty_plot', auto_align.value, align.value, nshown.value, npoints.value, random.value) as PlotData;
     plotdata = { ...payload };
     cache[title] = {timestamp: latest_timestamp, plotdata};
   }
-  plotdata.width = Math.round(plot_div.value?.clientWidth ?? 640) - 16;
-  plotdata.height = Math.round(plot_div.value?.clientHeight ?? 480) - 16;
-  mpld3.draw_figure(plot_div_id.value, plotdata, false, true);
+
+  const { data, layout } = plotdata;
+  const config: Partial<Plotly.Config> = {
+    responsive: true,
+    edits: {
+      legendPosition: true
+    }
+  }
+  await Plotly.react(plot_div_id.value, [...data], layout, config);
+
   clearTimeout(show_loader);
   drawing_busy.value = false;
 }
