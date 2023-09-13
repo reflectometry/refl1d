@@ -11,11 +11,12 @@ CONTOURS = (68, 95)
 def get_color(index: int):
     return COLORS[index % len(COLORS)]
 
-def show_errors(errors, npoints, align):
-    fig = make_subplots(rows=2, cols=1)
-    contours = None
+def show_errors(errors, npoints, align, residuals=True):
+    rows = 2 if residuals else 1
+    fig = make_subplots(rows=rows, cols=1)
     show_profiles(errors, align, CONTOURS, npoints, fig=fig, row=1, col=1)
-    show_residuals(errors, contours, fig=fig, row=2, col=1)
+    if residuals:
+        show_residuals(errors, None, fig=fig, row=2, col=1)
     return fig
 
 def show_profiles(errors, align, contours, npoints, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None) -> go.Figure:
@@ -35,7 +36,11 @@ def show_profiles(errors, align, contours, npoints, fig: go.Figure, row: Optiona
 
 def show_residuals(errors, contours, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
     _, _, Q, residuals = errors
-    _residuals_overplot(Q, residuals, fig=fig, row=row, col=col)
+
+    if contours is not None:
+        _residuals_contour(Q, residuals, contours, fig, row, col)
+    else:
+        _residuals_overplot(Q, residuals, fig=fig, row=row, col=col)
 
 
 def _profiles_overplot(profiles, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
@@ -82,14 +87,14 @@ def _draw_contours(group, index, label, zp, contours, fig: go.Figure, color_inde
     fp = np.vstack([np.interp(zp, L[0], L[index]) for L in group])
     # Plot the quantiles
     color = get_color(color_index)
-
-    _plot_quantiles(zp, fp, contours, color, alpha=None, fig=fig, row=row, col=col)
+    legendgroup = f"group_{color_index}"
+    fig.add_scattergl(x=zp, y=fp[0], mode="lines", name=label, line=dict(color=color), legendgroup=legendgroup, row=row, col=col)
+    _plot_quantiles(zp, fp, contours, color, alpha=None, fig=fig, row=row, col=col, legendgroup=legendgroup)
     # Plot the best
-    fig.add_scattergl(x=zp, y=fp[0], mode="lines", name=label, line=dict(color=color))
     # axes.plot(zp, fp[0], '-', label=label, color=dark(color))
 
 def _profile_labels(fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
-    fig.update_layout(legend=dict(visible=True), template='simple_white')
+    fig.update_layout(legend=dict(visible=True), template=None)
     fig.update_xaxes(title_text='z (Å)', row=row, col=col, showline=True, zeroline=False)
     fig.update_yaxes(title_text='SLD (10⁻⁶/Å²)', row=row, col=col, showline=True)
 
@@ -102,23 +107,25 @@ def _residuals_overplot(Q, residuals, fig: go.Figure, row: Optional[int] = None,
         pop_size = r.shape[1] - 1
         qq = np.tile(Q[m], pop_size)
         rr = shift + r[:, 1:].ravel(order="F")
-        fig.add_scattergl(x=qq, y=rr, showlegend=False, mode="markers", marker=dict(color=color, size=1), opacity=alpha, row=row, col=col, hoverinfo="skip")
+        fig.add_scattergl(x=qq, y=rr, showlegend=False, mode="markers", marker=dict(color=color, size=2), opacity=alpha, row=row, col=col, hoverinfo="skip")
         fig.add_scattergl(x=Q[m], y=shift+r[:, 0],  name=m.name, mode="markers", marker=dict(color=color, size=3), row=row, col=col, hoverinfo="skip")
         shift += 5
     _residuals_labels(fig, row=row, col=col)
 
-def _residuals_contour(Q, residuals, contours=CONTOURS):
-    import matplotlib.pyplot as plt
+def _residuals_contour(Q, residuals, contours, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
     shift = 0
-    for m, r in residuals.items():
-        color = next_color()
-        _plot_quantiles(Q[m], shift+r.T, contours, color)
-        plt.plot(Q[m], shift+r[:, 0], '.', label=m.name, markersize=1, color=dark(color))
-        # Use 3 colours from cycle so reflectivity matches rho for each dataset
-        next_color()
-        next_color()
+    for model_index, (m, r) in enumerate(residuals.items()):
+        color_index = model_index * 3
+        color = get_color(color_index)
+        x = Q[m]
+        # residuals x may not be sorted:
+        sort_order = np.argsort(x)
+        sorted_x = x[sort_order]
+        fig.add_scattergl(x=sorted_x, y=shift+r[:, 0], mode="markers", name=m.name, marker=dict(color=color, size=3), row=row, col=col)
+        _plot_quantiles(sorted_x, shift+r.T[:, sort_order], contours, color, alpha=None, fig=fig, row=row, col=col)
+        # Plot the best
         shift += 5
-    _residuals_labels()
+    _residuals_labels(fig, row=row, col=col)
 
 def _residuals_labels(fig, row=None, col=None):
     fig.update_layout(legend=dict(visible=True), template=None)
@@ -131,7 +138,7 @@ def _profiles_draw_align_lines(profiles, slabs, align, fig: go.Figure, row: Opti
         if t1_offset is not None:
             fig.add_vline(x=t1_offset, line=dict(dash="dash"), row=row, col=col)
 
-def _plot_quantiles(x, y, contours, color, alpha, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
+def _plot_quantiles(x, y, contours, color, alpha, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None, legendgroup: Optional[str]=None):
     """
     Plot quantile curves for a set of lines.
 
@@ -154,5 +161,5 @@ def _plot_quantiles(x, y, contours, color, alpha, fig: go.Figure, row: Optional[
     if alpha is None:
         alpha = 2. / (len(q) + 1)
     for lo, hi in q:
-        fig.add_scattergl(x=x, y=lo, showlegend=False, mode="lines", line=dict(color=color), opacity=alpha, row=row, col=col, hoverinfo="skip")
-        fig.add_scattergl(x=x, y=hi, showlegend=False, mode="lines", line=dict(color=color), fill="tonexty", opacity=alpha, row=row, col=col, hoverinfo="skip")
+        fig.add_scattergl(x=x, y=lo, showlegend=False, mode="lines", line=dict(color=color, width=1), opacity=alpha, row=row, col=col, hoverinfo="skip", legendgroup=legendgroup)
+        fig.add_scattergl(x=x, y=hi, showlegend=False, mode="lines", line=dict(color=color, width=1), fill="tonexty", opacity=alpha, row=row, col=col, hoverinfo="skip", legendgroup=legendgroup)
