@@ -96,7 +96,7 @@ async def get_model_names():
 
 
 @register
-async def get_profile_uncertainty_plot(auto_align: bool=True, align: float=0., nshown: int=5000, npoints: int=5000, random: bool=True):
+async def get_profile_uncertainty_plot(auto_align: bool=True, align: float=0., nshown: int=5000, npoints: int=5000, random: bool=True, residuals: bool=False):
     if state.problem is None or state.problem.fitProblem is None:
         return None
     fitProblem = state.problem.fitProblem
@@ -108,7 +108,7 @@ async def get_profile_uncertainty_plot(auto_align: bool=True, align: float=0., n
         print('queueing new profile uncertainty plot...', start_time)
         errs = calc_errors_from_state(fitProblem, uncertainty_state, nshown=nshown, random=random, portion=1.0)
         print('errors calculated: ', time.time() - start_time)
-        fig = show_errors(errs, npoints=npoints, align=align_arg)
+        fig = show_errors(errs, npoints=npoints, align=align_arg, residuals=residuals)
         print("time to render but not serialize...", time.time() - start_time)
         output = to_json_compatible_dict(fig.to_dict())
         del fig
