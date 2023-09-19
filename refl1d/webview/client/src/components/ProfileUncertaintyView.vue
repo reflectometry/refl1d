@@ -14,6 +14,7 @@ const auto_align = ref(true);
 const nshown = ref(50);
 const npoints = ref(200);
 const random = ref(true);
+const show_residuals = ref(false);
 // don't use the one from setupDrawLoop because we are calling
 // fetch_and_draw locally:
 const drawing_busy = ref(false);
@@ -38,7 +39,7 @@ async function fetch_and_draw(latest_timestamp: string) {
   }, loading_delay);
   if (timestamp !== latest_timestamp) {
     console.log("fetching new profile uncertainty plot", timestamp, latest_timestamp);
-    const payload = await props.socket.asyncEmit('get_profile_uncertainty_plot', auto_align.value, align.value, nshown.value, npoints.value, random.value) as PlotData;
+    const payload = await props.socket.asyncEmit('get_profile_uncertainty_plot', auto_align.value, align.value, nshown.value, npoints.value, random.value, show_residuals.value) as PlotData;
     plotdata = { ...payload };
     cache[title] = {timestamp: latest_timestamp, plotdata};
   }
@@ -62,10 +63,16 @@ async function fetch_and_draw(latest_timestamp: string) {
   <div class="container d-flex flex-grow-1 flex-column">
     <!-- <details open>
       <summary>Settings</summary> -->
-        <div class="row g-3">
+      <div class="row g-3">
         <div class="col-md-2 align-middle text-end">
-          <label class="form-check-label pe-2" for="auto-align">Auto-align</label>
-          <input class="form-check-input" type="checkbox" v-model="auto_align" id="auto-align" @change="fetch_and_draw" />
+          <div>
+            <label class="form-check-label pe-2" for="auto-align">Auto-align</label>
+            <input class="form-check-input" type="checkbox" v-model="auto_align" id="auto-align" @change="fetch_and_draw" />
+          </div>
+          <div>
+            <label class="form-check-label pe-2" for="show_residuals">Show resid.</label>
+            <input class="form-check-input" type="checkbox" v-model="show_residuals" id="show_residuals" @change="fetch_and_draw" />
+          </div>
         </div>
         <div class="col-md-3 align-middle">
           <label class="form-label" for="align-interface">Align interface</label>
@@ -85,7 +92,7 @@ async function fetch_and_draw(latest_timestamp: string) {
           <label class="form-check-label pe-2" for="randomize">Random draw</label>
           <input class="form-check-input" type="checkbox" v-model="random" id="randomize" @change="fetch_and_draw" />
         </div>
-    </div>
+      </div>
     <!-- </details> -->
     <div class="flex-grow-1 position-relative">
       <div class="w-100 h-100 plot-div" ref="plot_div" :id="plot_div_id"></div>
