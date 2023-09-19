@@ -94,7 +94,7 @@ def _draw_contours(group, index, label, zp, contours, fig: go.Figure, color_inde
     # axes.plot(zp, fp[0], '-', label=label, color=dark(color))
 
 def _profile_labels(fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
-    fig.update_layout(legend=dict(visible=True), template=None)
+    fig.update_layout(template=None)
     fig.update_xaxes(title_text='z (Å)', row=row, col=col, showline=True, zeroline=False)
     fig.update_yaxes(title_text='SLD (10⁻⁶/Å²)', row=row, col=col, showline=True)
 
@@ -128,7 +128,7 @@ def _residuals_contour(Q, residuals, contours, fig: go.Figure, row: Optional[int
     _residuals_labels(fig, row=row, col=col)
 
 def _residuals_labels(fig, row=None, col=None):
-    fig.update_layout(legend=dict(visible=True), template=None)
+    fig.update_layout(template=None)
     fig.update_xaxes(title_text='Q (1/Å)', row=row, col=col, showline=True, zeroline=False)
     fig.update_yaxes(title_text='Residuals', row=row, col=col, showline=True)
 
