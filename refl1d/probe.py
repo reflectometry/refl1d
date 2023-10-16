@@ -1653,6 +1653,14 @@ class QProbe(BaseProbe):
 
     polarized = False
 
+    @classmethod
+    def from_dict(cls, **kw):
+        R = kw.pop('R', None)
+        dR = kw.pop('dR', None)
+        if R is not None and dR is not None:
+            kw['data'] = (R, dR)
+        return cls(**kw)
+
     def __init__(self, Q, dQ, data=None, name=None, filename=None,
                  intensity=1, background=0, back_absorption=1,
                  back_reflectivity=False, resolution: Literal['normal', 'uniform']='normal'):
