@@ -2,8 +2,9 @@ from typing import Union, Dict, List, TypedDict
 import numpy as np
 from refl1d.experiment import Experiment, ExperimentBase, MixedExperiment
 import refl1d.probe
+from refl1d.material import SLD
 from bumps.webview.server.api import (
-    register, get_chisq, state, to_json_compatible_dict, set_problem
+    register, get_chisq, state, to_json_compatible_dict, set_problem, publish
 )
 from bumps.errplot import calc_errors_from_state
 # from refl1d.errors import show_errors
@@ -117,3 +118,18 @@ async def get_profile_uncertainty_plot(auto_align: bool=True, align: float=0., n
         return output
     else:
         return None
+
+@register
+async def add_layer(model=0):
+    """
+        Append a layer at the end of the sample stack
+    """
+    material = SLD(name='new', rho=2.3, irho=0.0)
+    layer = material(25, 1)
+    state.problem.fitProblem.set_active_model(model)
+    state.problem.fitProblem.active_model.sample.add(layer)
+    
+    await publish("update_model", True)
+    await publish("update_parameters", True)
+    await publish("model_loaded", {"pathlist": [], "filename": "local"})
+ 
