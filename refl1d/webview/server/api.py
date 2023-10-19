@@ -128,6 +128,8 @@ async def add_layer(model=0):
     layer = material(25, 1)
     state.problem.fitProblem.set_active_model(model)
     state.problem.fitProblem.active_model.sample.add(layer)
+    state.problem.fitProblem.model_reset()
+
     
     await publish("update_model", True)
     await publish("update_parameters", True)
