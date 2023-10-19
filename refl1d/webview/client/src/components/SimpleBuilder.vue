@@ -7,6 +7,7 @@ import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket';
 const title = "Builder";
 // @ts-ignore: intentionally infinite type recursion
 const modelJson = ref<json>({});
+const parameters_by_id = ref({});
 const dictionaryLoaded = ref(false);
 const sortedLayers = ref([]);
 
@@ -27,6 +28,9 @@ async function fetch_model() {
     const json_bytes = new Uint8Array(payload);
     const json_value = JSON.parse(decoder.decode(json_bytes));
     modelJson.value = json_value;
+    extract_parameters(json_value);
+    console.log(json_value);
+    console.log(parameters_by_id.value);
     sortedLayers.value = modelJson.value['models'][0]['sample']['layers'];
 
     for (const [index, item] of Object.entries(sortedLayers.value)) {
@@ -34,6 +38,37 @@ async function fetch_model() {
     };
     dictionaryLoaded.value = true;
   });
+}
+
+function extract_parameters(model) {
+    const new_parameters_by_id = {};
+    const get_parameters = (obj, parent_obj, path, key) => {
+        if (obj && obj?.type === 'bumps.parameter.Parameter') {
+            new_parameters_by_id[obj.id] = obj;
+        }
+    }
+    walk_object(model, null, '', '', get_parameters);
+    parameters_by_id.value = new_parameters_by_id;
+}
+
+function walk_object(obj, parent_obj, path, key, cb: Function) {
+    cb(obj, parent_obj, path, key);
+    if (Array.isArray(obj)) {
+        obj.forEach((subobj, i) => walk_object(subobj, obj, `${path}/${i}`, i, cb));
+    }
+    else if (obj instanceof Object) {
+        Object.entries(obj).forEach(([subkey, subobj]) => walk_object(subobj, obj, `${path}/${subkey}`, key, cb));
+    }
+}
+
+function get_slot(parameter_like) {
+    // parameter_like can be type: "bumps.parameter.Parameter" or type: "Reference"
+    if (parameter_like == null) {
+        return null;
+    }
+    const slot = parameter_like?.slot ?? parameters_by_id.value[parameter_like.id]?.slot;
+    console.log(parameter_like, slot);
+    return slot;
 }
 
 function send_model() {
@@ -87,10 +122,10 @@ onMounted(() => {
             <tr class="py-1" v-for="(layer, key) in sortedLayers" :key="key">
                 <td><input type="number" step="1" v-model="layer.order"></td>
                 <td><input type="text" v-model="layer.name"></td>
-                <td><input class="editable" type="number" step="5" v-model="layer.thickness.slot.value"></td>
-                <td><input type="number" step="0.01" v-model="layer.material.rho.slot.value"></td>
-                <td><input type="number" step="0.01" v-model="layer.material.irho.slot.value"></td>
-                <td><input type="number" step="1" v-model="layer.interface.slot.value"></td>
+                <td><input v-if="get_slot(layer.thickness) !== null" type="number" step="5" v-model="get_slot(layer.thickness).value"></td>
+                <td><input v-if="get_slot(layer.material.rho) !== null" type="number" step="0.01" v-model="get_slot(layer.material.rho).value"></td>
+                <td><input v-if="get_slot(layer.material.irho) !== null" type="number" step="0.01" v-model="get_slot(layer.material.irho).value"></td>
+                <td><input v-if="get_slot(layer.interface) !== null" type="number" step="1" v-model="get_slot(layer.interface).value"></td>
             </tr>
         </tbody>
     </table>
