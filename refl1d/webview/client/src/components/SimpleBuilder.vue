@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Modal } from 'bootstrap/dist/js/bootstrap.esm';
 import { ref, onMounted, onBeforeUnmount, watch, onUpdated, computed, shallowRef } from 'vue';
 import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket';
 
@@ -67,10 +68,12 @@ onMounted(() => {
 
 <template>
 <div id="builder">
-    <button @click="add_layer">Add Row</button>
-    <button @click="send_model">Process</button>
-    <table v-if="dictionaryLoaded">
-        <thead>
+    <div class="badge bg-secondary p-1">
+        <button class="btn btn-light btn-sm me-2" @click="add_layer">Add row</button>
+        <button class="btn btn-success btn-sm" @click="send_model">Update model</button>
+    </div>
+    <table class="table table-sm" v-if="dictionaryLoaded">
+        <thead class="border-bottom py-1 sticky-top text-white bg-secondary">
             <tr>
                 <th>Order</th>
                 <th>Layer</th>
@@ -81,10 +84,10 @@ onMounted(() => {
             </tr>
         </thead>
         <tbody>
-            <tr v-for="(layer, key) in sortedLayers" :key="key">
+            <tr class="py-1" v-for="(layer, key) in sortedLayers" :key="key">
                 <td><input type="number" step="1" v-model="layer.order"></td>
                 <td><input type="text" v-model="layer.name"></td>
-                <td><input type="number" step="5" v-model="layer.thickness.slot.value"></td>
+                <td><input class="editable" type="number" step="5" v-model="layer.thickness.slot.value"></td>
                 <td><input type="number" step="0.01" v-model="layer.material.rho.slot.value"></td>
                 <td><input type="number" step="0.01" v-model="layer.material.irho.slot.value"></td>
                 <td><input type="number" step="1" v-model="layer.interface.slot.value"></td>
