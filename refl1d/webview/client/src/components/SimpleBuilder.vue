@@ -23,14 +23,13 @@ props.socket.on('update_parameters', fetch_model);
 props.socket.on('model_loaded', fetch_model);
 
 async function fetch_model() {
-    console.log("in fetch_model");
     props.socket.asyncEmit('get_model', (payload: ArrayBuffer) => {
     const json_bytes = new Uint8Array(payload);
     const json_value = JSON.parse(decoder.decode(json_bytes));
     modelJson.value = json_value;
     extract_parameters(json_value);
-    console.log(json_value);
-    console.log(parameters_by_id.value);
+    //console.log(json_value);
+    //console.log(parameters_by_id.value);
     sortedLayers.value = modelJson.value['models'][0]['sample']['layers'];
 
     for (const [index, item] of Object.entries(sortedLayers.value)) {
@@ -44,6 +43,11 @@ function extract_parameters(model) {
     const new_parameters_by_id = {};
     const get_parameters = (obj, parent_obj, path, key) => {
         if (obj && obj?.type === 'bumps.parameter.Parameter') {
+            // Replace the first word of the parameter name with the parent object name
+            // e.g. "new thickness" -> "layer1 thickness"
+            const parent_name = parent_obj?.name ?? '';
+            const new_name = `${parent_name} ${obj.name.split(' ').slice(1).join(' ')}`;
+            obj.name = new_name;
             new_parameters_by_id[obj.id] = obj;
         }
     }
@@ -67,7 +71,6 @@ function get_slot(parameter_like) {
         return null;
     }
     const slot = parameter_like?.slot ?? parameters_by_id.value[parameter_like.id]?.slot;
-    console.log(parameter_like, slot);
     return slot;
 }
 
@@ -77,6 +80,7 @@ function send_model() {
         if (item.order == -1) {
             sortedLayers.value.splice(index, 1);
         }
+        item.name = item.material.name;
     };
 
     // Resort the layers by order
@@ -121,7 +125,7 @@ onMounted(() => {
         <tbody>
             <tr class="py-1" v-for="(layer, key) in sortedLayers" :key="key">
                 <td><input type="number" step="1" v-model="layer.order"></td>
-                <td><input type="text" v-model="layer.name"></td>
+                <td><input type="text" v-model="layer.material.name"></td>
                 <td><input v-if="get_slot(layer.thickness) !== null" type="number" step="5" v-model="get_slot(layer.thickness).value"></td>
                 <td><input v-if="get_slot(layer.material.rho) !== null" type="number" step="0.01" v-model="get_slot(layer.material.rho).value"></td>
                 <td><input v-if="get_slot(layer.material.irho) !== null" type="number" step="0.01" v-model="get_slot(layer.material.irho).value"></td>

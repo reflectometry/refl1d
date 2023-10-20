@@ -133,5 +133,6 @@ async def add_layer(model=0):
     
     await publish("update_model", True)
     await publish("update_parameters", True)
+    # Not sure this is needed
     await publish("model_loaded", {"pathlist": [], "filename": "local"})
  
