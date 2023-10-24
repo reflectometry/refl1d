@@ -32,9 +32,7 @@ async function fetch_model() {
     //console.log(parameters_by_id.value);
     sortedLayers.value = modelJson.value['models'][0]['sample']['layers'];
 
-    for (const [index, item] of Object.entries(sortedLayers.value)) {
-        item.order = index;
-    };
+    update_order_number();
     dictionaryLoaded.value = true;
   });
 }
@@ -94,8 +92,20 @@ function send_model() {
     props.socket.emit('set_model', array_buffer);
 }
 
+// Adding and deleting layers
+function delete_layer(index) {
+    sortedLayers.value.splice(index, 1);
+    update_order_number();
+};
+
 function add_layer() {
     props.socket.emit('add_layer');
+};
+
+function update_order_number() {
+    for (const [index, item] of Object.entries(sortedLayers.value)) {
+        item.order = index;
+    };
 };
 
 const decoder = new TextDecoder('utf-8');
@@ -103,42 +113,120 @@ const decoder = new TextDecoder('utf-8');
 onMounted(() => {
     fetch_model();
 })
+
+// Code for draggable rows
+const dragData = ref(null);
+
+function dragStart(index, event) {
+    dragData.value = index;
+    console.log("grabbing", index);
+    event.dataTransfer.setData('text/plain', index);
+};
+function dragOver(index, event) {
+    event.preventDefault();
+};
+function drop(index) {
+    console.log("dropping", index, dragData.value);
+    if (dragData.value !== null) {
+        const draggedDict = sortedLayers.value[dragData.value];
+        sortedLayers.value.splice(dragData.value, 1);
+        sortedLayers.value.splice(index, 0, draggedDict);
+        dragData.value = null;
+    }
+    update_order_number();
+};
+function dragEnd() {
+    dragData.value = null;
+};
+
+// Builder options
+const showImaginary = ref(false);
+function handle_iSLD_toggle(value) {
+    showImaginary.value = value.target.checked;
+}
 </script>
 
 <template>
 <div id="builder">
-    <div class="badge bg-secondary p-1">
+    <div class="container m-2">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Simple Slab Model Builder</h5>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">Instructions</h5>
+                <p class="card-text">
+                    <ul>
+                        <li>Click the "Add row" button to add a new layer.</li>
+                        <li>Drag and drop the rows to change the order of the layers.</li>
+                        <li>Click the "Update model" button to send the model to the server.</li>
+                        <li>You can toggle the imaginary SLD by clicking the checkbox below.</li>
+                    </ul>
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="container mt-4">
+        <table class="table table-sm" v-if="dictionaryLoaded" id="sortable">
+            <thead class="border-bottom py-1 sticky-top text-white bg-secondary">
+                <tr>
+                    <th>Layer</th>
+                    <th>Thickness</th>
+                    <th>SLD</th>
+                    <th v-if="showImaginary">iSLD</th>
+                    <th>Interface</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr 
+                    @dragstart="dragStart(key, $event)"
+                    @dragover="dragOver(key, $event)"
+                    @drop="drop(key)"
+                    @dragend="dragEnd"
+                    draggable="true"
+                    class="draggable" v-for="(layer, key) in sortedLayers" :key="key">
+                    <td><input type="text" v-model="layer.material.name"></td>
+                    <td><input v-if="get_slot(layer.thickness) !== null" type="number" step="5" v-model="get_slot(layer.thickness).value"></td>
+                    <td><input v-if="get_slot(layer.material.rho) !== null" type="number" step="0.01" v-model="get_slot(layer.material.rho).value"></td>
+                    <td v-if="showImaginary"><input v-if="get_slot(layer.material.irho) !== null" type="number" step="0.01" v-model="get_slot(layer.material.irho).value"></td>
+                    <td><input v-if="get_slot(layer.interface) !== null" type="number" step="1" v-model="get_slot(layer.interface).value"></td>
+                    <td><button class="btn btn-danger btn-sm" @click="delete_layer(key)">Delete</button></td>
+                </tr>
+            </tbody>
+        </table>
+    <p v-else>Load data to start building a model</p>
+    </div>
+    <div class="badge bg-secondary p-2 m-2">
         <button class="btn btn-light btn-sm me-2" @click="add_layer">Add row</button>
         <button class="btn btn-success btn-sm" @click="send_model">Update model</button>
     </div>
-    <table class="table table-sm" v-if="dictionaryLoaded">
-        <thead class="border-bottom py-1 sticky-top text-white bg-secondary">
-            <tr>
-                <th>Order</th>
-                <th>Layer</th>
-                <th>Thickness</th>
-                <th>SLD</th>
-                <th>iSLD</th>
-                <th>Interface</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr class="py-1" v-for="(layer, key) in sortedLayers" :key="key">
-                <td><input type="number" step="1" v-model="layer.order"></td>
-                <td><input type="text" v-model="layer.material.name"></td>
-                <td><input v-if="get_slot(layer.thickness) !== null" type="number" step="5" v-model="get_slot(layer.thickness).value"></td>
-                <td><input v-if="get_slot(layer.material.rho) !== null" type="number" step="0.01" v-model="get_slot(layer.material.rho).value"></td>
-                <td><input v-if="get_slot(layer.material.irho) !== null" type="number" step="0.01" v-model="get_slot(layer.material.irho).value"></td>
-                <td><input v-if="get_slot(layer.interface) !== null" type="number" step="1" v-model="get_slot(layer.interface).value"></td>
-            </tr>
-        </tbody>
-    </table>
-    <p v-else>Click Load Dictionary</p>
+    <div class="form-check form-switch m-2" @click="send_model">
+        <input class="form-check-input" type="checkbox" id="showImaginary" @change="handle_iSLD_toggle">
+        <label class="form-check-label" for="showImaginary">Show imaginary SLD</label>
+    </div>
+    <div class="container m-2">
+        <div class="card bg-warning">
+            <div class="card-body">
+                <h5 class="card-title">Limitations and future features</h5>
+                <p class="card-text">
+                    <ul>
+                        <li>This builder can currently only do non-magnetic models.</li>
+                        <li>It can only deal with a single model.</li>
+                    </ul>
+                    
+                </p>
+            </div>
+        </div>
+    </div>
 </div>
 </template>
 
 <style scoped>
     svg {
       width: 50%;
+    }
+    .draggable {
+        cursor: move;
     }
 </style>
