@@ -183,7 +183,7 @@ const showImaginary = ref(false);
                         @drop="drop(key)"
                         @dragend="dragEnd"
                         draggable="true"
-                        class="draggable"><i width="16" height="16" class="bi bi-grip-vertical"></i>-</td>
+                        class="draggable"><span width=10px class="badge bg-secondary">:</span></td>
                     <td><input type="text" v-model="layer.material.name"></td>
                     <td><input v-if="get_slot(layer.thickness) !== null" type="number" step="5" v-model="get_slot(layer.thickness).value"></td>
                     <td><input v-if="get_slot(layer.material.rho) !== null" type="number" step="0.01" v-model="get_slot(layer.material.rho).value"></td>
