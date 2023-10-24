@@ -141,9 +141,6 @@ function dragEnd() {
 
 // Builder options
 const showImaginary = ref(false);
-function handle_iSLD_toggle(value) {
-    showImaginary.value = value.target.checked;
-}
 </script>
 
 <template>
@@ -202,7 +199,7 @@ function handle_iSLD_toggle(value) {
         <button class="btn btn-success btn-sm" @click="send_model">Update model</button>
     </div>
     <div class="form-check form-switch m-2" @click="send_model">
-        <input class="form-check-input" type="checkbox" id="showImaginary" @change="handle_iSLD_toggle">
+        <input class="form-check-input" type="checkbox" id="showImaginary" v-model="showImaginary">
         <label class="form-check-label" for="showImaginary">Show imaginary SLD</label>
     </div>
     <div class="container m-2">
