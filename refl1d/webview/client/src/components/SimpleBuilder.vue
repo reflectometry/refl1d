@@ -89,7 +89,7 @@ function send_model() {
     };
 
     const array_buffer = new TextEncoder().encode(JSON.stringify(modelJson.value));
-    props.socket.emit('set_model', array_buffer);
+    props.socket.emit('set_serialized_problem', array_buffer);
 }
 
 // Adding and deleting layers
@@ -166,7 +166,7 @@ const showImaginary = ref(false);
     <div class="container mt-4">
         <table class="table table-sm" v-if="dictionaryLoaded" id="sortable">
             <thead class="border-bottom py-1 sticky-top text-white bg-secondary">
-                <tr>
+                <tr><th></th>
                     <th>Layer</th>
                     <th>Thickness</th>
                     <th>SLD</th>
@@ -176,13 +176,14 @@ const showImaginary = ref(false);
                 </tr>
             </thead>
             <tbody>
-                <tr 
-                    @dragstart="dragStart(key, $event)"
-                    @dragover="dragOver(key, $event)"
-                    @drop="drop(key)"
-                    @dragend="dragEnd"
-                    draggable="true"
-                    class="draggable" v-for="(layer, key) in sortedLayers" :key="key">
+                <tr v-for="(layer, key) in sortedLayers" :key="key">
+                    <td  
+                        @dragstart="dragStart(key, $event)"
+                        @dragover="dragOver(key, $event)"
+                        @drop="drop(key)"
+                        @dragend="dragEnd"
+                        draggable="true"
+                        class="draggable"><i width="16" height="16" class="bi bi-grip-vertical"></i>-</td>
                     <td><input type="text" v-model="layer.material.name"></td>
                     <td><input v-if="get_slot(layer.thickness) !== null" type="number" step="5" v-model="get_slot(layer.thickness).value"></td>
                     <td><input v-if="get_slot(layer.material.rho) !== null" type="number" step="0.01" v-model="get_slot(layer.material.rho).value"></td>
