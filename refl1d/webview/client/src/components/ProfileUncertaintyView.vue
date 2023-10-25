@@ -15,7 +15,6 @@ const show_residuals = ref(false);
 const nshown = ref(50);
 const npoints = ref(200);
 const random = ref(true);
-const show_residuals = ref(false);
 // don't use the one from setupDrawLoop because we are calling
 // fetch_and_draw locally:
 const drawing_busy = ref(false);
