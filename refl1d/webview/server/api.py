@@ -2,7 +2,6 @@ from typing import Union, Dict, List, TypedDict
 import numpy as np
 from refl1d.experiment import Experiment, ExperimentBase, MixedExperiment
 import refl1d.probe
-from refl1d.material import SLD
 from bumps.webview.server.api import (
     register, get_chisq, state, to_json_compatible_dict, set_problem, publish
 )
