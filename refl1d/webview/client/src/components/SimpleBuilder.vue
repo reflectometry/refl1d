@@ -98,8 +98,20 @@ function delete_layer(index) {
     update_order_number();
 };
 
+const newLayerTemplate = {
+    name: "new",
+    thickness: 25,
+    magnetism: null,
+    material: {name: "new", rho: 2.3, irho: 0, type: "refl1d.material.SLD"},
+    interface: 1,
+    type: "refl1d.model.Slab"
+}
+
 function add_layer() {
-    props.socket.emit('add_layer');
+    const new_layer = structuredClone(newLayerTemplate);
+    new_layer.order = sortedLayers.value.length;
+    sortedLayers.value.push(new_layer);
+    send_model();
 };
 
 function update_order_number() {
