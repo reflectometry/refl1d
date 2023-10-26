@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /// <reference types="@types/plotly.js" />
-import { ref } from 'vue';
+import { ref, shallowRef } from 'vue';
 import * as Plotly from 'plotly.js/lib/core';
 import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket';
 import { setupDrawLoop } from 'bumps-webview-client/src/setupDrawLoop';
@@ -8,6 +8,9 @@ import { COLORS } from '../colors.mjs';
 
 const title = "Reflectivity";
 const plot_div = ref<HTMLDivElement | null>(null);
+const plot_offset = ref(0);
+const plot_data = shallowRef<Partial<Plotly.PlotData>>({});
+const chisq_str = ref("");
 
 const props = defineProps<{
   socket: AsyncSocket,
@@ -42,49 +45,61 @@ type ModelData = {
   dR?: number[]
 };
 
+
 function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) {
   let theory_traces: Trace[] = [];
   let data_traces: Trace[] = [];
   let yaxis_label: string = "Reflectivity";
   let xaxis_label: string = "Q (Å<sup>-1</sup>)";
+  const offset = plot_offset.value;
   switch (view) {
     case "Log":
     case "Linear": {
-      let color_index = 0;
+      let plot_index = 0;
+      const lin_y = (view === "Linear");
       for (let model of model_data) {
         for (let xs of model) {
           const label = `${xs.label} ${xs.polarization}`;
-          theory_traces.push({ x: xs.Q, y: xs.theory, mode: 'lines', name: label + ' theory', line: { width: 2, color: COLORS[color_index] }});
+          const local_offset = (lin_y) ? plot_index * offset : Math.pow(10, plot_index * offset);
+          const y = (lin_y) ? xs.theory.map((t) => t + local_offset) : xs.theory.map((t) => t * local_offset);
+          theory_traces.push({ x: xs.Q, y: y, mode: 'lines', name: label + ' theory', line: { width: 2, color: COLORS[plot_index % COLORS.length] } });
           if (xs.R !== undefined) {
-            const data_trace: Trace = { x: xs.Q, y: xs.R, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }, opacity: MARKER_OPACITY};
+            const R = (lin_y) ? xs.R.map((t) => t + local_offset) : xs.R.map((t) => t * local_offset);
+            const data_trace: Trace = { x: xs.Q, y: R, mode: 'markers', name: label + ' data', marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY };
             if (xs.dR !== undefined) {
-              data_trace.error_y = {type: 'data', array: xs.dR, visible: true};
+              const dR = (lin_y) ? xs.dR : xs.dR.map((t) => t * local_offset);
+              data_trace.error_y = { type: 'data', array: dR, visible: true };
             }
             data_traces.push(data_trace);
           }
-          color_index = (color_index + 1) % COLORS.length;
+          plot_index++;
         }
       }
       break;
     }
     case "Log Fresnel":
     case "Fresnel": {
-      let color_index = 0;
+      let plot_index = 0;
       for (let model of model_data) {
         for (let xs of model) {
           const label = `${xs.label} ${xs.polarization}`;
+          const lin_y = (view === "Fresnel");
+          const local_offset = (lin_y) ? plot_index * offset : Math.pow(10, plot_index * offset);
           const theory = xs.theory.map((y, i) => (y / (xs.fresnel[i])));
-          theory_traces.push({ x: xs.Q, y: theory, mode: 'lines', name: label + ' theory', line: { width: 2, color: COLORS[color_index] }});
+          const offset_theory = (lin_y) ? theory.map((t) => t + local_offset) : theory.map((t) => t * local_offset);
+          theory_traces.push({ x: xs.Q, y: offset_theory, mode: 'lines', name: label + ' theory', line: { width: 2, color: COLORS[plot_index % COLORS.length] } });
           if (xs.R !== undefined) {
             const R = xs.R.map((y, i) => (y / (xs.fresnel[i])));
-            const data_trace: Trace = { x: xs.Q, y: R, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }, opacity: MARKER_OPACITY};
+            const offset_R = (lin_y) ? R.map((t) => t + local_offset) : R.map((t) => t * local_offset);
+            const data_trace: Trace = { x: xs.Q, y: offset_R, mode: 'markers', name: label + ' data', marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY };
             if (xs.dR !== undefined) {
               const dR = xs.dR.map((dy, i) => (dy / (xs.fresnel[i])));
-              data_trace.error_y = {type: 'data', array: dR, visible: true};
+              const dR_offset = (lin_y) ? dR : dR.map((t) => t * local_offset);
+              data_trace.error_y = { type: 'data', array: dR_offset, visible: true };
             }
             data_traces.push(data_trace);
           }
-          color_index = (color_index + 1) % COLORS.length;
+          plot_index++;
         }
       }
       yaxis_label = "Fresnel Reflectivity"
@@ -92,36 +107,41 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
     }
     case "Q4": {
       // Q4 = 1e-8*Q**-4*self.intensity.value + self.background.value
-      let color_index = 0;
+      let plot_index = 0;
       for (let model of model_data) {
         for (let xs of model) {
           const label = `${xs.label} ${xs.polarization}`;
-          const {intensity_in, background_in} = xs;
+          const local_offset = Math.pow(10, plot_index * offset);
+          const { intensity_in, background_in } = xs;
           const intensity = intensity_in ?? 1.0;
           const background = background_in ?? 0.0;
-          const Q4 = xs.Q.map((qq) => (1e-8*Math.pow(qq, -4)*intensity + background));
+          const Q4 = xs.Q.map((qq) => (1e-8 * Math.pow(qq, -4) * intensity + background));
           const theory = xs.theory.map((t, i) => (t / Q4[i]));
-          theory_traces.push({ x: xs.Q, y: theory, mode: 'lines', name: label + ' theory', line: { width: 2, color: COLORS[color_index] }});
+          const offset_theory = theory.map((t) => t * local_offset);
+          theory_traces.push({ x: xs.Q, y: offset_theory, mode: 'lines', name: label + ' theory', line: { width: 2, color: COLORS[plot_index % COLORS.length] } });
           if (xs.R !== undefined) {
             const R = xs.R.map((r, i) => (r / Q4[i]));
-            const data_trace: Trace = { x: xs.Q, y: R, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }, opacity: MARKER_OPACITY};
+            const offset_R = R.map((t) => t * local_offset);
+            const data_trace: Trace = { x: xs.Q, y: offset_R, mode: 'markers', name: label + ' data', marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY };
             if (xs.dR !== undefined) {
               const dR = xs.dR.map((dy, i) => (dy / Q4[i]));
-              data_trace.error_y = {type: 'data', array: dR, visible: true};
+              const offset_dR = dR.map((t) => t * local_offset);
+              data_trace.error_y = { type: 'data', array: offset_dR, visible: true };
             }
             data_traces.push(data_trace);
           }
-          color_index = (color_index + 1) % COLORS.length;
+          plot_index++;
         }
       }
       yaxis_label = "Reflectivity / Q<sup>4</sup>";
       break;
     }
     case "Spin Asymmetry": {
-      let color_index = 0;
+      let plot_index = 0;
       for (let model of model_data) {
         const pp = model.find((xs) => xs.polarization === '++');
         const mm = model.find((xs) => xs.polarization === '--');
+        const local_offset = plot_index * offset;
 
         if (pp !== undefined && mm !== undefined) {
           const label = pp.label;
@@ -129,18 +149,18 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
           const Tm = interp(pp.Q, mm.Q, mm.theory);
           const TSA = Tm.map((m, i) => {
             const p = pp.theory[i];
-            return (p - m) / (p + m);
+            return (p - m) / (p + m) + local_offset;
           });
 
-          theory_traces.push({ x: pp.Q, y: TSA, mode: 'lines', name: label + ' theory', line: { width: 2, color: COLORS[color_index] }});
+          theory_traces.push({ x: pp.Q, y: TSA, mode: 'lines', name: label + ' theory', line: { width: 2, color: COLORS[plot_index % COLORS.length] } });
 
           if (pp.R !== undefined && mm.R !== undefined) {
             const Rm = interp(pp.Q, mm.Q, mm.R);
             const SA = Rm.map((m, i) => {
               const p = pp.R[i];
-              return (p - m) / (p + m);
+              return (p - m) / (p + m) + local_offset;
             });
-            const data_trace: Trace = { x: pp.Q, y: SA, mode: 'markers', name: label + ' data', marker: { color: COLORS[color_index] }, opacity: MARKER_OPACITY};
+            const data_trace: Trace = { x: pp.Q, y: SA, mode: 'markers', name: label + ' data', marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY };
 
             if (pp.dR !== undefined && mm.dR !== undefined) {
               const dRm = interp(pp.Q, mm.Q, mm.dR);
@@ -148,28 +168,34 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
                 const dp = pp.dR[i];
                 const p = pp.R[i];
                 const m = Rm[i];
-                return Math.sqrt(4 * ((p*dm)**2 + (m*dm)**2) / (p+m)**4)
+                return Math.sqrt(4 * ((p * dm) ** 2 + (m * dm) ** 2) / (p + m) ** 4)
               });
-              data_trace.error_y = {type: 'data', array: dSA, visible: true};
+              data_trace.error_y = { type: 'data', array: dSA, visible: true };
             }
 
             data_traces.push(data_trace);
           }
 
-          color_index = (color_index + 1) % COLORS.length;
+          plot_index++;
         }
       }
       yaxis_label = "Spin Asymmetry (pp - mm) / (pp + mm)"
     }
 
   }
-  return {theory_traces, data_traces, xaxis_label, yaxis_label};
+  return { theory_traces, data_traces, xaxis_label, yaxis_label };
 }
 
 async function fetch_and_draw() {
-  const payload = await props.socket.asyncEmit('get_plot_data', 'linear');
+  const payload = await props.socket.asyncEmit('get_plot_data', 'linear') as {plotdata: Partial<Plotly.PlotData>, chisq: string};
+  plot_data.value = payload.plotdata;
+  chisq_str.value = payload.chisq;
+  await draw_plot();
+}
+
+async function draw_plot() {
   // console.log(payload);
-  const { theory_traces, data_traces, xaxis_label, yaxis_label } = generate_new_traces(payload.plotdata, reflectivity_type.value)
+  const { theory_traces, data_traces, xaxis_label, yaxis_label } = generate_new_traces(plot_data.value, reflectivity_type.value)
   const layout: Partial<Plotly.Layout> = {
     uirevision: reflectivity_type.value,
     xaxis: {
@@ -201,9 +227,9 @@ async function fetch_and_draw() {
         x: 0.8,
         yanchor: 'top',
         y: -0.05,
-        text: `chisq = ${payload.chisq}`,
+        text: `chisq = ${chisq_str.value}`,
         showarrow: false,
-        font: {size: 16}, 
+        font: { size: 16 },
       }
     ],
     legend: {
@@ -252,7 +278,7 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
   }
 
   return x.map((xv) => {
-    while(xv >= upper_xp.value && !upper_xp.done) {
+    while (xv >= upper_xp.value && !upper_xp.done) {
       lower_xp = upper_xp;
       lower_fp = upper_fp;
       upper_xp = xpv.next();
@@ -277,8 +303,16 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
 <template>
   <div class="container d-flex flex-column flex-grow-1">
     <select v-model="reflectivity_type" @change="fetch_and_draw">
-      <option v-for="refl_type in REFLECTIVITY_PLOTS" :key="refl_type" :value="refl_type">{{refl_type}}</option>
+      <option v-for="refl_type in REFLECTIVITY_PLOTS" :key="refl_type" :value="refl_type">{{ refl_type }}</option>
     </select>
+    <div class="row px-2 align-items-center">
+      <div class="col-auto">
+        <label for="plot_offset_control" class="col-form-label">Plot offset</label>
+      </div>
+      <div class="col">
+        <input type="range" min="0" max="1.0" step="0.01" id="plot_offset_control" class="form-range" v-model.number="plot_offset" @input="draw_plot">
+      </div>
+    </div>
     <div class="flex-grow-1" ref="plot_div" id="plot_div">
 
     </div>
