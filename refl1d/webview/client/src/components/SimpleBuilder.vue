@@ -28,11 +28,7 @@ async function fetch_model() {
     const json_value = JSON.parse(decoder.decode(json_bytes));
     modelJson.value = json_value;
     extract_parameters(json_value);
-    //console.log(json_value);
-    //console.log(parameters_by_id.value);
     sortedLayers.value = modelJson.value['models'][0]['sample']['layers'];
-
-    update_order_number();
     dictionaryLoaded.value = true;
   });
 }
@@ -73,19 +69,9 @@ function get_slot(parameter_like) {
 }
 
 function send_model() {
-    // Remove layer if order is -1
+    // Ensure that the name of the layer is the same as the name of the material
     for (const [index, item] of Object.entries(sortedLayers.value)) {
-        if (item.order == -1) {
-            sortedLayers.value.splice(index, 1);
-        }
         item.name = item.material.name;
-    };
-
-    // Resort the layers by order
-    sortedLayers.value.sort((a, b) => (a.order > b.order) ? 1 : -1);
-    // Remove the order key
-    for (const [index, item] of Object.entries(sortedLayers.value)) {
-        delete item.order;
     };
 
     const array_buffer = new TextEncoder().encode(JSON.stringify(modelJson.value));
@@ -95,7 +81,7 @@ function send_model() {
 // Adding and deleting layers
 function delete_layer(index) {
     sortedLayers.value.splice(index, 1);
-    update_order_number();
+    send_model();
 };
 
 const newLayerTemplate = {
@@ -109,15 +95,8 @@ const newLayerTemplate = {
 
 function add_layer() {
     const new_layer = structuredClone(newLayerTemplate);
-    new_layer.order = sortedLayers.value.length;
     sortedLayers.value.push(new_layer);
     send_model();
-};
-
-function update_order_number() {
-    for (const [index, item] of Object.entries(sortedLayers.value)) {
-        item.order = index;
-    };
 };
 
 const decoder = new TextDecoder('utf-8');
@@ -131,22 +110,23 @@ const dragData = ref(null);
 
 function dragStart(index, event) {
     dragData.value = index;
-    console.log("grabbing", index);
     event.dataTransfer.setData('text/plain', index);
 };
+
 function dragOver(index, event) {
     event.preventDefault();
 };
+
 function drop(index) {
-    console.log("dropping", index, dragData.value);
     if (dragData.value !== null) {
         const draggedDict = sortedLayers.value[dragData.value];
         sortedLayers.value.splice(dragData.value, 1);
         sortedLayers.value.splice(index, 0, draggedDict);
         dragData.value = null;
     }
-    update_order_number();
+    send_model();
 };
+
 function dragEnd() {
     dragData.value = null;
 };
@@ -156,7 +136,7 @@ const showImaginary = ref(false);
 </script>
 
 <template>
-<div id="builder">
+<div id="builder" @keyup.enter="send_model" @keyup.tab="send_model">
     <div class="container m-2">
         <div class="card">
             <div class="card-header">
@@ -166,9 +146,8 @@ const showImaginary = ref(false);
                 <h5 class="card-title">Instructions</h5>
                 <p class="card-text">
                     <ul>
-                        <li>Click the "Add row" button to add a new layer.</li>
+                        <li>Click the "Add layer" button to add a new layer.</li>
                         <li>Drag and drop the rows to change the order of the layers.</li>
-                        <li>Click the "Update model" button to send the model to the server.</li>
                         <li>You can toggle the imaginary SLD by clicking the checkbox below.</li>
                     </ul>
                 </p>
@@ -207,10 +186,8 @@ const showImaginary = ref(false);
         </table>
     <p v-else>Load data to start building a model</p>
     </div>
-    <div class="badge bg-secondary p-2 m-2">
-        <button class="btn btn-light btn-sm me-2" @click="add_layer">Add row</button>
-        <button class="btn btn-success btn-sm" @click="send_model">Update model</button>
-    </div>
+       
+    <button class="btn btn-success btn-sm me-2" @click="add_layer">Add layer</button>
     <div class="form-check form-switch m-2" @click="send_model">
         <input class="form-check-input" type="checkbox" id="showImaginary" v-model="showImaginary">
         <label class="form-check-label" for="showImaginary">Show imaginary SLD</label>
