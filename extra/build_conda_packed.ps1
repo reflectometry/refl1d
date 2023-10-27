@@ -29,6 +29,8 @@ Copy-Item .\extra\refl1d_webview.bat "$destdir"
 & "$destdir\python.exe" -m pip install --no-input git+https://github.com/reflectometry/refl1d@webview
 & "$destdir\python.exe" -m pip install -r https://raw.githubusercontent.com/bumps/bumps/webview/webview-requirements
 
+$version=$(& "$destdir\python.exe" -c "import refl1d; print(refl1d.__version__)")
 # zip it back up
 cd $tmpdir
-tar -czf "refl1d-webview-Windows-x86_64.tar.gz" "$DIRNAME"
+Rename-Item "$DIRNAME" "$DIRNAME-$version"
+tar -czf "refl1d-webview-Windows-x86_64.tar.gz" "$DIRNAME-$version"
