@@ -9,7 +9,8 @@ conda create -n "$ENV_NAME" -q --force -y "python=$PYTHON_VERSION"
 conda-pack -n "$ENV_NAME" -f -o "$ENV_NAME.tar.gz"
 
 # unpack the new environment, that contains only python + pip
-$destdir="dist\$DIRNAME"
+$tmpdir="dist"
+$destdir="$tmpdir\$DIRNAME"
 Remove-Item -r "$destdir"
 mkdir "$destdir"
 tar -xzf "$ENV_NAME.tar.gz" -C "$destdir"
@@ -18,8 +19,8 @@ tar -xzf "$ENV_NAME.tar.gz" -C "$destdir"
 conda deactivate
 $WORKING_DIRECTORY="$pwd"
 echo "WORKING_DIRECTORY=$WORKING_DIRECTORY"
+dir .
 dir ..
-dir ...
 # add our batch script:
 Copy-Item .\extra\refl1d_webview.bat "$destdir"
 
@@ -29,4 +30,5 @@ Copy-Item .\extra\refl1d_webview.bat "$destdir"
 & "$destdir\python.exe" -m pip install -r https://raw.githubusercontent.com/bumps/bumps/webview/webview-requirements
 
 # zip it back up
-tar -czf "dist\refl1d-webview-Windows-x86_64.tar.gz" "$destdir"
+cd $tmpdir
+tar -czf "refl1d-webview-Windows-x86_64.tar.gz" "$DIRNAME"
