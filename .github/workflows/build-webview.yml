@@ -70,7 +70,7 @@ jobs:
         curl -L https://www.7-zip.org/a/7z2106-x64.exe --output 7z.exe
         7z e 7z.exe -aoa -oself_extracting 7z.sfx
         tar -xzf "Refl1D-windows-exe-$branch_name.tar.gz" -C self_extracting
-        cd self_extracting && 7z a -mhe=on -mx=1 -sfx7z.sfx "../Refl1D-$branch_name-self-extracting.exe" Refl1D*/
+        cd self_extracting && 7z a -mhe=on -mx=1 -sfx7z.sfx "../Refl1D-$branch_name-self-extracting.exe" refl1d*/
 
     - name: Update release assets and text
       uses: actions/github-script@v6
