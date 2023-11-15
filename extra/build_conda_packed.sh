@@ -22,7 +22,9 @@ tar -xzf "$ENV_NAME.tar.gz" -C "$envdir"
 # activate the unpacked environment and install pip packages
 conda deactivate
 WORKING_DIRECTORY=$(pwd)
-# cd "$tmpdir"
+# add our batch script:
+case $OSTYPE in darwin*) cp -r ./extra/refl1d_webview.app "$destdir" ;; esac
+
 $envdir/bin/python -m pip install --no-input --no-compile numba
 $envdir/bin/python -m pip install --no-input --no-compile git+https://github.com/bumps/bumps@webview
 $envdir/bin/python -m pip install --no-input --no-compile git+https://github.com/reflectometry/refl1d@webview
