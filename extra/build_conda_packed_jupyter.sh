@@ -38,7 +38,7 @@ mv "$tmpdir/$DIRNAME" "$tmpdir/$DIRNAME-$version"
 
 case $OSTYPE in 
   # darwin*) cd $tmpdir && hdiutil create -srcfolder  "$DIRNAME-$version" -volname "Refl1D_Jupyter" "$WORKING_DIRECTORY/Refl1D_Jupyter.dmg" ;; 
-  darwin*) pkgbuild --root $tmpdir --identifier org.reflectometry.refl1d-webview-jupyter --version $version --ownership preserve --install-location /Applications refl1d-webview-jupyter.pkg ;;
+  darwin*) pkgbuild --root $tmpdir --identifier org.reflectometry.refl1d-webview-jupyter --version $version --ownership preserve --install-location /Applications refl1d-webview-jupyter-$(uname -s)-$(uname -m).pkg ;;
 esac
 
 cd $tmpdir && tar -czf "$WORKING_DIRECTORY/refl1d-webview-jupyter-$version-$(uname -s)-$(uname -m).tar.gz" "$DIRNAME-$version"
