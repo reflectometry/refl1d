@@ -37,8 +37,6 @@ jobs:
         ./extra/build_conda_packed_jupyter.sh
         mkdir unstable
         pwd
-        dir dist
-        dir extra
         mv refl1d-webview* ./unstable/
 
     # See the following for how to upload to a release
