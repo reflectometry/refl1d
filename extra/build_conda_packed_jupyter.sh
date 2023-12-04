@@ -22,10 +22,13 @@ tar -xzf "$ENV_NAME.tar.gz" -C "$envdir"
 # activate the unpacked environment and install pip packages
 conda deactivate
 WORKING_DIRECTORY=$(pwd)
-# add our batch script:
-case $OSTYPE in darwin*) cp -r ./extra/refl1d_webview.app "$destdir" ;; esac
+# add our batch scripts:
+case $OSTYPE in 
+  darwin*) cp -r ./extra/refl1d_webview.app "$destdir" && \
+           cp -r ./extra/refl1d_jupyter.app "$destdir" ;; 
+esac
 
-$envdir/bin/python -m pip install --no-input --no-compile numba
+$envdir/bin/python -m pip install --no-input --no-compile numba jupyterlab notebook
 $envdir/bin/python -m pip install --no-input --no-compile git+https://github.com/bumps/bumps@webview
 $envdir/bin/python -m pip install --no-input --no-compile git+https://github.com/reflectometry/refl1d@webview
 $envdir/bin/python -m pip install --no-compile -r https://raw.githubusercontent.com/bumps/bumps/webview/webview-requirements
@@ -33,5 +36,5 @@ $envdir/bin/python -m pip install --no-compile -r https://raw.githubusercontent.
 version=$($envdir/bin/python -c "import refl1d; print(refl1d.__version__)")
 mv "$tmpdir/$DIRNAME" "$tmpdir/$DIRNAME-$version"
 
-cd $tmpdir && tar -czf "$WORKING_DIRECTORY/refl1d-webview-$version-$(uname -s)-$(uname -m).tar.gz" "$DIRNAME-$version"
+cd $tmpdir && tar -czf "$WORKING_DIRECTORY/refl1d-webview-jupyter-$version-$(uname -s)-$(uname -m).tar.gz" "$DIRNAME-$version"
 rm -rf $tmpdir
