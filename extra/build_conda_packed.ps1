@@ -35,3 +35,4 @@ $version=$(& "$envdir\python.exe" -c "import refl1d; print(refl1d.__version__)")
 cd $tmpdir
 Rename-Item "$DIRNAME" "$DIRNAME-$version"
 tar -czf "refl1d-webview-Windows-x86_64.tar.gz" "$DIRNAME-$version"
+Compress-Archive -Path "$DIRNAME-$version" -DestinationPath "refl1d-webview-Windows-x86_64.zip"
