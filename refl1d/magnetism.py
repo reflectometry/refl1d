@@ -39,12 +39,12 @@ and anchoring them to the structure.
 """
 from __future__ import print_function
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import numpy as np
 from numpy import inf
 from bumps.parameter import Parameter, flatten, to_dict
 from bumps.mono import monospline
-from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
+from bumps.util import Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
 from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
 
