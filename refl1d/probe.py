@@ -41,6 +41,7 @@ from __future__ import with_statement, division, print_function
 import os
 import json
 import warnings
+from dataclasses import dataclass
 from enum import Enum
 
 import numpy as np
@@ -50,7 +51,7 @@ import numpy.random
 import numpy.fft
 from typing import NamedTuple, Optional, Any, Sequence, Union, TYPE_CHECKING
 
-from bumps.util import field, field_desc, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
+from bumps.util import field, field_desc, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
 from periodictable import nsf, xsf
 from bumps.parameter import Parameter, to_dict, Constant
@@ -587,7 +588,7 @@ class BaseProbe:
         else:
             return suffix+" "+gloss if gloss else None
 
-@schema(init=False, eq=False)
+@dataclass(init=False)
 class Probe(BaseProbe):
     r"""
     Defines the incident beam used to study the material.
@@ -1630,7 +1631,7 @@ def _data_as_probe(entry, json_header_encoding, probe_args, T, L, dT, dL, dR, FW
     return probe
 
 
-@schema()
+@dataclass(init=False)
 class QProbe(BaseProbe):
     """
     A pure Q, R probe
@@ -1761,7 +1762,7 @@ def Qmeasurement_union(xs):
 
 optional_xs = Union[NeutronProbe, Literal[None]]
 
-@schema(init=False)
+@dataclass(init=False)
 class PolarizedNeutronProbe:
     """
     Polarized neutron probe
@@ -2154,7 +2155,7 @@ def _interpolate_Q(Q, dQ, n):
     return Q, dQ
 
 
-@schema(init=False)
+@dataclass(init=False)
 class PolarizedQProbe(PolarizedNeutronProbe):
     polarized = True
     def __init__(self, xs=None, name=None, Aguide=BASE_GUIDE_ANGLE, H=0):

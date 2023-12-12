@@ -39,6 +39,7 @@ and anchoring them to the structure.
 """
 from __future__ import print_function
 
+from dataclasses import dataclass
 import numpy as np
 from numpy import inf
 from bumps.parameter import Parameter, flatten, to_dict
@@ -48,7 +49,7 @@ from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Lite
 from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
 
 
-@schema()
+@dataclass
 class BaseMagnetism:
     """
     Magnetic properties of the layer.
@@ -125,7 +126,7 @@ class BaseMagnetism:
             self.name = name
 
 
-@schema(init=False)
+@dataclass(init=False)
 class Magnetism(BaseMagnetism):
     """
     Region of constant magnetism.
@@ -180,7 +181,7 @@ class Magnetism(BaseMagnetism):
                 %(self.rhoM.value, self.thetaM.value))
 
 
-@schema(init=False)
+@dataclass(init=False)
 class MagnetismStack(BaseMagnetism):
     """
     Magnetic slabs within a magnetic layer.
@@ -294,7 +295,7 @@ class MagnetismStack(BaseMagnetism):
         return "MagnetismStack"
 
 
-@schema(init=False)
+@dataclass(init=False)
 class MagnetismTwist(BaseMagnetism):
     """
     Linear change in magnetism throughout layer.
@@ -355,7 +356,7 @@ class MagnetismTwist(BaseMagnetism):
         return "MagneticTwist"
 
 
-@schema(init=False)
+@dataclass(init=False)
 class FreeMagnetism(BaseMagnetism):
     """
     Spline change in magnetism throughout layer.

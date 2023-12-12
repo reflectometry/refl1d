@@ -42,12 +42,14 @@ the end, sld is just the returned scattering factors times density.
 """
 __all__ = ['Material', 'Mixture', 'SLD', 'Vacuum', 'Scatterer', 'ProbeCache', 'BulkDensityMaterial', 'NaturalDensityMaterial', 'NumberDensityMaterial', 'RelativeDensityMaterial', 'CellVolumeMaterial']
 
+from dataclasses import dataclass, field
+from typing import Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
+
 import numpy as np
 from numpy import inf, NaN
 import periodictable
 from periodictable.constants import avogadro_number
 from bumps.parameter import Expression, Parameter, to_dict #, PARAMETER_TYPES, UnaryExpression
-from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 from periodictable.formulas import Formula as BaseFormula
 
 
@@ -93,7 +95,7 @@ class Scatterer:
 
 
 # ============================ No scatterer =============================
-@schema(init=False)
+@dataclass(init=False)
 class Vacuum(Scatterer):
     """
     Empty layer (all sld = 0)
@@ -118,7 +120,7 @@ class Vacuum(Scatterer):
 
 
 # ============================ Unknown scatterer ========================
-@schema(init=False)
+@dataclass(init=False)
 class SLD(Scatterer):
     r"""
     Unknown composition.
@@ -234,7 +236,7 @@ def Material(
         raise ValueError(f'unknown value "{fitby}" of fitby: should be one of ["bulk_density", "natural_density", "relative_density", "number_density", "cell_volume"]')
 
 
-@schema(init=False)
+@dataclass(init=False)
 class BulkDensityMaterial(BaseMaterial):
     """
     A solid block of material, described by its bulk density
@@ -266,7 +268,7 @@ class BulkDensityMaterial(BaseMaterial):
         return dict(density=self.density)
 
 
-@schema()
+@dataclass(init=False)
 class NaturalDensityMaterial(BaseMaterial):
     """
     A solid block of material, described by its natural density
@@ -299,7 +301,7 @@ class NaturalDensityMaterial(BaseMaterial):
         return dict(density=self.density, natural_density=self.natural_density)
 
 
-@schema()
+@dataclass(init=False)
 class NumberDensityMaterial(BaseMaterial):
     """
     A solid block of material, described by its number density
@@ -341,7 +343,7 @@ class NumberDensityMaterial(BaseMaterial):
         return dict(density=self.density, number_density=self.number_density)
 
 
-@schema()
+@dataclass(init=False)
 class RelativeDensityMaterial(BaseMaterial):
     """
     A solid block of material, described by its relative density
@@ -381,7 +383,7 @@ class RelativeDensityMaterial(BaseMaterial):
         return dict(density=self.density, relative_density=self.relative_density)
 
 
-@schema()
+@dataclass(init=False)
 class CellVolumeMaterial(BaseMaterial):
     """
     A solid block of material, described by the volume of one unit cell

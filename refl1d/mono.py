@@ -3,10 +3,11 @@ Monotonic spline modeling for free interfaces
 """
 from __future__ import division, with_statement
 
+from dataclasses import dataclass, field
+from typing import Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 import numpy as np
 from numpy import (diff, hstack, sqrt, searchsorted, asarray, cumsum,
                    inf, nonzero, linspace, sort, isnan, clip)
-from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 from bumps.parameter import Parameter as Par, Function as ParFunction, to_dict, Constant
 from bumps.mono import monospline, count_inflections
 
@@ -102,7 +103,7 @@ def inflections(dx, dy):
     y = hstack((0, cumsum(dy)))
     return count_inflections(x, y)
 
-@schema()
+@dataclass(init=False)
 class FreeInterface(Layer):
     """
     A freeform section of the sample modeled with monotonic splines.

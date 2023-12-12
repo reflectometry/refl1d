@@ -1,15 +1,14 @@
-from bumps.util import schema, List
-from bumps.fitproblem import FitProblem as _FitProblem, FitProblemSchema as _FitProblemSchema
+from dataclasses import dataclass
+from typing import List
+from bumps.fitproblem import FitProblem as _FitProblem
 from .experiment import Experiment
 
-# @schema(eq=False, init=False)
+# @dataclass(init=False)
 # class BaseFitProblem(_BaseFitProblem):
 #     fitness: Experiment
 
-@schema(classname="FitProblem", eq=False, init=False)
-class FitProblemSchema(_FitProblemSchema):
+@dataclass(init=False)
+class FitProblem(_FitProblem):
     __doc__ =  _FitProblem.__doc__.replace("Fitness", "Experiment")
     models: List[Experiment]
 
-class FitProblem(_FitProblem, FitProblemSchema):
-    ...
