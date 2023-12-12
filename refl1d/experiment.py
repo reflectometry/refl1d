@@ -9,18 +9,19 @@ to create a fittable reflectometry model.
 """
 from __future__ import division, print_function
 
+from dataclasses import dataclass, field
 import sys
 import os
 from math import pi, log10, floor
 import traceback
 import json
+from typing import Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 from warnings import warn
 
 import numpy as np
 from bumps import parameter
 from bumps.parameter import Parameter, Constraint, tag_all
 from bumps.fitproblem import Fitness
-from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
 from . import material, profile
 from . import __version__
@@ -306,7 +307,7 @@ class ExperimentBase:
                             theory=theory)
 
 
-@schema(init=False)
+@dataclass(init=False)
 class Experiment(ExperimentBase):
     """
     Theory calculator.  Associates sample with data, Sample plus data.
@@ -646,7 +647,7 @@ class Experiment(ExperimentBase):
 
 assert isinstance(Experiment, Fitness)
 
-@schema(init=False)
+@dataclass(init=False)
 class MixedExperiment(ExperimentBase):
     """
     Support composite sample reflectivity measurements.

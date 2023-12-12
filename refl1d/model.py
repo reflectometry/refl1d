@@ -26,13 +26,9 @@ scattering density may vary with depth in the layer.
 __all__ = ['Repeat', 'Slab', 'Stack', 'Layer']
 
 from copy import copy, deepcopy
+from dataclasses import dataclass, field
 import json
-
-try:
-    from typing import Union, List, Optional, Any, Literal
-except ImportError:
-    from typing import Union, List, Optional, Any
-    from typing_extensions import Literal
+from typing import Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
 import numpy as np
 from numpy import (inf, nan, pi, sin, cos, tan, sqrt, exp, log, log10,
@@ -44,12 +40,11 @@ import periodictable.nsf as nsf
 from bumps.parameter import (
     #BaseParameter as BasePar,
     Calculation, Parameter, to_dict)
-from bumps.util import field, field_desc, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
 from . import material as mat
 from .magnetism import BaseMagnetism
 
-#@schema(init=False)
+#@dataclass(init=False)
 class Layer: # Abstract base class
     """
     Component of a material description.
@@ -205,7 +200,7 @@ def _parcopy(p, v):
     return p
 
 
-@schema(init=False)
+@dataclass(init=False)
 class Slab(Layer):
     """
     A block of material.
@@ -262,22 +257,8 @@ class Slab(Layer):
         })
 
 
-@schema(classname="Stack")
-class StackSchema:
-    """
-    Reflectometry layer stack
-
-    A reflectometry sample is defined by a stack of layers. Each layer
-    has an interface describing how the top of the layer interacts with
-    the bottom of the overlaying layer. The stack may contain Slab or Repeats.
-    """
-    name: str
-    interface: Literal[None]
-    layers: List[Union['Slab', 'Repeat']]
-    thickness: Parameter = field_desc("always equals the sum of the layer thicknesses")
-
-
-class Stack(Layer, StackSchema):
+@dataclass(init=False)
+class Stack(Layer):
     """
     Reflectometry layer stack
 
@@ -285,6 +266,10 @@ class Stack(Layer, StackSchema):
     has an interface describing how the top of the layer interacts with
     the bottom of the overlaying layer. The stack may contain
     """
+    name: str
+    interface: Literal[None]
+    layers: List[Union['Slab', 'Repeat']]
+    thickness: Parameter = field(metadata = {"description": "always equals the sum of the layer thicknesses"})
 
     def __init__(self, base=None, layers=None, name="Stack", interface=None, thickness: Optional[Union[Parameter, float]]=None):
         self.name = name
@@ -628,7 +613,7 @@ def _check_layer(el):
         raise TypeError("Can only stack materials and layers, not %s"%el)
 
 
-@schema(init=False)
+@dataclass(init=False)
 class Repeat(Layer):
     """
     Repeat a layer or stack.
