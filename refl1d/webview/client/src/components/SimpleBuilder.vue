@@ -219,11 +219,11 @@ function dragEnd() {
                         @dragend="dragEnd"
                         draggable="true"
                         class="draggable"><span width=10px class="badge bg-secondary">:</span></td>
-                    <td><input type="text" v-model="layer.material.name"></td>
-                    <td><input v-if="get_slot(layer.thickness) !== null" type="number" step="5" v-model="get_slot(layer.thickness).value"></td>
-                    <td><input v-if="get_slot(layer.material.rho) !== null" type="number" step="0.01" v-model="get_slot(layer.material.rho).value"></td>
-                    <td v-if="showImaginary"><input v-if="get_slot(layer.material.irho) !== null" type="number" step="0.01" v-model="get_slot(layer.material.irho).value"></td>
-                    <td><input v-if="get_slot(layer.interface) !== null" type="number" step="1" v-model="get_slot(layer.interface).value"></td>
+                    <td><textarea class="form-control name" rows=1 cols="40" type="text" v-model="layer.material.name" :title="layer.material.name"/></td>
+                    <td><input class="form-control" v-if="get_slot(layer.thickness) !== null" type="number" step="5" v-model="get_slot(layer.thickness).value"></td>
+                    <td><input class="form-control" v-if="get_slot(layer.material.rho) !== null" type="number" step="0.01" v-model="get_slot(layer.material.rho).value"></td>
+                    <td v-if="showImaginary"><input class="form-control" v-if="get_slot(layer.material.irho) !== null" type="number" step="0.01" v-model="get_slot(layer.material.irho).value"></td>
+                    <td><input class="form-control" v-if="get_slot(layer.interface) !== null" type="number" step="1" v-model="get_slot(layer.interface).value"></td>
                     <td><button class="btn btn-danger btn-sm" @click="delete_layer(key)">Delete</button></td>
                 </tr>
             </tbody>
@@ -259,5 +259,11 @@ function dragEnd() {
     }
     .draggable {
         cursor: move;
+    }
+
+    textarea.name {
+        overflow-x: auto;
+        white-space: nowrap;
+        resize: none;
     }
 </style>
