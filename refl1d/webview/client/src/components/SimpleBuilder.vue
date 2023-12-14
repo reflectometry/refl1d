@@ -32,41 +32,41 @@ interface NonMagneticLayer {
     name: string,
     rho: number,
     irho: number,
-    type: string
+    __class__: string
   },
   interface: number,
-  type: "refl1d.model.Slab"
+  __class__: "refl1d.model.Slab"
 }
 
 const newLayerTemplate: NonMagneticLayer = {
     name: "new",
     thickness: 25,
     magnetism: null,
-    material: {name: "new", rho: 2.3, irho: 0, type: "refl1d.material.SLD"},
+    material: {name: "new", rho: 2.3, irho: 0, __class__: "refl1d.material.SLD"},
     interface: 1,
-    type: "refl1d.model.Slab"
+    __class__: "refl1d.model.Slab"
 }
 
 const newModelTemplate = {
   references: {},
   object: { 
-    type: "refl1d.fitproblem.FitProblem",
+    __class__: "refl1d.fitproblem.FitProblem",
     models: [
       {
-        type: "refl1d.experiment.Experiment",
+        __class__: "refl1d.experiment.Experiment",
         sample: { 
-          type: "refl1d.model.Stack",
+          __class__: "refl1d.model.Stack",
           layers: [newLayerTemplate] 
         },
         probe: {
-          type: "refl1d.probe.QProbe",
+          __class__: "refl1d.probe.QProbe",
           Q: {
-            type: "bumps.util.NumpyArray",
+            __class__: "bumps.util.NumpyArray",
             values: Array.from({length: 250}).map((_, i) => i * 0.1 / 250),
             dtype: 'float'
           },
           dQ: {
-            type: "bumps.util.NumpyArray",
+            __class__: "bumps.util.NumpyArray",
             values: Array.from({length: 250}).map((_, i) => 0.00001),
             dtype: 'float'
           },
