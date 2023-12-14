@@ -91,7 +91,7 @@ async function fetch_model() {
 function extract_parameters(model) {
     const new_parameters_by_id = model.references;
     const get_parameters = (obj, parent_obj, path, key) => {
-        if (obj && obj?.type === 'bumps.parameter.Parameter') {
+        if (obj && obj?.__class__ === 'bumps.parameter.Parameter') {
             // Replace the first word of the parameter name with the parent object name
             // e.g. "new thickness" -> "layer1 thickness"
             const parent_name = parent_obj?.name ?? '';
