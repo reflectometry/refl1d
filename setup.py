@@ -102,7 +102,10 @@ dist = setup(
     include_package_data=True,
     scripts=['bin/refl1d_cli.py', 'bin/refl1d_gui.py'],
     entry_points={
-        'console_scripts': ['refl1d=refl1d.main:cli'],
+        'console_scripts': [
+            'refl1d=refl1d.main:cli',
+            'refl1d-webview=refl1d.webview.server.webserver:main'
+        ],
         'gui_scripts': ['refl1d_gui=refl1d.main:gui']
     },
     ext_modules=[reflmodule_config()] if BUILD_EXTENSION else [],
