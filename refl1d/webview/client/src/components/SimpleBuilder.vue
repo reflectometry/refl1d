@@ -9,34 +9,89 @@ const title = "Builder";
 const modelJson = ref<json>({});
 const parameters_by_id = ref({});
 const dictionaryLoaded = ref(false);
-const sortedLayers = ref([]);
+const sortedLayers = ref<NonMagneticLayer[]>([]);
+// Builder options
+const showImaginary = ref(false);
 
 const props = defineProps<{
   socket: AsyncSocket,
 }>();
 
-async function get_model_names() {
-  model_names.value = await props.socket.asyncEmit("get_model_names");
-}
+// async function get_model_names() {
+//   model_names.value = await props.socket.asyncEmit("get_model_names");
+// }
 
 props.socket.on('update_parameters', fetch_model);
 props.socket.on('model_loaded', fetch_model);
 
+interface NonMagneticLayer {
+  name: string,
+  thickness: number,
+  magnetism: null,
+  material: {
+    name: string,
+    rho: number,
+    irho: number,
+    __class__: string
+  },
+  interface: number,
+  __class__: "refl1d.model.Slab"
+}
+
+const newLayerTemplate: NonMagneticLayer = {
+    name: "new",
+    thickness: 25,
+    magnetism: null,
+    material: {name: "new", rho: 2.3, irho: 0, __class__: "refl1d.material.SLD"},
+    interface: 1,
+    __class__: "refl1d.model.Slab"
+}
+
+const newModelTemplate = {
+  references: {},
+  object: { 
+    __class__: "refl1d.fitproblem.FitProblem",
+    models: [
+      {
+        __class__: "refl1d.experiment.Experiment",
+        sample: { 
+          __class__: "refl1d.model.Stack",
+          layers: [newLayerTemplate] 
+        },
+        probe: {
+          __class__: "refl1d.probe.QProbe",
+          Q: {
+            __class__: "bumps.util.NumpyArray",
+            values: Array.from({length: 250}).map((_, i) => i * 0.1 / 250),
+            dtype: 'float'
+          },
+          dQ: {
+            __class__: "bumps.util.NumpyArray",
+            values: Array.from({length: 250}).map((_, i) => 0.00001),
+            dtype: 'float'
+          },
+        },
+      }
+    ] 
+  },
+  "$schema": "bumps-draft-02"
+}
+
 async function fetch_model() {
-    props.socket.asyncEmit('get_model', (payload: ArrayBuffer) => {
+  props.socket.asyncEmit('get_model', (payload: ArrayBuffer) => {
     const json_bytes = new Uint8Array(payload);
-    const json_value = JSON.parse(decoder.decode(json_bytes));
+    const json_value = (json_bytes.length < 3) ? structuredClone(newModelTemplate) : JSON.parse(decoder.decode(json_bytes));
     modelJson.value = json_value;
     extract_parameters(json_value);
-    sortedLayers.value = modelJson.value['models'][0]['sample']['layers'];
+    sortedLayers.value = modelJson.value['object']['models'][0]['sample']['layers'];
     dictionaryLoaded.value = true;
   });
 }
 
 function extract_parameters(model) {
-    const new_parameters_by_id = {};
+    const new_parameters_by_id = model.references;
     const get_parameters = (obj, parent_obj, path, key) => {
-        if (obj && obj?.type === 'bumps.parameter.Parameter') {
+        if (obj && obj?.__class__ === 'bumps.parameter.Parameter') {
             // Replace the first word of the parameter name with the parent object name
             // e.g. "new thickness" -> "layer1 thickness"
             const parent_name = parent_obj?.name ?? '';
@@ -45,7 +100,7 @@ function extract_parameters(model) {
             new_parameters_by_id[obj.id] = obj;
         }
     }
-    walk_object(model, null, '', '', get_parameters);
+    walk_object(model.object, null, '', '', get_parameters);
     parameters_by_id.value = new_parameters_by_id;
 }
 
@@ -84,17 +139,8 @@ function delete_layer(index) {
     send_model();
 };
 
-const newLayerTemplate = {
-    name: "new",
-    thickness: 25,
-    magnetism: null,
-    material: {name: "new", rho: 2.3, irho: 0, type: "refl1d.material.SLD"},
-    interface: 1,
-    type: "refl1d.model.Slab"
-}
-
 function add_layer() {
-    const new_layer = structuredClone(newLayerTemplate);
+    const new_layer: NonMagneticLayer = structuredClone(newLayerTemplate);
     sortedLayers.value.push(new_layer);
     send_model();
 };
@@ -106,9 +152,9 @@ onMounted(() => {
 })
 
 // Code for draggable rows
-const dragData = ref(null);
+const dragData = ref<number | null>(null);
 
-function dragStart(index, event) {
+function dragStart(index: number, event) {
     dragData.value = index;
     event.dataTransfer.setData('text/plain', index);
 };
@@ -131,8 +177,6 @@ function dragEnd() {
     dragData.value = null;
 };
 
-// Builder options
-const showImaginary = ref(false);
 </script>
 
 <template>
@@ -175,11 +219,11 @@ const showImaginary = ref(false);
                         @dragend="dragEnd"
                         draggable="true"
                         class="draggable"><span width=10px class="badge bg-secondary">:</span></td>
-                    <td><input type="text" v-model="layer.material.name"></td>
-                    <td><input v-if="get_slot(layer.thickness) !== null" type="number" step="5" v-model="get_slot(layer.thickness).value"></td>
-                    <td><input v-if="get_slot(layer.material.rho) !== null" type="number" step="0.01" v-model="get_slot(layer.material.rho).value"></td>
-                    <td v-if="showImaginary"><input v-if="get_slot(layer.material.irho) !== null" type="number" step="0.01" v-model="get_slot(layer.material.irho).value"></td>
-                    <td><input v-if="get_slot(layer.interface) !== null" type="number" step="1" v-model="get_slot(layer.interface).value"></td>
+                    <td><textarea class="form-control name" rows=1 cols="40" type="text" v-model="layer.material.name" :title="layer.material.name"/></td>
+                    <td><input class="form-control" v-if="get_slot(layer.thickness) !== null" type="number" step="5" v-model="get_slot(layer.thickness).value"></td>
+                    <td><input class="form-control" v-if="get_slot(layer.material.rho) !== null" type="number" step="0.01" v-model="get_slot(layer.material.rho).value"></td>
+                    <td v-if="showImaginary"><input class="form-control" v-if="get_slot(layer.material.irho) !== null" type="number" step="0.01" v-model="get_slot(layer.material.irho).value"></td>
+                    <td><input class="form-control" v-if="get_slot(layer.interface) !== null" type="number" step="1" v-model="get_slot(layer.interface).value"></td>
                     <td><button class="btn btn-danger btn-sm" @click="delete_layer(key)">Delete</button></td>
                 </tr>
             </tbody>
@@ -189,8 +233,8 @@ const showImaginary = ref(false);
        
     <button class="btn btn-success btn-sm me-2" @click="add_layer">Add layer</button>
     <div class="form-check form-switch m-2" @click="send_model">
-        <input class="form-check-input" type="checkbox" id="showImaginary" v-model="showImaginary">
-        <label class="form-check-label" for="showImaginary">Show imaginary SLD</label>
+        <input class="form-check-input" type="checkbox" id="showImaginary_input" v-model="showImaginary">
+        <label class="form-check-label" for="showImaginary_input">Show imaginary SLD</label>
     </div>
     <div class="container m-2">
         <div class="card bg-warning">
@@ -215,5 +259,11 @@ const showImaginary = ref(false);
     }
     .draggable {
         cursor: move;
+    }
+
+    textarea.name {
+        overflow-x: auto;
+        white-space: nowrap;
+        resize: none;
     }
 </style>
