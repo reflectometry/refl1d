@@ -1,4 +1,4 @@
-name: Build webview with Jupyter for macos
+name: Build webview for linux
 
 on:
   workflow_dispatch:
