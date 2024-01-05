@@ -32,7 +32,7 @@ jobs:
         auto-update-conda: true
         python-version: ${{ matrix.config.py }}
 
-    - name: Build installer
+    - name: Build webview packed (linux)
       run: |
         ./extra/build_conda_packed.sh
         mkdir unstable
