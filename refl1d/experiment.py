@@ -224,9 +224,9 @@ class ExperimentBase:
 
     def save_json(self, basename):
         """ Save the experiment as a json file """
-        from bumps.serialize import to_dict
+        from bumps.serialize import serialize
         try:
-            experiment = to_dict(self)
+            experiment = serialize(self)
             json_file = basename + "-expt.json"
             with open(json_file, 'w') as fid:
                 data = json.dumps(experiment)
