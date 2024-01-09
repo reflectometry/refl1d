@@ -1,10 +1,12 @@
 from typing import Union, Dict, List, TypedDict
+from pathlib import Path
 import numpy as np
 from refl1d.experiment import Experiment, ExperimentBase, MixedExperiment
 import refl1d.probe
 from bumps.webview.server.api import (
-    register, get_chisq, state, to_json_compatible_dict, set_problem
+    register, get_chisq, state, to_json_compatible_dict, log, publish
 )
+import bumps.webview.server.api as bumps_api
 from bumps.errplot import calc_errors_from_state
 # from refl1d.errors import show_errors
 from .profile_uncertainty import show_errors
@@ -117,3 +119,27 @@ async def get_profile_uncertainty_plot(auto_align: bool=True, align: float=0., n
         return output
     else:
         return None
+
+@register
+async def load_probe_from_file(pathlist: List[str], filename: str, model_index: int = 0):
+    path = Path(*pathlist)
+    fitProblem = state.problem.fitProblem if state.problem is not None else None
+    if fitProblem is None:
+        await log("Error: Can't load data if no problem defined")
+    else:
+        models = list(fitProblem.models)
+        num_models = len(models)
+        if model_index >= num_models:
+            await log(f"Error: Can not access model at model_index {model_index} (only {num_models} defined)")
+            return
+        model: Experiment = models[model_index]
+        probe = refl1d.probe.load4(str(path / filename))
+        model.probe = probe
+        fitProblem.model_reset()
+        state.save()
+        await publish("update_model", True)
+        await bumps_api.emit("add_notification", {
+            "title": "Data loaded:",
+            "content": f"from {filename} to model {model_index}",
+            "timeout": 2000,
+        })
