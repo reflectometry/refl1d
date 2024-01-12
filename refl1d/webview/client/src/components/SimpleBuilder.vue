@@ -1,21 +1,27 @@
 <script setup lang="ts">
 import { Modal } from 'bootstrap/dist/js/bootstrap.esm';
 import { ref, onMounted, onBeforeUnmount, watch, onUpdated, computed, shallowRef } from 'vue';
+import type { ComputedRef } from 'vue';
 import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket';
 
 
 const title = "Builder";
 // @ts-ignore: intentionally infinite type recursion
 const modelJson = ref<json>({});
+const activeModel = ref(0);
+const insert_index = ref(-1);
 const parameters_by_id = ref({});
 const dictionaryLoaded = ref(false);
-const sortedLayers = ref<NonMagneticLayer[]>([]);
 // Builder options
 const showImaginary = ref(false);
 
 const props = defineProps<{
   socket: AsyncSocket,
 }>();
+
+const sortedLayers: ComputedRef<NonMagneticLayer[]> = computed(() => {
+  return modelJson.value['object']['models'][activeModel.value]['sample']['layers'];
+});
 
 // async function get_model_names() {
 //   model_names.value = await props.socket.asyncEmit("get_model_names");
@@ -24,25 +30,55 @@ const props = defineProps<{
 props.socket.on('update_parameters', fetch_model);
 props.socket.on('model_loaded', fetch_model);
 
+interface Variable {
+  value: number,
+  __class__: "bumps.parameter.Variable"
+}
+
+// this is an imcomplete interface definition...
+interface Parameter {
+  name?: string,
+  fixed: boolean,
+  slot: Variable | number,
+  limits?: (number | "-inf" | "inf")[],
+  bounds?: (number | "-inf" | "inf")[],
+  tags?: string[],
+  __class__: "bumps.parameter.Parameter",
+}
+
+interface SLD {
+  name: string,
+  rho: number | Parameter,
+  irho: number | Parameter,
+  __class__: "refl1d.material.SLD"
+}
+
 interface NonMagneticLayer {
   name: string,
-  thickness: number,
+  thickness: number | Parameter,
   magnetism: null,
-  material: {
-    name: string,
-    rho: number,
-    irho: number,
-    __class__: string
-  },
-  interface: number,
+  material: SLD,
+  interface: number | Parameter,
   __class__: "refl1d.model.Slab"
+}
+
+const newParameterTemplate = {
+  value: 0,
+  __class__: "bumps.parameter.Parameter",
+}
+
+const newSLDTemplate: SLD = {
+  name: "sld",
+  rho: 2.5,
+  irho: 0,
+  __class__: "refl1d.material.SLD"
 }
 
 const newLayerTemplate: NonMagneticLayer = {
     name: "new",
     thickness: 25,
     magnetism: null,
-    material: {name: "new", rho: 2.3, irho: 0, __class__: "refl1d.material.SLD"},
+    material: newSLDTemplate,
     interface: 1,
     __class__: "refl1d.model.Slab"
 }
@@ -56,7 +92,10 @@ const newModelTemplate = {
         __class__: "refl1d.experiment.Experiment",
         sample: { 
           __class__: "refl1d.model.Stack",
-          layers: [newLayerTemplate] 
+          layers: [
+            { ...newLayerTemplate, name: "Substrate", material: { ...newSLDTemplate, name: "Si", rho: 2.07 } },
+            { ...newLayerTemplate, name: "Vacuum", material: { ...newSLDTemplate, name: "Vacuum", rho: 0 } },
+          ] 
         },
         probe: {
           __class__: "refl1d.probe.QProbe",
@@ -80,12 +119,24 @@ const newModelTemplate = {
 async function fetch_model() {
   props.socket.asyncEmit('get_model', (payload: ArrayBuffer) => {
     const json_bytes = new Uint8Array(payload);
-    const json_value = (json_bytes.length < 3) ? structuredClone(newModelTemplate) : JSON.parse(decoder.decode(json_bytes));
-    modelJson.value = json_value;
-    extract_parameters(json_value);
-    sortedLayers.value = modelJson.value['object']['models'][0]['sample']['layers'];
-    dictionaryLoaded.value = true;
+    if (json_bytes.length < 3) {
+      // no model defined...
+      modelJson.value = {};
+      dictionaryLoaded.value = false;
+    }
+    else {
+      const json_value = JSON.parse(decoder.decode(json_bytes));
+      modelJson.value = json_value;
+      extract_parameters(json_value);
+      dictionaryLoaded.value = true;
+    }
   });
+}
+
+async function new_model() {
+  const model = structuredClone(newModelTemplate);
+  modelJson.value = model;
+  send_model();
 }
 
 function extract_parameters(model) {
@@ -156,9 +207,9 @@ function delete_layer(index) {
     send_model();
 };
 
-function add_layer() {
+function add_layer(after_index: number = -1) {
     const new_layer: NonMagneticLayer = structuredClone(newLayerTemplate);
-    sortedLayers.value.push(new_layer);
+    sortedLayers.value.splice(after_index, 0, new_layer);
     send_model();
 };
 
@@ -248,7 +299,11 @@ function dragEnd() {
     <p v-else>Load data to start building a model</p>
     </div>
        
-    <button class="btn btn-success btn-sm me-2" @click="add_layer">Add layer</button>
+    <button v-if="!dictionaryLoaded" class="btn btn-success btn-sm me-2" @click="new_model">New Model</button>
+    <div class="input-group m-2" v-if="dictionaryLoaded">
+      <button class="btn btn-success btn-sm" @click="add_layer(-1)">Add layer at index: </button>
+      <input class="form-control me-4" v-model="insert_index" type="number"/>
+    </div>
     <div class="form-check form-switch m-2" @click="send_model">
         <input class="form-check-input" type="checkbox" id="showImaginary_input" v-model="showImaginary">
         <label class="form-check-label" for="showImaginary_input">Show imaginary SLD</label>
