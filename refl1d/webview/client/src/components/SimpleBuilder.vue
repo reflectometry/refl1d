@@ -125,8 +125,25 @@ function get_slot(parameter_like) {
 
 function send_model() {
     // Ensure that the name of the layer is the same as the name of the material
+    const renamed_params = new Set();
     for (const [index, item] of Object.entries(sortedLayers.value)) {
-        item.name = item.material.name;
+      const { material } = item;
+      const { name } = material;
+      item.name = name;
+      for (let param_name of ["rho", "irho"]) {
+        const param_ref = material[param_name];
+        if ( param_ref instanceof Object && !renamed_params.has(param_ref.id) ) {
+          parameters_by_id.value[param_ref.id].name = `${name} ${param_name}`;
+          renamed_params.add(param_ref.id);
+        }
+      }
+      for (let param_name of ["thickness", "interface"]) {
+        const param_ref = item[param_name];
+        if ( param_ref instanceof Object && !renamed_params.has(param_ref.id) ) {
+          parameters_by_id.value[param_ref.id].name = `${name} ${param_name}`;
+          renamed_params.add(param_ref.id);
+        }
+      }
     };
 
     const array_buffer = new TextEncoder().encode(JSON.stringify(modelJson.value));
