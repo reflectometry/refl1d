@@ -136,6 +136,7 @@ async def load_probe_from_file(pathlist: List[str], filename: str, model_index: 
         probe = refl1d.probe.load4(str(path / filename))
         model.probe = probe
         fitProblem.model_reset()
+        fitProblem.model_update()
         state.save()
         await publish("update_model", True)
         await publish("update_parameters", True)
