@@ -138,6 +138,7 @@ async def load_probe_from_file(pathlist: List[str], filename: str, model_index: 
         fitProblem.model_reset()
         state.save()
         await publish("update_model", True)
+        await publish("update_parameters", True)
         await bumps_api.emit("add_notification", {
             "title": "Data loaded:",
             "content": f"from {filename} to model {model_index}",
