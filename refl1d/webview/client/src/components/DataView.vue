@@ -13,6 +13,9 @@ const plot_offset = ref(0);
 const plot_data = shallowRef<Partial<Plotly.PlotData>>({});
 const chisq_str = ref("");
 
+const log_y = ref(true);
+const log_x = ref(false);
+
 const props = defineProps<{
   socket: AsyncSocket,
 }>();
@@ -20,16 +23,14 @@ const props = defineProps<{
 setupDrawLoop('update_parameters', props.socket, fetch_and_draw);
 
 const REFLECTIVITY_PLOTS = [
-  "Fresnel",
-  "Log Fresnel",
-  "Linear",
-  "Log",
-  "Q4",
+  "Fresnel (R/R_substrate)",
+  "Reflectivity",
+  "R/Q4",
   "Spin Asymmetry"
 ] as const;
 type ReflectivityPlotEnum = typeof REFLECTIVITY_PLOTS;
 type ReflectivityPlot = ReflectivityPlotEnum[number];
-const reflectivity_type = ref<ReflectivityPlot>("Log");
+const reflectivity_type = ref<ReflectivityPlot>("Reflectivity");
 
 const MARKER_OPACITY = 0.5;
 type Trace = Partial<Plotly.PlotData>;
@@ -55,7 +56,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
   const offset = plot_offset.value;
   switch (view) {
     case "Log":
-    case "Linear": {
+    case "Reflectivity": {
       let plot_index = 0;
       const lin_y = (view === "Linear");
       for (let model of model_data) {
@@ -79,7 +80,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
       break;
     }
     case "Log Fresnel":
-    case "Fresnel": {
+    case "Fresnel (R/R_substrate)": {
       let plot_index = 0;
       for (let model of model_data) {
         for (let xs of model) {
@@ -106,7 +107,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
       yaxis_label = "Fresnel Reflectivity"
       break;
     }
-    case "Q4": {
+    case "R/Q4": {
       // Q4 = 1e-8*Q**-4*self.intensity.value + self.background.value
       let plot_index = 0;
       for (let model of model_data) {
@@ -194,6 +195,13 @@ async function fetch_and_draw() {
   await draw_plot();
 }
 
+async function change_plot_type() {
+  if (reflectivity_type.value === "Spin Asymmetry") {
+    log_y.value = false;
+  }
+  await fetch_and_draw();
+}
+
 async function draw_plot() {
   // console.log(payload);
   const { theory_traces, data_traces, xaxis_label, yaxis_label } = generate_new_traces(plot_data.value, reflectivity_type.value)
@@ -203,14 +211,14 @@ async function draw_plot() {
       title: {
         text: xaxis_label,
       },
-      type: 'linear',
+      type: (log_x.value) ? 'log' : 'linear',
       autorange: true,
     },
     yaxis: {
       title: { text: yaxis_label },
       exponentformat: 'e',
       showexponent: 'all',
-      type: (/^(Log|Q4)/.test(reflectivity_type.value)) ? 'log' : 'linear',
+      type: (log_y.value) ? 'log' : 'linear',
       autorange: true,
     },
     margin: {
@@ -304,9 +312,21 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
 
 <template>
   <div class="container d-flex flex-column flex-grow-1">
-    <select v-model="reflectivity_type" @change="fetch_and_draw">
-      <option v-for="refl_type in REFLECTIVITY_PLOTS" :key="refl_type" :value="refl_type">{{ refl_type }}</option>
-    </select>
+    <div class="row">
+      <div class="col">
+        <select class="plot-mode" v-model="reflectivity_type" @change="change_plot_type">
+          <option v-for="refl_type in REFLECTIVITY_PLOTS" :key="refl_type" :value="refl_type">{{ refl_type }}</option>
+        </select>
+      </div>
+      <div class="col-auto form-check">
+        <input type="checkbox" class="form-check-input" id="log_y" v-model="log_y" @change="draw_plot">
+        <label for="log_y" class="form-check-label">Log y</label>
+      </div>
+      <div class="col-auto form-check">
+        <input type="checkbox" class="form-check-input" id="log_x" v-model="log_x" @change="draw_plot">
+        <label for="log_x" class="form-check-label">Log x</label>
+      </div>
+    </div>
     <div class="row px-2 align-items-center">
       <div class="col-auto">
         <label for="plot_offset_control" class="col-form-label">Plot offset</label>
@@ -320,3 +340,9 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
     </div>
   </div>
 </template>
+
+<style scoped>
+.plot-mode {
+  width: 100%;
+}
+</style>
