@@ -4,6 +4,7 @@ import { ref, onMounted, onBeforeUnmount, watch, onUpdated, computed, shallowRef
 import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket';
 import { v4 as uuidv4 } from 'uuid';
 import { setupDrawLoop } from 'bumps-webview-client/src/setupDrawLoop';
+import { configWithSVGDownloadButton } from 'bumps-webview-client/src/plotly_extras.mjs';
 import * as Plotly from 'plotly.js/lib/core';
 
 const title = "Profile";
@@ -33,14 +34,15 @@ async function fetch_and_draw() {
   const specs = current_models.value.map(([model_index, sample_index]) => (
     {model_index, sample_index}
   ));
-  const payload = await props.socket.asyncEmit('get_profile_plots', specs);
+  const payload = await props.socket.asyncEmit('get_profile_plots', specs) as { data: Partial<Plotly.PlotData>[], layout: Partial<Plotly.Layout> };
   let plotdata = { ...payload };
   const { data, layout } = plotdata;
   const config: Partial<Plotly.Config> = {
     responsive: true,
     edits: {
       legendPosition: true
-    }
+    },
+    ...configWithSVGDownloadButton
   }
   await Plotly.react(plot_div_id.value, [...data], layout, config);
 }

@@ -5,7 +5,7 @@ import * as Plotly from 'plotly.js/lib/core';
 import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket';
 import { setupDrawLoop } from 'bumps-webview-client/src/setupDrawLoop';
 import { COLORS } from '../colors.mjs';
-import { configWithSVGDownloadButton } from '../plotly_extras.mjs';
+import { configWithSVGDownloadButton } from 'bumps-webview-client/src/plotly_extras.mjs';
 
 const title = "Reflectivity";
 const plot_div = ref<HTMLDivElement | null>(null);

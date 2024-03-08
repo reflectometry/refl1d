@@ -1,8 +1,11 @@
 <script setup lang="ts">
 /// <reference types="@types/uuid"/>
 import { ref } from 'vue';
-import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket';import { v4 as uuidv4 } from 'uuid';
+import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket';
+import { v4 as uuidv4 } from 'uuid';
 import { setupDrawLoop } from 'bumps-webview-client/src/setupDrawLoop';
+import { configWithSVGDownloadButton } from 'bumps-webview-client/src/plotly_extras.mjs';
+
 import { cache } from '../plotcache';
 import * as Plotly from 'plotly.js/lib/core';
 
@@ -51,7 +54,8 @@ async function fetch_and_draw(latest_timestamp?: string) {
     responsive: true,
     edits: {
       legendPosition: true
-    }
+    },
+    ...configWithSVGDownloadButton
   }
   await Plotly.react(plot_div_id.value, [...data], layout, config);
 
