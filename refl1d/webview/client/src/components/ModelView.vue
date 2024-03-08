@@ -2,14 +2,12 @@
 /// <reference types="@types/uuid"/>
 import { ref, onMounted, onBeforeUnmount, watch, onUpdated, computed, shallowRef } from 'vue';
 import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket';
-import { v4 as uuidv4 } from 'uuid';
 import { setupDrawLoop } from 'bumps-webview-client/src/setupDrawLoop';
 import { configWithSVGDownloadButton } from 'bumps-webview-client/src/plotly_extras.mjs';
 import * as Plotly from 'plotly.js/lib/core';
 
 const title = "Profile";
 const plot_div = ref<HTMLDivElement>();
-const plot_div_id = ref(`div-${uuidv4()}`);
 const model_names = ref<{name: string, part_name: string, model_index: number, part_index: number}[]>([]);
 const show_multiple = ref(false);
 const current_models = ref<Array<[number, number]>>([[0, 0]]);
@@ -44,7 +42,7 @@ async function fetch_and_draw() {
     },
     ...configWithSVGDownloadButton
   }
-  await Plotly.react(plot_div_id.value, [...data], layout, config);
+  await Plotly.react(plot_div.value as HTMLDivElement, [...data], layout, config);
 }
 
 function toggle_multiple(value) {
@@ -53,7 +51,7 @@ function toggle_multiple(value) {
     current_models.value.splice(0, current_models.value.length -1);
     draw_requested.value = true;
   }
-  Plotly.Plots.resize(plot_div_id.value);
+  Plotly.Plots.resize(plot_div.value as HTMLDivElement);
 }
 
 </script>
@@ -79,7 +77,7 @@ function toggle_multiple(value) {
       <option v-for="{name, part_name, model_index, part_index} in model_names" :key="`${model_index}:${part_index}`" :value="[model_index, part_index]">
         {{ model_index }}:{{ part_index }} --- {{ name ?? "" }}:{{ part_name ?? "" }}</option>
     </select>
-    <div class="flex-grow-1" ref="plot_div" :id="plot_div_id">
+    <div class="flex-grow-1" ref="plot_div">
     </div>
   </div>
 </template>
