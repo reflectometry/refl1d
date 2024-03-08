@@ -4,7 +4,7 @@ import numpy as np
 from refl1d.experiment import Experiment, ExperimentBase, MixedExperiment
 import refl1d.probe
 from bumps.webview.server.api import (
-    register, get_chisq, state, to_json_compatible_dict, log, publish
+    register, get_chisq, state, to_json_compatible_dict, log, publish, deserialize_problem, set_problem
 )
 import bumps.webview.server.api as bumps_api
 from bumps.errplot import calc_errors_from_state
