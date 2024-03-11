@@ -1253,7 +1253,7 @@ class ProbeSet(Probe):
         theta_offset = Parameter.default(theta_offset, name="theta_offset")
         sample_broadening = Parameter.default(sample_broadening,
                                               name="sample_broadening",
-                                              limits=[0, None])
+                                              limits=[None, None])
         for p in self.probes:
             p.intensity = intensity
             p.background = background
@@ -1884,7 +1884,7 @@ class PolarizedNeutronProbe:
         theta_offset = Parameter.default(theta_offset, name="theta_offset")
         sample_broadening = Parameter.default(sample_broadening,
                                               name="sample_broadening",
-                                              limits=[0, None])
+                                              limits=[None, None])
         for x in self.xs:
             if x is not None:
                 x.intensity = intensity
