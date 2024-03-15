@@ -1,8 +1,7 @@
 <script setup lang="ts">
 /// <reference types="@types/uuid"/>
-import { ref } from 'vue';
+import { ref, computed, shallowRef } from 'vue';
 import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket';
-import { v4 as uuidv4 } from 'uuid';
 import { setupDrawLoop } from 'bumps-webview-client/src/setupDrawLoop';
 import { configWithSVGDownloadButton } from 'bumps-webview-client/src/plotly_extras.mjs';
 
@@ -11,7 +10,7 @@ import * as Plotly from 'plotly.js/lib/core';
 
 const title = "Profile Uncertainty"
 const plot_div = ref<HTMLDivElement>();
-const plot_div_id = ref(`div-${uuidv4()}`);
+const hidden_download = ref<HTMLAnchorElement>();
 const align = ref(0);
 const auto_align = ref(true);
 const show_residuals = ref(false);
@@ -33,6 +32,56 @@ type PlotData = {
   layout: Partial<Plotly.Layout>,
 }
 
+type Payload  = {
+  fig: PlotData,
+  contour_data: {
+    [model_name: string]: {
+      z: number[],
+      data: { [key: string]: number[][][] },
+    }
+  },
+  contours: number[],
+}
+
+const contour_data = shallowRef<Payload["contour_data"]>({});
+const contours = ref<number[]>([]);
+
+function get_csv_data() {
+  const data = contour_data.value;
+  const contours_value = contours.value;
+  if (Object.keys(data).length === 0) {
+    return '';
+  }
+  const headers: string[] = [];
+  const values: number[][] = [];
+  for (const [model_name, model_data] of Object.entries(data)) {
+    headers.push(`"${model_name} z"`);
+    values.push(model_data.z);
+    Object.keys(model_data.data).forEach((key) => {
+      contours_value.forEach((c, ci) => {
+        headers.push(`"${model_name} ${key} (${c} lower)"`);
+        headers.push(`"${model_name} ${key} (${c} upper)"`);
+        values.push(model_data.data[key][ci][0]);
+        values.push(model_data.data[key][ci][1]);
+      });
+    });
+  }
+  const n = values[0].length;
+  const lines = new Array(n + 1);
+  lines[0] = headers.join(',');
+  for (let i = 0; i < n; i++) {
+    lines[i + 1] = values.map((v) => v[i].toPrecision(6)).join(',');
+    //keys.map(k => data[k][i].toPrecision(6)).join(',');
+  }
+  return 'data:text/csv;charset=utf-8,' + encodeURIComponent(lines.join('\n'));
+}
+
+async function download_csv() {
+  const a = hidden_download.value as HTMLAnchorElement;
+  a.href = get_csv_data();
+  a.click();
+}
+
 async function fetch_and_draw(latest_timestamp?: string) {
   let { timestamp, plotdata } = cache[title] as { timestamp: string, plotdata: PlotData } ?? {};
   const loading_delay = 50; // ms
@@ -42,8 +91,10 @@ async function fetch_and_draw(latest_timestamp?: string) {
   }, loading_delay);
   if (latest_timestamp === undefined || timestamp !== latest_timestamp) {
     console.log("fetching new profile uncertainty plot", timestamp, latest_timestamp);
-    const payload = await props.socket.asyncEmit('get_profile_uncertainty_plot', auto_align.value, align.value, nshown.value, npoints.value, random.value, show_residuals.value) as PlotData;
-    plotdata = { ...payload };
+    const payload = await props.socket.asyncEmit('get_profile_uncertainty_plot', auto_align.value, align.value, nshown.value, npoints.value, random.value, show_residuals.value) as Payload;
+    plotdata = { ...payload.fig };
+    contour_data.value = payload.contour_data;
+    contours.value = payload.contours;
     if (latest_timestamp !== undefined) {
       cache[title] = {timestamp: latest_timestamp, plotdata};
     }
@@ -57,7 +108,7 @@ async function fetch_and_draw(latest_timestamp?: string) {
     },
     ...configWithSVGDownloadButton
   }
-  await Plotly.react(plot_div_id.value, [...data], layout, config);
+  await Plotly.react(plot_div.value as HTMLDivElement, [...data], layout, config);
 
   clearTimeout(show_loader);
   drawing_busy.value = false;
@@ -99,9 +150,13 @@ async function fetch_and_draw(latest_timestamp?: string) {
           <input class="form-check-input" type="checkbox" v-model="random" id="randomize" @change="fetch_and_draw()" />
         </div>
       </div>
+      <div>
+        <button class="btn btn-primary btn-sm" @click="download_csv">Download CSV</button>
+        <a ref="hidden_download" class="hidden" download='contours.csv' type='text/csv'>Download CSV</a>
+      </div>
     <!-- </details> -->
     <div class="flex-grow-1 position-relative">
-      <div class="w-100 h-100 plot-div" ref="plot_div" :id="plot_div_id"></div>
+      <div class="w-100 h-100 plot-div" ref="plot_div"></div>
       <div class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center loading" v-if="drawing_busy">
         <span class="spinner-border text-primary"></span>
       </div>
@@ -112,6 +167,9 @@ async function fetch_and_draw(latest_timestamp?: string) {
 <style scoped>
 svg {
   width: 100%;
+}
+.hidden {
+  display: none;
 }
 span.spinner-border {
   width: 3rem;
