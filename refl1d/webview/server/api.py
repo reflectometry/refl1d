@@ -110,10 +110,11 @@ async def get_profile_uncertainty_plot(auto_align: bool=True, align: float=0., n
         print('queueing new profile uncertainty plot...', start_time)
         errs = calc_errors_from_state(fitProblem, uncertainty_state, nshown=nshown, random=random, portion=1.0)
         print('errors calculated: ', time.time() - start_time)
-        fig = show_errors(errs, npoints=npoints, align=align_arg, residuals=residuals)
+        error_result = show_errors(errs, npoints=npoints, align=align_arg, residuals=residuals)
+        error_result['fig'] = error_result['fig'].to_dict()
         print("time to render but not serialize...", time.time() - start_time)
-        output = to_json_compatible_dict(fig.to_dict())
-        del fig
+        output = to_json_compatible_dict(error_result)
+        del error_result
         end_time = time.time()
         print("time to draw profile uncertainty plot:", end_time - start_time)
         return output
