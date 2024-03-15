@@ -14,25 +14,26 @@ def get_color(index: int):
 def show_errors(errors, npoints, align, residuals=True):
     rows = 2 if residuals else 1
     fig = make_subplots(rows=rows, cols=1)
-    show_profiles(errors, align, CONTOURS, npoints, fig=fig, row=1, col=1)
+    contour_data = show_profiles(errors, align, CONTOURS, npoints, fig=fig, row=1, col=1)
     if residuals:
         show_residuals(errors, None, fig=fig, row=2, col=1)
-    return fig
+    return dict(fig=fig, contour_data=contour_data, contours=CONTOURS)
 
 def show_profiles(errors, align, contours, npoints, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None) -> go.Figure:
     profiles, slabs, _, _ = errors
     if align is not None:
         profiles = align_profiles(profiles, slabs, align)
 
+    contour_data = None
     if contours is not None:
-        _profiles_contour(profiles, contours, npoints, fig=fig, row=row, col=col)
+        contour_data = _profiles_contour(profiles, contours, npoints, fig=fig, row=row, col=col)
     else:
         _profiles_overplot(profiles, fig=fig, row=row, col=col)
     
     if align != 'auto':
         _profiles_draw_align_lines(profiles, slabs, align, fig=fig, row=row, col=col)
 
-    return
+    return contour_data
 
 def show_residuals(errors, contours, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
     _, _, Q, residuals = errors
@@ -66,21 +67,26 @@ def _draw_overplot(group, index, label, fig: go.Figure, color_index: int, row: O
     fig.add_scattergl(x=L[0], y=L[index], name=label, mode="lines", line={"color": color}, hoverinfo="skip", row=row, col=col)
 
 def _profiles_contour(profiles, contours, npoints, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
+    contour_data = {}
     for model_index, (model, group) in enumerate(profiles.items()):
         name = model.name if model.name is not None else f"Model {model_index}"
+        contour_data[name] = {}
         absorbing = any((L[2] > 1e-4).any() for L in group)
         magnetic = (len(group[0]) > 3)
         # Find limits of all profiles
         z = np.hstack([line[0] for line in group])
         zp = np.linspace(np.min(z), np.max(z), npoints)
+        contour_data[name]['z'] = zp
+        contour_data[name]['data'] = {}
         # Note: Use 3 colours per dataset for consistency
         color_index = model_index * 3
-        _draw_contours(group, 1, name + ' rho', zp, contours, fig=fig, color_index=color_index, row=row, col=col)
+        contour_data[name]['data']['rho'] = _draw_contours(group, 1, name + ' rho', zp, contours, fig=fig, color_index=color_index, row=row, col=col)
         if absorbing:
-            _draw_contours(group, 2, name + ' irho', zp, contours, fig=fig, color_index=color_index+1, row=row, col=col)
+            contour_data[name]['data']['irho'] = _draw_contours(group, 2, name + ' irho', zp, contours, fig=fig, color_index=color_index+1, row=row, col=col)
         if magnetic:
-            _draw_contours(group, 3, name + ' rhoM', zp, contours, fig=fig, color_index=color_index+2, row=row, col=col)
+            contour_data[name]['data']['rhonM'] = _draw_contours(group, 3, name + ' rhoM', zp, contours, fig=fig, color_index=color_index+2, row=row, col=col)
     _profile_labels(fig=fig, row=row, col=col)
+    return contour_data
 
 def _draw_contours(group, index, label, zp, contours, fig: go.Figure, color_index: int, row: Optional[int] = None, col: Optional[int] = None):
     # Interpolate on common z
@@ -89,9 +95,10 @@ def _draw_contours(group, index, label, zp, contours, fig: go.Figure, color_inde
     color = get_color(color_index)
     legendgroup = f"group_{color_index}"
     fig.add_scattergl(x=zp, y=fp[0], mode="lines", name=label, line=dict(color=color), legendgroup=legendgroup, row=row, col=col)
-    _plot_quantiles(zp, fp, contours, color, alpha=None, fig=fig, row=row, col=col, legendgroup=legendgroup)
+    q = _plot_quantiles(zp, fp, contours, color, alpha=None, fig=fig, row=row, col=col, legendgroup=legendgroup)
     # Plot the best
     # axes.plot(zp, fp[0], '-', label=label, color=dark(color))
+    return q
 
 def _profile_labels(fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
     fig.update_layout(template=None)
@@ -163,3 +170,4 @@ def _plot_quantiles(x, y, contours, color, alpha, fig: go.Figure, row: Optional[
     for lo, hi in q:
         fig.add_scattergl(x=x, y=lo, showlegend=False, mode="lines", line=dict(color=color, width=1), opacity=alpha, row=row, col=col, hoverinfo="skip", legendgroup=legendgroup)
         fig.add_scattergl(x=x, y=hi, showlegend=False, mode="lines", line=dict(color=color, width=1), fill="tonexty", opacity=alpha, row=row, col=col, hoverinfo="skip", legendgroup=legendgroup)
+    return q
