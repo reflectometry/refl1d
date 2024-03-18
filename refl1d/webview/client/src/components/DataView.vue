@@ -15,6 +15,7 @@ const chisq_str = ref("");
 
 const log_y = ref(true);
 const log_x = ref(false);
+const show_resolution = ref(true);
 
 const props = defineProps<{
   socket: AsyncSocket,
@@ -39,6 +40,7 @@ type ModelData = {
   label: string,
   polarization: PolarizationString,
   Q: number[],
+  dQ?: number[],
   theory: number[],
   fresnel: number[],
   intensity_in: number,
@@ -67,6 +69,9 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
           if (xs.R !== undefined) {
             const R = (lin_y) ? xs.R.map((t) => t + local_offset) : xs.R.map((t) => t * local_offset);
             const data_trace: Trace = { x: xs.Q, y: R, mode: 'markers', name: label + ' data', marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY };
+            if (show_resolution.value && xs.dQ !== undefined) {
+              data_trace.error_x = { type: 'data', array: xs.dQ, visible: true };
+            }
             if (xs.dR !== undefined) {
               const dR = (lin_y) ? xs.dR : xs.dR.map((t) => t * local_offset);
               data_trace.error_y = { type: 'data', array: dR, visible: true };
@@ -92,6 +97,9 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
             const R = xs.R.map((y, i) => (y / (xs.fresnel[i])));
             const offset_R = (lin_y) ? R.map((t) => t + local_offset) : R.map((t) => t * local_offset);
             const data_trace: Trace = { x: xs.Q, y: offset_R, mode: 'markers', name: label + ' data', marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY };
+            if (show_resolution.value && xs.dQ !== undefined) {
+              data_trace.error_x = { type: 'data', array: xs.dQ, visible: true };
+            }
             if (xs.dR !== undefined) {
               const dR = xs.dR.map((dy, i) => (dy / (xs.fresnel[i])));
               const dR_offset = (lin_y) ? dR : dR.map((t) => t * local_offset);
@@ -123,6 +131,9 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
             const R = xs.R.map((r, i) => (r / Q4[i]));
             const offset_R = R.map((t) => t * local_offset);
             const data_trace: Trace = { x: xs.Q, y: offset_R, mode: 'markers', name: label + ' data', marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY };
+            if (show_resolution.value && xs.dQ !== undefined) {
+              data_trace.error_x = { type: 'data', array: xs.dQ, visible: true };
+            }
             if (xs.dR !== undefined) {
               const dR = xs.dR.map((dy, i) => (dy / Q4[i]));
               const offset_dR = dR.map((t) => t * local_offset);
@@ -162,6 +173,9 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
             });
             const data_trace: Trace = { x: pp.Q, y: SA, mode: 'markers', name: label + ' data', marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY };
 
+            if (show_resolution.value && pp.dQ !== undefined) {
+              data_trace.error_x = { type: 'data', array: pp.dQ, visible: true };
+            }
             if (pp.dR !== undefined && mm.dR !== undefined) {
               const dRm = interp(pp.Q, mm.Q, mm.dR);
               const dSA = dRm.map((dm, i) => {
@@ -323,6 +337,10 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
       <div class="col-auto form-check">
         <input type="checkbox" class="form-check-input" id="log_x" v-model="log_x" @change="draw_plot">
         <label for="log_x" class="form-check-label">Log x</label>
+      </div>
+      <div class="col-auto form-check">
+        <input type="checkbox" class="form-check-input" id="show_resolution" v-model="show_resolution" @change="draw_plot">
+        <label for="show_resolution" class="form-check-label">dQ</label>
       </div>
     </div>
     <div class="row px-2 align-items-center">
