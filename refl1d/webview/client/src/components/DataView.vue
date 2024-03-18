@@ -55,10 +55,9 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
   let xaxis_label: string = "Q (Å<sup>-1</sup>)";
   const offset = plot_offset.value;
   switch (view) {
-    case "Log":
     case "Reflectivity": {
       let plot_index = 0;
-      const lin_y = (view === "Linear");
+      const lin_y = !log_y.value;
       for (let model of model_data) {
         for (let xs of model) {
           const label = `${xs.label} ${xs.polarization}`;
@@ -79,13 +78,12 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
       }
       break;
     }
-    case "Log Fresnel":
     case "Fresnel (R/R_substrate)": {
       let plot_index = 0;
       for (let model of model_data) {
         for (let xs of model) {
           const label = `${xs.label} ${xs.polarization}`;
-          const lin_y = (view === "Fresnel");
+          const lin_y = !log_y.value;
           const local_offset = (lin_y) ? plot_index * offset : Math.pow(10, plot_index * offset);
           const theory = xs.theory.map((y, i) => (y / (xs.fresnel[i])));
           const offset_theory = (lin_y) ? theory.map((t) => t + local_offset) : theory.map((t) => t * local_offset);
