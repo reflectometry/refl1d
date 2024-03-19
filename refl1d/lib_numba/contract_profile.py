@@ -129,20 +129,18 @@ def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
         rhoarea = irhoarea = rhoMpara_area = rhoMperp_area = 0.0
         rholo = rhohi = rho[i]
         irholo = irhohi = irho[i]
-        thetaM_radians_i = thetaM[i] * math.pi / 180.0
+        # /* Pre-calculate projections */
+        thetaM_radians = thetaM[i] * math.pi / 180.0
+        rhoMpara = rhoM[i] * math.cos(thetaM_radians)
+        rhoMperp = rhoM[i] * math.sin(thetaM_radians)
         # /*
         #  * Note that mpara indicates M when theta_M = 0,
         #  * and mperp indicates M when theta_M = 90,
         #  * but in most cases M is parallel to H when theta_M = 270
         #  * and Aguide = 270
         #  */
-        mparalo = mparahi = rhoM[i] * math.cos(thetaM_radians_i)
-        mperplo = mperphi = rhoM[i] * math.sin(thetaM_radians_i)
-
-        # /* Pre-calculate projections */
-        thetaM_radians = thetaM[i] * math.pi / 180.0
-        rhoMpara = rhoM[i] * math.cos(thetaM_radians)
-        rhoMperp = rhoM[i] * math.sin(thetaM_radians)
+        mparalo = mparahi = rhoMpara
+        mperplo = mperphi = rhoMperp
 
         # /* Accumulate slices into layer */
         while (i < m):
