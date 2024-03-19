@@ -125,11 +125,17 @@ def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
 
         # /* Get ready for the next layer */
         # /* Accumulation of the first row happens in the inner loop */
-        dz = weighted_dz = 0
-        rhoarea = irhoarea = rhoMarea = thetaMarea = 0.0
+        dz = 0
+        rhoarea = irhoarea = rhoMparaArea = rhoMperpArea = 0.0
         rholo = rhohi = rho[i]
         irholo = irhohi = irho[i]
-        maglo = maghi = rhoM[i] * math.cos(thetaM[i] * math.pi / 180.0)
+        thetaM_radians_i = thetaM[i] * math.pi / 180.0
+        # Note that mpara indicates M when theta_M = 0,
+        # and mperp indicates M when theta_M = 90,
+        # but in most cases M is parallel to H when theta_M = 270
+        # and Aguide = 270
+        mparalo = mparahi = rhoM[i] * math.cos(thetaM_radians_i)
+        mperplo = mperphi = rhoM[i] * math.sin(thetaM_radians_i)
 
         # /* Accumulate slices into layer */
         while True:
@@ -137,19 +143,18 @@ def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
             dz += d[i]
             rhoarea += d[i] * rho[i]
             irhoarea += d[i] * irho[i]
-
-            # /* Weight the magnetic signal by the in -plane contribution
-            # * when accumulating rhoM and thetaM. */
-            weight = math.cos(thetaM[i]*math.pi/180.)
-            mag = rhoM[i]*weight
-            rhoMarea += d[i]*rhoM[i]*weight
-            thetaMarea += d[i]*thetaM[i]*weight
-            weighted_dz += d[i]*weight
+            thetaM_radians_i = thetaM[i] * math.pi / 180.0
+            rhoMparaArea += d[i] * rhoM[i] * math.cos(thetaM_radians_i)
+            rhoMperpArea += d[i] * rhoM[i] * math.sin(thetaM_radians_i)
 
             # /* If no more slices or sigma != 0, break immediately */
             i += 1
             if (i == n or sigma[i-1] != 0.):
                 break
+
+            # /* If next slice has zero width just skip calculations */
+            if d[i] == 0:
+                continue
 
             # /* If next slice exceeds limit then break */
             if (rho[i] < rholo):
@@ -166,11 +171,18 @@ def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
             if ((irhohi-irholo)*(dz+d[i]) > dA):
                 break
 
-            if (mag < maglo):
-                maglo = mag
-            if (mag > maghi):
-                maghi = mag
-            if ((maghi-maglo)*(dz+d[i]) > dA):
+            if (rhoM[i] * math.cos(thetaM[i] * math.pi / 180.0) < mparalo):
+                mparalo = rhoM[i] * math.cos(thetaM[i] * math.pi / 180.0)
+            if (rhoM[i] * math.cos(thetaM[i] * math.pi / 180.0) > mparahi):
+                mparahi = rhoM[i] * math.cos(thetaM[i] * math.pi / 180.0)
+            if ((mparahi-mparalo)*(dz+d[i]) > dA):
+                break
+
+            if (rhoM[i] * math.sin(thetaM[i] * math.pi / 180.0) < mperplo):
+                mperplo = rhoM[i] * math.sin(thetaM[i] * math.pi / 180.0)
+            if (rhoM[i] * math.sin(thetaM[i] * math.pi / 180.0) > mperphi):
+                mperphi = rhoM[i] * math.sin(thetaM[i] * math.pi / 180.0)
+            if ((mperphi-mperplo)*(dz+d[i]) > dA):
                 break
 
         # /* Save the layer */
@@ -183,12 +195,21 @@ def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
             rhoM[newi] = rhoM[n-1]
             thetaM[newi] = thetaM[n-1]
             # /* No interface for final layer */
+        elif (dz == 0):
+            # /* if dz (sum) is zero, then this layer doesn't matter 
+            #  * and we don't need to set anything
+            #  */ 
+            pass
         else:
-            # /* Middle layers uses average values */
+            # /* Middle layers use average values */
             rho[newi] = rhoarea / dz
             irho[newi] = irhoarea / dz
-            rhoM[newi] = rhoMarea / weighted_dz
-            thetaM[newi] = thetaMarea / weighted_dz
+            mean_rhoM_para = rhoMparaArea / dz
+            mean_rhoM_perp = rhoMperpArea / dz
+            mean_rhoM = math.sqrt(mean_rhoM_para**2 + mean_rhoM_perp**2)
+            thetaM_from_mean = math.atan2(mean_rhoM_perp, mean_rhoM_para) * 180.0 / math.pi
+            rhoM[newi] = mean_rhoM
+            thetaM[newi] = thetaM_from_mean
             sigma[newi] = sigma[i-1]
             # /* First layer uses substrate values */
         newi += 1
