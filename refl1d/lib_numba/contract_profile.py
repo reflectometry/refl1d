@@ -120,41 +120,44 @@ CONTRACT_MAG_SIG = 'i4(f8[:], f8[:], f8[:], f8[:], f8[:], f8[:], f8)'
 @numba.njit(cache=True)
 def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
     n = len(d)
+    m = n - 1 # /* last middle layer */
     i = newi = 1  # /* Skip the substrate */
-    while (i < n):
-
+    while (i < m):
         # /* Get ready for the next layer */
         # /* Accumulation of the first row happens in the inner loop */
         dz = 0
-        rhoarea = irhoarea = rhoMparaArea = rhoMperpArea = 0.0
+        rhoarea = irhoarea = rhoMpara_area = rhoMperp_area = 0.0
         rholo = rhohi = rho[i]
         irholo = irhohi = irho[i]
         thetaM_radians_i = thetaM[i] * math.pi / 180.0
-        # Note that mpara indicates M when theta_M = 0,
-        # and mperp indicates M when theta_M = 90,
-        # but in most cases M is parallel to H when theta_M = 270
-        # and Aguide = 270
+        # /*
+        #  * Note that mpara indicates M when theta_M = 0,
+        #  * and mperp indicates M when theta_M = 90,
+        #  * but in most cases M is parallel to H when theta_M = 270
+        #  * and Aguide = 270
+        #  */
         mparalo = mparahi = rhoM[i] * math.cos(thetaM_radians_i)
         mperplo = mperphi = rhoM[i] * math.sin(thetaM_radians_i)
 
+        # /* Pre-calculate projections */
+        thetaM_radians = thetaM[i] * math.pi / 180.0
+        rhoMpara = rhoM[i] * math.cos(thetaM_radians)
+        rhoMperp = rhoM[i] * math.sin(thetaM_radians)
+
         # /* Accumulate slices into layer */
-        while True:
+        while (i < m):
             # /* Accumulate next slice */
             dz += d[i]
             rhoarea += d[i] * rho[i]
             irhoarea += d[i] * irho[i]
-            thetaM_radians_i = thetaM[i] * math.pi / 180.0
-            rhoMparaArea += d[i] * rhoM[i] * math.cos(thetaM_radians_i)
-            rhoMperpArea += d[i] * rhoM[i] * math.sin(thetaM_radians_i)
+            # /* Use pre-calculated next values */
+            rhoMpara_area += rhoMpara * d[i]
+            rhoMperp_area += rhoMperp * d[i]
 
             # /* If no more slices or sigma != 0, break immediately */
             i += 1
             if (i == n or sigma[i-1] != 0.):
                 break
-
-            # /* If next slice has zero width just skip calculations */
-            if d[i] == 0:
-                continue
 
             # /* If next slice exceeds limit then break */
             if (rho[i] < rholo):
@@ -171,48 +174,53 @@ def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
             if ((irhohi-irholo)*(dz+d[i]) > dA):
                 break
 
-            if (rhoM[i] * math.cos(thetaM[i] * math.pi / 180.0) < mparalo):
-                mparalo = rhoM[i] * math.cos(thetaM[i] * math.pi / 180.0)
-            if (rhoM[i] * math.cos(thetaM[i] * math.pi / 180.0) > mparahi):
-                mparahi = rhoM[i] * math.cos(thetaM[i] * math.pi / 180.0)
+            # /* Pre-calculate projections of next layer */
+            thetaM_radians = thetaM[i] * math.pi / 180.0
+            rhoMpara = rhoM[i] * math.cos(thetaM_radians)
+            rhoMperp = rhoM[i] * math.sin(thetaM_radians)
+
+            if (rhoMpara < mparalo):
+                mparalo = rhoMpara
+            if (rhoMpara > mparahi):
+                mparahi = rhoMpara
             if ((mparahi-mparalo)*(dz+d[i]) > dA):
                 break
 
-            if (rhoM[i] * math.sin(thetaM[i] * math.pi / 180.0) < mperplo):
-                mperplo = rhoM[i] * math.sin(thetaM[i] * math.pi / 180.0)
-            if (rhoM[i] * math.sin(thetaM[i] * math.pi / 180.0) > mperphi):
-                mperphi = rhoM[i] * math.sin(thetaM[i] * math.pi / 180.0)
+            if (rhoMperp < mperplo):
+                mperplo = rhoMperp
+            if (rhoMperp > mperphi):
+                mperphi = rhoMperp
             if ((mperphi-mperplo)*(dz+d[i]) > dA):
                 break
 
-        # /* Save the layer */
-        assert(newi < n)
+        assert(newi < m)
         d[newi] = dz
-        if (i == n):
-            # /* Last layer uses surface values */
-            rho[newi] = rho[n-1]
-            irho[newi] = irho[n-1]
-            rhoM[newi] = rhoM[n-1]
-            thetaM[newi] = thetaM[n-1]
-            # /* No interface for final layer */
-        elif (dz == 0):
-            # /* if dz (sum) is zero, then this layer doesn't matter 
-            #  * and we don't need to set anything
-            #  */ 
-            pass
+        if (dz == 0):
+            rho[newi] = rho[i-1]
+            irho[newi] = irho[i-1]
+            rhoM[newi] = rhoM[i-1]
+            thetaM[newi] = thetaM[i-1]
         else:
-            # /* Middle layers use average values */
             rho[newi] = rhoarea / dz
             irho[newi] = irhoarea / dz
-            mean_rhoM_para = rhoMparaArea / dz
-            mean_rhoM_perp = rhoMperpArea / dz
-            mean_rhoM = math.sqrt(mean_rhoM_para**2 + mean_rhoM_perp**2)
-            thetaM_from_mean = math.atan2(mean_rhoM_perp, mean_rhoM_para) * 180.0 / math.pi
+            mean_rhoMpara = rhoMpara_area / dz
+            mean_rhoMperp = rhoMperp_area / dz
+            mean_rhoM = math.sqrt(mean_rhoMpara**2 + mean_rhoMperp**2)
+            thetaM_from_mean = math.atan2(mean_rhoMperp, mean_rhoMpara) * 180.0 / math.pi
             rhoM[newi] = mean_rhoM
             thetaM[newi] = thetaM_from_mean
-            sigma[newi] = sigma[i-1]
-            # /* First layer uses substrate values */
+        sigma[newi] = sigma[i-1]
+
         newi += 1
+
+    # /* Save the last layer */
+    # /* Last layer uses surface values */
+    rho[newi] = rho[n-1]
+    irho[newi] = irho[n-1]
+    rhoM[newi] = rhoM[n-1]
+    thetaM[newi] = thetaM[n-1]
+    # /* No interface for final layer */
+    newi += 1
 
     return newi
 
