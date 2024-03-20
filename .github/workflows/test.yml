@@ -104,7 +104,7 @@ jobs:
       env:
         TEST_PYPI_API_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
       if: env.TEST_PYPI_API_TOKEN != null
-      uses: pypa/gh-action-pypi-publish@master
+      uses: pypa/gh-action-pypi-publish@v1.8.14
       with:
         skip_existing: true
         password: ${{ secrets.TEST_PYPI_API_TOKEN }}
@@ -112,6 +112,6 @@ jobs:
 
     - name: Publish distribution to PyPI
       if: startsWith(github.ref, 'refs/tags')
-      uses: pypa/gh-action-pypi-publish@master
+      uses: pypa/gh-action-pypi-publish@v1.8.14
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
