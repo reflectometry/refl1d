@@ -8,7 +8,7 @@ from typing import Union, Dict, List, Optional
 
 import numpy as np
 from bumps.webview.server import webserver
-from bumps.webview.server.webserver import start_app, sio, main, create_server_task, display_inline_jupyter
+from bumps.webview.server.webserver import start_app, sio, main, create_server_task, display_inline_jupyter, open_tab_link
 
 # Register the refl1d model loader
 import refl1d.fitplugin

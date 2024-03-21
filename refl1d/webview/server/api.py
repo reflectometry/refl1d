@@ -4,7 +4,8 @@ import numpy as np
 from refl1d.experiment import Experiment, ExperimentBase, MixedExperiment
 import refl1d.probe
 from bumps.webview.server.api import (
-    register, get_chisq, state, to_json_compatible_dict, log, publish, deserialize_problem, set_problem
+    register, get_chisq, state, to_json_compatible_dict, log, publish, 
+    deserialize_problem, set_problem, logger
 )
 import bumps.webview.server.api as bumps_api
 from bumps.errplot import calc_errors_from_state
@@ -107,16 +108,16 @@ async def get_profile_uncertainty_plot(auto_align: bool=True, align: float=0., n
     if uncertainty_state is not None:
         import time
         start_time = time.time()
-        print('queueing new profile uncertainty plot...', start_time)
+        logger.info(f'queueing new profile uncertainty plot... {start_time}')
         errs = calc_errors_from_state(fitProblem, uncertainty_state, nshown=nshown, random=random, portion=1.0)
-        print('errors calculated: ', time.time() - start_time)
+        logger.info(f'errors calculated: {time.time() - start_time}')
         error_result = show_errors(errs, npoints=npoints, align=align_arg, residuals=residuals)
         error_result['fig'] = error_result['fig'].to_dict()
-        print("time to render but not serialize...", time.time() - start_time)
+        logger.info(f"time to render but not serialize... {time.time() - start_time}")
         output = to_json_compatible_dict(error_result)
         del error_result
         end_time = time.time()
-        print("time to draw profile uncertainty plot:", end_time - start_time)
+        logger.info(f"time to draw profile uncertainty plot: {end_time - start_time}")
         return output
     else:
         return None
