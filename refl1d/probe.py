@@ -1733,19 +1733,19 @@ def measurement_union(xs):
     TL = set()
     for x in xs:
         if x is not None:
-            TL |= set(zip(x.T+x.theta_offset.value, x.dT, x.L, x.dL, x.dQ))
-    T, dT, L, dL, dQ = zip(*[item for item in TL])
-    T, dT, L, dL, dQ = [np.asarray(v) for v in (T, dT, L, dL, dQ)]
+            TL |= set(zip(x.T, x.T+x.theta_offset.value, x.dT, x.L, x.dL, x.dQ))
+    To, T, dT, L, dL, dQ = zip(*[item for item in TL])
+    To, T, dT, L, dL, dQ = [np.asarray(v) for v in (To, T, dT, L, dL, dQ)]
 
     # Convert to Q, dQ
     Q = TL2Q(T, L)
 
     # Sort by Q
     idx = np.argsort(Q)
-    T, dT, L, dL, Q, dQ = T[idx], dT[idx], L[idx], dL[idx], Q[idx], dQ[idx]
+    To, T, dT, L, dL, Q, dQ = To[idx], T[idx], dT[idx], L[idx], dL[idx], Q[idx], dQ[idx]
     if abs(Q[1:] - Q[:-1]).any() < 1e-14:
         raise ValueError("Q is not unique")
-    return T, dT, L, dL, Q, dQ
+    return To, T, dT, L, dL, Q, dQ
 
 def Qmeasurement_union(xs):
     """
@@ -1916,15 +1916,16 @@ class PolarizedNeutronProbe:
 
         unique_offsets = set(theta_offsets)
         shared_offset = theta_offsets[0] if len(unique_offsets) == 1 else None
-        if self._theta_offsets is not None \
-            and shared_offset is not None \
-            and len(set(self._theta_offsets)) == 1:
-            # offset was shared, and is shared, but value changed
-            Q = TL2Q(T=self.T + shared_offset, L=self.L)
+        if shared_offset is not None and self._theta_offsets is not None:
+            # offset is shared, and measurement_union has been calculated before
+            # (so self.To is already populated)
+            self.T = self._To + shared_offset
+            Q = TL2Q(T=self.T, L=self.L)
             self.calc_Qo = Q
         else:
             # unshared offsets changed, or union has not been calculated before
-            self.T, self.dT, self.L, self.dL, self.Q, self.dQo \
+            # returned T has offset applied, To does not
+            self._To, self.T, self.dT, self.L, self.dL, self.Q, self.dQo \
                 = measurement_union(self.xs)
             self._set_calc(self.T, self.L)
 
