@@ -1733,19 +1733,19 @@ def measurement_union(xs):
     TL = set()
     for x in xs:
         if x is not None:
-            TL |= set(zip(x.T+x.theta_offset.value, x.dT, x.L, x.dL, x.dQ))
-    T, dT, L, dL, dQ = zip(*[item for item in TL])
-    T, dT, L, dL, dQ = [np.asarray(v) for v in (T, dT, L, dL, dQ)]
+            TL |= set(zip(x.calc_T, x.calc_T+x.theta_offset.value, x.calc_L))
+    To, T, L = zip(*[item for item in TL])
+    To, T, L = [np.asarray(v) for v in (To, T, L)]
 
     # Convert to Q, dQ
     Q = TL2Q(T, L)
 
     # Sort by Q
     idx = np.argsort(Q)
-    T, dT, L, dL, Q, dQ = T[idx], dT[idx], L[idx], dL[idx], Q[idx], dQ[idx]
+    To, T, L, Q = To[idx], T[idx], L[idx], Q[idx]
     if abs(Q[1:] - Q[:-1]).any() < 1e-14:
         raise ValueError("Q is not unique")
-    return T, dT, L, dL, Q, dQ
+    return To, T, L, Q
 
 def Qmeasurement_union(xs):
     """
@@ -1825,7 +1825,7 @@ class PolarizedNeutronProbe:
             self.oversample(oversampling, oversampling_seed)
         
     @property
-    def xs(self):
+    def xs(self) -> List[Union[NeutronProbe, None]]:
         return [getattr(self, xs_name) for xs_name in self._xs_names]
     
     def parameters(self):
@@ -1893,20 +1893,11 @@ class PolarizedNeutronProbe:
                 x.theta_offset = theta_offset
                 x.sample_broadening = sample_broadening
 
-    def oversample(self, n=6, seed=1):
-        self._oversample(n, seed)
-        self.oversampling = n
-        self.oversampling_seed = seed
-
-    def _oversample(self, n=6, seed=1):
-        # doc string is inherited from parent (see below)
-        rng = numpy.random.RandomState(seed=seed)
-        T = rng.normal(self.T[:, None], self.dT[:, None], size=(len(self.dT), n))
-        L = rng.normal(self.L[:, None], self.dL[:, None], size=(len(self.dL), n))
-        T = T.flatten()
-        L = L.flatten()
-        self._set_calc(T, L)
-    _oversample.__doc__ = Probe.oversample.__doc__
+    def oversample(self, **kw):
+        for xs in self.xs:
+            if xs is not None:
+                xs.oversample(**kw)
+    oversample.__doc__ = Probe.oversample.__doc__
 
     def _calculate_union(self):
         theta_offsets = [x.theta_offset.value for x in self.xs if x is not None]
@@ -1916,16 +1907,16 @@ class PolarizedNeutronProbe:
 
         unique_offsets = set(theta_offsets)
         shared_offset = theta_offsets[0] if len(unique_offsets) == 1 else None
-        if self._theta_offsets is not None \
-            and shared_offset is not None \
-            and len(set(self._theta_offsets)) == 1:
-            # offset was shared, and is shared, but value changed
-            Q = TL2Q(T=self.T + shared_offset, L=self.L)
+        if shared_offset is not None and self._theta_offsets is not None:
+            # offset is shared, and measurement_union has been calculated before
+            # (so self.To is already populated)
+            self.T = self._To + shared_offset
+            Q = TL2Q(T=self.T, L=self.L)
             self.calc_Qo = Q
         else:
             # unshared offsets changed, or union has not been calculated before
-            self.T, self.dT, self.L, self.dL, self.Q, self.dQo \
-                = measurement_union(self.xs)
+            # returned T has offset applied, To does not
+            self._To, self.T, self.L, self.Q = measurement_union(self.xs)
             self._set_calc(self.T, self.L)
 
         self._theta_offsets = theta_offsets
