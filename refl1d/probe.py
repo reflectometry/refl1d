@@ -1825,7 +1825,7 @@ class PolarizedNeutronProbe:
             self.oversample(oversampling, oversampling_seed)
         
     @property
-    def xs(self):
+    def xs(self) -> List[Union[NeutronProbe, None]]:
         return [getattr(self, xs_name) for xs_name in self._xs_names]
     
     def parameters(self):
@@ -1893,20 +1893,11 @@ class PolarizedNeutronProbe:
                 x.theta_offset = theta_offset
                 x.sample_broadening = sample_broadening
 
-    def oversample(self, n=6, seed=1):
-        self._oversample(n, seed)
-        self.oversampling = n
-        self.oversampling_seed = seed
-
-    def _oversample(self, n=6, seed=1):
-        # doc string is inherited from parent (see below)
-        rng = numpy.random.RandomState(seed=seed)
-        T = rng.normal(self.T[:, None], self.dT[:, None], size=(len(self.dT), n))
-        L = rng.normal(self.L[:, None], self.dL[:, None], size=(len(self.dL), n))
-        T = T.flatten()
-        L = L.flatten()
-        self._set_calc(T, L)
-    _oversample.__doc__ = Probe.oversample.__doc__
+    def oversample(self, **kw):
+        for xs in self.xs:
+            if xs is not None:
+                xs.oversample(**kw)
+    oversample.__doc__ = Probe.oversample.__doc__
 
     def _calculate_union(self):
         theta_offsets = [x.theta_offset.value for x in self.xs if x is not None]
