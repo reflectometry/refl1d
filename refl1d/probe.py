@@ -1733,19 +1733,19 @@ def measurement_union(xs):
     TL = set()
     for x in xs:
         if x is not None:
-            TL |= set(zip(x.T, x.T+x.theta_offset.value, x.dT, x.L, x.dL, x.dQ))
-    To, T, dT, L, dL, dQ = zip(*[item for item in TL])
-    To, T, dT, L, dL, dQ = [np.asarray(v) for v in (To, T, dT, L, dL, dQ)]
+            TL |= set(zip(x.calc_T, x.calc_T+x.theta_offset.value, x.calc_L))
+    To, T, L = zip(*[item for item in TL])
+    To, T, L = [np.asarray(v) for v in (To, T, L)]
 
     # Convert to Q, dQ
     Q = TL2Q(T, L)
 
     # Sort by Q
     idx = np.argsort(Q)
-    To, T, dT, L, dL, Q, dQ = To[idx], T[idx], dT[idx], L[idx], dL[idx], Q[idx], dQ[idx]
+    To, T, L, Q = To[idx], T[idx], L[idx], Q[idx]
     if abs(Q[1:] - Q[:-1]).any() < 1e-14:
         raise ValueError("Q is not unique")
-    return To, T, dT, L, dL, Q, dQ
+    return To, T, L, Q
 
 def Qmeasurement_union(xs):
     """
@@ -1925,8 +1925,7 @@ class PolarizedNeutronProbe:
         else:
             # unshared offsets changed, or union has not been calculated before
             # returned T has offset applied, To does not
-            self._To, self.T, self.dT, self.L, self.dL, self.Q, self.dQo \
-                = measurement_union(self.xs)
+            self._To, self.T, self.L, self.Q = measurement_union(self.xs)
             self._set_calc(self.T, self.L)
 
         self._theta_offsets = theta_offsets
