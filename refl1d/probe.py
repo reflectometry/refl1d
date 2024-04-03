@@ -1893,10 +1893,11 @@ class PolarizedNeutronProbe:
                 x.theta_offset = theta_offset
                 x.sample_broadening = sample_broadening
 
-    def oversample(self, **kw):
+    def oversample(self, n, seed=1):
         for xs in self.xs:
             if xs is not None:
-                xs.oversample(**kw)
+                xs.oversample(n, seed=1)
+        self._theta_offsets = None
     oversample.__doc__ = Probe.oversample.__doc__
 
     def _calculate_union(self):
