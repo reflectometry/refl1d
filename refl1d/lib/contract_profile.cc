@@ -230,37 +230,59 @@ contract_mag(int n, double d[], double sigma[],
              double rhoM[], double thetaM[],
              double dA)
 {
-  double dz, weighted_dz, weight;
+  double dz;
   double rholo, rhohi, rhoarea;
   double irholo, irhohi, irhoarea;
-  double maglo, maghi, mag, rhoMarea, thetaMarea;
-  int i, newi;
+  double mparalo, mparahi, rhoMpara, rhoMpara_area;
+  double mperplo, mperphi, rhoMperp, rhoMperp_area;
+  double mean_rhoMpara, mean_rhoMperp, mean_rhoM;
+  double thetaM_area, thetaM_phase_offset;
+  double thetaM_radians, thetaM_from_mean;
+  int i, newi, m;
+  m = n - 1; /* last middle layer */
   i=newi=1; /* Skip the substrate */
-  while (i < n) {
+  while (i < m) {
 
     /* Get ready for the next layer */
     /* Accumulation of the first row happens in the inner loop */
-    dz = weighted_dz = 0;
-    rhoarea = irhoarea = rhoMarea = thetaMarea = 0.;
-    rholo=rhohi=rho[i];
-    irholo=irhohi=irho[i];
-    maglo=maghi=rhoM[i]*cos(thetaM[i]*M_PI/180.);
+    dz = 0;
+    rhoarea = irhoarea = rhoMpara_area = rhoMperp_area = thetaM_area = 0.0;
+    rholo = rhohi = rho[i];
+    irholo = irhohi = irho[i];
+
+    /*
+     * averaged thetaM is from atan2 (when rhoM is nonzero)
+    * which returns values in the range -180 to 180,
+    * so we keep track of the phase offset of the input
+    * to match it afterward
+    */
+    thetaM_phase_offset = floor((thetaM[i] + 180.) / 360.0);
+
+    /* Pre-calculate projections */
+    thetaM_radians = thetaM[i] * M_PI / 180.0;
+    rhoMpara = rhoM[i] * cos(thetaM_radians);
+    rhoMperp = rhoM[i] * sin(thetaM_radians);
+    /*
+     * Note that mpara indicates M when theta_M = 0,
+     * and mperp indicates M when theta_M = 90,
+     * but in most cases M is parallel to H when theta_M = 270
+     * and Aguide = 270
+     */
+    mparalo = mparahi = rhoMpara;
+    mperplo = mperphi = rhoMperp;
 
     /* Accumulate slices into layer */
-    for (;;) {
-      assert(i < n);
+    while (i < m) {
+      assert(i < m);
       /* Accumulate next slice */
       dz += d[i];
       rhoarea+=d[i]*rho[i];
       irhoarea+=d[i]*irho[i];
-
-      /* Weight the magnetic signal by the in-plane contribution
-       * when accumulating rhoM and thetaM. */
-      weight = cos(thetaM[i]*M_PI/180.);
-      mag = rhoM[i]*weight;
-      rhoMarea += d[i]*rhoM[i]*weight;
-      thetaMarea += d[i]*thetaM[i]*weight;
-      weighted_dz += d[i]*weight;
+      /* thetaM_area is only used if rhoM is zero */
+      thetaM_area += d[i] * thetaM[i];
+      /* Use pre-calculated next values */
+      rhoMpara_area += rhoMpara * d[i];
+      rhoMperp_area += rhoMperp * d[i];
 
       /* If no more slices or sigma != 0, break immediately */
       if (++i == n || sigma[i-1] != 0.) break;
@@ -274,31 +296,63 @@ contract_mag(int n, double d[], double sigma[],
       if (irho[i] > irhohi) irhohi = irho[i];
       if ((irhohi-irholo)*(dz+d[i]) > dA) break;
 
-      if (mag < maglo) maglo = mag;
-      if (mag > maghi) maghi = mag;
-      if ((maghi-maglo)*(dz+d[i]) > dA) break;
+      /* Pre-calculate projections of next layer */
+      thetaM_radians = thetaM[i] * M_PI / 180.0;
+      rhoMpara = rhoM[i] * cos(thetaM_radians);
+      rhoMperp = rhoM[i] * sin(thetaM_radians);
+
+      /* If next slice is wrapped in phase, break */
+      if (floor((thetaM[i] + 180.0) / 360.0) != thetaM_phase_offset) break;
+
+      if (rhoMpara < mparalo) mparalo = rhoMpara;
+      if (rhoMpara > mparahi) mparahi = rhoMpara;
+      if ((mparahi-mparalo)*(dz+d[i]) > dA) break;
+
+      if (rhoMperp < mperplo) mperplo = rhoMperp;
+      if (rhoMperp > mperphi) mperphi = rhoMperp;
+      if ((mperphi-mperplo)*(dz+d[i]) > dA) break;
     }
 
     /* Save the layer */
-    assert(newi < n);
+    assert(newi < m);
     d[newi] = dz;
-    if (i == n) {
+    if (dz == 0) {
       /* Last layer uses surface values */
-      rho[newi] = rho[n-1];
-      irho[newi] = irho[n-1];
-      rhoM[newi] = rhoM[n-1];
-      thetaM[newi] = thetaM[n-1];
+      rho[newi] = rho[i-1];
+      irho[newi] = irho[i-1];
+      rhoM[newi] = rhoM[i-1];
+      thetaM[newi] = thetaM[i-1];
       /* No interface for final layer */
     } else {
       /* Middle layers uses average values */
       rho[newi] = rhoarea / dz;
       irho[newi] = irhoarea / dz;
-      rhoM[newi] = rhoMarea / weighted_dz;
-      thetaM[newi] = thetaMarea / weighted_dz;
-      sigma[newi] = sigma[i-1];
+      mean_rhoMpara = rhoMpara_area / dz;
+      mean_rhoMperp = rhoMperp_area / dz;
+      mean_rhoM = sqrt((mean_rhoMpara * mean_rhoMpara) + (mean_rhoMperp * mean_rhoMperp));
+      if (mean_rhoM == 0.0) {
+        /* If rhoM is zero, then thetaM is meaningless: use plain average */
+        thetaM[newi] = thetaM_area / dz;
+      } else {
+        /* Otherwise, use atan2 to get the average angle */
+        thetaM_from_mean = atan2(mean_rhoMperp, mean_rhoMpara) * 180.0 / M_PI;
+        thetaM_from_mean += 360.0 * thetaM_phase_offset;
+        thetaM[newi] = thetaM_from_mean;
+      }
+      rhoM[newi] = mean_rhoM;
     } /* First layer uses substrate values */
+    sigma[newi] = sigma[i-1];
     newi++;
   }
+
+  /* Save the last layer */
+  /* Last layer uses surface values */
+  rho[newi] = rho[n-1];
+  irho[newi] = irho[n-1];
+  rhoM[newi] = rhoM[n-1];
+  thetaM[newi] = thetaM[n-1];
+  /* No interface for final layer */
+  newi++;
 
   return newi;
 }
