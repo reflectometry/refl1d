@@ -236,6 +236,7 @@ contract_mag(int n, double d[], double sigma[],
   double mparalo, mparahi, rhoMpara, rhoMpara_area;
   double mperplo, mperphi, rhoMperp, rhoMperp_area;
   double mean_rhoMpara, mean_rhoMperp, mean_rhoM;
+  double thetaM_area, thetaM_phase_offset;
   double thetaM_radians, thetaM_from_mean;
   int i, newi, m;
   m = n - 1; /* last middle layer */
@@ -245,9 +246,18 @@ contract_mag(int n, double d[], double sigma[],
     /* Get ready for the next layer */
     /* Accumulation of the first row happens in the inner loop */
     dz = 0;
-    rhoarea = irhoarea = rhoMpara_area = rhoMperp_area = 0.0;
+    rhoarea = irhoarea = rhoMpara_area = rhoMperp_area = thetaM_area = 0.0;
     rholo = rhohi = rho[i];
     irholo = irhohi = irho[i];
+
+    /*
+     * averaged thetaM is from atan2 (when rhoM is nonzero)
+    * which returns values in the range -180 to 180,
+    * so we keep track of the phase offset of the input
+    * to match it afterward
+    */
+    thetaM_phase_offset = floor((thetaM[i] + 180.) / 360.0);
+
     /* Pre-calculate projections */
     thetaM_radians = thetaM[i] * M_PI / 180.0;
     rhoMpara = rhoM[i] * cos(thetaM_radians);
@@ -268,6 +278,8 @@ contract_mag(int n, double d[], double sigma[],
       dz += d[i];
       rhoarea+=d[i]*rho[i];
       irhoarea+=d[i]*irho[i];
+      /* thetaM_area is only used if rhoM is zero */
+      thetaM_area += d[i] * thetaM[i];
       /* Use pre-calculated next values */
       rhoMpara_area += rhoMpara * d[i];
       rhoMperp_area += rhoMperp * d[i];
@@ -288,6 +300,9 @@ contract_mag(int n, double d[], double sigma[],
       thetaM_radians = thetaM[i] * M_PI / 180.0;
       rhoMpara = rhoM[i] * cos(thetaM_radians);
       rhoMperp = rhoM[i] * sin(thetaM_radians);
+
+      /* If next slice is wrapped in phase, break */
+      if (floor((thetaM[i] + 180.0) / 360.0) != thetaM_phase_offset) break;
 
       if (rhoMpara < mparalo) mparalo = rhoMpara;
       if (rhoMpara > mparahi) mparahi = rhoMpara;
@@ -315,9 +330,16 @@ contract_mag(int n, double d[], double sigma[],
       mean_rhoMpara = rhoMpara_area / dz;
       mean_rhoMperp = rhoMperp_area / dz;
       mean_rhoM = sqrt((mean_rhoMpara * mean_rhoMpara) + (mean_rhoMperp * mean_rhoMperp));
-      thetaM_from_mean = atan2(mean_rhoMperp, mean_rhoMpara) * 180.0 / M_PI;
+      if (mean_rhoM == 0.0) {
+        /* If rhoM is zero, then thetaM is meaningless: use plain average */
+        thetaM[newi] = thetaM_area / dz;
+      } else {
+        /* Otherwise, use atan2 to get the average angle */
+        thetaM_from_mean = atan2(mean_rhoMperp, mean_rhoMpara) * 180.0 / M_PI;
+        thetaM_from_mean += 360.0 * thetaM_phase_offset;
+        thetaM[newi] = thetaM_from_mean;
+      }
       rhoM[newi] = mean_rhoM;
-      thetaM[newi] = thetaM_from_mean;
     } /* First layer uses substrate values */
     sigma[newi] = sigma[i-1];
     newi++;
