@@ -90,7 +90,7 @@ class BaseMagnetism:
                                                 name=name+" interfaceM below")
         if interface_above is not None:
             interface_above = Parameter.default(interface_above, limits=(0, None),
-                                                name=name+"  interfaceM above")
+                                                name=name+" interfaceM above")
         self.interface_below = interface_below
         self.interface_above = interface_above
         self.name = name
