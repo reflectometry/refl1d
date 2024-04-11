@@ -126,9 +126,18 @@ def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
         # /* Get ready for the next layer */
         # /* Accumulation of the first row happens in the inner loop */
         dz = 0
-        rhoarea = irhoarea = rhoMpara_area = rhoMperp_area = 0.0
+        rhoarea = irhoarea = rhoMpara_area = rhoMperp_area = thetaM_area = 0.0
         rholo = rhohi = rho[i]
         irholo = irhohi = irho[i]
+
+        # /*
+        #  * averaged thetaM is from atan2 (when rhoM is nonzero)
+        #  * which returns values in the range -180 to 180,
+        #  * so we keep track of the phase offset of the input
+        #  * to match it afterward
+        #  */
+        thetaM_phase_offset = (thetaM[i] + 180.) // 360.0
+
         # /* Pre-calculate projections */
         thetaM_radians = thetaM[i] * math.pi / 180.0
         rhoMpara = rhoM[i] * math.cos(thetaM_radians)
@@ -148,6 +157,8 @@ def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
             dz += d[i]
             rhoarea += d[i] * rho[i]
             irhoarea += d[i] * irho[i]
+            # /* thetaM_area is only used if rhoM is zero */
+            thetaM_area += d[i] * thetaM[i]
             # /* Use pre-calculated next values */
             rhoMpara_area += rhoMpara * d[i]
             rhoMperp_area += rhoMperp * d[i]
@@ -177,6 +188,10 @@ def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
             rhoMpara = rhoM[i] * math.cos(thetaM_radians)
             rhoMperp = rhoM[i] * math.sin(thetaM_radians)
 
+            # /* If next slice is wrapped in phase, break */
+            if (thetaM[i] + 180.0) // 360.0 != thetaM_phase_offset:
+                break
+
             if (rhoMpara < mparalo):
                 mparalo = rhoMpara
             if (rhoMpara > mparahi):
@@ -204,9 +219,15 @@ def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
             mean_rhoMpara = rhoMpara_area / dz
             mean_rhoMperp = rhoMperp_area / dz
             mean_rhoM = math.sqrt(mean_rhoMpara**2 + mean_rhoMperp**2)
-            thetaM_from_mean = math.atan2(mean_rhoMperp, mean_rhoMpara) * 180.0 / math.pi
+            if mean_rhoM == 0:
+                # /* If rhoM is zero, then thetaM is meaningless: use plain average */
+                thetaM[newi] = thetaM_area / dz
+            else:
+                # /* Otherwise, calculate the mean thetaM */
+                thetaM_from_mean = math.atan2(mean_rhoMperp, mean_rhoMpara) * 180.0 / math.pi
+                thetaM_from_mean += 360.0 * thetaM_phase_offset
+                thetaM[newi] = thetaM_from_mean
             rhoM[newi] = mean_rhoM
-            thetaM[newi] = thetaM_from_mean
         sigma[newi] = sigma[i-1]
 
         newi += 1
