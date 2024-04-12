@@ -13,7 +13,7 @@ def get_color(index: int):
 
 def show_errors(errors, npoints, align, residuals=True):
     rows = 2 if residuals else 1
-    fig = make_subplots(rows=rows, cols=1)
+    fig = make_subplots(rows=rows, cols=1, specs=[[{"secondary_y": True}]])
     contour_data = show_profiles(errors, align, CONTOURS, npoints, fig=fig, row=1, col=1)
     if residuals:
         show_residuals(errors, None, fig=fig, row=2, col=1)
@@ -45,29 +45,33 @@ def show_residuals(errors, contours, fig: go.Figure, row: Optional[int] = None, 
 
 
 def _profiles_overplot(profiles, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
+    has_magnetism = False
     for model_index, (model, group) in enumerate(profiles.items()):
         name = model.name
         absorbing = any((L[2] != 1e-4).any() for L in group)
         magnetic = (len(group[0]) > 3)
         # Note: Use 3 colours per dataset for consistency
-        color_index = model_index * 3
-        _draw_overplot(group, 1, name + ' rho', fig=fig, color_index=color_index, row=row, col=col)
+        color_index = model_index * 4
+        _draw_overplot(group, 1, name + ' rho', fig=fig, color_index=color_index, row=row, col=col, secondary_y=True)
         if absorbing:
-            _draw_overplot(group, 2, name + ' irho', fig=fig, color_index=color_index+1, row=row, col=col)
+            _draw_overplot(group, 2, name + ' irho', fig=fig, color_index=color_index+1, row=row, col=col, secondary_y=True)
         if magnetic:
-            _draw_overplot(group, 3, name + ' rhoM', fig=fig, color_index=color_index+2, row=row, col=col)
-    _profile_labels(fig=fig, row=row, col=col)
+            has_magnetism = True
+            _draw_overplot(group, 3, name + ' rhoM', fig=fig, color_index=color_index+2, row=row, col=col, secondary_y=True)
+            _draw_overplot(group, 4, name + ' thetaM', fig=fig, color_index=color_index+3, row=row, col=col, secondary_y=False)
+    _profile_labels(fig=fig, row=row, col=col, magnetic=has_magnetism)
 
-def _draw_overplot(group, index, label, fig: go.Figure, color_index: int, row: Optional[int] = None, col: Optional[int] = None):
+def _draw_overplot(group, index, label, fig: go.Figure, color_index: int, row: Optional[int] = None, col: Optional[int] = None, secondary_y: bool = False):
     color = get_color(color_index)
     for L in group[1:]:
-        fig.add_scattergl(x=L[0], y=L[index], opacity=0.1, showlegend=False, mode="lines", line={"color": color}, hoverinfo="skip", row=row, col=col)
+        fig.add_scattergl(x=L[0], y=L[index], opacity=0.1, showlegend=False, mode="lines", line={"color": color}, hoverinfo="skip", row=row, col=col, secondary_y=secondary_y)
     # Plot best
     L = group[0]
-    fig.add_scattergl(x=L[0], y=L[index], name=label, mode="lines", line={"color": color}, hoverinfo="skip", row=row, col=col)
+    fig.add_scattergl(x=L[0], y=L[index], name=label, mode="lines", line={"color": color}, hoverinfo="skip", row=row, col=col, secondary_y=secondary_y)
 
 def _profiles_contour(profiles, contours, npoints, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
     contour_data = {}
+    has_magnetism = False
     for model_index, (model, group) in enumerate(profiles.items()):
         name = model.name if model.name is not None else f"Model {model_index}"
         contour_data[name] = {}
@@ -78,38 +82,46 @@ def _profiles_contour(profiles, contours, npoints, fig: go.Figure, row: Optional
         zp = np.linspace(np.min(z), np.max(z), npoints)
         contour_data[name]['z'] = zp
         contour_data[name]['data'] = {}
-        # Note: Use 3 colours per dataset for consistency
-        color_index = model_index * 3
-        contour_data[name]['data']['rho'] = _draw_contours(group, 1, name + ' rho', zp, contours, fig=fig, color_index=color_index, row=row, col=col)
+        # Note: Use 4 colours per dataset for consistency
+        color_index = model_index * 4
+        contour_data[name]['data']['rho'] = _draw_contours(group, 1, name + ' rho', zp, contours, fig=fig, color_index=color_index, row=row, col=col, secondary_y=True)
         if absorbing:
-            contour_data[name]['data']['irho'] = _draw_contours(group, 2, name + ' irho', zp, contours, fig=fig, color_index=color_index+1, row=row, col=col)
+            contour_data[name]['data']['irho'] = _draw_contours(group, 2, name + ' irho', zp, contours, fig=fig, color_index=color_index+1, row=row, col=col, secondary_y=True)
         if magnetic:
-            contour_data[name]['data']['rhonM'] = _draw_contours(group, 3, name + ' rhoM', zp, contours, fig=fig, color_index=color_index+2, row=row, col=col)
-    _profile_labels(fig=fig, row=row, col=col)
+            has_magnetism = True
+            contour_data[name]['data']['rhonM'] = _draw_contours(group, 3, name + ' rhoM', zp, contours, fig=fig, color_index=color_index+2, row=row, col=col, secondary_y=True)
+            contour_data[name]['data']['thetaM'] = _draw_contours(group, 4, name + ' thetaM', zp, contours, fig=fig, color_index=color_index+3, row=row, col=col, secondary_y=False)
+
+    _profile_labels(fig=fig, row=row, col=col, magnetic=has_magnetism)
     return contour_data
 
-def _draw_contours(group, index, label, zp, contours, fig: go.Figure, color_index: int, row: Optional[int] = None, col: Optional[int] = None):
+def _draw_contours(group, index, label, zp, contours, fig: go.Figure, color_index: int, row: Optional[int] = None, col: Optional[int] = None, secondary_y: bool = False):
     # Interpolate on common z
     fp = np.vstack([np.interp(zp, L[0], L[index]) for L in group])
     # Plot the quantiles
     color = get_color(color_index)
     legendgroup = f"group_{color_index}"
-    fig.add_scattergl(x=zp, y=fp[0], mode="lines", name=label, line=dict(color=color), legendgroup=legendgroup, row=row, col=col)
-    q = _plot_quantiles(zp, fp, contours, color, alpha=None, fig=fig, row=row, col=col, legendgroup=legendgroup)
+    fig.add_scattergl(x=zp, y=fp[0], mode="lines", name=label, line=dict(color=color), legendgroup=legendgroup, row=row, col=col, secondary_y=secondary_y)
+    q = _plot_quantiles(zp, fp, contours, color, alpha=None, fig=fig, row=row, col=col, legendgroup=legendgroup, secondary_y=secondary_y)
     # Plot the best
     # axes.plot(zp, fp[0], '-', label=label, color=dark(color))
     return q
 
-def _profile_labels(fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
+def _profile_labels(fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None, magnetic: bool = False):
     fig.update_layout(template=None)
     fig.update_xaxes(title_text='z (Å)', row=row, col=col, showline=True, zeroline=False)
-    fig.update_yaxes(title_text='SLD (10⁻⁶/Å²)', row=row, col=col, showline=True)
+    fig.update_yaxes(title_text='SLD (10⁻⁶/Å²)', row=row, col=col, showline=True, secondary_y=True, side='left')
+    if magnetic:
+        fig.update_yaxes(
+           automargin=True, showgrid=False,
+           title_text='Magnetic Angle θ<sub>M</sub> / °',
+           row=row, col=col, showline=True, secondary_y=False, side='right')
 
 def _residuals_overplot(Q, residuals, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
     alpha = 0.6
     shift = 0
     for m_index, (m, r) in enumerate(residuals.items()):
-        color_index = m_index * 3
+        color_index = m_index * 4
         color = get_color(color_index)
         pop_size = r.shape[1] - 1
         qq = np.tile(Q[m], pop_size)
@@ -122,7 +134,7 @@ def _residuals_overplot(Q, residuals, fig: go.Figure, row: Optional[int] = None,
 def _residuals_contour(Q, residuals, contours, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
     shift = 0
     for model_index, (m, r) in enumerate(residuals.items()):
-        color_index = model_index * 3
+        color_index = model_index * 4
         color = get_color(color_index)
         x = Q[m]
         # residuals x may not be sorted:
@@ -145,7 +157,7 @@ def _profiles_draw_align_lines(profiles, slabs, align, fig: go.Figure, row: Opti
         if t1_offset is not None:
             fig.add_vline(x=t1_offset, line=dict(dash="dash"), row=row, col=col)
 
-def _plot_quantiles(x, y, contours, color, alpha, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None, legendgroup: Optional[str]=None):
+def _plot_quantiles(x, y, contours, color, alpha, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None, legendgroup: Optional[str]=None, secondary_y: bool=False):
     """
     Plot quantile curves for a set of lines.
 
@@ -168,6 +180,6 @@ def _plot_quantiles(x, y, contours, color, alpha, fig: go.Figure, row: Optional[
     if alpha is None:
         alpha = 2. / (len(q) + 1)
     for lo, hi in q:
-        fig.add_scattergl(x=x, y=lo, showlegend=False, mode="lines", line=dict(color=color, width=1), opacity=alpha, row=row, col=col, hoverinfo="skip", legendgroup=legendgroup)
-        fig.add_scattergl(x=x, y=hi, showlegend=False, mode="lines", line=dict(color=color, width=1), fill="tonexty", opacity=alpha, row=row, col=col, hoverinfo="skip", legendgroup=legendgroup)
+        fig.add_scattergl(x=x, y=lo, showlegend=False, mode="lines", line=dict(color=color, width=1), opacity=alpha, row=row, col=col, hoverinfo="skip", legendgroup=legendgroup, secondary_y=secondary_y)
+        fig.add_scattergl(x=x, y=hi, showlegend=False, mode="lines", line=dict(color=color, width=1), fill="tonexty", opacity=alpha, row=row, col=col, hoverinfo="skip", legendgroup=legendgroup, secondary_y=secondary_y)
     return q
