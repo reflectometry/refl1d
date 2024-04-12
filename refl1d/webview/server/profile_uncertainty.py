@@ -89,7 +89,7 @@ def _profiles_contour(profiles, contours, npoints, fig: go.Figure, row: Optional
             contour_data[name]['data']['irho'] = _draw_contours(group, 2, name + ' irho', zp, contours, fig=fig, color_index=color_index+1, row=row, col=col, secondary_y=True)
         if magnetic:
             has_magnetism = True
-            contour_data[name]['data']['rhonM'] = _draw_contours(group, 3, name + ' rhoM', zp, contours, fig=fig, color_index=color_index+2, row=row, col=col, secondary_y=True)
+            contour_data[name]['data']['rhoM'] = _draw_contours(group, 3, name + ' rhoM', zp, contours, fig=fig, color_index=color_index+2, row=row, col=col, secondary_y=True)
             contour_data[name]['data']['thetaM'] = _draw_contours(group, 4, name + ' thetaM', zp, contours, fig=fig, color_index=color_index+3, row=row, col=col, secondary_y=False)
 
     _profile_labels(fig=fig, row=row, col=col, magnetic=has_magnetism)
