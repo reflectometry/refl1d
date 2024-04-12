@@ -74,6 +74,8 @@ def _profiles_contour(profiles, contours, npoints, fig: go.Figure, row: Optional
     has_magnetism = False
     for model_index, (model, group) in enumerate(profiles.items()):
         name = model.name if model.name is not None else f"Model {model_index}"
+        if name in contour_data:
+            name += f" {model_index}"
         contour_data[name] = {}
         absorbing = any((L[2] > 1e-4).any() for L in group)
         magnetic = (len(group[0]) > 3)
