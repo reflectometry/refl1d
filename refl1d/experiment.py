@@ -596,7 +596,7 @@ class Experiment(ExperimentBase):
                 plt.plot(z, rhoM, ':r', transform=trans)
                 if (abs(thetaM-DEFAULT_THETA_M) > 1e-3).any():
                     ax = plt.twinx()
-                    plt.plot(z, thetaM, ':k', axes=ax, transform=trans)
+                    ax.plot(z, thetaM, ':k', transform=trans)
                     plt.ylabel('magnetic angle (degrees)')
             z, rho, irho, rhoM, thetaM = self.magnetic_smooth_profile()
             #rhoM_net = rhoM*np.cos(np.radians(thetaM))
@@ -607,7 +607,7 @@ class Experiment(ExperimentBase):
             ]
             if (abs(thetaM-DEFAULT_THETA_M) > 1e-3).any():
                 ax = plt.twinx()
-                h = plt.plot(z, thetaM, '-k', axes=ax, transform=trans, label='thetaM')
+                h = ax.plot(z, thetaM, '-k', transform=trans, label='thetaM')
                 handles.append(h[0])
                 plt.ylabel('magnetic angle (degrees)')
             plt.xlabel('depth (A)')
