@@ -235,7 +235,7 @@ contract_mag(int n, double d[], double sigma[],
   double irholo, irhohi, irhoarea;
   double mparalo, mparahi, rhoMpara, rhoMpara_area;
   double mperplo, mperphi, rhoMperp, rhoMperp_area;
-  double mean_rhoMpara, mean_rhoMperp, mean_rhoM;
+  double mean_rhoMpara, mean_rhoMperp, mean_rhoM, rhoM_sign;
   double thetaM_area, thetaM_phase_offset;
   double thetaM_radians, thetaM_from_mean;
   int i, newi, m;
@@ -259,6 +259,7 @@ contract_mag(int n, double d[], double sigma[],
     thetaM_phase_offset = floor((thetaM[i] + 180.) / 360.0);
 
     /* Pre-calculate projections */
+    rhoM_sign = copysign(1.0, rhoM[i]);
     thetaM_radians = thetaM[i] * M_PI / 180.0;
     rhoMpara = rhoM[i] * cos(thetaM_radians);
     rhoMperp = rhoM[i] * sin(thetaM_radians);
@@ -304,6 +305,9 @@ contract_mag(int n, double d[], double sigma[],
       /* If next slice is wrapped in phase, break */
       if (floor((thetaM[i] + 180.0) / 360.0) != thetaM_phase_offset) break;
 
+      /* If next slice has different sign for rhoM, break */
+      if (copysign(1.0, rhoM[i]) != rhoM_sign) break;
+
       if (rhoMpara < mparalo) mparalo = rhoMpara;
       if (rhoMpara > mparahi) mparahi = rhoMpara;
       if ((mparahi-mparalo)*(dz+d[i]) > dA) break;
@@ -329,13 +333,14 @@ contract_mag(int n, double d[], double sigma[],
       irho[newi] = irhoarea / dz;
       mean_rhoMpara = rhoMpara_area / dz;
       mean_rhoMperp = rhoMperp_area / dz;
-      mean_rhoM = sqrt((mean_rhoMpara * mean_rhoMpara) + (mean_rhoMperp * mean_rhoMperp));
+      mean_rhoM = sqrt((mean_rhoMpara * mean_rhoMpara) + (mean_rhoMperp * mean_rhoMperp)) * rhoM_sign;
       if (mean_rhoM == 0.0) {
         /* If rhoM is zero, then thetaM is meaningless: use plain average */
         thetaM[newi] = thetaM_area / dz;
       } else {
-        /* Otherwise, use atan2 to get the average angle */
-        thetaM_from_mean = atan2(mean_rhoMperp, mean_rhoMpara) * 180.0 / M_PI;
+        /* Otherwise, calculate the mean thetaM
+         * invert the sign of components if rhoM is negative, before atan2 */
+        thetaM_from_mean = atan2(mean_rhoMperp * rhoM_sign, mean_rhoMpara * rhoM_sign) * 180.0 / M_PI;
         thetaM_from_mean += 360.0 * thetaM_phase_offset;
         thetaM[newi] = thetaM_from_mean;
       }
