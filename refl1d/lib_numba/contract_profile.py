@@ -139,6 +139,7 @@ def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
         thetaM_phase_offset = (thetaM[i] + 180.) // 360.0
 
         # /* Pre-calculate projections */
+        rhoM_sign = math.copysign(1, rhoM[i])
         thetaM_radians = thetaM[i] * math.pi / 180.0
         rhoMpara = rhoM[i] * math.cos(thetaM_radians)
         rhoMperp = rhoM[i] * math.sin(thetaM_radians)
@@ -192,6 +193,10 @@ def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
             if (thetaM[i] + 180.0) // 360.0 != thetaM_phase_offset:
                 break
 
+            # /* If next slice has different sign for rhoM, break */
+            if (math.copysign(1, rhoM[i]) != rhoM_sign):
+                break
+
             if (rhoMpara < mparalo):
                 mparalo = rhoMpara
             if (rhoMpara > mparahi):
@@ -218,13 +223,14 @@ def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
             irho[newi] = irhoarea / dz
             mean_rhoMpara = rhoMpara_area / dz
             mean_rhoMperp = rhoMperp_area / dz
-            mean_rhoM = math.sqrt(mean_rhoMpara**2 + mean_rhoMperp**2)
+            mean_rhoM = math.sqrt(mean_rhoMpara**2 + mean_rhoMperp**2) * rhoM_sign
             if mean_rhoM == 0:
                 # /* If rhoM is zero, then thetaM is meaningless: use plain average */
                 thetaM[newi] = thetaM_area / dz
             else:
-                # /* Otherwise, calculate the mean thetaM */
-                thetaM_from_mean = math.atan2(mean_rhoMperp, mean_rhoMpara) * 180.0 / math.pi
+                # /* Otherwise, calculate the mean thetaM
+                #  * invert the sign of components if rhoM is negative, before atan2 */
+                thetaM_from_mean = math.atan2(mean_rhoMperp * rhoM_sign, mean_rhoMpara * rhoM_sign) * 180.0 / math.pi
                 thetaM_from_mean += 360.0 * thetaM_phase_offset
                 thetaM[newi] = thetaM_from_mean
             rhoM[newi] = mean_rhoM
