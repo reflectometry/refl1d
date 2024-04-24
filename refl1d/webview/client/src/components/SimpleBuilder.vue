@@ -331,7 +331,7 @@ function dragEnd() {
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="(layer, key) in sortedLayers" :key="key" @blur.capture="send_model">
+                <tr v-for="(layer, key) in sortedLayers" :key="key" @blur.capture="send_model" class="align-middle">
                     <td  
                         @dragstart="dragStart(key, $event)"
                         @dragover="dragOver(key, $event)"
@@ -402,6 +402,6 @@ function dragEnd() {
     }
     button.add-layer-after {
       padding: 0.1em 0.3em;
-      margin-bottom: -4em;
+      margin-bottom: -3em;
     }
 </style>
