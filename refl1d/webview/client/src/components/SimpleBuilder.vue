@@ -302,15 +302,15 @@ function dragEnd() {
       </div>
       <div class="row mb-2" v-if="showEditQRange">
         <div class="col">
-          <label for="qmin">Q min:</label>
+          <label for="qmin">Q min (Å<sup>-1</sup>)</label>
           <input class="form-control" type="number" step="0.01" v-model="editQmin">
         </div>
         <div class="col">
-          <label for="qmax">Q max:</label>
+          <label for="qmax">Q max (Å<sup>-1</sup>)</label>
           <input class="form-control" type="number" step="0.01" v-model="editQmax">
         </div>
         <div class="col">
-          <label for="qsteps">Q steps:</label>
+          <label for="qsteps">Q steps</label>
           <input class="form-control" type="number" step="1" v-model="editQsteps">
         </div>
         <div class="col-auto align-self-end">
