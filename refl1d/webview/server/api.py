@@ -34,8 +34,7 @@ async def get_plot_data(view: str = 'linear'):
 
     return to_json_compatible_dict(result)
 
-@register
-async def get_profile_plots(model_specs: List[ModelSpec]):
+async def create_profile_plots(model_specs: List[ModelSpec]):
     if state.problem is None or state.problem.fitProblem is None:
         return None
     fitProblem = state.problem.fitProblem
@@ -50,6 +49,11 @@ async def get_profile_plots(model_specs: List[ModelSpec]):
             color_index += 1
 
     fig = plot_multiple_sld_profiles(plot_items)
+    return fig
+
+@register
+async def get_profile_plots(model_specs: List[ModelSpec]):
+    fig = await create_profile_plots(model_specs)
     output = to_json_compatible_dict(fig.to_dict())
     del fig
     return output
