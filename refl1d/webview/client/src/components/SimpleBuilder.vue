@@ -319,13 +319,15 @@ function dragEnd() {
       </div>
         <table class="table table-sm" v-if="dictionaryLoaded" id="sortable">
             <thead class="border-bottom py-1 sticky-top text-white bg-secondary">
-                <tr><th></th>
-                    <th>Layer</th>
-                    <th>Thickness</th>
-                    <th>SLD</th>
-                    <th v-if="showImaginary">iSLD</th>
-                    <th>Interface</th>
-                    <th></th>
+                <tr>
+                  <th></th>
+                  <th>Layer</th>
+                  <th>Thickness</th>
+                  <th>SLD</th>
+                  <th v-if="showImaginary">iSLD</th>
+                  <th>Interface</th>
+                  <th></th>
+                  <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -343,6 +345,7 @@ function dragEnd() {
                     <td v-if="showImaginary"><input class="form-control" v-if="get_slot(layer.material.irho) !== null" type="number" step="0.01" v-model="get_slot(layer.material.irho).value"></td>
                     <td><input class="form-control" v-if="get_slot(layer.interface) !== null" type="number" step="1" v-model="get_slot(layer.interface).value"></td>
                     <td><button class="btn btn-danger btn-sm" @click="delete_layer(key)">Delete</button></td>
+                    <td><button class="btn btn-success btn-sm add-layer-after" @click="add_layer(key+1)" title="add layer here">+</button></td>
                 </tr>
             </tbody>
         </table>
@@ -358,7 +361,7 @@ function dragEnd() {
         </div>
         <div class="col-auto" v-if="dictionaryLoaded">
           <div class="input-group m-2">
-            <button class="btn btn-success btn-sm" @click="add_layer(-1)">Add layer at index: </button>
+            <button class="btn btn-success btn-sm" @click="add_layer(insert_index)">Add layer at index: </button>
             <input class="form-control me-4 insert-index" v-model="insert_index" type="number"/>
           </div>
         </div>
@@ -396,5 +399,9 @@ function dragEnd() {
     }
     input.insert-index {
       width: 4em;
+    }
+    button.add-layer-after {
+      padding: 0.1em 0.3em;
+      margin-bottom: -4em;
     }
 </style>
