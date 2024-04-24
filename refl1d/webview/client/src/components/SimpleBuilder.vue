@@ -279,7 +279,7 @@ function dragEnd() {
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="(layer, key) in sortedLayers" :key="key">
+                <tr v-for="(layer, key) in sortedLayers" :key="key" @blur.capture="send_model">
                     <td  
                         @dragstart="dragStart(key, $event)"
                         @dragover="dragOver(key, $event)"
