@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /// <reference types="@types/uuid"/>
 import { ref, onMounted, watch, onUpdated, computed, shallowRef } from 'vue';
-import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket';
+import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket.ts';
 import { v4 as uuidv4 } from 'uuid';
 import * as Plotly from 'plotly.js/lib/core';
 import { setupDrawLoop } from 'bumps-webview-client/src/setupDrawLoop';

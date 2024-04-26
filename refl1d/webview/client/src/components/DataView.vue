@@ -2,7 +2,7 @@
 /// <reference types="@types/plotly.js" />
 import { ref, shallowRef } from 'vue';
 import * as Plotly from 'plotly.js/lib/core';
-import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket';
+import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket.ts';
 import { setupDrawLoop } from 'bumps-webview-client/src/setupDrawLoop';
 import { COLORS } from '../colors.mjs';
 import { configWithSVGDownloadButton } from 'bumps-webview-client/src/plotly_extras.mjs';
