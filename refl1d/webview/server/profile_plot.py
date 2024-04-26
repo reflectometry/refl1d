@@ -55,7 +55,7 @@ class FindLayers:
         z = self.boundary[1:-1]
         left = -20
         middle = [(a + b) / 2. for a, b in zip(z[:-1], z[1:])]
-        right = z[-1] + 150
+        right = z[-1] + 20
         return [left] + middle + [right]
 
     def reset_markers_plotly(self):

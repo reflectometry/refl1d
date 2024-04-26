@@ -7,7 +7,12 @@ import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket.ts';
 
 const title = "Builder";
 // @ts-ignore: intentionally infinite type recursion
-const modelJson = ref<json>({});
+const modelJson = shallowRef<json>({});
+const showInstructions = ref(false);
+const showEditQRange = ref(false);
+const editQmin = ref(0);
+const editQmax = ref(0.1);
+const editQsteps = ref(250);
 const activeModel = ref(0);
 const insert_index = ref(-1);
 const parameters_by_id = ref({});
@@ -97,23 +102,27 @@ const newModelTemplate = {
             { ...newLayerTemplate, name: "Vacuum", material: { ...newSLDTemplate, name: "Vacuum", rho: 0 } },
           ] 
         },
-        probe: {
-          __class__: "refl1d.probe.QProbe",
-          Q: {
-            __class__: "bumps.util.NumpyArray",
-            values: Array.from({length: 250}).map((_, i) => i * 0.1 / 250),
-            dtype: 'float'
-          },
-          dQ: {
-            __class__: "bumps.util.NumpyArray",
-            values: Array.from({length: 250}).map((_, i) => 0.00001),
-            dtype: 'float'
-          },
-        },
+        probe: createQProbe(0, 0.1, 250, 0.00001),
       }
     ] 
   },
   "$schema": "bumps-draft-02"
+}
+
+function createQProbe(qmin: number = 0, qmax: number = 0.1, qsteps: number = 250, dQ: number = 0.00001) {
+  return {
+    __class__: "refl1d.probe.QProbe",
+    Q: {
+      __class__: "bumps.util.NumpyArray",
+      values: Array.from({length: qsteps}).map((_, i) => i * (qmax - qmin) / qsteps),
+      dtype: 'float'
+    },
+    dQ: {
+      __class__: "bumps.util.NumpyArray",
+      values: Array.from({length: qsteps}).map((_, i) => dQ),
+      dtype: 'float'
+    },
+  }
 }
 
 async function fetch_model() {
@@ -135,6 +144,12 @@ async function fetch_model() {
 
 async function new_model() {
   const model = structuredClone(newModelTemplate);
+  if (dictionaryLoaded.value) {
+    const confirmation = confirm("This will overwrite your current model...");
+    if (!confirmation) {
+      return;
+    }
+  }
   modelJson.value = model;
   send_model();
 }
@@ -213,6 +228,11 @@ function add_layer(after_index: number = -1) {
     send_model();
 };
 
+function setQProbe() {
+  modelJson.value['object']['models'][activeModel.value]['probe'] = createQProbe(editQmin.value, editQmax.value, editQsteps.value);
+  send_model();
+}
+
 const decoder = new TextDecoder('utf-8');
 
 onMounted(() => {
@@ -251,35 +271,67 @@ function dragEnd() {
 <div id="builder" @keyup.enter="send_model" @keyup.tab="send_model">
     <div class="container m-2">
         <div class="card">
-            <div class="card-header">
-                <h5 class="card-title">Simple Slab Model Builder</h5>
-            </div>
             <div class="card-body">
-                <h5 class="card-title">Instructions</h5>
-                <p class="card-text">
-                    <ul>
-                        <li>Click the "Add layer" button to add a new layer.</li>
-                        <li>Drag and drop the rows to change the order of the layers.</li>
-                        <li>You can toggle the imaginary SLD by clicking the checkbox below.</li>
-                    </ul>
-                </p>
+              <h5 class="card-title d-inline-block px-2 my-0 align-middle">Simple Slab Model Builder</h5>
+                <button class="btn btn-primary" type="button" aria-expanded="false"
+                  aria-controls="builderInstructions" @click="showInstructions = !showInstructions">
+                  Instructions
+                </button>
+
+              <p class="card-text collapse" :class="{ show: showInstructions }" id="builderInstructions">
+                  <ul>
+                      <li>Click the "Add layer" button to add a new layer.</li>
+                      <li>Drag and drop the rows to change the order of the layers.</li>
+                      <li>You can toggle the imaginary SLD by clicking the checkbox below.</li>
+                  </ul>
+              </p>
             </div>
         </div>
     </div>
     <div class="container mt-4">
+      <div class="row justify-content-end">
+        <div class="col">
+          <button class="btn btn-primary m-2" @click="showEditQRange = !showEditQRange">Edit Q-range</button>
+        </div>
+        <div class="col-auto align-self-center">
+          <div class="form-check form-switch m-2" @click="send_model">
+            <input class="form-check-input" type="checkbox" id="showImaginary_input" v-model="showImaginary">
+            <label class="form-check-label" for="showImaginary_input">Show imaginary SLD</label>
+          </div>
+        </div>
+      </div>
+      <div class="row mb-2" v-if="showEditQRange">
+        <div class="col">
+          <label for="qmin">Q min (Å<sup>-1</sup>)</label>
+          <input class="form-control" type="number" step="0.01" v-model="editQmin">
+        </div>
+        <div class="col">
+          <label for="qmax">Q max (Å<sup>-1</sup>)</label>
+          <input class="form-control" type="number" step="0.01" v-model="editQmax">
+        </div>
+        <div class="col">
+          <label for="qsteps">Q steps</label>
+          <input class="form-control" type="number" step="1" v-model="editQsteps">
+        </div>
+        <div class="col-auto align-self-end">
+          <button class="btn btn-secondary mx-2" @click="setQProbe">Apply new Q</button>
+        </div>
+      </div>
         <table class="table table-sm" v-if="dictionaryLoaded" id="sortable">
             <thead class="border-bottom py-1 sticky-top text-white bg-secondary">
-                <tr><th></th>
-                    <th>Layer</th>
-                    <th>Thickness</th>
-                    <th>SLD</th>
-                    <th v-if="showImaginary">iSLD</th>
-                    <th>Interface</th>
-                    <th></th>
+                <tr>
+                  <th></th>
+                  <th>Layer</th>
+                  <th>Thickness</th>
+                  <th>SLD</th>
+                  <th v-if="showImaginary">iSLD</th>
+                  <th>Interface</th>
+                  <th></th>
+                  <th></th>
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="(layer, key) in sortedLayers" :key="key">
+                <tr v-for="(layer, key) in sortedLayers" :key="key" @blur.capture="send_model">
                     <td  
                         @dragstart="dragStart(key, $event)"
                         @dragover="dragOver(key, $event)"
@@ -293,21 +345,28 @@ function dragEnd() {
                     <td v-if="showImaginary"><input class="form-control" v-if="get_slot(layer.material.irho) !== null" type="number" step="0.01" v-model="get_slot(layer.material.irho).value"></td>
                     <td><input class="form-control" v-if="get_slot(layer.interface) !== null" type="number" step="1" v-model="get_slot(layer.interface).value"></td>
                     <td><button class="btn btn-danger btn-sm" @click="delete_layer(key)">Delete</button></td>
+                    <td><button class="btn btn-success btn-sm add-layer-after" @click="add_layer(key+1)" title="add layer here">+</button></td>
                 </tr>
             </tbody>
         </table>
     <p v-else>Load data to start building a model</p>
     </div>
        
-    <button v-if="!dictionaryLoaded" class="btn btn-success btn-sm me-2" @click="new_model">New Model</button>
-    <div class="input-group m-2" v-if="dictionaryLoaded">
-      <button class="btn btn-success btn-sm" @click="add_layer(-1)">Add layer at index: </button>
-      <input class="form-control me-4" v-model="insert_index" type="number"/>
+    <div class="row">
+        <div class="col">
+            <button class="btn btn-primary m-2" @click="new_model">New model</button>
+        </div>
+        <div class="col-auto" v-if="dictionaryLoaded">
+          <button class="btn btn-secondary m-2" @click="send_model">Apply changes</button>
+        </div>
+        <div class="col-auto" v-if="dictionaryLoaded">
+          <div class="input-group m-2">
+            <button class="btn btn-success btn-sm" @click="add_layer(insert_index)">Add layer at index: </button>
+            <input class="form-control me-4 insert-index" v-model="insert_index" type="number"/>
+          </div>
+        </div>
     </div>
-    <div class="form-check form-switch m-2" @click="send_model">
-        <input class="form-check-input" type="checkbox" id="showImaginary_input" v-model="showImaginary">
-        <label class="form-check-label" for="showImaginary_input">Show imaginary SLD</label>
-    </div>
+    
     <div class="container m-2">
         <div class="card bg-warning">
             <div class="card-body">
@@ -337,5 +396,12 @@ function dragEnd() {
         overflow-x: auto;
         white-space: nowrap;
         resize: none;
+    }
+    input.insert-index {
+      width: 4em;
+    }
+    button.add-layer-after {
+      padding: 0.1em 0.3em;
+      margin-bottom: -4em;
     }
 </style>
