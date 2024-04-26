@@ -9,7 +9,7 @@ conda activate base || { echo 'failed: conda not installed'; exit 1; }
 
 conda install -y conda-pack
 conda remove -n "$ENV_NAME" -y --all
-conda create -n "$ENV_NAME" -q --force -y "python=$PYTHON_VERSION"
+conda create -n "$ENV_NAME" -q --force -y "python=$PYTHON_VERSION" "nodejs"
 conda-pack -n "$ENV_NAME" -f -o "$ENV_NAME.tar.gz"
 
 # unpack the new environment, that contains only python + pip
@@ -30,6 +30,16 @@ $envdir/bin/python -m pip install --no-input --no-compile numba
 $envdir/bin/python -m pip install --no-input --no-compile git+https://github.com/bumps/bumps@webview
 $envdir/bin/python -m pip install --no-input --no-compile git+https://github.com/reflectometry/refl1d@webview
 $envdir/bin/python -m pip install --no-compile -r https://raw.githubusercontent.com/bumps/bumps/webview/webview-requirements
+
+# build the client
+cd $envdir/lib/python$PYTHON_VERSION/site-packages/bumps/webview/client
+$envdir/bin/npm install
+$envdir/bin/npm link
+
+cd $envdir/lib/python$PYTHON_VERSION/site-packages/refl1d/webview/client
+$envdir/bin/npm link ../../../bumps/webview/client
+$envdir/bin/npm install
+$envdir/bin/npm run build
 
 version=$($envdir/bin/python -c "import refl1d; print(refl1d.__version__)")
 mv "$tmpdir/$DIRNAME" "$tmpdir/$DIRNAME-$version"
