@@ -5,7 +5,7 @@ $DIRNAME="refl1d"
 conda activate "base"
 
 conda install -y conda-pack
-conda create -n "$ENV_NAME" -q --force -y "python=$PYTHON_VERSION"
+conda create -n "$ENV_NAME" -q --force -y "python=$PYTHON_VERSION" "nodejs"
 conda-pack -n "$ENV_NAME" -f -o "$ENV_NAME.tar.gz"
 
 # unpack the new environment, that contains only python + pip
