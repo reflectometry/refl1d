@@ -30,6 +30,16 @@ Copy-Item .\extra\refl1d_webview.bat "$destdir"
 & "$envdir\python.exe" -m pip install --no-input --no-compile git+https://github.com/reflectometry/refl1d@webview
 & "$envdir\python.exe" -m pip install --no-compile -r https://raw.githubusercontent.com/bumps/bumps/webview/webview-requirements
 
+# build the client
+cd $envdir\lib\python$PYTHON_VERSION\site-packages\bumps\webview\client
+& "$envdir\bin\npm" install
+& "$envdir\bin\npm" link
+
+cd $envdir\lib\python$PYTHON_VERSION\site-packages\refl1d\webview\client
+& "$envdir\bin\npm" link ..\..\..\bumps\webview\client
+& "$envdir\bin\npm" install
+& "$envdir\bin\npm" run build
+
 $version=$(& "$envdir\python.exe" -c "import refl1d; print(refl1d.__version__)")
 # zip it back up
 cd $tmpdir
