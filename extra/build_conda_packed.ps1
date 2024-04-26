@@ -42,6 +42,10 @@ cd $envdir\Lib\site-packages\refl1d\webview\client
 & "$envdir\npm.cmd" install
 & "$envdir\npm.cmd" run build
 
+# remove node_modules after build
+rm -r -Force $envdir\Lib\site-packages\bumps\webview\client\node_modules
+rm -r -Force $envdir\Lib\site-packages\refl1d\webview\client\node_modules
+
 $version=$(& "$envdir\python.exe" -c "import refl1d; print(refl1d.__version__)")
 # zip it back up
 cd $tmpdir
