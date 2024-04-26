@@ -8,8 +8,10 @@ conda install -y conda-pack
 conda create -n "$ENV_NAME" -q --force -y "python=$PYTHON_VERSION" "nodejs"
 conda-pack -n "$ENV_NAME" -f -o "$ENV_NAME.tar.gz"
 
-# unpack the new environment, that contains only python + pip
-$tmpdir="dist"
+# unpack the new environment, that contains only python + pip + nodejs
+$tmp_target_dir="dist"
+mkdir -Force $tmp_target_dir
+$tmpdir = Resolve-Path "$tmp_target_dir" | Select-Object -ExpandProperty Path
 $destdir="$tmpdir\$DIRNAME"
 $envdir = "$destdir\env"
 Remove-Item -r -Force "$destdir"
@@ -31,14 +33,14 @@ Copy-Item .\extra\refl1d_webview.bat "$destdir"
 & "$envdir\python.exe" -m pip install --no-compile -r https://raw.githubusercontent.com/bumps/bumps/webview/webview-requirements
 
 # build the client
-cd $envdir\lib\python$PYTHON_VERSION\site-packages\bumps\webview\client
-& "$envdir\bin\npm" install
-& "$envdir\bin\npm" link
+cd $envdir\Lib\site-packages\bumps\webview\client
+& "$envdir\npm.cmd" install
+& "$envdir\npm.cmd" link
 
-cd $envdir\lib\python$PYTHON_VERSION\site-packages\refl1d\webview\client
-& "$envdir\bin\npm" link ..\..\..\bumps\webview\client
-& "$envdir\bin\npm" install
-& "$envdir\bin\npm" run build
+cd $envdir\Lib\site-packages\refl1d\webview\client
+& "$envdir\npm.cmd" link ..\..\..\bumps\webview\client
+& "$envdir\npm.cmd" install
+& "$envdir\npm.cmd" run build
 
 $version=$(& "$envdir\python.exe" -c "import refl1d; print(refl1d.__version__)")
 # zip it back up
