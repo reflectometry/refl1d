@@ -15,7 +15,7 @@ include refl1d.iss
 include setup_py2exe.py
 recursive-include refl1d/lib/c *.h *.c *.cc
 recursive-include refl1d/webview/client/dist *.html *.js *.css *.svg *.png
-recursive-include refl1d/webview/client/src/ *.html *.js *.mjs *.css *.svg *.png *.ts *.vue
+recursive-include refl1d/webview/client/src *.html *.js *.mjs *.css *.svg *.png *.ts *.vue
 include refl1d/webview/client/*.html
 include refl1d/webview/client/*.js
 include refl1d/webview/client/*.json
