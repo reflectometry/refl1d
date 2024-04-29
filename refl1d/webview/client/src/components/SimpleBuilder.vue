@@ -2,7 +2,7 @@
 import { Modal } from 'bootstrap/dist/js/bootstrap.esm';
 import { ref, onMounted, onBeforeUnmount, watch, onUpdated, computed, shallowRef } from 'vue';
 import type { ComputedRef } from 'vue';
-import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket';
+import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket.ts';
 
 
 const title = "Builder";
