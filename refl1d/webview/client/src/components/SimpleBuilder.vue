@@ -3,7 +3,7 @@ import { Modal } from 'bootstrap/dist/js/bootstrap.esm';
 import { ref, onMounted, onBeforeUnmount, watch, onUpdated, computed, shallowRef } from 'vue';
 import type { ComputedRef } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
-import type { Layer, Magnetism, Parameter, ParameterLike, QProbe, Reference, SLD, Stack, SerializedModel, BoundsValue } from '../model';
+import type { Slab, Magnetism, Parameter, ParameterLike, QProbe, Reference, SLD, Stack, SerializedModel, BoundsValue } from '../model';
 import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket.ts';
 
 
@@ -26,7 +26,7 @@ const props = defineProps<{
   socket: AsyncSocket,
 }>();
 
-const sortedLayers: ComputedRef<Layer[]> = computed(() => {
+const sortedLayers: ComputedRef<Slab[]> = computed(() => {
   return modelJson.value['object']['models'][activeModel.value]['sample']['layers'];
 });
 
@@ -57,7 +57,7 @@ function createLayer(name: string, rho: number, irho: number, thickness: number,
   const thickness_param = createParameter("thickness", thickness, [0, "inf"], true, ["sample"]);
   const interface_param = createParameter("interface", interface_, [0, "inf"], true, ["sample"]);
   const material: SLD = { __class__: "refl1d.material.SLD", name, rho: rho_param, irho: irho_param };
-  const layer: Layer = { __class__: "refl1d.model.Slab", name, material, thickness: thickness_param, interface: interface_param, magnetism };
+  const layer: Slab = { __class__: "refl1d.model.Slab", name, material, thickness: thickness_param, interface: interface_param, magnetism };
   return layer;
 }
 
@@ -92,7 +92,7 @@ function generateQProbe(qmin: number = 0, qmax: number = 0.1, qsteps: number = 2
         dQ: { values: dQ_arr, dtype: "float64", __class__: "bumps.util.NumpyArray" },
         background: createParameter("background", 0.0, [0, "inf"], true, ["probe"]),
         intensity: createParameter("intensity", 1.0, [0, "inf"], true, ["probe"]),
-        back_absorption: createParameter("back_absorption", 0.0, [0, "inf"], true, ["probe"]),
+        back_absorption: createParameter("back_absorption", 0.0, [0, 1.0], true, ["probe"]),
         back_reflectivity: false,
         resolution: 'normal',
         __class__: "refl1d.probe.QProbe"
@@ -154,11 +154,11 @@ function resolve_parameter(parameter_like: ParameterLike): Parameter {
 
 function set_parameter_names(stack: Stack) {
   for (const layer of stack.layers) {
-    if (layer.__class__ === "refl1d.model.Stack") {
-      set_parameter_names(layer);
+    if (layer.__class__ === "refl1d.model.Repeat") {
+      set_parameter_names(layer.stack);
     }
     else {
-      const l = layer as Layer;
+      const l = layer as Slab;
       const { material, thickness, interface: interface_ } = l;
       const { name, rho, irho } = material;
       const thickness_param = resolve_parameter(thickness);
@@ -186,11 +186,11 @@ function set_parameter_bounds(stack: Stack) {
 
   }
   for (const layer of stack.layers) {
-    if (layer.__class__ === "refl1d.model.Stack") {
-      set_parameter_bounds(layer);
+    if (layer.__class__ === "refl1d.model.Repeat") {
+      set_parameter_bounds(layer.stack);
     }
     else {
-      const l = layer as Layer;
+      const l = layer as Slab;
       const { material, thickness, interface: interface_ } = l;
       const { rho, irho } = material;
       const thickness_param = resolve_parameter(thickness);
@@ -218,7 +218,7 @@ function delete_layer(index) {
 };
 
 function add_layer(after_index: number = -1) {
-    const new_layer: Layer = createLayer("sld", 2.5, 0.0, 25.0, 1.0);
+    const new_layer: Slab = createLayer("sld", 2.5, 0.0, 25.0, 1.0);
     sortedLayers.value.splice(after_index, 0, new_layer);
     send_model();
 };

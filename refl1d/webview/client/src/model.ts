@@ -32,13 +32,23 @@ export interface ParameterLike {
     __class__: "bumps.parameter.Parameter" | "Reference";
 }
 
-export interface Layer {
+export interface Slab {
     name: string;
     thickness: ParameterLike;
     magnetism: Magnetism | null;
     material: SLD;
     interface: ParameterLike;
     __class__: "refl1d.model.Slab";
+}
+
+export interface Repeat {
+    name: string;
+    interface: ParameterLike;
+    magnetism: Magnetism | null;
+    repeat: ParameterLike;
+    stack: Stack;
+    thickness: ParameterLike;
+    __class__: "refl1d.model.Repeat";
 }
 
 export interface SLD {
@@ -57,7 +67,7 @@ export interface Magnetism {
 }
 
 export interface Stack {
-    layers: (Layer | Stack)[];
+    layers: (Slab | Repeat)[];
     __class__: "refl1d.model.Stack";
 }
 
