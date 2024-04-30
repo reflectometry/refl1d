@@ -97,7 +97,7 @@ async function fetch_model() {
     else {
       const json_value = JSON.parse(decoder.decode(json_bytes));
       modelJson.value = json_value;
-      extract_parameters(json_value);
+      parameters_by_id.value = json_value.references;
       dictionaryLoaded.value = true;
     }
   });
@@ -113,32 +113,6 @@ async function new_model() {
   }
   modelJson.value = model;
   send_model();
-}
-
-function extract_parameters(model) {
-    const new_parameters_by_id = model.references;
-    const get_parameters = (obj, parent_obj, path, key) => {
-        if (obj && obj?.__class__ === 'bumps.parameter.Parameter') {
-            // Replace the first word of the parameter name with the parent object name
-            // e.g. "new thickness" -> "layer1 thickness"
-            const parent_name = parent_obj?.name ?? '';
-            const new_name = `${parent_name} ${obj.name.split(' ').slice(1).join(' ')}`;
-            obj.name = new_name;
-            new_parameters_by_id[obj.id] = obj;
-        }
-    }
-    walk_object(model.object, null, '', '', get_parameters);
-    parameters_by_id.value = new_parameters_by_id;
-}
-
-function walk_object(obj, parent_obj, path, key, cb: Function) {
-    cb(obj, parent_obj, path, key);
-    if (Array.isArray(obj)) {
-        obj.forEach((subobj, i) => walk_object(subobj, obj, `${path}/${i}`, i, cb));
-    }
-    else if (obj instanceof Object) {
-        Object.entries(obj).forEach(([subkey, subobj]) => walk_object(subobj, obj, `${path}/${subkey}`, key, cb));
-    }
 }
 
 function get_slot(parameter_like: ParameterLike) {
@@ -235,7 +209,7 @@ function add_layer(after_index: number = -1) {
 };
 
 function setQProbe() {
-  modelJson.value['object']['models'][activeModel.value]['probe'] = generateQProbe(editQmin.value, editQmax.value, editQsteps.value, 0.1);
+  modelJson.value['object']['models'][activeModel.value]['probe'] = generateQProbe(editQmin.value, editQmax.value, editQsteps.value, 0.0001);
   send_model();
 }
 
