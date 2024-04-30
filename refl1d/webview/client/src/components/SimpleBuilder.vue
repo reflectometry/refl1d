@@ -2,6 +2,9 @@
 import { Modal } from 'bootstrap/dist/js/bootstrap.esm';
 import { ref, onMounted, onBeforeUnmount, watch, onUpdated, computed, shallowRef } from 'vue';
 import type { ComputedRef } from 'vue';
+import { v4 as uuidv4 } from 'uuid';
+import { generateQProbe } from '../model';
+import type { Layer, Magnetism, Parameter, ParameterLike, Reference, SLD, Stack, SerializedModel, BoundsValue } from '../model';
 import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket.ts';
 
 
@@ -15,7 +18,7 @@ const editQmax = ref(0.1);
 const editQsteps = ref(250);
 const activeModel = ref(0);
 const insert_index = ref(-1);
-const parameters_by_id = ref({});
+const parameters_by_id = ref<{[key: string]: Parameter}>({});
 const dictionaryLoaded = ref(false);
 // Builder options
 const showImaginary = ref(false);
@@ -24,7 +27,7 @@ const props = defineProps<{
   socket: AsyncSocket,
 }>();
 
-const sortedLayers: ComputedRef<NonMagneticLayer[]> = computed(() => {
+const sortedLayers: ComputedRef<Layer[]> = computed(() => {
   return modelJson.value['object']['models'][activeModel.value]['sample']['layers'];
 });
 
@@ -35,95 +38,53 @@ const sortedLayers: ComputedRef<NonMagneticLayer[]> = computed(() => {
 props.socket.on('update_parameters', fetch_model);
 props.socket.on('model_loaded', fetch_model);
 
-interface Variable {
-  value: number,
-  __class__: "bumps.parameter.Variable"
+function createParameter(name: string, value: number, limits: [BoundsValue, BoundsValue] = ["-inf", "inf"], fixed: boolean = true, tags: string[] = []) {
+  const par: Parameter = {
+    id: uuidv4(),
+    name,
+    fixed,
+    slot: { value, __class__: "bumps.parameter.Variable" },
+    limits,
+    bounds: null,
+    tags,
+    __class__: "bumps.parameter.Parameter"
+  }
+  return par;
 }
 
-// this is an imcomplete interface definition...
-interface Parameter {
-  name?: string,
-  fixed: boolean,
-  slot: Variable | number,
-  limits?: (number | "-inf" | "inf")[],
-  bounds?: (number | "-inf" | "inf")[],
-  tags?: string[],
-  __class__: "bumps.parameter.Parameter",
+function createLayer(name: string, rho: number, irho: number, thickness: number, interface_: number, magnetism: Magnetism | null = null) {
+  const rho_param = createParameter("rho", rho, ["-inf", "inf"], true, ["sample"]);
+  const irho_param = createParameter("irho", irho, ["-inf", "inf"], true, ["sample"]);
+  const thickness_param = createParameter("thickness", thickness, [0, "inf"], true, ["sample"]);
+  const interface_param = createParameter("interface", interface_, [0, "inf"], true, ["sample"]);
+  const material: SLD = { __class__: "refl1d.material.SLD", name, rho: rho_param, irho: irho_param };
+  const layer: Layer = { __class__: "refl1d.model.Slab", name, material, thickness: thickness_param, interface: interface_param, magnetism };
+  return layer;
 }
 
-interface SLD {
-  name: string,
-  rho: number | Parameter,
-  irho: number | Parameter,
-  __class__: "refl1d.material.SLD"
-}
-
-interface NonMagneticLayer {
-  name: string,
-  thickness: number | Parameter,
-  magnetism: null,
-  material: SLD,
-  interface: number | Parameter,
-  __class__: "refl1d.model.Slab"
-}
-
-const newParameterTemplate = {
-  value: 0,
-  __class__: "bumps.parameter.Parameter",
-}
-
-const newSLDTemplate: SLD = {
-  name: "sld",
-  rho: 2.5,
-  irho: 0,
-  __class__: "refl1d.material.SLD"
-}
-
-const newLayerTemplate: NonMagneticLayer = {
-    name: "new",
-    thickness: 25,
-    magnetism: null,
-    material: newSLDTemplate,
-    interface: 1,
-    __class__: "refl1d.model.Slab"
-}
-
-const newModelTemplate = {
-  references: {},
-  object: { 
-    __class__: "refl1d.fitproblem.FitProblem",
-    models: [
-      {
-        __class__: "refl1d.experiment.Experiment",
-        sample: { 
-          __class__: "refl1d.model.Stack",
-          layers: [
-            { ...newLayerTemplate, name: "Substrate", material: { ...newSLDTemplate, name: "Si", rho: 2.07 } },
-            { ...newLayerTemplate, name: "Vacuum", material: { ...newSLDTemplate, name: "Vacuum", rho: 0 } },
-          ] 
-        },
-        probe: createQProbe(0, 0.1, 250, 0.00001),
-      }
-    ] 
-  },
-  "$schema": "bumps-draft-02"
-}
-
-function createQProbe(qmin: number = 0, qmax: number = 0.1, qsteps: number = 250, dQ: number = 0.00001) {
+function createModel(): SerializedModel {
   return {
-    __class__: "refl1d.probe.QProbe",
-    Q: {
-      __class__: "bumps.util.NumpyArray",
-      values: Array.from({length: qsteps}).map((_, i) => i * (qmax - qmin) / qsteps),
-      dtype: 'float'
+    references: {},
+    object: {
+      __class__: "refl1d.fitproblem.FitProblem",
+      models: [
+        {
+          __class__: "refl1d.experiment.Experiment",
+          sample: {
+            __class__: "refl1d.model.Stack",
+            layers: [
+              createLayer("Si", 2.07, 0.0, 0.0, 1.0),
+              createLayer("Vacuum", 0.0, 0.0, 0.0, 0.0),
+            ]
+          },
+          probe: generateQProbe(editQmin.value, editQmax.value, editQsteps.value, 0.1),
+        }
+      ]
     },
-    dQ: {
-      __class__: "bumps.util.NumpyArray",
-      values: Array.from({length: qsteps}).map((_, i) => dQ),
-      dtype: 'float'
-    },
+    "$schema": "bumps-draft-02"
   }
 }
+
 
 async function fetch_model() {
   props.socket.asyncEmit('get_model', (payload: ArrayBuffer) => {
@@ -143,7 +104,7 @@ async function fetch_model() {
 }
 
 async function new_model() {
-  const model = structuredClone(newModelTemplate);
+  const model = createModel();
   if (dictionaryLoaded.value) {
     const confirmation = confirm("This will overwrite your current model...");
     if (!confirmation) {
@@ -180,40 +141,85 @@ function walk_object(obj, parent_obj, path, key, cb: Function) {
     }
 }
 
-function get_slot(parameter_like) {
+function get_slot(parameter_like: ParameterLike) {
     // parameter_like can be type: "bumps.parameter.Parameter" or type: "Reference"
     if (parameter_like == null) {
         return null;
     }
-    const slot = parameter_like?.slot ?? parameters_by_id.value[parameter_like.id]?.slot;
-    return slot;
+    const parameter = resolve_parameter(parameter_like);
+    return parameter.slot;
+}
+
+function resolve_parameter(parameter_like: ParameterLike): Parameter {
+  // parameter_like can be type: "bumps.parameter.Parameter" or type: "Reference"
+  if (parameter_like.__class__ === "bumps.parameter.Parameter") {
+    return parameter_like as Parameter;
+  }
+  else if (parameter_like.__class__ === "Reference" && parameter_like.id in parameters_by_id.value) {
+    return parameters_by_id.value[parameter_like.id] as Parameter;
+  }
+  else {
+    throw new Error(`Parameter with id ${parameter_like.id} not found in parameters_by_id`);
+  }
+}
+
+function set_parameter_names(stack: Stack) {
+  for (const layer of stack.layers) {
+    if (layer.__class__ === "refl1d.model.Stack") {
+      set_parameter_names(layer);
+    }
+    else {
+      const l = layer as Layer;
+      const { material, thickness, interface: interface_ } = l;
+      const { name, rho, irho } = material;
+      const thickness_param = resolve_parameter(thickness);
+      const interface_param = resolve_parameter(interface_);
+      const rho_param = resolve_parameter(rho);
+      const irho_param = resolve_parameter(irho);
+      l.name = name;
+      thickness_param.name = `${material.name} thickness`;
+      interface_param.name = `${material.name} interface`;
+      rho_param.name = `${material.name} rho`;
+      irho_param.name = `${material.name} irho`;
+    }
+  }
+}
+
+function set_parameter_bounds(stack: Stack) {
+  // set the bounds of the fixed parameters
+  const bounds_setter = (p: Parameter) => {
+    if (!p.fixed) {
+      return;
+    }
+    const value = p.slot.value;
+    p.bounds = (value == 0.0) ? [-0.1, 0.1] : [value * 0.5, value * 1.5];
+    p.bounds.sort((a, b) => a - b);
+
+  }
+  for (const layer of stack.layers) {
+    if (layer.__class__ === "refl1d.model.Stack") {
+      set_parameter_bounds(layer);
+    }
+    else {
+      const l = layer as Layer;
+      const { material, thickness, interface: interface_ } = l;
+      const { rho, irho } = material;
+      const thickness_param = resolve_parameter(thickness);
+      const interface_param = resolve_parameter(interface_);
+      const rho_param = resolve_parameter(rho);
+      const irho_param = resolve_parameter(irho);
+      [thickness_param, interface_param, rho_param, irho_param].forEach(bounds_setter);
+    }
+  }
 }
 
 function send_model() {
-    // Ensure that the name of the layer is the same as the name of the material
-    const renamed_params = new Set();
-    for (const [index, item] of Object.entries(sortedLayers.value)) {
-      const { material } = item;
-      const { name } = material;
-      item.name = name;
-      for (let param_name of ["rho", "irho"]) {
-        const param_ref = material[param_name];
-        if ( param_ref instanceof Object && !renamed_params.has(param_ref.id) ) {
-          parameters_by_id.value[param_ref.id].name = `${name} ${param_name}`;
-          renamed_params.add(param_ref.id);
-        }
-      }
-      for (let param_name of ["thickness", "interface"]) {
-        const param_ref = item[param_name];
-        if ( param_ref instanceof Object && !renamed_params.has(param_ref.id) ) {
-          parameters_by_id.value[param_ref.id].name = `${name} ${param_name}`;
-          renamed_params.add(param_ref.id);
-        }
-      }
-    };
-
-    const array_buffer = new TextEncoder().encode(JSON.stringify(modelJson.value));
-    props.socket.emit('set_serialized_problem', array_buffer);
+  for (const model of modelJson.value['object']['models']) {
+    set_parameter_names(model['sample']);
+    set_parameter_bounds(model['sample']);
+  }
+  const array_buffer = new TextEncoder().encode(JSON.stringify(modelJson.value));
+  props.socket.emit('set_serialized_problem', array_buffer);
 }
 
 // Adding and deleting layers
@@ -223,13 +229,13 @@ function delete_layer(index) {
 };
 
 function add_layer(after_index: number = -1) {
-    const new_layer: NonMagneticLayer = structuredClone(newLayerTemplate);
+    const new_layer: Layer = createLayer("sld", 2.5, 0.0, 25.0, 1.0);
     sortedLayers.value.splice(after_index, 0, new_layer);
     send_model();
 };
 
 function setQProbe() {
-  modelJson.value['object']['models'][activeModel.value]['probe'] = createQProbe(editQmin.value, editQmax.value, editQsteps.value);
+  modelJson.value['object']['models'][activeModel.value]['probe'] = generateQProbe(editQmin.value, editQmax.value, editQsteps.value, 0.1);
   send_model();
 }
 
