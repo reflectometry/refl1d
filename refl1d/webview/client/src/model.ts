@@ -76,17 +76,14 @@ export interface NumpyArray {
 export interface QProbe {
     Q: NumpyArray;
     dQ: NumpyArray;
+    name?: string;
+    filename?: string;
+    intensity: ParameterLike;
+    back_absorption: ParameterLike;
+    background: ParameterLike;
+    back_reflectivity: boolean;
+    R?: NumpyArray;
+    dR?: NumpyArray;
+    resolution: "normal" | "uniform";
     __class__: "refl1d.probe.QProbe";
 }
-
-export function generateQProbe(qmin: number = 0, qmax: number = 0.1, qsteps: number = 250, dQ: number = 0.00001) {
-    const Q_arr = Array.from({ length: qsteps }, (_, i) => qmin + i * (qmax - qmin) / qsteps);
-    const dQ_arr = Array.from({ length: qsteps }, () => dQ);
-    const probe: QProbe = { 
-        Q: { values: Q_arr, dtype: "float64", __class__: "bumps.util.NumpyArray" },
-        dQ: { values: dQ_arr, dtype: "float64", __class__: "bumps.util.NumpyArray" },
-        __class__: "refl1d.probe.QProbe"
-    };
-    return probe;
-}
-

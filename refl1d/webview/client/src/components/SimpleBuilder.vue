@@ -3,8 +3,7 @@ import { Modal } from 'bootstrap/dist/js/bootstrap.esm';
 import { ref, onMounted, onBeforeUnmount, watch, onUpdated, computed, shallowRef } from 'vue';
 import type { ComputedRef } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
-import { generateQProbe } from '../model';
-import type { Layer, Magnetism, Parameter, ParameterLike, Reference, SLD, Stack, SerializedModel, BoundsValue } from '../model';
+import type { Layer, Magnetism, Parameter, ParameterLike, QProbe, Reference, SLD, Stack, SerializedModel, BoundsValue } from '../model';
 import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket.ts';
 
 
@@ -85,6 +84,21 @@ function createModel(): SerializedModel {
   }
 }
 
+function generateQProbe(qmin: number = 0, qmax: number = 0.1, qsteps: number = 250, dQ: number = 0.00001) {
+    const Q_arr = Array.from({ length: qsteps }, (_, i) => qmin + i * (qmax - qmin) / qsteps);
+    const dQ_arr = Array.from({ length: qsteps }, () => dQ);
+    const probe: QProbe = {
+        Q: { values: Q_arr, dtype: "float64", __class__: "bumps.util.NumpyArray" },
+        dQ: { values: dQ_arr, dtype: "float64", __class__: "bumps.util.NumpyArray" },
+        background: createParameter("background", 0.0, [0, "inf"], true, ["probe"]),
+        intensity: createParameter("intensity", 1.0, [0, "inf"], true, ["probe"]),
+        back_absorption: createParameter("back_absorption", 0.0, [0, "inf"], true, ["probe"]),
+        back_reflectivity: false,
+        resolution: 'normal',
+        __class__: "refl1d.probe.QProbe"
+    };
+    return probe;
+}
 
 async function fetch_model() {
   props.socket.asyncEmit('get_model', (payload: ArrayBuffer) => {
@@ -97,6 +111,7 @@ async function fetch_model() {
     else {
       const json_value = JSON.parse(decoder.decode(json_bytes));
       modelJson.value = json_value;
+      console.log('modelJson', modelJson.value);
       parameters_by_id.value = json_value.references;
       dictionaryLoaded.value = true;
     }
