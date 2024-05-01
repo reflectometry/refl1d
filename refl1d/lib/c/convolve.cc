@@ -148,6 +148,91 @@ convolve_gaussian_point(const double xin[], const double yin[], size_t k, size_t
 
 #else /* !USE_TRAPEZOID_RULE */
 
+/* Convolution using uniform sampling */
+void
+convolve_uniform(size_t Nin, const double xin[], const double yin[],
+         size_t Nout, const double x[], const double dx[], double y[])
+{
+  int left_index = 0;
+  size_t k = 0;
+  for (size_t out=0; out < Nout; out++) {
+    const double xo = x[out];
+    const double sigma = dx[out];
+    const double limit = sigma * sqrt(3.0);
+    const double left = ((xo - limit) > xin[0]) ? (xo - limit) : xin[0];
+    const double right = ((xo + limit) < xin[Nin-1]) ? (xo + limit) : xin[Nin-1];
+    if (right < left) {
+      /* Convolution does not overlap data range. */
+      y[k] = 0.;
+      k++;
+      continue;
+    }
+
+    /* Find the starting point for the convolution by first scanning
+     * forward until we reach the next point greater than the limit
+     * (we might already be there if the next output point has wider
+     * resolution than the current point), then scanning backwards to
+     * get to the last point before the limit. Make sure we have at
+     * least one interval so that we don't have to check edge cases
+     * later.
+     */
+    while (left_index < Nin-2 && xin[left_index] < left) left_index++;
+    while (left_index > 0 && xin[left_index] > left) left_index--;
+
+    /* Set the first interval. */
+    double total = 0.;
+    int right_index = left_index + 1;
+    double x1 = xin[left_index], y1 = yin[left_index];
+    double x2 = xin[right_index], y2 = yin[right_index];
+
+    /* Subtract the excess from left interval before the left edge. */
+    if (x1 < left) {
+      double offset = left - x1;
+      double slope = (y2 - y1)/(x2 - x1);
+      double area = offset * (y1 + 0.5*slope*offset);
+      total -= area;
+    }
+
+    /* Do trapezoidal integration up to and including the end interval. */
+    while (right_index < Nin-1 && x2 < right) {
+      if (x1 != x2) {
+        double area = 0.5*(y1 + y2)*(x2 - x1);
+        total += area;
+      }
+      right_index++;
+      x1 = x2;
+      y1 = y2;
+      x2 = xin[right_index];
+      y2 = yin[right_index];
+    }
+    if (x1 != x2) {
+      double area = 0.5*(y1 + y2)*(x2 - x1);
+      total += area;
+    }
+
+    /* Subtract the excess from the right interval after the right edge
+      * and normalize by interval length.
+      */
+    if (x2 > right) {
+      double offset = x2 - right;
+      double slope = (y2 - y1)/(x2 - x1);
+      double area = offset * (y2 - 0.5*slope*offset);
+      total -= area;
+    }
+    if (left < right) {
+      y[k] = total / (right - left);
+    } else if (x1 < x2) {
+      double offset = left - x1;
+      double slope = (y2 - y1)/(x2 - x1);
+      y[k] = y1 + slope*offset;
+    } else {
+      y[k] = 0.5*(y1 + y2);
+    }
+    k++;
+  }
+}
+
+
 /* Analytic convolution of gaussian with linear spline */
 /* More expensive but more reliable */
 double

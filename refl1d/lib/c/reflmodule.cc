@@ -123,6 +123,11 @@ static PyMethodDef methods[] = {
 	 METH_VARARGS,
 	 "convolve_gaussian(xi,yi,x,dx,y): compute convolution of width dx[k] at points x[k],\nreturned in y[k]"},
 
+	{"convolve_uniform",
+	 Pconvolve_uniform,
+	 METH_VARARGS,
+	 "convolve_uniform(xi,yi,x,dx,y): compute convolution of width dx[k] at points x[k],\nreturned in y[k]"},
+
 	{"convolve_sampled",
 	 Pconvolve_sampled,
 	 METH_VARARGS,

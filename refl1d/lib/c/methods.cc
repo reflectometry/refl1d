@@ -349,6 +349,40 @@ PyObject* Pconvolve_gaussian(PyObject *obj, PyObject *args)
   return Py_BuildValue("");
 }
 
+PyObject* Pconvolve_uniform(PyObject *obj, PyObject *args)
+{
+  PyObject *xi_obj,*yi_obj,*x_obj,*dx_obj,*y_obj;
+  const double *xi, *yi, *x, *dx;
+  double *y;
+  Py_ssize_t nxi, nyi, nx, ndx, ny;
+  DECLARE_VECTORS(5);
+
+  if (!PyArg_ParseTuple(args, "OOOOO:convolve_uniform",
+			&xi_obj,&yi_obj,&x_obj,&dx_obj,&y_obj)) return NULL;
+  INVECTOR(xi_obj,xi,nxi);
+  INVECTOR(yi_obj,yi,nyi);
+  INVECTOR(x_obj,x,nx);
+  INVECTOR(dx_obj,dx,ndx);
+  OUTVECTOR(y_obj,y,ny);
+  if (nxi != nyi) {
+#ifndef BROKEN_EXCEPTIONS
+    PyErr_SetString(PyExc_ValueError, "convolve_uniform: xi and yi have different lengths");
+#endif
+    FREE_VECTORS();
+    return NULL;
+  }
+  if (nx != ndx || nx != ny) {
+#ifndef BROKEN_EXCEPTIONS
+    PyErr_SetString(PyExc_ValueError, "convolve_uniform: x, dx and y have different lengths");
+#endif
+    FREE_VECTORS();
+    return NULL;
+  }
+  convolve_gaussian(nxi,xi,yi,nx,x,dx,y);
+  FREE_VECTORS();
+  return Py_BuildValue("");
+}
+
 PyObject* Pconvolve_sampled(PyObject *obj, PyObject *args)
 {
   PyObject *xi_obj,*yi_obj,*xp_obj,*yp_obj,*x_obj,*dx_obj,*y_obj;
