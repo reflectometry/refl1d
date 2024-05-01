@@ -1,6 +1,6 @@
 // import { loadPyodideAndPackages } from './pyodide_worker.mjs';
 import { expose } from 'comlink';
-import { loadPyodide } from 'pyodide';
+import { loadPyodide, version } from 'pyodide';
 import type { PyodideInterface } from 'pyodide';
 const DEBUG = true;
 
@@ -9,7 +9,7 @@ var pyodide: PyodideInterface;
 
 async function loadPyodideAndPackages() { // loads pyodide
     pyodide = await loadPyodide({
-        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.2/full/"
+        indexURL: `https://cdn.jsdelivr.net/pyodide/v${version}/full/`
     }); // run the function and wait for the result (base library)
 
     await pyodide.loadPackage(["numpy", "scipy", "pytz", "h5py", "micropip"]); // waits until these python packpages are loaded to continue
@@ -18,7 +18,7 @@ async function loadPyodideAndPackages() { // loads pyodide
     let api = await pyodide.runPythonAsync(`
     import micropip
     await micropip.install("./wheels/bumps-0.9.0-py3-none-any.whl")
-    await micropip.install("./wheels/refl1d-0.8.15-py3-none-any.whl", keep_going=True, deps=False)
+    await micropip.install("./wheels/refl1d-0.8.15-cp311-cp311-emscripten_3_1_46_wasm32.whl", keep_going=True, deps=False)
     await micropip.install("matplotlib")
     await micropip.install("plotly")
     await micropip.install("mpld3")
@@ -28,7 +28,11 @@ async function loadPyodideAndPackages() { // loads pyodide
     print("pip imports finished")
     from bumps.webview.server import api
     from refl1d.webview.server import api as refl1d_api
+    api.state.parallel = 0
     print("api imported")
+    import refl1d
+    # setup backend:
+    refl1d.use('c_ext')
 
     wrapped_api = {}
   
@@ -123,7 +127,8 @@ export class Server {
         const api = await pyodideReadyPromise;
         const callback = (args[args.length - 1] instanceof Function) ? args.pop() : null;
         const result = await api.get(signal)(args);
-        const jsResult = result?.toJs({dict_converter: Object.fromEntries}) ?? null;
+        console.log('result:', result, result === null);
+        const jsResult = result?.toJs?.({dict_converter: Object.fromEntries}) ?? null;
         if (callback !== null) {
             await callback(jsResult);
         }
