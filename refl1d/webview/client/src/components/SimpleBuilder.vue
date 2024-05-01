@@ -76,7 +76,7 @@ function createModel(): SerializedModel {
               createLayer("Vacuum", 0.0, 0.0, 0.0, 0.0),
             ]
           },
-          probe: generateQProbe(editQmin.value, editQmax.value, editQsteps.value, 0.1),
+          probe: generateQProbe(editQmin.value, editQmax.value, editQsteps.value, 0.0001),
         }
       ]
     },
@@ -202,13 +202,13 @@ function set_parameter_bounds(stack: Stack) {
   }
 }
 
-function send_model() {
+async function send_model() {
   for (const model of modelJson.value['object']['models']) {
     set_parameter_names(model['sample']);
     set_parameter_bounds(model['sample']);
   }
-  const array_buffer = new TextEncoder().encode(JSON.stringify(modelJson.value));
-  props.socket.emit('set_serialized_problem', array_buffer);
+  const json_model = JSON.stringify(modelJson.value);
+  await props.socket.asyncEmit('set_serialized_problem', json_model);
 }
 
 // Adding and deleting layers
