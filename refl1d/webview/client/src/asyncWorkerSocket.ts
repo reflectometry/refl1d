@@ -63,3 +63,5 @@ export class AsyncSocket {
   }
 
 }
+
+export const Socket = AsyncSocket;
