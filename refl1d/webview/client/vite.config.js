@@ -16,7 +16,6 @@ export default ({mode}) => {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
         './asyncSocket.ts': (mode == 'standalone') ? join(process.cwd(), 'src', 'asyncWorkerSocket.ts') : './asyncSocket.ts',
         'socket.io-client': (mode == 'standalone') ? join(process.cwd(), 'src', 'asyncWorkerSocket.ts') : 'socket.io-client',
-        'vue': './node_modules/vue/index.mjs',
       }
     },
     define: {
@@ -26,6 +25,9 @@ export default ({mode}) => {
     },
     worker: {
       format: 'es',
+      rollupOptions: {
+        external: ["node-fetch"],
+      },
     },
     build: {
       rollupOptions: {

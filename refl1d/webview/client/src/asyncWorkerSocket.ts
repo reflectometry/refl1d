@@ -43,11 +43,16 @@ export class AsyncSocket {
     }
   }
   async mountLocal() {
-    const dirHandle = await window.showDirectoryPicker();
+    const dirHandle = await window.showDirectoryPicker({mode: "readwrite"});
     console.log({dirHandle});
     
     const server = await this.ServerPromise;
     await server.mount(dirHandle);
+    return true;
+  }
+  async syncFS() {
+    const server = await this.ServerPromise;
+    return await server.syncFS();
   }
   async asyncEmit(signal: string, ...args: any[]) {
     const server = await this.ServerPromise;

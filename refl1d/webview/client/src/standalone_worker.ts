@@ -17,22 +17,30 @@ async function loadPyodideAndPackages() { // loads pyodide
     //import reductus library with micropip
     let api = await pyodide.runPythonAsync(`
     import micropip
+    await micropip.install([
+        "matplotlib",
+        "plotly",
+        "mpld3",
+        "periodictable",
+        "blinker",
+    ])
     await micropip.install("./wheels/bumps-0.9.0-py3-none-any.whl")
     await micropip.install("./wheels/refl1d-0.8.15-cp311-cp311-emscripten_3_1_46_wasm32.whl", keep_going=True, deps=False)
-    await micropip.install("matplotlib")
-    await micropip.install("plotly")
-    await micropip.install("mpld3")
-    await micropip.install("periodictable")
-    await micropip.install("blinker")
 
     print("pip imports finished")
     from bumps.webview.server import api
     from refl1d.webview.server import api as refl1d_api
     api.state.parallel = 0
+    api.state.problem.serializer = "dataclass"
     print("api imported")
     import refl1d
     # setup backend:
     refl1d.use('c_ext')
+    await api.emit("add_notification", {
+        "title": "Backend Ready",
+        "content": f"All packages loaded",
+        "timeout": 2000,
+    })
 
     wrapped_api = {}
   
@@ -65,9 +73,11 @@ type EventCallback = (message?: any) => any;
 
 export class Server {
     handlers: { [signal: string]: EventCallback[] }
+    nativefs: any;
 
     constructor() {
         this.handlers = {};
+        this.nativefs = null;
         this.init();
     }
 
@@ -89,6 +99,7 @@ export class Server {
             console.log(`adding handler: ${signal}`);
         }
         if (signal === 'connect') {
+            await pyodideReadyPromise;
             await handler();
         }
         this.handlers[signal] = signal_handlers;
@@ -106,13 +117,17 @@ export class Server {
         this.handlers[signal] = signal_handlers;
     }
 
-    async mount(dirHandle) {
+    async mount(dirHandle: FileSystemDirectoryHandle) {
         // const dirHandle = await self.showDirectoryPicker();
         console.log({dirHandle});   
         const nativefs = await pyodide.mountNativeFS("/home/pyodide/user_mount", dirHandle);
+        this.nativefs = nativefs;
     }
 
-    
+    async syncFS() {
+        let r = await this.nativefs?.syncfs?.();
+    }
+
     async asyncEmit(signal: string, message?: any) {
         const jsMessage = message?.toJs({dict_converter: Object.fromEntries}) ?? null;
         console.log('server emit:', signal, jsMessage);
