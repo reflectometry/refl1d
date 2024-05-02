@@ -24,8 +24,8 @@ conda deactivate
 WORKING_DIRECTORY=$(pwd)
 # add our batch scripts:
 case $OSTYPE in 
-  darwin*) cp -r ./extra/refl1d_webview.app "$destdir" && \
-           cp -r ./extra/refl1d_jupyter.app "$destdir" ;; 
+  darwin*) cp -r ./extra/platform_scripts/refl1d_webview.app "$destdir" && \
+           cp -r ./extra/platform_scripts/refl1d_jupyter.app "$destdir" ;; 
 esac
 
 $envdir/bin/python -m pip install --no-input --no-compile numba jupyterlab notebook

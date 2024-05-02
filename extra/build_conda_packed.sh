@@ -23,8 +23,8 @@ tar -xzf "$ENV_NAME.tar.gz" -C "$envdir"
 conda deactivate
 WORKING_DIRECTORY=$(pwd)
 # add our batch script:
-case $OSTYPE in darwin*) cp -r ./extra/refl1d_webview.app "$destdir" ;; esac
-case $OSTYPE in linux*) cp -r ./extra/make_linux_desktop_shortcut.sh "$destdir" ;; esac
+case $OSTYPE in darwin*) cp -r ./extra/platform_scripts/refl1d_webview.app "$destdir" ;; esac
+case $OSTYPE in linux*) cp -r ./extra/platform_scripts/make_linux_desktop_shortcut.sh "$destdir" ;; esac
 
 $envdir/bin/python -m pip install --no-input --no-compile numba
 $envdir/bin/python -m pip install --no-input --no-compile git+https://github.com/bumps/bumps@webview

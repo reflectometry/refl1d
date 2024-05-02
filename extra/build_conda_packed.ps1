@@ -25,7 +25,7 @@ echo "WORKING_DIRECTORY=$WORKING_DIRECTORY"
 dir .
 dir ..
 # add our batch script:
-Copy-Item .\extra\refl1d_webview.bat "$destdir"
+Copy-Item .\extra\platform_scripts\refl1d_webview.bat "$destdir"
 
 & "$envdir\python.exe" -m pip install --no-input --no-compile numba
 & "$envdir\python.exe" -m pip install --no-input --no-compile git+https://github.com/bumps/bumps@webview
