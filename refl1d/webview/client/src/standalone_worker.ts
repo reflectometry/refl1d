@@ -5,7 +5,9 @@ import type { PyodideInterface } from 'pyodide';
 const DEBUG = true;
 
 var pyodide: PyodideInterface;
-// import { loadPyodide } from "https://cdn.jsdelivr.net/pyodide/v0.23.2/full/pyodide.mjs";
+
+declare const REFL1D_WHEEL_FILE: string;
+declare const BUMPS_WHEEL_FILE: string;
 
 async function loadPyodideAndPackages() { // loads pyodide
     pyodide = await loadPyodide({
@@ -24,8 +26,8 @@ async function loadPyodideAndPackages() { // loads pyodide
         "periodictable",
         "blinker",
     ])
-    await micropip.install("./wheels/bumps-0.9.0-py3-none-any.whl")
-    await micropip.install("./wheels/refl1d-0.8.15-cp311-cp311-emscripten_3_1_46_wasm32.whl", keep_going=True, deps=False)
+    await micropip.install("./wheels/${BUMPS_WHEEL_FILE}")
+    await micropip.install("./wheels/${REFL1D_WHEEL_FILE}", keep_going=True, deps=False)
 
     print("pip imports finished")
     from bumps.webview.server import api

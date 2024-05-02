@@ -1,6 +1,7 @@
 {
   "name": "refl1d-webview-client",
   "version": "0.1.18",
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build --emptyOutDir -m development",

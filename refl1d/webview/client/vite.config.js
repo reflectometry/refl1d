@@ -22,6 +22,9 @@ export default ({mode}) => {
       // By default, Vite doesn't include shims for NodeJS/
       // necessary for segment analytics lib to work
       global: {},
+      APP_VERSION: JSON.stringify(process.env.npm_package_version),
+      REFL1D_WHEEL_FILE: JSON.stringify(process.env.REFL1D_WHEEL_FILE),
+      BUMPS_WHEEL_FILE: JSON.stringify(process.env.BUMPS_WHEEL_FILE),
     },
     worker: {
       format: 'es',
@@ -33,7 +36,7 @@ export default ({mode}) => {
       rollupOptions: {
         output: {
           // Default
-          dir: join('dist', process.env.npm_package_version),
+          dir: (mode == 'standalone') ? 'dist_standalone': join('dist', process.env.npm_package_version),
           entryFileNames: (mode == 'production') ? 'assets/[name].js' : 'assets/[name].[hash].js',
           assetFileNames: (mode == 'production') ? 'assets/[name][extname]' : 'assets/[name].[hash][extname]',
           // chunkFileNames: "chunk-[name].js",
