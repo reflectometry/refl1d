@@ -24,6 +24,10 @@ conda deactivate
 WORKING_DIRECTORY=$(pwd)
 # add our batch script:
 case $OSTYPE in darwin*) cp -r ./extra/platform_scripts/refl1d_webview.app "$destdir" ;; esac
+case $OSTYPE in 
+  linux*) cp -r ./extra/platform_scripts/make_linux_desktop_shortcut.sh "$destdir" && \
+          cp -r ./extra/platform_scripts/refl1d-webview "$destdir" ;;
+esac
 case $OSTYPE in linux*) cp -r ./extra/platform_scripts/make_linux_desktop_shortcut.sh "$destdir" ;; esac
 
 $envdir/bin/python -m pip install --no-input --no-compile numba
