@@ -26,7 +26,7 @@ setupDrawLoop('update_parameters', props.socket, fetch_and_draw);
 const REFLECTIVITY_PLOTS = [
   "Fresnel (R/R_substrate)",
   "Reflectivity",
-  "R/Q4",
+  "RQ^4",
   "Spin Asymmetry"
 ] as const;
 type ReflectivityPlotEnum = typeof REFLECTIVITY_PLOTS;
@@ -113,7 +113,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
       yaxis_label = "Fresnel Reflectivity"
       break;
     }
-    case "R/Q4": {
+    case "RQ^4": {
       // Q4 = 1e-8*Q**-4*self.intensity.value + self.background.value
       let plot_index = 0;
       for (let model of model_data) {
