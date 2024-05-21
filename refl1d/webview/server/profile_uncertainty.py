@@ -53,19 +53,20 @@ def show_residuals(errors: ErrorType, contours: Optional[tuple[float]], fig: go.
 
 
 def _profiles_overplot(profiles: dict[str, list[np.ndarray]], fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
-    has_magnetism = any(len(group[0]) > 3 for group in profiles.values())
+    has_magnetism = False
     for model_index, (model, group) in enumerate(profiles.items()):
         name = model.name
         absorbing = any((L[2] != 1e-4).any() for L in group)
         magnetic = (len(group[0]) > 3)
         # Note: Use 3 colours per dataset for consistency
         color_index = model_index * 4
-        _draw_overplot(group, 1, name + ' rho', fig=fig, color_index=color_index, row=row, col=col, secondary_y=has_magnetism)
+        _draw_overplot(group, 1, name + ' rho', fig=fig, color_index=color_index, row=row, col=col, secondary_y=False)
         if absorbing:
-            _draw_overplot(group, 2, name + ' irho', fig=fig, color_index=color_index+1, row=row, col=col, secondary_y=has_magnetism)
+            _draw_overplot(group, 2, name + ' irho', fig=fig, color_index=color_index+1, row=row, col=col, secondary_y=False)
         if magnetic:
-            _draw_overplot(group, 3, name + ' rhoM', fig=fig, color_index=color_index+2, row=row, col=col, secondary_y=True)
-            _draw_overplot(group, 4, name + ' thetaM', fig=fig, color_index=color_index+3, row=row, col=col, secondary_y=False)
+            has_magnetism = True
+            _draw_overplot(group, 3, name + ' rhoM', fig=fig, color_index=color_index+2, row=row, col=col, secondary_y=False)
+            _draw_overplot(group, 4, name + ' thetaM', fig=fig, color_index=color_index+3, row=row, col=col, secondary_y=True)
     _profile_labels(fig=fig, row=row, col=col, magnetic=has_magnetism)
 
 def _draw_overplot(group, index, label, fig: go.Figure, color_index: int, row: Optional[int] = None, col: Optional[int] = None, secondary_y: bool = False):
@@ -78,7 +79,7 @@ def _draw_overplot(group, index, label, fig: go.Figure, color_index: int, row: O
 
 def _profiles_contour(profiles: dict[str, list[np.ndarray]], contours: Optional[tuple[float]], npoints, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
     contour_data = {}
-    has_magnetism = any(len(group[0]) > 3 for group in profiles.values())
+    has_magnetism = False
     for model_index, (model, group) in enumerate(profiles.items()):
         name = model.name if model.name is not None else f"Model {model_index}"
         if name in contour_data:
@@ -93,12 +94,13 @@ def _profiles_contour(profiles: dict[str, list[np.ndarray]], contours: Optional[
         contour_data[name]['data'] = {}
         # Note: Use 4 colours per dataset for consistency
         color_index = model_index * 4
-        contour_data[name]['data']['rho'] = _draw_contours(group, 1, name + ' rho', zp, contours, fig=fig, color_index=color_index, row=row, col=col, secondary_y=has_magnetism)
+        contour_data[name]['data']['rho'] = _draw_contours(group, 1, name + ' rho', zp, contours, fig=fig, color_index=color_index, row=row, col=col, secondary_y=False)
         if absorbing:
-            contour_data[name]['data']['irho'] = _draw_contours(group, 2, name + ' irho', zp, contours, fig=fig, color_index=color_index+1, row=row, col=col, secondary_y=has_magnetism)
+            contour_data[name]['data']['irho'] = _draw_contours(group, 2, name + ' irho', zp, contours, fig=fig, color_index=color_index+1, row=row, col=col, secondary_y=False)
         if magnetic:
-            contour_data[name]['data']['rhoM'] = _draw_contours(group, 3, name + ' rhoM', zp, contours, fig=fig, color_index=color_index+2, row=row, col=col, secondary_y=True)
-            contour_data[name]['data']['thetaM'] = _draw_contours(group, 4, name + ' thetaM', zp, contours, fig=fig, color_index=color_index+3, row=row, col=col, secondary_y=False)
+            has_magnetism = True
+            contour_data[name]['data']['rhoM'] = _draw_contours(group, 3, name + ' rhoM', zp, contours, fig=fig, color_index=color_index+2, row=row, col=col, secondary_y=False)
+            contour_data[name]['data']['thetaM'] = _draw_contours(group, 4, name + ' thetaM', zp, contours, fig=fig, color_index=color_index+3, row=row, col=col, secondary_y=True)
 
     _profile_labels(fig=fig, row=row, col=col, magnetic=has_magnetism)
     return contour_data
@@ -117,12 +119,12 @@ def _draw_contours(group, index, label, zp, contours, fig: go.Figure, color_inde
 
 def _profile_labels(fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None, magnetic: bool = False):
     fig.update_xaxes(title_text='z (Å)', row=row, col=col, showline=True, zeroline=False)
-    fig.update_yaxes(title_text='SLD (10⁻⁶/Å²)', row=row, col=col, showline=True, secondary_y=magnetic, side='left')
+    fig.update_yaxes(title_text='SLD (10⁻⁶/Å²)', row=row, col=col, showline=True, secondary_y=False, side='left')
     if magnetic:
         fig.update_yaxes(
            automargin=True, showgrid=False,
            title_text='Magnetic Angle θ<sub>M</sub> / °',
-           row=row, col=col, showline=True, secondary_y=False, side='right')
+           row=row, col=col, showline=True, secondary_y=True, side='right')
 
 def _residuals_overplot(Q, residuals, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
     alpha = 0.6
