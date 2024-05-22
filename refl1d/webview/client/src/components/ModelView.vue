@@ -8,7 +8,13 @@ import * as Plotly from 'plotly.js/lib/core';
 
 const title = "Profile";
 const plot_div = ref<HTMLDivElement>();
-const model_names = ref<{name: string, part_name: string, model_index: number, part_index: number}[]>([]);
+interface ModelNameInfo {
+  name: string,
+  part_name: string,
+  model_index: number,
+  part_index: number,
+}
+const model_names = ref<ModelNameInfo[]>([]);
 const show_multiple = ref(false);
 const current_models = ref<Array<[number, number]>>([[0, 0]]);
 
@@ -16,10 +22,10 @@ const props = defineProps<{
   socket: AsyncSocket,
 }>();
 
-const { draw_requested } = setupDrawLoop('update_parameters', props.socket, fetch_and_draw, title);
+const { draw_requested } = setupDrawLoop('updated_parameters', props.socket, fetch_and_draw, title);
 
 async function get_model_names() {
-  model_names.value = await props.socket.asyncEmit("get_model_names");
+  model_names.value = await props.socket.asyncEmit("get_model_names") as ModelNameInfo[];
 }
 
 props.socket.on('model_loaded', get_model_names);

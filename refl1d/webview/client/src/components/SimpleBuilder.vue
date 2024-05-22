@@ -34,7 +34,7 @@ const sortedLayers: ComputedRef<Slab[]> = computed(() => {
 //   model_names.value = await props.socket.asyncEmit("get_model_names");
 // }
 
-props.socket.on('update_parameters', fetch_model);
+props.socket.on('updated_parameters', fetch_model);
 props.socket.on('model_loaded', fetch_model);
 
 function createParameter(name: string, value: number, limits: [BoundsValue, BoundsValue] = ["-inf", "inf"], fixed: boolean = true, tags: string[] = []) {

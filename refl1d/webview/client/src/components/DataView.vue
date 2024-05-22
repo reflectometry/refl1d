@@ -21,7 +21,7 @@ const props = defineProps<{
   socket: AsyncSocket,
 }>();
 
-setupDrawLoop('update_parameters', props.socket, fetch_and_draw);
+setupDrawLoop('updated_parameters', props.socket, fetch_and_draw);
 
 const REFLECTIVITY_PLOTS = [
   "Fresnel (R/R_substrate)",
