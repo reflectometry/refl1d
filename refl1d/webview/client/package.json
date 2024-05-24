@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "bootstrap": "^5.2.1",
-    "bumps-webview-client": "^0.1.13",
+    "bumps-webview-client": "^0.1.14",
     "comlink": "^4.4.1",
     "json-difference": "^1.8.2",
     "plotly.js": "^2.29.0",
