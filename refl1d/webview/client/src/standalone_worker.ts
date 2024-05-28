@@ -45,7 +45,7 @@ async function loadPyodideAndPackages() { // loads pyodide
     })
 
     wrapped_api = {}
-  
+    
     def expose(method, method_name):
         def wrapper(args):
             # print("args:", args)
@@ -54,14 +54,14 @@ async function loadPyodideAndPackages() { // loads pyodide
             result = method(*pyargs)
             print("result of", method_name, str(result))
             return result
-  
+
         return wrapper
-  
+
     for method_name, method in api.REGISTRY.items():
         print("wrapping:", method_name)
         wrapped = expose(method, method_name)
         wrapped_api[method_name] = wrapped
-  
+    
     wrapped_api
     `);
     return api;
@@ -131,7 +131,7 @@ export class Server {
     }
 
     async asyncEmit(signal: string, message?: any) {
-        const jsMessage = message?.toJs({dict_converter: Object.fromEntries}) ?? null;
+        const jsMessage = message?.toJs?.({dict_converter: Object.fromEntries}) ?? message;
         console.log('server emit:', signal, jsMessage);
         const handlers = this.handlers[signal] ?? [];
         for (let handler of handlers) {
@@ -140,12 +140,10 @@ export class Server {
     }
 
     async onAsyncEmit(signal: string, ...args: any[]) {
-        console.log('emit!', signal); // , args);
         const api = await pyodideReadyPromise;
         const callback = (args[args.length - 1] instanceof Function) ? args.pop() : null;
         const result = await api.get(signal)(args);
-        console.log('result:', result, result === null);
-        const jsResult = result?.toJs?.({dict_converter: Object.fromEntries}) ?? null;
+        const jsResult = result?.toJs?.({dict_converter: Object.fromEntries}) ?? result;
         if (callback !== null) {
             await callback(jsResult);
         }
