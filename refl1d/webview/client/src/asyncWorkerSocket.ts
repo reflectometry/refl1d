@@ -48,6 +48,7 @@ export class AsyncSocket {
     
     const server = await this.ServerPromise;
     await server.mount(dirHandle);
+    await server.asyncEmit('add_notification', {content: dirHandle.name, title: "Local Directory Mounted", timeout: 3000 });
     return true;
   }
   async syncFS() {
@@ -56,7 +57,7 @@ export class AsyncSocket {
   }
   async asyncEmit(signal: string, ...args: any[]) {
     const server = await this.ServerPromise;
-    console.log({server, signal, args});
+    // console.log({server, signal, args});
     let last_arg = args.pop();
     if (last_arg instanceof Function) {
       last_arg = proxy(last_arg);
