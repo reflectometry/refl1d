@@ -2,6 +2,7 @@
 import { expose } from 'comlink';
 import { loadPyodide, version } from 'pyodide';
 import type { PyodideInterface } from 'pyodide';
+import { Signal } from './standalone_signal';
 const DEBUG = true;
 
 var pyodide: PyodideInterface;
@@ -55,7 +56,7 @@ async function loadPyodideAndPackages() { // loads pyodide
         return wrapper
 
     for method_name, method in api.REGISTRY.items():
-        if method_name in ["start_fit_thread", "stop_fit"]:
+        if method_name in ["start_fit_thread"]:
             wrapped_api[method_name] = expose(method, method_name)
 
     def set_problem(dilled_problem):
@@ -105,6 +106,20 @@ export class Server {
         await defineEmit(this);
     }
 
+    async set_signal(signal_in: Signal) {
+        const api = await pyodideReadyPromise;
+        const { name, buffer } = signal_in;
+        const signal = new Signal(name, buffer);
+        console.log("setting abort signal in worker", signal);
+        const defineFitEvent = await pyodide.runPythonAsync(`
+            def defineFitEvent(event):
+                api.state.${name} = event.to_py();
+            
+            defineFitEvent
+        `);
+        await defineFitEvent(signal);
+    }
+
     async addHandler(signal: string, handler: EventCallback) {
         const signal_handlers = this.handlers[signal] ?? [];
         signal_handlers.push(handler);
@@ -146,8 +161,6 @@ export class Server {
         const js_args = args.map((arg) => {
             return arg?.toJs?.({dict_converter: Object.fromEntries}) ?? arg;
         });
-        // const jsMessage = message?.toJs?.({dict_converter: Object.fromEntries}) ?? message;
-        //console.log('server emit:', signal, js_args);
         const handlers = this.handlers[signal] ?? [];
         for (let handler of handlers) {
             handler(...js_args);

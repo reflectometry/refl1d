@@ -2,6 +2,7 @@
 import { expose, wrap, proxy } from 'comlink';
 import { loadPyodide, version } from 'pyodide';
 import type { PyodideInterface } from 'pyodide';
+import { Signal } from './standalone_signal';
 import type { Server as FitServer } from './standalone_fit_worker';
 
 const DEBUG = true;
@@ -98,7 +99,7 @@ async function loadPyodideAndPackages() { // loads pyodide
             pass
 
         def is_alive(self):
-            return False
+            return True
 
         def run(self):
             print("running dummy fit thread")
@@ -147,21 +148,19 @@ export class Server {
     async init() {
         const api = await pyodideReadyPromise;
         const fit_server = await FitServerPromise;
+        const abort_fit_signal = new Signal("fit_abort_event");
+        const fit_complete_signal = new Signal("fit_complete_event");
+        await fit_server.set_signal(abort_fit_signal);
+        await this.set_signal(abort_fit_signal);
+        await fit_server.set_signal(fit_complete_signal);
+        await this.set_signal(fit_complete_signal);
         const defineEmit = await pyodide.runPythonAsync(`
             def defineEmit(server):
                 api.emit = server.asyncEmit;
             
             defineEmit
-         `);
-        await defineEmit(this);
-        const define_fit_server = await pyodide.runPythonAsync(`
-            def define_fit_server(fit_server_js):
-                global fit_server
-                fit_server = fit_server_js
-                            
-            define_fit_server
         `);
-        await define_fit_server(fit_server);
+        await defineEmit(this);
         this.addHandler('set_fit_thread_problem', async (problem: any) => {
             const result = await fit_server.onAsyncEmit('set_problem', problem);
             console.log("set_fit_thread_problem result:", result);
@@ -178,6 +177,20 @@ export class Server {
             await this.onAsyncEmit('evt_fit_complete', event);
         }
         fit_server.addHandler('evt_fit_complete', proxy(fit_complete_handler));
+    }
+
+    async set_signal(signal_in: Signal) {
+        const api = await pyodideReadyPromise;
+        const { name, buffer } = signal_in;
+        const signal = new Signal(name, buffer);
+        console.log("setting abort signal in worker", signal);
+        const defineFitEvent = await pyodide.runPythonAsync(`
+            def defineFitEvent(event):
+                api.state.${name} = event.to_py();
+            
+            defineFitEvent
+        `);
+        await defineFitEvent(signal);
     }
 
     async addHandler(signal: string, handler: EventCallback) {
@@ -227,8 +240,6 @@ export class Server {
         const js_args = args.map((arg) => {
             return arg?.toJs?.({dict_converter: Object.fromEntries}) ?? arg;
         });
-        // const jsMessage = message?.toJs?.({dict_converter: Object.fromEntries}) ?? message;
-        // console.log('server emit:', signal, js_args);
         const handlers = this.handlers[signal] ?? [];
         for (let handler of handlers) {
             handler(...js_args);
