@@ -2,25 +2,27 @@
 import { expose, wrap, proxy } from 'comlink';
 import { loadPyodide, version } from 'pyodide';
 import type { PyodideInterface } from 'pyodide';
+import type { PyProxy } from 'pyodide/ffi';
 import { Signal } from './standalone_signal';
 import type { Server as FitServer } from './standalone_fit_worker';
 
 const DEBUG = true;
 
-var pyodide: PyodideInterface;
-
 declare const REFL1D_WHEEL_FILE: string;
 declare const BUMPS_WHEEL_FILE: string;
 
-async function loadPyodideAndPackages() { // loads pyodide
-    pyodide = await loadPyodide({
+async function loadPyodideBase() {
+    return await loadPyodide({
         indexURL: `https://cdn.jsdelivr.net/pyodide/v${version}/full/`
-    }); // run the function and wait for the result (base library)
+    });
+}
 
-    await pyodide.loadPackage(["numpy", "scipy", "pytz", "h5py", "micropip"]); // waits until these python packpages are loaded to continue
-  
-    //import reductus library with micropip
-    let api = await pyodide.runPythonAsync(`
+async function loadBuiltins(pyodide: PyodideInterface) {
+    await pyodide.loadPackage(["numpy", "scipy", "pytz", "h5py", "micropip"]);
+}
+
+async function doPipInstalls(pyodide: PyodideInterface) {
+    await pyodide.runPythonAsync(`
     import micropip
     await micropip.install([
         "matplotlib",
@@ -32,8 +34,12 @@ async function loadPyodideAndPackages() { // loads pyodide
     ])
     await micropip.install("./wheels/${BUMPS_WHEEL_FILE}")
     await micropip.install("./wheels/${REFL1D_WHEEL_FILE}", keep_going=True, deps=False)
-    print("pip installs finished")
 
+    `);
+}
+
+async function createAPI(pyodide: PyodideInterface) {
+    let api = await pyodide.runPythonAsync(`
     from typing import Any
     from bumps.webview.server import api
     import bumps.cli
@@ -47,15 +53,10 @@ async function loadPyodideAndPackages() { // loads pyodide
     import asyncio
     import json
     import dill
+
     # setup backend:
     bumps.cli.install_plugin(refl1d.fitplugin)
     refl1d.use('c_ext')
-
-    await api.emit("add_notification", {
-        "title": "Backend Ready",
-        "content": f"All packages loaded",
-        "timeout": 2000,
-    })
 
     wrapped_api = {}
 
@@ -95,11 +96,13 @@ async function loadPyodideAndPackages() { // loads pyodide
         uncertainty_update: int
         terminate_on_finish: bool
 
+        _alive = True
+
         def join(self, timeout=None):
-            pass
+            self._alive = False
 
         def is_alive(self):
-            return True
+            return self._alive
 
         def run(self):
             print("running dummy fit thread")
@@ -126,27 +129,38 @@ async function loadPyodideAndPackages() { // loads pyodide
     return api;
 }
 
-// export { loadPyodideAndPackages };
 
-let pyodideReadyPromise = loadPyodideAndPackages(); // run the functions stored in lines 4
+
 const fit_worker = new Worker(new URL("./standalone_fit_worker.ts", import.meta.url), {type: 'module'});
-const FitServerClass = wrap<FitServer>(fit_worker);
+const FitServerClass = wrap<typeof FitServer>(fit_worker);
 const FitServerPromise = new FitServerClass();
-const FitSignals = ["progress"]
 type EventCallback = (message?: any) => any;
 
 export class Server {
     handlers: { [signal: string]: EventCallback[] }
     nativefs: any;
+    pyodide: PyodideInterface;
+    api: PyProxy;
+    initialized: Promise<void>;
 
     constructor() {
         this.handlers = {};
         this.nativefs = null;
-        this.init();
+        this.initialized = this.init();
     }
 
     async init() {
-        const api = await pyodideReadyPromise;
+        await this.asyncEmit("server_startup_status", {status: "loading python", percent: 0});
+        const pyodide = await loadPyodideBase();
+        this.pyodide = pyodide;
+        await this.asyncEmit("server_startup_status", {status: "initializing builtin modules", percent: 25});
+        await loadBuiltins(pyodide);
+        await this.asyncEmit("server_startup_status", {status: "installing pip dependencies", percent: 50});
+        await doPipInstalls(pyodide);
+        await this.asyncEmit("server_startup_status", {status: "loading bumps and refl1d", percent: 75});
+        const api = await createAPI(pyodide);
+        this.api = api;
+        await this.asyncEmit("server_startup_status", {status: "api created", percent: 100});
         const fit_server = await FitServerPromise;
         const abort_fit_signal = new Signal("fit_abort_event");
         const fit_complete_signal = new Signal("fit_complete_event");
@@ -180,11 +194,10 @@ export class Server {
     }
 
     async set_signal(signal_in: Signal) {
-        const api = await pyodideReadyPromise;
         const { name, buffer } = signal_in;
         const signal = new Signal(name, buffer);
         console.log("setting abort signal in worker", signal);
-        const defineFitEvent = await pyodide.runPythonAsync(`
+        const defineFitEvent = await this.pyodide.runPythonAsync(`
             def defineFitEvent(event):
                 api.state.${name} = event.to_py();
             
@@ -200,7 +213,7 @@ export class Server {
             console.log(`adding handler: ${signal}`);
         }
         if (signal === 'connect') {
-            await pyodideReadyPromise;
+            await this.initialized;
             await FitServerPromise;
             await handler();
         }
@@ -222,9 +235,9 @@ export class Server {
     async mount(dirHandle: FileSystemDirectoryHandle) {
         // const dirHandle = await self.showDirectoryPicker();
         console.log({dirHandle});   
-        const nativefs = await pyodide.mountNativeFS("/home/pyodide/user_mount", dirHandle);
+        const nativefs = await this.pyodide.mountNativeFS("/home/pyodide/user_mount", dirHandle);
         this.nativefs = nativefs;
-        await pyodide.runPythonAsync(`
+        await this.pyodide.runPythonAsync(`
         import os
         os.chdir("/home/pyodide/user_mount")
 
@@ -248,9 +261,9 @@ export class Server {
 
     async onAsyncEmit(signal: string, ...args: any[]) {
         // this is for emit() calls from the client
-        const api = await pyodideReadyPromise;
+        await this.initialized; // api ready after this...
         const callback = (args[args.length - 1] instanceof Function) ? args.pop() : null;
-        const result = await api.get(signal)(args);
+        const result = await this.api.get(signal)(args);
         const jsResult = result?.toJs?.({dict_converter: Object.fromEntries}) ?? result;
         if (callback !== null) {
             await callback(jsResult);
