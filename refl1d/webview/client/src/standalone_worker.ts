@@ -153,6 +153,7 @@ export class Server {
         await this.asyncEmit("server_startup_status", {status: "loading python", percent: 0});
         const pyodide = await loadPyodideBase();
         this.pyodide = pyodide;
+        pyodide.FS.createLazyFile("/home/pyodide", "YIG_magnetic_example.json", "../examples/YIG_Py_300K_Combined_Annotated.json", true, false);
         await this.asyncEmit("server_startup_status", {status: "initializing builtin modules", percent: 25});
         await loadBuiltins(pyodide);
         await this.asyncEmit("server_startup_status", {status: "installing pip dependencies", percent: 50});
