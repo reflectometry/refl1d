@@ -121,13 +121,13 @@ async function fetch_model() {
 async function new_model() {
   const model = createModel();
   if (dictionaryLoaded.value) {
-    const confirmation = confirm("This will overwrite your current model...");
+    const confirmation = confirm('This will overwrite your current model...');
     if (!confirmation) {
       return;
     }
   }
   modelJson.value = model;
-  send_model();
+  send_model(true, 'Simple Builder Model');
 }
 
 function get_slot(parameter_like: ParameterLike) {
@@ -202,13 +202,13 @@ function set_parameter_bounds(stack: Stack) {
   }
 }
 
-async function send_model() {
+async function send_model(is_new: boolean = false, name: string | null = null) {
   for (const model of modelJson.value['object']['models']) {
     set_parameter_names(model['sample']);
     set_parameter_bounds(model['sample']);
   }
   const json_model = JSON.stringify(modelJson.value);
-  await props.socket.asyncEmit('set_serialized_problem', json_model);
+  await props.socket.asyncEmit('set_serialized_problem', json_model, is_new, name);
 }
 
 // Adding and deleting layers
@@ -263,7 +263,7 @@ function dragEnd() {
 </script>
 
 <template>
-<div id="builder" @keyup.enter="send_model" @keyup.tab="send_model">
+<div id="builder" @keyup.enter="send_model()" @keyup.tab="send_model()">
     <div class="container m-2">
         <div class="card">
             <div class="card-body">
@@ -289,7 +289,7 @@ function dragEnd() {
           <button class="btn btn-primary m-2" @click="showEditQRange = !showEditQRange">Edit Q-range</button>
         </div>
         <div class="col-auto align-self-center">
-          <div class="form-check form-switch m-2" @click="send_model">
+          <div class="form-check form-switch m-2" @click="send_model()">
             <input class="form-check-input" type="checkbox" id="showImaginary_input" v-model="showImaginary">
             <label class="form-check-label" for="showImaginary_input">Show imaginary SLD</label>
           </div>
@@ -326,7 +326,7 @@ function dragEnd() {
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="(layer, key) in sortedLayers" :key="key" @blur.capture="send_model" class="align-middle">
+                <tr v-for="(layer, key) in sortedLayers" :key="key" @blur.capture="send_model()" class="align-middle">
                     <td  
                         @dragstart="dragStart(key, $event)"
                         @dragover="dragOver(key, $event)"
@@ -352,7 +352,7 @@ function dragEnd() {
             <button class="btn btn-primary m-2" @click="new_model">New model</button>
         </div>
         <div class="col-auto" v-if="dictionaryLoaded">
-          <button class="btn btn-secondary m-2" @click="send_model">Apply changes</button>
+          <button class="btn btn-secondary m-2" @click="send_model()">Apply changes</button>
         </div>
         <div class="col-auto" v-if="dictionaryLoaded">
           <div class="input-group m-2">
