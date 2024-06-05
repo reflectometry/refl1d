@@ -44,6 +44,8 @@ cd $envdir/lib/python$PYTHON_VERSION/site-packages/refl1d/webview/client
 $envdir/bin/npm link ../../../bumps/webview/client
 $envdir/bin/npm install
 $envdir/bin/npm run build
+rm -rf $envdir/lib/python$PYTHON_VERSION/site-packages/bumps/webview/client/node_modules
+rm -rf $envdir/lib/python$PYTHON_VERSION/site-packages/refl1d/webview/client/node_modules
 
 version=$($envdir/bin/python -c "import refl1d; print(refl1d.__version__)")
 mv "$tmpdir/$DIRNAME" "$tmpdir/$DIRNAME-$version"
