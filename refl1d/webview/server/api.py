@@ -23,7 +23,7 @@ async def get_plot_data(view: str = 'linear'):
     if state.problem is None or state.problem.fitProblem is None:
         return None
     fitProblem = state.problem.fitProblem
-    chisq = get_chisq(fitProblem)
+    chisq = await get_chisq(fitProblem)
     plotdata = []
     result = {"chisq": chisq, "plotdata": plotdata}
     for model in fitProblem.models:
