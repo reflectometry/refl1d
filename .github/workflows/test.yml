@@ -68,15 +68,25 @@ jobs:
     - name: Archive artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: artifacts
+        name: artifacts-${{ matrix.config.os }}
         path: |
           dist/*.whl
           dist/*.zip
           dist/*.tar.gz
           release/*.zip
 
-  publish:
+  merge_artifacts:
     needs: test_and_build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Merge artifacts
+      uses: actions/upload-artifact/merge@v4
+      with:
+        name: artifacts
+        pattern: artifacts-*
+
+  publish:
+    needs: merge_artifacts
     runs-on: ubuntu-latest
     steps:
     - name: Retrieve all artifacts
