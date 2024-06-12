@@ -1240,6 +1240,11 @@ class ProbeSet(Probe):
                       resolution=Po.resolution)
 
 
+
+# Flag to automatically convert "+" to "++" on load in load4
+# (and "-" to "--")
+AUTO_PROMOTE_HALPOL = True
+
 def load4(filename, keysep=":", sep=None, comment="#", name=None,
           intensity=1, background=0, back_absorption=1,
           back_reflectivity=False, Aguide=BASE_GUIDE_ANGLE, H=0,
@@ -1372,6 +1377,10 @@ def load4(filename, keysep=":", sep=None, comment="#", name=None,
         data_by_xs = {strip_quotes(entry[0]["polarization"])
                       : _data_as_probe(entry, probe_args, **data_args)
                       for entry in entries}
+        if AUTO_PROMOTE_HALPOL:
+            for halfpol in ("+", "-"):
+                if halfpol in data_by_xs:
+                    data_by_xs[halfpol*2] = data_by_xs.pop(halfpol)
         if not set(data_by_xs.keys()) <= set('-- -+ +- ++'.split()):
             raise ValueError("Unknown cross sections in: "
                              + ", ".join(sorted(data_by_xs.keys())))
