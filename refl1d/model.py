@@ -91,10 +91,10 @@ class Layer(object): # Abstract base class
         """
 
     def layer_parameters(self):
-        pars = {'thickness': self.thickness}
-        if self.interface:
-            pars['interface'] = self.interface
-        if self.magnetism:
+        pars = {'thickness': self.thickness.parameters()}
+        if self.interface is not None:
+            pars['interface'] = self.interface.parameters()
+        if self.magnetism is not None:
             pars['magnetism'] = self.magnetism.parameters()
         pars.update(self.parameters())
         return pars
@@ -286,7 +286,7 @@ class Stack(Layer):
 
     def parameters(self):
         layers = [L.layer_parameters() for L in self._layers]
-        return {'thickness':self.thickness, 'layers':layers}
+        return {'thickness':self.thickness.parameters(), 'layers':layers}
 
     def penalty(self):
         return sum(L.penalty() for L in self._layers)
