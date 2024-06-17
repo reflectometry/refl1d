@@ -4,12 +4,14 @@
 # Originally written for use in a jupyter notebook
 # Adapted to act as a prototype for the profile plotting in the new GUI for refl1d
 
-from typing import List, TypedDict
+from typing import List, TypedDict, TYPE_CHECKING
 from refl1d.experiment import Experiment
 from numpy import inf
 import numpy as np
-import plotly.graph_objs as go
-import plotly.io as pio
+
+if TYPE_CHECKING:
+    import plotly.graph_objs as go
+
 from .colors import COLORS as MULTI_PLOT_COLORS
 
 SINGLE_PLOT_COLORS = ("black", "blue", "green", "gold")
@@ -62,6 +64,7 @@ class FindLayers:
         """
         Reset all markers, for plotly plots
         """
+        import plotly.graph_objs as go
         # self.clear_markers()
         if not isinstance(self.axes, go.Figure):
             raise ValueError(
@@ -126,6 +129,7 @@ class PlotItem(TypedDict):
 
 
 def plot_multiple_sld_profiles(plot_items: List[PlotItem]):
+    import plotly.graph_objs as go
     fig = go.Figure()
     nplots = len(plot_items)
     multiplot = nplots > 1

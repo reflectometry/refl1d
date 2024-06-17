@@ -1,7 +1,8 @@
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 import numpy as np
-import plotly.graph_objs as go
-from plotly.subplots import make_subplots
+
+if TYPE_CHECKING:
+    import plotly.graph_objs as go
 
 from refl1d.errors import align_profiles, form_quantiles, _find_offset
 from .colors import COLORS
@@ -19,6 +20,7 @@ def get_color(index: int):
     return COLORS[index % len(COLORS)]
 
 def show_errors(errors: ErrorType, npoints: int, align: bool, residuals: bool=True):
+    from plotly.subplots import make_subplots
     specs = [[{"secondary_y": True, "rowspan": 1}], [{}]] if residuals else [[{"secondary_y": True, "rowspan": 2}], [None]]
     fig = make_subplots(rows=2, cols=1, specs=specs)
     fig.update_layout(template=None)
@@ -27,7 +29,7 @@ def show_errors(errors: ErrorType, npoints: int, align: bool, residuals: bool=Tr
         show_residuals(errors, None, fig=fig, row=2, col=1)
     return dict(fig=fig, contour_data=contour_data, contours=CONTOURS)
 
-def show_profiles(errors: ErrorType, align: bool, contours: Optional[tuple[float]], npoints: int, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None) -> go.Figure:
+def show_profiles(errors: ErrorType, align: bool, contours: Optional[tuple[float]], npoints: int, fig: 'go.Figure', row: Optional[int] = None, col: Optional[int] = None) -> 'go.Figure':
     profiles, slabs, _, _ = errors
     if align is not None:
         profiles = align_profiles(profiles, slabs, align)
@@ -43,7 +45,7 @@ def show_profiles(errors: ErrorType, align: bool, contours: Optional[tuple[float
 
     return contour_data
 
-def show_residuals(errors: ErrorType, contours: Optional[tuple[float]], fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
+def show_residuals(errors: ErrorType, contours: Optional[tuple[float]], fig: 'go.Figure', row: Optional[int] = None, col: Optional[int] = None):
     _, _, Q, residuals = errors
 
     if contours is not None:
@@ -52,7 +54,7 @@ def show_residuals(errors: ErrorType, contours: Optional[tuple[float]], fig: go.
         _residuals_overplot(Q, residuals, fig=fig, row=row, col=col)
 
 
-def _profiles_overplot(profiles: dict[str, list[np.ndarray]], fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
+def _profiles_overplot(profiles: dict[str, list[np.ndarray]], fig: 'go.Figure', row: Optional[int] = None, col: Optional[int] = None):
     has_magnetism = False
     for model_index, (model, group) in enumerate(profiles.items()):
         name = model.name
@@ -69,7 +71,7 @@ def _profiles_overplot(profiles: dict[str, list[np.ndarray]], fig: go.Figure, ro
             _draw_overplot(group, 4, name + ' thetaM', fig=fig, color_index=color_index+3, row=row, col=col, secondary_y=True)
     _profile_labels(fig=fig, row=row, col=col, magnetic=has_magnetism)
 
-def _draw_overplot(group, index, label, fig: go.Figure, color_index: int, row: Optional[int] = None, col: Optional[int] = None, secondary_y: bool = False):
+def _draw_overplot(group, index, label, fig: 'go.Figure', color_index: int, row: Optional[int] = None, col: Optional[int] = None, secondary_y: bool = False):
     color = get_color(color_index)
     for L in group[1:]:
         fig.add_scattergl(x=L[0], y=L[index], opacity=0.1, showlegend=False, mode="lines", line={"color": color}, hoverinfo="skip", row=row, col=col, secondary_y=secondary_y)
@@ -77,7 +79,7 @@ def _draw_overplot(group, index, label, fig: go.Figure, color_index: int, row: O
     L = group[0]
     fig.add_scattergl(x=L[0], y=L[index], name=label, mode="lines", line={"color": color}, hoverinfo="skip", row=row, col=col, secondary_y=secondary_y)
 
-def _profiles_contour(profiles: dict[str, list[np.ndarray]], contours: Optional[tuple[float]], npoints, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
+def _profiles_contour(profiles: dict[str, list[np.ndarray]], contours: Optional[tuple[float]], npoints, fig: 'go.Figure', row: Optional[int] = None, col: Optional[int] = None):
     contour_data = {}
     has_magnetism = False
     for model_index, (model, group) in enumerate(profiles.items()):
@@ -105,7 +107,7 @@ def _profiles_contour(profiles: dict[str, list[np.ndarray]], contours: Optional[
     _profile_labels(fig=fig, row=row, col=col, magnetic=has_magnetism)
     return contour_data
 
-def _draw_contours(group, index, label, zp, contours, fig: go.Figure, color_index: int, row: Optional[int] = None, col: Optional[int] = None, secondary_y: bool = False):
+def _draw_contours(group, index, label, zp, contours, fig: 'go.Figure', color_index: int, row: Optional[int] = None, col: Optional[int] = None, secondary_y: bool = False):
     # Interpolate on common z
     fp = np.vstack([np.interp(zp, L[0], L[index]) for L in group])
     # Plot the quantiles
@@ -117,7 +119,7 @@ def _draw_contours(group, index, label, zp, contours, fig: go.Figure, color_inde
     # axes.plot(zp, fp[0], '-', label=label, color=dark(color))
     return q
 
-def _profile_labels(fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None, magnetic: bool = False):
+def _profile_labels(fig: 'go.Figure', row: Optional[int] = None, col: Optional[int] = None, magnetic: bool = False):
     fig.update_xaxes(title_text='z (Å)', row=row, col=col, showline=True, zeroline=False)
     fig.update_yaxes(title_text='SLD (10⁻⁶/Å²)', row=row, col=col, showline=True, secondary_y=False, side='left')
     if magnetic:
@@ -126,7 +128,7 @@ def _profile_labels(fig: go.Figure, row: Optional[int] = None, col: Optional[int
            title_text='Magnetic Angle θ<sub>M</sub> / °',
            row=row, col=col, showline=True, secondary_y=True, side='right')
 
-def _residuals_overplot(Q, residuals, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
+def _residuals_overplot(Q, residuals, fig: 'go.Figure', row: Optional[int] = None, col: Optional[int] = None):
     alpha = 0.6
     shift = 0
     for m_index, (m, r) in enumerate(residuals.items()):
@@ -140,7 +142,7 @@ def _residuals_overplot(Q, residuals, fig: go.Figure, row: Optional[int] = None,
         shift += 5
     _residuals_labels(fig, row=row, col=col)
 
-def _residuals_contour(Q, residuals, contours, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
+def _residuals_contour(Q, residuals, contours, fig: 'go.Figure', row: Optional[int] = None, col: Optional[int] = None):
     shift = 0
     for model_index, (m, r) in enumerate(residuals.items()):
         color_index = model_index * 4
@@ -159,13 +161,13 @@ def _residuals_labels(fig, row=None, col=None):
     fig.update_xaxes(title_text='Q (1/Å)', row=row, col=col, showline=True, zeroline=False)
     fig.update_yaxes(title_text='Residuals', row=row, col=col, showline=True)
 
-def _profiles_draw_align_lines(profiles, slabs, align, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None):
+def _profiles_draw_align_lines(profiles, slabs, align, fig: 'go.Figure', row: Optional[int] = None, col: Optional[int] = None):
     for i, m in enumerate(profiles.keys()):
         t1_offset = _find_offset(slabs[m][0], align) if align != 'auto' else None
         if t1_offset is not None:
             fig.add_vline(x=t1_offset, line=dict(dash="dash"), row=row, col=col)
 
-def _plot_quantiles(x, y, contours, color, alpha, fig: go.Figure, row: Optional[int] = None, col: Optional[int] = None, legendgroup: Optional[str]=None, secondary_y: bool=False):
+def _plot_quantiles(x, y, contours, color, alpha, fig: 'go.Figure', row: Optional[int] = None, col: Optional[int] = None, legendgroup: Optional[str]=None, secondary_y: bool=False):
     """
     Plot quantile curves for a set of lines.
 
