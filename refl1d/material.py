@@ -46,7 +46,7 @@ from dataclasses import dataclass, field
 from typing import Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
 import numpy as np
-from numpy import inf, NaN
+from numpy import inf, nan
 import periodictable
 from periodictable.constants import avogadro_number
 from bumps.parameter import Expression, Parameter, to_dict #, PARAMETER_TYPES, UnaryExpression
@@ -611,7 +611,7 @@ class Mixture(Scatterer):
         # penalty = scale - 1
         fraction[0] = 100 - sum(fraction)
         if (fraction < 0).any():
-            return NaN
+            return nan
         volume = self._volume(fraction)
         density = np.array([m.density() for m in [self.base]+self.material])
         return np.sum(volume*density)
@@ -630,7 +630,7 @@ class Mixture(Scatterer):
         # fraction[0] = 100 - S/scale
         # penalty = scale - 1
         if (fraction < 0).any():
-            return NaN, NaN
+            return nan, nan
 
         # Lookup SLD
         slds = [c.sld(probe) for c in [self.base] + self.material]
