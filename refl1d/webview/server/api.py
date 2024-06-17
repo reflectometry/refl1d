@@ -4,8 +4,8 @@ import numpy as np
 from refl1d.experiment import Experiment, ExperimentBase, MixedExperiment
 import refl1d.probe
 from bumps.webview.server.api import (
-    register, get_chisq, state, to_json_compatible_dict, log, publish, 
-    deserialize_problem, set_problem, logger
+    register, get_chisq, state, to_json_compatible_dict, log, now_string,
+    add_notification, deserialize_problem, set_problem, logger
 )
 import bumps.webview.server.api as bumps_api
 from bumps.errplot import calc_errors_from_state
@@ -144,10 +144,6 @@ async def load_probe_from_file(pathlist: List[str], filename: str, model_index: 
         fitProblem.model_reset()
         fitProblem.model_update()
         state.save()
-        await publish("update_model", True)
-        await publish("update_parameters", True)
-        await bumps_api.emit("add_notification", {
-            "title": "Data loaded:",
-            "content": f"from {filename} to model {model_index}",
-            "timeout": 2000,
-        })
+        state.shared.updated_model = now_string()
+        state.shared.updated_parameters = now_string()
+        await add_notification(content=f"from {filename} to model {model_index}", title="Data loaded:", timeout=2000)
