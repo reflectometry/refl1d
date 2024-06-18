@@ -60,7 +60,7 @@ async def get_profile_plots(model_specs: List[ModelSpec]):
 
 def get_single_probe_data(theory, probe, substrate=None, surface=None, polarization=""):
     fresnel_calculator = probe.fresnel(substrate, surface)
-    Q, FQ = probe.apply_beam(probe.calc_Q, fresnel_calculator(probe.calc_Q))
+    Q, FQ = probe.apply_beam(probe.calc_Q, fresnel_calculator(probe.calc_Qo))
     Q, R = theory
     output: Dict[str, Union[str, np.ndarray]]
     assert isinstance(FQ, np.ndarray)
