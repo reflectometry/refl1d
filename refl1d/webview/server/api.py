@@ -58,8 +58,6 @@ async def get_profile_plots(model_specs: List[ModelSpec]):
     del fig
     return output
 
-
-
 def get_single_probe_data(theory, probe, substrate=None, surface=None, polarization=""):
     fresnel_calculator = probe.fresnel(substrate, surface)
     Q, FQ = probe.apply_beam(probe.calc_Q, fresnel_calculator(probe.calc_Q))
@@ -125,6 +123,19 @@ async def get_profile_uncertainty_plot(auto_align: bool=True, align: float=0., n
         return output
     else:
         return None
+
+@register
+async def get_custom_plot():
+    if state.problem is None or state.problem.fitProblem is None:
+        return None
+    fitProblem = state.problem.fitProblem
+    if not hasattr(fitProblem, 'custom_plot'):
+        return None
+    else:
+        fitProblem.chisq_str()
+
+    fig = fitProblem.custom_plot()
+    return to_json_compatible_dict(fig.to_dict())
 
 @register
 async def load_probe_from_file(pathlist: List[str], filename: str, model_index: int = 0):

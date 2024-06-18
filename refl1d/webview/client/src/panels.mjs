@@ -3,12 +3,14 @@ import DataView from './components/DataView.vue';
 import ModelView from './components/ModelView.vue';
 import SimpleBuilder from './components/SimpleBuilder.vue';
 import ProfileUncertaintyView from './components/ProfileUncertaintyView.vue';
+import CustomPlot from './components/CustomPlot.vue';
 
 const refl1d_panels = [
     {title: 'Reflectivity', component: DataView},
     {title: 'Profile', component: ModelView},
     {title: 'Profile Uncertainty', component: ProfileUncertaintyView},
     {title: 'Builder', component: SimpleBuilder},
+    {title: 'Custom', component: CustomPlot}
 ];
 
 const replacements = {
@@ -18,7 +20,8 @@ const replacements = {
 
 const insertions = {
     'Profile': { after: 'Summary'},
-    'Builder': { after: 'Uncertainty' }
+    'Builder': { after: 'Uncertainty' },
+    'Custom': { after: 'Builder'}
 }
 
 function replace_panel(panels, replacement_panels, replaced_title, replacement_title) {
