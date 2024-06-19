@@ -1,7 +1,7 @@
 import { createApp, computed } from 'vue'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './style.css'
-import { model_loaded, menu_items, FileBrowserSettings, fileBrowser, socket } from 'bumps-webview-client/src/app_state';
+import { model_file, menu_items, FileBrowserSettings, fileBrowser, socket } from 'bumps-webview-client/src/app_state';
 import App from 'bumps-webview-client/src/App.vue';
 import { panels } from './panels.mjs';
 
@@ -26,4 +26,5 @@ async function loadProbeFromFile(ev) {
 }
 
 createApp(App, {panels, name}).mount('#app');
-menu_items.value.push({ text: "Load Data into Model", action: loadProbeFromFile, disabled: !model_loaded.value });
+const model_not_loaded = computed(() => model_file.value == null);
+menu_items.value.push({ text: "Load Data into Model", action: loadProbeFromFile, disabled: model_not_loaded });
