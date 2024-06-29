@@ -27,4 +27,4 @@ async function loadProbeFromFile(ev) {
 
 createApp(App, {panels, name}).mount('#app');
 //const model_not_loaded = computed(() => model_file.value == null);
-menu_items.value.push({ text: "Load data into model", action: loadProbeFromFile});
+menu_items.value.push({ text: "Load data into current model", action: loadProbeFromFile});
