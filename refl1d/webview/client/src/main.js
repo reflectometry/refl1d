@@ -19,7 +19,7 @@ async function loadProbeFromFile(ev) {
       require_name: true,
       show_files: true,
       chosenfile_in: "",
-      search_patterns: [".ort", ".orb", ".refl"]
+      search_patterns: [".ort", ".orb", ".refl", ".dat", ".txt"]
     };
     fileBrowser.value.open(settings);
   }
