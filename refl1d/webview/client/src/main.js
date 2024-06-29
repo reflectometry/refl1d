@@ -19,7 +19,7 @@ async function loadProbeFromFile(ev) {
       require_name: true,
       show_files: true,
       chosenfile_in: "",
-      search_patterns: [".ort", ".orb", ".refl"]
+      search_patterns: [".ort", ".orb", ".refl", ".txt", ".dat"]
     };
     fileBrowser.value.open(settings);
   }
@@ -27,4 +27,4 @@ async function loadProbeFromFile(ev) {
 
 createApp(App, {panels, name}).mount('#app');
 //const model_not_loaded = computed(() => model_file.value == null);
-menu_items.value.push({ text: "Load Data into Model", action: loadProbeFromFile, disabled: false });
+menu_items.value.push({ text: "Load data into model", action: loadProbeFromFile, disabled: false });
