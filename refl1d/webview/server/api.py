@@ -127,7 +127,7 @@ async def get_profile_uncertainty_plot(auto_align: bool=True, align: float=0., n
         return None
 
 @register
-async def load_probe_from_file(pathlist: List[str], filename: str, model_index: int = 0):
+async def load_probe_from_file(pathlist: List[str], filename: str, model_index: int = 0, fwhm: bool = True):
     path = Path(*pathlist)
     fitProblem = state.problem.fitProblem if state.problem is not None else None
     if fitProblem is None:
@@ -139,7 +139,7 @@ async def load_probe_from_file(pathlist: List[str], filename: str, model_index: 
             await log(f"Error: Can not access model at model_index {model_index} (only {num_models} defined)")
             return
         model: Experiment = models[model_index]
-        probe = refl1d.probe.load4(str(path / filename))
+        probe = refl1d.probe.load4(str(path / filename), FWHM=fwhm)
         model.probe = probe
         fitProblem.model_reset()
         fitProblem.model_update()

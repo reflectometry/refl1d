@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { Slab, Magnetism, Parameter, ParameterLike, QProbe, Reference, SLD, Stack, SerializedModel, BoundsValue } from '../model';
 import type { AsyncSocket } from 'bumps-webview-client/src/asyncSocket.ts';
 
+import { dq_is_FWHM } from '../app_state';
 
 const title = "Builder";
 // @ts-ignore: intentionally infinite type recursion
@@ -293,6 +294,10 @@ function dragEnd() {
             <input class="form-check-input" type="checkbox" id="showImaginary_input" v-model="showImaginary">
             <label class="form-check-label" for="showImaginary_input">Show imaginary SLD</label>
           </div>
+          <div class="form-check form-switch m-2" @click="send_model()">
+            <input class="form-check-input" type="checkbox" id="dq_is_FWHM_input" v-model="dq_is_FWHM">
+            <label class="form-check-label" for="dq_is_FWHM_input">Resolution as FWHM</label>
+          </div>
         </div>
       </div>
       <div class="row mb-2" v-if="showEditQRange">
@@ -318,8 +323,8 @@ function dragEnd() {
                   <th></th>
                   <th>Layer</th>
                   <th>Thickness</th>
-                  <th>SLD</th>
-                  <th v-if="showImaginary">iSLD</th>
+                  <th>Rho</th>
+                  <th v-if="showImaginary">iRho</th>
                   <th>Interface</th>
                   <th></th>
                   <th></th>

@@ -4,6 +4,7 @@ import './style.css'
 import { model_file, menu_items, FileBrowserSettings, fileBrowser, socket } from 'bumps-webview-client/src/app_state';
 import App from 'bumps-webview-client/src/App.vue';
 import { panels } from './panels.mjs';
+import { dq_is_FWHM } from './app_state';
 
 const name = "Refl1D";
 
@@ -12,7 +13,7 @@ async function loadProbeFromFile(ev) {
     const settings = {
       title: "Load Probe Data from File",
       callback: (pathlist, filename) => {
-        socket.value.asyncEmit("load_probe_from_file", pathlist, filename, 0);
+        socket.value.asyncEmit("load_probe_from_file", pathlist, filename, 0, dq_is_FWHM.value);
       },
       show_name_input: true,
       name_input_label: "Filename",
