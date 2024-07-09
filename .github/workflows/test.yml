@@ -73,7 +73,7 @@ jobs:
     - name: Archive artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: artifacts
+        name: artifacts-${{ matrix.runs-on }}
         overwrite: true
         path: |
           dist/*.whl
@@ -88,7 +88,9 @@ jobs:
     - name: Retrieve all artifacts
       uses: actions/download-artifact@v4
       with:
-        name: artifacts
+        path: artifacts
+        pattern: artifacts-*
+        merge-multiple: true
 
     - name: show files
       run: |
