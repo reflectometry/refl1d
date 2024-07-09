@@ -73,7 +73,7 @@ jobs:
     - name: Archive artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: artifacts-${{ matrix.runs-on }}
+        name: artifacts-${{ matrix.config.os }}-${{ matrix.config.py }}
         overwrite: true
         path: |
           dist/*.whl
