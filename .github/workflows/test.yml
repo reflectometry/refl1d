@@ -95,6 +95,8 @@ jobs:
     - name: show files
       run: |
         ls * -l
+        ls dist -l
+        ls release -l
         echo "WINDOWS_INSTALLER=$(ls release/*.zip)" >> $GITHUB_ENV
         echo "SRC_DIST=$(ls dist/*.tar.gz)" >> $GITHUB_ENV
         echo "PY3_WHL=$(ls dist/*.whl)" >> $GITHUB_ENV
