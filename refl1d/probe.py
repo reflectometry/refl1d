@@ -46,7 +46,6 @@ from enum import Enum
 
 import numpy as np
 from numpy import sqrt, pi, inf, sign, log
-from numpy.linalg.linalg import matrix_power
 import numpy.random
 import numpy.fft
 from typing import NamedTuple, Optional, Any, Sequence, Union, TYPE_CHECKING
