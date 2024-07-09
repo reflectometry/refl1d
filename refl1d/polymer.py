@@ -57,7 +57,7 @@ from collections import OrderedDict
 
 import numpy as np
 from numpy import real, imag, exp, log, sqrt, pi, hstack, ones_like
-from numpy.core.multiarray import correlate as old_correlate
+from numpy._core.multiarray import correlate as old_correlate
 from bumps.parameter import Parameter, to_dict
 
 from . import util
@@ -697,7 +697,11 @@ def SCFcache(chi, chi_s, pdi, sigma, phi_b, segments, disp=False,
 
     Using an OrderedDict because I want to prune keys FIFO
     """
-    from scipy.optimize.nonlin import NoConvergence
+    try:
+        from scipy.optimize import NoConvergence
+    except ImportError:
+        # cruft for scipy < 1.14, hard breaking change with no warning
+        from scipy.optimize.nonlin import NoConvergence
     # prime the cache with a known easy solutions
     if not cache:
         cache[(0, 0, 0, .1, .1, .1)] = SCFsolve(sigma=.1, phi_b=.1, segments=50, disp=disp)
