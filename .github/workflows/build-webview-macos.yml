@@ -79,6 +79,11 @@ jobs:
           const to_update = await globber.glob();
           // const to_update = ["refl1d-webview-jupyter-0.8.15-Darwin-arm64.tar.gz", "refl1d-webview-jupyter.pkg"];
           for (let fn of to_update) {
+            const stats = fs.statSync(fn);
+            if (!stats.isFile()) {
+              continue;
+            }
+            console.log("updating: ", fn);
             let asset_id = (sid_release.data.assets.find((a) => (a.name == fn)) ?? {}).id;
             if (asset_id) {
               await github.rest.repos.deleteReleaseAsset({
