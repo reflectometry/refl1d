@@ -20,7 +20,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-
+      with:
+        ref: 'webview'
     - name: Set up Python ${{ matrix.config.py }}
       uses: actions/setup-python@v5
       with:
