@@ -22,12 +22,7 @@ jobs:
       with:
         ref: ${{ env.branch_name }}
 
-    - name: Set up Python ${{ matrix.config.py }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.config.py }}
-
-    - uses: conda-incubator/setup-miniconda@v2
+    - uses: conda-incubator/setup-miniconda@v3
       with:
         auto-update-conda: true
         python-version: ${{ matrix.config.py }}
