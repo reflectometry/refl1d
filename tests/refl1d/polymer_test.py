@@ -397,7 +397,11 @@ def SCFeqns_test():
 
 
 def SCFsolve_test():
-    from scipy.optimize.nonlin import NoConvergence
+    try:
+        from scipy.optimize import NoConvergence
+    except ImportError:
+        # cruft from scipy < 1.14, hard breaking change with no warning
+        from scipy.optimize.nonlin import NoConvergence
     #find the solution used in the previous test without an initial guess
     chi = 0.1
     chi_s = 0.05
