@@ -88,7 +88,7 @@ jobs:
             body: "A persistent prerelease where build artifacts for the current tip will be deposited\n\n## Last updated: " + (new Date()).toDateString()
           });
           // delete existing release assets (if needed) and upload new ones:
-          const globber = await glob.create("*", {followSymbolicLinks: false});
+          const globber = await glob.create("Refl1D-*", {followSymbolicLinks: false});
           const full_paths = await globber.glob();
           const to_update = full_paths.map((f) => path.basename(f));
           console.log({to_update});
