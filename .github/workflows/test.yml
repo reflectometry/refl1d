@@ -20,7 +20,7 @@ jobs:
           - { os: ubuntu-latest, py: "3.10" }
           - { os: ubuntu-latest, py: "3.11", doc: 1, whl: 1 }
           - { os: ubuntu-latest, py: "3.12" }
-          - { os: windows-latest, py: "3.11", exe: 1, whl: 1 }
+          - { os: windows-latest, py: "3.11", exe: 1 }
           # pure python wheels
 
     steps:
@@ -34,10 +34,11 @@ jobs:
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install wheel setuptools
+        python -m pip install wheel setuptools build
         python -m pip install numpy scipy matplotlib bumps periodictable scikit-learn pytest pytest-cov numba
-        python setup.py build
+        pip install -e .
         mkdir release
+        mkdir dist
 
     - name: Run tests
       run: |
@@ -55,7 +56,7 @@ jobs:
     - name: Build binary wheel
       if: matrix.config.whl == 1
       run: |
-        python setup.py bdist_wheel
+        python -m build
 
     - name: Build installer
       if: matrix.config.exe == 1
@@ -63,18 +64,12 @@ jobs:
         pwsh -command ".\$GITHUB_WORKSPACE\extra\build_win_installer.ps1"
         mv dist\Refl1D*.zip release\
 
-    - name: Build source distribution
-      if: matrix.config.whl != 1
-      run: |
-        python setup.py sdist
-
     # See the following for how to upload to a release
     #  https://eugene-babichenko.github.io/blog/2020/05/09/github-actions-cross-platform-auto-releases/
     - name: Archive artifacts
       uses: actions/upload-artifact@v4
       with:
         name: artifacts-${{ matrix.config.os }}-${{ matrix.config.py }}
-        overwrite: true
         path: |
           dist/*.whl
           dist/*.zip
@@ -94,12 +89,10 @@ jobs:
 
     - name: show files
       run: |
-        ls * -l
-        ls dist -l
-        ls release -l
-        echo "WINDOWS_INSTALLER=$(ls release/*.zip)" >> $GITHUB_ENV
-        echo "SRC_DIST=$(ls dist/*.tar.gz)" >> $GITHUB_ENV
-        echo "PY3_WHL=$(ls dist/*.whl)" >> $GITHUB_ENV
+        ls -R artifacts
+        echo "WINDOWS_INSTALLER=$(ls artifacts/release/*.zip)" >> $GITHUB_ENV
+        echo "SRC_DIST=$(ls artifacts/dist/*.tar.gz)" >> $GITHUB_ENV
+        echo "PY3_WHL=$(ls artifacts/dist/*.whl)" >> $GITHUB_ENV
 
     - name: Update current release
       if: startsWith(github.ref, 'refs/tags')
@@ -119,9 +112,11 @@ jobs:
         skip-existing: true
         password: ${{ secrets.TEST_PYPI_API_TOKEN }}
         repository-url: https://test.pypi.org/legacy/
+        packages-dir: artifacts/dist/
 
     - name: Publish distribution to PyPI
       if: startsWith(github.ref, 'refs/tags')
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         password: ${{ secrets.PYPI_API_TOKEN }}
+        packages-dir: artifacts/dist/
