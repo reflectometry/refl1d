@@ -74,38 +74,11 @@ jobs:
 
     - name: Update release assets and text
       uses: actions/github-script@v7
+      env:
+        SEARCH_PATTERN: "Refl1D-*"
       with:
-        github-token: ${{secrets.GITHUB_TOKEN}}          
+        github-token: ${{secrets.GITHUB_TOKEN}}
         script: |
-          const fs = require('fs');
-          const { owner, repo } = context.repo;
-          let sid_release = await github.rest.repos.getReleaseByTag({
-            owner,
-            repo,
-            tag: "sid"
-          });
-          await github.rest.repos.updateRelease({
-            owner,
-            repo,
-            release_id: sid_release.data.id,
-            body: "A persistent prerelease where build artifacts for the current tip will be deposited\n\n## Last updated: " + (new Date()).toDateString()
-          });
-          // delete existing release assets (if needed) and upload new ones:
-          const to_update = ["Refl1D-windows-exe-${{ env.branch_name }}-jupyter.tar.gz", "Refl1D-${{ env.branch_name }}-jupyter-self-extracting.exe"];
-          for (let fn of to_update) {
-            let asset_id = (sid_release.data.assets.find((a) => (a.name == fn)) ?? {}).id;
-            if (asset_id) {
-              await github.rest.repos.deleteReleaseAsset({
-                owner,
-                repo,
-                asset_id
-              });
-            }
-            await github.rest.repos.uploadReleaseAsset({
-              owner,
-              repo,
-              release_id: sid_release.data.id,
-              name: fn,
-              data: await fs.readFileSync(fn)
-            });
-          }
+          const script = require('./.github/actions/update_unstable.js');
+          const output = await script({github, context, glob});
+          console.log(output);
