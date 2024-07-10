@@ -28,7 +28,6 @@ case $OSTYPE in
   linux*) cp -r ./extra/platform_scripts/make_linux_desktop_shortcut.sh "$destdir" && \
           cp -r ./extra/platform_scripts/refl1d-webview "$destdir" ;;
 esac
-case $OSTYPE in linux*) cp -r ./extra/platform_scripts/make_linux_desktop_shortcut.sh "$destdir" ;; esac
 
 $envdir/bin/python -m pip install --no-input --no-compile numba
 $envdir/bin/python -m pip install --no-input --no-compile git+https://github.com/bumps/bumps@webview
@@ -49,6 +48,11 @@ rm -rf $envdir/lib/python$PYTHON_VERSION/site-packages/refl1d/webview/client/nod
 
 version=$($envdir/bin/python -c "import refl1d; print(refl1d.__version__)")
 mv "$tmpdir/$DIRNAME" "$tmpdir/$DIRNAME-$version"
+
+case $OSTYPE in 
+  # darwin*) cd $tmpdir && hdiutil create -srcfolder  "$DIRNAME-$version" -volname "Refl1D_Jupyter" "$WORKING_DIRECTORY/Refl1D_Jupyter.dmg" ;; 
+  darwin*) pkgbuild --root $tmpdir --identifier org.reflectometry.refl1d-webview --version $version --ownership preserve --install-location /Applications refl1d-webview-$(uname -s)-$(uname -m).pkg ;;
+esac
 
 cd $tmpdir && tar -czf "$WORKING_DIRECTORY/refl1d-webview-$version-$(uname -s)-$(uname -m).tar.gz" "$DIRNAME-$version"
 rm -rf $tmpdir
