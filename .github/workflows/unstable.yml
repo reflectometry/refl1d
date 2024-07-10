@@ -76,6 +76,10 @@ jobs:
     needs: test_and_build
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ env.branch_name }}
+
     - name: Retrieve all artifacts
       uses: actions/download-artifact@v4
       with:
