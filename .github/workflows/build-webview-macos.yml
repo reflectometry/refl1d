@@ -34,69 +34,13 @@ jobs:
         pwd
         mv refl1d-webview* ./unstable/
 
-    # See the following for how to upload to a release
-    #  https://eugene-babichenko.github.io/blog/2020/05/09/github-actions-cross-platform-auto-releases/
-    - name: Archive artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: artifacts
-        path: |
-          unstable/*
-
-  updateUnstable:
-    needs: test_and_build
-    runs-on: ubuntu-latest
-    steps:
-    - name: Retrieve all artifacts
-      uses: actions/download-artifact@v3
-      with:
-        name: artifacts
-
-    - name: show files
-      run: |
-        ls * -l
-
     - name: Update release assets and text
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
+      env:
+        SEARCH_PATTERN: "unstable/*"
       with:
-        github-token: ${{secrets.GITHUB_TOKEN}}          
+        github-token: ${{secrets.GITHUB_TOKEN}}
         script: |
-          const fs = require('fs');
-          const { owner, repo } = context.repo;
-          let sid_release = await github.rest.repos.getReleaseByTag({
-            owner,
-            repo,
-            tag: "sid"
-          });
-          await github.rest.repos.updateRelease({
-            owner,
-            repo,
-            release_id: sid_release.data.id,
-            body: "A persistent prerelease where build artifacts for the current tip will be deposited\n\n## Last updated: " + (new Date()).toDateString()
-          });
-          // delete existing release assets (if needed) and upload new ones:
-          const globber = await glob.create("**");
-          const to_update = await globber.glob();
-          // const to_update = ["refl1d-webview-jupyter-0.8.15-Darwin-arm64.tar.gz", "refl1d-webview-jupyter.pkg"];
-          for (let fn of to_update) {
-            const stats = fs.statSync(fn);
-            if (!stats.isFile()) {
-              continue;
-            }
-            console.log("updating: ", fn);
-            let asset_id = (sid_release.data.assets.find((a) => (a.name == fn)) ?? {}).id;
-            if (asset_id) {
-              await github.rest.repos.deleteReleaseAsset({
-                owner,
-                repo,
-                asset_id
-              });
-            }
-            await github.rest.repos.uploadReleaseAsset({
-              owner,
-              repo,
-              release_id: sid_release.data.id,
-              name: fn,
-              data: await fs.readFileSync(fn)
-            });
-          }
+          const script = require('./.github/actions/update_unstable.js');
+          const output = await script({github, context, glob});
+          console.log(output);
