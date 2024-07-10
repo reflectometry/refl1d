@@ -54,10 +54,15 @@ jobs:
     needs: test_and_build
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: ${{ env.branch_name }}
+
     - name: Retrieve all artifacts
       uses: actions/download-artifact@v4
       with:
         name: artifacts
+        path: artifacts
 
     - name: show files
       run: |
@@ -69,13 +74,13 @@ jobs:
         mkdir self_extracting
         curl -L https://www.7-zip.org/a/7z2106-x64.exe --output 7z.exe
         7z e 7z.exe -aoa -oself_extracting 7z.sfx
-        tar -xzf "Refl1D-windows-exe-$branch_name-jupyter.tar.gz" -C self_extracting
-        cd self_extracting && 7z a -mhe=on -mx=1 -sfx7z.sfx "../Refl1D-$branch_name-jupyter-self-extracting.exe" refl1d*/
+        tar -xzf "artifacts/Refl1D-windows-exe-$branch_name-jupyter.tar.gz" -C self_extracting
+        cd self_extracting && 7z a -mhe=on -mx=1 -sfx7z.sfx "../artifacts/Refl1D-$branch_name-jupyter-self-extracting.exe" refl1d*/
 
     - name: Update release assets and text
       uses: actions/github-script@v7
       env:
-        SEARCH_PATTERN: "Refl1D-*"
+        SEARCH_PATTERN: "artifacts/*"
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
         script: |
