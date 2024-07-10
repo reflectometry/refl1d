@@ -84,6 +84,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: artifacts
+        path: artifacts
 
     - name: show files
       run: |
@@ -95,13 +96,13 @@ jobs:
         mkdir self_extracting
         curl -L https://www.7-zip.org/a/7z2106-x64.exe --output 7z.exe
         7z e 7z.exe -aoa -oself_extracting 7z.sfx
-        unzip "Refl1D-windows-exe-$branch_name.zip" -d self_extracting
-        cd self_extracting && 7z a -mhe=on -mx=1 -sfx7z.sfx "../Refl1D-$branch_name-self-extracting.exe" Refl1D*/
+        unzip "artifacts/Refl1D-windows-exe-$branch_name.zip" -d self_extracting
+        cd self_extracting && 7z a -mhe=on -mx=1 -sfx7z.sfx "../artifacts/Refl1D-$branch_name-self-extracting.exe" Refl1D*/
 
     - name: Update release assets and text
       uses: actions/github-script@v7
       env:
-        SEARCH_PATTERN: "Refl1D-*"
+        SEARCH_PATTERN: "artifacts/*"
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
         script: |
