@@ -20,7 +20,6 @@ mkdir "$envdir"
 tar -xzf "$ENV_NAME.tar.gz" -C "$envdir"
 
 # activate the unpacked environment and install pip packages
-conda deactivate
 $WORKING_DIRECTORY="$pwd"
 echo "WORKING_DIRECTORY=$WORKING_DIRECTORY"
 # add our batch script:
@@ -30,6 +29,7 @@ Copy-Item .\extra\platform_scripts\refl1d_webview.bat "$destdir"
 & "$envdir\python.exe" -m pip install --no-input --no-compile git+https://github.com/bumps/bumps@webview
 & "$envdir\python.exe" -m pip install --no-input --no-compile git+https://github.com/reflectometry/refl1d@webview
 & "$envdir\python.exe" -m pip install --no-compile -r https://raw.githubusercontent.com/bumps/bumps/webview/webview-requirements
+& "$envdir\python.exe" -m pip install --no-input --no-compile orsopy
 
 # build the client
 cd $envdir\Lib\site-packages\bumps\webview\client
@@ -50,9 +50,9 @@ $version=$(& "$envdir\python.exe" -c "import $PKGNAME; print($PKGNAME.__version_
 cd $tmpdir
 Rename-Item "$PKGNAME" "$PKGNAME-$version"
 tar -czf "$PKGNAME-$SUBNAME-$version-Windows-x86_64.tar.gz" "$PKGNAME-$version"
-Compress-Archive -Path "$PKGNAME-$version" -DestinationPath "$PKGNAME-$SUBNAME-$version-Windows-x86_64.zip"
+7z a -mx=9 "$PKGNAME-$SUBNAME-$version-Windows-x86_64.zip" "$PKGNAME-$version"
 
 # build self-extracting executable
-Invoke-WebRequest https://www.7-zip.org/a/7z2106-x64.exe -OutFile 7z.exe
-7z e 7z.exe -aoa 7z.sfx
+Invoke-WebRequest https://www.7-zip.org/a/7z2106-x64.exe -OutFile 7z_exe
+7z e 7z_exe -aoa 7z.sfx
 7z a -mhe=on -mx=1 -sfx".\7z.sfx" "$PKGNAME-$SUBNAME-$version-Windows-x86_64-self-extracting.exe" "$PKGNAME-$version"
