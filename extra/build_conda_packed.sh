@@ -4,6 +4,10 @@ ENV_NAME="isolated-base"
 PYTHON_VERSION="3.10"
 PKGNAME="refl1d"
 SUBNAME="webview"
+OUTPUT="artifacts"
+WORKING_DIRECTORY=$(pwd)
+
+mkdir -p $OUTPUT
 
 eval "$(conda shell.bash hook)"
 conda activate base || { echo 'failed: conda not installed'; exit 1; }
@@ -18,18 +22,18 @@ fi
 
 # unpack the new environment, that contains only python + pip
 tmpdir=$(mktemp -d)
-destdir="$tmpdir/$PKGNAME"
-envdir="$destdir/env"
+pkgdir="$tmpdir/$PKGNAME"
+envdir="$pkgdir/env"
 mkdir -p "$envdir"
 tar -xzf "$ENV_NAME.tar.gz" -C "$envdir"
 
 # activate the unpacked environment and install pip packages
-WORKING_DIRECTORY=$(pwd)
 # add our batch script:
 case $OSTYPE in 
-  darwin*) cp -r ./extra/platform_scripts/refl1d_webview.app "$destdir" ;;
-  linux*) cp -r ./extra/platform_scripts/make_linux_desktop_shortcut.sh "$destdir" ;
-          cp -r ./extra/platform_scripts/refl1d-webview "$destdir" ;;
+  darwin*) cp -r ./extra/platform_scripts/refl1d_webview.app "$pkgdir" ;;
+  msys*) cp ./extra/platform_scripts/refl1d_webview.bat "$pkgdir" ;;
+  linux*) cp -r ./extra/platform_scripts/make_linux_desktop_shortcut.sh "$pkgdir" ;
+          cp -r ./extra/platform_scripts/refl1d-webview "$pkgdir" ;;
 esac
 
 case "$OSTYPE" in
@@ -67,13 +71,13 @@ mv "$tmpdir/$PKGNAME" "$tmpdir/$PKGNAME-$version"
 
 case $OSTYPE in 
   # darwin*) cd $tmpdir && hdiutil create -srcfolder  "$PKGNAME-$version" -volname "Refl1D_Jupyter" "$WORKING_DIRECTORY/Refl1D_Jupyter.dmg" ;; 
-  darwin*) pkgbuild --root $tmpdir --identifier org.reflectometry.refl1d-webview --version $version --ownership preserve --install-location /Applications "$WORKING_DIRECTORY/refl1d-webview-$(uname -s)-$(uname -m).pkg" ;;
+  darwin*) pkgbuild --root $tmpdir --identifier org.reflectometry.refl1d-webview --version $version --ownership preserve --install-location /Applications "$WORKING_DIRECTORY/$OUTPUT/refl1d-webview-$(uname -s)-$(uname -m).pkg" ;;
   msys*) conda install -y 7zip ;
          curl -L https://www.7-zip.org/a/7z2106-x64.exe --output 7z_exe ;
          7z e 7z_exe -aoa 7z.sfx ;
-         7z a -mhe=on -mx=1 -sfx".\7z.sfx" "$WORKING_DIRECTORY/$PKGNAME-$SUBNAME-$version-$platform-$(uname -m)-self-extracting.exe" "$PKGNAME-$version";;
+         7z a -mhe=on -mx=1 -sfx".\7z.sfx" "$WORKING_DIRECTORY/$OUTPUT/$PKGNAME-$SUBNAME-$version-$platform-$(uname -m)-self-extracting.exe" "$PKGNAME-$version";;
 esac
 
-cd $tmpdir && tar -czf "$WORKING_DIRECTORY/$PKGNAME-$SUBNAME-$version-$platform-$(uname -m).tar.gz" "$PKGNAME-$version"
+cd $tmpdir && tar -czf "$WORKING_DIRECTORY/$OUTPUT/$PKGNAME-$SUBNAME-$version-$platform-$(uname -m).tar.gz" "$PKGNAME-$version"
 cd $WORKING_DIRECTORY
 rm -rf $tmpdir
