@@ -12,9 +12,10 @@ jobs:
     strategy:
       matrix:
         config:
-          #- { os: ubuntu-latest, py: 3.8, doc: 1 }
-          - { os: windows-latest, py: "3.10", exe: 1, whl: 1 }
-          #- { os: macos-latest, py: 3.8, whl: 1 }
+          - { os: ubuntu-latest, py: 3.11 }
+          - { os: windows-latest, py: "3.11" }
+          - { os: macos-latest, py: "3.11" }
+          - { os: macos-13, py: "3.11" }
           # all using to stable abi
 
     steps:
@@ -22,61 +23,18 @@ jobs:
       with:
         ref: ${{ env.branch_name }}
 
-    - name: Set up Python ${{ matrix.config.py }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.config.py }}
-
     - uses: conda-incubator/setup-miniconda@v3
       with:
         auto-update-conda: true
         python-version: ${{ matrix.config.py }}
+        shell: bash
 
-    - name: Build installer
+    - name: Build webview packed
+      shell: bash -el {0}
       run: |
-        pwsh -command ".\$GITHUB_WORKSPACE\extra\build_conda_packed_jupyter.ps1"
-        mkdir unstable
-        pwd
-        dir dist
-        dir extra
-        mv dist\refl1d*.tar.gz "unstable\Refl1D-windows-exe-$($env:branch_name)-jupyter.tar.gz"
-
-    # See the following for how to upload to a release
-    #  https://eugene-babichenko.github.io/blog/2020/05/09/github-actions-cross-platform-auto-releases/
-    - name: Archive artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: artifacts
-        path: |
-          unstable/*
-
-  updateUnstable:
-    needs: test_and_build
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        ref: ${{ env.branch_name }}
-
-    - name: Retrieve all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: artifacts
-        path: artifacts
-
-    - name: show files
-      run: |
-        ls * -l
-
-    - name: repack self-extracting
-      run: |
-        sudo apt-get install -y p7zip-full
-        mkdir self_extracting
-        curl -L https://www.7-zip.org/a/7z2106-x64.exe --output 7z.exe
-        7z e 7z.exe -aoa -oself_extracting 7z.sfx
-        tar -xzf "artifacts/Refl1D-windows-exe-$branch_name-jupyter.tar.gz" -C self_extracting
-        cd self_extracting && 7z a -mhe=on -mx=1 -sfx7z.sfx "../artifacts/Refl1D-$branch_name-jupyter-self-extracting.exe" refl1d*/
-
+        conda activate base
+        ./extra/build_conda_packed_jupyter.sh
+        ls artifacts
     - name: Update release assets and text
       uses: actions/github-script@v7
       env:
