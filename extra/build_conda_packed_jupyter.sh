@@ -74,7 +74,7 @@ mv "$tmpdir/$PKGNAME" "$tmpdir/$PKGNAME-$version"
 
 case $OSTYPE in 
   # darwin*) cd $tmpdir && hdiutil create -srcfolder  "$PKGNAME-$version" -volname "Refl1D_Jupyter" "$WORKING_DIRECTORY/Refl1D_Jupyter.dmg" ;; 
-  darwin*) pkgbuild --root $tmpdir --identifier org.reflectometry.refl1d-webview --version $version --ownership preserve --install-location /Applications "$WORKING_DIRECTORY/$OUTPUT/refl1d-webview-$(uname -s)-$(uname -m).pkg" ;;
+  darwin*) pkgbuild --root $tmpdir --identifier org.reflectometry.$PKGNAME-$SUBNAME --version $version --ownership preserve --install-location /Applications "$WORKING_DIRECTORY/$OUTPUT/$PKGNAME-$SUBNAME-$version-$platform-$(uname -m).pkg" ;;
   msys*) conda install -y 7zip ;
          curl -L https://www.7-zip.org/a/7z2106-x64.exe --output 7z_exe ;
          7z e 7z_exe -aoa 7z.sfx ;
