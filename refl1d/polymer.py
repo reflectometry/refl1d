@@ -57,7 +57,12 @@ from collections import OrderedDict
 
 import numpy as np
 from numpy import real, imag, exp, log, sqrt, pi, hstack, ones_like
-from numpy._core.multiarray import correlate as old_correlate
+try:
+    from numpy._core.multiarray import correlate as old_correlate
+except ImportError:
+    # cruft for numpy < 2
+    from numpy.core.multiarray import correlate as old_correlate
+
 from bumps.parameter import Parameter, to_dict
 
 from . import util
