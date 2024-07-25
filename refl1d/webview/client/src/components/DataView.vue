@@ -69,7 +69,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
           theory_traces.push({ x: xs.Q, y: y, mode: 'lines', name: label + ' theory', line: { width: 2, color: COLORS[plot_index % COLORS.length] } });
           if (xs.R !== undefined) {
             const R = (lin_y) ? xs.R.map((t) => t + local_offset) : xs.R.map((t) => t * local_offset);
-            const data_trace: Trace = { x: xs.Q, y: R, mode: 'markers', name: label + ' data', marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY };
+            const data_trace: Trace = { x: xs.Q, y: R, mode: 'markers', name: label + ' data', marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY, legendgroup: `group_${plot_index}` };
             if (show_resolution.value && xs.dQ !== undefined) {
               data_trace.error_x = { type: 'data', array: xs.dQ, visible: true };
             }
@@ -97,7 +97,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
           if (xs.R !== undefined) {
             const R = xs.R.map((y, i) => (y / (xs.fresnel[i])));
             const offset_R = (lin_y) ? R.map((t) => t + local_offset) : R.map((t) => t * local_offset);
-            const data_trace: Trace = { x: xs.Q, y: offset_R, mode: 'markers', name: label + ' data', marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY };
+            const data_trace: Trace = { x: xs.Q, y: offset_R, mode: 'markers', name: label + ' data', marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY, legendgroup: `group_${plot_index}` };
             if (show_resolution.value && xs.dQ !== undefined) {
               data_trace.error_x = { type: 'data', array: xs.dQ, visible: true };
             }
@@ -131,7 +131,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
           if (xs.R !== undefined) {
             const R = xs.R.map((r, i) => (r / Q4[i]));
             const offset_R = R.map((t) => t * local_offset);
-            const data_trace: Trace = { x: xs.Q, y: offset_R, mode: 'markers', name: label + ' data', marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY };
+            const data_trace: Trace = { x: xs.Q, y: offset_R, mode: 'markers', name: label + ' data', marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY, legendgroup: `group_${plot_index}` };
             if (show_resolution.value && xs.dQ !== undefined) {
               data_trace.error_x = { type: 'data', array: xs.dQ, visible: true };
             }
@@ -172,7 +172,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
               const p = pp.R[i];
               return (p - m) / (p + m) + local_offset;
             });
-            const data_trace: Trace = { x: pp.Q, y: SA, mode: 'markers', name: label + ' data', marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY };
+            const data_trace: Trace = { x: pp.Q, y: SA, mode: 'markers', name: label + ' data', marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY, legendgroup: `group_${plot_index}` };
 
             if (show_resolution.value && pp.dQ !== undefined) {
               data_trace.error_x = { type: 'data', array: pp.dQ, visible: true };
@@ -214,7 +214,7 @@ function generate_residual_traces(model_data: ModelData[][], view: ReflectivityP
       }
       const label = `${xs.label} ${xs.polarization} residuals`;
       const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR[i]);
-      residual_traces.push({ x: xs.Q, y: residuals, mode: 'markers', name: label, marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY, yaxis: 'y2' });
+      residual_traces.push({ x: xs.Q, y: residuals, mode: 'markers', name: label, showlegend: false, legendgroup: `group_${plot_index}`, marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY, yaxis: 'y2' });
       plot_index++;
     }
   }
