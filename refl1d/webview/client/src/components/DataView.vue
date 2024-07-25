@@ -16,6 +16,7 @@ const chisq_str = ref("");
 const log_y = ref(true);
 const log_x = ref(false);
 const show_resolution = ref(true);
+const show_residuals = ref(false);
 
 const props = defineProps<{
   socket: AsyncSocket,
@@ -200,6 +201,26 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
   return { theory_traces, data_traces, xaxis_label, yaxis_label };
 }
 
+function generate_residual_traces(model_data: ModelData[][], view: ReflectivityPlot) {
+  let residual_traces: Trace[] = [];
+  let yaxis2_label: string = "Residuals";
+  let plot_index = 0;
+  const lin_y = !log_y.value;
+  for (let model of model_data) {
+    for (let xs of model) {
+      if (xs.R === undefined || xs.theory === undefined || xs.dR === undefined) {
+        plot_index++;
+        continue;
+      }
+      const label = `${xs.label} ${xs.polarization} residuals`;
+      const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR[i]);
+      residual_traces.push({ x: xs.Q, y: residuals, mode: 'markers', name: label, marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY, yaxis: 'y2' });
+      plot_index++;
+    }
+  }
+  return residual_traces;
+}
+
 async function fetch_and_draw() {
   const payload = await props.socket.asyncEmit('get_plot_data', 'linear') as {plotdata: Partial<Plotly.PlotData>, chisq: string};
   plot_data.value = payload.plotdata;
@@ -216,7 +237,11 @@ async function change_plot_type() {
 
 async function draw_plot() {
   // console.log(payload);
-  const { theory_traces, data_traces, xaxis_label, yaxis_label } = generate_new_traces(plot_data.value, reflectivity_type.value)
+  const { theory_traces, data_traces, xaxis_label, yaxis_label } = generate_new_traces(plot_data.value, reflectivity_type.value);
+  if (show_residuals.value) {
+    const residual_traces = generate_residual_traces(plot_data.value, reflectivity_type.value);
+    data_traces.push(...residual_traces);
+  }
   const layout: Partial<Plotly.Layout> = {
     uirevision: reflectivity_type.value,
     xaxis: {
@@ -260,6 +285,16 @@ async function draw_plot() {
       yanchor: 'top'
     }
   };
+
+  if (show_residuals.value) {
+    layout.yaxis.domain = [0.4, 1];
+    // layout.yaxis.anchor = 'x';
+    layout.yaxis2 = {
+      domain: [0, 0.25],
+      title: { text: 'Residuals' },
+      anchor: 'x',
+    }
+  }
 
   if (reflectivity_type.value === 'Spin Asymmetry') {
     layout.yaxis.range = [-1.5, 1.5];
@@ -329,6 +364,10 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
         <select class="plot-mode" v-model="reflectivity_type" @change="change_plot_type">
           <option v-for="refl_type in REFLECTIVITY_PLOTS" :key="refl_type" :value="refl_type">{{ refl_type }}</option>
         </select>
+      </div>
+      <div class="col-auto form-check">
+        <input class="form-check-input" type="checkbox" v-model="show_residuals" id="show_residuals" @change="draw_plot" />
+        <label class="form-check-label" for="show_residuals">Residuals</label>
       </div>
       <div class="col-auto form-check">
         <input type="checkbox" class="form-check-input" id="log_y" v-model="log_y" @change="draw_plot">
