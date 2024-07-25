@@ -51,9 +51,10 @@ type ModelData = {
 };
 
 
-function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) {
+function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, calculate_residuals: boolean = false) {
   let theory_traces: Trace[] = [];
   let data_traces: Trace[] = [];
+  let residuals_traces: Trace[] = [];
   let yaxis_label: string = "Reflectivity";
   let xaxis_label: string = "Q (Å<sup>-1</sup>)";
   const offset = plot_offset.value;
@@ -64,18 +65,25 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
       for (let model of model_data) {
         for (let xs of model) {
           const label = `${xs.label} ${xs.polarization}`;
+          const color = COLORS[plot_index % COLORS.length];
+          const legendgroup = `group_${plot_index}`;
           const local_offset = (lin_y) ? plot_index * offset : Math.pow(10, plot_index * offset);
           const y = (lin_y) ? xs.theory.map((t) => t + local_offset) : xs.theory.map((t) => t * local_offset);
-          theory_traces.push({ x: xs.Q, y: y, mode: 'lines', name: label + ' theory', line: { width: 2, color: COLORS[plot_index % COLORS.length] } });
+          theory_traces.push({ x: xs.Q, y: y, mode: 'lines', name: label + ' theory', line: { width: 2, color } });
           if (xs.R !== undefined) {
             const R = (lin_y) ? xs.R.map((t) => t + local_offset) : xs.R.map((t) => t * local_offset);
-            const data_trace: Trace = { x: xs.Q, y: R, mode: 'markers', name: label + ' data', marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY, legendgroup: `group_${plot_index}` };
+            const data_trace: Trace = { x: xs.Q, y: R, mode: 'markers', name: label + ' data', marker: { color }, opacity: MARKER_OPACITY, legendgroup };
             if (show_resolution.value && xs.dQ !== undefined) {
               data_trace.error_x = { type: 'data', array: xs.dQ, visible: true };
             }
             if (xs.dR !== undefined) {
               const dR = (lin_y) ? xs.dR : xs.dR.map((t) => t * local_offset);
               data_trace.error_y = { type: 'data', array: dR, visible: true };
+              if (calculate_residuals) {
+                const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR[i]);
+                const residuals_trace: Trace = { x: xs.Q, y: residuals, mode: 'markers', name: label + ' residuals', showlegend: false, legendgroup, marker: { color }, opacity: MARKER_OPACITY, yaxis: 'y2' };
+                residuals_traces.push(residuals_trace);
+              }
             }
             data_traces.push(data_trace);
           }
@@ -89,15 +97,17 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
       for (let model of model_data) {
         for (let xs of model) {
           const label = `${xs.label} ${xs.polarization}`;
+          const color = COLORS[plot_index % COLORS.length];
+          const legendgroup = `group_${plot_index}`;
           const lin_y = !log_y.value;
           const local_offset = (lin_y) ? plot_index * offset : Math.pow(10, plot_index * offset);
           const theory = xs.theory.map((y, i) => (y / (xs.fresnel[i])));
           const offset_theory = (lin_y) ? theory.map((t) => t + local_offset) : theory.map((t) => t * local_offset);
-          theory_traces.push({ x: xs.Q, y: offset_theory, mode: 'lines', name: label + ' theory', line: { width: 2, color: COLORS[plot_index % COLORS.length] } });
+          theory_traces.push({ x: xs.Q, y: offset_theory, mode: 'lines', name: label + ' theory', line: { width: 2, color } });
           if (xs.R !== undefined) {
             const R = xs.R.map((y, i) => (y / (xs.fresnel[i])));
             const offset_R = (lin_y) ? R.map((t) => t + local_offset) : R.map((t) => t * local_offset);
-            const data_trace: Trace = { x: xs.Q, y: offset_R, mode: 'markers', name: label + ' data', marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY, legendgroup: `group_${plot_index}` };
+            const data_trace: Trace = { x: xs.Q, y: offset_R, mode: 'markers', name: label + ' data', marker: { color }, opacity: MARKER_OPACITY, legendgroup };
             if (show_resolution.value && xs.dQ !== undefined) {
               data_trace.error_x = { type: 'data', array: xs.dQ, visible: true };
             }
@@ -105,6 +115,11 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
               const dR = xs.dR.map((dy, i) => (dy / (xs.fresnel[i])));
               const dR_offset = (lin_y) ? dR : dR.map((t) => t * local_offset);
               data_trace.error_y = { type: 'data', array: dR_offset, visible: true };
+              if (calculate_residuals) {
+                const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR[i]);
+                const residuals_trace: Trace = { x: xs.Q, y: residuals, mode: 'markers', name: label + ' residuals', showlegend: false, legendgroup, marker: { color }, opacity: MARKER_OPACITY, yaxis: 'y2' };
+                residuals_traces.push(residuals_trace);
+              }
             }
             data_traces.push(data_trace);
           }
@@ -120,6 +135,8 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
       for (let model of model_data) {
         for (let xs of model) {
           const label = `${xs.label} ${xs.polarization}`;
+          const color = COLORS[plot_index % COLORS.length];
+          const legendgroup = `group_${plot_index}`;
           const local_offset = Math.pow(10, plot_index * offset);
           const { intensity_in, background_in } = xs;
           const intensity = intensity_in ?? 1.0;
@@ -127,11 +144,11 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
           const Q4 = xs.Q.map((qq) => (1e-8 * Math.pow(qq, -4) * intensity + background));
           const theory = xs.theory.map((t, i) => (t / Q4[i]));
           const offset_theory = theory.map((t) => t * local_offset);
-          theory_traces.push({ x: xs.Q, y: offset_theory, mode: 'lines', name: label + ' theory', line: { width: 2, color: COLORS[plot_index % COLORS.length] } });
+          theory_traces.push({ x: xs.Q, y: offset_theory, mode: 'lines', name: label + ' theory', line: { width: 2, color } });
           if (xs.R !== undefined) {
             const R = xs.R.map((r, i) => (r / Q4[i]));
             const offset_R = R.map((t) => t * local_offset);
-            const data_trace: Trace = { x: xs.Q, y: offset_R, mode: 'markers', name: label + ' data', marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY, legendgroup: `group_${plot_index}` };
+            const data_trace: Trace = { x: xs.Q, y: offset_R, mode: 'markers', name: label + ' data', marker: { color }, opacity: MARKER_OPACITY, legendgroup };
             if (show_resolution.value && xs.dQ !== undefined) {
               data_trace.error_x = { type: 'data', array: xs.dQ, visible: true };
             }
@@ -139,6 +156,11 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
               const dR = xs.dR.map((dy, i) => (dy / Q4[i]));
               const offset_dR = dR.map((t) => t * local_offset);
               data_trace.error_y = { type: 'data', array: offset_dR, visible: true };
+              if (calculate_residuals) {
+                const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR[i]);
+                const residuals_trace: Trace = { x: xs.Q, y: residuals, mode: 'markers', name: label + ' residuals', showlegend: false, legendgroup, marker: { color }, opacity: MARKER_OPACITY, yaxis: 'y2' };
+                residuals_traces.push(residuals_trace);
+              }
             }
             data_traces.push(data_trace);
           }
@@ -157,6 +179,8 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
 
         if (pp !== undefined && mm !== undefined) {
           const label = pp.label;
+          const color = COLORS[plot_index % COLORS.length];
+          const legendgroup = `group_${plot_index}`;
 
           const Tm = interp(pp.Q, mm.Q, mm.theory);
           const TSA = Tm.map((m, i) => {
@@ -164,15 +188,16 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
             return (p - m) / (p + m) + local_offset;
           });
 
-          theory_traces.push({ x: pp.Q, y: TSA, mode: 'lines', name: label + ' theory', line: { width: 2, color: COLORS[plot_index % COLORS.length] } });
+          theory_traces.push({ x: pp.Q, y: TSA, mode: 'lines', name: label + ' theory', line: { width: 2, color } });
 
           if (pp.R !== undefined && mm.R !== undefined) {
             const Rm = interp(pp.Q, mm.Q, mm.R);
             const SA = Rm.map((m, i) => {
               const p = pp.R[i];
-              return (p - m) / (p + m) + local_offset;
+              return (p - m) / (p + m);
             });
-            const data_trace: Trace = { x: pp.Q, y: SA, mode: 'markers', name: label + ' data', marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY, legendgroup: `group_${plot_index}` };
+            const SA_offset = SA.map((v) => v + local_offset);
+            const data_trace: Trace = { x: pp.Q, y: SA_offset, mode: 'markers', name: label + ' data', marker: { color }, opacity: MARKER_OPACITY, legendgroup };
 
             if (show_resolution.value && pp.dQ !== undefined) {
               data_trace.error_x = { type: 'data', array: pp.dQ, visible: true };
@@ -186,6 +211,11 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
                 return Math.sqrt(4 * ((p * dm) ** 2 + (m * dm) ** 2) / (p + m) ** 4)
               });
               data_trace.error_y = { type: 'data', array: dSA, visible: true };
+              if (calculate_residuals) {
+                const residuals = SA.map((v, i) => (v - TSA[i]) / dSA[i]);
+                const residuals_trace: Trace = { x: pp.Q, y: residuals, mode: 'markers', name: label + ' residuals', showlegend: false, legendgroup, marker: { color }, opacity: MARKER_OPACITY, yaxis: 'y2' };
+                residuals_traces.push(residuals_trace);
+              }
             }
 
             data_traces.push(data_trace);
@@ -198,27 +228,8 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot) 
     }
 
   }
+  data_traces.push(...residuals_traces);
   return { theory_traces, data_traces, xaxis_label, yaxis_label };
-}
-
-function generate_residual_traces(model_data: ModelData[][], view: ReflectivityPlot) {
-  let residual_traces: Trace[] = [];
-  let yaxis2_label: string = "Residuals";
-  let plot_index = 0;
-  const lin_y = !log_y.value;
-  for (let model of model_data) {
-    for (let xs of model) {
-      if (xs.R === undefined || xs.theory === undefined || xs.dR === undefined) {
-        plot_index++;
-        continue;
-      }
-      const label = `${xs.label} ${xs.polarization} residuals`;
-      const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR[i]);
-      residual_traces.push({ x: xs.Q, y: residuals, mode: 'markers', name: label, showlegend: false, legendgroup: `group_${plot_index}`, marker: { color: COLORS[plot_index % COLORS.length] }, opacity: MARKER_OPACITY, yaxis: 'y2' });
-      plot_index++;
-    }
-  }
-  return residual_traces;
 }
 
 async function fetch_and_draw() {
@@ -237,11 +248,7 @@ async function change_plot_type() {
 
 async function draw_plot() {
   // console.log(payload);
-  const { theory_traces, data_traces, xaxis_label, yaxis_label } = generate_new_traces(plot_data.value, reflectivity_type.value);
-  if (show_residuals.value) {
-    const residual_traces = generate_residual_traces(plot_data.value, reflectivity_type.value);
-    data_traces.push(...residual_traces);
-  }
+  const { theory_traces, data_traces, xaxis_label, yaxis_label } = generate_new_traces(plot_data.value, reflectivity_type.value, show_residuals.value);
   const layout: Partial<Plotly.Layout> = {
     uirevision: reflectivity_type.value,
     xaxis: {
