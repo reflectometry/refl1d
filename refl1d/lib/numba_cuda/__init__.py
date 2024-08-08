@@ -16,7 +16,7 @@ __all__ = [
 from .reflectivity import reflectivity_amplitude
 from .magnetic import magnetic_amplitude
 from .magnetic import calculate_u1_u3
-from .build_profile import build_profile
+from ..numba.build_profile import build_profile
 from .convolve import convolve_gaussian
 from .convolve import convolve_uniform
 from .convolve_sampled import convolve_sampled
