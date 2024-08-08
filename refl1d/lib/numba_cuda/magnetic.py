@@ -947,7 +947,7 @@ def magnetic_amplitude_cuda_aligned(layer_params, KZ, rho_index, Ra, Rb, Rc, Rd)
         # print(i, Ra[i].real,)
 
 
-USE_ALIGNED = False
+USE_ALIGNED = True
 STREAM = None
 
 def _magnetic_amplitude(d, sigma, rho, irho, rhoM, u1, u3, KZ, rho_index, Ra, Rb, Rc, Rd):
