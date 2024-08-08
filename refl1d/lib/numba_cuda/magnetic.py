@@ -980,9 +980,9 @@ def _magnetic_amplitude(d, sigma, rho, irho, rhoM, u1, u3, KZ, rho_index, Ra, Rb
     
     Rad, Rbd, Rcd, Rdd = [cuda.device_array(r.shape, dtype=np.complex128, stream=stream) for r in [Ra, Rb, Rc, Rd]]
 
-    print("stream:", stream)
-    print("default stream:", cuda.default_stream())
-    print("context:", cuda.current_context())
+    # print("stream:", stream)
+    # print("default stream:", cuda.default_stream())
+    # print("context:", cuda.current_context())
 
     threadsperblock = 16
     blockspergrid = (KZ.shape[0] + (threadsperblock - 1)) // threadsperblock
