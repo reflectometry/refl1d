@@ -30,7 +30,8 @@ tar -xzf "$ENV_NAME.tar.gz" -C "$envdir"
 # activate the unpacked environment and install pip packages
 # add our batch script:
 case $OSTYPE in 
-  darwin*) cp -r ./extra/platform_scripts/refl1d_webview.app "$pkgdir" ;;
+  darwin*) cp -r ./extra/platform_scripts/refl1d_webview.app "$pkgdir" ;
+           cp -r ./extra/platform_scripts/refl1d_shell.app "$pkgdir" ;;
   msys*) cp ./extra/platform_scripts/refl1d_webview.bat "$pkgdir" ;;
   linux*) cp -r ./extra/platform_scripts/make_linux_desktop_shortcut.sh "$pkgdir" ;
           cp -r ./extra/platform_scripts/refl1d-webview "$pkgdir" ;;
@@ -53,6 +54,7 @@ $bindir/python -m pip install --no-compile -r https://raw.githubusercontent.com/
 $bindir/python -m pip install orsopy
 
 # build the client
+export PATH=$bindir:$PATH
 cd $sitepackages/bumps/webview/client
 $bindir/npm install
 
@@ -75,7 +77,7 @@ case $OSTYPE in
   msys*) conda install -y 7zip ;
          curl -L https://www.7-zip.org/a/7z2106-x64.exe --output 7z_exe ;
          7z e 7z_exe -aoa 7z.sfx ;
-         7z a -mhe=on -mx=1 -sfx".\7z.sfx" "$WORKING_DIRECTORY/$OUTPUT/$PKGNAME-$SUBNAME-$version-$platform-$(uname -m)-self-extracting.exe" "$PKGNAME-$version";;
+         7z a -mhe=on -mx=1 -sfx".\7z.sfx" "$WORKING_DIRECTORY/$OUTPUT/$PKGNAME-$SUBNAME-$version-$platform-$(uname -m)-self-extracting.exe" "$PKGNAME-$version" ;;
 esac
 
 cd $tmpdir && tar -czf "$WORKING_DIRECTORY/$OUTPUT/$PKGNAME-$SUBNAME-$version-$platform-$(uname -m).tar.gz" "$PKGNAME-$version"
