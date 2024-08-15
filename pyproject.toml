@@ -44,9 +44,8 @@ build-backend = "setuptools.build_meta"
 version = { attr = "refl1d.__version__" }
 
 [tool.setuptools]
-packages = ["refl1d", "resources"]
+packages = ["refl1d"]
 script-files = ["bin/refl1d_cli.py", "bin/refl1d_gui.py"]
-package-data = { resources = ["*.svg"] }
 
 [project.scripts]
 refl1d = "refl1d.main:main"
