@@ -46,6 +46,9 @@ case "$OSTYPE" in
     platform="$(uname -s)";;
 esac
 
+mkdir -p $pkgdir/share/icons
+cp ./extra/*.svg $pkgdir/share/icons
+cp ./extra/*.png $pkgdir/share/icons
 
 $bindir/python -m pip install --no-input --no-compile numba
 $bindir/python -m pip install --no-input --no-compile git+https://github.com/bumps/bumps@webview
