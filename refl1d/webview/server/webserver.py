@@ -27,6 +27,7 @@ class Refl1DOptions(webserver.BumpsOptions):
     headless: bool = True
 
 webserver.OPTIONS_CLASS = Refl1DOptions
+webserver.APPLICATION_NAME = "refl1d"
 
 if __name__ == '__main__':
     main()
