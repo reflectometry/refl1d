@@ -2149,16 +2149,34 @@ def _interpolate_Q(Q, dQ, n):
 @dataclass(init=False)
 class PolarizedQProbe(PolarizedNeutronProbe):
     polarized = True
-    def __init__(self, xs=None, name=None, Aguide=BASE_GUIDE_ANGLE, H=0):
-        self._xs = xs
+    def __init__(self, xs: Optional[Tuple]=None,
+                       mm: optional_xs=None,
+                       mp: optional_xs=None,
+                       pm: optional_xs=None,
+                       pp: optional_xs=None,
+                       name=None, Aguide=BASE_GUIDE_ANGLE, H=0,):
+        if any([mm, mp, pm, pp]):
+            if xs is not None:
+                warnings.warn("a cross-section is directly specified - xs argument will be ignored")
+            self.mm = mm
+            self.mp = mp
+            self.pm = pm
+            self.pp = pp
+        else:
+            for index, xs_name in enumerate(self._xs_names):
+                setattr(self, xs_name, xs[index])
         self._check()
-        self.name = name if name is not None else xs[0].name
+        self.name = name if name is not None else self.pp.name
         self.unique_L = None
         self.Aguide = Parameter.default(Aguide, name="Aguide "+self.name,
                                         limits=[-360, 360])
         self.H = Parameter.default(H, name="H "+self.name)
-        self.Q, self.dQ = Qmeasurement_union(xs)
+        self.Q, self.dQ = Qmeasurement_union(self.xs)
         self.calc_Qo = self.Q
+
+    @property
+    def calc_Q(self):
+        return self.calc_Qo if not self.back_reflectivity else -self.calc_Qo
 
 # Deprecated old long name
 PolarizedNeutronQProbe = PolarizedQProbe
