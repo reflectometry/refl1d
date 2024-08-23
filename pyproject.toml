@@ -12,11 +12,12 @@ authors = [
 license = { file = "LICENSE.txt" }
 dependencies = [
     'bumps>=0.7.16',
-    'numpy',
-    'scipy',
     'matplotlib',
-    'periodictable',
     'numba',
+    'numpy',
+    'periodictable',
+    'ruff',
+    'scipy',
 ]
 classifiers = [
     'Development Status :: 4 - Beta',
