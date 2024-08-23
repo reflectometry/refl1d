@@ -34,11 +34,13 @@ https://doi.org/10.1016/B978-0-444-63739-0.00005-0
 
 [4] https://en.wikipedia.org/wiki/Prefix_sum
 """
+
 from __future__ import print_function, division
 
 import numpy as np
 from numpy import asarray, isscalar, empty, ones, ones_like
 from numpy import sqrt, exp, pi
+
 
 def refl_tr(kz, depth, rho, irho=0, sigma=0, rho_index=None):
     r"""
@@ -70,7 +72,7 @@ def refl_tr(kz, depth, rho, irho=0, sigma=0, rho_index=None):
     index -1.
     """
     if isscalar(kz):
-        kz = asarray([kz], 'd')
+        kz = asarray([kz], "d")
 
     # Don't support kz negative for now
     if (kz < 0).any():
@@ -79,10 +81,10 @@ def refl_tr(kz, depth, rho, irho=0, sigma=0, rho_index=None):
     m = len(depth)
 
     # Make everything into arrays
-    depth = asarray(depth, 'd')
-    rho = asarray(rho, 'd')
-    irho = irho*ones_like(rho) if isscalar(irho) else asarray(irho, 'd')
-    sigma = sigma*ones(m-1, 'd') if isscalar(sigma) else asarray(sigma, 'd')
+    depth = asarray(depth, "d")
+    rho = asarray(rho, "d")
+    irho = irho * ones_like(rho) if isscalar(irho) else asarray(irho, "d")
+    sigma = sigma * ones(m - 1, "d") if isscalar(sigma) else asarray(sigma, "d")
 
     # Repeat rho, irho columns as needed
     if rho_index is not None:
@@ -119,11 +121,11 @@ def _calc(kz, depth, rho, irho, sigma):
     #     k_l = sqrt((2 m_n)/h_bar E0 - 4 pi rho_l)
     # Substituting E0:
     #     k_l = sqrt(k_z^2 + 4 pi rho_in - 4 pi rho_l)
-    #rho_in = np.where(kz >= 0, rho[:, 0], rho[:, -1])
+    # rho_in = np.where(kz >= 0, rho[:, 0], rho[:, -1])
     rho_in = rho[:, 0]
-    kz_sq = kz*kz
+    kz_sq = kz * kz
 
-    k = sqrt(kz_sq + 4e-6*pi*(rho_in - rho[:, 0]))
+    k = sqrt(kz_sq + 4e-6 * pi * (rho_in - rho[:, 0]))
     z = 0
     M = []
     k_list = [k]
@@ -132,160 +134,167 @@ def _calc(kz, depth, rho, irho, sigma):
     B21 = 0
     B12 = 0
     for i in range(num_interfaces):
-        k_next = sqrt(kz_sq + 4e-6*pi*(rho_in - rho[:, i+1] + 1j*irho[:, i+1]))
-        nevot_croce_damping = exp(-2*k*k_next*sigma[i]**2)
+        k_next = sqrt(kz_sq + 4e-6 * pi * (rho_in - rho[:, i + 1] + 1j * irho[:, i + 1]))
+        nevot_croce_damping = exp(-2 * k * k_next * sigma[i] ** 2)
         k_plus, k_minus = k_next + k, k_next - k
-        M11 = k_plus * exp(-1j*k_minus*z)/(2*k)
-        M22 = k_plus * exp(+1j*k_minus*z)/(2*k)
-        M12 = nevot_croce_damping * k_minus * exp(-1j*k_plus*z)/(2*k)
-        M21 = nevot_croce_damping * k_minus * exp(+1j*k_plus*z)/(2*k)
+        M11 = k_plus * exp(-1j * k_minus * z) / (2 * k)
+        M22 = k_plus * exp(+1j * k_minus * z) / (2 * k)
+        M12 = nevot_croce_damping * k_minus * exp(-1j * k_plus * z) / (2 * k)
+        M21 = nevot_croce_damping * k_minus * exp(+1j * k_plus * z) / (2 * k)
         M.append((M11, M12, M21, M22))
         k_list.append(k_next)
         # Right-multiply: B = M*B
-        C11 = M11*B11 + M12*B21
-        C21 = M21*B11 + M22*B21
+        C11 = M11 * B11 + M12 * B21
+        C21 = M21 * B11 + M22 * B21
         B11, B21 = C11, C21
-        C12 = M11*B12 + M12*B22
-        C22 = M21*B12 + M22*B22
+        C12 = M11 * B12 + M12 * B22
+        C22 = M21 * B12 + M22 * B22
         B12, B22 = C12, C22
         k = k_next
-        z += depth[i+1]
-        #print("==== layer %d ====" % i)
-        #print("B11:", B11)
-        #print("B22:", B22)
-        #print("B21:", B21)
-        #print("B12:", B12)
+        z += depth[i + 1]
+        # print("==== layer %d ====" % i)
+        # print("B11:", B11)
+        # print("B22:", B22)
+        # print("B21:", B21)
+        # print("B12:", B12)
 
-    r = -B21/B22
-    t = B11 + B12*r
+    r = -B21 / B22
+    t = B11 + B12 * r
 
-    results = np.empty((num_interfaces+1, 2, num_kz), 'D')
+    results = np.empty((num_interfaces + 1, 2, num_kz), "D")
     if 1:
         # Propagate (1, r) forward using:
         #    [c_{n+1}, d_{n+1}]^T = M_n [c_n, d_n]^T
-        #print("propagate forward")
-        c, d = np.ones(num_kz, 'D'), r
+        # print("propagate forward")
+        c, d = np.ones(num_kz, "D"), r
         results[0] = c, d
         for i in range(num_interfaces):
             M11, M12, M21, M22 = M[i]
-            c, d = M11*c + M12*d, M21*c + M22*d
-            results[i+1] = c, d
+            c, d = M11 * c + M12 * d, M21 * c + M22 * d
+            results[i + 1] = c, d
     else:
         # Propagate (t, 0) backward using:
         #    [c_n, d_n]^T = M_n^{-1} [c_{n+1}, d_{n+1}]^T
-        #print("propagate backward")
-        c, d = t, np.zeros(num_kz, 'D')
+        # print("propagate backward")
+        c, d = t, np.zeros(num_kz, "D")
         results[-1] = c, d
         for i in reversed(range(num_interfaces)):
             M11, M12, M21, M22 = M[i]
             # Minv = [[M22, -M12], [-M21, M11]] / (M11 M22 - M12 M21)
-            det = B11*B22 - B21*B12
-            c, d = (M22*c - M12*d)/det, (-M21*c + M11*d)/det
+            det = B11 * B22 - B21 * B12
+            c, d = (M22 * c - M12 * d) / det, (-M21 * c + M11 * d) / det
             results[i] = c, d
 
-    #print("r   ", r)
-    #for k, layer in enumerate(results):
+    # print("r   ", r)
+    # for k, layer in enumerate(results):
     #    print("r[%d]"%k, layer[1])
     #    print("t[%d]"%k, layer[0])
-    #print("t   ", t)
+    # print("t   ", t)
     k0, kn = k_list[0], k_list[-1]
-    #print("r^2 =", abs(r**2))
-    #print("t^2 =", abs(t**2))
-    #print("r^2 + t^2*k0/kn =", abs(r**2) + abs(t**2)*(k0/kn).real)
-    #print("k0", k0)
-    #print("kn", kn)
+    # print("r^2 =", abs(r**2))
+    # print("t^2 =", abs(t**2))
+    # print("r^2 + t^2*k0/kn =", abs(r**2) + abs(t**2)*(k0/kn).real)
+    # print("k0", k0)
+    # print("kn", kn)
 
     ## Compute back reflectivity
-    #negative = (kz < 0.0)
-    #if negative.any():
+    # negative = (kz < 0.0)
+    # if negative.any():
     #    det = B11*B22 - B21*B12
     #    r[negative] = -(B12 / B22 / det)[negative]
     return results
 
+
 def check():
     import numpy as np
+
     np.set_printoptions(linewidth=10000)
 
-    #q = np.linspace(-0.3, 0.3, 4)
+    # q = np.linspace(-0.3, 0.3, 4)
     q = np.linspace(0.1, 0.3, 3)
     layers = [
         # depth rho irho sigma
-        [  0, 0.0, 0.0,  0.0],
-        [200, 2.0, 0.0,  0.0],
-        [200, 4.0, 0.0,  0.0],
-        [  0, 3.0, 0.0,  0.0],
+        [0, 0.0, 0.0, 0.0],
+        [200, 2.0, 0.0, 0.0],
+        [200, 4.0, 0.0, 0.0],
+        [0, 3.0, 0.0, 0.0],
     ]
-    #layers[1][2] = 1.0  # add absorption to layer 1
-    #for L in layers[:-1]: L[3] = 10.0   # add roughness to all layers
+    # layers[1][2] = 1.0  # add absorption to layer 1
+    # for L in layers[:-1]: L[3] = 10.0   # add roughness to all layers
 
     depth, rho, irho, sigma = (np.asarray(v) for v in zip(*layers))
     rho *= 100  # show point below critical edge
     print("q", q)
     try:
         from .abeles import refl
-        r_old = refl(q/2, depth, rho, irho=irho, sigma=sigma)
+
+        r_old = refl(q / 2, depth, rho, irho=irho, sigma=sigma)
         print("rold", r_old)
     except ImportError:
         print("could not import abeles")
-    wave = refl_tr(q/2, depth, rho, irho=irho, sigma=sigma)
+    wave = refl_tr(q / 2, depth, rho, irho=irho, sigma=sigma)
     for k, wk in enumerate(wave):
-        print("r[%d]"%k, wk[1])
-        print("t[%d]"%k, wk[0])
+        print("r[%d]" % k, wk[1])
+        print("t[%d]" % k, wk[0])
     r, t = wk[0][1], wk[-1][0]
-    #print("r^2", abs(r**2))
+    # print("r^2", abs(r**2))
 
 
 def check2(t=200, rho=4.66):
     import numpy as np
+
     np.set_printoptions(linewidth=10000)
 
-    #q = np.linspace(0.0, 0.05, 600)
+    # q = np.linspace(0.0, 0.05, 600)
     q = np.linspace(0.0, 0.0005, 6000)
-    #q = np.linspace(0.1, 0.3, 3)
+    # q = np.linspace(0.1, 0.3, 3)
     layers = [
         # depth rho irho sigma
-        [  0, 0.0, 0.0,  0.0],
-        #[200, 2.0, 0.0,  0.0],
-        [t, -rho, 0.0,  0.0],
-        [  0, 0, 0.0,  0.0],
-        #[  0, 2.07, 0.0,  0.0],
+        [0, 0.0, 0.0, 0.0],
+        # [200, 2.0, 0.0,  0.0],
+        [t, -rho, 0.0, 0.0],
+        [0, 0, 0.0, 0.0],
+        # [  0, 2.07, 0.0,  0.0],
     ]
     # add absorption
     # layers[1][2] = 1.0
     depth, rho, irho, sigma = zip(*layers)
 
-    wave = refl_tr(q/2, depth, rho, irho=irho, sigma=sigma)
-    #print("shape", wave.shape)
+    wave = refl_tr(q / 2, depth, rho, irho=irho, sigma=sigma)
+    # print("shape", wave.shape)
     r = wave[0, 1]
 
     import matplotlib.pyplot as plt
-    plt.plot(q, r.real, '-b', label='real')
-    plt.plot(q, r.imag, '-r', label='imag')
-    plt.plot(q, abs(r**2), '-g', label='magnitude')
-    #plt.legend()
+
+    plt.plot(q, r.real, "-b", label="real")
+    plt.plot(q, r.imag, "-r", label="imag")
+    plt.plot(q, abs(r**2), "-g", label="magnitude")
+    # plt.legend()
     plt.grid(True)
-    #plt.xlabel('q (1/A)')
-    #plt.title("stack = Si / 20 nm Au / Air")
-    #plt.show()
-    #print("q", q)
-    #print("r", r)
-    #print("r^2", abs(r**2))
+    # plt.xlabel('q (1/A)')
+    # plt.title("stack = Si / 20 nm Au / Air")
+    # plt.show()
+    # print("q", q)
+    # print("r", r)
+    # print("r^2", abs(r**2))
+
 
 def check3(t=200, rho=4.66):
     import numpy as np
+
     np.set_printoptions(linewidth=10000)
 
     qmax = 0.1
     t, qmax = 2000, 0.05
-    #t, qmax = 20, 0.4
+    # t, qmax = 20, 0.4
     q = np.linspace(0.0, qmax, 6000)[1:]
     layers = [
         # depth rho irho sigma
-        [  0, 0.0, 0.0,  0.0],
-        #[200, 2.0, 0.0,  0.0],
-        [t, rho, 0.0,  0.0],
-        [  0, 0, 0.0,  0.0],
-        #[  0, 2.07, 0.0,  0.0],
+        [0, 0.0, 0.0, 0.0],
+        # [200, 2.0, 0.0,  0.0],
+        [t, rho, 0.0, 0.0],
+        [0, 0, 0.0, 0.0],
+        # [  0, 2.07, 0.0,  0.0],
     ]
     # add absorption
     # layers[1][2] = 1.0
@@ -293,68 +302,70 @@ def check3(t=200, rho=4.66):
 
     if 1:
         steps = 2001
-        #portion = 0.9
+        # portion = 0.9
         portion = 0.0
         thickness = t
-        flat = thickness*portion
-        ends = thickness*(1-portion)
+        flat = thickness * portion
+        ends = thickness * (1 - portion)
         z = np.linspace(-3, 3, steps)
-        vrho = np.exp(-0.5*z**2)*rho
-        virho = 0*rho
-        vdepth = np.ones_like(z)*ends/steps
-        vdepth[int((steps-1)/2)] = flat
-        vsigma = 0*rho
+        vrho = np.exp(-0.5 * z**2) * rho
+        virho = 0 * rho
+        vdepth = np.ones_like(z) * ends / steps
+        vdepth[int((steps - 1) / 2)] = flat
+        vsigma = 0 * rho
 
     if 0:
         steps = 2001
         thickness, portion = t, 0.0
-        flat = thickness*portion
-        ends = thickness*(1-portion)
+        flat = thickness * portion
+        ends = thickness * (1 - portion)
         z = np.linspace(-3, 3, steps)
-        vrho = np.exp(-0.5*z**2)*rho
-        vrho += -np.exp(-0.5*(z-1)**2*4)*rho
-        virho = 0*rho
-        vdepth = np.ones_like(z)*ends/steps
-        vdepth[int((steps-1)/2)] = flat
-        vsigma = 0*rho
+        vrho = np.exp(-0.5 * z**2) * rho
+        vrho += -np.exp(-0.5 * (z - 1) ** 2 * 4) * rho
+        virho = 0 * rho
+        vdepth = np.ones_like(z) * ends / steps
+        vdepth[int((steps - 1) / 2)] = flat
+        vsigma = 0 * rho
 
     ## normalize to same amount of scattering density
-    #total = rho*t
-    #vrho *= total/np.sum(vrho*vdepth)
+    # total = rho*t
+    # vrho *= total/np.sum(vrho*vdepth)
 
-    wave = refl_tr(q/2, vdepth, vrho, irho=virho, sigma=vsigma)
-    #print("shape", layers.shape)
+    wave = refl_tr(q / 2, vdepth, vrho, irho=virho, sigma=vsigma)
+    # print("shape", layers.shape)
     r = wave[0, 1]
 
     import matplotlib.pyplot as plt
     from mpl_toolkits.axes_grid.inset_locator import InsetPosition
 
-    scale = q*0+1
-    #scale = q**4
-    plt.plot(q, scale*r.real, '-b', label='real', zorder=2)
-    plt.plot(q, scale*r.imag, '-r', label='imag')
-    plt.plot(q, scale*abs(r**2), '-g', label='magnitude')
-    #plt.yscale('symlog', linthreshy=1e-6)
-    #plt.legend()
+    scale = q * 0 + 1
+    # scale = q**4
+    plt.plot(q, scale * r.real, "-b", label="real", zorder=2)
+    plt.plot(q, scale * r.imag, "-r", label="imag")
+    plt.plot(q, scale * abs(r**2), "-g", label="magnitude")
+    # plt.yscale('symlog', linthreshy=1e-6)
+    # plt.legend()
     plt.grid(True)
     ax = plt.gca()
     inset = plt.axes([0, 0, 1, 1])
-    inset.step(np.cumsum(vdepth), vrho, '-g', label='rho')
-    #inset.step(np.cumsum(vdepth), virho, '-m', label='irho')
+    inset.step(np.cumsum(vdepth), vrho, "-g", label="rho")
+    # inset.step(np.cumsum(vdepth), virho, '-m', label='irho')
     inset.set_axes_locator(InsetPosition(ax, [0.6, 0.7, 0.4, 0.3]))
     inset.patch.set_alpha(0.5)
-    inset.patch.set_color([0.9,0.9,0.8])
-    #mark_inset(ax, inset)
+    inset.patch.set_color([0.9, 0.9, 0.8])
+    # mark_inset(ax, inset)
 
-    #plt.xlabel('q (1/A)')
-    #plt.title("stack = Si / 20 nm Au / Air")
-    #plt.show()
-    #print("q", q)
-    #print("r", r)
-    #print("r^2", abs(r**2))
+    # plt.xlabel('q (1/A)')
+    # plt.title("stack = Si / 20 nm Au / Air")
+    # plt.show()
+    # print("q", q)
+    # print("r", r)
+    # print("r^2", abs(r**2))
+
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
+
     check3()
     """
     plt.subplot(211)

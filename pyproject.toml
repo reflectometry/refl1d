@@ -11,9 +11,14 @@ authors = [
 ]
 license = { file = "LICENSE.txt" }
 dependencies = [
-    'bumps>=0.7.16', 'numpy', 'scipy', 'matplotlib', 'periodictable', 'numba'
+    'bumps>=0.7.16',
+    'numpy',
+    'scipy',
+    'matplotlib',
+    'periodictable',
+    'numba',
 ]
-classifiers=[
+classifiers = [
     'Development Status :: 4 - Beta',
     'Environment :: Console',
     'Intended Audience :: Science/Research',
@@ -27,9 +32,7 @@ requires-python = ">=3.8"
 
 [project.optional-dependencies]
 webview = []
-full = [
-    'wxpython', 'ipython'
-]
+full = ['wxpython', 'ipython']
 
 [project.urls]
 documentation = "https://refl1d.github.io"
@@ -40,11 +43,30 @@ repository = "https://github.com/reflectometry/refl1d"
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
+[tool.ruff]
+line-length = 120
+
+# [tool.ruff.lint]
+# select = [
+#     "E",   # pycodestyle
+#     "F",   # Pyflakes
+#     "UP",  # pyupgrade
+#     "B",   # flake8-bugbear
+#     "SIM", # flake8-simplify
+#     "I",   # isort
+# ]
+
 [tool.setuptools.dynamic]
 version = { attr = "refl1d.__version__" }
 
 [tool.setuptools]
-packages = ["refl1d", "refl1d.view", "refl1d.lib.python", "refl1d.lib.numba", "refl1d.webview.server"]
+packages = [
+    "refl1d",
+    "refl1d.view",
+    "refl1d.lib.python",
+    "refl1d.lib.numba",
+    "refl1d.webview.server",
+]
 script-files = ["bin/refl1d_cli.py", "bin/refl1d_gui.py"]
 
 [project.scripts]
