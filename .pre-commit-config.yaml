@@ -7,12 +7,11 @@ repos:
     - id: check-merge-conflict
     - id: check-yaml
       args: [--allow-multiple-documents]
-      exclude: "conda.recipe/meta.yaml"
     - id: end-of-file-fixer
     - id: trailing-whitespace
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.6.1
   hooks:
     - id: ruff
-      args: [--fix, --exit-non-zero-on-fix]
+      args: [--fix, --exit-non-zero-on-fix, --line-length=120]
     - id: ruff-format
