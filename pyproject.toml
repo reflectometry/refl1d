@@ -16,6 +16,7 @@ dependencies = [
     'numba',
     'numpy',
     'periodictable',
+    'pre-commit',
     'ruff',
     'scipy',
 ]
