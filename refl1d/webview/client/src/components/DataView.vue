@@ -312,7 +312,7 @@ async function draw_plot() {
     responsive: true,
     edits: {
       legendPosition: true
-    }, 
+    },
     ...configWithSVGDownloadButton
   }
   await Plotly.react(plot_div.value as HTMLDivElement, [...theory_traces, ...data_traces], layout, config);

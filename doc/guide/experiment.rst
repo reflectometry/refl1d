@@ -56,4 +56,3 @@ function to yield reflectivities at intervals of 0.01.
     Q: 0.02  R: 3.30684e-03
     ...
     Q: 0.19  R: 2.10084e-07
-

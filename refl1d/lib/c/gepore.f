@@ -5,17 +5,17 @@ c Program "gepore.f" (GEneral POlarized REflectivity) calculates the
 c spin-dependent neutron reflectivities (and transmissions) for
 c model potentials, or scattering length density profiles, assuming
 c the specular condition.
-c 
+c
 c In the present version, both nuclear and magnetic, real scattering
 c length densities can be input, whereas imaginary components of the
 c nuclear potential cannot. Also, magnetic and nuclear incident, or
 c "fronting", and substrate, or "backing", media can be included. A
 c description of the input parameters is given below:
 c
-c 
+c
 c 	NL = # of distict layers or "slabs" of uniform scattering
 c 	      length density (SLD)
-c 
+c
 c 	NC = # of "unit cell" repeats
 c
 c 	QS = first wavevector transfer at which reflectivities and
@@ -36,7 +36,7 @@ c 	      sample z-axis TO the lab z-axis rotating CCW about the
 c 	      x-axis as viewed from the positive side of the x-axis.
 c 	      For the lab z-axis to be aligned with the positive y-axis
 c 	      of the sample, for example, EPS must be 3pi/2 radians.
-c 
+c
 c 	IP, IM = complex numbers describing the polarization state
 c 		   of the incident neutron relative to the lab-
 c 		   oratory axis of quantization: e.g., spin "+" is
@@ -62,8 +62,8 @@ c 	ROINM =    "    -    "      "        "       "        "-"  "
 c
 c 	ROSUP =    "    -    "      "     substrate  "        "+"  "
 c
-c 	ROSUM =    "    -    "      "        "       "        "-"  " 
-c 
+c 	ROSUM =    "    -    "      "        "       "        "-"  "
+c
 c 	The parameters defined above are input into the program
 c 	through the file "inpt.d".
 c
@@ -72,12 +72,12 @@ c individual layer comprising the sample. Starting with the first
 c layer encountered by the incident beam, the following quantities
 c for the jth layer are supplied in the format as shown:
 c
-c 	T(J)  BN(J)  PN(J)  THE(J)  PHI(J) 
+c 	T(J)  BN(J)  PN(J)  THE(J)  PHI(J)
 c
 c                      .
-c                      . 
 c                      .
-c 
+c                      .
+c
 c 	where
 c
 c 	T(J) = layer thickness in A
@@ -134,7 +134,7 @@ c 	qtm2.d -- probability that the neutron will be transmitted
 c 		  in the minus spin state
 c
 c all of the above as a function of Q in A-1.
-c 
+c
 c Also output are the files:
 c
 c 	qrpmtpms.d -- the reflectivities and transmissions, in the

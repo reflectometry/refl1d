@@ -8,4 +8,4 @@ on run argv
    tell app "Terminal"
       do script python_exe & " -c" & " \"from tkinter import filedialog as fd; import jupyterlab.labapp as lab; start_folder = fd.askdirectory(); lab.main(argv=[f'--notebook-dir={start_folder}'])\""
    end tell
-end run 
+end run

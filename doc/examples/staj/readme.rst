@@ -88,4 +88,3 @@ example::
 
 
 Dura, J. A. et al. Porous Mg formation upon dehydrogenation of MgH2 thin films. Journal of Applied Physics 109, 093501–093501–7 (2011).
-

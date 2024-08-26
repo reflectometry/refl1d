@@ -28,4 +28,3 @@ modules.  A safer, though more verbose pattern is to use:
 This documents to the reader unfamiliar with your code (such as you when
 looking at your model files two years from now) exactly where the
 name comes from.
-

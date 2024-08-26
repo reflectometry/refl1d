@@ -29,7 +29,7 @@ tar -xzf "$ENV_NAME.tar.gz" -C "$envdir"
 
 # activate the unpacked environment and install pip packages
 # add our batch script:
-case $OSTYPE in 
+case $OSTYPE in
   darwin*) cp -r ./extra/platform_scripts/refl1d_webview.app "$pkgdir" ;
            cp -r ./extra/platform_scripts/refl1d_jupyter.app "$pkgdir" ;;
   msys*) cp ./extra/platform_scripts/refl1d_webview.bat "$pkgdir" ;
@@ -72,8 +72,8 @@ rm -rf $sitepackages/bumps/webview/client/node_modules
 version=$($bindir/python -c "import refl1d; print(refl1d.__version__)")
 mv "$tmpdir/$PKGNAME" "$tmpdir/$PKGNAME-$version"
 
-case $OSTYPE in 
-  # darwin*) cd $tmpdir && hdiutil create -srcfolder  "$PKGNAME-$version" -volname "Refl1D_Jupyter" "$WORKING_DIRECTORY/Refl1D_Jupyter.dmg" ;; 
+case $OSTYPE in
+  # darwin*) cd $tmpdir && hdiutil create -srcfolder  "$PKGNAME-$version" -volname "Refl1D_Jupyter" "$WORKING_DIRECTORY/Refl1D_Jupyter.dmg" ;;
   darwin*) pkgbuild --root $tmpdir --identifier org.reflectometry.$PKGNAME-$SUBNAME --version $version --ownership preserve --install-location /Applications "$WORKING_DIRECTORY/$OUTPUT/$PKGNAME-$SUBNAME-$version-$platform-$(uname -m).pkg" ;;
   msys*) conda install -y 7zip ;
          curl -L https://www.7-zip.org/a/7z2106-x64.exe --output 7z_exe ;

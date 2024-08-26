@@ -332,7 +332,7 @@ function dragEnd() {
             </thead>
             <tbody>
                 <tr v-for="(layer, key) in sortedLayers" :key="key" @blur.capture="send_model()" class="align-middle">
-                    <td  
+                    <td
                         @dragstart="dragStart(key, $event)"
                         @dragover="dragOver(key, $event)"
                         @drop="drop(key)"
@@ -351,7 +351,7 @@ function dragEnd() {
         </table>
     <p v-else>Load data to start building a model</p>
     </div>
-       
+
     <div class="row">
         <div class="col">
             <button class="btn btn-primary m-2" @click="new_model">New model</button>
@@ -366,7 +366,7 @@ function dragEnd() {
           </div>
         </div>
     </div>
-    
+
     <div class="container m-2">
         <div class="card bg-warning">
             <div class="card-body">
@@ -376,7 +376,7 @@ function dragEnd() {
                         <li>This builder can currently only do non-magnetic models.</li>
                         <li>It can only deal with a single model.</li>
                     </ul>
-                    
+
                 </p>
             </div>
         </div>

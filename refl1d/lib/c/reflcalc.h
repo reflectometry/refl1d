@@ -170,7 +170,7 @@ build_profile(size_t NZ, size_t NP, size_t NI,
               const double z[], /* length NZ */
               const double offset[],  /* length NI */
               const double roughness[], /* length NI */
-              const double contrast[], /* length NP * NI */ 
+              const double contrast[], /* length NP * NI */
               const double initial_value[], /* length NP */
               double profile[] /* length NP * NZ (num profiles * num z) */
               );

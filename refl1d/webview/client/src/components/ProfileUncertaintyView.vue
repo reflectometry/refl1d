@@ -115,7 +115,7 @@ async function fetch_and_draw(latest_timestamp?: string) {
 }
 
 </script>
-    
+
 <template>
   <div class="container d-flex flex-grow-1 flex-column">
     <!-- <details open>
@@ -133,7 +133,7 @@ async function fetch_and_draw(latest_timestamp?: string) {
         </div>
         <div class="col-md-3 align-middle">
           <label class="form-label" for="align-interface">Align interface</label>
-          <input class="form-control" type="number" v-model="align" id="align-interface" @change="fetch_and_draw()" 
+          <input class="form-control" type="number" v-model="align" id="align-interface" @change="fetch_and_draw()"
             :disabled="auto_align"
           />
         </div>

@@ -4,7 +4,7 @@ export class Signal {
 
     constructor(name: string, buffer: SharedArrayBuffer = new SharedArrayBuffer(1)) {
         this.name = name;
-        this.buffer = buffer;      
+        this.buffer = buffer;
     }
 
     is_set() {

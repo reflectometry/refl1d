@@ -126,7 +126,7 @@ def main():
 
     parser = argparse.ArgumentParser(
         description="""
-        Algorithm: 
+        Algorithm:
       - the model is oversampled to a very high number (max_oversampling)
       - smeared R is calculated at max_oversampling and stored as reference "ideal" R
       - oversampling is iterated (starting at 1), and smeared R is calculated and compared to "ideal" R

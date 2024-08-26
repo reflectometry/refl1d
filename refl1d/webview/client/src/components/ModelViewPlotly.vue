@@ -99,7 +99,7 @@ async function fetch_and_draw() {
 }
 
 </script>
-    
+
 <template>
   <div class="container d-flex flex-grow-1 flex-column">
     <select v-model="current_model" @change="draw_requested = true">

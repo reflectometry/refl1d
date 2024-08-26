@@ -23,7 +23,7 @@ init:
   - ps: iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
   - ps: Start-FileDownload "https://download.microsoft.com/download/6/A/A/6AA4EDFF-645B-48C5-81CC-ED5963AEAD48/vc_redist.x64.exe" -FileName "C:\\Python27-x64\\vcredist_x64.exe"
   - set PATH=%PYTHON%\\Lib\\site-packages\\scipy\\extra-dll;%PATH%
-  
+
 install:
   # We need wheel installed to build wheels
   - "git clone -q --branch=master https://github.com/bumps/bumps.git C:\\projects\\bumps"
@@ -35,7 +35,7 @@ install:
   - "cd C:\\projects\\bumps"
   - "%PYTHON%\\python.exe setup.py install"
   - "cd C:\\projects\\refl1d"
-  
+
 build: off
 
 test_script:

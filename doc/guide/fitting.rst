@@ -580,4 +580,3 @@ Storn, R.: System Design by Constraint Adaptation and Differential Evolution,
 Technical Report TR-96-039, International Computer Science Institute (November 1996)
 
 Swendsen RH and Wang JS (1986) Replica Monte Carlo simulation of spin glasses Physical Review Letters 57 : 2607-2609
-

@@ -94,7 +94,7 @@ jobs:
     - name: Show last updated
       uses: actions/github-script@v3
       with:
-        github-token: ${{secrets.GITHUB_TOKEN}}          
+        github-token: ${{secrets.GITHUB_TOKEN}}
         script: |
           let sid_release = await github.repos.getReleaseByTag({
             owner: context.repo.owner,

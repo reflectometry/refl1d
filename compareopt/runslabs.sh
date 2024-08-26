@@ -5,7 +5,7 @@ REFL=$ROOT/refl1d
 PROG=refl1d
 
 for round in 1 2 3; do
-  for num in 4 5 6; do 
+  for num in 4 5 6; do
     dest=T$num.$round
     echo "Running num=$num (round=$round) in $dest"
     mkdir $dest

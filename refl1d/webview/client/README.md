@@ -79,7 +79,7 @@ install location will be different..._
     ```
 
 ### Rebuilding after changes
-Now you can run the server, and it will use this locally built client.  After changes to the source code (to incorporate new client features):  
+Now you can run the server, and it will use this locally built client.  After changes to the source code (to incorporate new client features):
 ```sh
 cd ~/dev/bumps
 git pull
@@ -96,7 +96,7 @@ This mode is useful for rapid prototyping (esp. trying to fix styling in the cli
 cd ~/dev/refl1d/refl1d/webview/client
 npx vite
 ```
-... this will start a local server for the rendered client at something like http://localhost:5173 (a link will appear in the console).  
+... this will start a local server for the rendered client at something like http://localhost:5173 (a link will appear in the console).
 
 In a different terminal, you have to also start the python server, which will be listening on a different port, e.g.
 ```sh

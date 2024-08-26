@@ -114,7 +114,7 @@ convolve_gaussian_point(const double xin[], const double yin[], size_t k, size_t
 {
   const double two_sigma_sq = 2. * sigma * sigma;
   double z, Glo, yGlo, y, norm;
-  
+
   z = xo - xin[k];
   Glo = exp(-z*z/two_sigma_sq);
   yGlo = yin[k]*Glo;
