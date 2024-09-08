@@ -1919,16 +1919,7 @@ class PolarizedNeutronProbe:
             self._To, self.T, self.L, self.Q = measurement_union(self.xs)
             self._set_calc(self.T, self.L)
 
-<<<<<<< HEAD
         self._theta_offsets = theta_offsets
-=======
-            if self.oversampling is None:
-                self._set_calc(self.T, self.L)
-            else:
-                self._oversample(self.oversampling, self.oversampling_seed)
-
-            self._theta_offsets = theta_offsets
->>>>>>> master
 
     @property
     def calc_Q(self):
