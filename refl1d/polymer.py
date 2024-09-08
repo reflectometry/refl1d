@@ -60,7 +60,7 @@ from numpy import real, imag, exp, log, sqrt, pi, hstack, ones_like
 try:
     from numpy._core.multiarray import correlate as old_correlate
 except ImportError:
-    # cruft from numpy <= 2.0
+    # cruft from numpy < 2.0
     from numpy.core.multiarray import correlate as old_correlate
 from bumps.parameter import Parameter, to_dict
 
