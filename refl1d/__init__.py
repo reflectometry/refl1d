@@ -12,14 +12,14 @@ parameters adjusted to achieve the best fit.
 
 A graphical interface allows direct manipulation of the model profiles.
 
-See http://www.reflectometry.org/danse/reflectometry for online manuals.
+See http://refl1d.readthedocs.org for online manuals.
 """
 
 import os
 import sys
 from typing import Literal
 
-__version__ = "0.8.15"
+__version__ = "0.8.16"
 
 
 BACKEND_NAMES = Literal['numba', 'c_ext', 'python']
