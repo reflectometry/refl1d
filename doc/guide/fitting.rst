@@ -311,8 +311,8 @@ when reporting your results:
     distribution.  This sample can then used to estimate the probability
     distribution for each individual parameter.
 
-    [1] Kienzle P. A., Krycka J., A., and Patel, N.  Refl1D: Interactive
-    depth profile modeler.  http://www.reflectometry.org/danse/software
+    [1] Kienzle P. A., Krycka J., A., and Patel, N. Refl1D: Interactive
+    depth profile modeler.  http://refl1d.readthedocs.org
 
     [2] Vrugt J. A., ter Braak C. J. F., Diks C. G. H., Higdon D.,
     Robinson B. A., and Hyman J. M.  Accelerating Markov chain Monte Carlo

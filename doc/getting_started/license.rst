@@ -50,11 +50,11 @@ its user community.
 
 Please cite:
 
-        Kienzle, P.A., Krycka, J., Patel, N., & Sahin, I. (2011).
+        Kienzle, P.A., Krycka, J., Patel, N., & Sahin, I.
         Refl1D (Version |release|) [Computer Software].
         College Park, MD: University of Maryland.  Retrieved |today|.
 
-        Available from http://reflectometry.org/danse
+Available from https://github.com/reflectometry/refl1d
 
 We are grateful for the existence of many fine open source packages such
 as `Pyparsing <http://pyparsing.wikispaces.com/>`_,

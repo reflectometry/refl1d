@@ -27,7 +27,8 @@ Use "pip install refl1d wxpython" to install in your python environment.
 
 For the windows application, follow the installation instructions on the
 `latest release <https://github.com/reflectometry/refl1d/releases/latest>`_
-page.
+page.  (For the latest bleeding-edge build, see the 
+`unstable release <https://github.com/reflectometry/refl1d/releases/tag/sid>`_)
 
 Submit requests and pull requests to the project
 `git pages <https://github.com/reflectometry/refl1d>`_

@@ -4,6 +4,13 @@ Change History
 
 Docs available from `<http://refl1d.readthedocs.org>`_
 
+2023-04-24 v0.8.16
+==================
+* fixed PolarizedQProbe.calc_Q (should not call PolarizedNeutronProbe._calculate_union)
+* added self-extracting self-contained folder install for Windows (see releases page)
+* added Error-in-Variables examples (see doc/examples/eiv folder)
+* fixed shouldn't show unpolarized data in spin-asymmetry (SA) view (thanks, purnimab)
+
 2021-11-18 v0.8.15
 ==================
 * preliminary support for theta_offset in PolarizedNeutronProbe

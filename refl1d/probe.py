@@ -1,4 +1,4 @@
-# coding=utf-8
+ # coding=utf-8
 # This program is in the public domain
 # Author: Paul Kienzle
 r"""
@@ -364,8 +364,8 @@ class BaseProbe:
             self.plot_residuals(**kwargs)
         elif view == 'fft':
             self.plot_fft(**kwargs)
-        elif view == 'SA': # SA uses default plot
-            self.plot(view=None, **kwargs)
+        elif view == 'SA': # SA does not plot since it does not exist
+            pass
         else:
             raise TypeError("incorrect reflectivity view '%s'"%view)
 
@@ -1919,7 +1919,16 @@ class PolarizedNeutronProbe:
             self._To, self.T, self.L, self.Q = measurement_union(self.xs)
             self._set_calc(self.T, self.L)
 
+<<<<<<< HEAD
         self._theta_offsets = theta_offsets
+=======
+            if self.oversampling is None:
+                self._set_calc(self.T, self.L)
+            else:
+                self._oversample(self.oversampling, self.oversampling_seed)
+
+            self._theta_offsets = theta_offsets
+>>>>>>> master
 
     @property
     def calc_Q(self):
@@ -2061,6 +2070,10 @@ class PolarizedNeutronProbe:
                          label=pp.label(prefix=label, gloss='data'),
                          transform=trans,
                          color=c['light'])
+            # Set limits based on max theoretical SA, which is in (-1.0, 1.0)
+            # If the error bars are bigger than that, you usually don't care.
+            ylim_low, ylim_high = plt.ylim()
+            plt.ylim(max(ylim_low, -2.5), min(ylim_high, 2.5))
         if theory is not None:
             mm, mp, pm, pp = theory
             Q, SA, _ = spin_asymmetry(pp[0], pp[1], None, mm[0], mm[1], None)
