@@ -26,8 +26,8 @@ init:
   
 install:
   # We need wheel installed to build wheels
-  - "git clone -q --branch=master https://github.com/bumps/bumps.git C:\\projects\\bumps"
-  #- "git clone -q --branch=master https://github.com/pkienzle/periodictable.git C:\\projects\\periodictable"
+  - "git clone -q --branch=master_v0 https://github.com/bumps/bumps.git C:\\projects\\bumps"
+  #- "git clone -q --branch=master_v0 https://github.com/pkienzle/periodictable.git C:\\projects\\periodictable"
   #- "%PYTHON%\\python.exe -m pip install pyinstaller"
   - "%PYTHON%\\python.exe -m pip install -r requirements.txt"
   - "%PYTHON%\\python.exe -m pip install -r rtd-requirements"
@@ -86,5 +86,5 @@ deploy:
   draft: false
   prerelease: false
   on:
-    #branch: master                 # release from master branch only
+    #branch: master_v0                 # release from master_v0 branch only
     appveyor_repo_tag: true        # deploy on tag push only (if true)

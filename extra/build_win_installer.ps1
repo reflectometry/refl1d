@@ -7,8 +7,8 @@
 # Look in https://www.python.org/ftp/python for the latest python version.
 $PY_VERSION = "3.8.1"
 $PTH_FILE = "python38._pth"
-$WHEEL_TAG = "cp38-cp38-win_amd64"
-$INSTALL_TAG = "cp38-embedded-amd64"
+$WHEEL_TAG = "py3-none-any"
+$INSTALL_TAG = "exe"  # PAK: renamed from "cp38-embedded-amd64" to make docs clearer
 $PACKAGE = "refl1d"
 $APP_NAME = "Refl1D"
 
@@ -38,10 +38,16 @@ $PTH_PATH = "build\$APP_PATH\$PTH_FILE"
 
 # Use pip to install the app from the binary wheel in the dist directory.
 Write-Host "Installing $APP_NAME-$APP_VERSION into embedded environment"
-& "build\$APP_PATH\Scripts\pip.exe" install --no-warn-script-location wxpython "$PSScriptRoot\..\dist\$PACKAGE-$APP_VERSION-$WHEEL_TAG.whl"
+& "build\$APP_PATH\Scripts\pip.exe" install --no-warn-script-location numba wxpython numpy "$PSScriptRoot\..\dist\$PACKAGE-$APP_VERSION-$WHEEL_TAG.whl"
 
 # Add batch files for starting the application
 Copy-Item "$PSScriptRoot\*.bat" "build\$APP_PATH"
+
+# Check that the CLI runs.
+"$PSScriptRoot\refl1d.bat"
+# It would be nice to check the GUI as well but I don't know how. Maybe a
+# special startup option that runs the GUI and adds an exit signal to the
+# idle event queue?
 
 # Create the embedded app archive in the dist directory .
 cd build

@@ -7,7 +7,7 @@
 
 ..
    | Windows installer: :slink:`%(winexe)s`
-   | Apple installer: :slink:`%(macapp)s`
+   | Source: :slink:`%(srczip)s`
 
 Contents
 ========

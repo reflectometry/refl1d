@@ -15,7 +15,7 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
 from bumps.gui.util import EmbeddedPylab
-from bumps.fitproblem import MultiFitProblem
+from bumps.fitproblem import FitProblem
 
 from refl1d.probe import Probe
 
@@ -113,31 +113,31 @@ class DataView(wx.Panel):
     # ==== Views ====
     def OnLog(self, event):
         self.view = "log"
-        self.redraw()
+        self.redraw(reset=True)
 
     def OnLinear(self, event):
         self.view = "linear"
-        self.redraw()
+        self.redraw(reset=True)
 
     def OnFresnel(self, event):
         self.view = "fresnel"
-        self.redraw()
+        self.redraw(reset=True)
 
     def OnLogFresnel(self, event):
         self.view = "logfresnel"
-        self.redraw()
+        self.redraw(reset=True)
 
     def OnQ4(self, event):
         self.view = "q4"
-        self.redraw()
+        self.redraw(reset=True)
 
     def OnSA(self, event):
         self.view = "SA"
-        self.redraw()
+        self.redraw(reset=True)
 
     def OnResiduals(self, event):
         self.view = "residuals"
-        self.redraw()
+        self.redraw(reset=True)
 
     # ==== Model view interface ===
     def OnShow(self, event):
@@ -197,56 +197,56 @@ class DataView(wx.Panel):
             self._cancel_calculate = False
 
             # Preform the calculation
-            if isinstance(self.problem,MultiFitProblem):
+            if isinstance(self.problem,FitProblem):
                 #print "n=",len(self.problem.models)
                 for p in self.problem.models:
-                    if hasattr(p.fitness, 'reflectivity'):
-                        self._precalc(p.fitness)
+                    if hasattr(p, 'reflectivity'):
+                        self._precalc(p)
                     #print "cancel",self._cancel_calculate,"reset",p.fitness.is_reset()
-                        if p.fitness.is_reset() or self._cancel_calculate: break
+                        if p.is_reset() or self._cancel_calculate: break
                 if self._cancel_calculate \
-                    or self.problem.active_model.fitness.is_reset(): continue
+                    or self.problem.active_model.is_reset(): continue
             else:
-                self._precalc(self.problem.fitness)
+                self._precalc(self.problem)
                 if self._cancel_calculate \
-                    or self.problem.fitness.is_reset(): continue
+                    or self.problem.is_reset(): continue
 
             # Redraw the canvas with newly calculated reflectivity
             with self.pylab_interface:
                 ax = plt.gca()
                 #print "reset",reset, ax.get_autoscalex_on(), ax.get_xlim()
-                reset = reset or ax.get_autoscalex_on()
                 range_x = ax.get_xlim()
+                range_y = ax.get_ylim()
                 #print "composing"
                 plt.clf() # clear the canvas
                 #shift=20 if self.view == 'log' else 0
                 shift=0
-                if isinstance(self.problem,MultiFitProblem):
+                if isinstance(self.problem,FitProblem):
                     for _,p in enumerate(self.problem.models):
-                        if hasattr(p.fitness, 'reflectivity'):
-                            p.fitness.plot_reflectivity(view=self.view,
+                        if hasattr(p, 'reflectivity'):
+                            p.plot_reflectivity(view=self.view,
                                                         plot_shift=shift)
-                            if self._cancel_calculate or p.fitness.is_reset(): break
+                            if self._cancel_calculate or p.is_reset(): break
                     if self._cancel_calculate \
-                        or self.problem.active_model.fitness.is_reset(): continue
+                        or self.problem.active_model.is_reset(): continue
                 else:
-                    self.problem.fitness.plot_reflectivity(view=self.view,
+                    self.problem.plot_reflectivity(view=self.view,
                                                            plot_shift=shift)
                     if self._cancel_calculate \
-                        or self.problem.fitness.is_reset(): continue
+                        or self.problem.is_reset(): continue
 
                 try:
                     # If we can calculate chisq, then put it on the graph.
-                    text = "chisq=%g"%self.problem.chisq()
-                    constraints = self.problem.parameter_nllf() + self.problem.constraints_nllf()
-                    if constraints > 0: text+= " constraints=%g"%constraints
+                    text = "chisq=" + self.problem.chisq_str()
                     plt.text(0.01, 0.01, text, transform=plt.gca().transAxes)
                 except Exception:
                     pass
                 #print "drawing"
                 if not reset:
                     self.toolbar.push_current()
-                    set_xrange(plt.gca(), range_x)
+                    ax = plt.gca()
+                    ax.set_xlim(range_x)
+                    ax.set_ylim(range_y)
                     self.toolbar.push_current()
                 plt.draw()
                 #print "done drawing"
@@ -266,6 +266,7 @@ class DataView(wx.Panel):
         wx.Yield()
         if self._cancel_calculate or fitness.is_reset(): return
 
+# DEPRECATED - using fixed y-range
 def set_xrange(ax, range_x):
     miny,maxy = inf,-inf
     for L in ax.get_lines():

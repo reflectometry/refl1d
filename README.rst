@@ -25,14 +25,24 @@ for details on recent changes.
 
 Use "pip install refl1d wxpython" to install in your python environment.
 
+For the windows application, follow the installation instructions on the
+`latest release <https://github.com/reflectometry/refl1d/releases/latest>`_
+page.  (For the latest bleeding-edge build, see the 
+`unstable release <https://github.com/reflectometry/refl1d/releases/tag/sid>`_)
+
 Submit requests and pull requests to the project
 `git pages <https://github.com/reflectometry/refl1d>`_
 
-.. image:: https://travis-ci.org/reflectometry/refl1d.svg?branch=master
-    :target: https://travis-ci.org/reflectometry/refl1d
+|CI| |RTD| |DOI|
 
-.. image:: https://ci.appveyor.com/api/projects/status/55ps40bauoqw2q6m?svg=true
-    :target: https://ci.appveyor.com/project/reflectometry/refl1d
+.. |CI| image:: https://github.com/reflectometry/refl1d/workflows/Test/badge.svg
+   :alt: Build status
+   :target: https://github.com/reflectometry/refl1d/actions
 
-.. image:: https://readthedocs.org/projects/refl1d/badge/
-    :target: https://readthedocs.org/projects/refl1d
+.. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.4329338.svg
+   :alt: DOI tag
+   :target: https://doi.org/10.5281/zenodo.4329338
+
+.. |RTD| image:: https://readthedocs.org/projects/refl1d/badge/?version=latest
+   :alt: Documentation status
+   :target: https://refl1d.readthedocs.io/en/latest

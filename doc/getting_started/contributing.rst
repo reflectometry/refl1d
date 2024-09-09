@@ -154,53 +154,22 @@ in site-packages/sphinx/writers/latex.py.
 Windows Installer
 =================
 
-To build a windows standalone executable with py2exe you may first need
-to create an empty file named *Lib\\numpy\\distutils\\tests\\__init__.py*
-in your python directory (usually *C:\\Python2.7*.  Without this file,
-py2exe raises an error when it is searching for the parts of the numpy
-package.  This may be fixed on recent versions of numpy. Next, update the
-__version__ tag in refl1d/__init__.py to mark it as your own.
+You can build the standalone executable using the powershell script::
 
-Now you can build the standalone executable using::
+    extra\\build_win_installer.ps1
 
-    python setup_py2exe
+This creates the distribution archive in the dist directory, including
+python, the application, the supporting libraries and everything else needed
+to run the application.
 
-This creates a dist subdirectory in the source tree containing
-everything needed to run the application including python and
-all required packages.
-
-To build the Windows installer, you will need two more downloads:
-
-    - Visual C++ 2008 Redistributable Package (x86) 11/29/2007
-    - `Inno Setup <http://www.jrsoftware.org/isdl.php>`_ 5.3.10 QuickStart Pack
-
-The C++ redistributable package is needed for programs compiled with the
-Microsoft Visual C++ compiler, including the standard build of the Python
-interpreter for Windows.  It is available as vcredist_x86.exe from the
-`Microsoft Download Center <http://www.microsoft.com/downloads/>`_.
-Be careful to select the version that corresponds to the one used
-to build the Python interpreter --- different versions can have the
-same name.  For the Python 2.6 standard build, the file is 1.7 Mb
-and is dated 11/29/2007.  We have a copy (:slink:`%(vcredist)s`) on
-our website for your convenience.  Save it to the *C:\\Python26*
-directory so the installer script can find it.
-
-Inno Setup creates the installer executable.  When installing Inno Setup,
-be sure to choose the 'Install Inno Setup Preprocessor' option.
-
-With all the pieces in place, you can run through all steps of the
-build and install by changing to the top level python directory and
-typing::
-
-    python master_builder.py
-
-This creates the redistributable installer refl1d-<version>-win32.exe for
-Windows one level up in the directory tree.  In addition, source archives
-in zip and tar.gz format are produced as well as text files listing the
-contents of the installer and the archives.
+The installer build script is run automatically on github in response
+to a checkin on the master branch (currently via the appveyor.yml file,
+but maybe moving to github actions).
 
 OS/X Installer
 ==============
+
+Note: OS/X installer is no longer maintained.
 
 To build a Mac OS/X standalone executable you will need the py2app package.
 This should already be available in your mac python environment.

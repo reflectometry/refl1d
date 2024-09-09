@@ -1,0 +1,63 @@
+[project]
+name = "refl1d"
+dynamic = ["version"]
+description = "Neutron and X-ray reflectometry analysis"
+readme = "README.rst"
+authors = [
+    { name = "Paul Kienzle", email = "paul.kienzle@nist.gov" },
+    { name = "Brian Maranville", email = "brian.maranville@nist.gov" },
+    { name = "Andrew Caruana", email = "andrew.caruana@stfc.uk" },
+    { name = "Mathieu Doucet", email = "doucetm@ornl.gov" },
+]
+license = { file = "LICENSE.txt" }
+dependencies = [
+    #'bumps>=0.7.16',
+    'bumps@git+https://github.com/bumps/bumps.git#egg=master',
+    'numpy', 'scipy', 'matplotlib', 'periodictable', 'numba'
+]
+classifiers=[
+    'Development Status :: 4 - Beta',
+    'Environment :: Console',
+    'Intended Audience :: Science/Research',
+    'License :: Public Domain',
+    'Operating System :: OS Independent',
+    'Programming Language :: Python :: 3',
+    'Topic :: Scientific/Engineering :: Chemistry',
+    'Topic :: Scientific/Engineering :: Physics',
+]
+requires-python = ">=3.8"
+
+[project.optional-dependencies]
+webview = []
+full = [
+    'wxpython', 'ipython'
+]
+
+[project.urls]
+documentation = "https://refl1d.github.io"
+homepage = "https://refl1d.github.io"
+repository = "https://github.com/reflectometry/refl1d"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = { attr = "refl1d.__version__" }
+
+[tool.setuptools]
+packages = ["refl1d", "refl1d.view", "refl1d.lib.python", "refl1d.lib.numba", "refl1d.webview.server"]
+script-files = ["bin/refl1d_cli.py", "bin/refl1d_gui.py"]
+
+[project.scripts]
+refl1d = "refl1d.main:main"
+refl1d-webview = "refl1d.webview.server.webserver:main"
+
+[tool.pytest.ini_options]
+addopts = "--doctest-modules --doctest-glob=*.rst --cov=refl1d"
+doctest_optionflags = ["ELLIPSIS", "NORMALIZE_WHITESPACE"]
+testpaths = ["refl1d", "tests", "doc/getting_started", "doc/guide"]
+norecursedirs = ["view", "mystic", "bin", "webview/client", "explore"]
+python_files = ["*.py"]
+python_classes = ["NoClassTestsWillMatch"]
+python_functions = ["test", "*_test", "test_*"]

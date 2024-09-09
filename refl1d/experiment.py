@@ -9,22 +9,27 @@ to create a fittable reflectometry model.
 """
 from __future__ import division, print_function
 
+from dataclasses import dataclass, field
 import sys
 import os
 from math import pi, log10, floor
 import traceback
 import json
+from typing import Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 from warnings import warn
 
 import numpy as np
 from bumps import parameter
-from bumps.parameter import Parameter, to_dict
+from bumps.parameter import Parameter, Constraint, tag_all
+from bumps.fitproblem import Fitness
 
 from . import material, profile
 from . import __version__
 from .reflectivity import reflectivity_amplitude as reflamp
 from .reflectivity import magnetic_amplitude as reflmag
 from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
+from . import model
+from .probe import Probe, NeutronProbe, PolarizedNeutronProbe
 #print("Using pure python reflectivity calculator")
 #from .abeles import refl as reflamp
 from .util import asbytes
@@ -42,8 +47,8 @@ def plot_sample(sample, instrument=None, roughness_limit=0):
                             roughness_limit=roughness_limit)
     experiment.plot()
 
-class ExperimentBase(object):
-    probe = None # type: probe.Probe
+class ExperimentBase:
+    probe = None # type: Optional[Probe]
     interpolation = 0
     _probe_cache = None
     _substrate = None
@@ -110,12 +115,15 @@ class ExperimentBase(object):
 
     def residuals(self):
         if 'residuals' not in self._cache:
+            # Trigger reflectivity calculation even if there is no data to
+            # compare against so that we can profile simulation code, and
+            # so that simulation smoke tests are run more thoroughly.
+            QR = self.reflectivity()
             if ((self.probe.polarized
                  and all(x is None or x.R is None for x in self.probe.xs))
                     or (not self.probe.polarized and self.probe.R is None)):
                 resid = np.zeros(0)
             else:
-                QR = self.reflectivity()
                 if self.probe.polarized:
                     resid = np.hstack([(xs.R - QRi[1])/xs.dR
                                        for xs, QRi in zip(self.probe.xs, QR)
@@ -208,13 +216,6 @@ class ExperimentBase(object):
         theory = self.reflectivity(resolution=True)
         self.probe.simulate_data(theory, noise=noise)
 
-    def _set_name(self, name):
-        self._name = name
-
-    def _get_name(self):
-        return self._name if self._name else self.probe.name
-    name = property(_get_name, _set_name)
-
     def save(self, basename):
         self.save_profile(basename)
         #self.save_staj(basename)
@@ -223,9 +224,9 @@ class ExperimentBase(object):
 
     def save_json(self, basename):
         """ Save the experiment as a json file """
+        from bumps.serialize import serialize
         try:
-            experiment = to_dict(self)
-            experiment['refl1d'] = __version__
+            experiment = serialize(self)
             json_file = basename + "-expt.json"
             with open(json_file, 'w') as fid:
                 data = json.dumps(experiment)
@@ -306,7 +307,7 @@ class ExperimentBase(object):
                             theory=theory)
 
 
-
+@dataclass(init=False)
 class Experiment(ExperimentBase):
     """
     Theory calculator.  Associates sample with data, Sample plus data.
@@ -358,11 +359,22 @@ class Experiment(ExperimentBase):
 
     *smoothness* **DEPRECATED** This parameter is not used.
     """
+    name: str
+    sample: Optional[model.Stack]
+    probe: Union[Probe, PolarizedNeutronProbe]
+    roughness_limit: float
+    dz: Union[float, Literal[None]]
+    dA: Union[float, Literal[None]]
+    step_interfaces: bool
+    interpolation: float
+    version: str
+
     profile_shift = 0
-    def __init__(self, sample=None, probe=None, name=None,
+    def __init__(self, sample: Optional[model.Stack]=None, probe=None, name=None,
                  roughness_limit=0, dz=None, dA=None,
                  step_interfaces=None, smoothness=None,
-                 interpolation=0):
+                 interpolation=0, constraints=None, version: Optional[str]=None,
+                 auto_tag=False):
         # Note: smoothness ignored
         self.sample = sample
         self._substrate = self.sample[0].material
@@ -376,11 +388,19 @@ class Experiment(ExperimentBase):
         self.dA = dA
         self.step_interfaces = step_interfaces
         self.interpolation = interpolation
-        num_slabs = len(probe.unique_L) if probe.unique_L is not None else 1
+        # TODO: proper 2D mesh resolution over L, T 
+        # (currently R is only calculated for first L anyway)
+        # num_slabs = len(probe.unique_L) if probe.unique_L is not None else 1
+        num_slabs = 1
         self._slabs = profile.Microslabs(num_slabs, dz=dz)
         self._probe_cache = material.ProbeCache(probe)
         self._cache = {}  # Cache calculated profiles/reflectivities
-        self._name = name
+        self.name = name if name is not None else probe.name
+        self.constraints = constraints
+        self.version = __version__ if version is None else version
+        if auto_tag:
+            tag_all(self.probe.parameters(), 'probe')
+            tag_all(self.sample.parameters(), 'sample')
 
     @property
     def ismagnetic(self):
@@ -412,7 +432,7 @@ class Experiment(ExperimentBase):
         """
         Build a slab description of the model from the individual layers.
         """
-        key = 'rendered'
+        key = 'rendered', self.step_interfaces, self.dA
         if key not in self._cache:
             self._slabs.clear()
             self.sample.render(self._probe_cache, self._slabs)
@@ -464,17 +484,16 @@ class Experiment(ExperimentBase):
             #if np.isnan(calc_r).any(): print("calc_r contains NaN")
         return self._cache[key]
 
-    def amplitude(self, resolution=False):
+    def amplitude(self, resolution=False, interpolation=0):
         """
         Calculate reflectivity amplitude at the probe points.
         """
-        key = ('amplitude', resolution)
+        key = ('amplitude', resolution, interpolation)
         if key not in self._cache:
             calc_q, calc_r = self._reflamp()
-            r_real = self.probe.apply_beam(calc_q, calc_r.real, resolution=resolution)
-            r_imag = self.probe.apply_beam(calc_q, calc_r.imag, resolution=resolution)
-            r = r_real + 1j*r_imag
-            self._cache[key] = self.probe.Q, r
+            res = self.probe.apply_beam(calc_q, calc_r, resolution=resolution,
+                                        interpolation=interpolation)
+            self._cache[key] = res
         return self._cache[key]
 
     def reflectivity(self, resolution=True, interpolation=0):
@@ -485,11 +504,11 @@ class Experiment(ExperimentBase):
         """
         key = ('reflectivity', resolution, interpolation)
         if key not in self._cache:
-            Q, r = self._reflamp()
-            R = _amplitude_to_magnitude(r,
-                                        ismagnetic=self.ismagnetic,
-                                        polarized=self.probe.polarized)
-            res = self.probe.apply_beam(Q, R, resolution=resolution,
+            calc_q, calc_r = self._reflamp()
+            calc_R = _amplitude_to_magnitude(calc_r,
+                                             ismagnetic=self.ismagnetic,
+                                             polarized=self.probe.polarized)
+            res = self.probe.apply_beam(calc_q, calc_R, resolution=resolution,
                                         interpolation=interpolation)
             self._cache[key] = res
         return self._cache[key]
@@ -537,7 +556,7 @@ class Experiment(ExperimentBase):
         """
         Return the nuclear and magnetic scattering potential for the sample.
         """
-        key = 'magnetic_smooth_profile'
+        key = 'magnetic_smooth_profile', '{:.6f}'.format(dz)
         if key not in self._cache:
             slabs = self._render_slabs()
             prof = slabs.magnetic_smooth_profile(dz=dz)
@@ -594,7 +613,7 @@ class Experiment(ExperimentBase):
                 plt.plot(z, rhoM, ':r', transform=trans)
                 if (abs(thetaM-DEFAULT_THETA_M) > 1e-3).any():
                     ax = plt.twinx()
-                    plt.plot(z, thetaM, ':k', axes=ax, transform=trans)
+                    ax.plot(z, thetaM, ':k', transform=trans)
                     plt.ylabel('magnetic angle (degrees)')
             z, rho, irho, rhoM, thetaM = self.magnetic_smooth_profile()
             #rhoM_net = rhoM*np.cos(np.radians(thetaM))
@@ -605,7 +624,7 @@ class Experiment(ExperimentBase):
             ]
             if (abs(thetaM-DEFAULT_THETA_M) > 1e-3).any():
                 ax = plt.twinx()
-                h = plt.plot(z, thetaM, '-k', axes=ax, transform=trans, label='thetaM')
+                h = ax.plot(z, thetaM, '-k', transform=trans, label='thetaM')
                 handles.append(h[0])
                 plt.ylabel('magnetic angle (degrees)')
             plt.xlabel('depth (A)')
@@ -626,6 +645,9 @@ class Experiment(ExperimentBase):
     def penalty(self):
         return self.sample.penalty()
 
+assert isinstance(Experiment, Fitness)
+
+@dataclass(init=False)
 class MixedExperiment(ExperimentBase):
     """
     Support composite sample reflectivity measurements.
@@ -651,19 +673,26 @@ class MixedExperiment(ExperimentBase):
     profiles can be accessed from the underlying experiments
     using composite.parts[i] for the various samples.
     """
+    name: str
+    ratio: List[Union[float, Parameter]]
+    samples: Optional[List[model.Stack]]
+    probe: Union[Probe, PolarizedNeutronProbe]
+    coherent: bool
+    interpolation: float
+
     def __init__(self, samples=None, ratio=None, probe=None,
                  name=None, coherent=False, interpolation=0, **kw):
         self.samples = samples
         self.probe = probe
         self.ratio = [Parameter.default(r, name="ratio %d"%i)
                       for i, r in enumerate(ratio)]
-        self.parts = [Experiment(s, probe, **kw) for s in samples]
+        self.parts = [Experiment(s, probe, name=s.name, **kw) for s in samples]
         self.coherent = coherent
         self.interpolation = interpolation
         self._substrate = self.samples[0][0].material
         self._surface = self.samples[0][-1].material
         self._cache = {}
-        self._name = name
+        self.name = name if name is not None else probe.name
 
     def update(self):
         self._cache = {}

@@ -11,7 +11,11 @@ __all__ = ["data_view", "model_view", "new_model", "calc_errors", "show_errors"]
 import numpy as np
 
 from . import names as refl
+from . import __version__
 from .errors import calc_errors, show_errors
+
+# List of modules that contain dataclasses for the saved json file format
+from . import names, material, model, magnetism, probe, experiment
 
 # These are names used by the driver
 def data_view():
@@ -45,8 +49,16 @@ def load_model(filename):
             for f in zf.filelist:
                 if f.filename.endswith('.py'):
                     return load_problem(f.filename, options=options)
+    elif filename.endswith('.json'):
+        from bumps.serialize import load
+        return load(filename)
     else:
         return None
+
+def save_json(problem, basename):
+    from bumps.serialize import save
+    json_filename = basename + "-expt.json"
+    save(json_filename, problem)
 
 def new_model():
     stack = refl.silicon(0, 10) | refl.air

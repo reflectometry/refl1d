@@ -31,7 +31,7 @@ environment:
 
 install:
   # We need wheel installed to build wheels
-  - "%PYTHON%\\python.exe -m pip install --no-warn-script-location wheel numpy scipy matplotlib wxpython periodictable bumps nose"
+  - "%PYTHON%\\python.exe -m pip install --no-warn-script-location wheel numpy==1.19.3 scipy matplotlib wxpython periodictable bumps nose"
 
 build: off
 

@@ -1,14 +1,18 @@
-.settings
-.coverage
+# Refl1d/Bumps specific
 .mplconfig
 .project
 .pydevproject
 .spyderproject
+.idea
 *.pyd
 *.pyc
+**/__pycache__/
+**/node_modules/
+/refl1d/webview/client/dist/
 *.swp
 *.so
 *.bak
+refl1d-webview-client*.tgz
 /build/
 /dist/
 /refl1d.egg-info/
@@ -19,4 +23,38 @@
 /refl1d-*
 /bumps-*
 /Refl1D.pdf
+
+# Build
+*.so
+__pycache__/
+*.py[cod]
+/build/
+/dist/
+/*.egg-info/
+/EGG-INFO
 /.eggs
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+
+
+# Test droppings
+.coverage
+.pytest_cache
+
+# Editor droppings
+.settings
+.ipynb_checkpoints
+.project
+.pydevproject
+.spyderproject
+.idea
+*.swp
+*.bak

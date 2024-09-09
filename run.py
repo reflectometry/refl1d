@@ -58,13 +58,6 @@ def prepare_environment():
     addpath(periodictable_root)
     addpath(bumps_root)
 
-    # Force a rebuild of bumps and refl1d
-    import subprocess
-    with open(os.devnull, 'w') as devnull:
-        with cd(refl1d_root):
-            subprocess.call((sys.executable, "setup.py", "build_ext", "--inplace"),
-                            shell=False, stdout=devnull)
-
     # Add the build dir to the system path
     addpath(refl1d_root)
 

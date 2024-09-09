@@ -68,4 +68,4 @@ D_model = Experiment(sample=D, probe=D_probe)
 H_model = Experiment(sample=H, probe=H_probe)
 models = D_model, H_model
 
-problem = MultiFitProblem(models=models)
+problem = FitProblem(models=models)

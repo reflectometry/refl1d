@@ -2,12 +2,56 @@
 Change History
 **************
 
-Note: updated docs now found at `<http://refl1d.readthedocs.org>`_
+Docs available from `<http://refl1d.readthedocs.org>`_
 
-2020-..-.. v0.8.12
+2023-04-24 v0.8.16
 ==================
+* fixed PolarizedQProbe.calc_Q (should not call PolarizedNeutronProbe._calculate_union)
+* added self-extracting self-contained folder install for Windows (see releases page)
+* added Error-in-Variables examples (see doc/examples/eiv folder)
+* fixed shouldn't show unpolarized data in spin-asymmetry (SA) view (thanks, purnimab)
+
+2021-11-18 v0.8.15
+==================
+* preliminary support for theta_offset in PolarizedNeutronProbe
+* preserve manual zoom view on R during fits
+* fix wx and matplotlib bug (setTitle)
+* use numba JIT for reflectometry kernel, convolve, etc (replacing all uses of C/C++ extensions)
+
+  * (this results in a pure Python wheel)
+* use magnetic_smooth_profile in "record_point", same as is done for non-magnetic profiles
+* FunctionalLayer can now accept lists of parameters
+* oversampling helper added (currently called refl1d.check_oversampling)
+* much faster "Model Uncertainty" view calculation for large profiles
+* update to bumps 0.8.1
+
+2021-02-09 v0.8.14
+==================
+* numba included in windows zipped executable
+* use numba rather than C++ for fast polymer calculations
+* wheels now built with stable ABI (one wheel per platform for all Python > 3.2)
+* drop py27 support for compiled modules
+* tolerance adjusted on polymer_test to account for sensitivity to input parameters
+* display of chisq in plot window works again
+* fix selection mask for load4 to work on theta and lambda as well as Q and R
+* use github actions to build wheels and deploy
+
+2020-12-15 v0.8.13
+==================
+* update to bumps 0.8.0, with DREAM outlier removal and convergence tests
+* allow garefl to work with DREAM again
+
+2020-10-23 v0.8.12
+==================
+* support uniform resolution in addition to gaussian resolution
+* implement *oversample()* and *critical_edge()* for *QProbe*
+* support variable wavelength probes for materials mixtures
 * add irho to the profile contour plots
+* save magnetic twist contour in output directory; it is not yet plotted
 * simplify realignment usage to 'refl1d align ...'
+* improve support for complex amplitude (beam corrections, interpolation)
+* restore DREAM fitter efficiency (it should now require fewer burn-in steps)
+* restore parallel processing for GUI
 * reenable python 2.7 support
 
 2020-06-11 v0.8.11

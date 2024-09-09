@@ -39,15 +39,19 @@ and anchoring them to the structure.
 """
 from __future__ import print_function
 
+from dataclasses import dataclass, field
+from typing import Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
+
 import numpy as np
 from numpy import inf
 from bumps.parameter import Parameter, flatten, to_dict
 from bumps.mono import monospline
 
-from .model import Layer, Stack
 from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
 
-class BaseMagnetism(object):
+
+@dataclass
+class BaseMagnetism:
     """
     Magnetic properties of the layer.
 
@@ -66,26 +70,33 @@ class BaseMagnetism(object):
     For consecutive layers, only *interface_above* is used; any value
     for *interface_below* is ignored.
     """
+    name: str
+    extent: float
+    dead_below: Union[Parameter, Literal[None]]
+    dead_above: Union[Parameter, Literal[None]]
+    interface_below: Union[Parameter, Literal[None]]
+    interface_above: Union[Parameter, Literal[None]]
+
     def __init__(self, extent=1,
                  dead_below=0, dead_above=0,
                  interface_below=None, interface_above=None,
                  name="LAYER"):
-        self.dead_below = Parameter.default(dead_below, limits=(0, inf),
+        self.dead_below = Parameter.default(dead_below, limits=(0, None),
                                             name=name+" deadM below")
-        self.dead_above = Parameter.default(dead_above, limits=(0, inf),
+        self.dead_above = Parameter.default(dead_above, limits=(0, None),
                                             name=name+" deadM above")
         if interface_below is not None:
-            interface_below = Parameter.default(interface_below, limits=(0, inf),
+            interface_below = Parameter.default(interface_below, limits=(0, None),
                                                 name=name+" interfaceM below")
         if interface_above is not None:
-            interface_above = Parameter.default(interface_above, limits=(0, inf),
-                                                name=name+"  interfaceM above")
+            interface_above = Parameter.default(interface_above, limits=(0, None),
+                                                name=name+" interfaceM above")
         self.interface_below = interface_below
         self.interface_above = interface_above
         self.name = name
         self.extent = extent
 
-    def parameters(self):
+    def parameters(self) -> Dict[str, Union[Parameter, List[Parameter], Literal[None]]]:
         return {
             'dead_below': self.dead_below,
             'dead_above': self.dead_above,
@@ -115,6 +126,8 @@ class BaseMagnetism(object):
                 p.name = p.name.replace("LAYER", name)
             self.name = name
 
+
+@dataclass(init=False)
 class Magnetism(BaseMagnetism):
     """
     Region of constant magnetism.
@@ -134,7 +147,10 @@ class Magnetism(BaseMagnetism):
     *interface_above* and *interface_below* define the magnetic interface
     at the boundaries, if it is different from the nuclear interface.
     """
-    def __init__(self, rhoM=0, thetaM=DEFAULT_THETA_M, name="LAYER", **kw):
+    rhoM: Parameter
+    thetaM: Parameter
+
+    def __init__(self, rhoM: Union[float, Parameter]=0, thetaM=DEFAULT_THETA_M, name="LAYER", **kw):
         BaseMagnetism.__init__(self, name=name, **kw)
         self.rhoM = Parameter.default(rhoM, name=name+" rhoM")
         self.thetaM = Parameter.default(thetaM, limits=(0, 360),
@@ -165,6 +181,8 @@ class Magnetism(BaseMagnetism):
         return ("Magnetism(rhoM=%g, thetaM=%g)"
                 %(self.rhoM.value, self.thetaM.value))
 
+
+@dataclass(init=False)
 class MagnetismStack(BaseMagnetism):
     """
     Magnetic slabs within a magnetic layer.
@@ -194,6 +212,10 @@ class MagnetismStack(BaseMagnetism):
     *interface_above* and *interface_below* define the magnetic interface
     at the boundaries, if it is different from the nuclear interface.
     """
+    weight: List[Parameter]
+    rhoM: List[Parameter]
+    thetaM: List[Parameter]
+
     def __init__(self, weight=None, rhoM=None, thetaM=None, interfaceM=None,
                  name="LAYER", **kw):
         weight_n = 0 if weight is None else len(weight)
@@ -274,6 +296,7 @@ class MagnetismStack(BaseMagnetism):
         return "MagnetismStack"
 
 
+@dataclass(init=False)
 class MagnetismTwist(BaseMagnetism):
     """
     Linear change in magnetism throughout layer.
@@ -294,6 +317,9 @@ class MagnetismTwist(BaseMagnetism):
     *interface_above* and *interface_below* define the magnetic interface
     at the boundaries, if it is different from the nuclear interface.
     """
+    rhoM: List[Parameter]
+    thetaM: List[Parameter]
+
     magnetic = True
     def __init__(self,
                  rhoM=(0, 0), thetaM=(DEFAULT_THETA_M, DEFAULT_THETA_M),
@@ -331,6 +357,7 @@ class MagnetismTwist(BaseMagnetism):
         return "MagneticTwist"
 
 
+@dataclass(init=False)
 class FreeMagnetism(BaseMagnetism):
     """
     Spline change in magnetism throughout layer.
@@ -354,6 +381,10 @@ class FreeMagnetism(BaseMagnetism):
     *interface_above* and *interface_below* define the magnetic interface
     at the boundaries, if it is different from the nuclear interface.
     """
+    z: List[Parameter]
+    rhoM: List[Parameter]
+    thetaM: List[Parameter]
+
     magnetic = True
     def __init__(self, z=(), rhoM=(), thetaM=(),
                  name="LAYER", **kw):
@@ -366,10 +397,10 @@ class FreeMagnetism(BaseMagnetism):
                for v, part, limits
                in zip((rhoM, thetaM, z),
                       ('rhoM', 'thetaM', 'z'),
-                      ((0, inf), (0, 360), (0, 1)))
+                      ((0, None), (0, 360), (0, 1)))
               ]
         if len(self.z) != len(self.rhoM):
-            raise ValueError("must have number of intervals dz one less than rhoM")
+            raise ValueError("must have one position z for each rhoM")
         if len(self.thetaM) > 0 and len(self.rhoM) != len(self.thetaM):
             raise ValueError("must have one thetaM for each rhoM")
 
@@ -388,7 +419,7 @@ class FreeMagnetism(BaseMagnetism):
     def profile(self, Pz, thickness):
         mbelow, tbelow = 0, (self.thetaM[0].value if self.thetaM else DEFAULT_THETA_M)
         mabove, tabove = 0, (self.thetaM[-1].value if self.thetaM else DEFAULT_THETA_M)
-        z = np.sort([0]+[p.value for p in self.z]+[1])*thickness
+        z = np.sort([0.0]+[p.value for p in self.z]+[1.0])*thickness
 
         rhoM = np.hstack((mbelow, [p.value for p in self.rhoM], mabove))
         PrhoM = monospline(z, rhoM, Pz)
@@ -403,7 +434,7 @@ class FreeMagnetism(BaseMagnetism):
             thetaM = np.hstack((tbelow, [p.value for p in self.thetaM], tabove))
             PthetaM = monospline(z, thetaM, Pz)
         elif len(self.thetaM) == 1:
-            PthetaM = self.thetaM.value * np.ones_like(PrhoM)
+            PthetaM = self.thetaM[0].value * np.ones_like(PrhoM)
         else:
             PthetaM = DEFAULT_THETA_M*np.ones_like(PrhoM)
         return PrhoM, PthetaM

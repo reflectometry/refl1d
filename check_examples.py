@@ -8,11 +8,14 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 CLI = "%s %s/bin/refl1d_cli.py %%s %%s"%(sys.executable, ROOT)
 EXAMPLEDIR = os.path.join(ROOT, 'doc', 'examples')
 
-# Add the build dir(s) to the system path
-from distutils.util import get_platform
-platform = '.%s-%s'%(get_platform(),sys.version[:3])
-buildpath = os.path.abspath(os.path.join(ROOT, 'build', 'lib'+platform))
-packages = [buildpath]
+# Add packages to the python path
+# Use in-place build of refl1d (requires "python setup.py build_ext --inplace")
+packages = [ROOT]
+## Add the build dir(s) to the system path
+##from distutils.util import get_platform
+##platform = '.%s-%s'%(get_platform(), sys.version[:3])
+##buildpath = os.path.abspath(os.path.join(ROOT, 'build', 'lib'+platform))
+##packages = [buildpath]
 try:
     import bumps
 except ImportError:
@@ -37,6 +40,12 @@ class Commands(object):
     @staticmethod
     def chisq(f):
         return os.system(CLI%(f, '--chisq --seed=1'))
+
+    @staticmethod
+    def time(f):
+        ## Note: use --parallel to check serialization for MPMapper
+        #return os.system(CLI%(f, '--time_model --seed=1 --steps=24 --parallel'))
+        return os.system(CLI%(f, '--time_model --seed=1 --steps=20'))
 
 examples = [
     "distribution/dist-example.py",
@@ -69,7 +78,7 @@ examples = [
 
 def main():
     if len(sys.argv) == 1 or not hasattr(Commands, sys.argv[1][2:]):
-        print("usage: check_examples.py [--preview|--edit|--chisq]")
+        print("usage: check_examples.py [--preview|--edit|--chisq|--time]")
     else:
         command = getattr(Commands, sys.argv[1][2:])
         for f in examples:

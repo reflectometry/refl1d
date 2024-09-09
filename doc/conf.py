@@ -153,7 +153,7 @@ html_theme_options = {}
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-html_logo = 'logo.png'
+#html_logo = 'logo.png'
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
@@ -260,16 +260,19 @@ if os.path.exists('rst_prolog'):
     with open('rst_prolog') as fid:
         rst_prolog = fid.read()
 
-htmlroot="http://www.reflectometry.org/danse"
-def download(name):
-    subs = dict(file=name%dict(version=version), path=htmlroot)
-    return "%(file)s <%(path)s/download.php?file=%(file)s>"%subs
-slink_vars=dict(version=release, htmlroot=htmlroot,
-                srczip=download("refl1d-%(version)s.zip"),
-                winexe=download("refl1d-%(version)s-win32.exe"),
-                macapp=download("Refl1D %(version)s.dmg"),
-                vcredist=download("vcredist_x86.exe"),
-                )
+htmlroot="https://github.com/reflectometry/refl1d"
+def download(path, filename):
+    subs = dict(
+        url=htmlroot,
+        path=path%{"version": version},
+        file=filename%{"version": version},
+    )
+    return "%(file)s <%(url)s/%(path)s/%(file)s>"%subs
+slink_vars=dict(
+    version=version, htmlroot=htmlroot,
+    srczip=download("archive", "%(version)s.zip"),
+    winexe=download("releases/download/v%(version)s", "Refl1D-%(version)s-exe.zip"),
+    )
 
 # -- Options for manual page output --------------------------------------------
 

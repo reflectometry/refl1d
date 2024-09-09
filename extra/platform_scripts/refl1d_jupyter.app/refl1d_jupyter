@@ -1,0 +1,11 @@
+#!/usr/bin/osascript
+
+on run argv
+   tell application "Finder"
+      set base_path to container of (container of (path to me)) as alias
+   end tell
+   set python_exe to quoted form of ((POSIX path of base_path) & "env/bin/python")
+   tell app "Terminal"
+      do script python_exe & " -c" & " \"from tkinter import filedialog as fd; import jupyterlab.labapp as lab; start_folder = fd.askdirectory(); lab.main(argv=[f'--notebook-dir={start_folder}'])\""
+   end tell
+end run 

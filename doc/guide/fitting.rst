@@ -311,8 +311,8 @@ when reporting your results:
     distribution.  This sample can then used to estimate the probability
     distribution for each individual parameter.
 
-    [1] Kienzle P. A., Krycka J., A., and Patel, N.  Refl1D: Interactive
-    depth profile modeler.  http://www.reflectometry.org/danse/software
+    [1] Kienzle P. A., Krycka J., A., and Patel, N. Refl1D: Interactive
+    depth profile modeler.  http://refl1d.readthedocs.org
 
     [2] Vrugt J. A., ter Braak C. J. F., Diks C. G. H., Higdon D.,
     Robinson B. A., and Hyman J. M.  Accelerating Markov chain Monte Carlo
@@ -381,7 +381,7 @@ To produce plots, you will need access to the data and the theory.  This
 can be complex depending on how many models you are fitting and how many
 datasets there are per model.  For :class:`refl1d.fitproblem.FitProblem`
 models, the :class:`refl1d.experiment.Experiment` object is referenced
-by *problem.fitness*.  For :class:`refl1d.fitproblem.MultiFitProblem` models,
+by *problem.fitness*.  For :class:`refl1d.fitproblem.FitProblem` models,
 you need to use *problem.models[k].fitness* to access the experiment for
 model *k*.  Profiles and reflectivity theory are returned from methods
 in experiment.  The :class:`refl1d.probe.Probe` data for the experiment is

@@ -1,5 +1,7 @@
 """
 Freeform modeling with B-Splines
+
+**DEPRECATED** Use refl1d.mono instead.
 """
 
 import numpy as np
