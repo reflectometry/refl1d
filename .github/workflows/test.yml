@@ -2,9 +2,9 @@ name: Test
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master_v0 ]
   pull_request:
-    branches: [ master ]
+    branches: [ master_v0 ]
   release:
     types: [ published ]
 

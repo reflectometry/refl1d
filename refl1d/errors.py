@@ -148,59 +148,80 @@ def calc_errors(problem, points):
         Array of (theory-data)/uncertainty for each data point in
         the measurement.  There will be one array returned per error sample.
     """
-    # Grab the individual samples
-    if hasattr(problem, 'models'):
-        models = [m.fitness for m in problem.models]
-    else:
-        models = [problem.fitness]
-
-    experiments = []
-    for m in models:
-        if hasattr(m, 'parts'):
-            experiments.extend(m.parts)
-        else:
-            experiments.append(m)
-    #probes = []
-    #for m in experiments:
-    #    if hasattr(m.probe, 'probes'):
-    #        probes.extend(m.probe.probes)
-    #    elif hasattr(m.probe, 'xs'):
-    #        probes.extend([p for p in m.probe if p])
-    #    else:
-    #        probes.append(p)
-
     # Find Q
-    def residQ(m):
-        if m.probe.polarized:
-            return np.hstack([xs.Q for xs in m.probe.xs if xs is not None])
-        else:
-            return m.probe.Q
-    Q = dict((m, residQ(m)) for m in experiments)
+    Q = [_residQ(m) for m in _experiments(problem)]
 
-    profiles = dict((m, []) for m in experiments)
-    residuals = dict((m, []) for m in experiments)
-    slabs = dict((m, []) for m in experiments)
-    def record_point():
-        problem.chisq_str() # Force reflectivity recalculation
-        for m in experiments:
-            D = m.residuals()
-            residuals[m].append(D+0)
-            slabs_i = [L.thickness.value for L in m.sample[1:-1]]
-            slabs[m].append(np.array(slabs_i))
-            if m.ismagnetic:
-                z, rho, irho, rhoM, thetaM = m.magnetic_smooth_profile()
-                profiles[m].append((z+0, rho+0, irho+0, rhoM+0, thetaM+0))
-            else:
-                z, rho, irho = m.smooth_profile()
-                profiles[m].append((z+0, rho+0, irho+0))
-    record_point() # Put best at slot 0, no alignment
+    # Put best at slot 0, no alignment
+    data = [_eval_point(problem, problem.getp())]
     for p in points:
-        problem.setp(p)
-        record_point()
+        data.append(_eval_point(problem, p))
 
-    # Turn residuals into arrays
-    residuals = dict((k, np.asarray(v).T) for k, v in residuals.items())
+    profiles, slabs, residuals = zip(*data)
+
+    # TODO: return sane datastructure
+    # Make a hashable version of model which just contains the name
+    # attribute, which is all that the rest of this code accesses.
+    models = [_HashableModel(m, i) for i, m in enumerate(_experiments(problem))]
+
+    profiles = {h: [v[k] for v in profiles] for k, h in enumerate(models)}
+    slabs = {h: [v[k] for v in slabs] for k, h in enumerate(models)}
+    residuals = {h: np.asarray([v[k] for v in residuals]).T for k, h in enumerate(models)}
+    Q = {h: Q[k] for k, h in enumerate(models)}
+
+    #from .pstruct import pstruct, sstruct
+    #print("profiles", sstruct(profiles))
+    #print("slabs", sstruct(slabs))
+    #print("residuals", sstruct(residuals))
+    #print("Q", sstruct(Q))
+    #import sys; sys.exit()
+
     return profiles, slabs, Q, residuals
+
+class _HashableModel:
+    name: str
+    index: int
+    def __init__(self, model, index):
+        self.name = model.name if model.name is not None else f"M{index}"
+        self.index = index
+    def __str__(self):
+        return f"model {self.name}: {self.index}"
+
+def _eval_point(problem, p):
+    problem.chisq_str() # Force reflectivity recalculation
+    problem.setp(p)
+    profiles, residuals, slabs = [], [], []
+    for m in _experiments(problem):
+        D = m.residuals()
+        residuals.append(D+0)
+        slabs_i = [L.thickness.value for L in m.sample[1:-1]]
+        slabs.append(np.array(slabs_i))
+        if m.ismagnetic:
+            z, rho, irho, rhoM, thetaM = m.magnetic_smooth_profile()
+            profiles.append((z+0, rho+0, irho+0, rhoM+0, thetaM+0))
+        else:
+            z, rho, irho = m.smooth_profile()
+            profiles.append((z+0, rho+0, irho+0))
+    return profiles, slabs, residuals
+
+def _experiments(problem):
+    """
+    Cycle through experiments yielding (k, m) pairs for each experiment.
+
+    The iterator is necessary because bumps substitutes the values from the
+    free parameters into the fitness via the model iterator in problem. In
+    order to keep the parametersets in sync we need to repeat that iteration
+    each time.
+    """
+    for m in problem.models:
+        parts = getattr(m, 'parts', [m])
+        for p in parts:
+            yield p
+
+def _residQ(m):
+    if m.probe.polarized:
+        return np.hstack([xs.Q for xs in m.probe.xs if xs is not None])
+    else:
+        return m.probe.Q
 
 def align_profiles(profiles, slabs, align):
     """
@@ -210,7 +231,7 @@ def align_profiles(profiles, slabs, align):
                 for m in profiles.keys())
 
 def show_errors(errors, contours=CONTOURS, npoints=200,
-                align='auto', plots=1, save=None):
+                align='auto', plots=1, save=None, fig=None):
     """
     Plot the aligned profiles and the distribution of the residuals for
     profiles and residuals returned from calc_errors.
@@ -240,15 +261,20 @@ def show_errors(errors, contours=CONTOURS, npoints=200,
     """
     import matplotlib.pyplot as plt
 
+    if fig is not None and plots != 1:
+        raise ValueError("can only pass in a figure object if exactly 1 plot is requested")
+
     if plots == 0: # Don't create plots, just save the data
         _save_profile_data(errors, contours=contours, npoints=npoints,
                            align=align, save=save)
         _save_residual_data(errors, contours=contours, save=save)
     elif plots == 1: # Subplots for profiles/residuals
-        plt.subplot(211)
-        show_profiles(errors, contours=contours, npoints=npoints, align=align)
-        plt.subplot(212)
-        show_residuals(errors, contours=contours)
+        if fig is None:
+            fig = plt.gcf()
+        ax_profiles = fig.add_subplot(211)
+        show_profiles(errors, contours=contours, npoints=npoints, align=align, axes=ax_profiles)
+        ax_residuals = fig.add_subplot(212)
+        show_residuals(errors, contours=contours, axes=ax_residuals)
         if save:
             plt.savefig(save+"-err.png")
     elif plots == 2:  # Separate plots for profiles/residuals
@@ -277,24 +303,26 @@ def show_errors(errors, contours=CONTOURS, npoints=200,
                 plt.savefig(save+"-err%d.png"%fignum)
             fignum += 1
 
-def show_profiles(errors, align, contours, npoints):
+def show_profiles(errors, align, contours, npoints, axes=None):
     profiles, slabs, _, _ = errors
     if align is not None:
         profiles = align_profiles(profiles, slabs, align)
+        _profiles_draw_align_lines(profiles, slabs, align, axes)
+
 
     if contours:
-        _profiles_contour(profiles, contours, npoints)
+        _profiles_contour(profiles, contours, npoints, axes=axes)
     else:
-        _profiles_overplot(profiles)
+        _profiles_overplot(profiles, axes=axes)
 
 
-def show_residuals(errors, contours):
+def show_residuals(errors, contours, axes=None):
     _, _, Q, residuals = errors
 
     if False and contours:
         _residuals_contour(Q, residuals, contours=contours)
     else:
-        _residuals_overplot(Q, residuals)
+        _residuals_overplot(Q, residuals, axes=axes)
 
 
 def _save_profile_data(errors, align, contours, npoints, save):
@@ -302,7 +330,7 @@ def _save_profile_data(errors, align, contours, npoints, save):
     if align is not None:
         profiles = align_profiles(profiles, slabs, align)
     k = 1
-    for title, group in sorted((m.name, group) for m, group in profiles.items()):
+    for title, _, group in sorted(((m.name, m.index, group) for m, group in profiles.items()), key=lambda x: (x[0], x[1])):
         # Find limits of all profiles
         z = np.hstack([line[0] for line in group])
         zp = np.linspace(np.min(z), np.max(z), npoints)
@@ -337,7 +365,7 @@ def _build_profile_matrix(group, index, zp, contours):
 def _save_residual_data(errors, contours, save):
     _, _, Q, residuals = errors
     k = 1
-    for title, x, r in sorted((m.name, Q[m], v) for m, v in residuals.items()):
+    for title, _, x, r in sorted([(m.name, m.index, Q[m], v) for m, v in residuals.items()], key=lambda x: (x[0], x[1])):
         q, qval = form_quantiles(r.T, contours)
         # TODO: should have columns for R, dR as well.
         data = np.vstack((x, r[:, 0], np.reshape(qval, (-1, qval.shape[2]))))
@@ -357,34 +385,36 @@ def _write_file(path, data, title, columns):
 def dark(color):
     return dhsv(color, dv=-0.2)
 
-def _profiles_overplot(profiles):
+def _profiles_overplot(profiles, axes=None):
     for model, group in profiles.items():
         name = model.name
         absorbing = any((L[2] != 1e-4).any() for L in group)
         magnetic = (len(group[0]) > 3)
         # Note: Use 3 colours per dataset for consistency
-        _draw_overplot(group, 1, name + ' rho')
+        _draw_overplot(group, 1, name + ' rho', axes=axes)
         if absorbing:
-            _draw_overplot(group, 2, name + ' irho')
+            _draw_overplot(group, 2, name + ' irho', axes=axes)
         else:
-            next_color()
+            next_color(axes=axes)
         if magnetic:
-            _draw_overplot(group, 3, name + ' rhoM')
+            _draw_overplot(group, 3, name + ' rhoM', axes=axes)
         else:
-            next_color()
-    _profile_labels()
+            next_color(axes=axes)
+    _profile_labels(axes=axes)
 
-def _draw_overplot(group, index, label):
+def _draw_overplot(group, index, label, axes=None):
     import matplotlib.pyplot as plt
+    if axes is None:
+        axes = plt.gca()
     alpha = 0.1
-    color = next_color()
+    color = next_color(axes=axes)
     for L in group[1:]:
-        plt.plot(L[0], L[index], '-', color=color, alpha=alpha)
+        axes.plot(L[0], L[index], '-', color=color, alpha=alpha)
     # Plot best
     L = group[0]
-    plt.plot(L[0], L[index], '-', label=label, color=dark(color))
+    axes.plot(L[0], L[index], '-', label=label, color=dark(color))
 
-def _profiles_contour(profiles, contours=CONTOURS, npoints=200):
+def _profiles_contour(profiles, contours=CONTOURS, npoints=200, axes=None):
     for model, group in profiles.items():
         name = model.name if model.name is not None else 'model'
         absorbing = any((L[2] > 1e-4).any() for L in group)
@@ -393,46 +423,52 @@ def _profiles_contour(profiles, contours=CONTOURS, npoints=200):
         z = np.hstack([line[0] for line in group])
         zp = np.linspace(np.min(z), np.max(z), npoints)
         # Note: Use 3 colours per dataset for consistency
-        _draw_contours(group, 1, name + ' rho', zp, contours)
+        _draw_contours(group, 1, name + ' rho', zp, contours, axes=axes)
         if absorbing:
-            _draw_contours(group, 2, name + ' irho', zp, contours)
+            _draw_contours(group, 2, name + ' irho', zp, contours, axes=axes)
         else:
-            next_color()
+            next_color(axes=axes)
         if magnetic:
-            _draw_contours(group, 3, name + ' rhoM', zp, contours)
+            _draw_contours(group, 3, name + ' rhoM', zp, contours, axes=axes)
         else:
-            next_color()
-    _profile_labels()
+            next_color(axes=axes)
+    _profile_labels(axes=axes)
 
-def _draw_contours(group, index, label, zp, contours):
+def _draw_contours(group, index, label, zp, contours, axes=None):
     import matplotlib.pyplot as plt
-    color = next_color()
+    if axes is None:
+        axes = plt.gca()
+    color = next_color(axes=axes)
     # Interpolate on common z
     fp = np.vstack([np.interp(zp, L[0], L[index]) for L in group])
     # Plot the quantiles
-    plot_quantiles(zp, fp, contours, color)
+    plot_quantiles(zp, fp, contours, color, axes=axes)
     # Plot the best
-    plt.plot(zp, fp[0], '-', label=label, color=dark(color))
+    axes.plot(zp, fp[0], '-', label=label, color=dark(color))
 
-def _profile_labels():
+def _profile_labels(axes=None):
     import matplotlib.pyplot as plt
-    plt.legend()
-    plt.xlabel(u'z (Å)')
-    plt.ylabel(u'SLD (10⁻⁶/Å²)')
+    if axes is None:
+        axes = plt.gca()
+    axes.legend()
+    axes.set_xlabel(u'z (Å)')
+    axes.set_ylabel(u'SLD (10⁻⁶/Å²)')
 
-def _residuals_overplot(Q, residuals):
+def _residuals_overplot(Q, residuals, axes=None):
     import matplotlib.pyplot as plt
+    if axes is None:
+        axes = plt.gca()
     alpha = 0.4
     shift = 0
     for m, r in residuals.items():
-        color = next_color()
-        plt.plot(Q[m], shift+r[:, 1:], '.', markersize=1, color=color, alpha=alpha)
-        plt.plot(Q[m], shift+r[:, 0], '.', label=m.name, markersize=1, color=dark(color))
+        color = next_color(axes=axes)
+        axes.plot(Q[m], shift+r[:, 1:], '.', markersize=1, color=color, alpha=alpha)
+        axes.plot(Q[m], shift+r[:, 0], '.', label=m.name, markersize=1, color=dark(color))
         # Use 3 colours from cycle so reflectivity matches rho for each dataset
-        next_color()
-        next_color()
+        next_color(axes=axes)
+        next_color(axes=axes)
         shift += 5
-    _residuals_labels()
+    _residuals_labels(axes=axes)
 
 def _residuals_contour(Q, residuals, contours=CONTOURS):
     import matplotlib.pyplot as plt
@@ -447,11 +483,19 @@ def _residuals_contour(Q, residuals, contours=CONTOURS):
         shift += 5
     _residuals_labels()
 
-def _residuals_labels():
+def _residuals_labels(axes=None):
     import matplotlib.pyplot as plt
-    plt.legend()
-    plt.xlabel(u'Q (1/Å)')
-    plt.ylabel(u'Residuals')
+    if axes is None:
+        axes = plt.gca()
+    axes.legend()
+    axes.set_xlabel(u'Q (1/Å)')
+    axes.set_ylabel(u'Residuals')
+
+def _profiles_draw_align_lines(profiles, slabs, align, axes):
+    for i, m in enumerate(profiles.keys()):
+        t1_offset = _find_offset(slabs[m][0], align) if align != 'auto' else None
+        if t1_offset is not None:
+            axes.axvline(x=t1_offset, color='grey', label=f"{m}:{i}")
 
 # ==== Helper functions =====
 
@@ -496,6 +540,6 @@ def _find_offset(v, align):
     -1.5 to specify the middle of the final layer.
     """
     idx = int(align)
-    offset = np.sum(v[:idx]) + (align-idx)*v[idx]
+    offset = np.sum(v[:idx]) + np.sum((align-idx)*v[idx:idx+1])
     #print offset, idx, v[:idx], align
     return offset

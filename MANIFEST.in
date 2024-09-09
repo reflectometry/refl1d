@@ -13,7 +13,14 @@ include MANIFEST.in  # this file
 include master_builder.py
 include refl1d.iss
 include setup_py2exe.py
-include refl1d/lib/*.h refl1d/lib/erf.c
-
+recursive-include refl1d/lib/c *.h *.c *.cc
+recursive-include refl1d/webview/client/dist *.html *.js *.css *.svg *.png
+recursive-include refl1d/webview/client/src *.html *.js *.mjs *.css *.svg *.png *.ts *.vue
+include refl1d/webview/client/*.html
+include refl1d/webview/client/*.js
+include refl1d/webview/client/*.json
+include refl1d/webview/client/*.txt
+include extra/*.svg extra/*.png
 # Delete files
 #prune this that
+prune refl1d/webview/client/node_modules

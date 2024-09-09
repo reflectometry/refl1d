@@ -61,4 +61,4 @@ M4 = Experiment(probe=neg, sample=rev_sample, name="neg",
 #M1.simulate_data(0.05)
 #M2.simulate_data(0.05)
 
-problem = MultiFitProblem([M1, M2])
+problem = FitProblem([M1, M2])

@@ -15,7 +15,7 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
 from bumps.gui.util import EmbeddedPylab
-from bumps.fitproblem import MultiFitProblem
+from bumps.fitproblem import FitProblem
 
 from refl1d.probe import Probe
 
@@ -197,19 +197,19 @@ class DataView(wx.Panel):
             self._cancel_calculate = False
 
             # Preform the calculation
-            if isinstance(self.problem,MultiFitProblem):
+            if isinstance(self.problem,FitProblem):
                 #print "n=",len(self.problem.models)
                 for p in self.problem.models:
-                    if hasattr(p.fitness, 'reflectivity'):
-                        self._precalc(p.fitness)
+                    if hasattr(p, 'reflectivity'):
+                        self._precalc(p)
                     #print "cancel",self._cancel_calculate,"reset",p.fitness.is_reset()
-                        if p.fitness.is_reset() or self._cancel_calculate: break
+                        if p.is_reset() or self._cancel_calculate: break
                 if self._cancel_calculate \
-                    or self.problem.active_model.fitness.is_reset(): continue
+                    or self.problem.active_model.is_reset(): continue
             else:
-                self._precalc(self.problem.fitness)
+                self._precalc(self.problem)
                 if self._cancel_calculate \
-                    or self.problem.fitness.is_reset(): continue
+                    or self.problem.is_reset(): continue
 
             # Redraw the canvas with newly calculated reflectivity
             with self.pylab_interface:
@@ -221,19 +221,19 @@ class DataView(wx.Panel):
                 plt.clf() # clear the canvas
                 #shift=20 if self.view == 'log' else 0
                 shift=0
-                if isinstance(self.problem,MultiFitProblem):
+                if isinstance(self.problem,FitProblem):
                     for _,p in enumerate(self.problem.models):
-                        if hasattr(p.fitness, 'reflectivity'):
-                            p.fitness.plot_reflectivity(view=self.view,
+                        if hasattr(p, 'reflectivity'):
+                            p.plot_reflectivity(view=self.view,
                                                         plot_shift=shift)
-                            if self._cancel_calculate or p.fitness.is_reset(): break
+                            if self._cancel_calculate or p.is_reset(): break
                     if self._cancel_calculate \
-                        or self.problem.active_model.fitness.is_reset(): continue
+                        or self.problem.active_model.is_reset(): continue
                 else:
-                    self.problem.fitness.plot_reflectivity(view=self.view,
+                    self.problem.plot_reflectivity(view=self.view,
                                                            plot_shift=shift)
                     if self._cancel_calculate \
-                        or self.problem.fitness.is_reset(): continue
+                        or self.problem.is_reset(): continue
 
                 try:
                     # If we can calculate chisq, then put it on the graph.

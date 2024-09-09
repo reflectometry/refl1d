@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+source ./env/bin/activate
+python -m refl1d.webview.server $@

@@ -2,14 +2,14 @@ name: Build_Unstable
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master_v0 ]
   pull_request:
-    branches: [ master ]
+    branches: [ master_v0 ]
   release:
     types: [ published ]
 
 env:
-  branch_name: master
+  branch_name: master_v0
 
 jobs:
   test_and_build:

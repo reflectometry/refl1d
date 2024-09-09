@@ -24,4 +24,4 @@ M5 = Experiment(probe=probe, sample=sample[1:], name="Ni substrate")
 
 #M.simulate_data(5)
 
-problem = MultiFitProblem([M1,M2,M5])
+problem = FitProblem([M1,M2,M5])

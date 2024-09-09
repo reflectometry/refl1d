@@ -1,30 +1,25 @@
 # This program is public domain
 # Authors: Paul Kienzle and Brian Maranville
 r"""
-Reflectometry numba library
+Reflectometry backend loader
 """
-__all__ = [
-    "reflectivity_amplitude",
-    "magnetic_amplitude",
-    "calculate_u1_u3",
-    "convolve_gaussian",
-    "convolve_uniform",
-    "convolve_sampled",
-    "align_magnetic",
-    "contract_by_area",
-    "contract_mag",
-    "rebin_counts",
-    "rebin_counts_2D",
-]
+import importlib
+from . import BACKEND_NAME, BACKEND_NAMES
 
-from .lib_numba.reflectivity import reflectivity_amplitude
-from .lib_numba.magnetic import magnetic_amplitude
-from .lib_numba.magnetic import calculate_u1_u3
-from .lib_numba.convolve import convolve_gaussian
-from .lib_numba.convolve import convolve_uniform
-from .lib_numba.convolve_sampled import convolve_sampled
-from .lib_numba.contract_profile import align_magnetic
-from .lib_numba.contract_profile import contract_by_area
-from .lib_numba.contract_profile import contract_mag
-from .lib_numba.rebin import rebin_counts
-from .lib_numba.rebin import rebin_counts_2D
+BACKEND_MODULE_NAMES = {
+    'numba': 'refl1d.lib.numba',
+    'c_ext': 'refl1d.reflmodule',
+    'python': 'refl1d.lib.python',
+}
+
+backend = None
+
+def set_backend(backend_name: BACKEND_NAMES):
+    global backend
+    backend_module_name = BACKEND_MODULE_NAMES.get(backend_name, None)
+    if backend_module_name is None:
+        raise ValueError(f"unknown backend: {backend_name}")
+    backend = importlib.import_module(backend_module_name)
+
+if BACKEND_NAME is not None:
+    set_backend(BACKEND_NAME)

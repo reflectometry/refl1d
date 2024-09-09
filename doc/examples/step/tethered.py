@@ -37,5 +37,5 @@ S2 = Experiment(sample=sample, probe=probe,
                 name="dz=1; dA=10; step interfaces")
 models=[M0,M1,M2,S0,S1,S2]
 #models=[S1]
-problem = MultiFitProblem(models=models)
+problem = FitProblem(models=models)
 problem.name = "tethered"
