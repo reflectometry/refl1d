@@ -21,6 +21,7 @@ jobs:
           - { os: ubuntu-latest, py: "3.11", doc: 1, whl: 1 }
           - { os: ubuntu-latest, py: "3.12" }
           - { os: windows-latest, py: "3.11", exe: 1 }
+          - { os: macos-latest, py: "3.11", dmg: 1 }
           # pure python wheels
 
     steps:
@@ -64,6 +65,52 @@ jobs:
         pwsh -command ".\$GITHUB_WORKSPACE\extra\build_win_installer.ps1"
         mv dist\Refl1D*.zip release\
 
+    - name: Build sasview installer dmg file (OSX)
+      if: matrix.config.dmg == 1
+      run: |
+        cd dist
+        hdiutil create Refl1D.dmg -srcfolder Refl1D.app -ov -format UDZO
+
+    - name: Sign executable and create dmg (OSX)
+      if: matrix.config.dmg == 1
+      env:
+        MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE_ISA }}
+        MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_ISA_PWD }}
+        DEVELOPER_NAME: "Developer ID Application: The International Scattering Alliance (8CX8K63BQM)"
+        APP_NAME: Refl1D.app
+      run: |
+        # TODO: GIve app more descriptive name (version, etc)
+        echo $MACOS_CERTIFICATE | base64 --decode > certificate.p12
+        security create-keychain -p DloaAcYP build.keychain
+        security default-keychain -s build.keychain
+        security unlock-keychain -p DloaAcYP build.keychain
+        security import certificate.p12 -k build.keychain -P $MACOS_CERTIFICATE_PWD -T /usr/bin/codesign
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k DloaAcYP build.keychain
+        security find-identity -p codesigning
+        
+        cd dist
+        # TODO: Include entitlements
+        codesign --verify --options=runtime --timestamp --deep --verbose=4 --force --sign $DEVELOPER_NAME $APP_NAME
+        hdiutil create Refl1D.dmg -srcfolder $APP_NAME -ov -format UDZO
+        codesign -s $DEVELOPER_NAME $APP_NAME
+
+    - name: Notarize Release Build (OSX)
+      if: matrix.config.dmg == 1
+      uses: lando/notarize-action@v2
+      with:
+        product-path: "dist/Refl1D.dmg"
+        primary-bundle-id: "org.orso.Refl1D"
+        appstore-connect-username: ${{ secrets.NOTARIZATION_USERNAME }}
+        appstore-connect-password: ${{ secrets.NOTARIZATION_PASSWORD }}
+        appstore-connect-team-id: W2AG9MPZ43
+        verbose: True
+
+    - name: Staple Release Build (OSX)
+      if: matrix.config.dmg == 1
+      uses: BoundfoxStudios/action-xcode-staple@v1
+      with:
+        product-path: "dist/Refl1D.dmg"
+
     # See the following for how to upload to a release
     #  https://eugene-babichenko.github.io/blog/2020/05/09/github-actions-cross-platform-auto-releases/
     - name: Archive artifacts
@@ -71,6 +118,7 @@ jobs:
       with:
         name: artifacts-${{ matrix.config.os }}-${{ matrix.config.py }}
         path: |
+          dist/*.dmg
           dist/*.whl
           dist/*.zip
           dist/*.tar.gz
@@ -91,6 +139,7 @@ jobs:
       run: |
         ls -R artifacts
         echo "WINDOWS_INSTALLER=$(ls artifacts/release/*.zip)" >> $GITHUB_ENV
+        echo "MACOS_INSTALLER=$(ls artifacts/release/*.dmg)" >> $GITHUB_ENV
         echo "SRC_DIST=$(ls artifacts/dist/*.tar.gz)" >> $GITHUB_ENV
         echo "PY3_WHL=$(ls artifacts/dist/*.whl)" >> $GITHUB_ENV
 
