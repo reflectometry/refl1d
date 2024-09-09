@@ -15,18 +15,19 @@
 
 from refl1d.names import *
 
-nickel = Material('Ni')
-sample = silicon(0,5) | nickel(100,5) | air
+nickel = Material("Ni")
+sample = silicon(0, 5) | nickel(100, 5) | air
 
 # Instead of using a generic probe, we are using an instrument definition
 # to control the simulation.
 
 instrument = SNS.Liquids()
-M = instrument.simulate(sample,
-                        T=[0.3,0.7,1.5,3],
-                        slits=[0.06, 0.14, 0.3, 0.6],
-                        uncertainty = 5,
-                        )
+M = instrument.simulate(
+    sample,
+    T=[0.3, 0.7, 1.5, 3],
+    slits=[0.06, 0.14, 0.3, 0.6],
+    uncertainty=5,
+)
 
 # The *instrument* line tells us to use the geometry of the SNS Liquids
 # reflectometer, which includes information like the distance between the

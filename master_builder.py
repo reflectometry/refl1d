@@ -56,6 +56,7 @@ putty key and drop it on your desktop.  Click the private key icon to start
 pagent with your key.  Uncomment os.environ['GIT_SSH'] below, and set it to
 the location of plink.exe on your system.
 """
+
 from __future__ import print_function
 
 import os
@@ -79,33 +80,31 @@ if os.name == "nt":
     SYSBIN = r"C:\Program Files (x86)"
     if not os.path.exists(SYSBIN):
         SYSBIN = r"C:\Program Files"
-    GIT = SYSBIN+r"\Git\mingw64\bin\git.exe"
-    INNO = SYSBIN+r"\Inno Setup 5\ISCC.exe"  # command line operation
+    GIT = SYSBIN + r"\Git\mingw64\bin\git.exe"
+    INNO = SYSBIN + r"\Inno Setup 5\ISCC.exe"  # command line operation
 
     if not os.path.exists(GIT):
-        print("missing git: "+GIT+" --- source will not be updated",
-              file=sys.stderr)
+        print("missing git: " + GIT + " --- source will not be updated", file=sys.stderr)
     if not os.path.exists(INNO):
-        print("missing inno setup: "+INNO+" --- installer will not be built",
-              file=sys.stderr)
+        print("missing inno setup: " + INNO + " --- installer will not be built", file=sys.stderr)
 
     # Put PYTHON in the environment and add the python directory and its
     # corresponding script directory (for nose, sphinx, pip, etc) to the path.
     PYTHONDIR = os.path.dirname(os.path.abspath(PYTHON))
-    SCRIPTDIR = os.path.join(PYTHONDIR, 'Scripts')
-    #LATEXDIR = 'C:/Program Files/MikTeX 2.9/miktex/bin/x64'
-    LATEXDIR = 'z:/miktex/miktex/bin'  # Portable miktex distribution
-    os.environ['PATH'] = ";".join((PYTHONDIR, SCRIPTDIR, LATEXDIR, os.environ['PATH']))
-    os.environ['PYTHON'] = "/".join(PYTHON.split("\\"))
-    #os.environ['GIT_SSH'] = r"C:\Program Files (x86)\PuTTY\plink.exe"
+    SCRIPTDIR = os.path.join(PYTHONDIR, "Scripts")
+    # LATEXDIR = 'C:/Program Files/MikTeX 2.9/miktex/bin/x64'
+    LATEXDIR = "z:/miktex/miktex/bin"  # Portable miktex distribution
+    os.environ["PATH"] = ";".join((PYTHONDIR, SCRIPTDIR, LATEXDIR, os.environ["PATH"]))
+    os.environ["PYTHON"] = "/".join(PYTHON.split("\\"))
+    # os.environ['GIT_SSH'] = r"C:\Program Files (x86)\PuTTY\plink.exe"
     MAKE = r"C:\mingw\bin\mingw32-make"
-    #MAKE = r"make.bat"
+    # MAKE = r"make.bat"
 else:
     # Support for wx in virtualenv on mac
     if hasattr(sys, "real_prefix"):
-        PYTHON = os.path.join(sys.real_prefix, 'bin', 'python')
-        os.environ['PYTHON'] = PYTHON
-        os.environ['PYTHONHOME'] = sys.prefix
+        PYTHON = os.path.join(sys.real_prefix, "bin", "python")
+        os.environ["PYTHON"] = PYTHON
+        os.environ["PYTHONHOME"] = sys.prefix
 
 # Name of the package
 PKG_NAME = "refl1d"
@@ -131,7 +130,7 @@ MIN_SPHINX = "1.0.3"
 MIN_DOCUTILS = "0.5"
 MIN_PYGMENTS = "1.0"
 MIN_JINJA2 = "2.5.2"
-#MIN_MATHJAX = "1.0.1"
+# MIN_MATHJAX = "1.0.1"
 # Required versions of Python packages and utilities to build Windows frozen
 # image and Windows installer.
 MIN_PY2EXE = "0.6.9"
@@ -148,20 +147,20 @@ else:
     TOP_DIR = RUN_DIR
 
 # Set the python path
-PLATFORM = '.%s-%s'%(get_platform(), sys.version[:3])
+PLATFORM = ".%s-%s" % (get_platform(), sys.version[:3])
 BUMPS_DIR = os.path.join(TOP_DIR, "bumps")
 REFL_DIR = os.path.join(TOP_DIR, "refl1d")
 PERIODICTABLE_DIR = os.path.join(TOP_DIR, "periodictable")
-BUMPS_LIB = os.path.join(BUMPS_DIR, 'build', 'lib'+PLATFORM)
-REFL_LIB = os.path.join(REFL_DIR, 'build', 'lib'+PLATFORM)
+BUMPS_LIB = os.path.join(BUMPS_DIR, "build", "lib" + PLATFORM)
+REFL_LIB = os.path.join(REFL_DIR, "build", "lib" + PLATFORM)
 paths = [BUMPS_LIB, REFL_LIB, PERIODICTABLE_DIR]
 sys.path = paths + sys.path
-os.environ['PYTHONPATH'] = os.pathsep.join(paths)
+os.environ["PYTHONPATH"] = os.pathsep.join(paths)
 
-BUMPS_NEW = '"%s" clone https://github.com/bumps/bumps.git'%GIT
-REFL_NEW = '"%s" clone https://github.com/reflectometry/refl1d.git'%GIT
-PERIODICTABLE_NEW = '"%s" clone https://github.com/pkienzle/periodictable.git'%GIT
-REPO_UPDATE = '"%s" pull'%GIT
+BUMPS_NEW = '"%s" clone https://github.com/bumps/bumps.git' % GIT
+REFL_NEW = '"%s" clone https://github.com/reflectometry/refl1d.git' % GIT
+PERIODICTABLE_NEW = '"%s" clone https://github.com/pkienzle/periodictable.git' % GIT
+REPO_UPDATE = '"%s" pull' % GIT
 
 # Note: can't put target files in the dist directory since all files in dist
 # are being collected and stored in the bundle.
@@ -173,14 +172,16 @@ def get_version():
     global PKG_VERSION
     # Get the version string of the application for use later.
     # This has to be done after we have checked out the repository.
-    for line in open(os.path.join(REFL_DIR, PKG_NAME, '__init__.py')).readlines():
-        if line.startswith('__version__'):
-            PKG_VERSION = line.split('=')[1].strip()[1:-1]
+    for line in open(os.path.join(REFL_DIR, PKG_NAME, "__init__.py")).readlines():
+        if line.startswith("__version__"):
+            PKG_VERSION = line.split("=")[1].strip()[1:-1]
             break
     else:
         raise RuntimeError("Could not find package version")
 
-#==============================================================================
+
+# ==============================================================================
+
 
 def checkout_code():
     "download or update source code"
@@ -213,20 +214,18 @@ def create_archive(version=None):
 
     try:
         # Create zip and tar archives in the dist subdirectory.
-        exec_cmd("%s setup.py sdist --formats=zip,gztar --dist-dir=%s"
-                 %(PYTHON, INSTALLER_DIR), cwd=REFL_DIR)
-        exec_cmd("%s setup.py sdist --formats=zip,gztar --dist-dir=%s"
-                 %(PYTHON, INSTALLER_DIR), cwd=BUMPS_DIR)
+        exec_cmd("%s setup.py sdist --formats=zip,gztar --dist-dir=%s" % (PYTHON, INSTALLER_DIR), cwd=REFL_DIR)
+        exec_cmd("%s setup.py sdist --formats=zip,gztar --dist-dir=%s" % (PYTHON, INSTALLER_DIR), cwd=BUMPS_DIR)
     except Exception:
         print("*** Failed to create source archive ***")
 
 
 def build_package():
     "build and install the package"
-    print("Building the %s package ...\n" %(PKG_NAME,))
+    print("Building the %s package ...\n" % (PKG_NAME,))
 
-    exec_cmd("%s setup.py build" %(PYTHON,), cwd=BUMPS_DIR)
-    exec_cmd("%s setup.py build" %(PYTHON,), cwd=REFL_DIR)
+    exec_cmd("%s setup.py build" % (PYTHON,), cwd=BUMPS_DIR)
+    exec_cmd("%s setup.py build" % (PYTHON,), cwd=REFL_DIR)
 
 
 def build_documentation():
@@ -235,20 +234,20 @@ def build_documentation():
     doc_dir = os.path.join(REFL_DIR, "doc")
     html_dir = os.path.join(doc_dir, "_build", "html")
     latex_dir = os.path.join(doc_dir, "_build", "latex")
-    pdf = os.path.join(latex_dir, APP_NAME+".pdf")
+    pdf = os.path.join(latex_dir, APP_NAME + ".pdf")
 
     # Delete any left over files from a previous build.
     # Create documentation in HTML and PDF format.
-    sphinx_cmd = '"%s" -m sphinx.__init__ -b %%s -d _build/doctrees -D latex_paper_size=letter . %%s'%PYTHON
-    exec_cmd(sphinx_cmd%("html", html_dir), cwd=doc_dir)
+    sphinx_cmd = '"%s" -m sphinx.__init__ -b %%s -d _build/doctrees -D latex_paper_size=letter . %%s' % PYTHON
+    exec_cmd(sphinx_cmd % ("html", html_dir), cwd=doc_dir)
     if True:  # build pdf as well
-        exec_cmd(sphinx_cmd%("latex", latex_dir), cwd=doc_dir)
-        exec_cmd("pdflatex %s.tex"%APP_NAME, cwd=latex_dir)
-        exec_cmd("pdflatex %s.tex"%APP_NAME, cwd=latex_dir)
-        exec_cmd("pdflatex %s.tex"%APP_NAME, cwd=latex_dir)
-        exec_cmd("makeindex -s python.ist %s.idx"%APP_NAME, cwd=latex_dir)
-        exec_cmd("pdflatex %s.tex"%APP_NAME, cwd=latex_dir)
-        exec_cmd("pdflatex %s.tex"%APP_NAME, cwd=latex_dir)
+        exec_cmd(sphinx_cmd % ("latex", latex_dir), cwd=doc_dir)
+        exec_cmd("pdflatex %s.tex" % APP_NAME, cwd=latex_dir)
+        exec_cmd("pdflatex %s.tex" % APP_NAME, cwd=latex_dir)
+        exec_cmd("pdflatex %s.tex" % APP_NAME, cwd=latex_dir)
+        exec_cmd("makeindex -s python.ist %s.idx" % APP_NAME, cwd=latex_dir)
+        exec_cmd("pdflatex %s.tex" % APP_NAME, cwd=latex_dir)
+        exec_cmd("pdflatex %s.tex" % APP_NAME, cwd=latex_dir)
         # Copy PDF to the html directory where the html can find it.
         if os.path.isfile(pdf):
             shutil.copy(pdf, html_dir)
@@ -256,13 +255,13 @@ def build_documentation():
 
 def create_binary():
     "create the standalone executable (windows or mac, depending)"
-    if sys.platform == 'darwin':
+    if sys.platform == "darwin":
         print("Using py2app to create a Mac OS X app...\n")
-        exec_cmd("%s setup_py2app.py"%PYTHON, cwd=REFL_DIR)
+        exec_cmd("%s setup_py2app.py" % PYTHON, cwd=REFL_DIR)
 
-    elif os.name == 'nt':
+    elif os.name == "nt":
         print("Using py2exe to create a Win32 executable ...\n")
-        exec_cmd("%s setup_py2exe.py"%PYTHON, cwd=REFL_DIR)
+        exec_cmd("%s setup_py2exe.py" % PYTHON, cwd=REFL_DIR)
 
     else:
         print("No binary build for %s %s\n" % (sys.platform, os.name))
@@ -273,18 +272,19 @@ def create_installer(version=None):
         version = PKG_VERSION
     if not os.path.exists(INSTALLER_DIR):
         os.mkdir(INSTALLER_DIR)
-    if sys.platform == 'darwin':
+    if sys.platform == "darwin":
         _create_osx_installer(version)
-    elif os.name == 'nt':
+    elif os.name == "nt":
         _create_windows_installer(version)
     else:
-        print("No installer for %r"%sys.platform)
+        print("No installer for %r" % sys.platform)
+
 
 def _create_osx_installer(version):
     "create mac dmg"
     print("Running command to create the dmg")
-    exec_cmd([PYTHON, "extra/build_dmg.py", APP_NAME, PKG_VERSION],
-             cwd=REFL_DIR)
+    exec_cmd([PYTHON, "extra/build_dmg.py", APP_NAME, PKG_VERSION], cwd=REFL_DIR)
+
 
 def _create_windows_installer(version):
     "create the windows installer"
@@ -292,16 +292,15 @@ def _create_windows_installer(version):
         print("missing INNO --- no installer")
     # Run the Inno Setup Compiler to create a Win32 installer/uninstaller for
     # the application.
-    print("Running Inno Setup Compiler to create Win32 "
-          "installer/uninstaller ...\n")
+    print("Running Inno Setup Compiler to create Win32 " "installer/uninstaller ...\n")
 
     # Run the Inno Setup Compiler to create a Win32 installer/uninstaller.
     # Override the output specification in <PKG_NAME>.iss to put the executable
     # and the manifest file in the top-level directory.
     arch = "x64" if sys.maxsize > 2**32 else "x86"
-    exec_cmd([INNO, "/Q", "/O"+INSTALLER_DIR,
-              "/DVERSION="+version, "/DARCH="+arch, PKG_NAME+".iss"],
-             cwd=REFL_DIR)
+    exec_cmd(
+        [INNO, "/Q", "/O" + INSTALLER_DIR, "/DVERSION=" + version, "/DARCH=" + arch, PKG_NAME + ".iss"], cwd=REFL_DIR
+    )
 
 
 def run_tests():
@@ -309,11 +308,12 @@ def run_tests():
     # Run unittests and doctests using a test script.
     # Running from a test script allows customization of the system path.
     print("Running periodictable tests ...\n")
-    exec_cmd("%s test.py"%PYTHON, cwd=PERIODICTABLE_DIR)
+    exec_cmd("%s test.py" % PYTHON, cwd=PERIODICTABLE_DIR)
     print("Running bumps tests ...\n")
-    exec_cmd("%s test.py"%PYTHON, cwd=BUMPS_DIR)
+    exec_cmd("%s test.py" % PYTHON, cwd=BUMPS_DIR)
     print("Running refl tests ...\n")
-    exec_cmd("%s test.py"%PYTHON, cwd=REFL_DIR)
+    exec_cmd("%s test.py" % PYTHON, cwd=REFL_DIR)
+
 
 def check_dependencies():
     "check that required packages are installed"
@@ -323,11 +323,10 @@ def check_dependencies():
 
     # ------------------------------------------------------
     python_ver = platform.python_version()
-    print("Using Python %s"%python_ver)
+    print("Using Python %s" % python_ver)
     print("")
     if PV(python_ver) < PV(MIN_PYTHON) or PV(python_ver) >= PV(MAX_PYTHON):
-        print("ERROR - build requires Python >= %s, but < %s"
-              %(MIN_PYTHON, MAX_PYTHON))
+        print("ERROR - build requires Python >= %s, but < %s" % (MIN_PYTHON, MAX_PYTHON))
         sys.exit()
 
     req_pkg = {}
@@ -374,9 +373,8 @@ def check_dependencies():
 
     # ------------------------------------------------------
     try:
-        shell = os.name != 'nt'
-        p = subprocess.Popen("gcc -dumpversion", stdout=subprocess.PIPE,
-                             shell=shell)
+        shell = os.name != "nt"
+        p = subprocess.Popen("gcc -dumpversion", stdout=subprocess.PIPE, shell=shell)
         gcc_ver = p.stdout.read().strip()
     except Exception:
         gcc_ver = "0"
@@ -440,7 +438,7 @@ def check_dependencies():
         req_pkg["jinja2"] = (jinja2_ver, MIN_JINJA2)
 
     # ------------------------------------------------------
-    if os.name == 'nt':
+    if os.name == "nt":
         try:
             from py2exe import __version__ as py2exe_ver
         except Exception:
@@ -457,16 +455,14 @@ def check_dependencies():
     error = False
     for key in req_pkg:
         if req_pkg[key][0] == "0":
-            print("====> %s not found; version %s or later is required - ERROR"
-                  % (key, req_pkg[key][1]))
+            print("====> %s not found; version %s or later is required - ERROR" % (key, req_pkg[key][1]))
             error = True
         elif req_pkg[key][0] == "?":
-            print("Found %s" %(key))  # version is unknown
+            print("Found %s" % (key))  # version is unknown
         elif PV(req_pkg[key][0]) >= PV(req_pkg[key][1]):
-            print("Found %s %s" %(key, req_pkg[key][0]))
+            print("Found %s %s" % (key, req_pkg[key][0]))
         else:
-            print("Found %s %s but minimum tested version is %s - WARNING"
-                  % (key, req_pkg[key][0], req_pkg[key][1]))
+            print("Found %s %s but minimum tested version is %s - WARNING" % (key, req_pkg[key][0], req_pkg[key][1]))
             error = True
 
     if error:
@@ -481,8 +477,8 @@ def exec_cmd(command, cwd=None):
     """Runs the specified command in a subprocess."""
 
     if isinstance(command, list):
-        command_str = " ".join('"%s"' % p if ' ' in p else p for p in command)
-        shell = os.name == 'nt'
+        command_str = " ".join('"%s"' % p if " " in p else p for p in command)
+        shell = os.name == "nt"
     else:
         command_str = command
         shell = True
@@ -491,16 +487,18 @@ def exec_cmd(command, cwd=None):
     if result != 0:
         sys.exit(result)
 
+
 BUILD_POINTS = [
-    ('deps', check_dependencies),
-    ('update', checkout_code),
-    ('build', build_package),
-    ('test', run_tests),
-    ('docs', build_documentation),  # Needed by windows installer
-    ('zip', create_archive),
-    ('exe', create_binary),
-    ('installer', create_installer),
+    ("deps", check_dependencies),
+    ("update", checkout_code),
+    ("build", build_package),
+    ("test", run_tests),
+    ("docs", build_documentation),  # Needed by windows installer
+    ("zip", create_archive),
+    ("exe", create_binary),
+    ("installer", create_installer),
 ]
+
 
 def main():
     points, _ = zip(*BUILD_POINTS)
@@ -508,25 +506,28 @@ def main():
     only = False
     if len(sys.argv) > 1:
         # Display help if requested.
-        if (len(sys.argv) > 1 and sys.argv[1] not in points
-                or len(sys.argv) > 2 and sys.argv[2] != 'only'
-                or len(sys.argv) > 3):
+        if (
+            len(sys.argv) > 1
+            and sys.argv[1] not in points
+            or len(sys.argv) > 2
+            and sys.argv[2] != "only"
+            or len(sys.argv) > 3
+        ):
             print("\nUsage: python master_builder.py [<start>] [only]\n")
             print("Build start points:")
             for point, function in BUILD_POINTS:
-                print("  %-10s %s"%(point, function.__doc__))
+                print("  %-10s %s" % (point, function.__doc__))
             print("Add 'only' to the command to only perform a single step")
             sys.exit()
         else:
             start = sys.argv[1]
-            only = len(sys.argv) > 2 and sys.argv[2] == 'only'
+            only = len(sys.argv) > 2 and sys.argv[2] == "only"
 
     get_version()
-    print("\nBuilding the %s-%s application from the %s repository ...\n"
-          % (APP_NAME, PKG_VERSION, PKG_NAME))
-    print("Current working directory  = %s"%RUN_DIR)
-    print("Top-level (root) directory = %s"%TOP_DIR)
-    print("Package (source) directory = %s"%REFL_DIR)
+    print("\nBuilding the %s-%s application from the %s repository ...\n" % (APP_NAME, PKG_VERSION, PKG_NAME))
+    print("Current working directory  = %s" % RUN_DIR)
+    print("Top-level (root) directory = %s" % TOP_DIR)
+    print("Package (source) directory = %s" % REFL_DIR)
 
     started = False
     for point, function in BUILD_POINTS:
@@ -534,10 +535,11 @@ def main():
             started = True
         if not started:
             continue
-        print("%s %s %s"%("/"*5, point, "/"*25))
+        print("%s %s %s" % ("/" * 5, point, "/" * 25))
         function()
         if only:
             break
+
 
 if __name__ == "__main__":
     main()

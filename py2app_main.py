@@ -4,7 +4,9 @@ if __name__ == "__main__":
     import dream
 
     import multiprocessing
+
     multiprocessing.freeze_support()
 
     from bumps.gui.gui_app import main
+
     main()
