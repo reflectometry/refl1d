@@ -11,7 +11,9 @@ authors = [
 ]
 license = { file = "LICENSE.txt" }
 dependencies = [
-    'bumps>=0.7.16', 'numpy', 'scipy', 'matplotlib', 'periodictable', 'numba'
+    #'bumps>=0.7.16',
+    bumps@git+https://github.com/bumps/bumps.git#egg=master,
+    'numpy', 'scipy', 'matplotlib', 'periodictable', 'numba'
 ]
 classifiers=[
     'Development Status :: 4 - Beta',
