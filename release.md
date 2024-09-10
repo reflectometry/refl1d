@@ -1,7 +1,4 @@
-#!/bin/sh
-
-cat <<EOF
-Refl1D Release Process
+# Refl1D Release Process
 
 (0) release dependent packages (bumps, periodictable) if necessary
 
@@ -139,5 +136,3 @@ pip install --user --no-deps periodictable bumps refl1d
 
 update web pages
 send message to reflectometry announcement list
-
-EOF
