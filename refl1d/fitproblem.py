@@ -7,8 +7,8 @@ from .experiment import Experiment
 # class BaseFitProblem(_BaseFitProblem):
 #     fitness: Experiment
 
+
 @dataclass(init=False)
 class FitProblem(_FitProblem):
-    __doc__ =  _FitProblem.__doc__.replace("Fitness", "Experiment")
+    __doc__ = _FitProblem.__doc__.replace("Fitness", "Experiment")
     models: List[Experiment]
-

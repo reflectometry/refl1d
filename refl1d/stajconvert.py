@@ -3,6 +3,7 @@
 """
 Convert staj files to Refl1D models
 """
+
 import os
 
 import numpy as np
@@ -16,11 +17,12 @@ from .material import SLD
 from .resolution import QL2T, sigma2FWHM
 from .probe import NeutronProbe, XrayProbe, PolarizedNeutronProbe
 
+
 def load_mlayer(filename, fit_pmp=0, name=None, layers=None):
     """
     Load a staj file as a model.
     """
-    if filename.endswith('.staj'):
+    if filename.endswith(".staj"):
         staj = MlayerModel.load(filename)
         model = mlayer_to_model(staj, name=name, layers=layers)
     else:
@@ -30,13 +32,15 @@ def load_mlayer(filename, fit_pmp=0, name=None, layers=None):
         fit_all(model, pmp=fit_pmp)
     return model
 
+
 def save_mlayer(experiment, filename, datafile=None):
     """
     Save a model to a staj file.
     """
     staj = model_to_mlayer(experiment, datafile)
-    #print staj
+    # print staj
     staj.save(filename)
+
 
 def fit_all(M, pmp=20):
     """
@@ -44,11 +48,14 @@ def fit_all(M, pmp=20):
     """
 
     # Exclude unlikely fitting parameters
-    exclude = set((M.sample[0].thickness,
-                   M.sample[-1].thickness,
-                   M.sample[-1].interface,
-                   M.probe.back_absorption,
-                  ))
+    exclude = set(
+        (
+            M.sample[0].thickness,
+            M.sample[-1].thickness,
+            M.sample[-1].interface,
+            M.probe.back_absorption,
+        )
+    )
     if M.probe.intensity.value == 1:
         exclude.add(M.probe.intensity)
     if M.probe.background.value < 2e-10:
@@ -60,7 +67,8 @@ def fit_all(M, pmp=20):
             continue
         if p.value != 0:
             p.pmp(pmp)
-        #p.fixed = False
+        # p.fixed = False
+
 
 def mlayer_to_model(staj, name=None, layers=None):
     """
@@ -69,9 +77,11 @@ def mlayer_to_model(staj, name=None, layers=None):
     Returns a new experiment
     """
     from .experiment import Experiment
+
     sample = _mlayer_to_stack(staj, name, layers)
-    probe = _load_probe(staj, name, xs='')
+    probe = _load_probe(staj, name, xs="")
     return Experiment(sample=sample, probe=probe)
+
 
 def _mlayer_to_stack(s, name, layers):
     """
@@ -79,8 +89,7 @@ def _mlayer_to_stack(s, name, layers):
     """
     # check pars
     if layers and len(layers) != len(s.rho):
-        raise ValueError("Have %d staj layers but got %d layer names"
-                         % (len(s.rho), len(layers)))
+        raise ValueError("Have %d staj layers but got %d layer names" % (len(s.rho), len(layers)))
 
     # prepend datafile name to layers
     if name is None:
@@ -88,40 +97,45 @@ def _mlayer_to_stack(s, name, layers):
     if name and not name.endswith(" "):
         name += " "
 
-    i1 = s.num_top+1
-    i2 = s.num_top+s.num_middle+1
+    i1 = s.num_top + 1
+    i2 = s.num_top + s.num_middle + 1
 
     # Construct slabs
     slabs = []
     for i in reversed(range(len(s.rho))):
         if layers:
-            Lname = layers[len(layers)-i-1]
+            Lname = layers[len(layers) - i - 1]
         elif i == 0:
-            Lname = 'V'
+            Lname = "V"
         elif i < i1:
-            Lname = 'T%d'%(i)
+            Lname = "T%d" % (i)
         elif i < i2:
-            Lname = 'M%d'%(i-i1+1)
+            Lname = "M%d" % (i - i1 + 1)
         else:
-            Lname = 'B%d'%(i-i2+1)
-        slabs.append(Slab(material=SLD(rho=s.rho[i], irho=s.irho[i],
-                                       name=name+Lname),
-                          thickness=s.thickness[i],
-                          interface=s.sigma_roughness[i]))
+            Lname = "B%d" % (i - i2 + 1)
+        slabs.append(
+            Slab(
+                material=SLD(rho=s.rho[i], irho=s.irho[i], name=name + Lname),
+                thickness=s.thickness[i],
+                interface=s.sigma_roughness[i],
+            )
+        )
 
     # Build stack
     if s.num_repeats == 0:
-        stack = Stack(slabs[:i1]+slabs[i2:])
+        stack = Stack(slabs[:i1] + slabs[i2:])
     elif s.num_repeats == 1:
         stack = Stack(slabs)
     else:
-        stack = Stack(slabs[:i1]+[Repeat(Stack(slabs[i1:i2]))]+slabs[i2:])
+        stack = Stack(slabs[:i1] + [Repeat(Stack(slabs[i1:i2]))] + slabs[i2:])
 
     return stack
 
-XS = {'A': '--', 'B': '-+', 'C': '+-', 'D': '++', '':''}
-def _load_probe(s, name, xs):
 
+XS = {"A": "--", "B": "-+", "C": "+-", "D": "++", "": ""}
+
+
+def _load_probe(s, name, xs):
     if name is None:
         name = os.path.splitext(s.data_file)[0]
 
@@ -131,7 +145,7 @@ def _load_probe(s, name, xs):
         R, dR = None, None
     else:
         filename = s.data_file
-        Q, R, dR = np.loadtxt(s.data_file+xs).T
+        Q, R, dR = np.loadtxt(s.data_file + xs).T
 
     # Use Q and wavelength L from the staj file to determine angle T
     L = s.wavelength
@@ -149,7 +163,7 @@ def _load_probe(s, name, xs):
     #         = sqrt( (dQ*L/4*pi*cos(T))^2 - (tan(T)*dL/L)^2 )
     dQ = s.FWHMresolution(Q)
     dL = s.wavelength_dispersion
-    dT = degrees(sqrt((dQ*L/(4*pi*cos(radians(T))))**2 - (tan(radians(T))*dL/L)**2))
+    dT = degrees(sqrt((dQ * L / (4 * pi * cos(radians(T)))) ** 2 - (tan(radians(T)) * dL / L) ** 2))
 
     # Hack: X-ray is 1.54; anything above 2 is neutron.  Doesn't matter since
     # materials are set as SLD rather than composition.
@@ -157,13 +171,19 @@ def _load_probe(s, name, xs):
         probe = XrayProbe
     else:
         probe = NeutronProbe
-    probe = probe(T=T, dT=dT, L=L, dL=dL, data=(R, dR),
-                  theta_offset=getattr(s, 'theta_offset', 0), # gj2 has no theta offset
-                  background=s.background,
-                  intensity=s.intensity,
-                  name=name)
+    probe = probe(
+        T=T,
+        dT=dT,
+        L=L,
+        dL=dL,
+        data=(R, dR),
+        theta_offset=getattr(s, "theta_offset", 0),  # gj2 has no theta offset
+        background=s.background,
+        intensity=s.intensity,
+        name=name,
+    )
     probe.filename = filename
-    #probe.oversample(n=10)
+    # probe.oversample(n=10)
     return probe
 
 
@@ -183,10 +203,12 @@ def model_to_mlayer(model, datafile):
         # Reason is that mlayer uses mu/(2 lambda) rather than irho
         raise TypeError("Mlayer only supports monochromatic sources")
 
-    staj.set(wavelength=probe.L[0],
-             intensity=probe.intensity.value,
-             background=probe.background.value,
-             theta_offset=probe.theta_offset.value)
+    staj.set(
+        wavelength=probe.L[0],
+        intensity=probe.intensity.value,
+        background=probe.background.value,
+        theta_offset=probe.theta_offset.value,
+    )
     if datafile:
         staj.data_file = os.path.basename(datafile)
     else:
@@ -237,7 +259,7 @@ def model_to_mlayer(model, datafile):
             raise TypeError("Too many slabs (only 28 slabs allowed)")
 
     # Convert slabs to sld parameters
-    #print "\n".join(str(s) for s in slabs)
+    # print "\n".join(str(s) for s in slabs)
     values = []
     for layer in slabs:
         rho, irho = layer.material.sld(probe)
@@ -264,14 +286,13 @@ def model_to_mlayer(model, datafile):
         while len(staj.rho) < 4:
             staj.rho = np.hstack((staj.rho[0], staj.rho))
             staj.irho = np.hstack((staj.irho[0], staj.irho))
-            staj.thickness = np.hstack((0,
-                                        3.5*staj.sigma_roughness[1],
-                                        staj.thickness[1:]))
+            staj.thickness = np.hstack((0, 3.5 * staj.sigma_roughness[1], staj.thickness[1:]))
             staj.sigma_roughness = np.hstack((0, staj.sigma_roughness))
 
         staj.split_sections()
 
     return staj
+
 
 def mlayer_magnetic_to_model(sta, name=None, layers=None):
     """
@@ -280,9 +301,11 @@ def mlayer_magnetic_to_model(sta, name=None, layers=None):
     Returns a new experiment
     """
     from .experiment import Experiment
+
     sample = _mlayer_magnetic_to_stack(sta, name, layers)
     probe = _mlayer_magnetic_to_probe(sta, name)
     return Experiment(sample=sample, probe=probe, dz=0.1)
+
 
 def _mlayer_magnetic_to_stack(s, name, layers):
     """
@@ -290,8 +313,7 @@ def _mlayer_magnetic_to_stack(s, name, layers):
     """
     # check pars
     if layers and len(layers) != len(s.rho):
-        raise ValueError("Have %d sta layers but got %d layer names"
-                         % (len(s.rho), len(layers)))
+        raise ValueError("Have %d sta layers but got %d layer names" % (len(s.rho), len(layers)))
 
     # prepend datafile name to layers
     if name is None:
@@ -300,28 +322,34 @@ def _mlayer_magnetic_to_stack(s, name, layers):
         name += " "
 
     # Construct slabs
-    magnetic_offset = np.cumsum(s.thickness-s.mthickness)
+    magnetic_offset = np.cumsum(s.thickness - s.mthickness)
     slabs = []
     nlayers = len(s.rho)
-    for i in range(nlayers-1, -1, -1):
+    for i in range(nlayers - 1, -1, -1):
         if layers:
-            Lname = layers[len(layers)-i-1]
+            Lname = layers[len(layers) - i - 1]
         elif i == 0:
-            Lname = 'V'
+            Lname = "V"
         else:
-            Lname = 'M%d'%i
-        slab_i = Slab(material=SLD(rho=s.rho[i], irho=s.irho[i], name=name+Lname),
-                      thickness=s.thickness[i],
-                      interface=s.sigma_roughness[i])
+            Lname = "M%d" % i
+        slab_i = Slab(
+            material=SLD(rho=s.rho[i], irho=s.irho[i], name=name + Lname),
+            thickness=s.thickness[i],
+            interface=s.sigma_roughness[i],
+        )
         if s.mrho[i] != 0.0:
-            slab_i.magnetism = Magnetism(s.mrho[i], s.mtheta[i],
-                                         interface_below=s.sigma_mroughness[i+1] if i < nlayers-1 else 0,
-                                         interface_above=s.sigma_mroughness[i],
-                                         dead_below=magnetic_offset[i+1] if i < nlayers-1 else 0,
-                                         dead_above=magnetic_offset[i])
+            slab_i.magnetism = Magnetism(
+                s.mrho[i],
+                s.mtheta[i],
+                interface_below=s.sigma_mroughness[i + 1] if i < nlayers - 1 else 0,
+                interface_above=s.sigma_mroughness[i],
+                dead_below=magnetic_offset[i + 1] if i < nlayers - 1 else 0,
+                dead_above=magnetic_offset[i],
+            )
         slabs.append(slab_i)
 
     return Stack(slabs)
+
 
 def _mlayer_magnetic_to_probe(s, name):
     """
@@ -331,8 +359,7 @@ def _mlayer_magnetic_to_probe(s, name):
         name = os.path.splitext(s.data_file)[0]
 
     active_xsec = s.active_xsec.upper()
-    xs = [_load_probe(s, name, xs) if (xs in active_xsec) else None
-          for xs in 'ABCD']
+    xs = [_load_probe(s, name, xs) if (xs in active_xsec) else None for xs in "ABCD"]
     probe = PolarizedNeutronProbe(xs, Aguide=s.guide_angle)
-    #probe.oversample(n=6)
+    # probe.oversample(n=6)
     return probe

@@ -65,9 +65,10 @@ You will need to provide the following methods::
 
 See the implementation of :class:`Erf` or :class:`Tanh` for a complete example.
 """
+
 from __future__ import division, print_function
 
-__all__ = ['Interface', 'Sharp', 'Erf', 'Tanh', 'Linear']
+__all__ = ["Interface", "Sharp", "Erf", "Tanh", "Linear"]
 
 import numpy as np
 from numpy import tanh, cosh, exp, log, sqrt, pi, inf
@@ -79,9 +80,11 @@ try:
     from bumps.parameter import Parameter
 except ImportError:
     print("Could not import Parameter; using trivial implementation")
+
     class Parameter(object):
         def __init__(self, value, **kw):
             self.value = value
+
         @classmethod
         def default(cls, value, **kw):
             if isinstance(value, Parameter):
@@ -89,8 +92,10 @@ except ImportError:
             else:
                 return cls(value)
 
-sech = lambda x: 1/cosh(x)
-asech = lambda x: acosh(1/x)
+
+sech = lambda x: 1 / cosh(x)
+asech = lambda x: acosh(1 / x)
+
 
 class Interface(object):
     """
@@ -99,6 +104,7 @@ class Interface(object):
     An interface defines the transition from one layer to another in terms
     of the relative proportion of materials on either side of the interface.
     """
+
     def parameters(self):
         """
         Fittable parameters
@@ -120,6 +126,7 @@ class Interface(object):
         Return the percent point function, which is the inverse of the cdf.
         """
 
+
 class Sharp(Interface):
     """
     Perfectly sharp interface
@@ -133,17 +140,19 @@ class Sharp(Interface):
     This interface has a trivial analytic solution in that it has no
     effect on the optical matrix calculation of the reflectivity.
     """
+
     def parameters(self):
         return []
 
     def cdf(self, z):
-        return 1*(z >= 0)
+        return 1 * (z >= 0)
 
     def pdf(self, z):
-        return inf*(z == 0)
+        return inf * (z == 0)
 
     def ppf(self, z):
-        return 0*z
+        return 0 * z
+
 
 class Erf(Interface):
     r"""
@@ -174,10 +183,11 @@ class Erf(Interface):
 
         F = (k_i-k_{i+1})/(k_i+k_{i+1}) \exp(-2 k_i k_{i+1} \sigma_i^2)
     """
+
     @classmethod
     def as_fwhm(cls, *args, **kw):
         self = cls(*args, **kw)
-        self._scale = 1/sqrt(8*log(2))
+        self._scale = 1 / sqrt(8 * log(2))
         return self
 
     def __init__(self, width=0, name="erf"):
@@ -185,28 +195,29 @@ class Erf(Interface):
         self.width = Parameter.default(width, limits=(0, inf), name=name)
 
     def parameters(self):
-        return {'width':self.width}
+        return {"width": self.width}
 
     def cdf(self, z):
         sigma = self.width.value * self._scale
         if sigma <= 0.0:
-            return 1.*(z >= 0)
+            return 1.0 * (z >= 0)
         else:
-            return 0.5*(1 + erf(z/(sigma*sqrt(2))))
+            return 0.5 * (1 + erf(z / (sigma * sqrt(2))))
 
     def pdf(self, z):
         sigma = self.width.value * self._scale
         if sigma <= 0.0:
-            return inf*(z == 0)
+            return inf * (z == 0)
         else:
-            return exp(z**2/(-2*sigma**2)) / sqrt(2*pi*sigma**2)
+            return exp(z**2 / (-2 * sigma**2)) / sqrt(2 * pi * sigma**2)
 
     def ppf(self, z):
         sigma = self.width.value * self._scale
         if sigma <= 0.0:
-            return 0*z
+            return 0 * z
         else:
-            return sigma*sqrt(2)*erfinv(2*z-1)
+            return sigma * sqrt(2) * erfinv(2 * z - 1)
+
 
 class Linear(Interface):
     """
@@ -222,28 +233,34 @@ class Linear(Interface):
         PDF(z) = 1/w if |z|<w/2, otherwise 0
         PPF(z) = w/2*z if |z|<w/2, -w/2 if z<-w/2, w/2 otherwise
     """
+
     def __init__(self, width=0, name="linear"):
         self.width = Parameter.default(width, limits=(0, inf), name=name)
+
     def parameters(self):
-        return {'width':self.width}
+        return {"width": self.width}
+
     def cdf(self, z):
         w = float(self.width.value)
         if w <= 0.0:
-            return 1.*(z >= 0)
+            return 1.0 * (z >= 0)
         else:
-            return np.clip(z/w + 0.5, 0, 1)
+            return np.clip(z / w + 0.5, 0, 1)
+
     def pdf(self, z):
         w = float(self.width.value)
         if w <= 0.0:
-            return inf*(z == 0)
+            return inf * (z == 0)
         else:
-            return (abs(z) < w/2)/w
+            return (abs(z) < w / 2) / w
+
     def ppf(self, z):
         w = float(self.width.value)
         if w <= 0.0:
-            return 0*z
+            return 0 * z
         else:
-            return np.clip(2*z/w, -w/2, w/2)
+            return np.clip(2 * z / w, -w / 2, w / 2)
+
 
 class Tanh(Interface):
     r"""
@@ -307,39 +324,46 @@ class Tanh(Interface):
     # To find ws 1-sigma given tanh fwhm of w, use the scale factor
     # s = C_1_sigma/C_fwhm = 1/2 atanh(erf(1/sqrt(2)))/acosh(sqrt(2))
     # to form ws = w*s
-    C = atanh(erf(1/sqrt(2)))
-    Cfwhm = 2*acosh(sqrt(2))
+    C = atanh(erf(1 / sqrt(2)))
+    Cfwhm = 2 * acosh(sqrt(2))
+
     @classmethod
     def as_fwhm(cls, *args, **kw):
         r"""
         Defines interface using FWHM rather than 1-\ $\sigma$.
         """
         self = cls(*args, **kw)
-        self._scale = Tanh.C/Tanh.Cfwhm
+        self._scale = Tanh.C / Tanh.Cfwhm
         return self
+
     def __init__(self, width=0, name="tanh"):
         self._scale = 1
         self.width = Parameter.default(width, limits=(0, inf), name=name)
+
     def parameters(self):
-        return {'width':self.width}
+        return {"width": self.width}
+
     def cdf(self, z):
         w = self.width.value * self._scale
         if w <= 0.0:
-            return 1.*(z > 0)
+            return 1.0 * (z > 0)
         else:
-            return 0.5*(1 + tanh((Tanh.C/w)*z))
+            return 0.5 * (1 + tanh((Tanh.C / w) * z))
+
     def pdf(self, z):
         w = self.width.value * self._scale
         if w <= 0.0:
-            return inf*(z == 0)
+            return inf * (z == 0)
         else:
-            return sech((Tanh.C/w)*z)**2 * (Tanh.C / (2*w))
+            return sech((Tanh.C / w) * z) ** 2 * (Tanh.C / (2 * w))
+
     def ppf(self, z):
         w = self.width.value * self._scale
         if w <= 0.0:
-            return 0*z
+            return 0 * z
         else:
-            return (w/Tanh.C)*atanh(2*z-1)
+            return (w / Tanh.C) * atanh(2 * z - 1)
+
 
 def demo_fwhm():
     """
@@ -349,6 +373,7 @@ def demo_fwhm():
 
     # Plot the cdf and pdf
     import matplotlib.pyplot as plt
+
     w = 10
     perf = Erf.as_fwhm(w)
     ptanh = Tanh.as_fwhm(w)
@@ -357,22 +382,32 @@ def demo_fwhm():
     plt.subplot(211)
     plt.plot(z, perf.cdf(z))
     plt.plot(z, ptanh.cdf(z))
-    plt.legend(['erf', 'tanh'])
+    plt.legend(["erf", "tanh"])
     plt.grid(True)
     plt.subplot(212)
-    plt.plot(z, perf.pdf(z), 'b')
-    plt.plot(z, ptanh.pdf(z), 'g')
-    plt.legend(['erf', 'tanh'])
+    plt.plot(z, perf.pdf(z), "b")
+    plt.plot(z, ptanh.pdf(z), "g")
+    plt.legend(["erf", "tanh"])
 
     # Show fwhm
-    arrowprops = dict(arrowstyle='wedge', connectionstyle='arc3', fc='0.6')
-    bbox = dict(boxstyle='round', fc='0.8')
-    plt.annotate('erf FWHM', xy=(w/2, perf.pdf(0)/2),
-                 xytext=(-35, 10), textcoords="offset points",
-                 arrowprops=arrowprops, bbox=bbox)
-    plt.annotate('tanh FWHM', xy=(w/2, ptanh.pdf(0)/2),
-                 xytext=(-35, -35), textcoords="offset points",
-                 arrowprops=arrowprops, bbox=bbox)
+    arrowprops = dict(arrowstyle="wedge", connectionstyle="arc3", fc="0.6")
+    bbox = dict(boxstyle="round", fc="0.8")
+    plt.annotate(
+        "erf FWHM",
+        xy=(w / 2, perf.pdf(0) / 2),
+        xytext=(-35, 10),
+        textcoords="offset points",
+        arrowprops=arrowprops,
+        bbox=bbox,
+    )
+    plt.annotate(
+        "tanh FWHM",
+        xy=(w / 2, ptanh.pdf(0) / 2),
+        xytext=(-35, -35),
+        textcoords="offset points",
+        arrowprops=arrowprops,
+        bbox=bbox,
+    )
 
     plt.grid(True)
 
@@ -385,35 +420,47 @@ def demo_tanh_to_erf():
 
     # Plot the cdf and pdf
     import matplotlib.pyplot as plt
+
     w = 10
-    ws = w * Tanh.C/Tanh.Cfwhm
+    ws = w * Tanh.C / Tanh.Cfwhm
     ptanh = Tanh.as_fwhm(w)
     perf = Erf(ws)
 
-    z = plt.linspace(-2*w, 2*w, 800)
+    z = plt.linspace(-2 * w, 2 * w, 800)
     plt.subplot(211)
     plt.plot(z, perf.cdf(z))
     plt.plot(z, ptanh.cdf(z))
     plt.title("""FWHM tanh -> 1-sigma erf
 scale by atanh(erf(1/sqrt(2))) / (2 acosh(sqrt(2)))""")
-    plt.legend(['erf', 'tanh'])
+    plt.legend(["erf", "tanh"])
     plt.grid(True)
     plt.subplot(212)
-    plt.plot(z, perf.pdf(z), 'b')
-    plt.plot(z, ptanh.pdf(z), 'g')
-    plt.legend(['erf', 'tanh'])
+    plt.plot(z, perf.pdf(z), "b")
+    plt.plot(z, ptanh.pdf(z), "g")
+    plt.legend(["erf", "tanh"])
 
     # Show fwhm
-    arrowprops = dict(arrowstyle='wedge', connectionstyle='arc3', fc='0.6')
-    bbox = dict(boxstyle='round', fc='0.8')
-    plt.annotate('erf 1-sigma', xy=(ws, perf.pdf(ws)),
-                 xytext=(-2, 20), textcoords="offset points",
-                 arrowprops=arrowprops, bbox=bbox)
-    plt.annotate('tanh FWHM', xy=(w/2, ptanh.pdf(0)/2),
-                 xytext=(-58, -35), textcoords="offset points",
-                 arrowprops=arrowprops, bbox=bbox)
+    arrowprops = dict(arrowstyle="wedge", connectionstyle="arc3", fc="0.6")
+    bbox = dict(boxstyle="round", fc="0.8")
+    plt.annotate(
+        "erf 1-sigma",
+        xy=(ws, perf.pdf(ws)),
+        xytext=(-2, 20),
+        textcoords="offset points",
+        arrowprops=arrowprops,
+        bbox=bbox,
+    )
+    plt.annotate(
+        "tanh FWHM",
+        xy=(w / 2, ptanh.pdf(0) / 2),
+        xytext=(-58, -35),
+        textcoords="offset points",
+        arrowprops=arrowprops,
+        bbox=bbox,
+    )
 
     plt.grid(True)
+
 
 def demo():
     """
@@ -423,57 +470,62 @@ def demo():
 
     # Plot the cdf and pdf
     import matplotlib.pyplot as plt
+
     w = 10
     perf = Erf(w)
     ptanh = Tanh(w)
-    plinear = Linear(2.35*w)
+    plinear = Linear(2.35 * w)
 
-    #arrowprops=dict(arrowstyle='wedge', connectionstyle='arc3', fc='0.6')
-    #bbox=dict(boxstyle='round', fc='0.8')
+    # arrowprops=dict(arrowstyle='wedge', connectionstyle='arc3', fc='0.6')
+    # bbox=dict(boxstyle='round', fc='0.8')
 
-    z = plt.linspace(-3*w, 3*w, 800)
+    z = plt.linspace(-3 * w, 3 * w, 800)
     plt.subplot(211)
     plt.plot(z, perf.cdf(z))
     plt.plot(z, ptanh.cdf(z))
     plt.plot(z, plinear.cdf(z))
     plt.axvline(w, linewidth=2)
-    plt.annotate('1-sigma', xy=(w*1.1, 0.2))
-    plt.legend(['erf', 'tanh'])
+    plt.annotate("1-sigma", xy=(w * 1.1, 0.2))
+    plt.legend(["erf", "tanh"])
     plt.grid(True)
     plt.subplot(212)
     plt.plot(z, perf.pdf(z))
     plt.plot(z, ptanh.pdf(z))
     plt.plot(z, plinear.pdf(z))
     plt.axvline(w, linewidth=2)
-    plt.annotate('1-sigma', xy=(w*1.1, 0.2))
-    plt.legend(['erf', 'tanh', 'linear'])
+    plt.annotate("1-sigma", xy=(w * 1.1, 0.2))
+    plt.legend(["erf", "tanh", "linear"])
     plt.grid(True)
+
 
 def _test_one(name, p, w, tol):
     import scipy.integrate as sum
+
     # Check that the pdf approximately matchs the numerical integral
     # Check that integral(-inf, 0) of pdf sums to 0.5
-    err = abs(sum.romberg(p.pdf, -20*w, 0, tol=1e-15) - 0.5)
-    assert err < tol, "%s cdf(0) == 0.5 yields %g"%(name, err)
+    err = abs(sum.romberg(p.pdf, -20 * w, 0, tol=1e-15) - 0.5)
+    assert err < tol, "%s cdf(0) == 0.5 yields %g" % (name, err)
 
     # Check that integral(-inf, x) of pdf sums to cdf when x != 0
-    err = abs(sum.romberg(p.pdf, -20*w, w/6, tol=1e-15) - p.cdf(w/6))
-    assert err < tol, "%s cdf(w/6) == w/6 yields %g"%(name, err)
+    err = abs(sum.romberg(p.pdf, -20 * w, w / 6, tol=1e-15) - p.cdf(w / 6))
+    assert err < tol, "%s cdf(w/6) == w/6 yields %g" % (name, err)
 
     # Check that P = cdf(ppf(P))
     P = 0.002
     err = abs(p.cdf(p.ppf(P)) - P)
-    assert err < tol, "%s p(lo) = P yields %g"%(name, err)
+    assert err < tol, "%s p(lo) = P yields %g" % (name, err)
+
 
 def test():
     w = 1.5
-    _test_one('Erf', Erf(w), w=w, tol=1e-13)
-    _test_one('Tanh', Tanh(w), w=w, tol=1e-11)
-    _test_one('Erf:fwhm', Erf.as_fwhm(2.35*w), w=w, tol=1e-11)
-    _test_one('Tanh:fwhm', Tanh.as_fwhm(2*w), w=w, tol=1e-11)
+    _test_one("Erf", Erf(w), w=w, tol=1e-13)
+    _test_one("Tanh", Tanh(w), w=w, tol=1e-11)
+    _test_one("Erf:fwhm", Erf.as_fwhm(2.35 * w), w=w, tol=1e-11)
+    _test_one("Tanh:fwhm", Tanh.as_fwhm(2 * w), w=w, tol=1e-11)
+
 
 if __name__ == "__main__":
-    #demo()
-    #demo_fwhm()
-    #demo_tanh_to_erf()
+    # demo()
+    # demo_fwhm()
+    # demo_tanh_to_erf()
     test()

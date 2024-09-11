@@ -5,6 +5,7 @@ class Vector(object):
 
     This will usually be used for graphing.
     """
+
     def __init__(self, data=(), err=(), name="", units=""):
         self.name = name
         self.units = units
@@ -14,15 +15,18 @@ class Vector(object):
     def plot(self, page, **kw):
         return page.bar(self, **kw)
 
+
 class Data(object):
     """
     A simple 1-D dataset x vs. y.
     """
+
     def __init__(self, x, y):
         self.x, self.y = x, y
 
     def plot(self, page, **kw):
         return page.marker(x, y, **kw)
+
 
 class Trend(object):
     """
@@ -30,11 +34,13 @@ class Trend(object):
     should probably have a mechanism for recalculating given new
     axes limits.
     """
+
     def __init__(self, x=None, y=None):
         self.fx, self.fy = fx, fy
 
     def plot(self, page, **kw):
         return page.line(fx, fy, **kw)
+
 
 class Histogram(object):
     def __init__(self, x=None):
@@ -43,10 +49,12 @@ class Histogram(object):
     def plot(self, page, **kw):
         return huh
 
+
 class Fit(object):
     """
     Data plus trend.
     """
+
     def __init__(self, data=None, trend=None):
         self.data, self.trend = data, trend
 
@@ -54,6 +62,7 @@ class Fit(object):
         h1 = self.data.plot(page)
         h2 = self.trend.plot(page, style=h.style.complement())
         return huh
+
 
 class Data2D(object):
     def __init__(self, x, y, z):
@@ -71,6 +80,7 @@ class Style(object):
     def contrast(self):
         return Contrast(self)
 
+
 class Complement(Style):
     def __init__(self, base, k, n):
         self.base, self.k, self.n = base, k, n
@@ -78,12 +88,14 @@ class Complement(Style):
     def color(self):
         return self._color.darken(k, n)
 
+
 class Contrast(Style):
     def __init__(self, base, k, n):
         self.base, self.k, self.n = base, k, n
 
     def color(self):
         return palette.next_color()
+
 
 class Page(object):
     def marker(self, x=None, y=None, **kw):
@@ -102,7 +114,7 @@ class Page(object):
         Returns a handle.
         """
 
-    def surface(self, x=None, y=None, z=None,  **kw):
+    def surface(self, x=None, y=None, z=None, **kw):
         """
         Add a surface to the axes, with appropriate representation for
         uncertainty in x, y and z.
@@ -114,6 +126,7 @@ class Page(object):
         """
         Add labels to the axes.
         """
+
 
 class MplPage(Page):
     def _new_axes(self, x, y):
@@ -134,7 +147,7 @@ class MplPage(Page):
 
     def line(self, x=None, y=None, **kw):
         ax = self._get_axes(x, y)
-        ax.plot(x.data, y.data, '-')
+        ax.plot(x.data, y.data, "-")
 
     def surface(self, x=None, y=None, z=None, **kw):
         ax = self._get_axes(x, y)

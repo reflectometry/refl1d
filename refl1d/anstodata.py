@@ -48,8 +48,7 @@ def _load_dat(f):
         header_lines = 0
         for i, line in enumerate(fh):
             try:
-                nums = [float(tok) for tok in re.split(r'\s|,', line)
-                        if len(tok)]
+                nums = [float(tok) for tok in re.split(r"\s|,", line) if len(tok)]
             except ValueError:
                 continue
             if len(nums) >= 2:
@@ -101,10 +100,11 @@ class Platypus(ANSTOData):
     """
     Loader for reduced data from the ANSTO Platypus instrument.
     """
+
     instrument = "Platypus"
     radiation = "neutron"
 
 
 INSTRUMENTS = {
-    'Platypus': Platypus,
-    }
+    "Platypus": Platypus,
+}

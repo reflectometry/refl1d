@@ -121,13 +121,14 @@ metadata values are changed, the resolution can be recomputed and the
 display updated.  When the data set is accepted, the final resolution
 calculation can be performed.
 """
+
 from __future__ import division, print_function
 
 # TODO: the resolution calculator should not be responsible for loading
 # the data; maybe do it as a mixin?
 
 import numpy as np
-#from numpy import pi, inf, sqrt, log, degrees, radians, cos, sin, tan
+# from numpy import pi, inf, sqrt, log, degrees, radians, cos, sin, tan
 
 from .resolution import QL2T
 from .resolution import bins, binwidths, binedges
@@ -181,6 +182,7 @@ class Monochromatic(object):
             of the rocking curve by subtracting (s1+s2)/2/(d_s1-d_s2) from
             the FWHM width of the rocking curve
     """
+
     instrument = "monochromatic"
     radiation = "unknown"
     # Required attributes
@@ -192,10 +194,10 @@ class Monochromatic(object):
     Tlo = 90  # Use 90 for fixed slits; this is effectively inf
     Thi = 90
     fixed_slits = None
-    slits_at_Tlo = None    # Slit openings at Tlo, and default for slits_below
-    slits_below = None     # Slit openings below Tlo, or fixed slits if Tlo=90
+    slits_at_Tlo = None  # Slit openings at Tlo, and default for slits_below
+    slits_below = None  # Slit openings below Tlo, or fixed slits if Tlo=90
     slits_above = None
-    sample_width = 1e10    # Large but finite value
+    sample_width = 1e10  # Large but finite value
     sample_broadening = 0
 
     def __init__(self, **kw):
@@ -204,7 +206,7 @@ class Monochromatic(object):
             if hasattr(self, k):
                 setattr(self, k, v)
             else:
-                raise TypeError("unexpected keyword argument '%s'"%k)
+                raise TypeError("unexpected keyword argument '%s'" % k)
 
     def probe(self, **kw):
         """
@@ -232,9 +234,9 @@ class Monochromatic(object):
         """
         self._translate_Q_to_theta(kw)
         T, dT, L, dL = self.resolution(**kw)
-        sample_broadening = kw.get('sample_broadening', self.sample_broadening)
-        kw.update(T=T, dT=dT-sample_broadening, L=L, dL=dL)
-        kw.setdefault('radiation', self.radiation)
+        sample_broadening = kw.get("sample_broadening", self.sample_broadening)
+        kw.update(T=T, dT=dT - sample_broadening, L=L, dL=dL)
+        kw.setdefault("radiation", self.radiation)
         return make_probe(**kw)
 
     def magnetic_probe(self, Aguide=BASE_GUIDE_ANGLE, shared_beam=True, H=0, **kw):
@@ -250,8 +252,7 @@ class Monochromatic(object):
         to define the angular divergence.
         """
         base_name = kw.pop("name", "")
-        probes = [self.probe(name=base_name+xs, **kw)
-                  for xs in ("--", "-+", "+-", "++")]
+        probes = [self.probe(name=base_name + xs, **kw) for xs in ("--", "-+", "+-", "++")]
         probe = PolarizedNeutronProbe(probes, Aguide=Aguide, H=H)
         if shared_beam:
             probe.shared_beam()  # Share the beam parameters by default
@@ -268,24 +269,24 @@ class Monochromatic(object):
                 Wavelengths and wavelength dispersion.
         """
         self._translate_Q_to_theta(kw)
-        if 'T' not in kw:
+        if "T" not in kw:
             raise TypeError("resolution requires slits and either T or Q")
 
-        L = kw.get('L', kw.get('wavelength', self.wavelength))
-        if 'dL' in kw:
-            dL = kw['dL']
+        L = kw.get("L", kw.get("wavelength", self.wavelength))
+        if "dL" in kw:
+            dL = kw["dL"]
         else:
-            dL = kw.get('dLoL', self.dLoL) * L
+            dL = kw.get("dLoL", self.dLoL) * L
 
         if L is None or dL is None:
             raise TypeError("Need wavelength and wavelength dispersion to compute resolution")
 
-        T = kw['T']
-        if 'dT' in kw:
-            dT = kw['dT']
+        T = kw["T"]
+        if "dT" in kw:
+            dT = kw["dT"]
         else:
-            if 'slits' not in kw:
-                kw['slits'] = self.calc_slits(**kw)
+            if "slits" not in kw:
+                kw["slits"] = self.calc_slits(**kw)
             dT = self.calc_dT(**kw)
 
         return T, dT, L, dL
@@ -307,27 +308,26 @@ class Monochromatic(object):
         Use fixed_slits is available, otherwise use opening slits.
         """
         self._translate_Q_to_theta(kw)
-        if 'T' not in kw:
+        if "T" not in kw:
             raise TypeError("calc_slits requires angle T=... or Q=...")
-        T = kw['T']
-        Tlo = kw.get('Tlo', self.Tlo)
-        Thi = kw.get('Thi', self.Thi)
-        fixed_slits = kw.get('fixed_slits', self.fixed_slits)
+        T = kw["T"]
+        Tlo = kw.get("Tlo", self.Tlo)
+        Thi = kw.get("Thi", self.Thi)
+        fixed_slits = kw.get("fixed_slits", self.fixed_slits)
         if fixed_slits is not None:
             slits_at_Tlo = slits_below = slits_above = fixed_slits
             Tlo = 90
         else:
-            slits_at_Tlo = kw.get('slits_at_Tlo', self.slits_at_Tlo)
-            slits_below = kw.get('slits_below', self.slits_below)
-            slits_above = kw.get('slits_above', self.slits_above)
+            slits_at_Tlo = kw.get("slits_at_Tlo", self.slits_at_Tlo)
+            slits_below = kw.get("slits_below", self.slits_below)
+            slits_above = kw.get("slits_above", self.slits_above)
 
         # Otherwise we are using opening slits
         if Tlo is None or slits_at_Tlo is None:
             raise TypeError("Resolution calculation requires Tlo and slits_at_Tlo")
-        slits = slit_widths(T=T, slits_at_Tlo=slits_at_Tlo,
-                            Tlo=Tlo, Thi=Thi,
-                            slits_below=slits_below,
-                            slits_above=slits_above)
+        slits = slit_widths(
+            T=T, slits_at_Tlo=slits_at_Tlo, Tlo=Tlo, Thi=Thi, slits_below=slits_below, slits_above=slits_above
+        )
         return slits
 
     def calc_dT(self, **kw):
@@ -357,19 +357,19 @@ class Monochromatic(object):
 
         """
         self._translate_Q_to_theta(kw)
-        if 'T' not in kw or 'slits' not in kw:
+        if "T" not in kw or "slits" not in kw:
             raise TypeError("calc_dT requires slits and either T or Q")
-        slits = kw['slits']
-        T = kw['T']
-        d_s1 = kw.get('d_s1', self.d_s1)
-        d_s2 = kw.get('d_s2', self.d_s2)
+        slits = kw["slits"]
+        T = kw["T"]
+        d_s1 = kw.get("d_s1", self.d_s1)
+        d_s2 = kw.get("d_s2", self.d_s2)
         if d_s1 is None or d_s2 is None:
             raise TypeError("Need slit distances d_s1, d_s2 to compute resolution")
-        sample_width = kw.get('sample_width', self.sample_width)
-        sample_broadening = kw.get('sample_broadening', self.sample_broadening)
-        dT = divergence(T=T, slits=slits, distance=(d_s1, d_s2),
-                        sample_width=sample_width,
-                        sample_broadening=sample_broadening)
+        sample_width = kw.get("sample_width", self.sample_width)
+        sample_broadening = kw.get("sample_broadening", self.sample_broadening)
+        dT = divergence(
+            T=T, slits=slits, distance=(d_s1, d_s2), sample_width=sample_width, sample_broadening=sample_broadening
+        )
 
         return dT
 
@@ -379,7 +379,7 @@ class Monochromatic(object):
         """
         # Grab wavelength first so we can translate Qlo/Qhi to Tlo/Thi no
         # matter what order the keywords appear.
-        wavelength = kw.get('wavelength', self.wavelength)
+        wavelength = kw.get("wavelength", self.wavelength)
         if "Q" in kw:
             kw["T"] = QL2T(kw.pop("Q"), wavelength)
         if "Qlo" in kw:
@@ -398,13 +398,19 @@ fixed region below %(Tlo)g and above %(Thi)g degrees
 slit openings at Tlo are %(slits_at_Tlo)s mm
 sample width = %(sample_width)g mm
 sample broadening = %(sample_broadening)g degrees\
-""" % dict(name=self.instrument, L=self.wavelength, dLpercent=self.dLoL*100,
-           d_s1=self.d_s1, d_s2=self.d_s2,
-           sample_width=self.sample_width,
-           sample_broadening=self.sample_broadening,
-           Tlo=self.Tlo, Thi=self.Thi,
-           slits_at_Tlo=str(self.slits_at_Tlo), radiation=self.radiation,
-          )
+""" % dict(
+            name=self.instrument,
+            L=self.wavelength,
+            dLpercent=self.dLoL * 100,
+            d_s1=self.d_s1,
+            d_s2=self.d_s2,
+            sample_width=self.sample_width,
+            sample_broadening=self.sample_broadening,
+            Tlo=self.Tlo,
+            Thi=self.Thi,
+            slits_at_Tlo=str(self.slits_at_Tlo),
+            radiation=self.radiation,
+        )
         return msg
 
     @classmethod
@@ -416,11 +422,10 @@ sample broadening = %(sample_broadening)g degrees\
 == Instrument class %(name)s ==
 radiation = %(radiation)s at %(L)s Angstrom with %(dL)s resolution
 slit distances = %(d_s1)s mm and %(d_s2)s mm"""
-        L, d_s1, d_s2 = ["%g"%v if v is not None else 'unknown'
-                         for v in (cls.wavelength, cls.d_s1, cls.d_s2)]
-        dL = "%g%%"%(cls.dLoL*100) if cls.dLoL else 'unknown'
-        return msg % dict(name=cls.instrument, radiation=cls.radiation,
-                          L=L, dL=dL, d_s1=d_s1, d_s2=d_s2)
+        L, d_s1, d_s2 = ["%g" % v if v is not None else "unknown" for v in (cls.wavelength, cls.d_s1, cls.d_s2)]
+        dL = "%g%%" % (cls.dLoL * 100) if cls.dLoL else "unknown"
+        return msg % dict(name=cls.instrument, radiation=cls.radiation, L=L, dL=dL, d_s1=d_s1, d_s2=d_s2)
+
 
 class Pulsed(object):
     """
@@ -466,31 +471,31 @@ class Pulsed(object):
             of the rocking curve by subtracting 0.5*(s1+s2)/(d_s1-d_s2) from
             the FWHM width of the rocking curve
     """
+
     instrument = "pulsed"
-    radiation = "neutron" # unless someone knows how to do TOF Xray...
+    radiation = "neutron"  # unless someone knows how to do TOF Xray...
     # Required attributes
     d_s1 = None
     d_s2 = None
     slits = None
     T = None
     wavelength = None
-    dLoL = None # usually 0.02 for 2% FWHM
+    dLoL = None  # usually 0.02 for 2% FWHM
     # Optional attributes
     TOF_range = (0, np.inf)
     Tlo = 90  # Use 90 for fixed slits; this is effectively inf
     Thi = 90
     fixed_slits = None
-    slits_at_Tlo = None    # Slit openings at Tlo, and default for slits_below
-    slits_below = None     # Slit openings below Tlo, or fixed slits if Tlo=90
+    slits_at_Tlo = None  # Slit openings at Tlo, and default for slits_below
+    slits_below = None  # Slit openings below Tlo, or fixed slits if Tlo=90
     slits_above = None
-    sample_width = 1e10    # Large but finite value
+    sample_width = 1e10  # Large but finite value
     sample_broadening = 0
-
 
     def __init__(self, **kw):
         for k, v in kw.items():
             if not hasattr(self, k):
-                raise TypeError("unexpected keyword argument '%s'"%k)
+                raise TypeError("unexpected keyword argument '%s'" % k)
             setattr(self, k, v)
 
     def probe(self, **kw):
@@ -505,15 +510,14 @@ class Pulsed(object):
         the angular divergence and *dLoL* defines the wavelength
         resolution.
         """
-        low, high = kw.get('wavelength', self.wavelength)
-        dLoL = kw.get('dLoL', self.dLoL)
-        T = kw.pop('T', self.T)
+        low, high = kw.get("wavelength", self.wavelength)
+        dLoL = kw.get("dLoL", self.dLoL)
+        T = kw.pop("T", self.T)
         L = bins(low, high, dLoL)
         dL = binwidths(L)
         T, dT, L, dL = self.resolution(L=L, dL=dL, T=T, **kw)
-        sample_broadening = kw.get('sample_broadening', self.sample_broadening)
-        return make_probe(T=T, dT=dT-sample_broadening, L=L, dL=dL,
-                          radiation=self.radiation, **kw)
+        sample_broadening = kw.get("sample_broadening", self.sample_broadening)
+        return make_probe(T=T, dT=dT - sample_broadening, L=L, dL=dL, radiation=self.radiation, **kw)
 
     def magnetic_probe(self, Aguide=BASE_GUIDE_ANGLE, shared_beam=True, **kw):
         """
@@ -568,17 +572,18 @@ class Pulsed(object):
         from .rebin import rebin
         from .experiment import Experiment
         from .probe import ProbeSet
-        T = kw.pop('T', self.T)
-        slits = kw.pop('slits', self.slits)
-        if slits is None:
-            raise TypeError('Need slit openings for simulation')
 
-        dLoL = kw.pop('dLoL', self.dLoL)
-        normalize = kw.pop('normalize', True)
-        theta_offset = kw.pop('theta_offset', 0)
-        background = kw.pop('background', 0)
-        back_reflectivity = kw.pop('back_reflectivity', False)
-        back_absorption = kw.pop('back_absorption', 1)
+        T = kw.pop("T", self.T)
+        slits = kw.pop("slits", self.slits)
+        if slits is None:
+            raise TypeError("Need slit openings for simulation")
+
+        dLoL = kw.pop("dLoL", self.dLoL)
+        normalize = kw.pop("normalize", True)
+        theta_offset = kw.pop("theta_offset", 0)
+        background = kw.pop("background", 0)
+        back_reflectivity = kw.pop("back_reflectivity", False)
+        back_absorption = kw.pop("back_absorption", 1)
         uncertainty *= 0.01
 
         # Compute reflectivity with resolution and added noise
@@ -592,16 +597,15 @@ class Pulsed(object):
             _, Rth = M.reflectivity()
             # Note: probe.L is reversed because L is sorted by increasing
             # Q in probe.
-            I = rebin(binedges(self.feather[0]), self.feather[1],
-                      binedges(probe.L[::-1]))[::-1]
-            Ci = np.median(1./(uncertainty**2 * I * Rth))
-            Igoal = Ci*I
-            Ibeam = pois(Igoal)+1.
+            I = rebin(binedges(self.feather[0]), self.feather[1], binedges(probe.L[::-1]))[::-1]
+            Ci = np.median(1.0 / (uncertainty**2 * I * Rth))
+            Igoal = Ci * I
+            Ibeam = pois(Igoal) + 1.0
 
-            Irefl = pois(Igoal*Rth)+1.
+            Irefl = pois(Igoal * Rth) + 1.0
             if background > 0:
-                Irefl += pois(Igoal*background) + 1.0
-                Iback = pois(Igoal*background) + 1.0
+                Irefl += pois(Igoal * background) + 1.0
+                Iback = pois(Igoal * background) + 1.0
             else:
                 Iback = 0
             # Set intensity/background _after_ calculating the theory function
@@ -616,21 +620,21 @@ class Pulsed(object):
             #       = (1/X + 1/Y) * (X/Y)**2
             #       = (Y + X) * X/Y**3
             #    dZ = sqrt( (Y+X)*X/Y**3) = sqrt((Y+X)*(X/Y))/Y
-            R = (Irefl-Iback)/Ibeam
-            dR = np.sqrt((Irefl + Iback + Ibeam)*(Irefl/Ibeam))/Ibeam
+            R = (Irefl - Iback) / Ibeam
+            dR = np.sqrt((Irefl + Iback + Ibeam) * (Irefl / Ibeam)) / Ibeam
             if np.isnan(dR).any() or (dR == 0).any() or (R <= 0).any():
-                print("Ibeam %s"%Ibeam)
-                print("Irefl %s"%Irefl)
-                print("Iback %s"%Iback)
-                print("R %s"%R)
-                print("dR %s"%dR)
+                print("Ibeam %s" % Ibeam)
+                print("Irefl %s" % Irefl)
+                print("Iback %s" % Iback)
+                print("R %s" % R)
+                print("dR %s" % dR)
                 raise RuntimeError("Should not be able to get here!!")
-            #dR[Irefl==0] == 1./Ibeam[Irefl==0]
-            #print("median %s"%np.median(dR/R))
+            # dR[Irefl==0] == 1./Ibeam[Irefl==0]
+            # print("median %s"%np.median(dR/R))
 
             if not normalize:
-                #Ci = 1./max(R)
-                R, dR = R*Ci, dR*Ci
+                # Ci = 1./max(R)
+                R, dR = R * Ci, dR * Ci
                 probe.background.value *= Ci
                 probe.intensity.value = Ci
 
@@ -645,9 +649,9 @@ class Pulsed(object):
         Return the resolution of the measurement.  Needs *T*, *L*, *dL*
         specified as keywords.
         """
-        T = kw.pop('T', self.T)
-        if 'slits' not in kw:
-            kw['slits'] = self.calc_slits(T=T, **kw)
+        T = kw.pop("T", self.T)
+        if "slits" not in kw:
+            kw["slits"] = self.calc_slits(T=T, **kw)
         dT = self.calc_dT(T, **kw)
 
         # Compute the FWHM angular divergence in radians
@@ -670,37 +674,36 @@ class Pulsed(object):
 
         Use fixed_slits is available, otherwise use opening slits.
         """
-        if 'T' not in kw:
+        if "T" not in kw:
             raise TypeError("calc_slits requires angle T=...")
-        T = kw['T']
-        Tlo = kw.get('Tlo', self.Tlo)
-        Thi = kw.get('Thi', self.Thi)
-        fixed_slits = kw.get('fixed_slits', self.fixed_slits)
+        T = kw["T"]
+        Tlo = kw.get("Tlo", self.Tlo)
+        Thi = kw.get("Thi", self.Thi)
+        fixed_slits = kw.get("fixed_slits", self.fixed_slits)
         if fixed_slits is not None:
             slits_at_Tlo = slits_below = slits_above = fixed_slits
             Tlo = 90
         else:
-            slits_at_Tlo = kw.get('slits_at_Tlo', self.slits_at_Tlo)
-            slits_below = kw.get('slits_below', self.slits_below)
-            slits_above = kw.get('slits_above', self.slits_above)
+            slits_at_Tlo = kw.get("slits_at_Tlo", self.slits_at_Tlo)
+            slits_below = kw.get("slits_below", self.slits_below)
+            slits_above = kw.get("slits_above", self.slits_above)
 
         # Otherwise we are using opening slits
         if Tlo is None or slits_at_Tlo is None:
             raise TypeError("Resolution calculation requires Tlo and slits_at_Tlo")
-        slits = slit_widths(T=T, slits_at_Tlo=slits_at_Tlo,
-                            Tlo=Tlo, Thi=Thi,
-                            slits_below=slits_below,
-                            slits_above=slits_above)
+        slits = slit_widths(
+            T=T, slits_at_Tlo=slits_at_Tlo, Tlo=Tlo, Thi=Thi, slits_below=slits_below, slits_above=slits_above
+        )
         return slits
 
     def calc_dT(self, T, slits, **kw):
-        d_s1 = kw.get('d_s1', self.d_s1)
-        d_s2 = kw.get('d_s2', self.d_s2)
-        sample_width = kw.get('sample_width', self.sample_width)
-        sample_broadening = kw.get('sample_broadening', self.sample_broadening)
-        dT = divergence(T=T, slits=slits, distance=(d_s1, d_s2),
-                        sample_width=sample_width,
-                        sample_broadening=sample_broadening)
+        d_s1 = kw.get("d_s1", self.d_s1)
+        d_s2 = kw.get("d_s2", self.d_s2)
+        sample_width = kw.get("sample_width", self.sample_width)
+        sample_broadening = kw.get("sample_broadening", self.sample_broadening)
+        dT = divergence(
+            T=T, slits=slits, distance=(d_s1, d_s2), sample_width=sample_width, sample_broadening=sample_broadening
+        )
 
         return dT
 
@@ -712,14 +715,18 @@ slit distances = %(d_s1)g mm and %(d_s2)g mm
 slit openings = %(slits)s mm
 sample width = %(sample_width)g mm
 sample broadening = %(sample_broadening)g degrees FWHM
-""" % dict(name=self.instrument,
-           L_min=self.wavelength[0], L_max=self.wavelength[1],
-           dLpercent=self.dLoL*100,
-           d_s1=self.d_s1, d_s2=self.d_s2, slits=str(self.slits),
-           sample_width=self.sample_width,
-           sample_broadening=self.sample_broadening,
-           radiation=self.radiation,
-          )
+""" % dict(
+            name=self.instrument,
+            L_min=self.wavelength[0],
+            L_max=self.wavelength[1],
+            dLpercent=self.dLoL * 100,
+            d_s1=self.d_s1,
+            d_s2=self.d_s2,
+            slits=str(self.slits),
+            sample_width=self.sample_width,
+            sample_broadening=self.sample_broadening,
+            radiation=self.radiation,
+        )
         return msg
 
     @classmethod
@@ -731,13 +738,17 @@ sample broadening = %(sample_broadening)g degrees FWHM
 == Instrument class %(name)s ==
 radiation = %(radiation)s in %(L_min)g to %(L_max)g Angstrom with %(dLpercent)g%% resolution
 slit distances = %(d_s1)g mm and %(d_s2)g mm
-""" % dict(name=cls.instrument,
-           L_min=cls.wavelength[0], L_max=cls.wavelength[1],
-           dLpercent=cls.dLoL*100,
-           d_s1=cls.d_s1, d_s2=cls.d_s2,
-           radiation=cls.radiation,
-          )
+""" % dict(
+            name=cls.instrument,
+            L_min=cls.wavelength[0],
+            L_max=cls.wavelength[1],
+            dLpercent=cls.dLoL * 100,
+            d_s1=cls.d_s1,
+            d_s2=cls.d_s2,
+            radiation=cls.radiation,
+        )
         return msg
+
 
 _ = '''
 class GenericMonochromatic(Monochromatic):

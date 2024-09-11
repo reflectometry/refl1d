@@ -30,6 +30,7 @@ within the model in order for the MCMC uncertainty analysis to work correctly.
 *FIT_REJECT_PENALTY* is set to 1e6, which should be high enough that it
 doesn't perturb the fit.
 """
+
 __all__ = ["load"]
 
 import sys
@@ -51,23 +52,27 @@ from .profile import Microslabs
 from .material import SLD, Vacuum
 
 if sys.version_info[0] >= 3:
+
     def tostr(s):
-        return s.decode('ascii')
+        return s.decode("ascii")
 else:
+
     def tostr(s):
         return s
+
 
 def trace(fn):
     """simple function trace function"""
     return fn  # Comment this to turn on tracing
+
     def wrapper(*args, **kw):
-        print("entering %s for thread %s:%s"
-              %(fn.func_name, getpid(), current_thread()))
+        print("entering %s for thread %s:%s" % (fn.func_name, getpid(), current_thread()))
         ret = fn(*args, **kw)
-        print("leaving %s for thread %s:%s"
-              %(fn.func_name, getpid(), current_thread()))
+        print("leaving %s for thread %s:%s" % (fn.func_name, getpid(), current_thread()))
         return ret
+
     return wrapper
+
 
 def load(modelfile, probes=None):
     """
@@ -85,25 +90,26 @@ def load(modelfile, probes=None):
     else:
         return FitProblem(M[0], constraints=constraints)
 
+
 def experiment(modelfile, probes=None):
     setup = GareflModel(modelfile)
     if probes:
         if len(probes) != setup.num_models:
             raise ValueError("Number of datasets must match number of models")
-        M = [GareflExperiment(setup, k, probe=probes[k])
-             for k in range(setup.num_models)]
+        M = [GareflExperiment(setup, k, probe=probes[k]) for k in range(setup.num_models)]
     else:
         M = [GareflExperiment(setup, k) for k in range(setup.num_models)]
     names = setup.par_names()
     low, high = setup.par_bounds()
     value = setup.par_values()
-    pars = [Parameter(v, name=s, bounds=(L, H))
-            for v, s, L, H in zip(value, names, low, high)]
+    pars = [Parameter(v, name=s, bounds=(L, H)) for v, s, L, H in zip(value, names, low, high)]
     M[0]._pars = pars
     return M
 
-NOTHING=Vacuum()
-NOTHING.name = ''
+
+NOTHING = Vacuum()
+NOTHING.name = ""
+
 
 class GareflExperiment(Experiment):
     def __init__(self, model, index, dz=1, step_interfaces=None, probe=None):
@@ -121,8 +127,8 @@ class GareflExperiment(Experiment):
         self._cache = {}  # Cache calculated profiles/reflectivities
         self._pars = None
         self.roughness_limit = 2.35
-        self._substrate = SLD(name='substrate', rho=0)
-        self._surface = SLD(name='surface', rho=0)
+        self._substrate = SLD(name="substrate", rho=0)
+        self._surface = SLD(name="surface", rho=0)
         self._name = None
         self.interpolation = 0
 
@@ -130,27 +136,28 @@ class GareflExperiment(Experiment):
         return self._pars
 
     def to_dict(self):
-        return to_dict({
-            'type': type(self).__name__,
-            'dll_path': self.model._dll_path,
-            'index': self.index,
-            'parameters': self.parameters(),
-        })
+        return to_dict(
+            {
+                "type": type(self).__name__,
+                "dll_path": self.model._dll_path,
+                "index": self.index,
+                "parameters": self.parameters(),
+            }
+        )
 
     def _render_slabs(self):
         """
         Build a slab description of the model from the individual layers.
         """
-        key = 'rendered'
+        key = "rendered"
         if key not in self._cache:
-
             if self._pars is not None:
-                pvec = array([p.value for p in self._pars], 'd')
+                pvec = array([p.value for p in self._pars], "d")
                 self._chisq = self.model.update_model(pvec, forced=True)
 
             self._slabs.clear()
             w, rho, irho, rhoM, thetaM = self.model.get_profile(self.index)
-            rho, irho, rhoM = 1e6*rho, 1e6*irho, 1e6*rhoM # remove zeros
+            rho, irho, rhoM = 1e6 * rho, 1e6 * irho, 1e6 * rhoM  # remove zeros
             self._slabs.extend(w=w, rho=rho[None, :], irho=irho[None, :])
             # TODO: What about rhoM, thetaM
 
@@ -179,7 +186,7 @@ class GareflExperiment(Experiment):
         """
         Calculate predicted reflectivity.
         """
-        key = 'reflectivity'
+        key = "reflectivity"
         if key not in self._cache:
             self._render_slabs()  # Force recacluation
             if self.probe.polarized:
@@ -195,6 +202,7 @@ class GareflExperiment(Experiment):
 
     def output_model(self):
         self.model.output_model()
+
 
 class GareflModel(object):
     def __init__(self, path):
@@ -232,11 +240,11 @@ class GareflModel(object):
     # module on the other side.
     def __getstate__(self):
         return self._dll_path
+
     def __setstate__(self, state):
         self._dll_path = state
         self._load_dll()
         self._setup_model()
-
 
     def clear_model(self):
         if self.num_models:
@@ -245,13 +253,11 @@ class GareflModel(object):
 
     @trace
     def update_model(self, p, weighted=1, approximate_roughness=0, forced=False):
-        p = p/self.scale
-        #assert p.flags.aligned and (p.flags.c_contiguous or p.flags.f_contiguous)
-        #assert p.size == self.num_pars
+        p = p / self.scale
+        # assert p.flags.aligned and (p.flags.c_contiguous or p.flags.f_contiguous)
+        # assert p.size == self.num_pars
         self.dll.ex_set_pars(self.models, p.ctypes)
-        chisq = self.dll.ex_update_models(self.models, self.num_models,
-                                          weighted, approximate_roughness,
-                                          int(forced))
+        chisq = self.dll.ex_update_models(self.models, self.num_models, weighted, approximate_roughness, int(forced))
         return chisq
 
     @trace
@@ -273,7 +279,7 @@ class GareflModel(object):
         n = self.dll.ex_ndata(self.models, k, xs)
         if n == 0:
             return None
-        data = empty((n, 4), 'd')
+        data = empty((n, 4), "d")
         filename = tostr(self.dll.ex_get_data(self.models, k, xs, data.ctypes))
         Q, dQ, R, dR = data.T
         probe = QProbe(Q, dQ, data=(R, dR), name=filename)
@@ -293,14 +299,14 @@ class GareflModel(object):
     def _setdata(self, k, xs, probe):
         if probe is not None:
             n = probe.Q
-            data = empty((n, 4), dtype='d', order='F')
+            data = empty((n, 4), dtype="d", order="F")
             data[:, 0] = probe.Q
             data[:, 1] = probe.dQ
             data[:, 2] = probe.R
             data[:, 3] = probe.dR
         else:
             n = 0
-            data = empty((n, 4), 'd')
+            data = empty((n, 4), "d")
         result = self.dll.ex_set_data(self.models, k, xs, n, data.ctypes)
         if result < 0:
             raise RuntimeError("unable to create data in garefl")
@@ -308,23 +314,20 @@ class GareflModel(object):
     @trace
     def get_profile(self, k):
         n = self.dll.ex_nprofile(self.models, k)
-        w, rho, irho, rhoM, thetaM = [zeros(n, 'd') for _ in range(5)]
-        self.dll.ex_get_profile(self.models, k, w.ctypes,
-                                rho.ctypes, irho.ctypes,
-                                rhoM.ctypes, thetaM.ctypes)
+        w, rho, irho, rhoM, thetaM = [zeros(n, "d") for _ in range(5)]
+        self.dll.ex_get_profile(self.models, k, w.ctypes, rho.ctypes, irho.ctypes, rhoM.ctypes, thetaM.ctypes)
         return w[::-1], rho[::-1], irho[::-1], rhoM[::-1], thetaM[::-1]
 
     @trace
     def get_reflectivity(self, k, xs):
         n = self.dll.ex_ncalc(self.models, k)
-        Q, R = empty(n, 'd'), empty(n, 'd')
-        self.dll.ex_get_reflectivity(self.models, k, xs,
-                                     Q.ctypes, R.ctypes)
+        Q, R = empty(n, "d"), empty(n, "d")
+        self.dll.ex_get_reflectivity(self.models, k, xs, Q.ctypes, R.ctypes)
         return Q, R
 
     @trace
     def get_penalty(self):
-        #print "penalty", self.dll.ex_get_penalty(self.models), self.par_values()
+        # print "penalty", self.dll.ex_get_penalty(self.models), self.par_values()
         return self.dll.ex_get_penalty(self.models)
 
     @trace
@@ -336,21 +339,20 @@ class GareflModel(object):
 
     @trace
     def par_names(self):
-        return [tostr(self.dll.ex_par_name(self.models, i))
-                for i in range(self.num_pars)]
+        return [tostr(self.dll.ex_par_name(self.models, i)) for i in range(self.num_pars)]
 
     @trace
     def par_bounds(self):
-        return self._par_bounds()*self.scale
+        return self._par_bounds() * self.scale
 
     @trace
     def _par_bounds(self):
-        lo, hi = empty(self.num_pars, 'd'), empty(self.num_pars, 'd')
+        lo, hi = empty(self.num_pars, "d"), empty(self.num_pars, "d")
         self.dll.ex_par_bounds(self.models, lo.ctypes, hi.ctypes)
         return lo, hi
 
     @trace
     def par_values(self):
-        p = empty(self.num_pars, 'd')
+        p = empty(self.num_pars, "d")
         self.dll.ex_par_values(self.models, p.ctypes)
-        return p*self.scale
+        return p * self.scale

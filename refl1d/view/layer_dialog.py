@@ -55,66 +55,60 @@ from refl1d.material import SLD
 # These belong with the layer definition, so that users can add their own
 # layer types more easily.  I will use monkey patching until the details
 # of the interface are worked out.
-Slab.name = 'slab'
-Slab.description = 'layer with uniform density and roughness on top'
+Slab.name = "slab"
+Slab.description = "layer with uniform density and roughness on top"
 Slab.fields = (
-    ('name','string','slab name (defaults to material name)'),
-    ('material','material','slab material'),
-    ('thickness','parameter','slab thickness','A',(0,inf)),
-    ('interface','parameter',
-     'rms roughness between this slab and the next','A',(0,inf)),
+    ("name", "string", "slab name (defaults to material name)"),
+    ("material", "material", "slab material"),
+    ("thickness", "parameter", "slab thickness", "A", (0, inf)),
+    ("interface", "parameter", "rms roughness between this slab and the next", "A", (0, inf)),
 )
 
-PolymerBrush.name = 'brush'
-PolymerBrush.description = 'polymer brush in a solvent'
+PolymerBrush.name = "brush"
+PolymerBrush.description = "polymer brush in a solvent"
 PolymerBrush.fields = (
-    ('name','string','brush name (defaults to polymer name)'),
-    ('polymer','material','polymer composition'),
-    ('solvent','material','solvent composition'),
-    ('thickness','parameter','brush+solvent thickness','A',(0,inf)),
-    ('interface','parameter',
-     'rms roughness between the solvent and the next layer','A',(0,inf)),
-    ('base_vf','parameter',
-     'volume fraction of the polymer brush at the base','%',(0,100)),
-    ('base','parameter','thickness of the base region','A',(0,inf)),
-    ('length','parameter','thickness of the thinning region','A',(0,inf)),
-    ('power','parameter','rate of brush thinning','',(-inf,inf)),
-    ('sigma','parameter','rms roughness within the brush','A',(0,inf)),
+    ("name", "string", "brush name (defaults to polymer name)"),
+    ("polymer", "material", "polymer composition"),
+    ("solvent", "material", "solvent composition"),
+    ("thickness", "parameter", "brush+solvent thickness", "A", (0, inf)),
+    ("interface", "parameter", "rms roughness between the solvent and the next layer", "A", (0, inf)),
+    ("base_vf", "parameter", "volume fraction of the polymer brush at the base", "%", (0, 100)),
+    ("base", "parameter", "thickness of the base region", "A", (0, inf)),
+    ("length", "parameter", "thickness of the thinning region", "A", (0, inf)),
+    ("power", "parameter", "rate of brush thinning", "", (-inf, inf)),
+    ("sigma", "parameter", "rms roughness within the brush", "A", (0, inf)),
 )
 
-FreeLayer.name = 'freeform'
-FreeLayer.description = 'freeform layer using monotonic splines for good control'
+FreeLayer.name = "freeform"
+FreeLayer.description = "freeform layer using monotonic splines for good control"
 FreeLayer.fields = (
-    ('name','string','layer name'),
-    ('thickness','string','total layer thickness','A',(0,inf)),
+    ("name", "string", "layer name"),
+    ("thickness", "string", "total layer thickness", "A", (0, inf)),
     # The following need to be links to neighbouring layer parameters; easy
     # enough with slabs, but somewhat messy with something like a tethered
     # polymer.  Perhaps we can define below and above fields for all the
     # layer types which act as scatterers to make this happen, but for now
     # just assume it is attached to a slab.  Insert/Delete are going to
     # have to update
-    ('below','material','material below the layer'),
-    ('above','material','material above the layer'),
+    ("below", "material", "material below the layer"),
+    ("above", "material", "material above the layer"),
     # Need to indicate that these are three coordinated vectors
-    ('z','[parameter]','control point location','A',(0,1)),
-    ('rho','[parameter]',
-     'scattering length density','1e-6 inv A^2',(-inf,inf)),
-    ('irho','[parameter]',
-     'complex scattering length density','1e-6 inv A^2',(0,inf)),
+    ("z", "[parameter]", "control point location", "A", (0, 1)),
+    ("rho", "[parameter]", "scattering length density", "1e-6 inv A^2", (-inf, inf)),
+    ("irho", "[parameter]", "complex scattering length density", "1e-6 inv A^2", (0, inf)),
 )
 
-FreeInterface.name = 'blend'
-FreeInterface.description = 'blend between two materials using a monotonic spline'
+FreeInterface.name = "blend"
+FreeInterface.description = "blend between two materials using a monotonic spline"
 FreeInterface.fields = (
-    ('name','string','layer name'),
-    ('below','material','material below the layer'),
-    ('above','material','material above the layer'),
-    ('thickness','parameter','total layer thickness','A',(0,inf)),
-    ('interface','parameter',
-     'rms roughness between "above" and the next layer', 'A', (0,inf)),
+    ("name", "string", "layer name"),
+    ("below", "material", "material below the layer"),
+    ("above", "material", "material above the layer"),
+    ("thickness", "parameter", "total layer thickness", "A", (0, inf)),
+    ("interface", "parameter", 'rms roughness between "above" and the next layer', "A", (0, inf)),
     # Need to indicate that these are two coordinated vectors
-    ('dz','[parameter]','relative segment size','',(0,inf)),
-    ('dp','[parameter]','relative step height','',(0,inf)),
+    ("dz", "[parameter]", "relative segment size", "", (0, inf)),
+    ("dp", "[parameter]", "relative step height", "", (0, inf)),
 )
 
 LAYERS = (Slab, FreeInterface, FreeLayer, PolymerBrush)
@@ -124,25 +118,29 @@ class LayerEditorDialog(wx.Dialog):
     """
     Select layer type and edit layer parameters interactively.
     """
-    def __init__(self,
-                 parent = None,
-                 id = wx.ID_ANY, #@ReservedAssignment
-                 title = "Layer Editor",
-                 pos = wx.DefaultPosition,
-                 size = (-1, 400),
-                 style = wx.DEFAULT_FRAME_STYLE, #|wx.THICK_FRAME|wx.RESIZE_BORDER,
-                 name = "",
-                 stack = None,
-                 layer_num = 0):
+
+    def __init__(
+        self,
+        parent=None,
+        id=wx.ID_ANY,  # @ReservedAssignment
+        title="Layer Editor",
+        pos=wx.DefaultPosition,
+        size=(-1, 400),
+        style=wx.DEFAULT_FRAME_STYLE,  # |wx.THICK_FRAME|wx.RESIZE_BORDER,
+        name="",
+        stack=None,
+        layer_num=0,
+    ):
         wx.Dialog.__init__(self, parent, id, title, pos, size, style, name)
-        if parent is not None: self.SetFont(parent.GetFont())
+        if parent is not None:
+            self.SetFont(parent.GetFont())
 
         self.next_button = wx.Button(self, wx.ID_ANY, "Next", style=wx.BU_EXACTFIT)
         self.prev_button = wx.Button(self, wx.ID_ANY, "Prev", style=wx.BU_EXACTFIT)
         self.ins_button = wx.Button(self, wx.ID_ANY, "Insert", style=wx.BU_EXACTFIT)
         self.del_button = wx.Button(self, wx.ID_ANY, "Delete", style=wx.BU_EXACTFIT)
 
-        self.layer_id = wx.StaticText(self, size=(-1,-1))
+        self.layer_id = wx.StaticText(self, size=(-1, -1))
         self.selector = wx.Choice(self)
         self.fields = InputListPanel(self)
 
@@ -152,7 +150,7 @@ class LayerEditorDialog(wx.Dialog):
         self.Bind(wx.EVT_BUTTON, self.OnInsert, self.ins_button)
         self.Bind(wx.EVT_BUTTON, self.OnDelete, self.del_button)
         self.Bind(wx.EVT_TEXT, self.OnValidate)
-        #self.Bind(wx.EVT_COMBO_BOX, self.OnValidate)
+        # self.Bind(wx.EVT_COMBO_BOX, self.OnValidate)
         self.selector.Bind(wx.EVT_CHOICE, self.OnLayerType)
 
         # Layout
@@ -163,19 +161,18 @@ class LayerEditorDialog(wx.Dialog):
         bbox.Add(self.prev_button, 1, wx.EXPAND)
         bbox.Add(self.ins_button, 1, wx.EXPAND)
         bbox.Add(self.del_button, 1, wx.EXPAND)
-        outer.Add(bbox, 0, wx.ALIGN_LEFT|wx.LEFT|wx.RIGHT|wx.TOP, border=10)
+        outer.Add(bbox, 0, wx.ALIGN_LEFT | wx.LEFT | wx.RIGHT | wx.TOP, border=10)
 
         hbox = wx.BoxSizer(wx.HORIZONTAL)
-        hbox.Add(self.layer_id, 0,
-                 wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL|wx.RIGHT, border=5)
-        hbox.Add(self.selector,0, wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL)
-        hbox.Add((0,0), 1)
-        outer.Add(hbox, 0, wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, border=10)
-        outer.Add(self.fields, 1, wx.EXPAND|wx.LEFT|wx.RIGHT|wx.TOP, border=10)
-        outer.Add((-1,10))
+        hbox.Add(self.layer_id, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=5)
+        hbox.Add(self.selector, 0, wx.ALIGN_LEFT | wx.ALIGN_CENTER_VERTICAL)
+        hbox.Add((0, 0), 1)
+        outer.Add(hbox, 0, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border=10)
+        outer.Add(self.fields, 1, wx.EXPAND | wx.LEFT | wx.RIGHT | wx.TOP, border=10)
+        outer.Add((-1, 10))
 
-        dx,dy = outer.GetMinSize()
-        outer.SetMinSize((dx,dy+100))
+        dx, dy = outer.GetMinSize()
+        outer.SetMinSize((dx, dy + 100))
         outer.Fit(self)
         self.SetSizer(outer)
 
@@ -185,14 +182,17 @@ class LayerEditorDialog(wx.Dialog):
         self.set_stack(stack)
 
     def OnNext(self, event):
-        self.set_layer(self.layer_num+1)
+        self.set_layer(self.layer_num + 1)
+
     def OnPrev(self, event):
-        self.set_layer(self.layer_num-1)
+        self.set_layer(self.layer_num - 1)
+
     def OnDelete(self, event):
         del self.stack[self.layer_num]
         self.set_layer(self.layer_num)
+
     def OnInsert(self, event):
-        slab = Slab(SLD(rho=1.0,name="layer"), thickness=100, interface=5)
+        slab = Slab(SLD(rho=1.0, name="layer"), thickness=100, interface=5)
         self.stack.insert(self.layer_num, slab)
         self.set_layer(self.layer_num)
 
@@ -200,25 +200,29 @@ class LayerEditorDialog(wx.Dialog):
         pass
 
     def set_stack(self, stack):
-        if stack is None: return
+        if stack is None:
+            return
         self.stack = stack
         self.set_layer(self.layer_num)
 
     def set_layer(self, layer_num):
         # Make sure the layer is valid
         N = len(self.stack)
-        if layer_num < 0: layer_num = 0
-        elif layer_num >= N: layer_num = N-1
+        if layer_num < 0:
+            layer_num = 0
+        elif layer_num >= N:
+            layer_num = N - 1
         self.layer_num = layer_num
 
         # Enable navigation and control buttons
-        self.next_button.Enable(layer_num < N-1)
+        self.next_button.Enable(layer_num < N - 1)
         self.prev_button.Enable(layer_num > 0)
         self.del_button.Enable(N > 1)
-        self.layer_id.SetLabel("Layer %d:"%layer_num)
+        self.layer_id.SetLabel("Layer %d:" % layer_num)
 
         # Null case: no stack
-        if N == 0: return # Should never happen...
+        if N == 0:
+            return  # Should never happen...
 
         # Update the layer contents
         if self.layer != self.stack[layer_num]:
@@ -227,19 +231,20 @@ class LayerEditorDialog(wx.Dialog):
 
     def draw_layer(self):
         return
-        if self.layer is None: return
+        if self.layer is None:
+            return
         self.name_label = wx.StaticText(self, label="Name")
-        self.name = wx.TextCtrl(self, wx.ID_ANY, size=(250,-1))
+        self.name = wx.TextCtrl(self, wx.ID_ANY, size=(250, -1))
 
         self.thickness_label = wx.StaticText(self, label="Thickness")
-        self.thickness = wx.TextCtrl(self, wx.ID_ANY, size=(100,-1))
+        self.thickness = wx.TextCtrl(self, wx.ID_ANY, size=(100, -1))
         self.interface_label = wx.StaticText(self, label="Interface")
-        self.interface = wx.TextCtrl(self, wx.ID_ANY, size=(100,-1))
+        self.interface = wx.TextCtrl(self, wx.ID_ANY, size=(100, -1))
 
         self.layer_name.SetValue(self.layer.name)
-        self.thickness.SetValue("%g"%self.layer.thickness.value)
-        self.interface.SetValue("%g"%self.layer.interface.value)
-        #self.selector.SetValue(self.layer.__class__.__name__)
+        self.thickness.SetValue("%g" % self.layer.thickness.value)
+        self.interface.SetValue("%g" % self.layer.interface.value)
+        # self.selector.SetValue(self.layer.__class__.__name__)
 
     def OnValidate(self, event):
         ctrl = event.GetEventObject()
@@ -248,6 +253,7 @@ class LayerEditorDialog(wx.Dialog):
             if validator:
                 validator.Validate(ctrl)
         event.Skip()
+
 
 def main(stack):
     class App(wx.App):
@@ -261,7 +267,9 @@ def main(stack):
     app = App(0)
     app.MainLoop()
 
+
 if __name__ == "__main__":
     from refl1d.names import silicon, air
+
     stack = silicon | air
     main(stack)
