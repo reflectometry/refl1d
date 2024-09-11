@@ -13,8 +13,14 @@ jobs:
     strategy:
       matrix:
         config:
-          - { os: ubuntu-latest, py: "3.10", doc: 1, whl: 1 }
-          - { os: windows-latest, py: "3.10", whl: 1 }
+          - { os: ubuntu-latest, py: 3.8 }
+          - { os: ubuntu-latest, py: 3.9 }
+          - { os: ubuntu-latest, py: "3.10" }
+          - { os: ubuntu-latest, py: "3.11", doc: 1, whl: 1 }
+          - { os: ubuntu-latest, py: "3.12" }
+          - { os: windows-latest, py: "3.12", whl: 1 }
+          - { os: macos-latest, py: "3.12" }
+
           # pure python wheels
 
     steps:
