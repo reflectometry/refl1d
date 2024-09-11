@@ -32,7 +32,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pre-commit", "ruff", "pytest", "pytest-cov", "setuptools", "wheel"]
+dev = ["pre-commit", "ruff", "pytest", "pytest-cov"]
 full = ["wxpython", "ipython"]
 webview = ["bumps[webview]@git+https://github.com/bumps/bumps.git#egg=master"]
 

@@ -46,6 +46,7 @@ jobs:
       - name: Build binary wheel
         if: matrix.config.whl == 1
         run: |
+          python -m pip install build setuptools wheel
           python -m build
 
       - name: Build installer
