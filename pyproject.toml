@@ -20,7 +20,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Chemistry",
     "Topic :: Scientific/Engineering :: Physics",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
     # "bumps>=0.7.16",
     "bumps@git+https://github.com/bumps/bumps.git#egg=master",
