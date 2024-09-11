@@ -12,7 +12,9 @@ if __name__ == "__main__":
     # using the --parallel option.  Note that freeze_support() has no effect
     # when running from a python script (i.e., in a non-frozen environment).
     import multiprocessing
+
     multiprocessing.freeze_support()
 
     import refl1d.main
+
     refl1d.main.cli()

@@ -19,20 +19,25 @@
 # py2exe-users@lists.sourceforge.net [1 Sep 17:13 2011]
 
 import sys
+
 if sys.frozen == "windows_exe":
+
     class Stderr(object):
         softspace = 0
         _file = None
         _alert = sys._MessageBox  # used atexit, so keep a handle here
+
         def _display_error(self):
-            text = 'Captured stderr:\n' + self._file.getvalue()
+            text = "Captured stderr:\n" + self._file.getvalue()
             self._alert(0, text)
 
         def write(self, text):
             if self._file is None:
                 from StringIO import StringIO
+
                 self._file = StringIO()
                 import atexit
+
                 atexit.register(self._display_error)
             self._file.write(text)
 
@@ -42,4 +47,3 @@ if sys.frozen == "windows_exe":
     sys.stderr = Stderr()
     del Stderr
 del sys
-
