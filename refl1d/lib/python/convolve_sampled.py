@@ -1,4 +1,3 @@
-
 def convolve_point_sampled(Nin, xin, yin, Np, xp, yp, xo, dx, _in):
     # Walk the theory spline and the resolution spline together, computing
     # the integral of the pairs of line segments.  Since the spline knots
@@ -15,10 +14,10 @@ def convolve_point_sampled(Nin, xin, yin, Np, xp, yp, xo, dx, _in):
     undefined = 1e308
     m1 = undefined
     b1 = undefined
-    m2 = 0.
-    b2 = 0.
-    sum = 0.
-    norm = 0.
+    m2 = 0.0
+    b2 = 0.0
+    sum = 0.0
+    norm = 0.0
     # size_t p;
     # double delta,delta2,delta3;
     # double x, next_x, next_xin, next_xp;
@@ -30,11 +29,11 @@ def convolve_point_sampled(Nin, xin, yin, Np, xp, yp, xo, dx, _in):
 
     # Set p to the point just before next_xin
     for p in range(1, Np):
-        if (xo + dx*xp[p] > next_xin):
+        if xo + dx * xp[p] > next_xin:
             break
 
     p -= 1
-    next_xp = xo + dx*xp[p]
+    next_xp = xo + dx * xp[p]
 
     # Choose the larger of next_xp and next_xin as the starting point of the
     # integral.  This will force us to step both xin and xp in the first
@@ -56,37 +55,37 @@ def convolve_point_sampled(Nin, xin, yin, Np, xp, yp, xo, dx, _in):
     #       xo,dx,x,p,in,next_xp,next_xin);
     while True:
         # Step xin if we are at the next theory point
-        if (next_xin <= x):
+        if next_xin <= x:
             _in += 1
-            if (_in >= Nin):
+            if _in >= Nin:
                 break  # At the right edge of the data
             next_xin = xin[_in]
-            m1 = (yin[_in] - yin[_in-1]) / (xin[_in] - xin[_in-1])
-            b1 = yin[_in] - m1*xin[_in]
+            m1 = (yin[_in] - yin[_in - 1]) / (xin[_in] - xin[_in - 1])
+            b1 = yin[_in] - m1 * xin[_in]
 
         # Step xp if we are at the next resolution point
-        if (next_xp <= x):
+        if next_xp <= x:
             p += 1
-            if (p >= Np):
+            if p >= Np:
                 break  # At the right edge of the resolution
-            next_xp = xo + dx*xp[p]
-            m2 = (yp[p] - yp[p-1]) / (xp[p] - xp[p-1]) / dx
-            b2 = yp[p] - m2*next_xp
+            next_xp = xo + dx * xp[p]
+            m2 = (yp[p] - yp[p - 1]) / (xp[p] - xp[p - 1]) / dx
+            b2 = yp[p] - m2 * next_xp
 
         # Find the next node
         next_x = next_xin if next_xin < next_xp else next_xp
         # Compute the convolution and norm between the current and next node
         delta = next_x - x
-        delta2 = next_x*next_x - x*x
-        delta3 = next_x*next_x*next_x - x*x*x
-        norm += 0.5*m2*delta2 + b2*delta
-        sum += m1*m2/3.0*delta3 + 0.5*(m1*b2+m2*b1)*delta2 + b1*b2*delta
+        delta2 = next_x * next_x - x * x
+        delta3 = next_x * next_x * next_x - x * x * x
+        norm += 0.5 * m2 * delta2 + b2 * delta
+        sum += m1 * m2 / 3.0 * delta3 + 0.5 * (m1 * b2 + m2 * b1) * delta2 + b1 * b2 * delta
         # printf("  delta:%g delta2:%g delta3:%g norm:%g sum:%g m1:%g b1:%g m2:%g b2:%g x:%g nx:%g ni:%g np:%g\n",
         #  delta, delta2, delta3, norm, sum, m1, b1, m2, b2, x, next_x, next_xin, next_xp);
         # Move to the next node
         x = next_x
 
-    return sum/norm
+    return sum / norm
 
 
 def convolve_sampled(xin, yin, xp, yp, x, dx, y):
@@ -121,7 +120,7 @@ def convolve_sampled(xin, yin, xp, yp, x, dx, y):
     # endif
     for _out in range(N):
         # /* width of resolution window for x is w = 2 dx ^ 2. */
-        limit = -dx[_out]*xp[0]
+        limit = -dx[_out] * xp[0]
         xo = x[_out]
 
         # /* Line up the left edge of the convolution window */
@@ -130,26 +129,25 @@ def convolve_sampled(xin, yin, xp, yp, x, dx, y):
         # /* dx or if the x are not sorted, then it may be before */
         # /* the current position. * /
         # /* FIXME verify that the convolution window is just right */
-        while (_in < Nin-1 and xin[_in] < xo-limit):
+        while _in < Nin - 1 and xin[_in] < xo - limit:
             _in += 1
-        while (_in > 0 and xin[_in] > xo-limit):
+        while _in > 0 and xin[_in] > xo - limit:
             _in -= 1
 
         # /* Special handling to avoid 0/0 for w = 0. */
-        if (dx[_out] > 0.):
+        if dx[_out] > 0.0:
             # printf("convolve in:%ld out:%ld, xo:%g dx:%g\n",in,out,xo,dx[out])
-            y[_out] = convolve_point_sampled(
-                Nin, xin, yin, Np, xp, yp, xo, dx[_out], _in)
-        elif (_in < Nin-1):
+            y[_out] = convolve_point_sampled(Nin, xin, yin, Np, xp, yp, xo, dx[_out], _in)
+        elif _in < Nin - 1:
             # /* Linear interpolation */
             m = (yin[_in + 1] - yin[_in]) / (xin[_in + 1] - xin[_in])
-            b = yin[_in] - m*xin[_in]
-            y[_out] = m*xo + b
-        elif (_in > 0):
+            b = yin[_in] - m * xin[_in]
+            y[_out] = m * xo + b
+        elif _in > 0:
             # /* Linear extrapolation */
-            m = (yin[_in]-yin[_in - 1])/(xin[_in]-xin[_in - 1])
-            b = yin[_in] - m*xin[_in]
-            y[_out] = m*xo + b
+            m = (yin[_in] - yin[_in - 1]) / (xin[_in] - xin[_in - 1])
+            b = yin[_in] - m * xin[_in]
+            y[_out] = m * xo + b
         else:
             # /* Can't happen because there is more than one point in xin. */
             if not Nin > 1:
