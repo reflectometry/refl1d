@@ -38,20 +38,21 @@ import warnings
 from dataclasses import dataclass
 from typing import Optional, Any, Sequence, Union, TYPE_CHECKING, Literal, Tuple, List
 
-if USE_PYDANTIC or TYPE_CHECKING:
-    from bumps.util import NDArray
-from bumps.util import field, field_desc
 from bumps.parameter import Parameter, to_dict
 from bumps.plotutil import coordinated_colors, auto_shift
+from bumps.util import field, field_desc
 from bumps.util import USE_PYDANTIC
+
+if USE_PYDANTIC or TYPE_CHECKING:
+    from bumps.util import NDArray
 import numpy as np
 import numpy.fft
 import numpy.random
 from numpy import log, pi, sign, sqrt
 from periodictable import nsf, xsf
 
-from ..calculations import fresnel
-from ..calculations.reflectivity import convolve, BASE_GUIDE_ANGLE
+from ..fitting import fresnel
+from ..fitting.reflectivity import convolve, BASE_GUIDE_ANGLE
 from ..material import Vacuum
 from ..resolution import QL2T, TL2Q, dTdL2dQ
 from ..resolution import dQ_broadening

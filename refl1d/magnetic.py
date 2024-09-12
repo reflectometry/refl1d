@@ -1,6 +1,4 @@
-# This program is public domain
-# Author: Paul Kienzle
-r"""
+"""
 Magnetic modeling for 1-D reflectometry.
 
 ** Deprecated ** use magnetism to set magnetism on a nuclear layer
@@ -49,8 +47,8 @@ from numpy import inf
 from bumps.parameter import Parameter, to_dict
 from bumps.mono import monospline
 
+from .fitting.reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
 from .model import Layer, Stack
-from .calculations.reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
 
 
 class MagneticLayer(Layer):

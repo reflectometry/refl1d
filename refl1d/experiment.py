@@ -21,9 +21,11 @@ import numpy as np
 
 from . import material, model, profile
 from . import __version__
-from .calculations.reflectivity import reflectivity_amplitude as reflamp
-from .calculations.reflectivity import magnetic_amplitude as reflmag
-from .calculations.reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
+from .fitting.reflectivity import (
+    BASE_GUIDE_ANGLE as DEFAULT_THETA_M,
+    magnetic_amplitude as reflmag,
+    reflectivity_amplitude as reflamp,
+)
 from .models.probe import Probe, PolarizedNeutronProbe
 from .util import asbytes
 

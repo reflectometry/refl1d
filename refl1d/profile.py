@@ -58,13 +58,11 @@ using one energy so we only show the first column.
     irho = 0 0 0 0 0 ...
 """
 
-from __future__ import division, print_function
-
 import numpy as np
-from numpy import inf, nan, isnan
+from numpy import nan, isnan
 from scipy.special import erf
 
-from .calculations.reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
+from .fitting.reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
 
 
 class Microslabs(object):

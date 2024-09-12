@@ -21,7 +21,7 @@ angles will be identical, but the curves will differ at high Q.
 """
 
 from pylab import *
-from ornl.refl1d.refl1d.calculations.reflectivity import reflectivity
+from ornl.refl1d.refl1d.fitting.reflectivity import reflectivity
 
 rho = 2.07  # silicon rho for neutrons
 L = 5  # Wavelength 5 angstroms

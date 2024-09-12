@@ -57,9 +57,9 @@ import os
 
 from bumps.data import parse_file
 
-from .instrument import Monochromatic
-from .probe import PolarizedNeutronProbe
-from .calculations.reflectivity import BASE_GUIDE_ANGLE
+from ..instrument import Monochromatic
+from ..models.probe import PolarizedNeutronProbe
+from ..fitting.reflectivity import BASE_GUIDE_ANGLE
 
 
 def load(filename, instrument=None, **kw):

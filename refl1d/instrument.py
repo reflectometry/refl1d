@@ -124,11 +124,11 @@ calculation can be performed.
 
 import numpy as np
 
+from .fitting.reflectivity import BASE_GUIDE_ANGLE
+from .models.probe import make_probe, PolarizedNeutronProbe
 from .resolution import QL2T
 from .resolution import bins, binwidths, binedges
 from .resolution import slit_widths, divergence
-from .models.probe import make_probe, PolarizedNeutronProbe
-from .calculations.reflectivity import BASE_GUIDE_ANGLE
 
 
 class Monochromatic(object):

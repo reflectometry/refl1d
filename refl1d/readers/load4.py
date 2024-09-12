@@ -3,7 +3,7 @@ import json
 from bumps.data import parse_multi, strip_quotes
 import numpy as np
 
-from ..calculations.reflectivity import BASE_GUIDE_ANGLE
+from ..fitting.reflectivity import BASE_GUIDE_ANGLE
 from ..models.probe import (
     Probe,
     NeutronProbe,

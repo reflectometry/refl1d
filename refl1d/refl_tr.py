@@ -223,7 +223,7 @@ def check():
     rho *= 100  # show point below critical edge
     print("q", q)
     try:
-        from .calculations.abeles import refl
+        from .fitting.abeles import refl
 
         r_old = refl(q / 2, depth, rho, irho=irho, sigma=sigma)
         print("rold", r_old)
