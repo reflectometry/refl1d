@@ -168,7 +168,7 @@ class ExperimentBase:
     def plot_reflectivity(self, show_resolution=False, view=None, plot_shift=None):
         n = self.interpolation
         QR = self.reflectivity(interpolation=n)
-        plot_probe.plot(
+        plotter = plot_probe.ProbePlotter(
             self.probe,
             theory=QR,
             substrate=self._substrate,
@@ -177,6 +177,9 @@ class ExperimentBase:
             plot_shift=plot_shift,
             interpolation=n,
         )
+        plotter.plot()
+        plotter.y_log()
+        plotter.x_log()
 
         if show_resolution:
             import matplotlib.pyplot as plt
