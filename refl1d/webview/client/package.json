@@ -13,7 +13,7 @@
     "bumps-webview-client": "^0.1.16",
     "comlink": "^4.4.1",
     "json-difference": "^1.16.1",
-    "plotly.js": "2.29.0",
+    "plotly.js": "^2.35.2",
     "socket.io-client": "^4.7.5",
     "uuid": "^9.0.1",
     "vue": "^3.5.4",
