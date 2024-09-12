@@ -53,6 +53,8 @@ class ExperimentBase:
     _probe_cache = None
     _substrate = None
     _surface = None
+    _plot_callbacks: dict[str, Callable]
+
     def parameters(self):
         raise NotImplementedError()
 
@@ -305,7 +307,19 @@ class ExperimentBase:
             theory = self.reflectivity(interpolation=self.interpolation)
             self.probe.save(filename=basename+"-refl-interp.dat",
                             theory=theory)
+            
+    def register_webview_plot(self, plot_title: str, plot_function: Callable):
+        # Plot function syntax: f(model, problem, state)
+        
+        self._plot_callbacks.update({plot_title: plot_function})
 
+    def get_plot_titles(self):
+
+        return list(self._plot_callbacks.keys())
+    
+    def get_plot(self, title, problem, state):
+
+        return self._plot_callbacks[title](self, problem, state)
 
 @dataclass(init=False)
 class Experiment(ExperimentBase):
@@ -401,6 +415,7 @@ class Experiment(ExperimentBase):
         if auto_tag:
             tag_all(self.probe.parameters(), 'probe')
             tag_all(self.sample.parameters(), 'sample')
+        self._plot_callbacks = {}
 
     @property
     def ismagnetic(self):
