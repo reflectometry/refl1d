@@ -31,6 +31,7 @@ from .reflectivity import magnetic_amplitude as reflmag
 from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
 from . import model
 from .probe import Probe, NeutronProbe, PolarizedNeutronProbe
+from .plotting import plot_probe
 
 # print("Using pure python reflectivity calculator")
 # from .abeles import refl as reflamp
@@ -167,7 +168,8 @@ class ExperimentBase:
     def plot_reflectivity(self, show_resolution=False, view=None, plot_shift=None):
         n = self.interpolation
         QR = self.reflectivity(interpolation=n)
-        self.probe.plot(
+        plot_probe.plot(
+            self.probe,
             theory=QR,
             substrate=self._substrate,
             surface=self._surface,
