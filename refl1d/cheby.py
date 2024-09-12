@@ -28,8 +28,7 @@ control using 'interp', but the function may oscillate wildly outside
 the bounds.  Bounds on the oscillation are easier to control using
 'direct', but the shape of the profile is difficult to control.
 """
-
-# TODO: clipping volume fraction to [0, 1] distorts parameter space
+#TODO: clipping volume fraction to [0, 1] distorts parameter space
 # Option 0: clip to [0, 1]
 # - Bayesian analysis: parameter values outside the domain will be equally
 #   probable out to infinity
@@ -79,18 +78,17 @@ the bounds.  Bounds on the oscillation are easier to control using
 # - moderately complicated
 import numpy as np
 from numpy import inf, real, imag
-from bumps.parameter import Parameter as Par, to_dict
+from bumps.parameter import  Parameter as Par, to_dict
 from bumps.cheby import cheby_val, cheby_coeff
-from bumps.cheby import cheby_approx, cheby_points  # pylint: disable=unused-import
+from bumps.cheby import cheby_approx, cheby_points #pylint: disable=unused-import
 
 from .model import Layer
 from . import util
 
-
-# TODO: add left_sld, right_sld to all layers so that fresnel works
-# TODO: access left_sld, right_sld so freeform doesn't need left, right
-# TODO: restructure to use vector parameters
-# TODO: allow the number of layers to be adjusted by the fit
+#TODO: add left_sld, right_sld to all layers so that fresnel works
+#TODO: access left_sld, right_sld so freeform doesn't need left, right
+#TODO: restructure to use vector parameters
+#TODO: allow the number of layers to be adjusted by the fit
 class FreeformCheby(Layer):
     """
     A freeform section of the sample modeled with Chebyshev polynomials.
@@ -98,42 +96,48 @@ class FreeformCheby(Layer):
     sld (rho) and imaginary sld (irho) can be modeled with a separate
     polynomial orders.
     """
-
-    def __init__(self, thickness=0, interface=0, rho=(), irho=(), name="Cheby", method="interp"):
+    def __init__(self, thickness=0, interface=0, rho=(), irho=(),
+                 name="Cheby", method="interp"):
         if interface != 0:
             raise NotImplementedError("interface not yet supported")
         self.name = name
         self.method = method
-        self.thickness = Par.default(thickness, limits=(0, inf), name=name + " thickness")
-        self.rho, self.irho = [
-            [Par.default(p, name=name + "[%d] %s" % (i, part), limits=limits) for i, p in enumerate(v)]
-            for v, part, limits in zip((rho, irho), ("rho", "irho"), ((-inf, inf), (-inf, inf)))
-        ]
+        self.thickness = Par.default(thickness, limits=(0, inf),
+                                     name=name+" thickness")
+        self.rho, self.irho \
+            = [[Par.default(p, name=name+"[%d] %s"%(i, part), limits=limits)
+                for i, p in enumerate(v)]
+               for v, part, limits
+               in zip((rho, irho),
+                      ('rho', 'irho'),
+                      ((-inf, inf), (-inf, inf)))
+              ]
 
     def parameters(self):
         """Return parameters used to define layer"""
-        return {"thickness": self.thickness, "rho": self.rho, "irho": self.irho}
+        return {
+            'thickness': self.thickness,
+            'rho': self.rho,
+            'irho': self.irho
+        }
 
     def to_dict(self):
         ret = self.parameters()
-        ret.update(
-            {
-                "type": type(self).__name__,
-                "name": self.name,
-                "method": self.method,
-            }
-        )
+        ret.update({
+            'type': type(self).__name__,
+            'name': self.name,
+            'method': self.method,
+        })
         return to_dict(ret)
 
     def render(self, probe, slabs):
         """Render slabs for use with the given probe"""
         thickness = self.thickness.value
         Pw, Pz = slabs.microslabs(thickness)
-        t = Pz / thickness
+        t = Pz/thickness
         Prho = _profile([p.value for p in self.rho], t, self.method)
         Pirho = _profile([p.value for p in self.irho], t, self.method)
         slabs.extend(rho=[Prho], irho=[Pirho], w=Pw)
-
 
 class ChebyVF(Layer):
     r"""
@@ -170,8 +174,9 @@ class ChebyVF(Layer):
 
            sld(z) = material.sld * profile(z) + solvent.sld * (1 - profile(z))
     """
-
-    def __init__(self, thickness=0, interface=0, material=None, solvent=None, vf=None, name="ChebyVF", method="interp"):
+    def __init__(self, thickness=0, interface=0,
+                 material=None, solvent=None, vf=None,
+                 name="ChebyVF", method="interp"):
         if interface != 0:
             raise NotImplementedError("interface not yet supported")
         self.name = name
@@ -179,7 +184,7 @@ class ChebyVF(Layer):
         self.interface = Par.default(interface, name="solvent interface")
         self.solvent = solvent
         self.material = material
-        self.vf = [Par.default(p, name="vf[%d]" % i) for i, p in enumerate(vf)]
+        self.vf = [Par.default(p, name="vf[%d]"%i) for i, p in enumerate(vf)]
         self.method = method
         # Constraints:
         #   base_vf in [0, 1]
@@ -188,29 +193,27 @@ class ChebyVF(Layer):
 
     def parameters(self):
         return {
-            "solvent": self.solvent.parameters(),
-            "material": self.material.parameters(),
-            "vf": self.vf,
+            'solvent': self.solvent.parameters(),
+            'material': self.material.parameters(),
+            'vf': self.vf,
         }
 
     def to_dict(self):
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "name": self.name,
-                "method": self.method,
-                "thickness": self.thickness,
-                "vf": self.vf,
-                "material": self.material,
-                "solvent": self.solvent,
-            }
-        )
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'method': self.method,
+            'thickness': self.thickness,
+            'vf': self.vf,
+            'material': self.material,
+            'solvent': self.solvent,
+        })
 
     def render(self, probe, slabs):
         Mr, Mi = self.material.sld(probe)
         Sr, Si = self.solvent.sld(probe)
-        M = Mr + 1j * Mi
-        S = Sr + 1j * Si
+        M = Mr + 1j*Mi
+        S = Sr + 1j*Si
         try:
             M, S = M[0], S[0]  # Temporary hack
         except Exception:
@@ -218,14 +221,13 @@ class ChebyVF(Layer):
 
         thickness = self.thickness.value
         Pw, Pz = slabs.microslabs(thickness)
-        t = Pz / thickness
+        t = Pz/thickness
         vf = _profile([p.value for p in self.vf], t, self.method)
         vf = np.clip(vf, 0, 1)
         Pw, vf = util.merge_ends(Pw, vf, tol=1e-3)
-        P = M * vf + S * (1 - vf)
+        P = M*vf + S*(1-vf)
         Pr, Pi = real(P), imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
-
 
 def _profile(c, t, method):
     r"""
@@ -238,6 +240,6 @@ def _profile(c, t, method):
     function $f$ evaluated at the chebyshev points returned by
     :func:`cheby_points`.
     """
-    if method == "interp":
+    if method == 'interp':
         c = cheby_coeff(c)
     return cheby_val(c, t)

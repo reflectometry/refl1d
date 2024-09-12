@@ -40,20 +40,7 @@ type and energy.  Unlike the normally tabulated scattering factors f', f''
 for X-ray, there is no need to scale by probe by electron radius.  In
 the end, sld is just the returned scattering factors times density.
 """
-
-__all__ = [
-    "Material",
-    "Mixture",
-    "SLD",
-    "Vacuum",
-    "Scatterer",
-    "ProbeCache",
-    "BulkDensityMaterial",
-    "NaturalDensityMaterial",
-    "NumberDensityMaterial",
-    "RelativeDensityMaterial",
-    "CellVolumeMaterial",
-]
+__all__ = ['Material', 'Mixture', 'SLD', 'Vacuum', 'Scatterer', 'ProbeCache', 'BulkDensityMaterial', 'NaturalDensityMaterial', 'NumberDensityMaterial', 'RelativeDensityMaterial', 'CellVolumeMaterial']
 
 from dataclasses import dataclass, field
 from typing import Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
@@ -62,7 +49,7 @@ import numpy as np
 from numpy import inf, nan
 import periodictable
 from periodictable.constants import avogadro_number
-from bumps.parameter import Expression, Parameter, to_dict  # , PARAMETER_TYPES, UnaryExpression
+from bumps.parameter import Expression, Parameter, to_dict #, PARAMETER_TYPES, UnaryExpression
 from periodictable.formulas import Formula as BaseFormula
 
 
@@ -92,13 +79,16 @@ class Scatterer:
         """
         Interface for a material stacker, to support e.g., *stack = Si | air*.
         """
-        raise NotImplementedError("failed monkey-patch: material stacker needs" " to replace __or__ in Scatterer")
+        raise NotImplementedError("failed monkey-patch: material stacker needs"
+                                  " to replace __or__ in Scatterer")
 
     def __call__(self, *args, **kw):
         """
         Interface for a material stacker, to support e.g., *stack = Si(thickness=)*.
         """
-        raise NotImplementedError("failed monkey-patch: material stacker needs" " to replace __call__ in Scatterer")
+        raise NotImplementedError("failed monkey-patch: material stacker needs"
+                                  " to replace __call__ in Scatterer")
+
 
     def __str__(self):
         return self.name
@@ -119,7 +109,7 @@ class Vacuum(Scatterer):
 
     def to_dict(self):
         return {
-            "type": type(self).__name__,
+            'type': type(self).__name__,
         }
 
     def sld(self, probe):
@@ -150,32 +140,28 @@ class SLD(Scatterer):
     rare earths, show wavelength dependence for neutrons, and so
     time-of-flight measurements should not be fit with a fixed SLD scatterer.
     """
-
     name: str
     rho: Parameter
     irho: Parameter
 
-    def __init__(self, name="SLD", rho: Union[float, Parameter] = 0, irho=0):
+    def __init__(self, name="SLD", rho: Union[float, Parameter]=0, irho=0):
         self.name = name
-        self.rho = Parameter.default(rho, name=name + " rho")
-        self.irho = Parameter.default(irho, name=name + " irho")
+        self.rho = Parameter.default(rho, name=name+" rho")
+        self.irho = Parameter.default(irho, name=name+" irho")
 
     def parameters(self):
-        return {"rho": self.rho, "irho": self.irho}
+        return {'rho':self.rho, 'irho':self.irho}
 
     def to_dict(self):
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "name": self.name,
-                "rho": self.rho,
-                "irho": self.irho,
-            }
-        )
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'rho': self.rho,
+            'irho': self.irho,
+        })
 
     def sld(self, probe):
         return self.rho.value, self.irho.value
-
 
 # ============================ Substances =============================
 # TODO: fix and use the real (circular) type definition:
@@ -183,7 +169,6 @@ class SLD(Scatterer):
 # FormulaUnit = Tuple[float, Union[str, FormulaStructure]]
 # still have to convert Element to/from string repr
 # ELEMENTS = Enum('elements', [(e.name, e.symbol) for e in periodictable.elements._element.values()])
-
 
 class BaseMaterial(Scatterer):
     """
@@ -202,17 +187,14 @@ class BaseMaterial(Scatterer):
             True if incoherent scattering should be interpreted as absorption.
 
     """
-
     name: str
-    formula: str  # Formula
+    formula: str # Formula
     use_incoherent: bool = False
 
     # not in the schema:
     _formula: BaseFormula
 
-    def __init__(
-        self, formula: Union[str, BaseFormula], density=None, natural_density=None, name=None, use_incoherent=False
-    ):
+    def __init__(self, formula: Union[str, BaseFormula], density=None, natural_density=None, name=None, use_incoherent=False):
         # coerce formula to string repr:
         self.formula = str(formula)
         self._formula: BaseFormula = periodictable.formula(formula, density=density, natural_density=natural_density)
@@ -220,50 +202,38 @@ class BaseMaterial(Scatterer):
         self.use_incoherent = use_incoherent
 
     def sld(self, probe):
-        rho, irho, incoh = probe.scattering_factors(self._formula, density=self.density.value)
+        rho, irho, incoh = probe.scattering_factors(
+            self._formula, density=self.density.value)
         if self.use_incoherent:
             raise NotImplementedError("incoherent scattering not supported")
-            # irho += incoh
+            #irho += incoh
         return rho, irho
-
     def __str__(self):
         return self.name
 
 
 FitByChoices = Literal["bulk_density", "natural_density", "relative_density", "number_density", "cell_volume"]
 
-
 def Material(
-    formula: Union[str, BaseFormula],
-    density: Optional[float] = None,
-    natural_density: Optional[float] = None,
-    name: Optional[str] = None,
-    use_incoherent: bool = False,
-    fitby: FitByChoices = "bulk_density",
-    **kw,
-):
+        formula: Union[str, BaseFormula],
+        density: Optional[float]=None,
+        natural_density: Optional[float]=None,
+        name: Optional[str]=None,
+        use_incoherent: bool=False,
+        fitby: FitByChoices="bulk_density",
+        **kw):
     if fitby == "bulk_density":
         return BulkDensityMaterial(formula, density=density, name=name, use_incoherent=use_incoherent)
     elif fitby == "natural_density":
-        return NaturalDensityMaterial(
-            formula, natural_density=natural_density, name=name, use_incoherent=use_incoherent
-        )
+        return NaturalDensityMaterial(formula, natural_density=natural_density, name=name, use_incoherent=use_incoherent)
     elif fitby == "relative_density":
-        return RelativeDensityMaterial(
-            formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent, **kw
-        )
+        return RelativeDensityMaterial(formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent, **kw)
     elif fitby == "number_density":
-        return NumberDensityMaterial(
-            formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent, **kw
-        )
+        return NumberDensityMaterial(formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent, **kw)
     elif fitby == "cell_volume":
-        return CellVolumeMaterial(
-            formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent, **kw
-        )
+        return CellVolumeMaterial(formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent, **kw)
     else:
-        raise ValueError(
-            f'unknown value "{fitby}" of fitby: should be one of ["bulk_density", "natural_density", "relative_density", "number_density", "cell_volume"]'
-        )
+        raise ValueError(f'unknown value "{fitby}" of fitby: should be one of ["bulk_density", "natural_density", "relative_density", "number_density", "cell_volume"]')
 
 
 @dataclass(init=False)
@@ -275,28 +245,23 @@ class BulkDensityMaterial(BaseMaterial):
         *density* : float | |g/cm^3|
             the bulk density for the material.
     """
-
     name: str
-    formula: str  # Formula
+    formula: str # Formula
     use_incoherent: bool = False
     density: Parameter
 
-    def __init__(
-        self,
-        formula: Union[str, BaseFormula],
-        density: Optional[Union[float, Parameter]] = None,
-        name=None,
-        use_incoherent=False,
-    ):
+    def __init__(self,
+                 formula: Union[str, BaseFormula],
+                 density: Optional[Union[float, Parameter]]=None,
+                 name=None,
+                 use_incoherent=False):
         BaseMaterial.__init__(self, formula, density=density, name=name, use_incoherent=use_incoherent)
         if density is None:
             if self._formula.density is not None:
                 density = self._formula.density
             else:
-                raise ValueError(
-                    f"material {self._formula} does not have known density: please provide it in arguments"
-                )
-        self.density = Parameter.default(density, name=self.name + " density", limits=(0, inf))
+                raise ValueError(f"material {self._formula} does not have known density: please provide it in arguments")
+        self.density = Parameter.default(density, name=self.name+" density", limits=(0, inf))
         self.bulk_density = self.density
 
     def parameters(self):
@@ -312,29 +277,24 @@ class NaturalDensityMaterial(BaseMaterial):
         *natural_density* : float | |g/cm^3|
             the natural bulk density for the material.
     """
-
     name: str
-    formula: str  # Formula
+    formula: str # Formula
     use_incoherent: bool = False
     natural_density: Parameter
     density: Expression
 
-    def __init__(
-        self,
-        formula: Union[str, BaseFormula],
-        natural_density: Optional[Union[float, Parameter]] = None,
-        name=None,
-        use_incoherent=False,
-    ):
+    def __init__(self,
+                 formula: Union[str, BaseFormula],
+                 natural_density: Optional[Union[float, Parameter]]=None,
+                 name=None,
+                 use_incoherent=False):
         BaseMaterial.__init__(self, formula, natural_density=natural_density, name=name, use_incoherent=use_incoherent)
         if natural_density is None:
             if self._formula.density is not None:
                 natural_density = self._formula.density
             else:
-                raise ValueError(
-                    f"material {self._formula} does not have known natural_density: please provide it in arguments"
-                )
-        self.natural_density = Parameter.default(natural_density, name=self.name + " nat. density", limits=(0, inf))
+                raise ValueError(f"material {self._formula} does not have known natural_density: please provide it in arguments")
+        self.natural_density = Parameter.default(natural_density, name=self.name+" nat. density", limits=(0, inf))
         self.density = self.natural_density / self._formula.natural_mass_ratio()
 
     def parameters(self):
@@ -356,33 +316,26 @@ class NumberDensityMaterial(BaseMaterial):
         *natural_density* : float | |g/cm^3|
             if specified, the natural bulk density for the material.
     """
-
     name: str
-    formula: str  # Formula
+    formula: str # Formula
     use_incoherent: bool = False
     number_density: Parameter
     density: Expression
 
-    def __init__(
-        self,
-        formula: Union[str, BaseFormula],
-        number_density: Optional[Union[float, Parameter]] = None,
-        density: Optional[float] = None,
-        natural_density: Optional[float] = None,
-        name=None,
-        use_incoherent=False,
-    ):
-        BaseMaterial.__init__(
-            self, formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent
-        )
+    def __init__(self,
+                 formula: Union[str, BaseFormula],
+                 number_density: Optional[Union[float, Parameter]]=None,
+                 density: Optional[float]=None,
+                 natural_density: Optional[float]=None,
+                 name=None,
+                 use_incoherent=False):
+        BaseMaterial.__init__(self, formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent)
         if number_density is None:
             if self._formula.density is not None:
                 number_density = avogadro_number / self._formula.mass * self._formula.density
             else:
-                raise ValueError(
-                    f"material {self._formula} does not have known density: please provide density or natural_density argument"
-                )
-        self.number_density = Parameter.default(number_density, name=self.name + " number density", limits=(0, inf))
+                raise ValueError(f"material {self._formula} does not have known density: please provide density or natural_density argument")
+        self.number_density = Parameter.default(number_density, name=self.name+" number density", limits=(0, inf))
         self.density = self.number_density / avogadro_number * self._formula.mass
         self._formula.density = float(self.density)
 
@@ -405,33 +358,26 @@ class RelativeDensityMaterial(BaseMaterial):
         *natural_density* : float | |g/cm^3|
             if specified, the natural bulk density for the material.
     """
-
     name: str
-    formula: str  # Formula
+    formula: str # Formula
     use_incoherent: bool = False
     relative_density: Parameter
     density: Expression
 
-    def __init__(
-        self,
-        formula: Union[str, BaseFormula],
-        relative_density: Optional[Union[float, Parameter]] = None,
-        density: Optional[float] = None,
-        natural_density: Optional[float] = None,
-        name=None,
-        use_incoherent=False,
-    ):
-        BaseMaterial.__init__(
-            self, formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent
-        )
+    def __init__(self, 
+                 formula: Union[str, BaseFormula],
+                 relative_density: Optional[Union[float, Parameter]]=None,
+                 density: Optional[float]=None,
+                 natural_density: Optional[float]=None,
+                 name=None,
+                 use_incoherent=False):
+        BaseMaterial.__init__(self, formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent)
         if self._formula.density is None and density is None and natural_density is None:
-            raise ValueError(
-                f"material {self._formula} does not have known density: please provide density or natural_density argument"
-            )
+            raise ValueError(f"material {self._formula} does not have known density: please provide density or natural_density argument")
         if relative_density is None:
             relative_density = 1
-        self.relative_density = Parameter.default(relative_density, name=self.name + " rel. density", limits=(0, inf))
-        self.density = self._formula.density * self.relative_density
+        self.relative_density = Parameter.default(relative_density, name=self.name+" rel. density", limits=(0, inf))
+        self.density = self._formula.density*self.relative_density
 
     def parameters(self):
         return dict(density=self.density, relative_density=self.relative_density)
@@ -461,42 +407,31 @@ class CellVolumeMaterial(BaseMaterial):
         12.02 14.70
 
     """
-
     name: str
-    formula: str  # Formula
+    formula: str # Formula
     use_incoherent: bool = False
     cell_volume: Parameter
     density: Expression
 
-    def __init__(
-        self,
-        formula: Union[str, BaseFormula],
-        cell_volume: Optional[Union[float, Parameter]] = None,
-        density: Optional[float] = None,
-        natural_density: Optional[float] = None,
-        name=None,
-        use_incoherent=False,
-    ):
-        BaseMaterial.__init__(
-            self, formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent
-        )
+    def __init__(self,
+                 formula: Union[str, BaseFormula],
+                 cell_volume: Optional[Union[float, Parameter]]=None,
+                 density: Optional[float]=None,
+                 natural_density: Optional[float]=None,
+                 name=None,
+                 use_incoherent=False):
+        BaseMaterial.__init__(self, formula, density=density, natural_density=natural_density, name=name, use_incoherent=use_incoherent)
         if self._formula.density is None and density is None and natural_density is None:
-            raise ValueError(
-                f"material {self._formula} does not have known density: please provide density or natural_density argument"
-            )
+            raise ValueError(f"material {self._formula} does not have known density: please provide density or natural_density argument")
         if cell_volume is None:
-            cell_volume = (1e24 * self._formula.molecular_mass) / self._formula.density
-        self.cell_volume = Parameter.default(cell_volume, name=self.name + " cell volume", limits=(0, inf))
-        self.density = (1e24 * self._formula.molecular_mass) / self.cell_volume
+            cell_volume = (1e24*self._formula.molecular_mass)/self._formula.density
+        self.cell_volume = Parameter.default(cell_volume, name=self.name+" cell volume", limits=(0, inf))
+        self.density = (1e24*self._formula.molecular_mass)/self.cell_volume
 
     def parameters(self):
         return dict(density=self.density, cell_volume=self.cell_volume)
 
-
-MaterialTypes = Union[
-    BulkDensityMaterial, NaturalDensityMaterial, NumberDensityMaterial, RelativeDensityMaterial, CellVolumeMaterial
-]
-
+MaterialTypes = Union[BulkDensityMaterial, NaturalDensityMaterial, NumberDensityMaterial, RelativeDensityMaterial, CellVolumeMaterial]
 
 class Compound(Scatterer):
     """
@@ -512,14 +447,14 @@ class Compound(Scatterer):
 
     An individual component can be a chemical formula, not just an element.
     """
-
     def __init__(self, parts=None):
         # Split [M1, N1, M2, N2, ...] into [M1, M2, ...], [N1, N2, ...]
         formula = [parts[i] for i in range(0, len(parts), 2)]
         count = [parts[i] for i in range(1, len(parts), 2)]
         # Convert M1, M2, ... to materials if necessary
         formula = [periodictable.formula(p) for p in formula]
-        count = [Parameter.default(w, limits=(0, None), name=str(f) + " count") for w, f in zip(count, formula)]
+        count = [Parameter.default(w, limits=(0, None), name=str(f)+" count")
+                 for w, f in zip(count, formula)]
         self.parts = formula
         self.count = count
 
@@ -529,55 +464,48 @@ class Compound(Scatterer):
         constituent and the relative scale fraction used to tweak
         the overall density.
         """
-        return {"count": self.count}
+        return {'count': self.count}
 
     def to_dict(self):
         return {
-            "type": type(self).__name__,
-            "parts": to_dict(self.parts),
-            "count": to_dict(self.count),
+            'type': type(self).__name__,
+            'parts': to_dict(self.parts),
+            'count': to_dict(self.count),
         }
 
     def formula(self):
         return tuple((c.value, f) for c, f in zip(self.count, self.parts))
 
     def __str__(self):
-        return "<%s>" % (", ".join(str(M) for M in self.formula()))
+        return "<%s>"%(", ".join(str(M) for M in self.formula()))
 
     def __repr__(self):
-        return "Compound([%s])" % (", ".join(repr(M) for M in self.formula()))
+        return "Compound([%s])"%(", ".join(repr(M) for M in self.formula()))
 
 
 # ============================ Alloys =============================
-
 
 class _VolumeFraction(object):
     """
     Returns the relative volume for each component in the system given
     the volume percentages.
     """
-
     def __init__(self, base, material):
         pass
-
     def __call__(self, fraction):
-        return 0.01 * np.asarray(fraction)
-
+        return 0.01*np.asarray(fraction)
 
 class _MassFraction(object):
     """
     Returns the relative volume for each component in the system given
     the relative masses.
     """
-
     def __init__(self, base, material):
         self._material = [base] + material
-
     def __call__(self, fraction):
         density = np.array([m.density.value for m in self._material])
-        volume = fraction / density
-        return volume / sum(volume)
-
+        volume = fraction/density
+        return volume/sum(volume)
 
 class Mixture(Scatterer):
     """
@@ -599,7 +527,6 @@ class Mixture(Scatterer):
 
     name defaults to M2.name+M3.name+...
     """
-
     @classmethod
     def bymass(cls, base, *parts, **kw):
         """
@@ -607,7 +534,7 @@ class Mixture(Scatterer):
 
         Mixture.bymass(base, M2, F2, ..., name='mixture name')
         """
-        return cls(base, parts, by="mass", **kw)
+        return cls(base, parts, by='mass', **kw)
 
     @classmethod
     def byvolume(cls, base, *parts, **kw):
@@ -616,31 +543,33 @@ class Mixture(Scatterer):
 
         Mixture.byvolume(base, M2, F2, ..., name='mixture name')
         """
-        return cls(base, parts, by="volume", **kw)
+        return cls(base, parts, by='volume', **kw)
 
-    def __init__(self, base, parts, by="volume", name=None, use_incoherent=False):
+    def __init__(self, base, parts, by='volume', name=None, use_incoherent=False):
         # Split [M1, M2, F2, ...] into [M1, M2, ...], [F2, ...]
         material = [parts[i] for i in range(0, len(parts), 2)]
         fraction = [parts[i] for i in range(1, len(parts), 2)]
         # Convert M1, M2, ... to materials if necessary
         if not isinstance(base, Scatterer):
             base = Material(base)
-        material = [p if isinstance(p, Scatterer) else Material(p) for p in material]
+        material = [p if isinstance(p, Scatterer) else Material(p)
+                    for p in material]
 
         # Specify the volume calculator based on the type of fraction
-        if by == "volume":
+        if by == 'volume':
             _volume = _VolumeFraction(base, material)
-        elif by == "mass":
+        elif by == 'mass':
             _volume = _MassFraction(base, material)
         else:
-            raise ValueError("fraction must be one of volume, mass or number")
+            raise ValueError('fraction must be one of volume, mass or number')
 
         # Name defaults to names of individual components
         if name is None:
             name = "+".join(p.name for p in material)
 
         # Make the fractions into fittable parameters
-        fraction = [Parameter.default(w, limits=(0, 100), name=f.name + "% " + by) for w, f in zip(fraction, material)]
+        fraction = [Parameter.default(w, limits=(0, 100), name=f.name+"% "+by)
+                    for w, f in zip(fraction, material)]
 
         self._volume = _volume
         self.base = base
@@ -656,17 +585,17 @@ class Mixture(Scatterer):
         the overall density.
         """
         return {
-            "base": self.base.parameters(),
-            "material": [m.parameters() for m in self.material],
-            "fraction": self.fraction,
-        }
+            'base':self.base.parameters(),
+            'material':[m.parameters() for m in self.material],
+            'fraction':self.fraction,
+            }
 
     def to_dict(self):
         return {
-            "type": type(self).__name__,
-            "base": to_dict(self.base),
-            "material": to_dict(self.material),
-            "fraction": to_dict(self.fraction),
+            'type': type(self).__name__,
+            'base': to_dict(self.base),
+            'material': to_dict(self.material),
+            'fraction': to_dict(self.fraction),
         }
 
     def _density(self):
@@ -674,7 +603,7 @@ class Mixture(Scatterer):
         Compute the density of the mixture from the density and proportion
         of the individual components.
         """
-        fraction = np.array([0.0] + [m.value for m in self.fraction])
+        fraction = np.array([0.]+[m.value for m in self.fraction])
         # TODO: handle invalid fractions using penalty functions
         # S = sum(fraction)
         # scale = S/100 if S > 100 else 1
@@ -684,9 +613,8 @@ class Mixture(Scatterer):
         if (fraction < 0).any():
             return nan
         volume = self._volume(fraction)
-        density = np.array([m.density() for m in [self.base] + self.material])
-        return np.sum(volume * density)
-
+        density = np.array([m.density() for m in [self.base]+self.material])
+        return np.sum(volume*density)
     density = property(_density, doc=_density.__doc__)
 
     def sld(self, probe):
@@ -694,7 +622,7 @@ class Mixture(Scatterer):
         Return the scattering length density and absorption of the mixture.
         """
         # Convert fractions into an array, with the final fraction
-        fraction = np.array([0.0] + [f.value for f in self.fraction])
+        fraction = np.array([0.]+[f.value for f in self.fraction])
         fraction[0] = 100 - sum(fraction)
         # TODO: handle invalid fractions using penalty functions
         # S = sum(fraction)
@@ -710,24 +638,22 @@ class Mixture(Scatterer):
 
         # Use calculator to convert individual SLDs to overall SLD
         volume_fraction = self._volume(fraction)
-        rho = np.sum(rho * extend(volume_fraction, rho))
+        rho = np.sum(rho*extend(volume_fraction, rho))
 
-        irho = np.sum(irho * extend(volume_fraction, irho))
+        irho = np.sum(irho*extend(volume_fraction, irho))
         if self.use_incoherent:
             raise NotImplementedError("incoherent scattering not supported")
-        # print "Mixture", self.name, coh, absorp
+        #print "Mixture", self.name, coh, absorp
 
         return rho, irho
 
     def __str__(self):
-        return "<%s>" % (", ".join(str(M) for M in [self.base] + self.material))
+        return "<%s>"%(", ".join(str(M) for M in [self.base]+self.material))
 
     def __repr__(self):
-        return "Mixture(%s)" % (", ".join(repr(M) for M in [self.base] + self.material))
-
+        return "Mixture(%s)"%(", ".join(repr(M) for M in [self.base]+self.material))
 
 # ============================ SLD cache =============================
-
 
 class ProbeCache(object):
     """
@@ -745,7 +671,6 @@ class ProbeCache(object):
     an individual material from probe (using del probe[material]) or
     by clearing the entire cash.
     """
-
     def __init__(self, probe=None):
         self._probe = probe
         self._cache = {}
@@ -765,9 +690,9 @@ class ProbeCache(object):
         h = id(material)
         if h not in self._cache:
             # lookup density of 1, and scale to actual density on retrieval
-            self._cache[h] = self._probe.scattering_factors(material, density=1.0)
-        return [v * density for v in self._cache[h]]
-
+            self._cache[h] = self._probe.scattering_factors(material,
+                                                            density=1.0)
+        return [v*density for v in self._cache[h]]
 
 def extend(a, b):
     """
@@ -797,8 +722,8 @@ def extend(a, b):
     if np.isscalar(a):
         return a
     # CRUFT: python 2.7 support
-    extra_dims = (1,) * (b.ndim - a.ndim)
+    extra_dims = (1,)*(b.ndim-a.ndim)
     return a.reshape(a.shape + extra_dims)
     # python 3 uses
-    # extra_dims = (np.newaxis,)*(b.ndim-a.ndim)
-    # return a[(..., *extra_dims)]
+    #extra_dims = (np.newaxis,)*(b.ndim-a.ndim)
+    #return a[(..., *extra_dims)]

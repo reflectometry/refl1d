@@ -7,7 +7,7 @@ from refl1d.anstodata import Platypus
 pth = os.path.dirname(__file__)
 
 PLP = Platypus()
-probe = PLP.load(os.path.join(pth, "c_PLP0000708.dat"))
+probe = PLP.load(os.path.join(pth, 'c_PLP0000708.dat'))
 
 assert_equal(probe.Q.size, 90)
 assert_almost_equal(probe.dQ[0], 0.000319677 / 2.3548)

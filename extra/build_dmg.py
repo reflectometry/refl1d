@@ -15,25 +15,22 @@ import os
 import sys
 import shutil
 
-
 def build_dmg(name, version):
     """DMG builder; should include docs"""
-    product = name + " " + version
-    productdash = name + "-" + version
-    app = "dist/%s.app" % product
-    dmg = "dist/%s.dmg" % productdash
+    product = name+" "+version
+    productdash = name+"-"+version
+    app="dist/%s.app"%product
+    dmg="dist/%s.dmg"%productdash
     # Remove previous build if it is still sitting there
-    if os.path.exists(app):
+    if os.path.exists(app): 
         shutil.rmtree(app)
-    if os.path.exists(dmg):
+    if os.path.exists(dmg): 
         os.unlink(dmg)
     print(os.getcwd(), name, app)
-    os.rename("dist/%s.app" % name, app)
-    os.system(
-        'cd dist && ../extra/dmgpack.sh "%s" "%s.app" ../doc/_build/html ../doc/examples' % (productdash, product)
-    )
-    os.system('chmod a+r "%s"' % dmg)
-
+    os.rename("dist/%s.app"%name, app)
+    os.system('cd dist && ../extra/dmgpack.sh "%s" "%s.app" ../doc/_build/html ../doc/examples'
+              % (productdash,product))
+    os.system('chmod a+r "%s"'%dmg)
 
 def main():
     if len(sys.argv) != 3:
@@ -42,6 +39,6 @@ def main():
     name, version = sys.argv[1:3]
     build_dmg(name, version)
 
-
 if __name__ == "__main__":
     main()
+

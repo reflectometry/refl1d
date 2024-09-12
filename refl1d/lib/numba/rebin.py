@@ -1,17 +1,17 @@
 import numba
 from .clone_module import clone_module
 
-MODULE = clone_module("refl1d.lib.python.rebin")
+MODULE = clone_module('refl1d.lib.python.rebin')
 
 # Define a bin iterator to adapt to either forward or reversed inputs.
 spec = [
-    ("forward", numba.boolean),
-    ("n", numba.int64),
-    ("edges", numba.float64[:]),
-    ("bin", numba.int64),
-    ("lo", numba.float64),
-    ("hi", numba.float64),
-    ("atend", numba.boolean),
+    ('forward', numba.boolean),
+    ('n', numba.int64),
+    ('edges', numba.float64[:]),
+    ('bin', numba.int64),
+    ('lo', numba.float64),
+    ('hi', numba.float64),
+    ('atend', numba.boolean)
 ]
 
 BinIter = numba.experimental.jitclass(spec)(MODULE.BinIter)

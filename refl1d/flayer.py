@@ -8,7 +8,6 @@ from refl1d.model import Layer
 from refl1d.magnetism import BaseMagnetism, Magnetism, DEFAULT_THETA_M
 from refl1d import util
 
-
 class FunctionalProfile(Layer):
     """
     Generic profile function
@@ -53,11 +52,11 @@ class FunctionalProfile(Layer):
                                     rhoL=L1.rho, rhoR=L3.rho)
         sample = L1 | profile | L3
     """
-
-    RESERVED = ("thickness", "interface", "profile", "tol", "magnetism", "name")
+    RESERVED = ('thickness', 'interface', 'profile', 'tol', 'magnetism', 'name')
 
     # TODO: test that thickness(z) matches the thickness of the layer
-    def __init__(self, thickness=0, interface=0, profile=None, tol=1e-3, magnetism=None, name=None, **kw):
+    def __init__(self, thickness=0, interface=0, profile=None, tol=1e-3,
+                 magnetism=None, name=None, **kw):
         if not name:
             name = profile.__name__
         if interface != 0:
@@ -65,8 +64,8 @@ class FunctionalProfile(Layer):
         if profile is None:
             raise TypeError("Need profile")
         self.name = name
-        self.thickness = Parameter.default(thickness, name=name + " thickness")
-        self.interface = Parameter.default(interface, name=name + " interface")
+        self.thickness = Parameter.default(thickness, name=name+" thickness")
+        self.interface = Parameter.default(interface, name=name+" interface")
         self.profile = profile
         self.tol = tol
         self.magnetism = magnetism
@@ -76,45 +75,44 @@ class FunctionalProfile(Layer):
         irho_start = _LayerLimit(self, isend=False, isrho=False)
         rho_end = _LayerLimit(self, isend=True, isrho=True)
         irho_end = _LayerLimit(self, isend=True, isrho=False)
-        self.start = SLD(name + " start", rho=rho_start, irho=irho_start)
-        self.end = SLD(name + " end", rho=rho_end, irho=irho_end)
+        self.start = SLD(name+" start", rho=rho_start, irho=irho_start)
+        self.end = SLD(name+" end", rho=rho_end, irho=irho_end)
 
         _set_parameters(self, name, profile, kw, self.RESERVED)
 
     def parameters(self):
         P = _get_parameters(self)
-        P["thickness"] = self.thickness
-        # P['interface'] = self.interface
+        P['thickness'] = self.thickness
+        #P['interface'] = self.interface
         return P
 
     def to_dict(self):
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "name": self.name,
-                "thickness": self.thickness,
-                "interface": self.interface,
-                "profile": self.profile,
-                "parameters": _get_parameters(self),
-                "tol": self.tol,
-                "magnetism": self.magnetism,
-            }
-        )
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'thickness': self.thickness,
+            'interface': self.interface,
+            'profile': self.profile,
+            'parameters': _get_parameters(self),
+            'tol': self.tol,
+            'magnetism': self.magnetism,
+        })
 
     def render(self, probe, slabs):
         Pw, Pz = slabs.microslabs(self.thickness.value)
         if len(Pw) == 0:
             return
-        # print kw
+        #print kw
         # TODO: always return rho, irho from profile function
         # return value may be a constant for rho or irho
         phi = asarray(self.profile(Pz, **_get_values(self)))
         if phi.shape != Pz.shape:
-            raise TypeError("profile function '%s' did not return array phi(z)" % self.profile.__name__)
+            raise TypeError("profile function '%s' did not return array phi(z)"
+                            %self.profile.__name__)
         Pw, phi = util.merge_ends(Pw, phi, tol=self.tol)
-        # P = M*phi + S*(1-phi)
+        #P = M*phi + S*(1-phi)
         slabs.extend(rho=[real(phi)], irho=[imag(phi)], w=Pw)
-        # slabs.interface(self.interface.value)
+        #slabs.interface(self.interface.value)
 
 
 class FunctionalMagnetism(BaseMagnetism):
@@ -137,17 +135,16 @@ class FunctionalMagnetism(BaseMagnetism):
     See :class:`FunctionalProfile` for a description of the the profile
     function.
     """
-
-    RESERVED = ("profile", "tol", "name", "extent", "dead_below", "dead_above", "interface_below", "interface_above")
+    RESERVED = ('profile', 'tol', 'name', 'extent', 'dead_below', 'dead_above',
+                'interface_below', 'interface_above')
     magnetic = True
-
     def __init__(self, profile=None, tol=1e-3, name=None, **kw):
         if not name:
             name = profile.__name__
         if profile is None:
             raise TypeError("Need profile")
         # strip magnetism keywords from list of keywords
-        magkw = dict((a, kw.pop(a)) for a in set(self.RESERVED) & set(kw.keys()))
+        magkw = dict((a, kw.pop(a)) for a in set(self.RESERVED)&set(kw.keys()))
         BaseMagnetism.__init__(self, name=name, **magkw)
         self.profile = profile
         self.tol = tol
@@ -167,11 +164,13 @@ class FunctionalMagnetism(BaseMagnetism):
     # TODO: is there a sane way of computing magnetism thickness in advance?
     def _calc_thickness(self):
         if self.anchor is None:
-            raise ValueError("Need layer.magnetism.set_anchor(stack, layer) to compute" " magnetic thickness.")
+            raise ValueError(
+                "Need layer.magnetism.set_anchor(stack, layer) to compute"
+                " magnetic thickness.")
         stack, index = self.anchor
         stack, start = stack._lookup(index)
         total = 0
-        for k in range(start, start + self.extent):
+        for k in range(start, start+self.extent):
             total += stack[k].thickness.value
         total -= self.dead_below.value + self.dead_above.value
         return total
@@ -183,15 +182,11 @@ class FunctionalMagnetism(BaseMagnetism):
 
     def to_dict(self):
         ret = BaseMagnetism.to_dict(self)
-        ret.update(
-            to_dict(
-                {
-                    "profile": self.profile,
-                    "parameters": _get_parameters(self),
-                    "tol": self.tol,
-                }
-            )
-        )
+        ret.update(to_dict({
+            'profile': self.profile,
+            'parameters': _get_parameters(self),
+            'tol': self.tol,
+        }))
 
     def render(self, probe, slabs, thickness, anchor, sigma):
         Pw, Pz = slabs.microslabs(thickness)
@@ -204,51 +199,52 @@ class FunctionalMagnetism(BaseMagnetism):
             # rhoM or thetaM may be constant, lists or arrays (but not tuples!)
             rhoM, thetaM = [broadcast_to(v, Pz.shape) for v in (rhoM, thetaM)]
         except ValueError:
-            raise TypeError("profile function '%s' did not return array rhoM(z)" % self.profile.__name__)
-        P = rhoM + thetaM * 0.001j  # combine rhoM/thetaM so they can be merged
+            raise TypeError("profile function '%s' did not return array rhoM(z)"
+                            %self.profile.__name__)
+        P = rhoM + thetaM*0.001j  # combine rhoM/thetaM so they can be merged
         Pw, P = util.merge_ends(Pw, P, tol=self.tol)
-        rhoM, thetaM = P.real, P.imag * 1000  # split out rhoM,thetaM again
-        slabs.add_magnetism(anchor=anchor, w=Pw, rhoM=rhoM, thetaM=thetaM, sigma=sigma)
+        rhoM, thetaM = P.real, P.imag*1000  # split out rhoM,thetaM again
+        slabs.add_magnetism(
+            anchor=anchor, w=Pw, rhoM=rhoM, thetaM=thetaM, sigma=sigma)
 
     def __repr__(self):
-        return "FunctionalMagnetism(%s)" % self.name
+        return "FunctionalMagnetism(%s)"%self.name
 
 
 def _set_parameters(self, name, profile, kw, reserved):
     # Query profile function for the list of arguments
     vars = inspect.getfullargspec(profile)[0]
-    # print "vars", vars
+    #print "vars", vars
     if inspect.ismethod(profile):
         vars = vars[1:]  # Chop self
     vars = vars[1:]  # Chop z
-    # print vars
+    #print vars
     unused = [k for k in kw.keys() if k not in vars]
     if len(unused) > 0:
-        raise TypeError("Profile got unexpected keyword argument '%s'" % unused[0])
+        raise TypeError("Profile got unexpected keyword argument '%s'"%unused[0])
     dups = [k for k in vars if k in reserved]
     if len(dups) > 0:
-        raise TypeError("Profile has conflicting argument %r" % dups[0])
+        raise TypeError("Profile has conflicting argument %r"%dups[0])
     for k in vars:
         kw.setdefault(k, 0)
     for k, v in kw.items():
         try:
-            pv = [Parameter.default(vi, name=f"{name} {k}[{i}]") for i, vi in enumerate(v)]
+            pv = [Parameter.default(vi, name=f"{name} {k}[{i}]")
+               for i, vi in enumerate(v)]
         except TypeError:
             pv = Parameter.default(v, name=f"{name} {k}")
         setattr(self, k, pv)
     self._parameters = vars
 
-
 def _get_parameters(self):
     return {k: getattr(self, k) for k in self._parameters}
-
 
 def _get_values(self):
     vals = {}
     for k in self._parameters:
         v = getattr(self, k)
         if isinstance(v, list):
-            vals[k] = asarray([vk.value for vk in v], "d")
+            vals[k] = asarray([vk.value for vk in v], 'd')
         else:
             vals[k] = v.value
     return vals
@@ -260,13 +256,15 @@ class _LayerLimit(Calculation):
         self.flayer = flayer
         self.isend = isend
         self.isrho = isrho
-        self.name = str(flayer) + (".rho_" if isrho else ".irho_") + ("end" if isend else "start")
+        self.name = (str(flayer)
+                     + (".rho_" if isrho else ".irho_")
+                     + ("end" if isend else "start"))
 
     def parameters(self):
         return []
 
     def _function(self):
-        z = asarray([0.0, self.flayer.thickness.value])
+        z = asarray([0., self.flayer.thickness.value])
         P = self.flayer.profile(asarray(z), **_get_values(self.flayer))
         index = 1 if self.isend else 0
         return real(P[index]) if self.isrho else imag(P[index])
@@ -274,21 +272,22 @@ class _LayerLimit(Calculation):
     def __repr__(self):
         return repr(self.flayer) + self._tag
 
-
 class _MagnetismLimit(Calculation):
     def __init__(self, flayer, isend=True, isrhoM=True):
         self.description = f"{'rhoM' if isrhoM else 'thetaM'} Magnetism Limit, isend={isend}"
         self.flayer = flayer
         self.isend = isend
         self.isrhoM = isrhoM
-        self.name = str(flayer) + (".rhoM_" if isrhoM else ".thetaM_") + ("end" if isend else "start")
+        self.name = (str(flayer)
+                     + (".rhoM_" if isrhoM else ".thetaM_")
+                     + ("end" if isend else "start"))
 
     def parameters(self):
         return []
 
     def _function(self):
         zmax = self.flayer._calc_thickness()
-        z = asarray([0.0, zmax])
+        z = asarray([0., zmax])
         P = self.flayer.profile(z, **_get_values(self.flayer))
         rhoM, thetaM = P if isinstance(P, tuple) else (P, DEFAULT_THETA_M)
         rhoM, thetaM = [broadcast_to(v, z.shape) for v in (rhoM, thetaM)]

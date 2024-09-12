@@ -1,7 +1,6 @@
 """
 Extension to MPL to support the binding of artists to key/mouse events.
 """
-
 import traceback
 import sys
 
@@ -9,25 +8,20 @@ from matplotlib import transforms
 
 # CRUFT: matplotlib doesn't yet support canvas.draw_now()
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg
-
-
 def wxdrawnow(self):
-    # print "draw if needed"
+    #print "draw if needed"
     if not self._isDrawn:
         self.draw()
-
-
 FigureCanvasWxAgg.draw_now = wxdrawnow
 
-if hasattr(transforms, "Transform"):
+if hasattr(transforms,'Transform'):
     # 0.98 transforms
     def pixel_to_data(transform, x, y):
-        return transform.inverted().transform_point((x, y))
+        return transform.inverted().transform_point( (x,y) )
 else:
     # CRUFT 0.91 support
     def pixel_to_data(transform, x, y):
-        return transform.inverse_xy_tup((x, y))
-
+        return transform.inverse_xy_tup((x,y))
 
 def draw_if_needed(canvas):
     """
@@ -40,31 +34,28 @@ def draw_if_needed(canvas):
     if not canvas._isDrawn:
         canvas.draw()
 
-
 class Selection:
     """
     Store and compare selections.
     """
-
     # TODO: We need some way to check in prop matches, preferably
     # TODO: without imposing structure on prop.
 
-    artist = None
-    prop = {}
+    artist=None
+    prop={}
+    def __init__(self,artist=None,prop={}):
+        self.artist,self.prop = artist,self.prop
 
-    def __init__(self, artist=None, prop={}):
-        self.artist, self.prop = artist, self.prop
-
-    def __eq__(self, other):
+    def __eq__(self,other):
         return self.artist is other.artist
 
-    def __ne__(self, other):
+    def __ne__(self,other):
         return self.artist is not other.artist
 
     def __bool__(self):
         return self.artist is not None
+    __nonzero__ = __bool__ # CRUFT: python 2.x support
 
-    __nonzero__ = __bool__  # CRUFT: python 2.x support
 
 
 #########################################################################
@@ -74,40 +65,43 @@ class BindArtist:
     # TODO: properly support it from outside the windowing system since there
     # TODO: is no way to recognized whether shift is held down when the mouse
     # TODO: first clicks on the the application window.
-    _debug = False
+    _debug  = False
     control = False
-    shift = False
-    alt = False
-    meta = False
+    shift   = False
+    alt     = False
+    meta    = False
 
     # Track doubleclick
     dclick_threshhold = 0.25
-    _last_button = None
-    _last_time = 0
+    _last_button      = None
+    _last_time        = 0
 
     # Mouse/keyboard events we can bind to
-    events = ["enter", "leave", "motion", "click", "dclick", "drag", "release", "scroll", "key", "keyup"]
+    events= ['enter','leave','motion','click','dclick','drag','release',
+             'scroll','key','keyup']
     # TODO: Need our own event structure
 
-    def __init__(self, figure):
+    def __init__(self,
+                 figure
+                 ):
         self.canvas = figure.canvas
         self.figure = figure
 
         self._connections = [
-            self.canvas.mpl_connect("motion_notify_event", self._onMotion),
-            self.canvas.mpl_connect("button_press_event", self._onClick),
-            self.canvas.mpl_connect("button_release_event", self._onRelease),
-            self.canvas.mpl_connect("key_press_event", self._onKey),
-            self.canvas.mpl_connect("key_release_event", self._onKeyRelease),
-            self.canvas.mpl_connect("scroll_event", self._onScroll),
-        ]
+            self.canvas.mpl_connect('motion_notify_event', self._onMotion),
+            self.canvas.mpl_connect('button_press_event',  self._onClick),
+            self.canvas.mpl_connect('button_release_event',self._onRelease),
+            self.canvas.mpl_connect('key_press_event',     self._onKey),
+            self.canvas.mpl_connect('key_release_event',   self._onKeyRelease),
+            self.canvas.mpl_connect('scroll_event',        self._onScroll) ]
 
         # Turn off picker if it hasn't already been done
-        self.canvas.mpl_disconnect(self.canvas.button_pick_id)
-        self.canvas.mpl_disconnect(self.canvas.scroll_pick_id)
+        self.canvas.mpl_disconnect( self.canvas.button_pick_id )
+        self.canvas.mpl_disconnect( self.canvas.scroll_pick_id )
 
-        # Clear connections to all artists.
+        #Clear connections to all artists.
         self.clearall()
+
 
     def clear(self, *artists):
         """
@@ -123,12 +117,10 @@ class BindArtist:
             if h in self._artists:
                 self._artists.remove(h)
 
-        if self._current.artist in artists:
-            self._current = Selection()
-        if self._hasclick.artist in artists:
-            self._hasclick = Selection()
-        if self._haskey.artist in artists:
-            self._haskey = Selection()
+        if self._current.artist  in artists: self._current  = Selection()
+        if self._hasclick.artist in artists: self._hasclick = Selection()
+        if self._haskey.artist   in artists: self._haskey   = Selection()
+
 
     def clearall(self):
         """
@@ -142,10 +134,11 @@ class BindArtist:
             self._actions[action] = {}
 
         # Need activity state
-        self._artists = []
-        self._current = Selection()
+        self._artists  = []
+        self._current  = Selection()
         self._hasclick = Selection()
-        self._haskey = Selection()
+        self._haskey   = Selection()
+
 
     def disconnect(self):
         """
@@ -158,10 +151,12 @@ class BindArtist:
             pass
         self._connections = []
 
+
     def __del__(self):
         self.disconnect()
 
-    def __call__(self, trigger, artist, action):
+
+    def __call__(self,trigger,artist,action):
         """Register a callback for an artist to a particular trigger event.
 
         usage:
@@ -218,60 +213,63 @@ class BindArtist:
         """
         # Check that the trigger is valid
         if trigger not in self._actions:
-            raise ValueError("%s invalid --- valid triggers are %s" % (trigger, ", ".join(self.events)))
+            raise ValueError("%s invalid --- valid triggers are %s"\
+                              %(trigger,", ".join(self.events)))
 
         # Register the trigger callback
-        self._actions[trigger][artist] = action
-        # print "==> added",artist,[artist],"to",trigger,":",self._actions[trigger].keys()
+        self._actions[trigger][artist]=action
+        #print "==> added",artist,[artist],"to",trigger,":",self._actions[trigger].keys()
 
         # Maintain a list of all artists
         if artist not in self._artists:
             self._artists.append(artist)
 
-    def trigger(self, actor, action, ev):
+
+    def trigger(self,actor,action,ev):
         """
         Trigger a particular event for the artist.  Fallback to axes,
         to figure, and to 'all' if the event is not processed.
         """
         if action not in self.events:
-            raise ValueError("Trigger expects " + ", ".join(self.events))
+            raise ValueError("Trigger expects "+", ".join(self.events))
 
         # Tag the event with modifiers
-        for mod in ("alt", "control", "shift", "meta"):
-            setattr(ev, mod, getattr(self, mod))
-        setattr(ev, "artist", None)
-        setattr(ev, "action", action)
-        setattr(ev, "prop", {})
+        for mod in ('alt','control','shift','meta'):
+            setattr(ev,mod,getattr(self,mod))
+        setattr(ev,'artist',None)
+        setattr(ev,'action',action)
+        setattr(ev,'prop',{})
 
         # Fallback scheme.  If the event does not return false, pass to parent.
         processed = False
         artist = actor.artist
-        prop = actor.prop
+        prop   = actor.prop
         if artist in self._actions[action]:
             # Make sure the x,y data use the coordinate system of the
             # artist rather than the default axes coordinates.
             xy = pixel_to_data(artist.get_transform(), ev.x, ev.y)
-            ev.xdata, ev.ydata = xy
+            ev.xdata, ev.ydata  = xy
             ev.artist = artist
-            ev.prop = prop
+            ev.prop   = prop
             processed = self._actions[action][artist](ev)
 
         if not processed and ev.inaxes in self._actions[action]:
             ev.artist = ev.inaxes
-            ev.prop = {}
+            ev.prop   = {}
             processed = self._actions[action][ev.inaxes](ev)
 
         if not processed and self.figure in self._actions[action]:
             ev.artist = self.figure
-            ev.prop = {}
+            ev.prop   = {}
             processed = self._actions[action][self.figure](ev)
 
-        if not processed and "all" in self._actions[action]:
+        if not processed and 'all' in self._actions[action]:
             ev.artist = None
-            ev.prop = {}
-            processed = self._actions[action]["all"](ev)
+            ev.prop   = {}
+            processed = self._actions[action]['all'](ev)
 
         return processed
+
 
     def _find_current(self, event):
         """
@@ -279,15 +277,16 @@ class BindArtist:
         registered artists.  All others are invisible to the mouse.
         """
         self.canvas.draw_now()
-        # self.canvas.draw()
-        # draw_now(self.canvas)
+        #self.canvas.draw()
+        #draw_now(self.canvas)
         # TODO: sort by zorder of axes then by zorder within axes
         self._artists.sort(key=lambda x: x.zorder, reverse=True)
         # print "search"," ".join([str(h) for h in self._artists])
 
         found = Selection()
-        # print "searching in",self._artists
+        #print "searching in",self._artists
         for artist in self._artists:
+
             # TODO: should contains() return false if invisible?
             if not artist.get_visible():
                 continue
@@ -295,44 +294,46 @@ class BindArtist:
             # TODO: optimization - exclude artists not inaxes
             # Note: errors tend to show up on move
             try:
-                inside, prop = artist.contains(event)
+                inside,prop = artist.contains(event)
             except:
-                warn_exception("Exception in %s contains() method" % artist)
+                warn_exception("Exception in %s contains() method"%artist)
                 inside = False
 
             if inside:
                 found.artist = artist
-                found.prop = prop
+                found.prop   = prop
                 break
 
-        # print "found",found.artist
+        #print "found",found.artist
 
         # TODO: how to check if prop is equal?
         if found != self._current:
-            self.trigger(self._current, "leave", event)
-            self.trigger(found, "enter", event)
+            self.trigger(self._current, 'leave', event)
+            self.trigger(found,         'enter', event)
         self._current = found
 
         return found
 
-    def _onMotion(self, event):
+
+    def _onMotion(self,event):
         """
         Track enter/leave/motion through registered artists; all
         other artists are invisible.
         """
         ## Can't kill double-click on motion since Windows produces
         ## spurious motion events.
-        # self._last_button = None
+        #self._last_button = None
 
         # Dibs on the motion event for the clicked artist
         if self._hasclick:
-            self.trigger(self._hasclick, "drag", event)
+            self.trigger(self._hasclick, 'drag', event)
         else:
             found = self._find_current(event)
-            # print "found",found.artist
-            self.trigger(found, "motion", event)
+            #print "found",found.artist
+            self.trigger(found,'motion',event)
 
-    def _onClick(self, event):
+
+    def _onClick(self,event):
         """
         Process button click
         """
@@ -340,16 +341,18 @@ class BindArtist:
 
         # Check for double-click
         event_time = time.time()
-        # print event_time,self._last_time,self.dclick_threshhold
-        # print (event_time > self._last_time + self.dclick_threshhold)
-        # print event.button,self._last_button
+        #print event_time,self._last_time,self.dclick_threshhold
+        #print (event_time > self._last_time + self.dclick_threshhold)
+        #print event.button,self._last_button
 
-        if (event.button != self._last_button) or (event_time > self._last_time + self.dclick_threshhold):
-            action = "click"
+        if (event.button != self._last_button) or \
+           (event_time    > self._last_time + self.dclick_threshhold):
+            action = 'click'
         else:
-            action = "dclick"
+            action = 'dclick'
         self._last_button = event.button
-        self._last_time = event_time
+        self._last_time   = event_time
+
 
         # If an artist is already dragging, feed any additional button
         # presses to that artist.
@@ -360,7 +363,7 @@ class BindArtist:
             found = self._hasclick
         else:
             found = self._find_current(event)
-        # print "button %d pressed"%event.button
+        #print "button %d pressed"%event.button
         # Note: it seems like if "click" returns False then hasclick should
         # not be set.  The problem is that there are two reasons it can
         # return false: because there is no click action for this artist
@@ -370,10 +373,11 @@ class BindArtist:
         # it to future maintainers to sort out this problem.  For now the
         # recommendation is that users should define click if they have
         # drag or release on the artist.
-        self.trigger(found, action, event)
+        self.trigger(found,action,event)
         self._hasclick = found
 
-    def _onDClick(self, event):
+
+    def _onDClick(self,event):
         """
         Process button double click
         """
@@ -386,17 +390,19 @@ class BindArtist:
             found = self._hasclick
         else:
             found = self._find_current(event)
-        self.trigger(found, "dclick", event)
+        self.trigger(found,'dclick',event)
         self._hasclick = found
 
-    def _onRelease(self, event):
+
+    def _onRelease(self,event):
         """
         Process release release
         """
-        self.trigger(self._hasclick, "release", event)
+        self.trigger(self._hasclick, 'release', event)
         self._hasclick = Selection()
 
-    def _onKey(self, event):
+
+    def _onKey(self,event):
         """
         Process key click
         """
@@ -407,7 +413,7 @@ class BindArtist:
         # TODO: finally to application?  Do we need to implement a full tags
         # TODO: architecture a la Tk?
         # TODO: Do modifiers cause a grab?  Does the artist see the modifiers?
-        if event.key in ("alt", "meta", "control", "shift"):
+        if event.key in ('alt','meta','control','shift'):
             setattr(self, event.key, True)
             return
 
@@ -415,28 +421,29 @@ class BindArtist:
             found = self._haskey
         else:
             found = self._find_current(event)
-        self.trigger(found, "key", event)
+        self.trigger(found, 'key', event)
         self._haskey = found
 
-    def _onKeyRelease(self, event):
+
+    def _onKeyRelease(self,event):
         """
         Process key release
         """
-        if event.key in ("alt", "meta", "control", "shift"):
+        if event.key in ('alt','meta','control','shift'):
             setattr(self, event.key, False)
             return
 
         if self._haskey:
-            self.trigger(self._haskey, "keyup", event)
+            self.trigger(self._haskey, 'keyup', event)
         self._haskey = Selection()
 
-    def _onScroll(self, event):
+
+    def _onScroll(self,event):
         """
         Process scroll event
         """
         found = self._find_current(event)
-        self.trigger(found, "scroll", event)
-
+        self.trigger(found, 'scroll', event)
 
 def warn_exception(msg):
     trace = traceback.format_exception(*sys.exc_info())

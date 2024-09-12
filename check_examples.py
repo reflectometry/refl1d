@@ -5,8 +5,8 @@ import os
 sys.dont_write_bytecode = True
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
-CLI = "%s %s/bin/refl1d_cli.py %%s %%s" % (sys.executable, ROOT)
-EXAMPLEDIR = os.path.join(ROOT, "doc", "examples")
+CLI = "%s %s/bin/refl1d_cli.py %%s %%s"%(sys.executable, ROOT)
+EXAMPLEDIR = os.path.join(ROOT, 'doc', 'examples')
 
 # Add packages to the python path
 # Use in-place build of refl1d (requires "python setup.py build_ext --inplace")
@@ -19,35 +19,33 @@ packages = [ROOT]
 try:
     import bumps
 except ImportError:
-    packages.append(os.path.abspath(os.path.join(ROOT, "..", "bumps")))
+    packages.append(os.path.abspath(os.path.join(ROOT, '..', 'bumps')))
 try:
     import periodictable
 except ImportError:
-    packages.append(os.path.abspath(os.path.join(ROOT, "..", "periodictable")))
-if "PYTHONPATH" in os.environ:
-    packages.append(os.environ["PYTHONPATH"])
-os.environ["PYTHONPATH"] = os.pathsep.join(packages)
-
+    packages.append(os.path.abspath(os.path.join(ROOT, '..', 'periodictable')))
+if 'PYTHONPATH' in os.environ:
+    packages.append(os.environ['PYTHONPATH'])
+os.environ['PYTHONPATH'] = os.pathsep.join(packages)
 
 class Commands(object):
     @staticmethod
     def preview(f):
-        return os.system(CLI % (f, "--preview --seed=1"))
+        return os.system(CLI%(f, '--preview --seed=1'))
 
     @staticmethod
     def edit(f):
-        return os.system(CLI % (f, "--edit --seed=1"))
+        return os.system(CLI%(f, '--edit --seed=1'))
 
     @staticmethod
     def chisq(f):
-        return os.system(CLI % (f, "--chisq --seed=1"))
+        return os.system(CLI%(f, '--chisq --seed=1'))
 
     @staticmethod
     def time(f):
         ## Note: use --parallel to check serialization for MPMapper
-        # return os.system(CLI%(f, '--time_model --seed=1 --steps=24 --parallel'))
-        return os.system(CLI % (f, "--time_model --seed=1 --steps=20"))
-
+        #return os.system(CLI%(f, '--time_model --seed=1 --steps=24 --parallel'))
+        return os.system(CLI%(f, '--time_model --seed=1 --steps=20'))
 
 examples = [
     "distribution/dist-example.py",
@@ -61,7 +59,7 @@ examples = [
     "interface/model.py",
     "mixed/mixed.py",
     "mixed/mixed_magnetic.py",
-    # "peaks/model.py",
+    #"peaks/model.py",
     "polymer/tethered.py",
     "polymer/freeform.py",
     "profile/model.py",
@@ -76,8 +74,7 @@ examples = [
     "xray/mlayer-lin.staj",
     "xray/model.py",
     "xray/staj.py",
-]
-
+    ]
 
 def main():
     if len(sys.argv) == 1 or not hasattr(Commands, sys.argv[1][2:]):
@@ -85,11 +82,10 @@ def main():
     else:
         command = getattr(Commands, sys.argv[1][2:])
         for f in examples:
-            print("\n" + f)
+            print("\n"+f)
             status = command(os.path.join(EXAMPLEDIR, f))
             if status != 0:
                 sys.exit(1)
-
 
 if __name__ == "__main__":
     main()

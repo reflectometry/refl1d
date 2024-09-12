@@ -22,7 +22,6 @@ from glob import glob
 from shutil import copyfile
 import pylit
 
-
 def make():
     if not exists(TARGET_PATH):
         makedirs(TARGET_PATH)
@@ -34,39 +33,36 @@ def make():
         copyfile(index_source, index_target)
 
     # examples
-    examples = (f for f in glob(joinpath(SOURCE_PATH, "*")) if isdir(f))
+    examples = (f for f in glob(joinpath(SOURCE_PATH,'*')) if isdir(f))
     for f in examples:
-        # print "weaving directory",f
+        #print "weaving directory",f
         weave(f, joinpath(TARGET_PATH, basename(f)))
-
 
 def newer(file1, file2):
     return not exists(file1) or (getmtime(file1) < getmtime(file2))
 
-
 def weave(source, target):
     if not exists(target):
         makedirs(target)
-    for f in glob(joinpath(source, "*")):
-        if f.endswith("__pycache__") or f.endswith("pyc"):
-            continue  # skip precompiled python files
-        # print "processing",f
+    for f in glob(joinpath(source,'*')):
+        if f.endswith('__pycache__') or f.endswith('pyc'):
+            continue # skip precompiled python files
+        #print "processing",f
         if f.endswith(".py") and ispylit(f):
-            rstfile = joinpath(target, basename(f).replace(".py", ".rst"))
+            rstfile = joinpath(target, basename(f).replace('.py','.rst'))
             pyclean = joinpath(target, basename(f))
             if newer(rstfile, f):
                 # Convert executable literate file to rst file with embedded code
                 pylit.main([f, rstfile])
                 # Convert rest file with embedded code to clean code file
-                pylit.main([rstfile, pyclean, "-s", "-t"])
+                pylit.main([rstfile,pyclean,"-s","-t"])
         else:
             dest = joinpath(target, basename(f))
             if newer(dest, f):
                 if f.endswith(".py"):
-                    print("Warning: file %r is not a pylit file" % (f,))
-                # print "copying",f,dest
+                    print("Warning: file %r is not a pylit file"%(f,))
+                #print "copying",f,dest
                 copyfile(f, dest)
-
 
 def ispylit(f):
     """

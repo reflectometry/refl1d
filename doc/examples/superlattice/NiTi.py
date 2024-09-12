@@ -23,15 +23,15 @@
 
 from refl1d.names import *
 
-nickel = Material("Ni")
-titanium = Material("Ti")
+nickel = Material('Ni')
+titanium = Material('Ti')
 
 # Next we will compose nickel and titanium into a bilayer and use that
 # bilayer to define a stack with 10 repeats.
 
 # Superlattice description
-bilayer = nickel(50, 5) | titanium(50, 5)
-sample = silicon(0, 5) | bilayer * 10 | air
+bilayer = nickel(50,5) | titanium(50,5)
+sample = silicon(0,5) | bilayer*10 | air
 
 # We allow the thickness to vary by +/- 100%
 
@@ -45,10 +45,10 @@ bilayer[1].thickness.pmp(100)
 # layer is an independent parameter, whose value defaults to the same initial
 # value as the interface between the repeats.
 
-bilayer[0].interface.range(0, 30)
-bilayer[1].interface.range(0, 30)
-sample[0].interface.range(0, 30)
-sample[1].interface.range(0, 30)
+bilayer[0].interface.range(0,30)
+bilayer[1].interface.range(0,30)
+sample[0].interface.range(0,30)
+sample[1].interface.range(0,30)
 
 # If we wanted to have the interface for Ti between repeats identical to
 # the interface between Ti and air, we could have tied the parameters
@@ -68,7 +68,7 @@ sample[1].interface.range(0, 30)
 # example (the sample grower surely knows the number of layers in a
 # sample like this), so we do so only to demonstrate how it works.
 
-sample[1].repeat.range(5, 15)
+sample[1].repeat.range(5,15)
 
 # Before we can view the reflectivity, we must define the Q range over
 # which we want to simulate, and combine this probe with the sample.

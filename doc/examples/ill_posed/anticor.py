@@ -16,8 +16,7 @@
 # define is nickel.
 
 from refl1d.names import *
-
-nickel = Material("Ni")
+nickel = Material('Ni')
 
 # Use a fixed seed so results are reproducible
 

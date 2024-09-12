@@ -17,13 +17,12 @@
 # define is nickel.
 
 from refl1d.names import *
-
-nickel = Material("Ni")
+nickel = Material('Ni')
 
 # We need two separate models, one with 1000 |Ang| nickel and one without.
 
-plateau = silicon(0, 5) | nickel(1000, 200) | air
-valley = silicon(0, 5) | air
+plateau = silicon(0,5) | nickel(1000,200) | air
+valley = silicon(0,5) | air
 
 # We need only one probe for simulation.  The reflectivity measured at
 # the detector will be a mixture of those neutrons which reflect off
@@ -35,7 +34,7 @@ probe = NeutronProbe(T=T, dT=0.01, L=4.75, dL=0.0475)
 # We are going to start with a 1:1 ratio of plateau to valley and create
 # a simulated data set.
 
-M = MixedExperiment(samples=[plateau, valley], probe=probe, ratio=[1, 1])
+M = MixedExperiment(samples=[plateau,valley], probe=probe, ratio=[1,1])
 M.simulate_data(5)
 
 # We will assume the silicon interface is the same for the valley as the
@@ -46,16 +45,16 @@ valley[0].interface = plateau[0].interface
 
 # We will want to fit the thicknesses and interfaces as usual.
 
-plateau[0].interface.range(0, 200)
-plateau[1].interface.range(0, 200)
-plateau[1].thickness.range(200, 1800)
+plateau[0].interface.range(0,200)
+plateau[1].interface.range(0,200)
+plateau[1].thickness.range(200,1800)
 
 # The ratio between the valley and the plateau can also be fit, either
 # by fixing size of the plateau and fitting the size of the valley or
 # fixing the size of the valley and fitting the size of the plateau.  We
 # will hold the plateau fixed.
 
-M.ratio[1].range(0, 5)
+M.ratio[1].range(0,5)
 
 # Note that we could include a second order effect by including a
 # hillside term with the same height as the plateau but using a

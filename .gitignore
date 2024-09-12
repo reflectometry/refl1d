@@ -23,7 +23,6 @@ refl1d-webview-client*.tgz
 /refl1d-*
 /bumps-*
 /Refl1D.pdf
-/output-*
 
 # Build
 *.so

@@ -3,7 +3,6 @@ from math import erf
 
 verf = np.vectorize(erf)
 
-
 def build_profile(z, offset, roughness, contrast, initial_value, profiles):
     """
     Convert a step profile to a smooth profile.
@@ -24,8 +23,8 @@ def build_profile(z, offset, roughness, contrast, initial_value, profiles):
     NI = len(offset)
 
     contrast_shaped = contrast.reshape((NP, NI))
-    profiles_shaped = profiles.reshape((NP, NZ))  # view - updates affect profiles
-
+    profiles_shaped = profiles.reshape((NP, NZ)) # view - updates affect profiles
+    
     profiles_shaped += initial_value.reshape((NP, 1))
     for i in range(NI):
         offset_i = offset[i]
@@ -36,12 +35,10 @@ def build_profile(z, offset, roughness, contrast, initial_value, profiles):
 
         # delta = contrast_i[:, None] * blended[None, :]
         profiles_shaped += delta
-
+        
     return
 
-
-SQRT1_2 = 1.0 / np.sqrt(2.0)
-
+SQRT1_2 = 1. / np.sqrt(2.0)
 
 def blend(z, sigma, offset):
     """

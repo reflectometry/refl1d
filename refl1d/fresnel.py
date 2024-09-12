@@ -6,7 +6,6 @@ Pure python Fresnel reflectivity calculator.
 
 from numpy import sqrt, exp, real, conj, pi, abs, choose
 
-
 class Fresnel(object):
     """
     Function for computing the Fresnel reflectivity for a single interface.
@@ -26,9 +25,9 @@ class Fresnel(object):
     Note that we do not correct for attenuation of the beam through the
     incident medium since we do not know the path length.
     """
-
     def __init__(self, rho=0, irho=0, sigma=0, Vrho=0, Virho=0):
-        self.rho, self.Vrho, self.irho, self.Virho, self.sigma = rho, Vrho, irho, Virho, sigma
+        self.rho, self.Vrho, self.irho, self.Virho, self.sigma \
+            = rho, Vrho, irho, Virho, sigma
 
     def reflectivity(self, Q):
         """
@@ -40,16 +39,16 @@ class Fresnel(object):
         # change in scattering length density and ignore the absorption,
         # which should be handled by measuring the intensity through the
         # substrate, and therefore be corrected during reduction.
-        delta_rho_Qp = 1e-6 * ((self.rho - self.Vrho) + 1j * self.irho)
-        delta_rho_Qm = 1e-6 * ((self.Vrho - self.rho) + 1j * self.Virho)
-        # print "fresnel", rho_Qp.shape, rho_Qm.shape, Q.shape
+        delta_rho_Qp = 1e-6*((self.rho-self.Vrho) + 1j*self.irho)
+        delta_rho_Qm = 1e-6*((self.Vrho-self.rho) + 1j*self.Virho)
+        #print "fresnel", rho_Qp.shape, rho_Qm.shape, Q.shape
 
         delta_rho = choose(Q < 0, (delta_rho_Qp, delta_rho_Qm))
-        kz = abs(Q) / 2
-        f = sqrt(kz**2 - 4 * pi * delta_rho)  # fresnel coefficient
+        kz = abs(Q)/2
+        f = sqrt(kz**2 - 4*pi*delta_rho)  # fresnel coefficient
 
         # Compute reflectivity amplitude, with adjustment for roughness
-        amp = (kz - f) / (kz + f) * exp(-2 * self.sigma**2 * kz * f)
+        amp = (kz-f)/(kz+f) * exp(-2*self.sigma**2*kz*f)
         # Note: we do not need to check for a divide by zero.
         # Qc^2 = 16 pi rho.  Since rho is non-zero then Qc is non-zero.
         # For mu = 0:
@@ -59,11 +58,10 @@ class Fresnel(object):
         # For mu != 0:
         # * f has an imaginary component, so |Q|+f != 0.
 
-        return (amp * conj(amp)).real
+        return (amp*conj(amp)).real
 
     # Make the reflectivity method the default
     __call__ = reflectivity
-
 
 def test():
     import numpy as np
@@ -80,16 +78,15 @@ def test():
     Mirho = [[Virho, irho]]
     Msigma = [sigma]
 
-    Q = np.linspace(-0.1, 0.1, 101, "d")
+    Q = np.linspace(-0.1, 0.1, 101, 'd')
     Rf = fresnel(Q)
-    rm = abeles.refl(Q / 2, depth=Mw, rho=Mrho, irho=Mirho, sigma=Msigma)
-    Rm = abs(rm) ** 2
+    rm = abeles.refl(Q/2, depth=Mw, rho=Mrho, irho=Mirho, sigma=Msigma)
+    Rm = abs(rm)**2
 
-    # print "Rm", Rm
-    # print "Rf", Rf
-    relerr = np.linalg.norm((Rf - Rm) / Rm)
-    assert relerr < 1e-14, "relative error is %g" % relerr
-
+    #print "Rm", Rm
+    #print "Rf", Rf
+    relerr = np.linalg.norm((Rf-Rm)/Rm)
+    assert relerr < 1e-14, "relative error is %g"%relerr
 
 if __name__ == "__main__":
     test()

@@ -23,33 +23,33 @@ angles will be identical, but the curves will differ at high Q.
 from pylab import *
 from refl1d.reflectivity import reflectivity
 
-rho = 2.07  # silicon rho for neutrons
+rho=2.07 # silicon rho for neutrons
 L = 5  # Wavelength 5 angstroms
-T = linspace(0, 1, 100)  # Measured angles
-T_offset = 0.005  # alignment offset
+T = linspace(0,1,100)  # Measured angles
+T_offset = 0.005       # alignment offset
 
 # Find location of critical edge and computed the adjusted rho
-Tc = degrees(arcsin(L / 4.0 / pi * sqrt(16e-6 * pi * rho)))
-rho_adj = (4 * pi / L * sin(radians(Tc - T_offset))) ** 2 / 16e-6 / pi
+Tc = degrees(arcsin( L/4./pi * sqrt(16e-6*pi*rho)))
+rho_adj = (4*pi/L * sin( radians(Tc-T_offset)))**2/16e-6/pi
 
 # Q where the measurement is supposed to be and
 # Qoffset where the measurement actually is
-Q = 4 * pi / L * sin(radians(T))
-Q_offset = 4 * pi / L * sin(radians(T + T_offset))
+Q = 4*pi/L * sin(radians(T))
+Q_offset = 4*pi/L * sin(radians(T+T_offset))
 
 # Reflectivity measurement returns (Q, R(Qoffset))
 # Adjusted measurement returns (Q, Radj(Q))
-R = reflectivity(kz=-Q_offset / 2, depth=[0, 0], rho=[rho, 0])
-Radj = reflectivity(kz=-Q / 2, depth=[0, 0], rho=[rho_adj, 0])
+R = reflectivity(kz=-Q_offset/2, depth=[0,0], rho=[rho,0])
+Radj = reflectivity(kz=-Q/2, depth=[0,0], rho=[rho_adj,0])
 
 # Plot log reflectivity and relative difference using a shared Q axis.
 h = subplot(211)
-semilogy(Q, R, "-", label=r"$R$")
-semilogy(Q, Radj, "-", label=r"$R_{\rm adj}$", hold=True)
+semilogy(Q,R,'-',label=r'$R$')
+semilogy(Q,Radj,'-',label=r'$R_{\rm adj}$', hold=True)
 legend()
-ylabel(r"$R$")
+ylabel(r'$R$')
 subplot(212, sharex=h)
-plot(Q, (R - Radj) / R, "o")
-xlabel(r"$Q$ ($A^{-1}$)")
-ylabel(r"$(R-R_{\rm adj})/R$")
+plot(Q, (R-Radj)/R, 'o')
+xlabel(r'$Q$ ($A^{-1}$)')
+ylabel(r'$(R-R_{\rm adj})/R$')
 show()

@@ -1,8 +1,8 @@
 from refl1d.names import *
 
 
-sharp = FreeInterface(below=silicon, above=gold, dz=[0.01, 1, 0.01], dp=[0.01, 1, 0.01])
-smooth = FreeInterface(below=gold, above=air, dz=[1], dp=[1])
+sharp = FreeInterface(below=silicon,above=gold,dz=[.01,1,.01],dp=[.01,1,.01])
+smooth = FreeInterface(below=gold,above=air,dz=[1],dp=[1])
 sample = silicon | sharp(100) | gold(20) | smooth(100) | air
 
 T = numpy.linspace(0, 2, 200)

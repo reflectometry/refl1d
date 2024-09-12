@@ -13,8 +13,8 @@
 
 from refl1d.names import *
 
-nickel = Material("Ni")
-sample = silicon(0, 5) | nickel(100, 5) | air
+nickel = Material('Ni')
+sample = silicon(0,5) | nickel(100,5) | air
 
 instrument = SNS.Liquids()
 
@@ -23,7 +23,7 @@ instrument = SNS.Liquids()
 # reduction program stitches together the data for you, then you can simply
 # use ``probe=instrument.load('file')``.
 
-files = ["nifilm-tof-%d.dat" % d for d in (1, 2, 3, 4)]
+files = ['nifilm-tof-%d.dat'%d for d in (1,2,3,4)]
 probe = ProbeSet(instrument.load(f) for f in files)
 
 # The data and sample are combined into an

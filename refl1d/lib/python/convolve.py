@@ -10,7 +10,6 @@ root_12_over_2 = sqrt(3)
 
 prange = range
 
-
 def convolve_uniform(xi, yi, x, dx, y):
     left_index = 0
     N_xi = len(xi)
@@ -24,7 +23,7 @@ def convolve_uniform(xi, yi, x, dx, y):
         left, right = max(x_k - limit, xi[0]), min(x_k + limit, xi[-1])
         if right < left:
             # Convolution does not overlap data range.
-            y[k] = 0.0
+            y[k] = 0.
             continue
 
         # Find the starting point for the convolution by first scanning
@@ -34,13 +33,13 @@ def convolve_uniform(xi, yi, x, dx, y):
         # get to the last point before the limit. Make sure we have at
         # least one interval so that we don't have to check edge cases
         # later.
-        while left_index < N_xi - 2 and xi[left_index] < left:
+        while left_index < N_xi-2 and xi[left_index] < left:
             left_index += 1
         while left_index > 0 and xi[left_index] > left:
             left_index -= 1
 
         # Set the first interval.
-        total = 0.0
+        total = 0.
         right_index = left_index + 1
         x1, y1 = xi[left_index], yi[left_index]
         x2, y2 = xi[right_index], yi[right_index]
@@ -59,23 +58,23 @@ def convolve_uniform(xi, yi, x, dx, y):
             # It can be simplified to the following:
             #    area = offset * (y1 + slope*offset/2)
             offset = left - x1
-            slope = (y2 - y1) / (x2 - x1)
-            area = offset * (y1 + 0.5 * slope * offset)
+            slope = (y2 - y1)/(x2 - x1)
+            area = offset * (y1 + 0.5*slope*offset)
             total -= area
             # print(f" left correction {area}")
 
         # Do trapezoidal integration up to and including the end interval
-        while right_index < N_xi - 1 and x2 < right:
+        while right_index < N_xi-1 and x2 < right:
             # Add the current interval if it isn't empty
             if x1 != x2:
-                area = 0.5 * (y1 + y2) * (x2 - x1)
+                area = 0.5*(y1 + y2)*(x2 - x1)
                 total += area
                 # print(f" adding {(x1,y1)}, {(x2, y2)} as {area}")
             # Move to the next interval
             right_index += 1
             x1, y1, x2, y2 = x2, y2, xi[right_index], yi[right_index]
         if x1 != x2:
-            area = 0.5 * (y1 + y2) * (x2 - x1)
+            area = 0.5*(y1 + y2)*(x2 - x1)
             total += area
             # print(f" adding final {(x1,y1)}, {(x2, y2)} as {area}")
 
@@ -90,8 +89,8 @@ def convolve_uniform(xi, yi, x, dx, y):
             # It can be simplified to the following:
             #    area = -offset * (y2 - slope*offset/2)
             offset = x2 - right
-            slope = (y2 - y1) / (x2 - x1)
-            area = offset * (y2 - 0.5 * slope * offset)
+            slope = (y2 - y1)/(x2 - x1)
+            area = offset * (y2 - 0.5*slope*offset)
             total -= area
             # print(f" right correction {area}")
 
@@ -103,37 +102,39 @@ def convolve_uniform(xi, yi, x, dx, y):
             # If dx = 0 using the value interpolated at x (with left=right=x).
             # print(f" dirac delta at {left} = {right} in {(x1, y1)}, {(x2, y2)}")
             offset = left - x1
-            slope = (y2 - y1) / (x2 - x1)
-            y[k] = y1 + slope * offset
+            slope = (y2 - y1)/(x2 - x1)
+            y[k] = y1 + slope*offset
         else:
             # At an empty interval in the theory function. Average the y.
             # print(f" empty interval with {left} = {right} in {(x1, y1)}, {(x2, y2)}")
-            y[k] = 0.5 * (y1 + y2)
+            y[k] = 0.5*(y1 + y2)
 
 
-def convolve_gaussian_point(xin, yin, k, n, xo, limit, sigma):
-    two_sigma_sq = 2.0 * sigma * sigma
+def convolve_gaussian_point(xin, yin, k, n,
+                            xo, limit, sigma):
+
+    two_sigma_sq = 2. * sigma * sigma
     # double z, Glo, erflo, erfmin, y
 
     z = xo - xin[k]
-    Glo = exp(-z * z / two_sigma_sq)
-    erfmin = erflo = erf(-z / (SQRT2 * sigma))
-    y = 0.0
+    Glo = exp(-z*z/two_sigma_sq)
+    erfmin = erflo = erf(-z/(SQRT2*sigma))
+    y = 0.
     # /* printf("%5.3f: (%5.3f,%11.5g)",xo,xin[k],yin[k]); */
-    while k < n - 1:
+    while (k < n-1):
         k += 1
-        if xin[k] != xin[k - 1]:
+        if (xin[k] != xin[k-1]):
             # /* No additional contribution from duplicate points. */
 
             # /* Compute the next endpoint */
             zhi = xo - xin[k]
-            Ghi = exp(-zhi * zhi / two_sigma_sq)
-            erfhi = erf(-zhi / (SQRT2 * sigma))
-            m = (yin[k] - yin[k - 1]) / (xin[k] - xin[k - 1])
+            Ghi = exp(-zhi*zhi/two_sigma_sq)
+            erfhi = erf(-zhi/(SQRT2*sigma))
+            m = (yin[k]-yin[k-1])/(xin[k]-xin[k-1])
             b = yin[k] - m * xin[k]
 
             # /* Add the integrals. */
-            y += 0.5 * (m * xo + b) * (erfhi - erflo) - sigma / SQRT2PI * m * (Ghi - Glo)
+            y += 0.5*(m*xo+b)*(erfhi-erflo) - sigma/SQRT2PI*m*(Ghi-Glo)
 
             # /* Debug computation failures. */
             # if isnan(y) {
@@ -146,7 +147,7 @@ def convolve_gaussian_point(xin, yin, k, n, xo, limit, sigma):
             erflo = erfhi
 
             # /* Check if we've calculated far enough */
-            if xin[k] >= xo + limit:
+            if (xin[k] >= xo+limit):
                 break
 
     # /* printf(" (%5.3f,%11.5g)",xin[k<n?k:n-1],yin[k<n?k:n-1]); */
@@ -185,7 +186,7 @@ def convolve_gaussian(xin, yin, x, dx, y):
         # /* width of resolution window for x is w = 2 dx^2. */
         sigma = dx[k_out]
         xo = x[k_out]
-        limit = sqrt(-2.0 * sigma * sigma * LOG_RESLIMIT)
+        limit = sqrt(-2.*sigma*sigma * LOG_RESLIMIT)
 
         # // if (out%20==0)
 
@@ -195,24 +196,25 @@ def convolve_gaussian(xin, yin, x, dx, y):
         # /* dx or if the x are not sorted, then it may be before */
         # /* the current position. */
         # /* FIXME verify that the convolution window is just right */
-        while k_in < Nin - 1 and xin[k_in] < xo - limit:
+        while (k_in < Nin-1 and xin[k_in] < xo-limit):
             k_in += 1
-        while k_in > 0 and xin[k_in] > xo - limit:
+        while (k_in > 0 and xin[k_in] > xo-limit):
             k_in -= 1
 
         # /* Special handling to avoid 0/0 for w=0. */
-        if sigma > 0.0:
-            y[k_out] = convolve_gaussian_point(xin, yin, k_in, Nin, xo, limit, sigma)
-        elif k_in < Nin - 1:
+        if (sigma > 0.):
+            y[k_out] = convolve_gaussian_point(
+                xin, yin, k_in, Nin, xo, limit, sigma)
+        elif (k_in < Nin-1):
             # /* Linear interpolation */
-            m = (yin[k_in + 1] - yin[k_in]) / (xin[k_in + 1] - xin[k_in])
-            b = yin[k_in] - m * xin[k_in]
-            y[k_out] = m * xo + b
-        elif k_in > 0:
+            m = (yin[k_in+1]-yin[k_in])/(xin[k_in+1]-xin[k_in])
+            b = yin[k_in] - m*xin[k_in]
+            y[k_out] = m*xo + b
+        elif (k_in > 0):
             # /* Linear extrapolation */
-            m = (yin[k_in] - yin[k_in - 1]) / (xin[k_in] - xin[k_in - 1])
-            b = yin[k_in] - m * xin[k_in]
-            y[k_out] = m * xo + b
+            m = (yin[k_in]-yin[k_in-1])/(xin[k_in]-xin[k_in-1])
+            b = yin[k_in] - m*xin[k_in]
+            y[k_out] = m*xo + b
         else:
             # /* Can't happen because there is more than one point in xin. */
             # assert(Nin>1)

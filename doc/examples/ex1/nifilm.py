@@ -43,7 +43,7 @@ from refl1d.names import *
 # silicon and air are common, so we don't need to define them.  We just
 # need to define nickel, which we do as follows:
 
-nickel = Material("Ni")
+nickel = Material('Ni')
 
 # This defines a chemical formula, Ni, for which the program knows the
 # density in advance since it has densities for all elements.  By using
@@ -52,7 +52,7 @@ nickel = Material("Ni")
 # Alternatively, we could take a more traditional approach and define
 # nickel as a specific SLD for our beam
 
-# nickel = SLD(rho=9.4)
+#nickel = SLD(rho=9.4)
 
 # The '#' character on the above line means that line is a comment, and
 # it won't be evaluated.
@@ -62,7 +62,7 @@ nickel = Material("Ni")
 # 1-\ $\sigma$ Si:Ni interface.  The nickel layer is 100 |Ang| thick
 # with a 5 |Ang| Ni:Air interface.  Air is on the surface.
 
-sample = silicon(0, 5) | nickel(100, 5) | air
+sample = silicon(0,5) | nickel(100,5) | air
 
 # Our sample definition is complete, so now we need to specify the
 # range of values we are going to view.  We will use the

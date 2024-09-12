@@ -18,9 +18,12 @@ H_initiator = SLD(name="H-initiator", rho=0)
 
 # === Sample ===
 # Deuterated sample
-D_brush = PolymerBrush(polymer=D_polystyrene, solvent=D_toluene, base_vf=70, base=120, length=80, power=2, sigma=10)
+D_brush = PolymerBrush(polymer=D_polystyrene, solvent=D_toluene,
+                       base_vf=70, base=120, length=80, power=2,
+                       sigma=10)
 
-D = silicon(0, 5) | SiOx(50, 5) | D_initiator(100, 20) | D_brush(400, 0) | D_toluene
+D = (silicon(0, 5) | SiOx(50, 5) | D_initiator(100, 20) | D_brush(400, 0)
+     | D_toluene)
 
 
 # === Fit parameters ===
@@ -29,7 +32,7 @@ for i in (0, 1, 2):
 D[1].thickness.range(0, 200)
 D[2].thickness.range(0, 200)
 D_polystyrene.rho.range(6.2, 6.5)
-SiOx.rho.range(2.07, 4.16)  # Si to SiO2
+SiOx.rho.range(2.07, 4.16) # Si to SiO2
 D_toluene.rho.pmp(5)
 D_initiator.rho.range(0, 1.5)
 D_brush.base_vf.range(50, 80)

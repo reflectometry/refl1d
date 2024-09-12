@@ -2,7 +2,6 @@ import math
 
 Z_EPS = 1e-6
 
-
 def align_magnetic(d, sigma, rho, irho, dM, sigmaM, rhoM, thetaM, output_flat):
     # ignoring thickness d on the first and last layers
     # ignoring interface width sigma on the last layer
@@ -25,7 +24,7 @@ def align_magnetic(d, sigma, rho, irho, dM, sigmaM, rhoM, thetaM, output_flat):
     k = 0  # current output layer index
     while True:
         # repeat over all nuclear/magnetic layers
-        if k == noutput:
+        if (k == noutput):
             return -1  # exceeds capacity of output
 
         # printf("%d: %d %d %g %g %g\n", k, nuclear, magnetic, z, next_z, next_zM)
@@ -43,9 +42,9 @@ def align_magnetic(d, sigma, rho, irho, dM, sigmaM, rhoM, thetaM, output_flat):
         # center of the loop exit in order to make sure that the final layer
         # is added.
 
-        if magnetic == nlayersM - 1 and nuclear == nlayers - 1:
-            output[k][0] = 0.0
-            output[k][1] = 0.0
+        if (magnetic == nlayersM-1 and nuclear == nlayers-1):
+            output[k][0] = 0.
+            output[k][1] = 0.
             k += 1
             break
 
@@ -66,28 +65,28 @@ def align_magnetic(d, sigma, rho, irho, dM, sigmaM, rhoM, thetaM, output_flat):
         # still 1-a, so the thickness next_z - z = -a. Since a is tiny we can just
         # pretend that -a == zero by setting thickness to fmax(next_z - z, 0.0).
 
-        if nuclear == nlayers - 1:
+        if (nuclear == nlayers-1):
             # No more nuclear layers... play out the remaining magnetic layers.
             output[k][0] = max(next_zM - z, 0.0)
             output[k][1] = sigmaM[magnetic]
             magnetic += 1
             next_zM += dM[magnetic]
-        elif magnetic == nlayersM - 1:
+        elif (magnetic == nlayersM-1):
             # No more magnetic layers... play out the remaining nuclear layers.
             output[k][0] = max(next_z - z, 0.0)
             output[k][1] = sigma[nuclear]
             nuclear += 1
             next_z += d[nuclear]
-        elif math.fabs(next_z - next_zM) < Z_EPS and math.fabs(sigma[nuclear] - sigmaM[magnetic]) < Z_EPS:
+        elif (math.fabs(next_z - next_zM) < Z_EPS and math.fabs(sigma[nuclear]-sigmaM[magnetic]) < Z_EPS):
             # Matching nuclear/magnetic boundary, with almost identical interfaces.
             # Increment both nuclear and magnetic layers.
-            output[k][0] = max(0.5 * (next_z + next_zM) - z, 0.0)
-            output[k][1] = 0.5 * (sigma[nuclear] + sigmaM[magnetic])
+            output[k][0] = max(0.5*(next_z + next_zM) - z, 0.0)
+            output[k][1] = 0.5*(sigma[nuclear] + sigmaM[magnetic])
             nuclear += 1
             next_z += d[nuclear]
             magnetic += 1
             next_zM += dM[magnetic]
-        elif next_zM < next_z:
+        elif (next_zM < next_z):
             # Magnetic boundary comes before nuclear boundary, so increment magnetic.
             output[k][0] = max(next_zM - z, 0.0)
             output[k][1] = sigmaM[magnetic]
@@ -110,9 +109,9 @@ def align_magnetic(d, sigma, rho, irho, dM, sigmaM, rhoM, thetaM, output_flat):
 
 def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
     n = len(d)
-    m = n - 1  # /* last middle layer */
+    m = n - 1 # /* last middle layer */
     i = newi = 1  # /* Skip the substrate */
-    while i < m:
+    while (i < m):
         # /* Get ready for the next layer */
         # /* Accumulation of the first row happens in the inner loop */
         dz = 0
@@ -126,7 +125,7 @@ def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
         #  * so we keep track of the phase offset of the input
         #  * to match it afterward
         #  */
-        thetaM_phase_offset = (thetaM[i] + 180.0) // 360.0
+        thetaM_phase_offset = (thetaM[i] + 180.) // 360.0
 
         # /* Pre-calculate projections */
         rhoM_sign = math.copysign(1, rhoM[i])
@@ -143,7 +142,7 @@ def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
         mperplo = mperphi = rhoMperp
 
         # /* Accumulate slices into layer */
-        while i < m:
+        while (i < m):
             # /* Accumulate next slice */
             dz += d[i]
             rhoarea += d[i] * rho[i]
@@ -156,22 +155,22 @@ def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
 
             # /* If no more slices or sigma != 0, break immediately */
             i += 1
-            if i == n or sigma[i - 1] != 0.0:
+            if (i == n or sigma[i-1] != 0.):
                 break
 
             # /* If next slice exceeds limit then break */
-            if rho[i] < rholo:
+            if (rho[i] < rholo):
                 rholo = rho[i]
-            if rho[i] > rhohi:
+            if (rho[i] > rhohi):
                 rhohi = rho[i]
-            if (rhohi - rholo) * (dz + d[i]) > dA:
+            if ((rhohi-rholo)*(dz+d[i]) > dA):
                 break
 
-            if irho[i] < irholo:
+            if (irho[i] < irholo):
                 irholo = irho[i]
-            if irho[i] > irhohi:
+            if (irho[i] > irhohi):
                 irhohi = irho[i]
-            if (irhohi - irholo) * (dz + d[i]) > dA:
+            if ((irhohi-irholo)*(dz+d[i]) > dA):
                 break
 
             # /* Pre-calculate projections of next layer */
@@ -184,30 +183,30 @@ def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
                 break
 
             # /* If next slice has different sign for rhoM, break */
-            if math.copysign(1, rhoM[i]) != rhoM_sign:
+            if (math.copysign(1, rhoM[i]) != rhoM_sign):
                 break
 
-            if rhoMpara < mparalo:
+            if (rhoMpara < mparalo):
                 mparalo = rhoMpara
-            if rhoMpara > mparahi:
+            if (rhoMpara > mparahi):
                 mparahi = rhoMpara
-            if (mparahi - mparalo) * (dz + d[i]) > dA:
+            if ((mparahi-mparalo)*(dz+d[i]) > dA):
                 break
 
-            if rhoMperp < mperplo:
+            if (rhoMperp < mperplo):
                 mperplo = rhoMperp
-            if rhoMperp > mperphi:
+            if (rhoMperp > mperphi):
                 mperphi = rhoMperp
-            if (mperphi - mperplo) * (dz + d[i]) > dA:
+            if ((mperphi-mperplo)*(dz+d[i]) > dA):
                 break
 
-        assert newi < m
+        assert(newi < m)
         d[newi] = dz
-        if dz == 0:
-            rho[newi] = rho[i - 1]
-            irho[newi] = irho[i - 1]
-            rhoM[newi] = rhoM[i - 1]
-            thetaM[newi] = thetaM[i - 1]
+        if (dz == 0):
+            rho[newi] = rho[i-1]
+            irho[newi] = irho[i-1]
+            rhoM[newi] = rhoM[i-1]
+            thetaM[newi] = thetaM[i-1]
         else:
             rho[newi] = rhoarea / dz
             irho[newi] = irhoarea / dz
@@ -224,16 +223,16 @@ def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
                 thetaM_from_mean += 360.0 * thetaM_phase_offset
                 thetaM[newi] = thetaM_from_mean
             rhoM[newi] = mean_rhoM
-        sigma[newi] = sigma[i - 1]
+        sigma[newi] = sigma[i-1]
 
         newi += 1
 
     # /* Save the last layer */
     # /* Last layer uses surface values */
-    rho[newi] = rho[n - 1]
-    irho[newi] = irho[n - 1]
-    rhoM[newi] = rhoM[n - 1]
-    thetaM[newi] = thetaM[n - 1]
+    rho[newi] = rho[n-1]
+    irho[newi] = irho[n-1]
+    rhoM[newi] = rhoM[n-1]
+    thetaM[newi] = thetaM[n-1]
     # /* No interface for final layer */
     newi += 1
 
@@ -243,7 +242,8 @@ def contract_mag(d, sigma, rho, irho, rhoM, thetaM, dA):
 def contract_by_area(d, sigma, rho, irho, dA):
     n = len(d)
     i = newi = 1  # /* Skip the substrate */
-    while i < n:
+    while (i < n):
+
         # /* Get ready for the next layer */
         # /* Accumulation of the first row happens in the inner loop */
         dz = rhoarea = irhoarea = 0.0
@@ -254,27 +254,27 @@ def contract_by_area(d, sigma, rho, irho, dA):
         while True:
             # /* Accumulate next slice */
             dz += d[i]
-            rhoarea += d[i] * rho[i]
-            irhoarea += d[i] * irho[i]
+            rhoarea += d[i]*rho[i]
+            irhoarea += d[i]*irho[i]
 
             # /* If no more slices or sigma != 0, break immediately */
             i += 1
-            if i == n or sigma[i - 1] != 0.0:
+            if (i == n or sigma[i-1] != 0.):
                 break
 
             # /* If next slice won't fit, break */
-            if rho[i] < rholo:
+            if (rho[i] < rholo):
                 rholo = rho[i]
-            if rho[i] > rhohi:
+            if (rho[i] > rhohi):
                 rhohi = rho[i]
-            if (rhohi - rholo) * (dz + d[i]) > dA:
+            if ((rhohi-rholo)*(dz+d[i]) > dA):
                 break
 
-            if irho[i] < irholo:
+            if (irho[i] < irholo):
                 irholo = irho[i]
-            if irho[i] > irhohi:
+            if (irho[i] > irhohi):
                 irhohi = irho[i]
-            if (irhohi - irholo) * (dz + d[i]) > dA:
+            if ((irhohi-irholo)*(dz+d[i]) > dA):
                 break
 
         # /* dz is only going to be zero if there is a forced break due to
@@ -284,19 +284,19 @@ def contract_by_area(d, sigma, rho, irho, dA):
         # /* if (dz == 0) continue; */
 
         # /* Save the layer */
-        assert newi < n
+        assert(newi < n)
         d[newi] = dz
-        if i == n:
+        if (i == n):
             # /* printf("contract: adding final sld at %d\n",newi); */
             # /* Last layer uses surface values */
-            rho[newi] = rho[n - 1]
-            irho[newi] = irho[n - 1]
+            rho[newi] = rho[n-1]
+            irho[newi] = irho[n-1]
             # /* No interface for final layer */
         else:
             # /* Middle layers uses average values */
             rho[newi] = rhoarea / dz
             irho[newi] = irhoarea / dz
-            sigma[newi] = sigma[i - 1]
+            sigma[newi] = sigma[i-1]
         # /* First layer uses substrate values */
         newi += 1
 

@@ -1,3 +1,4 @@
+
 # Freeform structures
 # ===================
 #
@@ -20,9 +21,9 @@
 
 from refl1d.names import *
 
-chrome = Material("Cr")
-gold = Material("Au")
-solvent = Material("H2O", density=1)
+chrome = Material('Cr')
+gold = Material('Au')
+solvent = Material('H2O', density=1)
 
 
 # The sample description is more complicated.  When we define a freeform
@@ -43,43 +44,35 @@ wrap = SLD(name="wrap", rho=0)
 # keep *n1* and *n3* small, but make *n2* large enough to define an
 # interesting repeat structure.
 
-n1, n2, n3 = 3, 9, 3
+n1, n2, n3 = 3,9,3
 
 # Free layers have a thickness, horizontal control points *z* varying
 # in $[0,1]$, real and complex SLD $\rho$ and $\rho_i$, and the material
 # above and below.
 
-tether = FreeLayer(
-    below=gold, above=wrap, thickness=10, z=numpy.linspace(0, 1, n1 + 2)[1:-1], rho=numpy.random.rand(n1), name="tether"
-)
-bilayer = FreeLayer(
-    below=wrap,
-    above=wrap,
-    thickness=80,
-    z=numpy.linspace(0, 1, n2 + 2)[1:-1],
-    rho=5 * numpy.random.rand(n2) - 1,
-    name="bilayer",
-)
-tail = FreeLayer(
-    below=wrap,
-    above=solvent,
-    thickness=10,
-    z=numpy.linspace(0, 1, n3 + 2)[1:-1],
-    rho=numpy.random.rand(n3),
-    name="tail",
-)
+tether = FreeLayer(below=gold, above=wrap, thickness=10,
+                   z=numpy.linspace(0,1,n1+2)[1:-1],
+                   rho=numpy.random.rand(n1),name="tether")
+bilayer = FreeLayer(below=wrap, above=wrap, thickness=80,
+                    z=numpy.linspace(0,1,n2+2)[1:-1],
+                    rho=5*numpy.random.rand(n2)-1,name="bilayer")
+tail = FreeLayer(below=wrap, above=solvent, thickness=10,
+                   z=numpy.linspace(0,1,n3+2)[1:-1],
+                   rho=numpy.random.rand(n3),name="tail")
 
 # With the predefined free layers, we can quickly define a stack, with
 # the bilayer repeat structure.  Note that we are setting the thickness
 # for the free layers when we define the layers, so there is no need to
 # set it when composing the layers into a sample.
 
-sample = silicon(0, 5) | chrome(20, 2) | gold(50, 5) | tether | bilayer * 10 | tail | solvent
+sample = (silicon(0,5) | chrome(20,2) | gold(50,5)
+          | tether | bilayer*10 | tail | solvent)
 
 # Finally, simulate the resulting model.
 
 T = numpy.linspace(0, 5, 100)
-probe = NeutronProbe(T=T, dT=0.01, L=4.75, dL=0.0475, back_reflectivity=True)
+probe = NeutronProbe(T=T, dT=0.01, L=4.75, dL=0.0475,
+                     back_reflectivity=True)
 M = Experiment(probe=probe, sample=sample, dA=5)
 M.simulate_data(5)
 problem = FitProblem(M)

@@ -76,11 +76,12 @@ def load(filename, instrument=None, **kw):
     # calling parameters override what's in the file.
     header.update(filename=filename, **kw)
     Q, R, dR = data
-    header.pop("Q", None)  # if columns are preceded by # Q R dR
+    header.pop('Q', None)  # if columns are preceded by # Q R dR
     probe = instrument.probe(Q=Q, data=(R, dR), **header)
-    probe.title = header["title"] if "title" in header else filename
-    probe.date = header["date"] if "date" in header else "unknown"
-    probe.instrument = header["instrument"] if "instrument" in header else instrument.instrument
+    probe.title = header['title'] if 'title' in header else filename
+    probe.date = header['date'] if 'date' in header else "unknown"
+    probe.instrument = (header['instrument'] if 'instrument' in header
+                        else instrument.instrument)
     return probe
 
 
@@ -140,22 +141,22 @@ def find_xsec(filename):
     """
     # Check if it is a string.  If not, assume it is a length 4 tuple
     try:
-        filename + "s"
+        filename + 's'
     except Exception:
         return filename
 
-    if filename[-1] in "abcdABCD":
+    if filename[-1] in 'abcdABCD':
         filename = filename[:-1]
 
     def check(a):
-        if os.path.exists(filename + a):
-            return filename + a
-        elif os.path.exists(filename + a.lower()):
-            return filename + a.lower()
+        if os.path.exists(filename+a):
+            return filename+a
+        elif os.path.exists(filename+a.lower()):
+            return filename+a.lower()
         else:
             return None
 
-    return check("A"), check("B"), check("C"), check("D")
+    return check('A'), check('B'), check('C'), check('D')
 
 
 def parse_ncnr_file(filename):
@@ -175,17 +176,17 @@ def parse_ncnr_file(filename):
     header, data = parse_file(filename)
 
     # Fill in instrument parameters, if not available from the file
-    if "instrument" in header and header["instrument"] in INSTRUMENTS:
-        instrument = INSTRUMENTS[header["instrument"]]
-        header.setdefault("radiation", instrument.radiation)
-        header.setdefault("wavelength", str(instrument.wavelength))
-        header.setdefault("dLoL", str(instrument.dLoL))
-        header.setdefault("d_s1", str(instrument.d_s1))
-        header.setdefault("d_s2", str(instrument.d_s2))
+    if 'instrument' in header and header['instrument'] in INSTRUMENTS:
+        instrument = INSTRUMENTS[header['instrument']]
+        header.setdefault('radiation', instrument.radiation)
+        header.setdefault('wavelength', str(instrument.wavelength))
+        header.setdefault('dLoL', str(instrument.dLoL))
+        header.setdefault('d_s1', str(instrument.d_s1))
+        header.setdefault('d_s2', str(instrument.d_s2))
 
-    if "columns" in header:
-        header["columns"] = header["columns"].split()
-    for key in ("wavelength", "dLoL", "d_s1", "d_s2"):
+    if 'columns' in header:
+        header['columns'] = header['columns'].split()
+    for key in ('wavelength', 'dLoL', 'd_s1', 'd_s2'):
         if key in header:
             header[key] = float(header[key])
 
@@ -207,20 +208,18 @@ class MAGIK(NCNRData, Monochromatic):
     """
     Instrument definition for NCNR MAGIK diffractometer/reflectometer.
     """
-
     instrument = "MAGIK"
     radiation = "neutron"
     wavelength = 5.0042
     dLoL = 0.009
-    d_s1 = 1321.0 + 438.0
-    d_s2 = 1321.0 - 991.0
+    d_s1 = 1321. + 438.
+    d_s2 = 1321. - 991.
 
 
 class PBR(NCNRData, Monochromatic):
     """
     Instrument definition for NCNR PBR reflectometer.
     """
-
     instrument = "PBR"
     radiation = "neutron"
     wavelength = 4.75
@@ -235,14 +234,13 @@ class NG7(NCNRData, Monochromatic):
     """
     Instrument definition for NCNR NG-7 reflectometer.
     """
-
     instrument = "NG-7"
     radiation = "neutron"
     wavelength = 4.768
     dLoL = 0.025  # 2.5% FWHM wavelength spread
     d_s2 = 222.25
     d_s1 = 1722.25
-    d_detector = 2000.0
+    d_detector = 2000.
 
 
 class XRay(NCNRData, Monochromatic):
@@ -267,11 +265,10 @@ class XRay(NCNRData, Monochromatic):
         >>> print(data.sample_broadening.value)
         0.0001
     """
-
     instrument = "X-ray"
     radiation = "xray"
     wavelength = 1.5416
-    dLoL = 1e-3 / wavelength
+    dLoL = 1e-3/wavelength
     d_s1 = 275.5
     d_s2 = 192.5
     d_s3 = 175.0
@@ -282,7 +279,6 @@ class ANDR(NCNRData, Monochromatic):
     """
     Instrument definition for NCNR AND/R diffractometer/reflectometer.
     """
-
     instrument = "AND/R"
     radiation = "neutron"
     wavelength = 5.0042
@@ -295,26 +291,24 @@ class NG1(NCNRData, Monochromatic):
     """
     Instrument definition for NCNR NG-1 reflectometer.
     """
-
     instrument = "NG-1"
     radiation = "neutron"
     wavelength = 4.75
     dLoL = 0.015
-    d_s1 = 75 * 25.4
-    d_s2 = 14 * 25.4
-    d_s3 = 9 * 25.4
-    d_s4 = 42 * 25.4
-
+    d_s1 = 75*25.4
+    d_s2 = 14*25.4
+    d_s3 = 9*25.4
+    d_s4 = 42*25.4
 
 # Instrument names assigned by reflpak
 INSTRUMENTS = {
-    "CG-D": MAGIK,
-    "NG-D": PBR,
-    "CG-1": ANDR,
-    "NG-1": NG1,
-    "NG-7": NG7,
-    "Xray": XRay,
-}
+    'CG-D': MAGIK,
+    'NG-D': PBR,
+    'CG-1': ANDR,
+    'NG-1': NG1,
+    'NG-7': NG7,
+    'Xray': XRay,
+    }
 
 _ = r'''
 def _counting_time(instrument, sample, uncertainty,

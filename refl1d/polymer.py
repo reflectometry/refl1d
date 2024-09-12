@@ -48,7 +48,8 @@ Profile\ [#Cosgrove]_\ [#deVos]_\ [#Sheridan]_
 from __future__ import division, print_function, unicode_literals
 
 
-__all__ = ["PolymerBrush", "PolymerMushroom", "EndTetheredPolymer", "VolumeProfile", "layer_thickness"]
+__all__ = ["PolymerBrush", "PolymerMushroom", "EndTetheredPolymer",
+           "VolumeProfile", "layer_thickness"]
 
 import inspect
 from time import time
@@ -56,7 +57,6 @@ from collections import OrderedDict
 
 import numpy as np
 from numpy import real, imag, exp, log, sqrt, pi, hstack, ones_like
-
 try:
     from numpy._core.multiarray import correlate as old_correlate
 except ImportError:
@@ -68,15 +68,14 @@ from bumps.parameter import Parameter, to_dict
 from . import util
 from .model import Layer
 
-LAMBDA_1 = 1.0 / 6.0  # always assume cubic lattice (1/6) for now
-LAMBDA_0 = 1.0 - 2.0 * LAMBDA_1
+LAMBDA_1 = 1.0/6.0 #always assume cubic lattice (1/6) for now
+LAMBDA_0 = 1.0 - 2.0*LAMBDA_1
 # Use reverse order for LAMBDA_ARRAY if it is asymmetric since we are using
 # it with correlate().
 LAMBDA_ARRAY = np.array([LAMBDA_1, LAMBDA_0, LAMBDA_1])
 MINLAT = 25
 MINBULK = 5
 SQRT_PI = sqrt(pi)
-
 
 class PolymerBrush(Layer):
     r"""
@@ -126,28 +125,17 @@ class PolymerBrush(Layer):
     roughness $\sigma$ and $\rho(z)$ is the complex scattering
     length density of the profile.
     """
-
-    def __init__(
-        self,
-        thickness=0,
-        interface=0,
-        name="brush",
-        polymer=None,
-        solvent=None,
-        base_vf=None,
-        base=None,
-        length=None,
-        power=None,
-        sigma=None,
-    ):
+    def __init__(self, thickness=0, interface=0, name="brush",
+                 polymer=None, solvent=None, base_vf=None,
+                 base=None, length=None, power=None, sigma=None):
         prefix = name + " "
-        self.thickness = Parameter.default(thickness, name=prefix + "thickness")
-        self.interface = Parameter.default(interface, name=prefix + "interface")
-        self.base_vf = Parameter.default(base_vf, name=prefix + "base_vf")
-        self.base = Parameter.default(base, name=prefix + "base")
-        self.length = Parameter.default(length, name=prefix + "length")
-        self.power = Parameter.default(power, name=prefix + "power")
-        self.sigma = Parameter.default(sigma, name=prefix + "sigma")
+        self.thickness = Parameter.default(thickness, name=prefix+"thickness")
+        self.interface = Parameter.default(interface, name=prefix+"interface")
+        self.base_vf = Parameter.default(base_vf, name=prefix+"base_vf")
+        self.base = Parameter.default(base, name=prefix+"base")
+        self.length = Parameter.default(length, name=prefix+"length")
+        self.power = Parameter.default(power, name=prefix+"power")
+        self.sigma = Parameter.default(sigma, name=prefix+"sigma")
         self.solvent = solvent
         self.polymer = polymer
         self.name = name
@@ -155,44 +143,40 @@ class PolymerBrush(Layer):
         #   base_vf in [0, 1]
         #   base, length, sigma, thickness, interface > 0
         #   base + length + 3*sigma <= thickness
-
     def parameters(self):
         return {
-            "solvent": self.solvent.parameters(),
-            "polymer": self.polymer.parameters(),
-            "base_vf": self.base_vf,
-            "base": self.base,
-            "length": self.length,
-            "power": self.power,
-            "sigma": self.sigma,
+            'solvent': self.solvent.parameters(),
+            'polymer': self.polymer.parameters(),
+            'base_vf': self.base_vf,
+            'base': self.base,
+            'length': self.length,
+            'power': self.power,
+            'sigma': self.sigma,
         }
-
     def to_dict(self):
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "name": self.name,
-                "base_vf": self.base_vf,
-                "base": self.base,
-                "length": self.length,
-                "power": self.power,
-                "sigma": self.sigma,
-                "solvent": self.solvent,
-                "polymer": self.polymer,
-            }
-        )
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'base_vf': self.base_vf,
+            'base': self.base,
+            'length': self.length,
+            'power': self.power,
+            'sigma': self.sigma,
+            'solvent': self.solvent,
+            'polymer': self.polymer,
+        })
 
     def profile(self, z):
         base_vf, base, length, power, sigma = [
-            p.value for p in (self.base_vf, self.base, self.length, self.power, self.sigma)
-        ]
-        base_vf /= 100.0  # % to fraction
+            p.value for p in (self.base_vf, self.base,
+            self.length, self.power, self.sigma)]
+        base_vf /= 100. # % to fraction
         L0 = base  # if base < thickness else thickness
-        L1 = base + length  # if base+length < thickness else thickness-L0
+        L1 = base+length # if base+length < thickness else thickness-L0
         if length == 0:
             v = np.ones_like(z)
         else:
-            v = 1 - ((z - L0) / (L1 - L0)) ** 2
+            v = (1 - ((z-L0)/(L1-L0))**2)
         v[z < L0] = 1
         v[z > L1] = 0
         brush_profile = base_vf * v**power
@@ -213,8 +197,8 @@ class PolymerBrush(Layer):
 
         Mr, Mi = self.polymer.sld(probe)
         Sr, Si = self.solvent.sld(probe)
-        M = Mr + 1j * Mi
-        S = Sr + 1j * Si
+        M = Mr + 1j*Mi
+        S = Sr + 1j*Si
         try:
             M, S = M[0], S[0]  # Temporary hack
         except Exception:
@@ -222,10 +206,9 @@ class PolymerBrush(Layer):
 
         vf = self.profile(Pz)
         Pw, vf = util.merge_ends(Pw, vf, tol=1e-3)
-        P = M * vf + S * (1 - vf)
+        P = M*vf + S*(1-vf)
         Pr, Pi = real(P), imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
-
 
 def layer_thickness(z):
     """
@@ -236,7 +219,6 @@ def layer_thickness(z):
     total length of the layer.
     """
     return 2 * (np.sum(z[-1::-2]) - np.sum(z[-2::-2]))
-
 
 class VolumeProfile(Layer):
     """
@@ -280,9 +262,9 @@ class VolumeProfile(Layer):
     thickness can be computed as :func: `layer_thickness`.
 
     """
-
     # TODO: test that thickness(z) matches the thickness of the layer
-    def __init__(self, thickness=0, interface=0, name="VolumeProfile", material=None, solvent=None, profile=None, **kw):
+    def __init__(self, thickness=0, interface=0, name="VolumeProfile",
+                 material=None, solvent=None, profile=None, **kw):
         if interface != 0:
             raise NotImplementedError("interface not yet supported")
         if profile is None or material is None or solvent is None:
@@ -296,17 +278,18 @@ class VolumeProfile(Layer):
 
         # Query profile function for the list of arguments
         vars = inspect.getfullargspec(profile)[0]
-        # print("vars", vars)
+        #print("vars", vars)
         if inspect.ismethod(profile):
             vars = vars[1:]  # Chop self
         vars = vars[1:]  # Chop z
-        # print(vars)
+        #print(vars)
         unused = [k for k in kw.keys() if k not in vars]
         if len(unused) > 0:
-            raise TypeError("Profile got unexpected keyword argument '%s'" % unused[0])
-        dups = [k for k in vars if k in ("thickness", "interface", "polymer", "solvent", "profile")]
+            raise TypeError("Profile got unexpected keyword argument '%s'"%unused[0])
+        dups = [k for k in vars
+                if k in ('thickness', 'interface', 'polymer', 'solvent', 'profile')]
         if len(dups) > 0:
-            raise TypeError("Profile has conflicting argument '%s'" % dups[0])
+            raise TypeError("Profile has conflicting argument '%s'"%dups[0])
         for k in vars:
             kw.setdefault(k, 0)
         for k, v in kw.items():
@@ -316,48 +299,46 @@ class VolumeProfile(Layer):
 
     def parameters(self):
         P = {
-            "solvent": self.solvent.parameters(),
-            "material": self.material.parameters(),
+            'solvent': self.solvent.parameters(),
+            'material': self.material.parameters(),
         }
         for k in self._parameters:
             P[k] = getattr(self, k)
         return P
-
     def to_dict(self):
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "name": self.name,
-                "profile": self.profile,
-                "thickness": self.thickness,
-                "interface": self.interface,
-                "parameters": {k: getattr(self, k) for k in self._parameters},
-                "solvent": self.solvent,
-                "material": self.material,
-            }
-        )
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'profile': self.profile,
+            'thickness': self.thickness,
+            'interface': self.interface,
+            'parameters': {k: getattr(self, k) for k in self._parameters},
+            'solvent': self.solvent,
+            'material': self.material,
+        })
 
     def render(self, probe, slabs):
         Mr, Mi = self.material.sld(probe)
         Sr, Si = self.solvent.sld(probe)
-        M = Mr + 1j * Mi
-        S = Sr + 1j * Si
-        # M, S = M[0], S[0]  # Temporary hack
+        M = Mr + 1j*Mi
+        S = Sr + 1j*Si
+        #M, S = M[0], S[0]  # Temporary hack
         Pw, Pz = slabs.microslabs(self.thickness.value)
         if len(Pw) == 0:
             return
         kw = dict((k, getattr(self, k).value) for k in self._parameters)
-        # print(kw)
+        #print(kw)
         phi = self.profile(Pz, **kw)
         try:
             if phi.shape != Pz.shape:
                 raise Exception
         except Exception:
-            raise TypeError("profile function '%s' did not return array phi(z)" % self.profile.__name__)
+            raise TypeError("profile function '%s' did not return array phi(z)"
+                            %self.profile.__name__)
         Pw, phi = util.merge_ends(Pw, phi, tol=1e-3)
-        P = M * phi + S * (1 - phi)
+        P = M*phi + S*(1-phi)
         slabs.extend(rho=[real(P)], irho=[imag(P)], w=Pw)
-        # slabs.interface(self.interface.value)
+        #slabs.interface(self.interface.value)
 
 
 def smear(z, P, sigma):
@@ -377,14 +358,13 @@ def smear(z, P, sigma):
     """
     if len(z) < 3:
         return P
-    dz = z[1] - z[0]
-    if 3 * sigma < dz:
+    dz = z[1]-z[0]
+    if 3*sigma < dz:
         return P
-    w = int(3 * sigma / dz)
-    G = exp(-0.5 * (np.arange(-w, w + 1) * (dz / sigma)) ** 2)
-    full = np.hstack(([P[0]] * w, P, [P[-1]] * w))
-    return np.convolve(full, G / np.sum(G), "valid")
-
+    w = int(3*sigma/dz)
+    G = exp(-0.5*(np.arange(-w, w+1)*(dz/sigma))**2)
+    full = np.hstack(([P[0]]*w, P, [P[-1]]*w))
+    return np.convolve(full, G/np.sum(G), 'valid')
 
 class PolymerMushroom(Layer):
     r"""
@@ -405,7 +385,9 @@ class PolymerMushroom(Layer):
     Solutions are only strictly valid for vf << 1.
     """
 
-    def __init__(self, thickness=0, interface=0, name="Mushroom", polymer=None, solvent=None, sigma=0, vf=0, delta=0):
+    def __init__(self, thickness=0, interface=0, name="Mushroom",
+                 polymer=None, solvent=None, sigma=0,
+                 vf=0, delta=0):
         self.thickness = Parameter.default(thickness, name="Mushroom thickness")
         self.interface = Parameter.default(interface, name="Mushroom interface")
         self.delta = Parameter.default(delta, name="delta")
@@ -414,38 +396,37 @@ class PolymerMushroom(Layer):
         self.solvent = solvent
         self.polymer = polymer
         self.name = name
-
     def parameters(self):
         return {
-            "solvent": self.solvent.parameters(),
-            "polymer": self.polymer.parameters(),
-            "delta": self.delta,
-            "vf": self.vf,
-            "sigma": self.sigma,
-            "thickness": self.thickness,
-            "interface": self.interface,
+            'solvent': self.solvent.parameters(),
+            'polymer': self.polymer.parameters(),
+            'delta': self.delta,
+            'vf': self.vf,
+            'sigma': self.sigma,
+            'thickness': self.thickness,
+            'interface': self.interface
         }
-
     def to_dict(self):
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "name": self.name,
-                "profile": self.profile,
-                "thickness": self.thickness,
-                "interface": self.interface,
-                "delta": self.delta,
-                "vf": self.vf,
-                "sigma": self.sigma,
-                "solvent": self.solvent,
-                "polymer": self.polymer,
-            }
-        )
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'profile': self.profile,
+            'thickness': self.thickness,
+            'interface': self.interface,
+            'delta': self.delta,
+            'vf': self.vf,
+            'sigma': self.sigma,
+            'solvent': self.solvent,
+            'polymer': self.polymer,
+        })
 
     def profile(self, z):
-        delta, sigma, vf, thickness = [p.value for p in (self.delta, self.sigma, self.vf, self.thickness)]
+        delta, sigma, vf, thickness = [
+            p.value for p in (self.delta, self.sigma, self.vf, self.thickness)
+            ]
 
         return smear(z, MushroomProfile(z, delta, vf, sigma), sigma)
+
 
     def render(self, probe, slabs):
         thickness = self.thickness.value
@@ -460,8 +441,8 @@ class PolymerMushroom(Layer):
 
         Mr, Mi = self.polymer.sld(probe)
         Sr, Si = self.solvent.sld(probe)
-        M = Mr + 1j * Mi
-        S = Sr + 1j * Si
+        M = Mr + 1j*Mi
+        S = Sr + 1j*Si
         try:
             M, S = M[0], S[0]  # Temporary hack
         except:
@@ -469,17 +450,16 @@ class PolymerMushroom(Layer):
 
         phi = self.profile(Pz)
         Pw, phi = util.merge_ends(Pw, phi, tol=1e-3)
-        P = M * phi + S * (1 - phi)
+        P = M*phi + S*(1-phi)
         Pr, Pi = np.real(P), np.imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
-
 
 def MushroomProfile(z, delta=0.1, vf=1.0, sigma=1.0):
     thickness = layer_thickness(z)
     thresh = 1e-10
-    base = 3.0 * sigma  # tail is erf, capture 95% of the mixing
-    Rg = (thickness - base) / 4.0  # profile ends by ~4 RG, so we can tether these
-    keep = (z - base) >= 0.0
+    base = 3.0*sigma # tail is erf, capture 95% of the mixing
+    Rg = (thickness-base) / 4.0 # profile ends by ~4 RG, so we can tether these
+    keep = (z-base) >= 0.0
     x = (z[keep] - base) / Rg
 
     """
@@ -490,21 +470,21 @@ def MushroomProfile(z, delta=0.1, vf=1.0, sigma=1.0):
     """
     if abs(delta) > thresh:
         mushroom_profile = mushroom_math(x, delta, vf)
-    else:  # we should RARELY get here
-        scale = (delta + thresh) / 2.0 / thresh
-        mushroom_profile = scale * mushroom_math(x, thresh, vf) + (1.0 - scale) * mushroom_math(x, -thresh, vf)
+    else: # we should RARELY get here
+        scale = (delta+thresh)/2.0/thresh
+        mushroom_profile = (scale*mushroom_math(x, thresh, vf)
+                            + (1.0-scale)*mushroom_math(x, -thresh, vf))
 
     try:
         # make the base connect with the profile
         zextra = z[np.logical_not(keep)]
-        base_profile = ones_like(zextra) * mushroom_profile[0]
+        base_profile = ones_like(zextra)*mushroom_profile[0]
     except IndexError:
-        base_profile = ones_like(z) * mushroom_profile[0]
+        base_profile = ones_like(z)*mushroom_profile[0]
 
     return hstack((base_profile, mushroom_profile))
 
-
-def mushroom_math(x, delta=0.1, vf=0.1):
+def mushroom_math(x, delta=.1, vf=.1):
     """
     new method, rewrite for numerical stability at high delta
     delta=0 causes divide by zero error!! Compensate elsewhere.
@@ -512,19 +492,19 @@ def mushroom_math(x, delta=0.1, vf=0.1):
     """
     from scipy.special import erfc, erfcx
 
-    x_half = x / 2.0
-    delta_double = 2.0 * delta
+    x_half = x/2.0
+    delta_double = 2.0*delta
     return (
-        (
-            erfc(x_half)
-            - erfcx(delta_double + x_half) / exp(x_half * x_half)
-            - erfc(x)
-            + ((0.25 - delta * (x + delta_double)) * erfcx(delta_double + x) + delta / SQRT_PI) * 4.0 / exp(x * x)
-        )
-        * vf
-        / (delta_double * erfcx(delta_double))
-    )
-
+            (
+             erfc(x_half)
+             -erfcx(delta_double+x_half)/exp(x_half*x_half)
+             -erfc(x)
+             + (
+                (.25-delta*(x+delta_double))*erfcx(delta_double+x)
+                + delta/SQRT_PI
+               ) * 4.0 / exp(x*x)
+            ) * vf / (delta_double * erfcx(delta_double))
+           )
 
 class EndTetheredPolymer(Layer):
     r"""
@@ -581,22 +561,9 @@ class EndTetheredPolymer(Layer):
     with coordination number $Z = 6$ for a cubic lattice, $p_l = .233$.
     """
 
-    def __init__(
-        self,
-        thickness=0,
-        interface=0,
-        name="EndTetheredPolymer",
-        polymer=None,
-        solvent=None,
-        chi=0,
-        chi_s=0,
-        h_dry=None,
-        l_lat=1,
-        mn=None,
-        m_lat=1,
-        pdi=1,
-        phi_b=0,
-    ):
+    def __init__(self, thickness=0, interface=0, name="EndTetheredPolymer",
+                 polymer=None, solvent=None, chi=0, chi_s=0, h_dry=None,
+                 l_lat=1, mn=None, m_lat=1, pdi=1, phi_b=0):
         if interface != 0:
             raise NotImplementedError("interface not yet supported")
         if polymer is None or solvent is None or h_dry is None or mn is None:
@@ -610,7 +577,7 @@ class EndTetheredPolymer(Layer):
         self.l_lat = Parameter.default(l_lat, name="Lattice layer length")
         self.mn = Parameter.default(mn, name="Num. avg. MW")
         self.m_lat = Parameter.default(m_lat, name="Lattice segegment mass")
-        self.pdi = Parameter.default(pdi, name="Dispersity")
+        self.pdi   = Parameter.default(pdi, name="Dispersity")
         self.phi_b = Parameter.default(phi_b, name="Free polymer conc.")
         self.solvent = solvent
         self.polymer = polymer
@@ -618,52 +585,41 @@ class EndTetheredPolymer(Layer):
 
     def parameters(self):
         return {
-            "solvent": self.solvent.parameters(),
-            "polymer": self.polymer.parameters(),
-            "chi": self.chi,
-            "chi_s": self.chi_s,
-            "h_dry": self.h_dry,
-            "l_lat": self.l_lat,
-            "mn": self.mn,
-            "m_lat": self.m_lat,
-            "pdi": self.pdi,
-            "phi_b": self.phi_b,
-            "thickness": self.thickness,
-            "interface": self.interface,
+            'solvent': self.solvent.parameters(),
+            'polymer': self.polymer.parameters(),
+            'chi': self.chi,
+            'chi_s': self.chi_s,
+            'h_dry': self.h_dry,
+            'l_lat': self.l_lat,
+            'mn': self.mn,
+            'm_lat': self.m_lat,
+            'pdi': self.pdi,
+            'phi_b': self.phi_b,
+            'thickness': self.thickness,
+            'interface': self.interface
         }
-
     def to_dict(self):
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "name": self.name,
-                "thickness": self.thickness,
-                "interface": self.interface,
-                "chi": self.chi,
-                "chi_s": self.chi_s,
-                "h_dry": self.h_dry,
-                "l_lat": self.l_lat,
-                "mn": self.mn,
-                "m_lat": self.m_lat,
-                "pdi": self.pdi,
-                "phi_b": self.phi_b,
-                "solvent": self.solvent,
-                "polymer": self.polymer,
-            }
-        )
-
+        return to_dict({
+            'type': type(self).__name__,
+            'name': self.name,
+            'thickness': self.thickness,
+            'interface': self.interface,
+            'chi': self.chi,
+            'chi_s': self.chi_s,
+            'h_dry': self.h_dry,
+            'l_lat': self.l_lat,
+            'mn': self.mn,
+            'm_lat': self.m_lat,
+            'pdi': self.pdi,
+            'phi_b': self.phi_b,
+            'solvent': self.solvent,
+            'polymer': self.polymer,
+        })
     def profile(self, z):
-        return SCFprofile(
-            z,
-            chi=self.chi.value,
-            chi_s=self.chi_s.value,
-            h_dry=self.h_dry.value,
-            l_lat=self.l_lat.value,
-            mn=self.mn.value,
-            m_lat=self.m_lat.value,
-            pdi=self.pdi.value,
-            phi_b=self.phi_b.value,
-        )
+        return SCFprofile(z, chi=self.chi.value, chi_s=self.chi_s.value,
+                          h_dry=self.h_dry.value, l_lat=self.l_lat.value,
+                          mn=self.mn.value, m_lat=self.m_lat.value,
+                          pdi=self.pdi.value, phi_b=self.phi_b.value)
 
     def render(self, probe, slabs):
         thickness = self.thickness.value
@@ -678,8 +634,8 @@ class EndTetheredPolymer(Layer):
 
         Mr, Mi = self.polymer.sld(probe)
         Sr, Si = self.solvent.sld(probe)
-        M = Mr + 1j * Mi
-        S = Sr + 1j * Si
+        M = Mr + 1j*Mi
+        S = Sr + 1j*Si
         try:
             M, S = M[0], S[0]  # Temporary hack
         except:
@@ -687,12 +643,13 @@ class EndTetheredPolymer(Layer):
 
         phi = self.profile(Pz)
         Pw, phi = util.merge_ends(Pw, phi, tol=1e-3)
-        P = M * phi + S * (1 - phi)
+        P = M*phi + S*(1-phi)
         Pr, Pi = np.real(P), np.imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
 
 
-def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None, m_lat=1, phi_b=0, pdi=1, disp=False):
+def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None,
+               m_lat=1, phi_b=0, pdi=1, disp=False):
     """
     Generate volume fraction profile for Refl1D based on real parameters.
 
@@ -710,9 +667,9 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None, m_lat=1, p
     """
 
     # calculate lattice space parameters
-    theta = h_dry / l_lat
-    segments = mn / m_lat
-    sigma = theta / segments
+    theta = h_dry/l_lat
+    segments = mn/m_lat
+    sigma = theta/segments
 
     # solve the self consistent field equations using the cache
     if disp:
@@ -725,11 +682,11 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None, m_lat=1, p
     for x, layer in enumerate(reversed(phi_lat)):
         if abs(layer - phi_b) < 1e-6:
             break
-    phi_lat = phi_lat[: -(x + 1)]
+    phi_lat = phi_lat[:-(x + 1)]
 
     # re-dimensionalize the solution
     layers = len(phi_lat)
-    z_end = l_lat * layers
+    z_end = l_lat*layers
     z_lat = np.linspace(0.0, z_end, num=layers)
     phi = np.interp(z, z_lat, phi_lat, right=phi_b)
 
@@ -739,7 +696,8 @@ def SCFprofile(z, chi=None, chi_s=None, h_dry=None, l_lat=1, mn=None, m_lat=1, p
 _SCFcache_dict = OrderedDict()
 
 
-def SCFcache(chi, chi_s, pdi, sigma, phi_b, segments, disp=False, cache=_SCFcache_dict):
+def SCFcache(chi, chi_s, pdi, sigma, phi_b, segments, disp=False,
+             cache=_SCFcache_dict):
     """Return a memoized SCF result by walking from a previous solution.
 
     Using an OrderedDict because I want to prune keys FIFO
@@ -751,9 +709,9 @@ def SCFcache(chi, chi_s, pdi, sigma, phi_b, segments, disp=False, cache=_SCFcach
         from scipy.optimize.nonlin import NoConvergence
     # prime the cache with a known easy solutions
     if not cache:
-        cache[(0, 0, 0, 0.1, 0.1, 0.1)] = SCFsolve(sigma=0.1, phi_b=0.1, segments=50, disp=disp)
-        cache[(0, 0, 0, 0, 0.1, 0.1)] = SCFsolve(sigma=0, phi_b=0.1, segments=50, disp=disp)
-        cache[(0, 0, 0, 0.1, 0, 0.1)] = SCFsolve(sigma=0.1, phi_b=0, segments=50, disp=disp)
+        cache[(0, 0, 0, .1, .1, .1)] = SCFsolve(sigma=.1, phi_b=.1, segments=50, disp=disp)
+        cache[(0, 0, 0, 0, .1, .1)] = SCFsolve(sigma=0, phi_b=.1, segments=50, disp=disp)
+        cache[(0, 0, 0, .1, 0, .1)] = SCFsolve(sigma=.1, phi_b=0, segments=50, disp=disp)
 
     if disp:
         starttime = time()
@@ -764,7 +722,7 @@ def SCFcache(chi, chi_s, pdi, sigma, phi_b, segments, disp=False, cache=_SCFcach
     # longshot, but return a cached result if we hit it
     if scaled_parameters in cache:
         if disp:
-            print("SCFcache hit at:", scaled_parameters)
+            print('SCFcache hit at:', scaled_parameters)
         phi = cache[scaled_parameters] = cache.pop(scaled_parameters)
         return phi
 
@@ -776,7 +734,7 @@ def SCFcache(chi, chi_s, pdi, sigma, phi_b, segments, disp=False, cache=_SCFcach
     p_array = np.array(scaled_parameters)
 
     # Calculate distances to all cached parameters
-    deltas = p_array - cp_array  # Parameter space displacement vectors
+    deltas = p_array - cp_array # Parameter space displacement vectors
     closest_index = np.sum(deltas * deltas, axis=1).argmin()
 
     # Organize closest point data for later use
@@ -806,8 +764,8 @@ def SCFcache(chi, chi_s, pdi, sigma, phi_b, segments, disp=False, cache=_SCFcach
     happened in practice.
     """
 
-    step = 1.0  # Fractional distance between cached and requested
-    dstep = 1.0  # Step size increment
+    step = 1.0 # Fractional distance between cached and requested
+    dstep = 1.0 # Step size increment
     flag = True
 
     while flag:
@@ -818,36 +776,35 @@ def SCFcache(chi, chi_s, pdi, sigma, phi_b, segments, disp=False, cache=_SCFcach
 
         # conditional math because, "why risk floating point error"
         if flag:
-            p_tup = tuple(closest_cp_array + step * closest_delta)
+            p_tup = tuple(closest_cp_array + step*closest_delta)
         else:
             p_tup = scaled_parameters
 
         if disp:
-            print("Parameter step is", step)
-            print("current parameters:", p_tup)
+            print('Parameter step is', step)
+            print('current parameters:', p_tup)
 
         try:
-            phi = SCFsolve(
-                p_tup[0], p_tup[1] / 3, p_tup[2] + 1, p_tup[3], p_tup[4], p_tup[5] * 500, disp=disp, phi0=phi
-            )
+            phi = SCFsolve(p_tup[0], p_tup[1] / 3, p_tup[2] + 1, p_tup[3], p_tup[4],
+                           p_tup[5] * 500, disp=disp, phi0=phi)
         except (NoConvergence, ValueError) as e:
             if isinstance(e, ValueError):
                 if str(e) != "array must not contain infs or NaNs":
                     raise
             if disp:
-                print("Step failed")
+                print('Step failed')
             flag = True  # Reset this so we don't quit if step=1.0 fails
-            dstep *= 0.5
+            dstep *= .5
             step -= dstep
             if dstep < 1e-5:
-                raise RuntimeError("Cache walk appears to be stuck")
+                raise RuntimeError('Cache walk appears to be stuck')
         else:  # Belongs to try, executes if no exception is raised
             cache[p_tup] = phi
             dstep *= 1.05
             step += dstep
 
     if disp:
-        print("SCFcache execution time:", round(time() - starttime, 3), "s")
+        print('SCFcache execution time:', round(time()-starttime, 3), "s")
 
     # keep the cache from consuming all things
     while len(cache) > 100:
@@ -856,7 +813,8 @@ def SCFcache(chi, chi_s, pdi, sigma, phi_b, segments, disp=False, cache=_SCFcach
     return phi
 
 
-def SCFsolve(chi=0, chi_s=0, pdi=1, sigma=None, phi_b=0, segments=None, disp=False, phi0=None, maxiter=30):
+def SCFsolve(chi=0, chi_s=0, pdi=1, sigma=None, phi_b=0, segments=None,
+             disp=False, phi0=None, maxiter=30):
     """Solve SCF equations using an initial guess and lattice parameters
 
     This function finds a solution for the equations where the lattice size
@@ -869,7 +827,7 @@ def SCFsolve(chi=0, chi_s=0, pdi=1, sigma=None, phi_b=0, segments=None, disp=Fal
     from scipy.optimize import newton_krylov
 
     if sigma >= 1:
-        raise ValueError("Chains that short cannot be squeezed that high")
+        raise ValueError('Chains that short cannot be squeezed that high')
 
     if disp:
         starttime = time()
@@ -880,15 +838,15 @@ def SCFsolve(chi=0, chi_s=0, pdi=1, sigma=None, phi_b=0, segments=None, disp=Fal
         # TODO: Better initial guess for chi>.6
         phi0 = default_guess(segments, sigma)
         if disp:
-            print("No guess passed, using default phi0: layers =", len(phi0))
+            print('No guess passed, using default phi0: layers =', len(phi0))
     else:
         phi0 = abs(phi0)
-        phi0[phi0 > 0.99999] = 0.99999
+        phi0[phi0>.99999] = .99999
         if disp:
             print("Initial guess passed: layers =", len(phi0))
 
     # resizing loop variables
-    jac_solve_method = "gmres"
+    jac_solve_method = 'gmres'
     lattice_too_small = True
 
     # We tolerate up to 1 ppm deviation from bulk phi
@@ -903,27 +861,24 @@ def SCFsolve(chi=0, chi_s=0, pdi=1, sigma=None, phi_b=0, segments=None, disp=Fal
             print("Solving SCF equations")
 
         try:
-            with np.errstate(invalid="ignore"):
-                phi = abs(
-                    newton_krylov(
-                        curried_SCFeqns,
-                        phi0,
-                        verbose=bool(disp),
-                        maxiter=maxiter,
-                        method=jac_solve_method,
-                    )
-                )
+            with np.errstate(invalid='ignore'):
+                phi = abs(newton_krylov(curried_SCFeqns,
+                                        phi0,
+                                        verbose=bool(disp),
+                                        maxiter=maxiter,
+                                        method=jac_solve_method,
+                                        ))
         except RuntimeError as e:
-            if str(e) == "gmres is not re-entrant":
+            if str(e) == 'gmres is not re-entrant':
                 # Threads are racing to use gmres. Lose the race and use
                 # something slower but thread-safe.
-                jac_solve_method = "lgmres"
+                jac_solve_method = 'lgmres'
                 continue
             else:
                 raise
 
         if disp:
-            print("lattice size:", len(phi))
+            print('lattice size:', len(phi))
 
         phi_deviation = abs(phi - phi_b)
         layers_near_phi_b = phi_deviation < tol
@@ -934,7 +889,7 @@ def SCFsolve(chi=0, chi_s=0, pdi=1, sigma=None, phi_b=0, segments=None, disp=Fal
             # if there aren't enough layers_near_phi_b, grow the lattice 20%
             newlayers = max(1, round(len(phi0) * 0.2))
             if disp:
-                print("Growing undersized lattice by", newlayers)
+                print('Growing undersized lattice by', newlayers)
             if nbulk:
                 i = np.diff(layers_near_phi_b).nonzero()[0].max()
             else:
@@ -948,7 +903,7 @@ def SCFsolve(chi=0, chi_s=0, pdi=1, sigma=None, phi_b=0, segments=None, disp=Fal
         phi = phi[(i <= chop_start) | (i > chop_end)]
 
     if disp:
-        print("SCFsolve execution time:", round(time() - starttime, 3), "s")
+        print("SCFsolve execution time:", round(time()-starttime, 3), "s")
 
     return phi
 
@@ -957,14 +912,13 @@ _SZdist_dict = OrderedDict()
 
 
 def SZdist(pdi, nn, cache=_SZdist_dict):
-    """Calculate Shultz-Zimm distribution from PDI and number average DP
+    """ Calculate Shultz-Zimm distribution from PDI and number average DP
 
     Shultz-Zimm is a "realistic" distribution for linear polymers. Numerical
     problems arise when the distribution gets too uniform, so if we find them,
     default to an exact uniform calculation.
     """
     from scipy.special import gammaln
-
     args = pdi, nn
     if args in cache:
         cache[args] = cache.pop(args)
@@ -975,24 +929,24 @@ def SZdist(pdi, nn, cache=_SZdist_dict):
     if pdi == 1.0:
         uniform = True
     elif pdi < 1.0:
-        raise ValueError("Invalid PDI")
+        raise ValueError('Invalid PDI')
     else:
-        x = 1.0 / (pdi - 1.0)
+        x = 1.0/(pdi-1.0)
         # Calculate the distribution in chunks so we don't waste CPU time
         chunk = 256
         p_ni_list = []
         pdi_underflow = False
 
-        for i in range(max(1, int((100 * nn) / chunk))):
-            ni = np.arange(chunk * i + 1, chunk * (i + 1) + 1, dtype=np.float64)
-            r = ni / nn
-            xr = x * r
+        for i in range(max(1, int((100*nn)/chunk))):
+            ni = np.arange(chunk*i+1, chunk*(i+1)+1, dtype=np.float64)
+            r = ni/nn
+            xr = x*r
 
-            p_ni = exp(log(x / ni) - gammaln(x + 1) + xr * (log(xr) / r - 1))
+            p_ni = exp(log(x/ni) - gammaln(x+1) + xr*(log(xr)/r-1))
 
-            pdi_underflow = (p_ni >= 1.0).any()  # catch "too small PDI"
+            pdi_underflow = (p_ni>=1.0).any() # catch "too small PDI"
             if pdi_underflow:
-                break  # and break out to uniform calculation
+                break # and break out to uniform calculation
 
             # Stop calculating when species account for less than 1ppm
             keep = (r < 1.0) | (p_ni >= 1e-6)
@@ -1001,8 +955,8 @@ def SZdist(pdi, nn, cache=_SZdist_dict):
             else:
                 p_ni_list.append(p_ni[keep])
                 break
-        else:  # Belongs to the for loop. Executes if no break statement runs.
-            raise RuntimeError("SZdist overflow")
+        else: # Belongs to the for loop. Executes if no break statement runs.
+            raise RuntimeError('SZdist overflow')
 
     if uniform or pdi_underflow:
         # NOTE: rounding here allows nn to be a double in the rest of the logic
@@ -1011,43 +965,43 @@ def SZdist(pdi, nn, cache=_SZdist_dict):
     else:
         p_ni = np.concatenate(p_ni_list)
         p_ni /= p_ni.sum()
-    cache[args] = p_ni
+    cache[args]=p_ni
 
-    if len(cache) > 9000:
+    if len(cache)>9000:
         cache.popitem(last=False)
 
     return p_ni
 
 
-def default_guess(segments=100, sigma=0.5, phi_b=0.1, chi=0, chi_s=0):
-    """Produce an initial guess for phi via analytical approximants.
+def default_guess(segments=100, sigma=.5, phi_b=.1, chi=0, chi_s=0):
+    """ Produce an initial guess for phi via analytical approximants.
 
     For now, a line using numbers from scaling theory
     """
-    ss = sqrt(sigma)
+    ss=sqrt(sigma)
     default_layers = int(round(max(MINLAT, segments * ss)))
     default_phi0 = np.linspace(ss, phi_b, num=default_layers)
     return default_phi0
 
 
 def SCFeqns(phi_z, chi, chi_s, sigma, n_avg, p_i, phi_b=0):
-    """System of SCF equation for terminally attached polymers.
+    """ System of SCF equation for terminally attached polymers.
 
-    Formatted for input to a nonlinear minimizer or solver.
+        Formatted for input to a nonlinear minimizer or solver.
 
-    The sign convention here on u is "backwards" and always has been.
-    It saves a few sign flips, and looks more like Cosgrove's.
+        The sign convention here on u is "backwards" and always has been.
+        It saves a few sign flips, and looks more like Cosgrove's.
     """
 
     # let the solver go negative if it wants
     phi_z = abs(phi_z)
 
     # penalize attempts that overfill the lattice
-    toomuch = phi_z > 0.99999
+    toomuch = phi_z > .99999
     penalty_flag = toomuch.any()
     if penalty_flag:
-        penalty = np.where(toomuch, phi_z - 0.99999, 0)
-        phi_z[toomuch] = 0.99999
+        penalty = np.where(toomuch, phi_z - .99999, 0)
+        phi_z[toomuch] = .99999
 
     # calculate new g_z (Boltzmann weighting factors)
     u_prime = log((1.0 - phi_z) / (1.0 - phi_b))
@@ -1119,12 +1073,10 @@ def calc_phi_z(g_z, n_avg, sigma, phi_b, u_z_avg=0, p_i=None):
 
     return phi_z_ta + phi_z_free
 
-
 def compose(g_zs, g_zs_ngts, g_z):
     prod = g_zs * np.fliplr(g_zs_ngts)
     prod[np.isnan(prod)] = 0
     return np.sum(prod, axis=1) / g_z
-
 
 class Propagator(object):
     def __init__(self, g_z, segments):
@@ -1169,43 +1121,41 @@ class Propagator(object):
         return g_zs
 
     def _new(self):
-        return np.empty(self.shape, order="F")
-
+        return np.empty(self.shape, order='F')
 
 try:
     from numba import njit
-
     USE_NUMBA = True
 except ImportError:
     USE_NUMBA = False
 
-# USE_NUMBA = False # Uncomment when doing timing tests
+#USE_NUMBA = False # Uncomment when doing timing tests
 
 if USE_NUMBA:
-
-    @njit("(f8[:], f8[:, :], f8, f8)", cache=True)
+    @njit('(f8[:], f8[:, :], f8, f8)', cache=True)
     def _calc_g_zs_uniform(g_z, g_zs, f0, f1):
         points, segments = g_zs.shape
-        for r in range(segments - 1):
-            g_zs[0, r + 1] = (g_zs[0, r] * f0 + g_zs[1, r] * f1) * g_z[0]
-            # g_zs[1:-1, r+1] = np.correlate(g_zs[:, r], [f1, f0, f1], 'valid')*g_z[1:-1]
-            for k in range(1, points - 1):
-                g_zs[k, r + 1] = (g_zs[k, r] * f0 + (g_zs[k - 1, r] + g_zs[k + 1, r]) * f1) * g_z[k]
-            g_zs[-1, r + 1] = (g_zs[-2, r] * f1 + g_zs[-1, r] * f0) * g_z[-1]
+        for r in range(segments-1):
+            g_zs[0, r+1] = (g_zs[0, r]*f0 + g_zs[1, r]*f1)*g_z[0]
+            #g_zs[1:-1, r+1] = np.correlate(g_zs[:, r], [f1, f0, f1], 'valid')*g_z[1:-1]
+            for k in range(1, points-1):
+                g_zs[k, r+1] = (
+                    g_zs[k, r]*f0 + (g_zs[k-1, r] + g_zs[k+1, r])*f1)*g_z[k]
+            g_zs[-1, r+1] = (g_zs[-2, r]*f1 + g_zs[-1, r]*f0)*g_z[-1]
 
-    @njit("(f8[:], f8[:], f8[:, :], f8, f8)", cache=True)
+    @njit('(f8[:], f8[:], f8[:, :], f8, f8)', cache=True)
     def _calc_g_zs(g_z, c_i, g_zs, f0, f1):
         points, segments = g_zs.shape
-        for r in range(segments - 1):
-            c_ir = c_i[segments - (r + 1) - 1]
-            g_zs[0, r + 1] = (g_zs[0, r] * f0 + g_zs[1, r] * f1 + c_ir) * g_z[0]
-            # g_zs[1:-1, r+1] = (np.correlate(g_zs[:, r], fir, 'valid') + c_ir)*g_z[1:-1]
-            for k in range(1, points - 1):
-                g_zs[k, r + 1] = (g_zs[k, r] * f0 + (g_zs[k - 1, r] + g_zs[k + 1, r]) * f1 + c_ir) * g_z[k]
-            g_zs[-1, r + 1] = (g_zs[-2, r] * f1 + g_zs[-1, r] * f0 + c_ir) * g_z[-1]
+        for r in range(segments-1):
+            c_ir = c_i[segments-(r+1)-1]
+            g_zs[0, r+1] = (g_zs[0, r]*f0 + g_zs[1, r]*f1 + c_ir)*g_z[0]
+            #g_zs[1:-1, r+1] = (np.correlate(g_zs[:, r], fir, 'valid') + c_ir)*g_z[1:-1]
+            for k in range(1, points-1):
+                g_zs[k, r+1] = (
+                    g_zs[k, r]*f0 + (g_zs[k-1, r] + g_zs[k+1, r])*f1 + c_ir)*g_z[k]
+            g_zs[-1, r+1] = (g_zs[-2, r]*f1 + g_zs[-1, r]*f0 + c_ir)*g_z[-1]
 
 else:
-
     def _calc_g_zs(g_z, c_i, g_zs, f0, f1):
         coeff = np.array([f1, f0, f1])
         pg_zs = g_zs[:, 0]

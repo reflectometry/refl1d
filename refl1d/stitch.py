@@ -6,7 +6,6 @@ Join together datasets yielding unique sorted x.
 
 from numpy import hstack, vstack, argsort, sum, sqrt
 
-
 def stitch(data, same_x=0.001, same_dx=0.001):
     """
     Stitch together multiple measurements into one.
@@ -42,10 +41,10 @@ def stitch(data, same_x=0.001, same_dx=0.001):
     dx = hstack(p.dx for p in data)
     y = hstack(p.y for p in data)
     dy = hstack(p.dy for p in data)
-    if all(hasattr(p, "I") for p in data):
+    if all(hasattr(p, 'I') for p in data):
         weight = hstack(p.I for p in data)
     else:
-        weight = y / dy**2  # y/dy**2 is approximately the intensity
+        weight = y/dy**2  # y/dy**2 is approximately the intensity
 
     # Sort the data by increasing x
     idx = argsort(x)
@@ -58,7 +57,7 @@ def stitch(data, same_x=0.001, same_dx=0.001):
     keep = []
     n, last, next = len(x), 0, 1
     while next < n:
-        while next < n and abs(x[next] - x[last]) <= same_x:
+        while next < n and abs(x[next]-x[last]) <= same_x:
             next += 1
         if next - last == 1:
             # Only one point, so no averaging necessary
@@ -70,17 +69,16 @@ def stitch(data, same_x=0.001, same_dx=0.001):
             avg = []
             while remainder.shape[1] > 0:
                 best_dx = min(remainder[1, :])
-                idx = remainder[1, :] - best_dx <= same_dx
+                idx = (remainder[1, :]-best_dx <= same_dx)
                 avg.append(poisson_average(remainder[:, idx]))
                 remainder = remainder[:, ~idx]
             # Store the result in worst to best resolution order.
             for i, d in enumerate(reversed(avg)):
-                data[:, last + i] = d
-                keep.append(last + i)
+                data[:, last+i] = d
+                keep.append(last+i)
         last = next
 
     return data[:4, keep]
-
 
 def poisson_average(xdxydyw):
     """
@@ -123,9 +121,9 @@ def poisson_average(xdxydyw):
     # attenuators.
     x, dx, y, _dy, weight = xdxydyw
     w = sum(weight)
-    x = sum(x * weight) / w
-    dx = sum(dx * weight) / w
-    y = sum(y * weight) / w
-    dy = sqrt(y / w)
-    # print "averaging", xdxydy, x, dx, y, dy
+    x = sum(x*weight)/w
+    dx = sum(dx*weight)/w
+    y = sum(y*weight)/w
+    dy = sqrt(y/w)
+    #print "averaging", xdxydy, x, dx, y, dy
     return x, dx, y, dy, w

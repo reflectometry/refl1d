@@ -13,20 +13,16 @@ def safecall(fn):
         except:
             if self._debug:
                 import sys, traceback
-
                 traceback.print_exc()
                 sys.exit(1)
             else:
                 raise
-
     return wrapped
-
 
 # ---------------------- Base interactors ----------------------
 # GUI starts here
 # Other interactor will inherit this
 # --------------------------------------------------------------
-
 
 class BaseInteractor(object):
     """
@@ -64,9 +60,7 @@ class BaseInteractor(object):
         color    - color of the interactor in non-active state
         markers  - list of handles for the interactor
     """
-
     _debug = False
-
     def __init__(self, profile):
         self.profile = profile
         self.markers = []
@@ -83,12 +77,12 @@ class BaseInteractor(object):
         """
         connect = self.profile.connect
         for h in markers:
-            connect("enter", h, self._onEnter)
-            connect("leave", h, self._onLeave)
-            connect("click", h, self._onClick)
-            connect("release", h, self._onRelease)
-            connect("drag", h, self._onDrag)
-            connect("key", h, self._onKey)
+            connect('enter',   h, self._onEnter)
+            connect('leave',   h, self._onLeave)
+            connect('click',   h, self._onClick)
+            connect('release', h, self._onRelease)
+            connect('drag',    h, self._onDrag)
+            connect('key',     h, self._onKey)
 
     def clear_markers(self):
         """Clear old markers and interfaces."""
@@ -99,24 +93,22 @@ class BaseInteractor(object):
             connect.clear(*self.markers)
         self.markers = []
 
-    # ======================================
+
+    #======================================
     def update_markers(self):
         """
         Configuration has changed: update marker positions
         """
-
     def save(self, ev):
         """
         Save the current state.
 
         Save is triggered by both a mouse click and a mouse release.
         """
-
     def restore(self, ev):
         """
         Restore the saved state
         """
-
     def drag(self, ev):
         """
         Move the interactor relative to the current state.
@@ -158,7 +150,6 @@ class BaseInteractor(object):
             drag_cancel()
             restore()
         """
-
     def drag_start(self, ev):
         """
         Start drag.
@@ -166,7 +157,6 @@ class BaseInteractor(object):
         Normally don't need to do anything here since save is triggered
         automatically.
         """
-
     def drag_cancel(self, ev):
         """
         Cancel drag.
@@ -183,9 +173,9 @@ class BaseInteractor(object):
         by drag.
         """
 
-    # ======================================#
+    #======================================#
     # Event processors --- do not override #
-    # ======================================#
+    #======================================#
     def _onEnter(self, event):
         """
         Hilite the artist reporting the event, indicating that it is
@@ -198,6 +188,7 @@ class BaseInteractor(object):
 
         return True
 
+
     def _onLeave(self, event):
         """
         Restore the artist to the original colour when the cursor leaves.
@@ -205,6 +196,7 @@ class BaseInteractor(object):
         event.artist.set_color(self._color)
         self.profile.draw_idle()
         return True
+
 
     @safecall
     def _onClick(self, event):
@@ -234,7 +226,7 @@ class BaseInteractor(object):
         # We are done the click-drag operation
         self.drag_done(event)
         self._dragging = False
-        # self.profile.draw_idle()
+        #self.profile.draw_idle()
 
         # Prepare for keyboard adjustment
         self._arrow_trans = event.artist.get_transform()
@@ -243,6 +235,7 @@ class BaseInteractor(object):
 
         return True
 
+
     @safecall
     def _onDrag(self, event):
         """
@@ -250,9 +243,9 @@ class BaseInteractor(object):
         the mouse leaves the window.
         """
 
-        inside, _ = self.profile.axes.contains(event)
+        inside,_ = self.profile.axes.contains(event)
 
-        if inside:
+        if  inside:
             # In case of no click and just drag
             if not self._dragging:
                 print("We have a drag without a click")
@@ -278,37 +271,35 @@ class BaseInteractor(object):
 
         Returns True if key is handled
         """
-        if event.key == "escape":
+        if event.key == 'escape':
             if self._dragging:
                 self.drag_cancel(event)
             self.restore(event)
             self.profile.update()
             return True
 
-        elif event.key in ["up", "down", "right", "left"]:
+        elif event.key in ['up', 'down', 'right', 'left']:
+
             if self._dragging:
                 return True
 
-            if not (hasattr(self, "_arrow_x") and hasattr(self, "_arrow_y")):
+            if  not (hasattr(self, '_arrow_x') and hasattr(self, '_arrow_y')):
                 print("got key event without having location")
                 return True
 
             step = 0.2 if event.control else 1
-            x, y = self._arrow_x, self._arrow_y
-            px, py = self._arrow_trans.transform_point((x, y))
-            if event.key == "up":
-                py += step
-            elif event.key == "down":
-                py -= step
-            elif event.key == "right":
-                px += step
-            elif event.key == "left":
-                px -= step
-            x, y = self._arrow_trans.inverted().transform_point((px, py))
-            self._arrow_x, self._arrow_y = x, y
+            x,y = self._arrow_x, self._arrow_y
+            px,py = self._arrow_trans.transform_point( (x,y) )
+            if   event.key == 'up':    py += step
+            elif event.key == 'down':  py -= step
+            elif event.key == 'right': px += step
+            elif event.key == 'left':  px -= step
+            x,y = self._arrow_trans.inverted().transform_point( (px,py) )
+            self._arrow_x, self._arrow_y = x,y
+
 
             # update the state
-            event.xdata, event.ydata = x, y
+            event.xdata, event.ydata = x,y
             # TODO: sound bell when at limits
             self.drag(event)
             self.profile.update()

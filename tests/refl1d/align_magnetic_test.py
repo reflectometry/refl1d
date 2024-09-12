@@ -8,11 +8,11 @@ from refl1d.refllib import backend
 # thickness, interface, rho, irho
 substrate = [[nan, 10, 2, 0.2]]
 air = [[nan, nan, 0, 0]]
-nuclear_slope = [[2, 2, -0.2 * k + 5, 0] for k in range(5)]
+nuclear_slope = [[2, 2, -0.2*k+5, 0] for k in range(5)]
 # thickness, interface, rhoM, thetaM
 magnetic_substrate = [[nan, 10, 1, 270]]
 rough_magnetic_substrate = [[nan, 20, 1, 270]]
-magnetic_slope = [[2, 2, -0.2 * k + 5, 270] for k in range(5)]
+magnetic_slope = [[2, 2, -0.2*k+5, 270] for k in range(5)]
 magnetic_air = [[nan, nan, 0, 270]]
 
 
@@ -25,7 +25,6 @@ def test_matched_substrate_air():
     ]
     check_one(nuclear, magnetic, expected)
 
-
 def test_unmatched_substrate_air():
     nuclear = substrate + air
     magnetic = rough_magnetic_substrate + magnetic_air
@@ -36,7 +35,6 @@ def test_unmatched_substrate_air():
     ]
     check_one(nuclear, magnetic, expected)
 
-
 def test_offset():
     binder = [[20, 10, 4, 0.4]]
     iron = [[50, 10, 8, 0.8]]
@@ -45,7 +43,8 @@ def test_offset():
     magnetic_iron = [[40, 5, 5, 270]]
     magnetic_postgap = [[15, 10, 0, 270]]
     nuclear = substrate + binder + iron + cap + air
-    magnetic = magnetic_substrate + magnetic_pregap + magnetic_iron + magnetic_postgap + magnetic_air
+    magnetic = (magnetic_substrate + magnetic_pregap + magnetic_iron
+                + magnetic_postgap + magnetic_air)
     expected = [
         [nan, 10, 2, 0.2, 1, 270],  # substrate
         [20, 10, 4, 0.4, 0, 270],  # binder
@@ -73,7 +72,6 @@ def test_stepped_nuclear():
     ]
     check_one(nuclear, magnetic, expected)
 
-
 def test_stepped_magnetic():
     nuclear = substrate + [[10, 10, 3, 0.3]] + air
     magnetic = magnetic_substrate + magnetic_slope + magnetic_air
@@ -89,24 +87,21 @@ def test_stepped_magnetic():
     ]
     check_one(nuclear, magnetic, expected)
 
-
 def check_one(nuclear, magnetic, expected):
-    # print("nuclear", nuclear)
-    # print("magnetic", magnetic)
-    w, sigma, rho, irho = [np.ascontiguousarray(v, "d") for v in zip(*nuclear)]
-    wM, sigmaM, rhoM, thetaM = [np.ascontiguousarray(v, "d") for v in zip(*magnetic)]
-    result = np.empty((len(w) + len(wM), 6), "d")
-    # print("sigmaM", sigmaM)
+    #print("nuclear", nuclear)
+    #print("magnetic", magnetic)
+    w, sigma, rho, irho = [np.ascontiguousarray(v, 'd') for v in zip(*nuclear)]
+    wM, sigmaM, rhoM, thetaM = [np.ascontiguousarray(v, 'd') for v in zip(*magnetic)]
+    result = np.empty((len(w)+len(wM), 6), 'd')
+    #print("sigmaM", sigmaM)
     k = backend.align_magnetic(w, sigma[:-1], rho, irho, wM, sigmaM[:-1], rhoM, thetaM, result)
-    good = all(
-        (np.isnan(c2) and c1 == 0.0) or (not np.isnan(c2) and abs(c1 - c2) < 1e-10)
-        for r1, r2 in zip(result[:k], expected)
-        for c1, c2 in zip(r1, r2)
-    )
+    good = all((np.isnan(c2) and c1 == 0.) or (not np.isnan(c2) and abs(c1-c2) < 1e-10)
+               for r1, r2 in zip(result[:k], expected)
+               for c1, c2 in zip(r1, r2))
     if not good:
-        nice = lambda v: ", ".join("[" + ", ".join("%g" % c for c in r) + "]" for r in v)
-        raise ValueError("=== Expected:\n%s\n=== Returned:\n%s\n" % (nice(expected), nice(result[:k])))
-
+        nice = lambda v: ", ".join("["+", ".join("%g"%c for c in r)+"]" for r in v)
+        raise ValueError("=== Expected:\n%s\n=== Returned:\n%s\n"
+                         % (nice(expected), nice(result[:k])))
 
 if __name__ == "__main__":
     test_matched_substrate_air()

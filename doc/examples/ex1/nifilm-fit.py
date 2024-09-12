@@ -15,7 +15,7 @@ from refl1d.names import *
 # fitting the sample_broadening parameter in the probe.
 Probe.show_resolution = False
 
-nickel = Material("Ni")
+nickel = Material('Ni')
 sample = silicon(0, 10) | nickel(125, 10) | air
 
 # We are going to try to recover the original thickness by letting the
@@ -37,7 +37,7 @@ sample[1].interface.range(0, 20)
 # The data is loaded as before.
 
 instrument = SNS.Liquids()
-files = ["nifilm-tof-%d.dat" % d for d in (1, 2, 3, 4)]
+files = ['nifilm-tof-%d.dat'%d for d in (1, 2, 3, 4)]
 probe = ProbeSet(instrument.load(f) for f in files)
 
 M = Experiment(probe=probe, sample=sample)

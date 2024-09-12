@@ -16,7 +16,6 @@ from bumps.parameter import Parameter, to_dict
 
 from .experiment import ExperimentBase
 
-
 class Weights(object):
     """
     Parameterized distribution for use in DistributionExperiment.
@@ -58,8 +57,8 @@ class Weights(object):
                   to define P as uniform over the range.
 
     """
-
-    def __init__(self, edges=None, cdf=None, args=(), loc=None, scale=None, truncated=True):
+    def __init__(self, edges=None, cdf=None,
+                 args=(), loc=None, scale=None, truncated=True):
         self.edges = np.asarray(edges)
         self.cdf = cdf
         self.truncated = truncated
@@ -68,24 +67,22 @@ class Weights(object):
         self.args = [Parameter.default(a) for a in args]
 
     def parameters(self):
-        return {"args": self.args, "loc": self.loc, "scale": self.scale}
+        return {'args': self.args, 'loc': self.loc, 'scale': self.scale}
 
     def to_dict(self):
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "edges": self.edges.tolist(),
-                "cdf": self.cdf.__name__,  # TODO: can't lookup name
-                "args": self.args,
-                "loc": self.loc,
-                "scale": self.scale,
-                "truncated": self.truncated,
-            }
-        )
+        return to_dict({
+            'type': type(self).__name__,
+            'edges': self.edges.tolist(),
+            'cdf': self.cdf.__name__,  # TODO: can't lookup name
+            'args': self.args,
+            'loc': self.loc,
+            'scale': self.scale,
+            'truncated': self.truncated,
+        })
 
     def __iter__(self):
         # Find weights and normalize the sum to 1
-        centers = (self.edges[:-1] + self.edges[1:]) / 2
+        centers = (self.edges[:-1]+self.edges[1:])/2
         loc = self.loc.value
         scale = self.scale.value
         args = [p.value for p in self.args]
@@ -100,7 +97,6 @@ class Weights(object):
             weights = relative_weights / total_weight
             idx = weights > 0
             return iter(zip(centers[idx], weights[idx]))
-
 
 class DistributionExperiment(ExperimentBase):
     """
@@ -118,8 +114,8 @@ class DistributionExperiment(ExperimentBase):
 
     See :class:`Weights` for a description of how to set up the distribution.
     """
-
-    def __init__(self, experiment=None, P=None, distribution=None, coherent=False):
+    def __init__(self, experiment=None, P=None, distribution=None,
+                 coherent=False):
         self.P = P
         self.distribution = distribution
         self.experiment = experiment
@@ -132,21 +128,19 @@ class DistributionExperiment(ExperimentBase):
 
     def parameters(self):
         return {
-            "distribution": self.distribution.parameters(),
-            "experiment": self.experiment.parameters(),
-        }
+            'distribution': self.distribution.parameters(),
+            'experiment': self.experiment.parameters(),
+            }
 
     def to_dict(self):
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "P": self.P,  # Note: use parameter id to restore
-                "distribution": self.distribution,
-                "experiment": self.experiment,
-                # Don't need self.probe since it is the experiment probe.
-                "coherent": self.coherent,
-            }
-        )
+        return to_dict({
+            'type': type(self).__name__,
+            'P': self.P, # Note: use parameter id to restore
+            'distribution': self.distribution,
+            'experiment': self.experiment,
+            # Don't need self.probe since it is the experiment probe.
+            'coherent': self.coherent,
+        })
 
     def reflectivity(self, resolution=True, interpolation=0):
         key = ("reflectivity", resolution, interpolation)
@@ -158,12 +152,14 @@ class DistributionExperiment(ExperimentBase):
                     self.experiment.update()
                     Qx, Rx = self.experiment._reflamp()
                     if self.coherent:
-                        calc_R += w * Rx
+                        calc_R += w*Rx
                     else:
-                        calc_R += w * abs(Rx) ** 2
+                        calc_R += w*abs(Rx)**2
             if self.coherent:
-                calc_R = abs(calc_R) ** 2
-            Q, R = self.probe.apply_beam(Qx, calc_R, resolution=resolution, interpolation=interpolation)
+                calc_R = abs(calc_R)**2
+            Q, R = self.probe.apply_beam(Qx, calc_R,
+                                         resolution=resolution,
+                                         interpolation=interpolation)
             self._cache[key] = Q, R
         return self._cache[key]
 
@@ -176,7 +172,7 @@ class DistributionExperiment(ExperimentBase):
         """
         Compute a density profile for the material
         """
-        key = "smooth_profile", dz
+        key = 'smooth_profile', dz
         if key not in self._cache:
             P = self._max_P()
             if self.P.value != P:
@@ -189,7 +185,7 @@ class DistributionExperiment(ExperimentBase):
         """
         Compute a scattering length density profile
         """
-        key = "step_profile"
+        key = 'step_profile'
         if key not in self._cache:
             P = self._max_P()
             if self.P.value != P:
@@ -198,22 +194,21 @@ class DistributionExperiment(ExperimentBase):
             self._cache[key] = self.experiment.step_profile()
         return self._cache[key]
 
-    def plot_profile(self, plot_shift=0.0):
+    def plot_profile(self, plot_shift=0.):
         import matplotlib.pyplot as plt
         from bumps.plotutil import auto_shift
 
         trans = auto_shift(plot_shift)
         z, rho, irho = self.step_profile()
-        plt.plot(z, rho, "-g", z, irho, "-b", transform=trans)
+        plt.plot(z, rho, '-g', z, irho, '-b', transform=trans)
         z, rho, irho = self.smooth_profile()
-        plt.plot(z, rho, ":g", z, irho, ":b", transform=trans)
-        plt.legend(["rho", "irho"])
+        plt.plot(z, rho, ':g', z, irho, ':b', transform=trans)
+        plt.legend(['rho', 'irho'])
 
     def plot_weights(self):
         import matplotlib.pyplot as plt
-
         x, w = zip(*self.distribution)
-        plt.stem(x, 100 * np.array(w))
-        plt.title("Weight distribution")
+        plt.stem(x, 100*np.array(w))
+        plt.title('Weight distribution')
         plt.xlabel(self.P.name)
-        plt.ylabel("Percentage")
+        plt.ylabel('Percentage')

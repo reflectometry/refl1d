@@ -1,9 +1,8 @@
 from __future__ import with_statement
 
 import wx
-
 # Can't seem to detect when notebook should be drawn on Mac
-IS_MAC = wx.Platform == "__WXMAC__"
+IS_MAC = (wx.Platform == '__WXMAC__')
 
 from numpy import inf
 
@@ -23,14 +22,13 @@ from refl1d.probe import Probe
 
 # ------------------------------------------------------------------------
 class DataView(wx.Panel):
-    title = "Reflectivity"
-    default_size = (600, 400)
-
+    title = 'Reflectivity'
+    default_size = (600,400)
     def __init__(self, *args, **kw):
         wx.Panel.__init__(self, *args, **kw)
 
         # Instantiate a figure object that will contain our plots.
-        figure = Figure(figsize=(1, 1), dpi=72)
+        figure = Figure(figsize=(1,1), dpi=72)
 
         # Initialize the figure canvas, mapping the figure object to the plot
         # engine backend.
@@ -51,8 +49,8 @@ class DataView(wx.Panel):
 
         # Create a vertical box sizer to manage the widgets in the main panel.
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(canvas, 1, wx.EXPAND | wx.LEFT | wx.RIGHT, border=0)
-        sizer.Add(mpl_toolbar, 0, wx.EXPAND | wx.ALL, border=0)
+        sizer.Add(canvas, 1, wx.EXPAND|wx.LEFT|wx.RIGHT, border=0)
+        sizer.Add(mpl_toolbar, 0, wx.EXPAND|wx.ALL, border=0)
 
         # Associate the sizer with its container.
         self.SetSizer(sizer)
@@ -71,28 +69,42 @@ class DataView(wx.Panel):
         # Grey out items that are not currently implemented.
         frame = wx.GetTopLevelParent(self)
         menu = wx.Menu()
-        _item = menu.AppendRadioItem(wx.ID_ANY, "&Fresnel", "Plot R/R_F")
+        _item = menu.AppendRadioItem(wx.ID_ANY,
+                                          "&Fresnel",
+                                          "Plot R/R_F")
         frame.Bind(wx.EVT_MENU, self.OnFresnel, _item)
-        _item.Check(Probe.view == "fresnel")
-        _item = menu.AppendRadioItem(wx.ID_ANY, "Log Fresnel", "Plot log R/R_F")
+        _item.Check(Probe.view == 'fresnel')
+        _item = menu.AppendRadioItem(wx.ID_ANY,
+                                          "Log Fresnel",
+                                          "Plot log R/R_F")
         frame.Bind(wx.EVT_MENU, self.OnLogFresnel, _item)
-        _item.Check(Probe.view == "logfresnel")
-        _item = menu.AppendRadioItem(wx.ID_ANY, "Li&near", "Plot linear R")
+        _item.Check(Probe.view == 'logfresnel')
+        _item = menu.AppendRadioItem(wx.ID_ANY,
+                                          "Li&near",
+                                          "Plot linear R")
         frame.Bind(wx.EVT_MENU, self.OnLinear, _item)
-        _item.Check(Probe.view == "linear")
-        _item = menu.AppendRadioItem(wx.ID_ANY, "&Log", "Plot log R")
+        _item.Check(Probe.view == 'linear')
+        _item = menu.AppendRadioItem(wx.ID_ANY,
+                                          "&Log",
+                                          "Plot log R")
         frame.Bind(wx.EVT_MENU, self.OnLog, _item)
-        _item.Check(Probe.view == "log")
-        _item = menu.AppendRadioItem(wx.ID_ANY, "&Q4", "Plot R * Q^4")
+        _item.Check(Probe.view == 'log')
+        _item = menu.AppendRadioItem(wx.ID_ANY,
+                                          "&Q4",
+                                          "Plot R * Q^4")
         frame.Bind(wx.EVT_MENU, self.OnQ4, _item)
-        _item.Check(Probe.view == "q4")
-        _item = menu.AppendRadioItem(wx.ID_ANY, "&SA", "Plot spin asymmetry")
+        _item.Check(Probe.view == 'q4')
+        _item = menu.AppendRadioItem(wx.ID_ANY,
+                                          "&SA",
+                                          "Plot spin asymmetry")
         frame.Bind(wx.EVT_MENU, self.OnSA, _item)
-        _item.Check(Probe.view == "SA")
+        _item.Check(Probe.view == 'SA')
 
         menu.AppendSeparator()
 
-        _item = menu.Append(wx.ID_ANY, "&Residuals", "Plot residuals (R_theory - R)/dR")
+        _item = menu.Append(wx.ID_ANY,
+                                 "&Residuals",
+                                 "Plot residuals (R_theory - R)/dR")
         frame.Bind(wx.EVT_MENU, self.OnResiduals, _item)
         menu.Enable(id=_item.GetId(), enable=True)
 
@@ -129,12 +141,11 @@ class DataView(wx.Panel):
 
     # ==== Model view interface ===
     def OnShow(self, event):
-        # print "theory show"
-        if not event.Show:
-            return
-        # print "showing theory"
+        #print "theory show"
+        if not event.Show: return
+        #print "showing theory"
         if self._need_redraw:
-            # print "-redraw"
+            #print "-redraw"
             self.redraw()
 
     def get_state(self):
@@ -157,7 +168,6 @@ class DataView(wx.Panel):
         # print ">>>>>>> refl1d data update parameters"
         if self.problem == model:
             self.redraw()
-
     # =============================
 
     def redraw(self, reset=False):
@@ -165,7 +175,7 @@ class DataView(wx.Panel):
         if not IS_MAC and not self.IsShown():
             self._need_redraw = True
             return
-        # print "drawing theory"
+        #print "drawing theory"
 
         if self._calculating:
             # That means that I've entered the thread through a
@@ -173,57 +183,57 @@ class DataView(wx.Panel):
             # to cancel the running thread and force it to start
             # the calculation over.
             self._cancel_calculate = True
-            # print "canceling calculation"
+            #print "canceling calculation"
             return
 
         self._need_redraw = False
         self._calculating = True
 
         # Calculate reflectivity
-        # print "calling again"
+        #print "calling again"
         while True:
-            # print "restarting"
+            #print "restarting"
             # We are restarting the calculation, so clear the reset flag
             self._cancel_calculate = False
 
             # Preform the calculation
-            if isinstance(self.problem, FitProblem):
-                # print "n=",len(self.problem.models)
+            if isinstance(self.problem,FitProblem):
+                #print "n=",len(self.problem.models)
                 for p in self.problem.models:
-                    if hasattr(p, "reflectivity"):
+                    if hasattr(p, 'reflectivity'):
                         self._precalc(p)
-                        # print "cancel",self._cancel_calculate,"reset",p.fitness.is_reset()
-                        if p.is_reset() or self._cancel_calculate:
-                            break
-                if self._cancel_calculate or self.problem.active_model.is_reset():
-                    continue
+                    #print "cancel",self._cancel_calculate,"reset",p.fitness.is_reset()
+                        if p.is_reset() or self._cancel_calculate: break
+                if self._cancel_calculate \
+                    or self.problem.active_model.is_reset(): continue
             else:
                 self._precalc(self.problem)
-                if self._cancel_calculate or self.problem.is_reset():
-                    continue
+                if self._cancel_calculate \
+                    or self.problem.is_reset(): continue
 
             # Redraw the canvas with newly calculated reflectivity
             with self.pylab_interface:
                 ax = plt.gca()
-                # print "reset",reset, ax.get_autoscalex_on(), ax.get_xlim()
+                #print "reset",reset, ax.get_autoscalex_on(), ax.get_xlim()
                 range_x = ax.get_xlim()
                 range_y = ax.get_ylim()
-                # print "composing"
-                plt.clf()  # clear the canvas
-                # shift=20 if self.view == 'log' else 0
-                shift = 0
-                if isinstance(self.problem, FitProblem):
-                    for _, p in enumerate(self.problem.models):
-                        if hasattr(p, "reflectivity"):
-                            p.plot_reflectivity(view=self.view, plot_shift=shift)
-                            if self._cancel_calculate or p.is_reset():
-                                break
-                    if self._cancel_calculate or self.problem.active_model.is_reset():
-                        continue
+                #print "composing"
+                plt.clf() # clear the canvas
+                #shift=20 if self.view == 'log' else 0
+                shift=0
+                if isinstance(self.problem,FitProblem):
+                    for _,p in enumerate(self.problem.models):
+                        if hasattr(p, 'reflectivity'):
+                            p.plot_reflectivity(view=self.view,
+                                                        plot_shift=shift)
+                            if self._cancel_calculate or p.is_reset(): break
+                    if self._cancel_calculate \
+                        or self.problem.active_model.is_reset(): continue
                 else:
-                    self.problem.plot_reflectivity(view=self.view, plot_shift=shift)
-                    if self._cancel_calculate or self.problem.is_reset():
-                        continue
+                    self.problem.plot_reflectivity(view=self.view,
+                                                           plot_shift=shift)
+                    if self._cancel_calculate \
+                        or self.problem.is_reset(): continue
 
                 try:
                     # If we can calculate chisq, then put it on the graph.
@@ -231,7 +241,7 @@ class DataView(wx.Panel):
                     plt.text(0.01, 0.01, text, transform=plt.gca().transAxes)
                 except Exception:
                     pass
-                # print "drawing"
+                #print "drawing"
                 if not reset:
                     self.toolbar.push_current()
                     ax = plt.gca()
@@ -239,7 +249,7 @@ class DataView(wx.Panel):
                     ax.set_ylim(range_y)
                     self.toolbar.push_current()
                 plt.draw()
-                # print "done drawing"
+                #print "done drawing"
                 break
 
         self._calculating = False
@@ -247,32 +257,29 @@ class DataView(wx.Panel):
     def _precalc(self, fitness):
         # First calculate reflectivity
         fitness.reflectivity(resolution=False)
-        # print "yield 1"
+        #print "yield 1"
         wx.Yield()
-        if self._cancel_calculate or fitness.is_reset():
-            return
+        if self._cancel_calculate or fitness.is_reset(): return
         # Then calculate resolution
         fitness.reflectivity()
-        # print "yield 2"
+        #print "yield 2"
         wx.Yield()
-        if self._cancel_calculate or fitness.is_reset():
-            return
-
+        if self._cancel_calculate or fitness.is_reset(): return
 
 # DEPRECATED - using fixed y-range
 def set_xrange(ax, range_x):
-    miny, maxy = inf, -inf
+    miny,maxy = inf,-inf
     for L in ax.get_lines():
-        x, y = L.get_data()
-        idx = (x > range_x[0]) & (x < range_x[1])
+        x,y = L.get_data()
+        idx = (x>range_x[0]) & (x<range_x[1])
         if idx.any():
-            miny = min(miny, min(y[idx]))
-            maxy = max(maxy, max(y[idx]))
+            miny = min(miny,min(y[idx]))
+            maxy = max(maxy,max(y[idx]))
     if miny < maxy:
-        if ax.get_yscale() == "linear":
-            padding = 0.05 * (maxy - miny)
-            miny, maxy = miny - padding, maxy + padding
+        if ax.get_yscale() == 'linear':
+            padding = 0.05*(maxy-miny)
+            miny,maxy = miny-padding, maxy+padding
         else:
-            miny, maxy = miny * 0.95, maxy * 1.05
+            miny,maxy = miny*0.95, maxy*1.05
     ax.set_xlim(range_x)
-    ax.set_ylim(miny, maxy)
+    ax.set_ylim(miny,maxy)

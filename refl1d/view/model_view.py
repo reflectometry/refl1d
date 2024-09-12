@@ -5,11 +5,11 @@ A base panel to draw the profile
 import os
 import wx
 
-IS_MAC = wx.Platform == "__WXMAC__"
+IS_MAC = (wx.Platform == '__WXMAC__')
 
 import numpy as np
 from matplotlib.figure import Figure
-from matplotlib.axes import Subplot
+from matplotlib.axes   import Subplot
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backend_bases import FigureManagerBase
 from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
@@ -19,43 +19,40 @@ from bumps.gui import signal
 
 from refl1d.experiment import MixedExperiment
 
-# from .binder import pixel_to_data
+#from .binder import pixel_to_data
 from .util import CopyImage
 from .profilei import ProfileInteractor
 from .interactor import BaseInteractor
 
-
 # ------------------------------------------------------------------------
 class ModelView(wx.Panel):
-    title = "Profile"
-    default_size = (600, 400)
-
-    def __init__(self, *args, **kw):
+    title = 'Profile'
+    default_size = (600,400)
+    def __init__( self, *args, **kw):
         wx.Panel.__init__(self, *args, **kw)
 
         # Fig
-        self.fig = Figure(
-            figsize=(1, 1),
-            dpi=75,
-            facecolor="white",
-            edgecolor="white",
-        )
+        self.fig = Figure( figsize   = (1,1),
+                           dpi       = 75,
+                           facecolor = 'white',
+                           edgecolor = 'white',
+                           )
         # Canvas
         self.canvas = FigureCanvas(self, -1, self.fig)
         self.fig.set_canvas(self.canvas)
 
         # Axes
-        self.axes = self.fig.add_axes(Subplot(self.fig, 111))
+        self.axes = self.fig.add_axes( Subplot(self.fig, 111))
         self.axes.set_autoscale_on(False)
         self.theta_axes = self.axes.twinx()
         self.theta_axes.set_autoscale_on(False)
 
         # Show toolbar or not?
-        self.toolbar = NavigationToolbar2WxAgg(self.canvas)
+        self.toolbar = NavigationToolbar2WxAgg( self.canvas )
         self.toolbar.Show(True)
 
         # Create a figure manager to manage things
-        self.figmgr = FigureManagerBase(self.canvas, 1)
+        self.figmgr = FigureManagerBase( self.canvas, 1 )
 
         # Panel layout
         self.profile_selector_label = wx.StaticText(self, label="Sample")
@@ -64,17 +61,19 @@ class ModelView(wx.Panel):
         self.profile_selector_label.Hide()
         self.Bind(wx.EVT_CHOICE, self.OnProfileSelect)
 
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.Add(self.canvas, 1, border=2, flag=wx.LEFT | wx.TOP | wx.GROW)
+        self.sizer = wx.BoxSizer( wx.VERTICAL )
+        self.sizer.Add( self.canvas,1, border=2, flag= wx.LEFT|wx.TOP|wx.GROW)
         self.tbsizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.tbsizer.Add(self.toolbar, 0, wx.ALIGN_CENTER_VERTICAL)
+        self.tbsizer.Add(self.toolbar,0,wx.ALIGN_CENTER_VERTICAL)
         self.tbsizer.AddSpacer(20)
-        self.tbsizer.Add(self.profile_selector_label, 0, wx.ALIGN_CENTER_VERTICAL)
+        self.tbsizer.Add(self.profile_selector_label,
+                         0, wx.ALIGN_CENTER_VERTICAL)
         self.tbsizer.AddSpacer(5)
-        self.tbsizer.Add(self.profile_selector, 0, wx.ALIGN_CENTER_VERTICAL)
+        self.tbsizer.Add(self.profile_selector,
+                         0, wx.ALIGN_CENTER_VERTICAL)
         self.sizer.Add(self.tbsizer)
 
-        self.SetSizer(self.sizer)
+        self.SetSizer( self.sizer)
         self.sizer.Fit(self)
 
         # Status bar
@@ -85,30 +84,33 @@ class ModelView(wx.Panel):
         status_update = lambda msg: self.statusbar.SetStatusText(msg)
 
         # Set the profile interactor
-        self.profile = ProfileInteractor(self.axes, self.theta_axes, status_update=status_update)
+        self.profile = ProfileInteractor(self.axes,self.theta_axes,
+                                         status_update=status_update)
 
         # Add context menu and keyboard support to canvas
         self.canvas.Bind(wx.EVT_RIGHT_DOWN, self.OnContextMenu)
-        # self.canvas.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.canvas.SetFocus())
+        #self.canvas.Bind(wx.EVT_LEFT_DOWN, lambda evt: self.canvas.SetFocus())
 
         self.model = None
         self._need_interactors = self._need_redraw = False
         self.Bind(wx.EVT_SHOW, self.OnShow)
 
-    def OnContextMenu(self, event):
+    def OnContextMenu(self,event):
         """
         Forward the context menu invocation to profile, if profile exists.
         """
-        sx, sy = event.GetX(), event.GetY()
-        # transform = self.axes.transData
-        # data_x,data_y = pixel_to_data(transform, sx, self.fig.bbox.height-sy)
+        sx,sy = event.GetX(), event.GetY()
+        #transform = self.axes.transData
+        #data_x,data_y = pixel_to_data(transform, sx, self.fig.bbox.height-sy)
 
         popup = wx.Menu()
-        item = popup.Append(wx.ID_ANY, "&Grid on/off", "Toggle grid lines")
-        wx.EVT_MENU(self, item.GetId(), lambda _: (self.axes.grid(), self.fig.canvas.draw_idle()))
-        item = popup.Append(wx.ID_ANY, "&Rescale", "Show entire profile")
-        wx.EVT_MENU(self, item.GetId(), lambda _: (self.profile.reset_limits(), self.profile.draw_idle()))
-        self.PopupMenu(popup, (sx, sy))
+        item = popup.Append(wx.ID_ANY,'&Grid on/off', 'Toggle grid lines')
+        wx.EVT_MENU(self, item.GetId(),
+                    lambda _: (self.axes.grid(),self.fig.canvas.draw_idle()))
+        item = popup.Append(wx.ID_ANY,'&Rescale', 'Show entire profile')
+        wx.EVT_MENU(self, item.GetId(),
+                    lambda _: (self.profile.reset_limits(),self.profile.draw_idle()))
+        self.PopupMenu(popup, (sx,sy))
         return False
 
     def OnProfileSelect(self, event):
@@ -118,10 +120,10 @@ class ModelView(wx.Panel):
     def OnShow(self, event):
         if not event.Show:
             return
-        # print "showing profile"
+        #print "showing profile"
         if self._need_redraw:
             self.redraw(reset_interactors=False, reset_limits=True)
-        # event.Skip()
+        #event.Skip()
 
     def get_state(self):
         return self.model
@@ -162,27 +164,24 @@ class ModelView(wx.Panel):
     # =============================================
     def _create_interactors(self):
         self.profiles = []
-
         def add_profiles(name, exp, idx):
-            if isinstance(exp, MixedExperiment):
-                for i, p in enumerate(exp.parts):
-                    self.profiles.append((name + chr(ord("a") + i), p, idx))
+            if isinstance(exp,MixedExperiment):
+                for i,p in enumerate(exp.parts):
+                    self.profiles.append( (name+chr(ord("a")+i), p, idx) )
             else:
-                self.profiles.append((name, exp, idx))
-
-        if isinstance(self.model, FitProblem):
-            for i, p in enumerate(self.model.models):
+                self.profiles.append( (name, exp, idx) )
+        if isinstance(self.model,FitProblem):
+            for i,p in enumerate(self.model.models):
                 if hasattr(p, "reflectivity"):
                     name = p.name
-                    if not name:
-                        name = "M%d" % (i + 1)
+                    if not name: name = "M%d"%(i+1)
                     add_profiles(name, p, i)
         else:
             add_profiles("", self.model, -1)
 
         self.profile_selector.Clear()
         if len(self.profiles) > 1:
-            self.profile_selector.AppendItems([k for k, _, _ in self.profiles])
+            self.profile_selector.AppendItems([k for k,_,_ in self.profiles])
             self.profile_selector_label.Show()
             self.profile_selector.Show()
             self.profile_selector.SetSelection(0)
@@ -203,45 +202,43 @@ class ModelView(wx.Panel):
         def signal_update():
             """Notify other views that the model has changed"""
             signal.update_parameters(model=self.model)
-
         def force_recalc():
             self.model.model_update()
-
-        if isinstance(self.model, FitProblem):
+        if isinstance(self.model,FitProblem):
             self.model.set_active_model(idx)
-        self.profile.set_experiment(experiment, force_recalc=force_recalc, signal_update=signal_update)
+        self.profile.set_experiment(experiment,
+                                    force_recalc=force_recalc,
+                                    signal_update=signal_update)
 
-    def onPrinterSetup(self, event=None):
+    def onPrinterSetup(self,event=None):
         self.canvas.Printer_Setup(event=event)
 
-    def onPrinterPreview(self, event=None):
+    def onPrinterPreview(self,event=None):
         self.canvas.Printer_Preview(event=event)
 
-    def onPrint(self, event=None):
+    def onPrint(self,event=None):
         self.canvas.Printer_Print(event=event)
 
-    def OnSaveFigureMenu(self, evt):
+    def OnSaveFigureMenu(self, evt ):
         """
         Save the current figure as an image file
         """
-        dlg = wx.FileDialog(
-            self,
-            message="Save Figure As ...",
-            defaultDir=os.getcwd(),
-            defaultFile="",
-            wildcard="PNG files (*.png)|*.png|BMP files (*.bmp)|*.bmp|All files (*.*)|*.*",
-            style=wx.SAVE,
-        )
+        dlg = wx.FileDialog(self,
+                       message="Save Figure As ...",
+                       defaultDir=os.getcwd(),
+                       defaultFile="",
+                       wildcard="PNG files (*.png)|*.png|BMP files (*.bmp)|*.bmp|All files (*.*)|*.*",
+                       style=wx.SAVE
+                      )
         _val = dlg.ShowModal()
-        if _val == wx.ID_CANCEL:
-            return  # Do nothing
-        if _val == wx.ID_OK:
+        if  _val == wx.ID_CANCEL:  return  #Do nothing
+        if  _val == wx.ID_OK:
             outfile = dlg.GetPath()
 
         dlg.Destroy()
 
         # Save
-        self.fig.savefig(outfile)
+        self.fig.savefig( outfile )
 
     def GetToolBar(self):
         """
@@ -262,7 +259,7 @@ class ModelView(wx.Panel):
         self.Destroy()
         evt.Skip()
 
-    def OnCopyFigureMenu(self, evt):
+    def OnCopyFigureMenu(self, evt ):
         """
         Copy the current figure
         """
@@ -272,6 +269,6 @@ class ModelView(wx.Panel):
         return True
 
     def quit_on_error(self):
-        np.seterr(all="raise")
+        np.seterr(all='raise')
         ProfileInteractor._debug = True
         BaseInteractor._debug = True
