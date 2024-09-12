@@ -163,8 +163,7 @@ python, the application, the supporting libraries and everything else needed
 to run the application.
 
 The installer build script is run automatically on github in response
-to a checkin on the master branch (currently via the appveyor.yml file,
-but maybe moving to github actions).
+to a checkin on the master branch via GitHub Actions.
 
 OS/X Installer
 ==============
