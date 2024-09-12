@@ -96,7 +96,7 @@ def check_one(nuclear, magnetic, expected):
     # print("sigmaM", sigmaM)
     k = backend.align_magnetic(w, sigma[:-1], rho, irho, wM, sigmaM[:-1], rhoM, thetaM, result)
     good = all(
-        (np.isnp.nan(c2) and c1 == 0.0) or (not np.isnp.nan(c2) and abs(c1 - c2) < 1e-10)
+        (np.isnan(c2) and c1 == 0.0) or (not np.isnan(c2) and abs(c1 - c2) < 1e-10)
         for r1, r2 in zip(result[:k], expected)
         for c1, c2 in zip(r1, r2)
     )

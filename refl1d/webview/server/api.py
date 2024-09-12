@@ -14,7 +14,7 @@ from bumps.webview.server.api import (
 from bumps.errplot import calc_errors_from_state
 import numpy as np
 
-# from refl1d.errors import show_errors
+# from refl1d.uncertainty import show_errors
 from refl1d.experiment import Experiment, ExperimentBase, MixedExperiment
 import refl1d.models.probe
 from .profile_uncertainty import show_errors

@@ -40,8 +40,8 @@ function to yield reflectivities at intervals of 0.01.
 ::
 
     >>> from numpy import arange
-    >>> from refl1d.reflectivity import reflectivity_amplitude as reflamp
-    >>> from refl1d.reflectivity import convolve
+    >>> from refl1d.fitting.reflectivity import reflectivity_amplitude as reflamp
+    >>> from refl1d.fitting.reflectivity import convolve
     >>> Qin = arange(0,0.21,0.001)
     >>> w,rho,irho,sigma = zip((0,2.07,0,5),(0,0,0,0))
     >>> # the last layer has no interface

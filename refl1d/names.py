@@ -17,7 +17,7 @@ from bumps.parameter import FreeVariables, Parameter
 from bumps.pdfwrapper import PDF
 from periodictable import elements, formula
 
-from .cheby import ChebyVF, FreeformCheby, cheby_approx, cheby_points
+from .sample.cheby import ChebyVF, FreeformCheby, cheby_approx, cheby_points
 from .experiment import Experiment, MixedExperiment, plot_sample
 from .flayer import FunctionalMagnetism, FunctionalProfile
 from .instrument import Monochromatic, Pulsed

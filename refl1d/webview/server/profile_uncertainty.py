@@ -4,7 +4,7 @@ import numpy as np
 if TYPE_CHECKING:
     import plotly.graph_objs as go
 
-from refl1d.errors import align_profiles, form_quantiles, _find_offset
+from refl1d.uncertainty import align_profiles, form_quantiles, _find_offset
 from .colors import COLORS
 
 ErrorType = tuple[

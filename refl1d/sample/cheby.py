@@ -84,8 +84,8 @@ from bumps.cheby import cheby_approx, cheby_points  # pylint: disable=unused-imp
 import numpy as np
 from numpy import inf, real, imag
 
-from . import util
-from .model import Layer
+from .. import util
+from ..model import Layer
 
 
 # TODO: add left_sld, right_sld to all layers so that fresnel works

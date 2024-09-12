@@ -23,7 +23,7 @@ classifiers = [
 requires-python = ">=3.9"
 dependencies = [
     # "bumps>=0.7.16",
-    "bumps@git+https://github.com/bumps/bumps.git#egg=master",
+    "bumps >= 1.0.0a0",
     "matplotlib",
     "numba",
     "numpy",

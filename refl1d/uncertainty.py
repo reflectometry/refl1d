@@ -12,10 +12,10 @@ Use *run_errors* in a model file to reload the results of a batch DREAM fit.
 from __future__ import print_function
 
 __all__ = [
+    "align_profiles",
+    "calc_errors",
     "reload_errors",
     "run_errors",
-    "calc_errors",
-    "align_profiles",
     "show_errors",
     "show_profiles",
     "show_residuals",

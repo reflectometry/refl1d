@@ -13,3 +13,11 @@ lint: ## Run ruff linting
 .PHONY: format
 format: ## Run ruff formatting
 	@ruff format refl1d/ tests/ setup.py
+
+.PHONY: clean
+clean: ## Delete some cruft from builds/testing/etc.
+	rm -f `find . -type f -name '*.py[co]'`
+	rm -rf `find . -name __pycache__ -o -name "*.egg-info"` \
+		.coverage build dist \
+		.pytest_cache \
+		.ruff_cache 

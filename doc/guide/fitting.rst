@@ -410,7 +410,7 @@ Next we can reload the the error sample data from the DREAM MCMC sequence::
 
     from bumps.dream.state import load_state
     from bumps.errplot import calc_errors_from_state
-    from refl1d.errors import align_profiles
+    from refl1d.uncertainty import align_profiles
 
     state = load_state(os.path.join(store, model[:-3]))
     state.mark_outliers()
@@ -419,7 +419,7 @@ Next we can reload the the error sample data from the DREAM MCMC sequence::
     aligned_profiles = align_profiles(profiles, slabs, 2.5)
     # ... insert profile and residuals uncertainty plots here ...
 
-The function :func:`refl1d.errors.calc_errors` provides details on the data
+The function :func:`refl1d.uncertainty.calc_errors` provides details on the data
 structures for *profiles*, *Q* and *residuals*.  Look at the source in
 refl1d/errors.py to see how this data is used to produce the error plots
 with _profiles_overplot, _profiles_contour, _residuals_overplot and
