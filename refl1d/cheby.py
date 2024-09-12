@@ -77,14 +77,15 @@ the bounds.  Bounds on the oscillation are easier to control using
 # - Newton methods: Hessian should point back to domain
 # - Direct methods: random walk should be biased toward the domain
 # - moderately complicated
-import numpy as np
-from numpy import inf, real, imag
+
 from bumps.parameter import Parameter as Par, to_dict
 from bumps.cheby import cheby_val, cheby_coeff
 from bumps.cheby import cheby_approx, cheby_points  # pylint: disable=unused-import
+import numpy as np
+from numpy import inf, real, imag
 
-from .model import Layer
 from . import util
+from .model import Layer
 
 
 # TODO: add left_sld, right_sld to all layers so that fresnel works

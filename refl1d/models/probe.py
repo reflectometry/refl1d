@@ -51,13 +51,13 @@ import numpy.random
 from numpy import log, pi, sign, sqrt
 from periodictable import nsf, xsf
 
-from refl1d.fitting import fresnel
-from refl1d.fitting.reflectivity import convolve, BASE_GUIDE_ANGLE
-from refl1d.material import Vacuum
-from refl1d.resolution import QL2T, TL2Q, dTdL2dQ
-from refl1d.resolution import dQ_broadening
-from refl1d.stitch import stitch
-from refl1d.util import asbytes
+from ..fitting import fresnel
+from ..fitting.reflectivity import convolve, BASE_GUIDE_ANGLE
+from ..material import Vacuum
+from ..resolution import QL2T, TL2Q, dTdL2dQ
+from ..resolution import dQ_broadening
+from ..stitch import stitch
+from ..util import asbytes
 
 PROBE_KW = (
     "T",
