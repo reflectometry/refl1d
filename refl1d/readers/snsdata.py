@@ -19,10 +19,10 @@ import numpy as np
 
 from bumps.data import parse_file
 
-from .rebin import rebin
-from .instrument import Pulsed
-from . import resolution
-from .probe import make_probe
+from .. import resolution
+from ..rebin import rebin
+from ..instrument import Pulsed
+from ..models.probe import make_probe
 
 ## Estimated intensity vs. wavelength for liquids reflectometer
 LIQUIDS_FEATHER = np.array(

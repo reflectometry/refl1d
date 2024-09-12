@@ -1,6 +1,6 @@
 import os
 
-from refl1d import ncnrdata
+from refl1d.readers import ncnrdata
 
 testdir = os.path.dirname(__file__)
 

@@ -15,8 +15,8 @@ import os.path
 import numpy as np
 
 from bumps.data import maybe_open
-from .probe import QProbe
-from .resolution import FWHM2sigma
+from ..models.probe import QProbe
+from ..resolution import FWHM2sigma
 
 
 def _load_dat(f):
