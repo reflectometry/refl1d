@@ -8,6 +8,7 @@ from numpy import arcsin as asin, ceil
 from numpy import ones_like, arange, isscalar, asarray, hstack
 from numpy import float64
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike
 
@@ -22,8 +23,8 @@ def QL2T(Q=None, L=None):
 
     Returns $\theta$\ |deg|.
     """
-    Q, L = asarray(Q, 'd'), asarray(L, 'd')
-    return degrees(asin(abs(Q) * L / (4*pi)))
+    Q, L = asarray(Q, "d"), asarray(L, "d")
+    return degrees(asin(abs(Q) * L / (4 * pi)))
 
 
 def QT2L(Q=None, T=None):
@@ -36,11 +37,11 @@ def QT2L(Q=None, T=None):
 
     Returns $\lambda$\ |Ang|.
     """
-    Q, T = asarray(Q, 'd'), radians(asarray(T, 'd'))
+    Q, T = asarray(Q, "d"), radians(asarray(T, "d"))
     return 4 * pi * sin(T) / Q
 
 
-def TL2Q(T:'ArrayLike', L:'ArrayLike'):
+def TL2Q(T: "ArrayLike", L: "ArrayLike"):
     r"""
     Compute $Q$ from angle and wavelength.
 
@@ -50,20 +51,22 @@ def TL2Q(T:'ArrayLike', L:'ArrayLike'):
 
     Returns $Q$ |1/Ang|
     """
-    T, L = radians(asarray(T, 'd')), asarray(L, 'd')
+    T, L = radians(asarray(T, "d")), asarray(L, "d")
     return 4 * pi * sin(T) / L
 
 
 _FWHM_scale: float64 = sqrt(log(256))
-def FWHM2sigma(s:'ArrayLike'):
-    return asarray(s, 'd')/_FWHM_scale
+
+
+def FWHM2sigma(s: "ArrayLike"):
+    return asarray(s, "d") / _FWHM_scale
 
 
 def sigma2FWHM(s):
-    return asarray(s, 'd')*_FWHM_scale
+    return asarray(s, "d") * _FWHM_scale
 
 
-def dTdL2dQ(T:'ArrayLike', dT:'ArrayLike', L:'ArrayLike', dL:'ArrayLike'):
+def dTdL2dQ(T: "ArrayLike", dT: "ArrayLike", L: "ArrayLike", dL: "ArrayLike"):
     r"""
     Convert wavelength dispersion and angular divergence to $Q$ resolution.
 
@@ -93,10 +96,10 @@ def dTdL2dQ(T:'ArrayLike', dT:'ArrayLike', L:'ArrayLike', dL:'ArrayLike'):
     # Compute dQ from wavelength dispersion (dL) and angular divergence (dT)
     T, dT = radians(asarray(T, float64)), radians(asarray(dT, float64))
     L, dL = asarray(L, float64), asarray(dL, float64)
-    #print T, dT, L, dL
-    dQ = (4*pi/L) * sqrt((sin(T)*dL/L)**2 + (cos(T)*dT)**2)
+    # print T, dT, L, dL
+    dQ = (4 * pi / L) * sqrt((sin(T) * dL / L) ** 2 + (cos(T) * dT) ** 2)
 
-    #sqrt((dL/L)**2+(radians(dT)/tan(radians(T)))**2)*probe.Q
+    # sqrt((dL/L)**2+(radians(dT)/tan(radians(T)))**2)*probe.Q
     return FWHM2sigma(dQ)
 
 
@@ -114,9 +117,9 @@ def dQ_broadening(dQ, L, T, dT, width):
     into the resolution estimate
     $(\Delta Q/Q)^2 = (\Delta\lambda/\lambda)^2 + (\Delta\theta/\tan\theta)^2$.
     """
-    T, dT = radians(asarray(T, 'd')), FWHM2sigma(radians(asarray(dT, 'd')))
+    T, dT = radians(asarray(T, "d")), FWHM2sigma(radians(asarray(dT, "d")))
     width = FWHM2sigma(radians(width))
-    dQsq = dQ**2 + (4*pi/L*cos(T))**2*(2*width*dT + width**2)
+    dQsq = dQ**2 + (4 * pi / L * cos(T)) ** 2 * (2 * width * dT + width**2)
 
     # If width < -dT, need to take abs(dQsq) before taking the sqrt
     # (focusing past zero)
@@ -133,10 +136,10 @@ def dQdT2dLoL(Q, dQ, T, dT):
 
     Returns FWHM $\Delta\lambda/\lambda$
     """
-    T, dT = radians(asarray(T, 'd')), radians(asarray(dT, 'd'))
-    Q, dQ = asarray(Q, 'd'), asarray(dQ, 'd')
-    dQoQ = sigma2FWHM(dQ)/Q
-    dToT = dT/tan(T)
+    T, dT = radians(asarray(T, "d")), radians(asarray(dT, "d"))
+    Q, dQ = asarray(Q, "d"), asarray(dQ, "d")
+    dQoQ = sigma2FWHM(dQ) / Q
+    dToT = dT / tan(T)
     if (dQoQ < dToT).any():
         raise ValueError("Cannot infer wavelength resolution: dQ is too small or dT is too large for some data points")
     return sqrt(dQoQ**2 - dToT**2)
@@ -152,19 +155,21 @@ def dQdL2dT(Q, dQ, L, dL):
 
     Returns FWHM \Delta\theta$
     """
-    L, dL = asarray(L, 'd'), asarray(dL, 'd')
-    Q, dQ = asarray(Q, 'd'), asarray(dQ, 'd')
+    L, dL = asarray(L, "d"), asarray(dL, "d")
+    Q, dQ = asarray(Q, "d"), asarray(dQ, "d")
     T = radians(QL2T(Q, L))
-    dQoQ = sigma2FWHM(dQ)/Q
-    dLoL = dL/L
+    dQoQ = sigma2FWHM(dQ) / Q
+    dLoL = dL / L
     if (dQoQ < dLoL).any():
         raise ValueError("Cannot infer angular resolution: dQ is too small or dL is too large for some data points")
     dT = degrees(sqrt(dQoQ**2 - dLoL**2) * tan(T))
     return dT
 
 
-Plancks_constant = 6.62618e-27 # Planck constant (erg*sec)
-neutron_mass = 1.67495e-24 # neutron mass (g)
+Plancks_constant = 6.62618e-27  # Planck constant (erg*sec)
+neutron_mass = 1.67495e-24  # neutron mass (g)
+
+
 def TOF2L(d_moderator, TOF):
     r"""
     Convert neutron time-of-flight to wavelength.
@@ -180,7 +185,7 @@ def TOF2L(d_moderator, TOF):
         | $h$ is Planck's constant in erg seconds
         | $n_m$ is the neutron mass in g
     """
-    return TOF*(Plancks_constant/neutron_mass/d_moderator)
+    return TOF * (Plancks_constant / neutron_mass / d_moderator)
 
 
 def bins(low, high, dLoL):
@@ -192,9 +197,9 @@ def bins(low, high, dLoL):
     """
 
     step = 1 + dLoL
-    n = ceil(log(high/low)/log(step))
-    edges = low*step**arange(n+1)
-    L = (edges[:-1]+edges[1:])/2
+    n = ceil(log(high / low) / log(step))
+    edges = low * step ** arange(n + 1)
+    L = (edges[:-1] + edges[1:]) / 2
     return L
 
 
@@ -214,12 +219,12 @@ def binwidths(L):
 
     where $E$ and $\omega$ are as defined in :func:`binedges`.
     """
-    L = asarray(L, 'd')
+    L = asarray(L, "d")
     if L[1] > L[0]:
-        dLoL = L[1]/L[0] - 1
+        dLoL = L[1] / L[0] - 1
     else:
-        dLoL = L[0]/L[1] - 1
-    dL = 2*dLoL/(2+dLoL)*L
+        dLoL = L[0] / L[1] - 1
+    dL = 2 * dLoL / (2 + dLoL) * L
     return dL
 
 
@@ -267,19 +272,18 @@ def binedges(L):
                           = \frac{E_{i+1}}{E_i}
                           = \frac{E_i(1+\omega)}{E_i} = 1 + \omega
     """
-    L = asarray(L, 'd')
+    L = asarray(L, "d")
     if L[1] > L[0]:
-        dLoL = L[1]/L[0] - 1
-        last = (1+dLoL)
+        dLoL = L[1] / L[0] - 1
+        last = 1 + dLoL
     else:
-        dLoL = L[0]/L[1] - 1
-        last = 1./(1+dLoL)
-    E = L*2/(2+dLoL)
-    return hstack((E, E[-1]*last))
+        dLoL = L[0] / L[1] - 1
+        last = 1.0 / (1 + dLoL)
+    E = L * 2 / (2 + dLoL)
+    return hstack((E, E[-1] * last))
 
 
-def divergence(T=None, slits=None, distance=None,
-               sample_width=1e10, sample_broadening=0):
+def divergence(T=None, slits=None, distance=None, sample_width=1e10, sample_broadening=0):
     r"""
     Calculate divergence due to slit and sample geometry.
 
@@ -350,25 +354,24 @@ def divergence(T=None, slits=None, distance=None,
         s1 = s2 = slits
 
     # Compute FWHM angular divergence dT from the slits in degrees
-    dT = degrees(0.5*(s1+s2)/(d1-d2))
+    dT = degrees(0.5 * (s1 + s2) / (d1 - d2))
 
     # For small samples, use the sample projection instead.
     sample_s = sample_width * sin(radians(T))
     if isscalar(sample_s):
         if sample_s < s2:
-            dT = degrees(0.5*(s1+sample_s)/d1)
+            dT = degrees(0.5 * (s1 + sample_s) / d1)
     else:
         idx = sample_s < s2
-        #print s1, s2, d1, d2, T, dT, sample_s
-        s1 = ones_like(sample_s)*s1
-        dT = ones_like(sample_s)*dT
-        dT[idx] = degrees(0.5*(s1[idx] + sample_s[idx])/d1)
+        # print s1, s2, d1, d2, T, dT, sample_s
+        s1 = ones_like(sample_s) * s1
+        dT = ones_like(sample_s) * dT
+        dT[idx] = degrees(0.5 * (s1[idx] + sample_s[idx]) / d1)
 
     return dT + sample_broadening
 
 
-def slit_widths(T=None, slits_at_Tlo=None, Tlo=90, Thi=90,
-                slits_below=None, slits_above=None):
+def slit_widths(T=None, slits_at_Tlo=None, Tlo=90, Thi=90, slits_below=None, slits_above=None):
     """
     Compute the slit widths for the standard scanning reflectometer
     fixed-opening-fixed geometry.
@@ -420,12 +423,12 @@ def slit_widths(T=None, slits_at_Tlo=None, Tlo=90, Thi=90,
     except TypeError:
         m1 = m2 = slits_at_Tlo
     idx = abs(T) >= Tlo
-    s1[idx] = m1 * T[idx]/Tlo
-    s2[idx] = m2 * T[idx]/Tlo
+    s1[idx] = m1 * T[idx] / Tlo
+    s2[idx] = m2 * T[idx] / Tlo
 
     # Slits at T > Thi
     if slits_above is None:
-        slits_above = m1 * Thi/Tlo, m2 * Thi/Tlo
+        slits_above = m1 * Thi / Tlo, m2 * Thi / Tlo
     try:
         t1, t2 = slits_above
     except TypeError:

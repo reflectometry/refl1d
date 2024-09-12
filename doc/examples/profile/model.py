@@ -29,14 +29,17 @@ from refl1d.flayer import FunctionalMagnetism as FM
 # imaginary part is *irho*.  This example is for neutron reflectometry
 # which for the most part does not have a strong absorption cross section.
 
+
 def nuc(z, period, phase):
     """Nuclear profile"""
-    return sin(2*pi*(z/period + phase))
+    return sin(2 * pi * (z / period + phase))
+
 
 # Define the magnetic profile.  Like the nuclear profile, the first parameter
 # is *z* and the remaining parameters become fittable parameters.  The returned
 # value is *rhoM* or the pair *rhoM, thetaM*, with *thetaM* defaulting to 0
 # if it is not returned.  Either *rhoM* or *thetaM* can be constant.
+
 
 def mag(z, z1, z2, M1, M2, M3):
     r"""Magnetic profile
@@ -61,19 +64,21 @@ def mag(z, z1, z2, M1, M2, M3):
         z1, z2 = z2, z1
     C = M1
     k = (log(M2) - log(M1)) / (z2 - z1)
-    r = M1/exp(k*z1)
+    r = M1 / exp(k * z1)
     a = (M3 - M2) / (z[-1] - z2)
-    b = M2 - a*z2
+    b = M2 - a * z2
 
-    part1 = z[z < z1]*0+C
-    part2 = r*exp(k*z[(z >= z1)&(z <= z2)])
-    part3 = a*z[z > z2] + b
+    part1 = z[z < z1] * 0 + C
+    part2 = r * exp(k * z[(z >= z1) & (z <= z2)])
+    part3 = a * z[z > z2] + b
     return hstack((part1, part2, part3))
+
 
 # Use these functions to define the functional layer.
 
-flayer = FP(100, 0, name="sin", profile=nuc, period=10, phase=0.2,
-            magnetism=FM(profile=mag, M1=1, M2=4, M3=5, z1=10, z2=40))
+flayer = FP(
+    100, 0, name="sin", profile=nuc, period=10, phase=0.2, magnetism=FM(profile=mag, M1=1, M2=4, M3=5, z1=10, z2=40)
+)
 
 # The functional layer is a normal layer which can be stacked into
 # the model.  *flayer.start* and *flayer.end* are materials objects
@@ -82,10 +87,7 @@ flayer = FP(100, 0, name="sin", profile=nuc, period=10, phase=0.2,
 # Similarly, *magnetism.start* and *magnetism.end* return a magnetic
 # layer defined by the start and end of the magnetic profile.
 
-sample = (silicon(0, 5)
-          | flayer
-          | flayer.end(35, 15, magnetism=flayer.magnetism.end)
-          | air)
+sample = silicon(0, 5) | flayer | flayer.end(35, 15, magnetism=flayer.magnetism.end) | air
 
 # Need to be able to compute the thickness of the functional magnetic
 # layer, which unfortunately requires the layer stack and an index.
@@ -93,19 +95,19 @@ sample = (silicon(0, 5)
 # layers with the same name, (layer name, k), where the magnetism
 # is attached to the kth layer.
 
-flayer.magnetism.set_anchor(sample, 'sin')
+flayer.magnetism.set_anchor(sample, "sin")
 
 # Set the fittable parameters.  Note that the parameters to the function
 # after the first parameter *z* become fittable parameters.
 
-sample['sin'].period.range(0, 100)
-sample['sin'].phase.range(0, 1)
-sample['sin'].thickness.range(0, 1000)
-sample['sin'].magnetism.M1.range(0, 10)
-sample['sin'].magnetism.M2.range(0, 10)
-sample['sin'].magnetism.M3.range(0, 10)
-sample['sin'].magnetism.z1.range(0, 100)
-sample['sin'].magnetism.z2.range(0, 100)
+sample["sin"].period.range(0, 100)
+sample["sin"].phase.range(0, 1)
+sample["sin"].thickness.range(0, 1000)
+sample["sin"].magnetism.M1.range(0, 10)
+sample["sin"].magnetism.M2.range(0, 10)
+sample["sin"].magnetism.M3.range(0, 10)
+sample["sin"].magnetism.z1.range(0, 100)
+sample["sin"].magnetism.z2.range(0, 100)
 
 # Define the model.  Since this is a simulation, we need to define the
 # incident beam in terms of angles, wavelengths and dispersion.  This
@@ -115,8 +117,7 @@ sample['sin'].magnetism.z2.range(0, 100)
 # None so that it pulls a random seed from entropy.
 
 T = np.linspace(0, 5, 100)
-xs = [NeutronProbe(T=T, dT=0.01, L=4.75, dL=0.0475, name=name)
-      for name in ("--", "-+", "+-", "++")]
+xs = [NeutronProbe(T=T, dT=0.01, L=4.75, dL=0.0475, name=name) for name in ("--", "-+", "+-", "++")]
 probe = PolarizedNeutronProbe(xs)
 M = Experiment(probe=probe, sample=sample, dz=0.1)
 with push_seed(1):

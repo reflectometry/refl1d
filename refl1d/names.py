@@ -18,18 +18,16 @@ from bumps.parameter import Parameter, FreeVariables
 from bumps import pmath
 from bumps.pdfwrapper import PDF
 from bumps.fitproblem import FitProblem, MultiFitProblem
-#from bumps.fitproblem import FitProblem  # deprecated
+# from bumps.fitproblem import FitProblem  # deprecated
 
 from .experiment import Experiment, plot_sample, MixedExperiment
 from .flayer import FunctionalProfile, FunctionalMagnetism
 from .material import SLD, Material, Compound, Mixture
 from .model import Slab, Stack
-from .polymer import (PolymerBrush, PolymerMushroom, EndTetheredPolymer,
-                      VolumeProfile, layer_thickness)
+from .polymer import PolymerBrush, PolymerMushroom, EndTetheredPolymer, VolumeProfile, layer_thickness
 from .mono import FreeLayer, FreeInterface
 from .cheby import FreeformCheby, ChebyVF, cheby_approx, cheby_points
-from .probe import (Probe, ProbeSet, XrayProbe, NeutronProbe, QProbe,
-                    PolarizedNeutronProbe, PolarizedQProbe, load4)
+from .probe import Probe, ProbeSet, XrayProbe, NeutronProbe, QProbe, PolarizedNeutronProbe, PolarizedQProbe, load4
 from .stajconvert import load_mlayer, save_mlayer
 from . import ncnrdata as NCNR, snsdata as SNS
 from .instrument import Monochromatic, Pulsed
@@ -44,9 +42,11 @@ from .support import sample_data
 # Python doesn't allow "from .module import *"
 from .materialdb import *
 
+
 # Deprecated names
 def ModelFunction(*args, **kw):
     raise NotImplementedError("ModelFunction no longer supported --- use PDF instead")
+
 
 PolarizedNeutronQProbe = PolarizedQProbe
 numpy = np

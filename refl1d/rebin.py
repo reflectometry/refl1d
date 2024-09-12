@@ -66,10 +66,10 @@ def logbin_edges(L):
     """
     if L[1] > L[0]:
         dLoL = L[1] / L[0] - 1
-        last = (1 + dLoL)
+        last = 1 + dLoL
     else:
         dLoL = L[0] / L[1] - 1
-        last = 1. / (1 + dLoL)
+        last = 1.0 / (1 + dLoL)
     E = L * 2 / (2 + dLoL)
     return np.hstack((E, E[-1] * last))
 
@@ -96,7 +96,7 @@ def rebin(x, I, xo, Io=None, dtype=np.float64):
     from .refllib import backend
 
     # Coerce axes to float arrays
-    x, xo = _input(x, dtype='d'), _input(xo, dtype='d')
+    x, xo = _input(x, dtype="d"), _input(xo, dtype="d")
     shape_in = np.array([x.shape[0] - 1])
     shape_out = np.array([xo.shape[0] - 1])
 
@@ -163,7 +163,7 @@ def rebin2d(x, y, I, xo, yo, Io=None, dtype=None):
     from .refllib import backend
 
     # Coerce axes to float arrays
-    x, y, xo, yo = [_input(v, dtype='d') for v in (x, y, xo, yo)]
+    x, y, xo, yo = [_input(v, dtype="d") for v in (x, y, xo, yo)]
     shape_in = np.array([x.shape[0] - 1, y.shape[0] - 1])
     shape_out = np.array([xo.shape[0] - 1, yo.shape[0] - 1])
 
@@ -192,7 +192,7 @@ def rebin2d(x, y, I, xo, yo, Io=None, dtype=None):
     return Io
 
 
-def _input(v, dtype='d'):
+def _input(v, dtype="d"):
     """
     Force v to be a contiguous array of the correct type, avoiding copies
     if possible.
@@ -207,12 +207,10 @@ def _output(v, shape, dtype=np.float64):
     """
     if v is None:
         return np.empty(shape, dtype=dtype)
-    if not (isinstance(v, np.ndarray)
-            and v.dtype == np.dtype(dtype)
-            and (v.shape == shape).all()
-            and v.flags.contiguous):
-        raise TypeError("output vector must be contiguous %s of size %s"
-                        % (dtype, shape))
+    if not (
+        isinstance(v, np.ndarray) and v.dtype == np.dtype(dtype) and (v.shape == shape).all() and v.flags.contiguous
+    ):
+        raise TypeError("output vector must be contiguous %s of size %s" % (dtype, shape))
     return v
 
 
@@ -220,11 +218,10 @@ def _output(v, shape, dtype=np.float64):
 # TODO: move test code to its own file
 def _check_one_1d(from_bins, val, to_bins, target):
     target = _input(target)
-    for (f, F) in [(from_bins, val), (from_bins[::-1], val[::-1])]:
-        for (t, T) in [(to_bins, target), (to_bins[::-1], target[::-1])]:
+    for f, F in [(from_bins, val), (from_bins[::-1], val[::-1])]:
+        for t, T in [(to_bins, target), (to_bins[::-1], target[::-1])]:
             result = rebin(f, F, t)
-            assert np.linalg.norm(T - result) < 1e-14, \
-                "rebin failed for %s->%s %s" % (f, t, result)
+            assert np.linalg.norm(T - result) < 1e-14, "rebin failed for %s->%s %s" % (f, t, result)
 
 
 def _check_all_1d():
@@ -235,22 +232,13 @@ def _check_all_1d():
     _check_one_1d([0, 1, 2, 3, 4], [5, 10, 20, 30], [1, 2.5, 3], [20, 10])
 
     # bin is a subset of rebin
-    _check_one_1d([1, 2, 3, 4, 5, 6],
-                  [10, 20, 30, 40, 50],
-                  [2.5, 3.5],
-                  [25])
+    _check_one_1d([1, 2, 3, 4, 5, 6], [10, 20, 30, 40, 50], [2.5, 3.5], [25])
 
     # one bin to many
-    _check_one_1d([1, 2, 3, 4, 5, 6],
-                  [10, 20, 30, 40, 50],
-                  [2.1, 2.2, 2.3, 2.4],
-                  [2, 2, 2])
+    _check_one_1d([1, 2, 3, 4, 5, 6], [10, 20, 30, 40, 50], [2.1, 2.2, 2.3, 2.4], [2, 2, 2])
 
     # many bins to one
-    _check_one_1d([1, 2, 3, 4, 5, 6],
-                  [10, 20, 30, 40, 50],
-                  [2.5, 4.5],
-                  [60])
+    _check_one_1d([1, 2, 3, 4, 5, 6], [10, 20, 30, 40, 50], [2.5, 4.5], [60])
 
 
 def _check_one_2d(x, y, z, xo, yo, zo):
@@ -259,27 +247,32 @@ def _check_one_2d(x, y, z, xo, yo, zo):
     # print(xo, yo, zo)
     result = rebin2d(x, y, z, xo, yo)
     target = np.array(zo, dtype=result.dtype)
-    assert np.linalg.norm(target - result) < 1e-14, \
-        "rebin2d failed for %s, %s->%s, %s\nexpected: %s\nbut got: %s" \
-        % (x, y, xo, yo, zo, z)
+    assert np.linalg.norm(target - result) < 1e-14, "rebin2d failed for %s, %s->%s, %s\nexpected: %s\nbut got: %s" % (
+        x,
+        y,
+        xo,
+        yo,
+        zo,
+        z,
+    )
 
 
 def _check_uniform_2d(x, y):
-    z = np.array([y], 'd') * np.array([x], 'd').T
-    xedges = np.concatenate([(0, ), np.cumsum(x)])
-    yedges = np.concatenate([(0, ), np.cumsum(y)])
+    z = np.array([y], "d") * np.array([x], "d").T
+    xedges = np.concatenate([(0,), np.cumsum(x)])
+    yedges = np.concatenate([(0,), np.cumsum(y)])
     nx = int(np.round(xedges[-1]))
     ny = int(np.round(yedges[-1]))
     ox = np.arange(nx + 1)
     oy = np.arange(ny + 1)
-    target = np.ones([nx, ny], 'd')
+    target = np.ones([nx, ny], "d")
     _check_one_2d(xedges, yedges, z, ox, oy, target)
 
 
 def _check_all_2d():
     x, y, I = [0, 3, 5, 7], [0, 1, 3], [[3, 6], [2, 4], [2, 4]]
     xo, yo, Io = range(8), range(4), [[1] * 3] * 7
-    x, y, I, xo, yo, Io = [np.array(A, 'd') for A in (x, y, I, xo, yo, Io)]
+    x, y, I, xo, yo, Io = [np.array(A, "d") for A in (x, y, I, xo, yo, Io)]
 
     # Try various types and orders on a non-square matrix
     _check_one_2d(x, y, I, xo, yo, Io)
@@ -290,26 +283,25 @@ def _check_all_2d():
     _check_one_2d(y, x, I.T, yo, xo, Io.T)  # C vs. Fortran ordering
 
     # Test smallest possible result
-    _check_one_2d([-1, 2, 4], [0, 1, 3], [[3, 6], [2, 4]],
-                  [1, 2], [1, 2], [1])
+    _check_one_2d([-1, 2, 4], [0, 1, 3], [[3, 6], [2, 4]], [1, 2], [1, 2], [1])
     # subset/superset
-    _check_one_2d([0, 1, 2, 3], [0, 1, 2, 3], [[1] * 3] * 3,
-                  [0.5, 1.5, 2.5], [0.5, 1.5, 2.5], [[1] * 2] * 2)
-    for dtype in ['uint8', 'uint16', 'uint32', 'float32', 'float64']:
-        _check_one_2d([0, 1, 2, 3, 4], [0, 1, 2, 3, 4],
-                      np.array([[1] * 4] * 4, dtype=dtype),
-                      [-2, -1, 2, 5, 6], [-2, -1, 2, 5, 6],
-                      np.array([[0, 0, 0, 0], [0, 4, 4, 0],
-                                [0, 4, 4, 0], [0, 0, 0, 0]],
-                               dtype=dtype)
-                      )
+    _check_one_2d([0, 1, 2, 3], [0, 1, 2, 3], [[1] * 3] * 3, [0.5, 1.5, 2.5], [0.5, 1.5, 2.5], [[1] * 2] * 2)
+    for dtype in ["uint8", "uint16", "uint32", "float32", "float64"]:
+        _check_one_2d(
+            [0, 1, 2, 3, 4],
+            [0, 1, 2, 3, 4],
+            np.array([[1] * 4] * 4, dtype=dtype),
+            [-2, -1, 2, 5, 6],
+            [-2, -1, 2, 5, 6],
+            np.array([[0, 0, 0, 0], [0, 4, 4, 0], [0, 4, 4, 0], [0, 0, 0, 0]], dtype=dtype),
+        )
     # non-square test
     _check_uniform_2d([1, 2.5, 4, 0.5], [3, 1, 2.5, 1, 3.5])
     _check_uniform_2d([3, 2], [1, 2])
 
 
 def _check_bin_edges():
-    log_edges = np.asarray([2 * 1.2 ** c for c in range(10)])
+    log_edges = np.asarray([2 * 1.2**c for c in range(10)])
     log_centers = (log_edges[1:] + log_edges[:-1]) / 2
     assert np.linalg.norm(logbin_edges(log_centers) - log_edges) < 1e-10
 
