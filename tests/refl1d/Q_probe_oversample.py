@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 # %matplotlib notebook
 
-import refl1d
 from refl1d.names import *
+
 
 q = np.logspace(np.log10(0.005), np.log10(0.2), num=150)
 dq = 0.02 * q / 2.35

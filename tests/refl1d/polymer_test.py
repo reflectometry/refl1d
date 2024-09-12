@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Created on Mon Sep 15 21:08:34 2014
 
@@ -9,10 +8,7 @@ No guarantee is made regarding absolute correctness, only that the results
 haven't changed since that version.
 """
 
-from __future__ import division, print_function
 import numpy as np
-from numpy.linalg import norm
-
 
 from refl1d.names import Material
 from refl1d.polymer import (

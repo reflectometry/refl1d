@@ -1,6 +1,8 @@
 from math import *
+
 import numpy as np
 from numpy.linalg import norm
+
 from refl1d import resolution as res, ncnrdata, snsdata, instrument as inst
 
 
