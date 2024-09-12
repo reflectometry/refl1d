@@ -87,8 +87,6 @@ def probeset_plot(probeset, view=None, **kwargs):
     """
     Plot a ProbeSet.
     """
-    view = view if view is not None else probe.view
-
     if view is None:
         view = ProbeSet.view  # Default to Probe.view
 
