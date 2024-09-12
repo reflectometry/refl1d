@@ -1,6 +1,4 @@
-# This program is in the public domain
-# Author: Paul Kienzle
-r"""
+"""
 Read and write staj files
 
 Staj files are the model files for the mlayer and gj2 programs, which are

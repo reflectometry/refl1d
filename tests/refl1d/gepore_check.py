@@ -6,7 +6,7 @@ import numpy as np
 from numpy import radians
 
 from bumps.util import pushdir
-from refl1d.reflectivity import magnetic_amplitude as refl
+from ornl.refl1d.refl1d.calculations.reflectivity import magnetic_amplitude as refl
 
 H2K = 2.91451e-5
 B2SLD = 2.31929e-06

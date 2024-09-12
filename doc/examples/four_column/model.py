@@ -7,7 +7,9 @@
 
 # The following is copied directly from the spin value example
 
-from refl1d.names import *
+from refl1d.models.experiment import FitProblem
+from refl1d.names import air, SLD, Magnetism, MagnetismTwist, Experiment
+from refl1d.readers import load4
 
 Si = SLD(name="Si", rho=2.0737, irho=2.376e-5)
 Cu = SLD(name="Cu", rho=6.5535, irho=8.925e-4)
@@ -43,7 +45,7 @@ sample[5].magnetism.interface_above.range(0, 10)
 # Here's the new loader.  Much simplified since the reduction computes the
 # appropriate $\Delta Q$ for the data points, and we don't need to specify
 # the slit openings and distances for the data set.  The options to the
-# :func:`refl1d.probe.load4` function allow you to override things during
+# :func:`refl1d.readers.load4` function allow you to override things during
 # load, such as the sample broadening of the resolution.
 
 probe = load4("refl.txt")

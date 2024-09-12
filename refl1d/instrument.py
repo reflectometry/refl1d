@@ -1,6 +1,4 @@
-# This program is in the public domain
-# Author: Paul Kienzle
-r"""
+"""
 Reflectometry instrument definitions.
 
 An instrument definition contains all the information necessary to compute
@@ -121,20 +119,16 @@ metadata values are changed, the resolution can be recomputed and the
 display updated.  When the data set is accepted, the final resolution
 calculation can be performed.
 """
-
-from __future__ import division, print_function
-
 # TODO: the resolution calculator should not be responsible for loading
 # the data; maybe do it as a mixin?
 
 import numpy as np
-# from numpy import pi, inf, sqrt, log, degrees, radians, cos, sin, tan
 
 from .resolution import QL2T
 from .resolution import bins, binwidths, binedges
 from .resolution import slit_widths, divergence
-from .probe import make_probe, PolarizedNeutronProbe
-from .reflectivity import BASE_GUIDE_ANGLE
+from .models.probe import make_probe, PolarizedNeutronProbe
+from .calculations.reflectivity import BASE_GUIDE_ANGLE
 
 
 class Monochromatic(object):
@@ -571,7 +565,7 @@ class Pulsed(object):
         from numpy.random import poisson as pois
         from .rebin import rebin
         from .experiment import Experiment
-        from .probe import ProbeSet
+        from .models.probe import ProbeSet
 
         T = kw.pop("T", self.T)
         slits = kw.pop("slits", self.slits)

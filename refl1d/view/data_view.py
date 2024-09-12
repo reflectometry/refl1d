@@ -1,24 +1,16 @@
-from __future__ import with_statement
-
+from bumps.gui.util import EmbeddedPylab
+from bumps.fitproblem import FitProblem
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
+from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg as Toolbar
+from matplotlib.figure import Figure  # Used to create backend-independent plot representations.
+from numpy import inf
 import wx
+
+from refl1d.models.probe import Probe
 
 # Can't seem to detect when notebook should be drawn on Mac
 IS_MAC = wx.Platform == "__WXMAC__"
-
-from numpy import inf
-
-from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg as Toolbar
-
-# The Figure object is used to create backend-independent plot representations.
-from matplotlib.figure import Figure
-
-import matplotlib.pyplot as plt
-
-from bumps.gui.util import EmbeddedPylab
-from bumps.fitproblem import FitProblem
-
-from refl1d.probe import Probe
 
 
 # ------------------------------------------------------------------------

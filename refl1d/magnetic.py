@@ -50,7 +50,7 @@ from bumps.parameter import Parameter, to_dict
 from bumps.mono import monospline
 
 from .model import Layer, Stack
-from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
+from .calculations.reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
 
 
 class MagneticLayer(Layer):

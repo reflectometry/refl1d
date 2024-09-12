@@ -11,11 +11,9 @@ __all__ = ["data_view", "model_view", "new_model", "calc_errors", "show_errors"]
 import numpy as np
 
 from . import names as refl
-from . import __version__
 from .errors import calc_errors, show_errors
 
 # List of modules that contain dataclasses for the saved json file format
-from . import names, material, model, magnetism, probe, experiment
 
 
 # These are names used by the driver

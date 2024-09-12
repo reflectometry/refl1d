@@ -1,6 +1,4 @@
 # pylint: disable=invalid-name
-# This program is in the public domain
-# Author: Paul Kienzle
 """
 Experiment definition
 
@@ -8,32 +6,25 @@ An experiment combines the sample definition with a measurement probe
 to create a fittable reflectometry model.
 """
 
-from __future__ import division, print_function
-
-from dataclasses import dataclass, field
-import sys
-import os
-from math import pi, log10, floor
-import traceback
+from dataclasses import dataclass
 import json
-from typing import Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
+from math import pi, log10, floor
+import os
+import traceback
+from typing import Optional, Union, Literal, List
 from warnings import warn
 
-import numpy as np
 from bumps import parameter
-from bumps.parameter import Parameter, Constraint, tag_all
+from bumps.parameter import Parameter, tag_all
 from bumps.fitproblem import Fitness
+import numpy as np
 
-from . import material, profile
+from . import material, model, profile
 from . import __version__
-from .reflectivity import reflectivity_amplitude as reflamp
-from .reflectivity import magnetic_amplitude as reflmag
-from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
-from . import model
-from .probe import Probe, NeutronProbe, PolarizedNeutronProbe
-
-# print("Using pure python reflectivity calculator")
-# from .abeles import refl as reflamp
+from .calculations.reflectivity import reflectivity_amplitude as reflamp
+from .calculations.reflectivity import magnetic_amplitude as reflmag
+from .calculations.reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
+from .models.probe import Probe, PolarizedNeutronProbe
 from .util import asbytes
 
 
@@ -42,7 +33,7 @@ def plot_sample(sample, instrument=None, roughness_limit=0):
     Quick plot of a reflectivity sample and the corresponding reflectivity.
     """
     if instrument is None:
-        from .probe import NeutronProbe
+        from .models.probe import NeutronProbe
 
         probe = NeutronProbe(T=np.arange(0, 5, 0.05), L=5)
     else:
@@ -59,9 +50,6 @@ class ExperimentBase:
     _surface = None
 
     def parameters(self):
-        raise NotImplementedError()
-
-    def to_dict(self):
         raise NotImplementedError()
 
     def reflectivity(self, resolution=True, interpolation=0):
@@ -444,21 +432,6 @@ class Experiment(ExperimentBase):
             "probe": self.probe.parameters(),
         }
 
-    def to_dict(self):
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "name": self.name,
-                "sample": self.sample,
-                "probe": self.probe,
-                "roughness_limit": self.roughness_limit,
-                "dz": self.dz,
-                "dA": self.dA,
-                "step_interfaces": self.step_interfaces,
-                "interpolation": self.interpolation,
-            }
-        )
-
     def _render_slabs(self):
         """
         Build a slab description of the model from the individual layers.
@@ -631,8 +604,8 @@ class Experiment(ExperimentBase):
             traceback.print_exc()
 
     def plot_profile(self, plot_shift=None):
-        import matplotlib.pyplot as plt
         from bumps.plotutil import auto_shift
+        import matplotlib.pyplot as plt
 
         plot_shift = plot_shift if plot_shift is not None else Experiment.profile_shift
         trans = auto_shift(plot_shift)
@@ -737,20 +710,6 @@ class MixedExperiment(ExperimentBase):
             "ratio": self.ratio,
             "probe": self.probe.parameters(),
         }
-
-    def to_dict(self):
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "name": self.name,
-                "samples": self.samples,
-                "ratio": self.ratio,
-                "probe": self.probe,
-                "parts": self.parts,
-                "coherent": self.coherent,
-                "interpolation": self.interpolation,
-            }
-        )
 
     def _reflamp(self):
         """

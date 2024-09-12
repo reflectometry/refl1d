@@ -1,4 +1,3 @@
-# This program is public domain.
 """
 Optical matrix form of the reflectivity calculation.
 
@@ -8,8 +7,6 @@ This is a pure python implementation of reflectometry provided for
 convenience when a compiler is not available.  The refl1d
 application uses reflmodule to compute reflectivity.
 """
-
-from __future__ import print_function, division
 
 from numpy import asarray, isscalar, empty, ones, ones_like
 from numpy import sqrt, exp, pi

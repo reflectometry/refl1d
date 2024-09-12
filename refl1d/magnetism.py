@@ -1,6 +1,4 @@
-# This program is public domain
-# Author: Paul Kienzle
-r"""
+"""
 Magnetic modeling for 1-D reflectometry.
 
 Magnetic properties are tied to the structural description of the
@@ -38,17 +36,14 @@ Magnetism support is split into two parts: describing the layers
 and anchoring them to the structure.
 """
 
-from __future__ import print_function
+from dataclasses import dataclass
+from typing import Union, Dict, Literal, List
 
-from dataclasses import dataclass, field
-from typing import Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
-
-import numpy as np
-from numpy import inf
 from bumps.parameter import Parameter, flatten, to_dict
 from bumps.mono import monospline
+import numpy as np
 
-from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
+from .calculations.reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
 
 
 @dataclass

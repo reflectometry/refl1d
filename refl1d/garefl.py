@@ -33,32 +33,24 @@ doesn't perturb the fit.
 
 __all__ = ["load"]
 
-import sys
+from ctypes import CDLL, c_int, c_double, c_void_p, c_char_p, byref
 import os
 from os import getpid
-from ctypes import CDLL, c_int, c_double, c_void_p, c_char_p, byref
 from threading import current_thread
-
-import numpy as np
-from numpy import empty, zeros, array
 
 from bumps.parameter import Parameter, to_dict
 from bumps.fitproblem import FitProblem
+import numpy as np
 
-from .probe import QProbe, PolarizedNeutronQProbe
+from .models.probe import QProbe, PolarizedNeutronQProbe
 from .experiment import Experiment
 from .model import Stack
 from .profile import Microslabs
 from .material import SLD, Vacuum
 
-if sys.version_info[0] >= 3:
 
-    def tostr(s):
-        return s.decode("ascii")
-else:
-
-    def tostr(s):
-        return s
+def tostr(s):
+    return s.decode("ascii")
 
 
 def trace(fn):
@@ -152,7 +144,7 @@ class GareflExperiment(Experiment):
         key = "rendered"
         if key not in self._cache:
             if self._pars is not None:
-                pvec = array([p.value for p in self._pars], "d")
+                pvec = np.array([p.value for p in self._pars], "d")
                 self._chisq = self.model.update_model(pvec, forced=True)
 
             self._slabs.clear()
@@ -279,7 +271,7 @@ class GareflModel(object):
         n = self.dll.ex_ndata(self.models, k, xs)
         if n == 0:
             return None
-        data = empty((n, 4), "d")
+        data = np.empty((n, 4), "d")
         filename = tostr(self.dll.ex_get_data(self.models, k, xs, data.ctypes))
         Q, dQ, R, dR = data.T
         probe = QProbe(Q, dQ, data=(R, dR), name=filename)
@@ -299,14 +291,14 @@ class GareflModel(object):
     def _setdata(self, k, xs, probe):
         if probe is not None:
             n = probe.Q
-            data = empty((n, 4), dtype="d", order="F")
+            data = np.empty((n, 4), dtype="d", order="F")
             data[:, 0] = probe.Q
             data[:, 1] = probe.dQ
             data[:, 2] = probe.R
             data[:, 3] = probe.dR
         else:
             n = 0
-            data = empty((n, 4), "d")
+            data = np.empty((n, 4), "d")
         result = self.dll.ex_set_data(self.models, k, xs, n, data.ctypes)
         if result < 0:
             raise RuntimeError("unable to create data in garefl")
@@ -314,14 +306,14 @@ class GareflModel(object):
     @trace
     def get_profile(self, k):
         n = self.dll.ex_nprofile(self.models, k)
-        w, rho, irho, rhoM, thetaM = [zeros(n, "d") for _ in range(5)]
+        w, rho, irho, rhoM, thetaM = [np.zeros(n, "d") for _ in range(5)]
         self.dll.ex_get_profile(self.models, k, w.ctypes, rho.ctypes, irho.ctypes, rhoM.ctypes, thetaM.ctypes)
         return w[::-1], rho[::-1], irho[::-1], rhoM[::-1], thetaM[::-1]
 
     @trace
     def get_reflectivity(self, k, xs):
         n = self.dll.ex_ncalc(self.models, k)
-        Q, R = empty(n, "d"), empty(n, "d")
+        Q, R = np.empty(n, "d"), np.empty(n, "d")
         self.dll.ex_get_reflectivity(self.models, k, xs, Q.ctypes, R.ctypes)
         return Q, R
 
@@ -347,12 +339,12 @@ class GareflModel(object):
 
     @trace
     def _par_bounds(self):
-        lo, hi = empty(self.num_pars, "d"), empty(self.num_pars, "d")
+        lo, hi = np.empty(self.num_pars, "d"), np.empty(self.num_pars, "d")
         self.dll.ex_par_bounds(self.models, lo.ctypes, hi.ctypes)
         return lo, hi
 
     @trace
     def par_values(self):
-        p = empty(self.num_pars, "d")
+        p = np.empty(self.num_pars, "d")
         self.dll.ex_par_values(self.models, p.ctypes)
         return p * self.scale

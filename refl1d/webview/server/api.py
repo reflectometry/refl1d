@@ -1,8 +1,6 @@
-from typing import Union, Dict, List, TypedDict
+from typing import Union, Dict, List
 from pathlib import Path
-import numpy as np
-from refl1d.experiment import Experiment, ExperimentBase, MixedExperiment
-import refl1d.probe
+
 from bumps.webview.server.api import (
     register,
     get_chisq,
@@ -11,16 +9,15 @@ from bumps.webview.server.api import (
     log,
     now_string,
     add_notification,
-    deserialize_problem,
-    set_problem,
     logger,
 )
-import bumps.webview.server.api as bumps_api
 from bumps.errplot import calc_errors_from_state
+import numpy as np
 
 # from refl1d.errors import show_errors
+from refl1d.experiment import Experiment, ExperimentBase, MixedExperiment
+import refl1d.models.probe
 from .profile_uncertainty import show_errors
-
 from .profile_plot import plot_multiple_sld_profiles, ModelSpec
 
 # state.problem.serializer = "dataclass"
@@ -99,7 +96,7 @@ def get_single_probe_data(theory, probe, substrate=None, surface=None, polarizat
 
 
 def get_probe_data(theory, probe, substrate=None, surface=None):
-    if isinstance(probe, refl1d.probe.PolarizedNeutronProbe):
+    if isinstance(probe, refl1d.models.probe.PolarizedNeutronProbe):
         output = []
         for xsi, xsi_th, suffix in zip(probe.xs, theory, ("--", "-+", "+-", "++")):
             if xsi is not None:

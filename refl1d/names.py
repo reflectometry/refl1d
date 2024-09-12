@@ -10,29 +10,36 @@ This is bad style for library and applications but convenient for
 small scripts.
 """
 
-import sys
 import numpy as np
-
-from periodictable import elements, formula
-from bumps.parameter import Parameter, FreeVariables
 from bumps import pmath
-from bumps.pdfwrapper import PDF
 from bumps.fitproblem import FitProblem, MultiFitProblem
-# from bumps.fitproblem import FitProblem  # deprecated
+from bumps.parameter import FreeVariables, Parameter
+from bumps.pdfwrapper import PDF
+from periodictable import elements, formula
 
-from .experiment import Experiment, plot_sample, MixedExperiment
-from .flayer import FunctionalProfile, FunctionalMagnetism
-from .material import SLD, Material, Compound, Mixture
-from .model import Slab, Stack
-from .polymer import PolymerBrush, PolymerMushroom, EndTetheredPolymer, VolumeProfile, layer_thickness
-from .mono import FreeLayer, FreeInterface
-from .cheby import FreeformCheby, ChebyVF, cheby_approx, cheby_points
-from .probe import Probe, ProbeSet, XrayProbe, NeutronProbe, QProbe, PolarizedNeutronProbe, PolarizedQProbe, load4
-from .stajconvert import load_mlayer, save_mlayer
-from . import ncnrdata as NCNR, snsdata as SNS
+from .cheby import ChebyVF, FreeformCheby, cheby_approx, cheby_points
+from .experiment import Experiment, MixedExperiment, plot_sample
+from .flayer import FunctionalMagnetism, FunctionalProfile
 from .instrument import Monochromatic, Pulsed
-from .magnetic import MagneticSlab, MagneticTwist, FreeMagnetic, MagneticStack
-from .magnetism import Magnetism, MagnetismTwist, FreeMagnetism, MagnetismStack
+from .magnetic import FreeMagnetic, MagneticSlab, MagneticStack, MagneticTwist
+from .magnetism import FreeMagnetism, Magnetism, MagnetismStack, MagnetismTwist
+from .material import SLD, Compound, Material, Mixture
+from .model import Slab, Stack
+from .models.probe import (
+    NeutronProbe,
+    PolarizedNeutronProbe,
+    PolarizedQProbe,
+    Probe,
+    ProbeSet,
+    QProbe,
+    XrayProbe,
+)
+from .mono import FreeInterface, FreeLayer
+from .polymer import EndTetheredPolymer, PolymerBrush, PolymerMushroom, VolumeProfile, layer_thickness
+from .readers import ncnrdata as NCNR
+from .readers import snsdata as SNS
+from .readers.load4 import load4
+from .stajconvert import load_mlayer, save_mlayer
 from .support import sample_data
 
 # Pull in common materials for reflectometry experiments.

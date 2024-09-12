@@ -10,8 +10,6 @@ unpolarized_magnetic returns the expected magnitude for a measurement
 of the magnetic scattering using an unpolarized beam.
 """
 
-from __future__ import print_function
-
 from functools import reduce
 
 # __doc__ = "Fundamental reflectivity calculations"
@@ -26,7 +24,7 @@ __all__ = [
 ]
 
 import numpy as np
-from numpy import pi, sin, cos, conj, radians, sqrt, exp, fabs
+from numpy import sin, cos, conj, radians
 
 BASE_GUIDE_ANGLE = 270.0
 
@@ -102,7 +100,7 @@ def reflectivity_amplitude(
 
     This function does not compute any instrument resolution corrections.
     """
-    from .refllib import backend
+    from ..refllib import backend
 
     kz = _dense(kz, "d")
     if rho_index is None:
@@ -211,7 +209,7 @@ def magnetic_amplitude(
 
     See :class:`magnetic_reflectivity <refl1d.reflectivity.magnetic_reflectivity>` for details.
     """
-    from .refllib import backend
+    from ..refllib import backend
 
     kz = _dense(kz, "d")
     if rho_index is None:
@@ -242,7 +240,7 @@ def magnetic_amplitude(
 
 
 def calculate_u1_u3(H, rhoM, thetaM, Aguide):
-    from .refllib import backend
+    from ..refllib import backend
 
     rhoM, thetaM = (_dense(rhoM, "d")).copy(), _dense(np.radians(thetaM), "d")
     n = len(rhoM)
@@ -321,7 +319,7 @@ def convolve(xi, yi, x, dx, resolution="normal"):
     distribution uses the $1-\sigma$ equivalent distribution width which is
     $1/\sqrt{3}$ times the width of the rectangle.
     """
-    from .refllib import backend
+    from ..refllib import backend
 
     xi, yi, x, dx = _dense(xi), _dense(yi), _dense(x), _dense(dx)
     y = np.empty_like(x)
@@ -344,7 +342,7 @@ def convolve_sampled(xi, yi, xp, yp, x, dx):
     resolution *(xp, yp)* is also represented as a piece-wise linear
     spline.
     """
-    from .refllib import backend
+    from ..refllib import backend
 
     x = _dense(x)
     y = np.empty_like(x)

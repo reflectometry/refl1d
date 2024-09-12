@@ -1,21 +1,19 @@
-# This program is in the public domain
-# Author: Paul Kienzle
 """
 Convert staj files to Refl1D models
 """
 
 import os
 
+from bumps import parameter
 import numpy as np
 from numpy import tan, cos, sqrt, radians, degrees, pi
-from bumps import parameter
 
-from .staj import MlayerModel, MlayerMagnetic, ERF_FWHM
+from .staj import MlayerModel, MlayerMagnetic
 from .model import Slab, Stack, Repeat
 from .magnetism import Magnetism
 from .material import SLD
 from .resolution import QL2T, sigma2FWHM
-from .probe import NeutronProbe, XrayProbe, PolarizedNeutronProbe
+from .models.probe import NeutronProbe, XrayProbe, PolarizedNeutronProbe
 
 
 def load_mlayer(filename, fit_pmp=0, name=None, layers=None):

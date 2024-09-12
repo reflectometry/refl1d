@@ -64,7 +64,7 @@ import numpy as np
 from numpy import inf, nan, isnan
 from scipy.special import erf
 
-from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
+from .calculations.reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
 
 
 class Microslabs(object):

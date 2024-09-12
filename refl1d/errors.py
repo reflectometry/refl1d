@@ -29,7 +29,7 @@ from bumps.plotutil import next_color, dhsv, plot_quantiles, form_quantiles
 from bumps.errplot import reload_errors
 
 from .util import asbytes
-from .reflectivity import BASE_GUIDE_ANGLE
+from .calculations.reflectivity import BASE_GUIDE_ANGLE
 
 # CONTOURS = (68, 95, 100)
 # CONTOURS = (57, 68, 84, 95, 100)

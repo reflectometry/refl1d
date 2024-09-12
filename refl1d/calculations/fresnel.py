@@ -4,7 +4,7 @@
 Pure python Fresnel reflectivity calculator.
 """
 
-from numpy import sqrt, exp, real, conj, pi, abs, choose
+from numpy import sqrt, exp, conj, pi, abs, choose
 
 
 class Fresnel(object):
