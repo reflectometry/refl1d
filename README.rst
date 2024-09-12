@@ -21,9 +21,9 @@ multicore machine, or using MPI for running on a cluster.
 
 Documentation is available at `<https://refl1d.readthedocs.io>`_. See
 `CHANGES.rst <https://github.com/reflectometry/refl1d/blob/master/CHANGES.rst>`_
-for details on recent changes.
+for details on recent changes. Information on the refl1d release process is in `release notes <release.md>`_.
 
-Use "pip install refl1d wxpython" to install in your python environment.
+Use ``pip install refl1d wxpython`` to install in your python environment.
 
 For the windows application, follow the installation instructions on the
 `latest release <https://github.com/reflectometry/refl1d/releases/latest>`_
