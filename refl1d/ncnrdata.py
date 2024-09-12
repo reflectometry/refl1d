@@ -33,7 +33,7 @@ For simulation, you need a probe and a sample:
 
     >>> instrument = NCNR.ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
     >>> probe = instrument.probe(T=np.linspace(0, 5, 51))
-    >>> plotting.plot_probe.plot_resolution(probe)
+    >>> plotting.plot_probe.plot(probe, view='resolution')
     >>> sample = silicon(0, 10) | gold(100, 10) | air
     >>> M = Experiment(probe=probe, sample=sample)
     >>> M.simulate_data() # Optional

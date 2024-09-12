@@ -20,12 +20,32 @@ def plot(probe, view=None, theory=None, **kwargs):
     General plotting function for probes.
     """
     if type(probe) is PolarizedNeutronProbe:
-        polarized_neutron_plot(probe, view, **kwargs)
+        plotter = MagneticProbePlotter(probe, theory=theory, **kwargs)
     elif type(probe) is ProbeSet:
         for p, th in probe.parts(theory):
             plot(p, theory=th, **kwargs)
     else:
-        base_plot(probe, view, theory=theory, **kwargs)
+        plotter = ProbePlotter(probe, theory=theory, **kwargs)
+
+    view = view if view is not None else probe.view
+
+    # Determine how to plot
+    if view == "fresnel":
+        plotter.plot_fresnel()
+        plotter.y_linear()
+    elif view == "q4":
+        plotter.plot_Q4()
+    elif view == "resolution":
+        plotter.plot_resolution()
+    elif view.startswith("resid"):
+        plotter.plot_residuals()
+    elif view == "SA":
+        plotter.plot_SA()
+    else:
+        plotter.plot()
+
+    if "log" in view:
+        plotter.y_log()
 
 
 def _xs_plot(probe, plotter, theory=None, **kwargs):
@@ -203,6 +223,12 @@ class ProbePlotter:
         plt.ylabel(r"Q resolution ($1-\sigma \AA^{-1}$)")
         plt.title("Measurement resolution")
 
+    def plot_SA(self):
+        """
+        This plot is unavailable for this probe.
+        """
+        pass
+
     def plot_residuals(self):
         suffix = self.kwargs.get("suffix", "")
         label = self.kwargs.get("label", None)
@@ -234,34 +260,61 @@ class ProbePlotter:
         plt.legend(numpoints=1)
 
 
-def base_plot(probe, view=None, **kwargs):
-    """
-    Plot theory against data.
+class MagneticProbePlotter(ProbePlotter):
+    def __init__(self, probe, **kwargs):
+        super().__init__(probe, **kwargs)
 
-    Need substrate/surface for Fresnel-normalized reflectivity
-    """
-    view = view if view is not None else probe.view
+    def plot(self):
+        theory = self.kwargs.get("theory", (None, None, None, None))
+        self.kwargs["theory"] = theory
 
-    plotter = ProbePlotter(probe, **kwargs)
+        for x_data, x_th, suffix in zip(self.probe.xs, theory, ("$^{--}$", "$^{-+}$", "$^{+-}$", "$^{++}$")):
+            if x_data is not None:
+                self.kwargs["suffix"] = suffix
+                self.kwargs["theory"] = x_th
+                super().plot()
 
-    if "fresnel" in view:
-        plotter.plot_fresnel()
-    elif view == "fresnel":
-        plotter.plot_fresnel()
-        plotter.y_linear()
-    elif view == "q4":
-        plotter.plot_Q4()
-    elif view == "resolution":
-        plotter.plot_resolution()
-    elif view.startswith("resid"):
-        plotter.plot_residuals()
-    elif view == "SA":  # SA does not plot since it does not exist
-        pass
-    else:
-        plotter.plot()
+    def plot_SA(self):
+        theory = self.kwargs.get("theory", (None, None, None, None))
+        label = self.kwargs.get("label", None)
+        plot_shift = self.kwargs.get("plot_shift", None)
 
-    if "log" in view:
-        plotter.y_log()
+        if self.probe.pp is None or self.probe.mm is None:
+            raise TypeError("cannot form spin asymmetry plot without ++ and --")
+
+        plot_shift = plot_shift if plot_shift is not None else Probe.plot_shift
+        trans = auto_shift(plot_shift)
+        pp, mm = self.probe.pp, self.probe.mm
+        c = coordinated_colors()
+        if hasattr(pp, "R") and hasattr(mm, "R") and pp.R is not None and mm.R is not None:
+            Q, SA, dSA = spin_asymmetry(pp.Q, pp.R, pp.dR, mm.Q, mm.R, mm.dR)
+            if dSA is not None:
+                res = self.probe.show_resolution if self.probe.show_resolution is not None else Probe.show_resolution
+                dQ = pp.dQ if res else None
+                plt.errorbar(
+                    Q,
+                    SA,
+                    yerr=dSA,
+                    xerr=dQ,
+                    fmt=".",
+                    capsize=0,
+                    label=pp.label(prefix=label, gloss="data"),
+                    transform=trans,
+                    color=c["light"],
+                )
+            else:
+                plt.plot(Q, SA, ".", label=pp.label(prefix=label, gloss="data"), transform=trans, color=c["light"])
+            # Set limits based on max theoretical SA, which is in (-1.0, 1.0)
+            # If the error bars are bigger than that, you usually don't care.
+            ylim_low, ylim_high = plt.ylim()
+            plt.ylim(max(ylim_low, -2.5), min(ylim_high, 2.5))
+        if theory is not None:
+            mm, mp, pm, pp = theory
+            Q, SA, _ = spin_asymmetry(pp[0], pp[1], None, mm[0], mm[1], None)
+            plt.plot(Q, SA, label=self.probe.pp.label(prefix=label, gloss="theory"), transform=trans, color=c["dark"])
+        plt.xlabel(r"Q (\AA^{-1})")
+        plt.ylabel(r"spin asymmetry $(R^{++} -\, R^{--}) / (R^{++} +\, R^{--})$")
+        plt.legend(numpoints=1)
 
 
 def _plot_pair(
@@ -308,42 +361,3 @@ def _plot_pair(
     plt.ylabel(ylabel)
     h = plt.legend(fancybox=True, numpoints=1)
     h.get_frame().set_alpha(0.5)
-
-
-def plot_SA(probe, theory=None, label=None, plot_shift=None, **kwargs):
-    if probe.pp is None or probe.mm is None:
-        raise TypeError("cannot form spin asymmetry plot without ++ and --")
-
-    plot_shift = plot_shift if plot_shift is not None else Probe.plot_shift
-    trans = auto_shift(plot_shift)
-    pp, mm = probe.pp, probe.mm
-    c = coordinated_colors()
-    if hasattr(pp, "R") and hasattr(mm, "R") and pp.R is not None and mm.R is not None:
-        Q, SA, dSA = spin_asymmetry(pp.Q, pp.R, pp.dR, mm.Q, mm.R, mm.dR)
-        if dSA is not None:
-            res = probe.show_resolution if probe.show_resolution is not None else Probe.show_resolution
-            dQ = pp.dQ if res else None
-            plt.errorbar(
-                Q,
-                SA,
-                yerr=dSA,
-                xerr=dQ,
-                fmt=".",
-                capsize=0,
-                label=pp.label(prefix=label, gloss="data"),
-                transform=trans,
-                color=c["light"],
-            )
-        else:
-            plt.plot(Q, SA, ".", label=pp.label(prefix=label, gloss="data"), transform=trans, color=c["light"])
-        # Set limits based on max theoretical SA, which is in (-1.0, 1.0)
-        # If the error bars are bigger than that, you usually don't care.
-        ylim_low, ylim_high = plt.ylim()
-        plt.ylim(max(ylim_low, -2.5), min(ylim_high, 2.5))
-    if theory is not None:
-        mm, mp, pm, pp = theory
-        Q, SA, _ = spin_asymmetry(pp[0], pp[1], None, mm[0], mm[1], None)
-        plt.plot(Q, SA, label=probe.pp.label(prefix=label, gloss="theory"), transform=trans, color=c["dark"])
-    plt.xlabel(r"Q (\AA^{-1})")
-    plt.ylabel(r"spin asymmetry $(R^{++} -\, R^{--}) / (R^{++} +\, R^{--})$")
-    plt.legend(numpoints=1)
