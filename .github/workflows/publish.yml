@@ -79,13 +79,10 @@ jobs:
     steps:
       - name: Retrieve all artifacts
         uses: actions/download-artifact@v4
-        with:
-          path: artifacts
 
       - name: show files
         run: |
           ls -R artifacts
-          echo "WINDOWS_INSTALLER=$(ls artifacts/release/*.zip)" >> $GITHUB_ENV
           echo "SRC_DIST=$(ls artifacts/dist/*.tar.gz)" >> $GITHUB_ENV
           echo "PY3_WHL=$(ls artifacts/dist/*.whl)" >> $GITHUB_ENV
 
