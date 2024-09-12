@@ -164,7 +164,31 @@ class ProbePlotter:
             name = substrate.name
         else:
             name = "%s:%s" % (substrate.name, surface.name)
-        _plot_pair(self.probe, scale=scale, ylabel="R/(R(%s)" % name)
+        _plot_pair(self.probe, scale=scale, ylabel="R/(R(%s)" % name, **self.kwargs)
+
+    def plot_Q4(self):
+        r"""
+        Plot the Q**4 reflectivity associated with the probe.
+
+        Note that Q**4 reflectivity has the intensity and background applied
+        so that hydrogenated samples display more cleanly.  The formula
+        to reproduce the graph is:
+
+        .. math::
+
+                R' = R / ( (100*Q)^{-4} I + B)
+                \Delta R' = \Delta R / ( (100*Q)^{-4} I + B )
+
+        where $B$ is the background.
+        """
+
+        def scale(Q, dQ, R, dR, interpolation=0):
+            # Q4 = np.maximum(1e-8*Q**-4, probe.background.value)
+            Q4 = 1e-8 * Q**-4 * self.probe.intensity.value + self.probe.background.value
+            return Q, dQ, R / Q4, dR / Q4
+
+        # Q4[Q4==0] = 1
+        _plot_pair(self.probe, scale=scale, ylabel="R (100 Q)^4", **self.kwargs)
 
 
 def base_plot(probe, view=None, **kwargs):
@@ -202,31 +226,6 @@ def plot_resolution(probe, suffix="", label=None, **kwargs):
     plt.xlabel(r"Q ($\AA^{-1}$)")
     plt.ylabel(r"Q resolution ($1-\sigma \AA^{-1}$)")
     plt.title("Measurement resolution")
-
-
-def plot_Q4(probe, **kwargs):
-    r"""
-    Plot the Q**4 reflectivity associated with the probe.
-
-    Note that Q**4 reflectivity has the intensity and background applied
-    so that hydrogenated samples display more cleanly.  The formula
-    to reproduce the graph is:
-
-    .. math::
-
-            R' = R / ( (100*Q)^{-4} I + B)
-            \Delta R' = \Delta R / ( (100*Q)^{-4} I + B )
-
-    where $B$ is the background.
-    """
-
-    def scale(Q, dQ, R, dR, interpolation=0):
-        # Q4 = np.maximum(1e-8*Q**-4, probe.background.value)
-        Q4 = 1e-8 * Q**-4 * probe.intensity.value + probe.background.value
-        return Q, dQ, R / Q4, dR / Q4
-
-    # Q4[Q4==0] = 1
-    _plot_pair(probe, scale=scale, ylabel="R (100 Q)^4", **kwargs)
 
 
 def _plot_pair(
