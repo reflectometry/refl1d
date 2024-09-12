@@ -19,7 +19,7 @@ import os
 import sys
 from typing import Literal
 
-__version__ = "0.8.16"
+__version__ = "1.0.0a0"
 
 
 BACKEND_NAMES = Literal["numba", "c_ext", "python"]
