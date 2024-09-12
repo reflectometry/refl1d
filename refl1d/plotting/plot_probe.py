@@ -7,6 +7,8 @@ for future refactor to have a common plotting interface with webview.
 """
 
 import sys
+import numpy as np
+
 from refl1d.probe import Probe, PolarizedNeutronProbe, ProbeSet, spin_asymmetry
 from bumps.plotutil import coordinated_colors, auto_shift
 
@@ -133,7 +135,7 @@ class ProbePlotter:
     def x_log(self):
         plt.xscale("log")
 
-    def plot_fresnel(self, substrate=None, surface=None):
+    def plot_fresnel(self):
         r"""
         Plot the Fresnel-normalized reflectivity associated with the probe.
 
@@ -148,6 +150,8 @@ class ProbePlotter:
 
         where $I$ is the intensity and $B$ is the background.
         """
+        substrate = self.kwargs.get("substrate", None)
+        surface = self.kwargs.get("surface", None)
 
         if substrate is None and surface is None:
             raise TypeError("Fresnel-normalized reflectivity needs substrate or surface")
@@ -190,6 +194,45 @@ class ProbePlotter:
         # Q4[Q4==0] = 1
         _plot_pair(self.probe, scale=scale, ylabel="R (100 Q)^4", **self.kwargs)
 
+    def plot_resolution(self):
+        suffix = self.kwargs.get("suffix", "")
+        label = self.kwargs.get("label", None)
+
+        plt.plot(self.probe.Q, self.probe.dQ, label=self.probe.label(prefix=label, suffix=suffix))
+        plt.xlabel(r"Q ($\AA^{-1}$)")
+        plt.ylabel(r"Q resolution ($1-\sigma \AA^{-1}$)")
+        plt.title("Measurement resolution")
+
+    def plot_residuals(self):
+        suffix = self.kwargs.get("suffix", "")
+        label = self.kwargs.get("label", None)
+        plot_shift = self.kwargs.get("plot_shift", None)
+        theory = self.kwargs.get("theory", None)
+
+        plot_shift = plot_shift if plot_shift is not None else Probe.residuals_shift
+        trans = auto_shift(plot_shift)
+
+        if theory is not None and self.probe.R is not None:
+            c = coordinated_colors()
+            Q, R = theory
+            # In case theory curve is evaluated at more/different points...
+            R = np.interp(self.probe.Q, Q, R)
+            residual = (R - self.probe.R) / self.probe.dR
+            plt.plot(
+                self.probe.Q,
+                residual,
+                ".",
+                color=c["light"],
+                transform=trans,
+                label=self.probe.label(prefix=label, suffix=suffix),
+            )
+        plt.axhline(1, color="black", ls="--", lw=1)
+        plt.axhline(0, color="black", lw=1)
+        plt.axhline(-1, color="black", ls="--", lw=1)
+        plt.xlabel("Q (inv A)")
+        plt.ylabel("(theory-data)/error")
+        plt.legend(numpoints=1)
+
 
 def base_plot(probe, view=None, **kwargs):
     """
@@ -198,8 +241,8 @@ def base_plot(probe, view=None, **kwargs):
     Need substrate/surface for Fresnel-normalized reflectivity
     """
     view = view if view is not None else probe.view
-    if view in ["linear", "log"]:
-        plotter = ProbePlotter(probe, **kwargs)
+
+    plotter = ProbePlotter(probe, **kwargs)
 
     if "fresnel" in view:
         plotter.plot_fresnel()
@@ -207,11 +250,11 @@ def base_plot(probe, view=None, **kwargs):
         plotter.plot_fresnel()
         plotter.y_linear()
     elif view == "q4":
-        plot_Q4(probe, **kwargs)
+        plotter.plot_Q4()
     elif view == "resolution":
-        plot_resolution(probe, **kwargs)
+        plotter.plot_resolution()
     elif view.startswith("resid"):
-        plot_residuals(probe, **kwargs)
+        plotter.plot_residuals()
     elif view == "SA":  # SA does not plot since it does not exist
         pass
     else:
@@ -219,13 +262,6 @@ def base_plot(probe, view=None, **kwargs):
 
     if "log" in view:
         plotter.y_log()
-
-
-def plot_resolution(probe, suffix="", label=None, **kwargs):
-    plt.plot(probe.Q, probe.dQ, label=probe.label(prefix=label, suffix=suffix))
-    plt.xlabel(r"Q ($\AA^{-1}$)")
-    plt.ylabel(r"Q resolution ($1-\sigma \AA^{-1}$)")
-    plt.title("Measurement resolution")
 
 
 def _plot_pair(
@@ -272,26 +308,6 @@ def _plot_pair(
     plt.ylabel(ylabel)
     h = plt.legend(fancybox=True, numpoints=1)
     h.get_frame().set_alpha(0.5)
-
-
-def plot_residuals(probe, theory=None, suffix="", label=None, plot_shift=None, **kwargs):
-    plot_shift = plot_shift if plot_shift is not None else Probe.residuals_shift
-    trans = auto_shift(plot_shift)
-    if theory is not None and probe.R is not None:
-        c = coordinated_colors()
-        Q, R = theory
-        # In case theory curve is evaluated at more/different points...
-        R = np.interp(probe.Q, Q, R)
-        residual = (R - probe.R) / probe.dR
-        plt.plot(
-            probe.Q, residual, ".", color=c["light"], transform=trans, label=probe.label(prefix=label, suffix=suffix)
-        )
-    plt.axhline(1, color="black", ls="--", lw=1)
-    plt.axhline(0, color="black", lw=1)
-    plt.axhline(-1, color="black", ls="--", lw=1)
-    plt.xlabel("Q (inv A)")
-    plt.ylabel("(theory-data)/error")
-    plt.legend(numpoints=1)
 
 
 def plot_SA(probe, theory=None, label=None, plot_shift=None, **kwargs):
