@@ -1,3 +1,11 @@
+"""
+Plotting functions for probes.
+
+Design note:
+These functions were originally part of the probe classes, and were moved out
+for future refactor to have a common plotting interface with webview.
+"""
+
 import sys
 from refl1d.probe import Probe, PolarizedNeutronProbe, ProbeSet, spin_asymmetry
 from bumps.plotutil import coordinated_colors, auto_shift
@@ -6,6 +14,9 @@ import matplotlib.pyplot as plt
 
 
 def plot(probe, view=None, theory=None, **kwargs):
+    """
+    General plotting function for probes.
+    """
     if type(probe) is PolarizedNeutronProbe:
         polarized_neutron_plot(probe, view, **kwargs)
     elif type(probe) is ProbeSet:
@@ -31,6 +42,9 @@ def _xs_plot(probe, plotter, theory=None, **kwargs):
 
 
 def _probeset_plot(probeset, plotter, theory=None, **kw):
+    """
+    Plot a ProbeSet
+    """
     thismodule = sys.modules[__name__]
     fn = getattr(thismodule, plotter)
 
