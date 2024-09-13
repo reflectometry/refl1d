@@ -19,15 +19,17 @@ def plot(probe, view=None, theory=None, **kwargs):
     """
     General plotting function for probes.
     """
+    view = view if view is not None else probe.view
+
     if type(probe) is PolarizedNeutronProbe:
         plotter = MagneticProbePlotter(probe, theory=theory, **kwargs)
     elif type(probe) is ProbeSet:
+        # If we have a ProbeSet, plot each probe in the set and exit
         for p, th in probe.parts(theory):
             plot(p, theory=th, **kwargs)
+        return
     else:
         plotter = ProbePlotter(probe, theory=theory, **kwargs)
-
-    view = view if view is not None else probe.view
 
     # Determine how to plot
     if view == "fresnel":
