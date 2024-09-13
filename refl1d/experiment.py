@@ -308,18 +308,19 @@ class ExperimentBase:
             self.probe.save(filename=basename+"-refl-interp.dat",
                             theory=theory)
             
-    def register_webview_plot(self, plot_title: str, plot_function: Callable):
+    def register_webview_plot(self,
+                              plot_title: str,
+                              plot_function: Callable,
+                              change_with: Literal['parameter'] | Literal['uncertainty']):
         # Plot function syntax: f(model, problem, state)
+        # change_with = 'parameter' or 'uncertainty'
         
-        self._plot_callbacks.update({plot_title: plot_function})
+        self._plot_callbacks.update({plot_title: dict(func=plot_function,
+                                                      change_with=change_with)})
 
-    def get_plot_titles(self):
+    def create_webview_plot(self, title, problem, state):
 
-        return list(self._plot_callbacks.keys())
-    
-    def get_plot(self, title, problem, state):
-
-        return self._plot_callbacks[title](self, problem, state)
+        return self._plot_callbacks[title]['func'](self, problem, state)
 
 @dataclass(init=False)
 class Experiment(ExperimentBase):
