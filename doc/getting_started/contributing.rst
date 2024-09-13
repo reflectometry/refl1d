@@ -179,3 +179,33 @@ Build the executable using::
 
 This creates a *.dmg* file in the *dist* directory with the Refl1D app
 inside.
+
+Creating a new release
+----------------------
+
+A developer with maintainer status can tag a new release and publish a package to the `Python
+Package Index (PyPI) <https://pypi.org/project/refl1d/>`_. Refl1d uses
+`versioningit <https://versioningit.readthedocs.io/>`_ to generate the version number
+from the latest tag in the git repository.
+
+1. Update the local copy of the master branch::
+
+    # update information from all remotes
+    git fetch -p -P -t --all
+    # update local copy of master
+    git checkout master
+    git rebase origin/master
+    # check the current version number
+    versioningit
+    > 0.8.17.dev805
+
+2. Add release notes and commit to master.
+
+3. Create the new tag and push it to the remote. Pushing a tag starts the GitHub workflow job to
+publish to PyPI (defined in `.github/workflows/publish.yml
+<https://github.com/reflectometry/refl1d/blob/master/.github/workflows/publish.yml>`_)::
+
+    git tag v1.0.0
+    versioningit
+    > 1.0.0
+    git push origin --tags master

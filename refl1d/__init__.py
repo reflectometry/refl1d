@@ -19,7 +19,10 @@ import os
 import sys
 from typing import Literal
 
-__version__ = "1.0.0a0"
+try:
+    from ._version import __version__  # noqa: F401
+except ImportError:
+    __version__ = "unknown"
 
 
 BACKEND_NAMES = Literal["numba", "c_ext", "python"]
