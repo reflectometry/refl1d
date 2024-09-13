@@ -37,103 +37,22 @@ def plot(probe, view=None, theory=None, **kwargs):
         plotter.plot_Q4()
     elif view == "resolution":
         plotter.plot_resolution()
-    elif view.startswith("resid"):
+    elif view is not None and view.startswith("resid"):
         plotter.plot_residuals()
     elif view == "SA":
         plotter.plot_SA()
     else:
         plotter.plot()
 
-    if "log" in view:
+    if view is not None and "log" in view:
         plotter.y_log()
 
 
-def _xs_plot(probe, plotter, theory=None, **kwargs):
-    """
-    Plot available cross sections
-    """
-
-    thismodule = sys.modules[__name__]
-    fn = getattr(thismodule, plotter)
-
-    if theory is None:
-        theory = (None, None, None, None)
-    for x_data, x_th, suffix in zip(probe.xs, theory, ("$^{--}$", "$^{-+}$", "$^{+-}$", "$^{++}$")):
-        if x_data is not None:
-            fn(theory=x_th, suffix=suffix, **kwargs)
-
-
-def _probeset_plot(probeset, plotter, theory=None, **kw):
-    """
-    Plot a ProbeSet
-    """
-    thismodule = sys.modules[__name__]
-    fn = getattr(thismodule, plotter)
-
-    for p, th in probeset.parts(theory):
-        fn(theory=th, **kw)
-
-
-def polarized_neutron_plot(probe, view=None, **kwargs):
-    """
-    Plot theory against data.
-
-    Need substrate/surface for Fresnel-normalized reflectivity
-    """
-    view = view if view is not None else probe.view
-
-    if view is None:
-        view = Probe.view  # Default to Probe.view
-
-    if view == "linear":
-        _xs_plot(probe, "plot_linear", **kwargs)
-    elif view == "log":
-        _xs_plot(probe, "plot_log", **kwargs)
-    elif view == "fresnel":
-        _xs_plot(probe, "plot_fresnel", **kwargs)
-    elif view == "logfresnel":
-        _xs_plot(probe, "plot_logfresnel", **kwargs)
-    elif view == "q4":
-        _xs_plot(probe, "plot_Q4", **kwargs)
-    elif view.startswith("resid"):
-        _xs_plot(probe, "plot_residuals", **kwargs)
-    elif view == "SA":
-        plot_SA(probe, **kwargs)
-    elif view == "resolution":
-        _xs_plot(probe, "plot_resolution", **kwargs)
-    else:
-        raise TypeError("incorrect reflectivity view '%s'" % view)
-
-
-def probeset_plot(probeset, view=None, **kwargs):
-    """
-    Plot a ProbeSet.
-    """
-    if view is None:
-        view = ProbeSet.view  # Default to Probe.view
-
-    if view == "linear":
-        _probeset_plot(probeset, "plot_linear", **kwargs)
-    elif view == "log":
-        _probeset_plot(probeset, "plot_log", **kwargs)
-    elif view == "fresnel":
-        _probeset_plot(probeset, "plot_fresnel", **kwargs)
-    elif view == "logfresnel":
-        _probeset_plot(probeset, "plot_logfresnel", **kwargs)
-    elif view == "q4":
-        _probeset_plot(probeset, "plot_Q4", **kwargs)
-    elif view.startswith("resid"):
-        _probeset_plot(probeset, "plot_residuals", **kwargs)
-    elif view == "SA":
-        _probeset_plot(probeset, **kwargs)
-    elif view == "resolution":
-        for p in probeset.probes:
-            p.plot_resolution(**kwargs)
-    else:
-        raise TypeError("incorrect reflectivity view '%s'" % view)
-
-
 class ProbePlotter:
+    """
+    Plotter for non-magnetic probes
+    """
+
     def __init__(self, probe, **kwargs):
         self.probe = probe
         self.kwargs = kwargs
@@ -261,10 +180,17 @@ class ProbePlotter:
 
 
 class MagneticProbePlotter(ProbePlotter):
+    """
+    Plotter for magnetic probes
+    """
+
     def __init__(self, probe, **kwargs):
         super().__init__(probe, **kwargs)
 
-    def plot(self):
+    def magnetic(self, plot_function):
+        """
+        Loop over the cross sections and plot them
+        """
         theory = self.kwargs.get("theory", (None, None, None, None))
         self.kwargs["theory"] = theory
 
@@ -272,7 +198,24 @@ class MagneticProbePlotter(ProbePlotter):
             if x_data is not None:
                 self.kwargs["suffix"] = suffix
                 self.kwargs["theory"] = x_th
-                super().plot()
+                plotter = ProbePlotter(x_data, **self.kwargs)
+                fn = getattr(plotter, plot_function)
+                fn()
+
+    def plot(self):
+        self.magnetic("plot")
+
+    def plot_fresnel(self):
+        self.magnetic("plot_fresnel")
+
+    def plot_Q4(self):
+        self.magnetic("plot_Q4")
+
+    def plot_resolution(self):
+        self.magnetic("plot_resolution")
+
+    def plot_residuals(self):
+        self.magnetic("plot_residuals")
 
     def plot_SA(self):
         theory = self.kwargs.get("theory", (None, None, None, None))
