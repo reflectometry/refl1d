@@ -19,6 +19,6 @@ clean: ## Delete some cruft from builds/testing/etc.
 	rm -f `find . -type f -name '*.py[co]'`
 	rm -rf `find . -name __pycache__ -o -name "*.egg-info"` \
 		`find . -name 'output-*'` \
-		.coverage build dist docs/_build \
+		.coverage build dist doc/_build \
 		.pytest_cache \
 		.ruff_cache 
