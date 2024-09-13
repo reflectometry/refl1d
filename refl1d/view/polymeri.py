@@ -1,6 +1,7 @@
-from __future__ import division
 from math import log
+
 import numpy
+
 from .interactor import BaseInteractor
 from .layer import MaterialInteractor
 from .config import pick_radius

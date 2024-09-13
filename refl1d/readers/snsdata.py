@@ -15,13 +15,12 @@ See :mod:`resolution` for details.
 import re
 import math
 
+from bumps.data import parse_file
 import numpy as np
 
-from bumps.data import parse_file
-
-from .. import resolution
-from ..rebin import rebin
-from ..instrument import Pulsed
+from ..fitting import resolution
+from .rebin import rebin
+from ..models.instrument import Pulsed
 from ..models.probe import make_probe
 
 ## Estimated intensity vs. wavelength for liquids reflectometer

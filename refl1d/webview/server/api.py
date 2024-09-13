@@ -15,7 +15,7 @@ from bumps.errplot import calc_errors_from_state
 import numpy as np
 
 # from refl1d.uncertainty import show_errors
-from refl1d.experiment import Experiment, ExperimentBase, MixedExperiment
+from refl1d.models.experiment import Experiment, ExperimentBase, MixedExperiment
 import refl1d.models.probe
 from .profile_uncertainty import show_errors
 from .profile_plot import plot_multiple_sld_profiles, ModelSpec

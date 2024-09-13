@@ -14,7 +14,7 @@ varying parameter.  Multi-parameter dispersion models are not available.
 from bumps.parameter import Parameter
 import numpy as np
 
-from refl1d.experiment import ExperimentBase
+from .experiment import ExperimentBase
 
 
 class Weights(object):

@@ -1,9 +1,9 @@
-from ..model import Slab
-from ..polymer import PolymerBrush
-from .polymeri import PolymerBrushInteractor
-from ..mono import FreeInterface, FreeLayer
-from .monoi import FreeInterfaceInteractor, FreeLayerInteractor
+from ..models.sample.layers import Slab
+from ..models.sample.mono import FreeInterface, FreeLayer
+from ..models.sample.polymer import PolymerBrush
 from .layer import NoInteractor, SlabInteractor
+from .monoi import FreeInterfaceInteractor, FreeLayerInteractor
+from .polymeri import PolymerBrushInteractor
 
 
 # ======================== LayerInteractor factory ====================

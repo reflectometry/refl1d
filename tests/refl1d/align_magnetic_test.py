@@ -1,6 +1,6 @@
 import numpy as np
 
-from refl1d.refllib import backend
+from refl1d.fitting.backends import backend
 
 # thickness, interface, rho, irho
 substrate = [[np.nan, 10, 2, 0.2]]

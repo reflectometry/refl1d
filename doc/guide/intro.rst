@@ -9,7 +9,7 @@ Using Refl1D
 The Refl1D library is organized into modules.  Specific functions and
 classes can be imported from a module, such as::
 
-    >>> from refl1d.model import Slab
+    >>> from refl1d.models.sample.layers import Slab
 
 The most common imports have been gathered together in refl1d.names.  This
 allows you to use names like :class:`Slab <refl1d.model.Slab>` directly::

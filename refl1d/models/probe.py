@@ -36,12 +36,11 @@ See :ref:`data-guide` for details.
 import os
 import warnings
 from dataclasses import dataclass
-from typing import Optional, Any, Sequence, Union, TYPE_CHECKING, Literal, Tuple, List
+from typing import TYPE_CHECKING, Any, List, Literal, Optional, Sequence, Tuple, Union
 
 from bumps.parameter import Parameter, to_dict
-from bumps.plotutil import coordinated_colors, auto_shift
-from bumps.util import field, field_desc
-from bumps.util import USE_PYDANTIC
+from bumps.plotutil import auto_shift, coordinated_colors
+from bumps.util import USE_PYDANTIC, field, field_desc
 
 if USE_PYDANTIC or TYPE_CHECKING:
     from bumps.util import NDArray
@@ -52,12 +51,11 @@ from numpy import log, pi, sign, sqrt
 from periodictable import nsf, xsf
 
 from ..fitting import fresnel
-from ..fitting.reflectivity import convolve, BASE_GUIDE_ANGLE
-from ..material import Vacuum
-from ..resolution import QL2T, TL2Q, dTdL2dQ
-from ..resolution import dQ_broadening
-from ..stitch import stitch
-from ..util import asbytes
+from ..fitting.reflectivity import BASE_GUIDE_ANGLE, convolve
+from ..readers.stitch import stitch
+from ..fitting.resolution import QL2T, TL2Q, dQ_broadening, dTdL2dQ
+from ..utils import asbytes
+from .sample.material import Vacuum
 
 PROBE_KW = (
     "T",

@@ -1,4 +1,3 @@
-import numba
 import importlib.util
 
 

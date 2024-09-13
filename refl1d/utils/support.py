@@ -7,6 +7,7 @@ utilities.
 """
 
 import os
+from pathlib import Path
 
 
 def get_data_path():
@@ -24,7 +25,8 @@ def get_data_path():
     # Check for data next to the package.
     try:
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        return os.path.join(root, "doc/examples")
+        root = Path(__file__).resolve().parent.parent.parent
+        return root / "doc" / "examples"
     except Exception:
         raise RuntimeError("Could not find sample data")
 

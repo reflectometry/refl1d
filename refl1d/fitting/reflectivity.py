@@ -100,7 +100,7 @@ def reflectivity_amplitude(
 
     This function does not compute any instrument resolution corrections.
     """
-    from ..refllib import backend
+    from .backends import backend
 
     kz = _dense(kz, "d")
     if rho_index is None:
@@ -209,7 +209,7 @@ def magnetic_amplitude(
 
     See :class:`magnetic_reflectivity <refl1d.reflectivity.magnetic_reflectivity>` for details.
     """
-    from ..refllib import backend
+    from .backends import backend
 
     kz = _dense(kz, "d")
     if rho_index is None:
@@ -240,7 +240,7 @@ def magnetic_amplitude(
 
 
 def calculate_u1_u3(H, rhoM, thetaM, Aguide):
-    from ..refllib import backend
+    from .backends import backend
 
     rhoM, thetaM = (_dense(rhoM, "d")).copy(), _dense(np.radians(thetaM), "d")
     n = len(rhoM)
@@ -319,7 +319,7 @@ def convolve(xi, yi, x, dx, resolution="normal"):
     distribution uses the $1-\sigma$ equivalent distribution width which is
     $1/\sqrt{3}$ times the width of the rectangle.
     """
-    from ..refllib import backend
+    from .backends import backend
 
     xi, yi, x, dx = _dense(xi), _dense(yi), _dense(x), _dense(dx)
     y = np.empty_like(x)
@@ -342,7 +342,7 @@ def convolve_sampled(xi, yi, xp, yp, x, dx):
     resolution *(xp, yp)* is also represented as a piece-wise linear
     spline.
     """
-    from ..refllib import backend
+    from .backends import backend
 
     x = _dense(x)
     y = np.empty_like(x)

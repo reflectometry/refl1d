@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-# This program is public domain
-# Authors Paul Kienzle, Richard Sheridan
 r"""
 Layer models for polymer systems.
 
@@ -45,17 +43,15 @@ Profile\ [#Cosgrove]_\ [#deVos]_\ [#Sheridan]_
 
 """
 
-from __future__ import division, print_function, unicode_literals
-
-
 __all__ = ["PolymerBrush", "PolymerMushroom", "EndTetheredPolymer", "VolumeProfile", "layer_thickness"]
 
 import inspect
-from time import time
 from collections import OrderedDict
+from time import time
 
+from bumps.parameter import Parameter
 import numpy as np
-from numpy import real, imag, exp, log, sqrt, pi, hstack, ones_like
+from numpy import exp, hstack, imag, log, ones_like, pi, real, sqrt
 
 try:
     from numpy._core.multiarray import correlate as old_correlate
@@ -63,10 +59,8 @@ except ImportError:
     # cruft for numpy < 2
     from numpy.core.multiarray import correlate as old_correlate
 
-from bumps.parameter import Parameter, to_dict
-
-from . import util
-from .model import Layer
+from ... import utils
+from .layers import Layer
 
 LAMBDA_1 = 1.0 / 6.0  # always assume cubic lattice (1/6) for now
 LAMBDA_0 = 1.0 - 2.0 * LAMBDA_1
@@ -167,21 +161,6 @@ class PolymerBrush(Layer):
             "sigma": self.sigma,
         }
 
-    def to_dict(self):
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "name": self.name,
-                "base_vf": self.base_vf,
-                "base": self.base,
-                "length": self.length,
-                "power": self.power,
-                "sigma": self.sigma,
-                "solvent": self.solvent,
-                "polymer": self.polymer,
-            }
-        )
-
     def profile(self, z):
         base_vf, base, length, power, sigma = [
             p.value for p in (self.base_vf, self.base, self.length, self.power, self.sigma)
@@ -221,7 +200,7 @@ class PolymerBrush(Layer):
             pass
 
         vf = self.profile(Pz)
-        Pw, vf = util.merge_ends(Pw, vf, tol=1e-3)
+        Pw, vf = utils.merge_ends(Pw, vf, tol=1e-3)
         P = M * vf + S * (1 - vf)
         Pr, Pi = real(P), imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
@@ -323,20 +302,6 @@ class VolumeProfile(Layer):
             P[k] = getattr(self, k)
         return P
 
-    def to_dict(self):
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "name": self.name,
-                "profile": self.profile,
-                "thickness": self.thickness,
-                "interface": self.interface,
-                "parameters": {k: getattr(self, k) for k in self._parameters},
-                "solvent": self.solvent,
-                "material": self.material,
-            }
-        )
-
     def render(self, probe, slabs):
         Mr, Mi = self.material.sld(probe)
         Sr, Si = self.solvent.sld(probe)
@@ -354,7 +319,7 @@ class VolumeProfile(Layer):
                 raise Exception
         except Exception:
             raise TypeError("profile function '%s' did not return array phi(z)" % self.profile.__name__)
-        Pw, phi = util.merge_ends(Pw, phi, tol=1e-3)
+        Pw, phi = utils.merge_ends(Pw, phi, tol=1e-3)
         P = M * phi + S * (1 - phi)
         slabs.extend(rho=[real(P)], irho=[imag(P)], w=Pw)
         # slabs.interface(self.interface.value)
@@ -426,22 +391,6 @@ class PolymerMushroom(Layer):
             "interface": self.interface,
         }
 
-    def to_dict(self):
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "name": self.name,
-                "profile": self.profile,
-                "thickness": self.thickness,
-                "interface": self.interface,
-                "delta": self.delta,
-                "vf": self.vf,
-                "sigma": self.sigma,
-                "solvent": self.solvent,
-                "polymer": self.polymer,
-            }
-        )
-
     def profile(self, z):
         delta, sigma, vf, thickness = [p.value for p in (self.delta, self.sigma, self.vf, self.thickness)]
 
@@ -468,7 +417,7 @@ class PolymerMushroom(Layer):
             pass
 
         phi = self.profile(Pz)
-        Pw, phi = util.merge_ends(Pw, phi, tol=1e-3)
+        Pw, phi = utils.merge_ends(Pw, phi, tol=1e-3)
         P = M * phi + S * (1 - phi)
         Pr, Pi = np.real(P), np.imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)
@@ -632,26 +581,6 @@ class EndTetheredPolymer(Layer):
             "interface": self.interface,
         }
 
-    def to_dict(self):
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "name": self.name,
-                "thickness": self.thickness,
-                "interface": self.interface,
-                "chi": self.chi,
-                "chi_s": self.chi_s,
-                "h_dry": self.h_dry,
-                "l_lat": self.l_lat,
-                "mn": self.mn,
-                "m_lat": self.m_lat,
-                "pdi": self.pdi,
-                "phi_b": self.phi_b,
-                "solvent": self.solvent,
-                "polymer": self.polymer,
-            }
-        )
-
     def profile(self, z):
         return SCFprofile(
             z,
@@ -686,7 +615,7 @@ class EndTetheredPolymer(Layer):
             pass
 
         phi = self.profile(Pz)
-        Pw, phi = util.merge_ends(Pw, phi, tol=1e-3)
+        Pw, phi = utils.merge_ends(Pw, phi, tol=1e-3)
         P = M * phi + S * (1 - phi)
         Pr, Pi = np.real(P), np.imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)

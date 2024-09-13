@@ -40,15 +40,13 @@ Magnetism support is split into two parts: describing the layers
 and anchoring them to the structure.
 """
 
-from __future__ import print_function
-
 import numpy as np
 from numpy import inf
 from bumps.parameter import Parameter, to_dict
 from bumps.mono import monospline
 
-from .fitting.reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
-from .model import Layer, Stack
+from ..fitting.reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
+from ..models.sample.layers import Layer, Stack
 
 
 class MagneticLayer(Layer):

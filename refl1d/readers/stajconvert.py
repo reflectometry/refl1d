@@ -8,12 +8,12 @@ from bumps import parameter
 import numpy as np
 from numpy import tan, cos, sqrt, radians, degrees, pi
 
+from ..fitting.resolution import QL2T, sigma2FWHM
+from ..models.probe import NeutronProbe, XrayProbe, PolarizedNeutronProbe
+from ..models.sample.layers import Slab, Stack, Repeat
+from ..models.sample.magnetism import Magnetism
+from ..models.sample.material import SLD
 from .staj import MlayerModel, MlayerMagnetic
-from .model import Slab, Stack, Repeat
-from .magnetism import Magnetism
-from .material import SLD
-from .resolution import QL2T, sigma2FWHM
-from .models.probe import NeutronProbe, XrayProbe, PolarizedNeutronProbe
 
 
 def load_mlayer(filename, fit_pmp=0, name=None, layers=None):
@@ -74,7 +74,7 @@ def mlayer_to_model(staj, name=None, layers=None):
 
     Returns a new experiment
     """
-    from .experiment import Experiment
+    from ..models.experiment import Experiment
 
     sample = _mlayer_to_stack(staj, name, layers)
     probe = _load_probe(staj, name, xs="")
@@ -298,7 +298,7 @@ def mlayer_magnetic_to_model(sta, name=None, layers=None):
 
     Returns a new experiment
     """
-    from .experiment import Experiment
+    from ..models.experiment import Experiment
 
     sample = _mlayer_magnetic_to_stack(sta, name, layers)
     probe = _mlayer_magnetic_to_probe(sta, name)

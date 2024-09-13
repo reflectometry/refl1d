@@ -12,7 +12,7 @@ from ..models.probe import (
     PolarizedNeutronProbe,
     PolarizedQProbe,
 )
-from ..resolution import sigma2FWHM, FWHM2sigma, dQdL2dT, dQdT2dLoL, QL2T, QT2L
+from ..fitting.resolution import sigma2FWHM, FWHM2sigma, dQdL2dT, dQdT2dLoL, QL2T, QT2L
 
 
 def parse_orso(filename, *args, **kwargs):

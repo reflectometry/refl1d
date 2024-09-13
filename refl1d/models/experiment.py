@@ -19,29 +19,16 @@ from bumps.parameter import Parameter, tag_all
 from bumps.fitproblem import Fitness
 import numpy as np
 
-from . import material, model, profile
-from . import __version__
-from .fitting.reflectivity import (
+from .. import __version__
+from ..fitting import profile
+from ..fitting.reflectivity import (
     BASE_GUIDE_ANGLE as DEFAULT_THETA_M,
     magnetic_amplitude as reflmag,
     reflectivity_amplitude as reflamp,
 )
-from .models.probe import Probe, PolarizedNeutronProbe
-from .util import asbytes
-
-
-def plot_sample(sample, instrument=None, roughness_limit=0):
-    """
-    Quick plot of a reflectivity sample and the corresponding reflectivity.
-    """
-    if instrument is None:
-        from .models.probe import NeutronProbe
-
-        probe = NeutronProbe(T=np.arange(0, 5, 0.05), L=5)
-    else:
-        probe = instrument.simulate()
-    experiment = Experiment(sample=sample, probe=probe, roughness_limit=roughness_limit)
-    experiment.plot()
+from .probe import Probe, PolarizedNeutronProbe
+from .sample import layers, material
+from ..utils import asbytes
 
 
 class ExperimentBase:
@@ -368,7 +355,7 @@ class Experiment(ExperimentBase):
     """
 
     name: str
-    sample: Optional[model.Stack]
+    sample: Optional[layers.Stack]
     probe: Union[Probe, PolarizedNeutronProbe]
     roughness_limit: float
     dz: Union[float, Literal[None]]
@@ -381,7 +368,7 @@ class Experiment(ExperimentBase):
 
     def __init__(
         self,
-        sample: Optional[model.Stack] = None,
+        sample: Optional[layers.Stack] = None,
         probe=None,
         name=None,
         roughness_limit=0,
@@ -586,7 +573,7 @@ class Experiment(ExperimentBase):
         return (slabs.w, np.hstack((slabs.sigma, 0)), slabs.rho[0], slabs.irho[0], slabs.rhoM, slabs.thetaM)
 
     def save_staj(self, basename):
-        from .stajconvert import save_mlayer
+        from ..readers.stajconvert import save_mlayer
 
         try:
             if self.probe.R is not None:
@@ -684,7 +671,7 @@ class MixedExperiment(ExperimentBase):
 
     name: str
     ratio: List[Union[float, Parameter]]
-    samples: Optional[List[model.Stack]]
+    samples: Optional[List[layers.Stack]]
     probe: Union[Probe, PolarizedNeutronProbe]
     coherent: bool
     interpolation: float
@@ -805,6 +792,30 @@ class MixedExperiment(ExperimentBase):
         return sum(s.penalty() for s in self.samples)
 
 
+def nice(v, digits=2):
+    """Fix v to a value with a given number of digits of precision"""
+    if v == 0.0:
+        return v
+    sign = v / abs(v)
+    place = floor(log10(abs(v)))
+    scale = 10 ** (place - (digits - 1))
+    return sign * floor(abs(v) / scale + 0.5) * scale
+
+
+def plot_sample(sample, instrument=None, roughness_limit=0):
+    """
+    Quick plot of a reflectivity sample and the corresponding reflectivity.
+    """
+    if instrument is None:
+        from .probe import NeutronProbe
+
+        probe = NeutronProbe(T=np.arange(0, 5, 0.05), L=5)
+    else:
+        probe = instrument.simulate()
+    experiment = Experiment(sample=sample, probe=probe, roughness_limit=roughness_limit)
+    experiment.plot()
+
+
 def _polarized_nonmagnetic(r):
     """Convert nonmagnetic data to polarized representation.
 
@@ -838,13 +849,3 @@ def _amplitude_to_magnitude(r, ismagnetic, polarized):
         if polarized:
             R = _polarized_nonmagnetic(R)
     return R
-
-
-def nice(v, digits=2):
-    """Fix v to a value with a given number of digits of precision"""
-    if v == 0.0:
-        return v
-    sign = v / abs(v)
-    place = floor(log10(abs(v)))
-    scale = 10 ** (place - (digits - 1))
-    return sign * floor(abs(v) / scale + 0.5) * scale

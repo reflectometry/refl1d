@@ -2,17 +2,18 @@
 Monotonic spline modeling for free interfaces
 """
 
-from __future__ import division, with_statement
+from dataclasses import dataclass
+from typing import Any, List, Optional, Union
 
-from dataclasses import dataclass, field
-from typing import Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 import numpy as np
-from numpy import diff, hstack, sqrt, searchsorted, asarray, cumsum, inf, nonzero, linspace, sort, isnan, clip
-from bumps.parameter import Parameter as Par, Function as ParFunction, to_dict, Constant
-from bumps.mono import monospline, count_inflections
+from bumps.mono import count_inflections, monospline
+from bumps.parameter import Constant, to_dict
+from bumps.parameter import Function as ParFunction
+from bumps.parameter import Parameter as Par
+from numpy import asarray, clip, cumsum, diff, hstack, inf, sort
 
-from . import util
-from .model import Layer
+from ... import utils
+from .layers import Layer
 
 
 # TODO: add left_sld, right_sld to all layers so that fresnel works
@@ -187,7 +188,7 @@ class FreeInterface(Layer):
         # Pz is the center, Pw is the width
         Pw, Pz = slabs.microslabs(thickness)
         profile = self.profile(Pz)
-        Pw, profile = util.merge_ends(Pw, profile, tol=1e-3)
+        Pw, profile = utils.merge_ends(Pw, profile, tol=1e-3)
         Prho = (1 - profile) * below_rho + profile * above_rho
         Pirho = (1 - profile) * below_irho + profile * above_irho
         slabs.extend(rho=[Prho], irho=[Pirho], w=Pw)
@@ -263,7 +264,7 @@ class _FreeInterfaceW(Layer):
         p /= p[-1]
         Pw, Pz = slabs.microslabs(z[-1])
         profile = monospline(z, p, Pz)
-        Pw, profile = util.merge_ends(Pw, profile, tol=1e-3)
+        Pw, profile = utils.merge_ends(Pw, profile, tol=1e-3)
         Prho = (1 - profile) * below_rho + profile * above_rho
         Pirho = (1 - profile) * below_irho + profile * above_irho
         slabs.extend(rho=[Prho], irho=[Pirho], w=Pw)

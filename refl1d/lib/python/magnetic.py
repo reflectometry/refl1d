@@ -1,5 +1,5 @@
 import sys
-from numpy import pi, sin, cos, conj, radians, sqrt, exp, fabs
+from numpy import pi, sin, cos, radians, sqrt, exp, fabs
 
 EPS = sys.float_info.epsilon
 M_PI = pi

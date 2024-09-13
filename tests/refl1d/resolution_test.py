@@ -3,7 +3,8 @@ from math import asin, degrees, log, pi, radians, sin, sqrt, tan
 import numpy as np
 from numpy.linalg import norm
 
-from refl1d import resolution as res, instrument as inst
+from refl1d.fitting import resolution as res
+from refl1d.models import instrument as inst
 from refl1d.readers import ncnrdata, snsdata
 
 

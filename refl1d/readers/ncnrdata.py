@@ -57,7 +57,7 @@ import os
 
 from bumps.data import parse_file
 
-from ..instrument import Monochromatic
+from ..models.instrument import Monochromatic
 from ..models.probe import PolarizedNeutronProbe
 from ..fitting.reflectivity import BASE_GUIDE_ANGLE
 
@@ -359,7 +359,7 @@ def _counting_time(instrument, sample, uncertainty,
         \Delta R &=& \sqrt(D)/I
     """
     import numpy as np
-    from .experiment import Experiment
+    from refl1d.models.experiment import Experiment
     probe = self.probe(**kw)
     M = Experiment(probe=probe, sample=sample)
     if 1: # Fresnel counting

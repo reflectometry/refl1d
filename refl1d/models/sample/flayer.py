@@ -1,12 +1,12 @@
 import inspect
 
-from numpy import real, imag, asarray, broadcast_to
+from bumps.parameter import Calculation, Parameter, to_dict
+from numpy import asarray, broadcast_to, imag, real
 
-from bumps.parameter import Parameter, to_dict, Calculation
-from refl1d.material import SLD
-from refl1d.model import Layer
-from refl1d.magnetism import BaseMagnetism, Magnetism, DEFAULT_THETA_M
-from refl1d import util
+from refl1d import utils
+from .layers import Layer
+from .magnetism import DEFAULT_THETA_M, BaseMagnetism, Magnetism
+from .material import SLD
 
 
 class FunctionalProfile(Layer):
@@ -111,7 +111,7 @@ class FunctionalProfile(Layer):
         phi = asarray(self.profile(Pz, **_get_values(self)))
         if phi.shape != Pz.shape:
             raise TypeError("profile function '%s' did not return array phi(z)" % self.profile.__name__)
-        Pw, phi = util.merge_ends(Pw, phi, tol=self.tol)
+        Pw, phi = utils.merge_ends(Pw, phi, tol=self.tol)
         # P = M*phi + S*(1-phi)
         slabs.extend(rho=[real(phi)], irho=[imag(phi)], w=Pw)
         # slabs.interface(self.interface.value)
@@ -206,7 +206,7 @@ class FunctionalMagnetism(BaseMagnetism):
         except ValueError:
             raise TypeError("profile function '%s' did not return array rhoM(z)" % self.profile.__name__)
         P = rhoM + thetaM * 0.001j  # combine rhoM/thetaM so they can be merged
-        Pw, P = util.merge_ends(Pw, P, tol=self.tol)
+        Pw, P = utils.merge_ends(Pw, P, tol=self.tol)
         rhoM, thetaM = P.real, P.imag * 1000  # split out rhoM,thetaM again
         slabs.add_magnetism(anchor=anchor, w=Pw, rhoM=rhoM, thetaM=thetaM, sigma=sigma)
 

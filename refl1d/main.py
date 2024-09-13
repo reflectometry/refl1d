@@ -43,7 +43,7 @@ def cli():
 
     # TODO: Add subcommand support to bumps.
     if len(sys.argv) > 2 and sys.argv[1] == "align":
-        from .uncertainty import run_errors
+        from .fitting.uncertainty import run_errors
 
         del sys.argv[1]
         run_errors()

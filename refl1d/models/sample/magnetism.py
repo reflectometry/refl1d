@@ -43,7 +43,7 @@ from bumps.parameter import Parameter, flatten, to_dict
 from bumps.mono import monospline
 import numpy as np
 
-from .fitting.reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
+from refl1d.fitting.reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
 
 
 @dataclass

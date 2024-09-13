@@ -84,8 +84,8 @@ from bumps.cheby import cheby_approx, cheby_points  # pylint: disable=unused-imp
 import numpy as np
 from numpy import inf, real, imag
 
-from .. import util
-from ..model import Layer
+from .layers import Layer
+from ... import utils
 
 
 # TODO: add left_sld, right_sld to all layers so that fresnel works
@@ -222,7 +222,7 @@ class ChebyVF(Layer):
         t = Pz / thickness
         vf = _profile([p.value for p in self.vf], t, self.method)
         vf = np.clip(vf, 0, 1)
-        Pw, vf = util.merge_ends(Pw, vf, tol=1e-3)
+        Pw, vf = utils.merge_ends(Pw, vf, tol=1e-3)
         P = M * vf + S * (1 - vf)
         Pr, Pi = real(P), imag(P)
         slabs.extend(rho=[Pr], irho=[Pi], w=Pw)

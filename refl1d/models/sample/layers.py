@@ -24,14 +24,15 @@ __all__ = ["Repeat", "Slab", "Stack", "Layer"]
 
 from copy import copy
 from dataclasses import dataclass, field
-from typing import Optional, Union, Literal, List
+from typing import List, Literal, Optional, Union
 
-from bumps.parameter import Calculation, Parameter
 import numpy as np
+from bumps.parameter import Calculation, Parameter
 
-from . import material as mat
+from ...fitting import profile
+from .. import probe
+from ..sample import material as mat
 from .magnetism import BaseMagnetism
-from .models import probe
 
 
 # @dataclass(init=False)
@@ -391,7 +392,8 @@ class Stack(Layer):
     def _plot(self, dz=1, roughness_limit=0):
         # TODO: unused?
         import matplotlib.pyplot as plt
-        from . import profile, material
+
+        from ... import material
 
         neutron_probe = probe.NeutronProbe(T=np.arange(0, 5, 100), L=5.0)
         xray_probe = probe.XrayProbe(T=np.arange(0, 5, 100), L=1.54)

@@ -12,7 +12,7 @@ haven't changed since that version.
 import numpy as np
 
 from refl1d.names import Material
-from refl1d.polymer import (
+from refl1d.models.sample.polymer import (
     PolymerBrush,
     PolymerMushroom,
     EndTetheredPolymer,

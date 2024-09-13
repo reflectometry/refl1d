@@ -9,8 +9,8 @@ from numpy import inf
 from bumps.parameter import Parameter as Par, to_dict
 from bumps.bspline import pbs, bspline
 
-from .model import Layer
-from . import util
+from refl1d.models.sample.layers import Layer
+from refl1d import utils
 
 
 # TODO: add left_sld, right_sld to all layers so that fresnel works
@@ -133,7 +133,7 @@ class FreeformInterface01(Layer):
         Pw, Pz = slabs.microslabs(thickness)
         t = Pz / thickness
         offset, profile = pbs(z, vf, t, parametric=False, clamp=True)
-        Pw, profile = util.merge_ends(Pw, profile, tol=1e-3)
+        Pw, profile = utils.merge_ends(Pw, profile, tol=1e-3)
         Prho = (1 - profile) * left_rho + profile * right_rho
         Pirho = (1 - profile) * left_irho + profile * right_irho
         slabs.extend(rho=[Prho], irho=[Pirho], w=Pw)
@@ -205,7 +205,7 @@ class FreeInterface(Layer):
         Pw, Pz = slabs.microslabs(z[-1])
         _, profile = pbs(z, p, Pz, parametric=False, clamp=True)
         profile = np.clip(profile, 0, 1)
-        Pw, profile = util.merge_ends(Pw, profile, tol=1e-3)
+        Pw, profile = utils.merge_ends(Pw, profile, tol=1e-3)
         Prho = (1 - profile) * left_rho + profile * right_rho
         Pirho = (1 - profile) * left_irho + profile * right_irho
         slabs.extend(rho=[Prho], irho=[Pirho], w=Pw)

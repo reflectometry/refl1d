@@ -124,11 +124,9 @@ calculation can be performed.
 
 import numpy as np
 
-from .fitting.reflectivity import BASE_GUIDE_ANGLE
-from .models.probe import make_probe, PolarizedNeutronProbe
-from .resolution import QL2T
-from .resolution import bins, binwidths, binedges
-from .resolution import slit_widths, divergence
+from ..fitting.reflectivity import BASE_GUIDE_ANGLE
+from ..fitting.resolution import QL2T, binedges, bins, binwidths, divergence, slit_widths
+from .probe import PolarizedNeutronProbe, make_probe
 
 
 class Monochromatic(object):
@@ -563,9 +561,10 @@ class Pulsed(object):
                 Only needed for back reflectivity measurements.
         """
         from numpy.random import poisson as pois
-        from .rebin import rebin
+
+        from ..readers.rebin import rebin
         from .experiment import Experiment
-        from .models.probe import ProbeSet
+        from .probe import ProbeSet
 
         T = kw.pop("T", self.T)
         slits = kw.pop("slits", self.slits)

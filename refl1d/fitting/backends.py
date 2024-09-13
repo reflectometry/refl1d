@@ -4,11 +4,11 @@ Reflectometry backend loader
 
 import importlib
 
-from . import BACKEND_NAME, BACKEND_NAMES
+from .. import BACKEND_NAME, BACKEND_NAMES
 
 BACKEND_MODULE_NAMES = {
-    "numba": "refl1d.lib.numba",
     "c_ext": "refl1d.reflmodule",
+    "numba": "refl1d.lib.numba",
     "python": "refl1d.lib.python",
 }
 
