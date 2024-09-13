@@ -9,10 +9,10 @@ Installing the application
 | Windows installer: :slink:`%(winexe)s`
 | Source: :slink:`%(srczip)s`
 
-Recent versions of the Refl1D application are available for windows
+Recent versions of the Refl1D application are available for Windows
 from `github <https://github.com/reflectometry/refl1d/releases/latest>`_.
 The file `Refl1D-VERSION-exe.zip` contains python, the application, the
-supporting libraries and everything else needed to run the application.
+supporting libraries, and everything else needed to run the application.
 
 To install, download and extract the zip file. Go to the extracted directory
 and click on `refl1d_gui.bat`. This will open a dialog saying that the
@@ -79,7 +79,7 @@ You will need a C/C++ compiler.  If you already have Microsoft Visual C
 installed you are done. If not, you can use the MinGW compiler that is supplied
 with your python environment or download your own.  You can set MinGW
 as the default compiler by creating the file *Lib\distutils\\distutils.cfg*
-in your python directory (e.g., *C:\\Python3.8*) with the following content::
+in your python directory (e.g., *C:\\Python3.9*) with the following content::
 
     [build]
     compiler=mingw32

@@ -29,8 +29,8 @@ BACKEND_NAME: BACKEND_NAMES = os.environ.get("REFL1D_BACKEND", "numba")
 def use(backend_name: BACKEND_NAMES):
     global BACKEND_NAME
     BACKEND_NAME = backend_name
-    if "refl1d.refllib" in sys.modules:
+    if "refl1d.fitting.backends" in sys.modules:
         # then it's already been imported:
-        import refl1d.refllib
+        import refl1d.fitting.backends as backends
 
-        refl1d.refllib.set_backend(backend_name)
+        backends.set_backend(backend_name)

@@ -62,14 +62,10 @@ exclude = ["*.txt"]
 version = { attr = "refl1d.__version__" }
 
 [tool.setuptools]
-packages = [
-    "refl1d",
-    "refl1d.view",
-    "refl1d.lib.python",
-    "refl1d.lib.numba",
-    "refl1d.webview.server",
-]
 script-files = ["bin/refl1d_cli.py", "bin/refl1d_gui.py"]
+
+[tool.setuptools.packages.find]
+include = ["refl1d"]
 
 [project.scripts]
 refl1d = "refl1d.main:main"
