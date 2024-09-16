@@ -87,14 +87,22 @@ jobs:
           echo "PY3_WHL=$(ls artifacts/dist/*.whl)" >> $GITHUB_ENV
           echo "PY3_WHL=$(ls artifacts/dist/*.whl)"
 
+      - name: Generate unstable release text
+        run: |
+          echo "UNSTABLE_TEXT='A persistent prerelease where build artifacts for the current tip will be deposited\n\n## Last updated: $(date +%F)'" >> $GITHUB_ENV
+
       - name: Update unstable release
         uses: johnwbyrd/update-release@v1.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           release: unstable
+          body: |
+            A persistent prerelease where build artifacts for the current tip will be deposited
+            
+            ## Last updated: $(date +%F)
           files: |
             ${{ env.PY3_WHL }}
-            
+
       - name: Update current release
         if: startsWith(github.ref, 'refs/tags')
         uses: johnwbyrd/update-release@v1.0.0
