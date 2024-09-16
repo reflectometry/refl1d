@@ -85,8 +85,9 @@ jobs:
           ls -R artifacts
           echo "SRC_DIST=$(ls artifacts/dist/*.tar.gz)" >> $GITHUB_ENV
           echo "PY3_WHL=$(ls artifacts/dist/*.whl)" >> $GITHUB_ENV
+          echo "PY3_WHL=$(ls artifacts/dist/*.whl)"
 
-      - name: Update current release
+      - name: Update unstable release
         uses: johnwbyrd/update-release@v1.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
