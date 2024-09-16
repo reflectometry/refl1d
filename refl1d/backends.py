@@ -4,7 +4,7 @@ Reflectometry backend loader
 
 import importlib
 
-from .. import BACKEND_NAME, BACKEND_NAMES
+from . import BACKEND_NAME, BACKEND_NAMES
 
 BACKEND_MODULE_NAMES = {
     "c_ext": "refl1d.reflmodule",
