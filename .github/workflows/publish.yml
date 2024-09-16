@@ -87,6 +87,14 @@ jobs:
           echo "PY3_WHL=$(ls artifacts/dist/*.whl)" >> $GITHUB_ENV
 
       - name: Update current release
+        uses: johnwbyrd/update-release@v1.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: sid
+          files: |
+            ${{ env.PY3_WHL }}
+            
+      - name: Update current release
         if: startsWith(github.ref, 'refs/tags')
         uses: johnwbyrd/update-release@v1.0.0
         with:
