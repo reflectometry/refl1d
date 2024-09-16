@@ -34,6 +34,7 @@ __pycache__/
 /*.egg-info/
 /EGG-INFO
 /.eggs
+refl1d/_version.py
 
 # Environments
 .env

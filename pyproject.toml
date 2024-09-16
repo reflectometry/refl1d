@@ -31,7 +31,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pre-commit", "ruff", "pytest", "pytest-cov", "sphinx"]
+dev = ["pre-commit", "ruff", "pytest", "pytest-cov", "sphinx", "versioningit"]
 full = ["wxpython", "ipython"]
 webview = ["bumps[webview] >= 1.0.0a0"]
 
@@ -41,7 +41,7 @@ homepage = "https://refl1d.github.io"
 repository = "https://github.com/reflectometry/refl1d"
 
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools", "versioningit"]
 build-backend = "setuptools.build_meta"
 
 [tool.ruff]
@@ -79,3 +79,18 @@ norecursedirs = ["view", "mystic", "bin", "webview/client", "explore"]
 python_files = ["*.py"]
 python_classes = ["NoClassTestsWillMatch"]
 python_functions = ["test", "*_test", "test_*"]
+
+[tool.versioningit.vcs]
+method = "git"
+default-tag = "0.0.1"
+
+[tool.versioningit.next-version]
+method = "smallest"
+
+[tool.versioningit.format]
+distance = "{next_version}.dev{distance}"
+dirty = "{version}+d{build_date:%Y%m%d}"
+distance-dirty = "{next_version}.dev{distance}+d{build_date:%Y%m%d%H%M}"
+
+[tool.versioningit.write]
+file = "refl1d/_version.py"
