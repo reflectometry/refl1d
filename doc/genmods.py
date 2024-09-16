@@ -34,7 +34,7 @@ MODULES = [
     ("deprecated.freeform", "Freeform - Parametric B-Spline"),
     ("fitplugin", "Bumps plugin definition for reflectivity models"),
     ("fitting.abeles", "Pure python reflectivity calculator"),
-    ("fitting.backends", "Backends for low level reflectivity calculations"),
+    ("backends", "Backends for low level reflectivity calculations"),
     ("fitting.fresnel", "Pure python Fresnel reflectivity calculator"),
     ("fitting.profile", "Model profile"),
     ("fitting.reflectivity", "Basic reflectivity calculations"),
