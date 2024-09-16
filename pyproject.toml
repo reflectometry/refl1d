@@ -63,10 +63,9 @@ version = { attr = "refl1d.__version__" }
 
 [tool.setuptools]
 script-files = ["bin/refl1d_cli.py", "bin/refl1d_gui.py"]
-packages = [
-    "refl1d",
-]
-# [tool.setuptools]
+
+[tool.setuptools.packages.find]
+where = ["."]
 
 [project.scripts]
 refl1d = "refl1d.main:main"
