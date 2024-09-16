@@ -23,7 +23,7 @@ classifiers = [
 requires-python = ">=3.9"
 dependencies = [
     # "bumps>=0.7.16",
-    "bumps@git+https://github.com/bumps/bumps.git#egg=master",
+    "bumps>=1.0.0a0",
     "matplotlib",
     "numba",
     "numpy",
@@ -34,7 +34,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pre-commit", "ruff", "pytest", "pytest-cov"]
 full = ["wxpython", "ipython"]
-webview = ["bumps[webview]@git+https://github.com/bumps/bumps.git#egg=master"]
+webview = ["bumps[webview]>=1.0.0a0"]
 
 [project.urls]
 documentation = "https://refl1d.github.io"
