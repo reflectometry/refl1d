@@ -6,6 +6,11 @@ Contributing Changes
 
 .. contents:: :local:
 
+
+The refl1d package is a community project, and we welcome contributions from anyone.  
+The package is developed collaboratively on `Github <https://github.com>`_ - if you don't have an account yet, you can sign up for free. For direct write access to the repository, it is required that your accout have `two-factor authentication enabled <https://docs.github.com/en/authentication/securing-your-account-with-two-factor-authentication-2fa>`_.
+You may also want to configure your account to use `SSH keys <https://docs.github.com/en/authentication/connecting-to-github-with-ssh>`_ for authentication.
+
 The best way to contribute to the reflectometry package is to work
 from a copy of the source tree in the revision control system.
 
@@ -18,11 +23,53 @@ be downloaded from the `git page <http://www.git-scm.com/>`_, or you can use
 an integrated development environment (IDE) such as Eclipse and PyCharm, which
 may have git built in.
 
+
+Getting the Code
+================
+
+To get the code, you will need to clone the repository.  If you are planning
+on making only a few small changes, you can clone the repository directly,
+make the changes, document and test, then send a patch (see `Simple patches <#Simple-patches>`_ below).
+
+If you are planning on making larger changes, you should fork the repository
+on github, make the changes in your fork, then issue a pull request to the
+main repository (see `Larger changes <#Larger-changes>`_ below).
+
+.. note::
+
+    If you are working on a fork, the clone line is slightly different::
+            
+        git clone https://github.com/YourGithubAccount/refl1d
+
+    
+    You will also need to keep your fork up to date
+    with the main repository.  You can do this by adding the main repository
+    as a remote, fetching the changes, then merging them into your fork.
+
+    .. code-block:: bash
+
+        # Add the main repository as a remote
+        git remote add refl1d
+
+        # Fetch the changes from the main repository
+        git fetch refl1d
+
+        # Merge the changes into your fork
+        git merge refl1d/master
+
+        # Push the changes to your fork
+        git push
+
+
+Once you have the code, you will need to install Refl1D, including its dependencies.
+You can do this by following the instructions in the `Installation guide <install.html>`_.
+
+.. simple-patches:
+
 Simple patches
 --------------
 
 If you want to make one or two tiny changes, it is easiest to clone the
-project, make the changes, document and test, then send a patch.
 
 Clone the project as follows::
 
