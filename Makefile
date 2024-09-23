@@ -22,3 +22,7 @@ clean: ## Delete some cruft from builds/testing/etc.
 		.coverage build dist doc/_build \
 		.pytest_cache \
 		.ruff_cache 
+
+.PHONY: test
+test: ## Run pytest and doc tests
+	pytest -v

@@ -70,22 +70,8 @@ Simple patches
 --------------
 
 If you want to make one or two tiny changes, it is easiest to clone the
-
-Clone the project as follows::
-
-    git clone https://github.com/reflectometry/refl1d.git
-
-You will need bumps and periodictable to run.  If you are fixing bugs in the
-scattering length density calculator or the fitting engine, you will want to
-clone the repositories as sister directories to the refl1d source tree::
-
-    git clone https://github.com/bumps/bumps.git
-    git clone https://github.com/pkienzle/periodictable.git
-
-If you are only working with the refl1d modeling code, then you can install
-bumps and periodictable using pip::
-
-    pip install periodictable bumps
+repository, make the changes, then send a patch.  This is the simplest way
+to contribute to the project.
 
 To run the package from the source tree use the following::
 
@@ -102,13 +88,13 @@ As you make changes to the package, you can see what you have done using git::
     git diff
 
 Please update the documentation and add tests for your changes.  We use
-doctests on all of our examples that we know our documentation is correct.
-More thorough tests are found in test directory.  With the nosetest package,
-you can run the tests using::
+doctests on all of our examples so that we know our documentation is correct.
+More thorough tests are found in test directory. You can run these tests via pytest, 
+or via the convenience Makefile target::
 
-    python tests.py
-
-Nose is available on linux form apt-get
+    pytest 
+    # or
+    make test
 
 When all the tests run, create a patch and send it to paul.kienzle@nist.gov::
 
@@ -120,14 +106,9 @@ Larger changes
 For a larger set of changes, you should fork refl1d on github, and issue pull
 requests for each part.
 
-Once you have create the fork, the clone line is slightly different::
-
-    git clone https://github.com/YourGithubAccount/refl1d
-
 After you have tested your changes, you will need to push them to your github
 fork::
 
-    git log
     git commit -a -m "short sentence describing what the change is for"
     git push
 
@@ -144,12 +125,14 @@ track updates to the original refl1d package using::
     git push
 
 When making changes, you need to take care that they work on different
-versions of python.   In particular, RHEL6, Centos6.5, Rocks and
-ScientificLinux all run python 2.6, most linux/windows/mac users run
-python 2.7, but some of the more bleeding edge distributions run 3.3/3.4.
-The anaconda distribution makes it convenient to maintain multiple independent
-environments
-Even better is to test against all python versions 2.6, 2.7, 3.3, 3.4::
+versions of python. Using conda makes it convenient to maintain multiple independent
+environments. You can create a new environment for testing with, for example::
+
+    conda create -n py312 python=3.12
+    conda activate py312
+    pip install -e .[dev]
+
+Even better is to test against all current python versions::
 
     pythonX.Y tests.py
     pythonX.Y run.py
@@ -160,7 +143,7 @@ Building Documentation
 ======================
 
 Building the package documentation requires a working Sphinx installation,
-and latex to build the pdf. As of this writing we are using sphinx 1.2.
+and latex to build the pdf. As of this writing we are using sphinx 8.0.2.
 
 The command line to build the docs is as follows::
 
@@ -172,7 +155,7 @@ You can see the result by pointing your browser to::
     doc/_build/latex/Refl1d.pdf
 
 Note that this only works with a unix-like environment for now since we are
-using *make*.  On windows, you can run sphinx directly from python::
+using *make*.  On Windows, you can run sphinx directly from python::
 
     cd doc
     python -m sphinx.__init__ -b html -d _build/doctrees . _build/html
@@ -217,15 +200,6 @@ OS/X Installer
 
 Note: OS/X installer is no longer maintained.
 
-To build a Mac OS/X standalone executable you will need the py2app package.
-This should already be available in your mac python environment.
-
-Build the executable using::
-
-    python setup_py2app
-
-This creates a *.dmg* file in the *dist* directory with the Refl1D app
-inside.
 
 Creating a new release
 ----------------------

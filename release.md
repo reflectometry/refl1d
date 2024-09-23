@@ -39,11 +39,14 @@
 
 1. Build the docs
 
-    Even though this should happen automatically in jenkins we should do the builds by hand to make sure they are error free.
+    This should happen automatically in Jenkins, but we should do the builds by hand to make sure they are error free.
 
     ```bash
     cd doc && make clean html pdf
     ```
+
+    **Note**: the pdf build requires `latexmk` and `pdflatex` to be installed.  
+    If you don't have these installed, you can omit the pdf build.
 
 1. Update version number and requirements
 

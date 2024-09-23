@@ -90,30 +90,6 @@ If you want to run the webview, you can install the optional extra::
 
     pip install .[webview]
 
-Additional Configuration - Windows 
-``````````````````````````````````
-
-To install Refl1D on Windows, you will need a C/C++ compiler.  If you already have Microsoft Visual C
-installed you are done. If not, you can use the MinGW compiler that is supplied
-with your python environment or download your own.  You can set MinGW
-as the default compiler by creating the file *Lib\distutils\\distutils.cfg*
-in your python directory (e.g., *C:\\Python3.10*) with the following content::
-
-    [build]
-    compiler=mingw32
-
-
-Additional Configuration - OS/X
-```````````````````````````````
-
-Similar to windows, you can install the official python distribution or
-use Anaconda.  You will need to install the Xcode command line utilities
-to get the compiler.
-
-To run the interactive interface on OS/X you may need to use::
-
-    pythonw -m refl1d.main --edit
-
 
 Installing for Development
 ==========================
