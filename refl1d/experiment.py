@@ -12,6 +12,7 @@ from __future__ import division, print_function
 
 from dataclasses import dataclass, field
 import sys
+from copy import deepcopy
 import os
 from math import pi, log10, floor
 import traceback
@@ -337,7 +338,7 @@ class ExperimentBase:
 
     def create_webview_plot(self, title, problem, state):
 
-        return self._plot_callbacks[title]['func'](self, problem, state)
+        return self._plot_callbacks[title]['func'](deepcopy(self), problem, state)
 
 @dataclass(init=False)
 class Experiment(ExperimentBase):
