@@ -198,8 +198,17 @@ to a checkin on the master branch via GitHub Actions.
 OS/X Installer
 ==============
 
-Note: OS/X installer is no longer maintained.
+A Python script is available to build the OS/X installer::
 
+    extra/build_dmg.py
+
+This script builds a `.dmg` based on the contents of the `dist/<product version>.app` directory.
+It can be called with the name and version of the product as arguments, e.g.::
+
+    python extra/build_dmg.py Refl1D 0.8.17
+
+This script is also run automatically on github in response
+to a checkin on the master branch via GitHub Actions.
 
 Creating a new release
 ----------------------
