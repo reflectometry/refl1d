@@ -11,7 +11,6 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-from __future__ import with_statement
 import sys, os
 
 print("python %s" % sys.executable)
@@ -32,12 +31,6 @@ print("python %s" % sys.executable)
 sys.path.append(os.path.abspath("."))  # for sitedoc
 sys.path.append(os.path.abspath("_extensions"))  # for sphinx extensions
 
-import imp
-from os.path import abspath, dirname, split as splitpath, join as joinpath
-
-run_py = joinpath(dirname(dirname(abspath(__file__))), "run.py")
-run = imp.load_source("run", run_py)
-run.prepare_environment()
 print("== path ==")
 print("\n".join(sys.path))
 print("== end path ==")
