@@ -321,7 +321,7 @@ class ExperimentBase:
 
     def create_webview_plot(self, title, problem, state):
 
-        return self._plot_callbacks[title]['func'](deepcopy(self), problem, state)
+        return self._plot_callbacks[title]['func'](self, problem, state)
 
 @dataclass(init=False)
 class Experiment(ExperimentBase):
