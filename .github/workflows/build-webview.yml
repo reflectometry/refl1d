@@ -1,10 +1,10 @@
-name: Build webview
+name: Build conda-packed distribution
 
 on:
   workflow_dispatch:
 
 env:
-  branch_name: webview
+  branch_name: master
 
 jobs:
   test_and_build:
@@ -29,7 +29,7 @@ jobs:
         python-version: ${{ matrix.config.py }}
         shell: bash
 
-    - name: Build webview packed (linux)
+    - name: Build conda-packed (all platforms)
       shell: bash -el {0}
       run: |
         conda activate base
