@@ -1,6 +1,6 @@
 {
   "name": "refl1d-webview-client",
-  "version": "0.1.24",
+  "version": "0.1.25",
   "type": "module",
   "repository": {
     "type": "git",
@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "bootstrap": "^5.3.3",
-    "bumps-webview-client": "^0.1.18",
+    "bumps-webview-client": "^0.1.19",
     "comlink": "^4.4.1",
     "json-difference": "^1.16.1",
     "plotly.js": "^2.35.2",
