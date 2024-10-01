@@ -275,21 +275,16 @@ class Stack(Layer):
     layers: List[Union["Slab", "Repeat"]]
     thickness: Parameter = field(metadata={"description": "always equals the sum of the layer thicknesses"})
 
-    def __init__(
-        self, base=None, layers=None, name="Stack", interface=None, thickness: Optional[Union[Parameter, float]] = None
-    ):
+    def __init__(self, layers=None, name="Stack", interface=None, thickness: Optional[Union[Parameter, float]] = None):
         self.name = name
         self.interface = None
         self._layers = []
         # make sure thickness.id is persistent through serialization:
-        thickness_id = getattr(thickness, "id", None)
         thickness = thickness if thickness is not None else 0
-        self.thickness = Parameter.default(thickness, name=name + " thickness", id=thickness_id)
+        self.thickness = Parameter.default(thickness, name=name + " thickness")
         self._set_thickness()
-        if layers is not None and base is None:
-            base = layers
-        if base is not None:
-            self.add(base)
+        if layers is not None:
+            self.add(layers)
 
     @property
     def layers(self):
@@ -329,15 +324,6 @@ class Stack(Layer):
             except TypeError:
                 L = [other]
             self._layers.extend(_check_layer(el) for el in L)
-
-    def __getstate__(self):
-        return self.interface, self._layers, self.name, self.thickness
-
-    def __setstate__(self, state):
-        self.interface, self._layers, self.name, self.thickness = state
-        # TODO: not clear that this is needed here.  The thickness parameter
-        # from __getstate__ should have a valid expression in it.
-        self._set_thickness()
 
     def __copy__(self):
         stack = Stack()
