@@ -16,23 +16,24 @@ for the purposes.
 Example loading data:
 
     >>> from refl1d.names import *
+    >>> from refl1d import plotting
     >>> datafile = sample_data('chale207.refl')
     >>> instrument = NCNR.ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
     >>> probe = instrument.load(datafile)
-    >>> probe.plot(view='log')
+    >>> plotting.plot_probe.plot(probe, view='log')
 
 Magnetic data has multiple cross sections and often has fixed slits:
 
     >>> datafile = sample_data('lha03_255G.refl')
     >>> instrument = NCNR.NG1(slits_at_Tlo=1)
     >>> probe = instrument.load_magnetic(datafile)
-    >>> probe.plot(view='SA', substrate=silicon) # Spin asymmetry view
+    >>> plotting.plot_probe.plot(probe, view='SA', substrate=silicon) # Spin asymmetry view
 
 For simulation, you need a probe and a sample:
 
     >>> instrument = NCNR.ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
     >>> probe = instrument.probe(T=np.linspace(0, 5, 51))
-    >>> probe.plot_resolution()
+    >>> plotting.plot_probe.plot(probe, view='resolution')
     >>> sample = silicon(0, 10) | gold(100, 10) | air
     >>> M = Experiment(probe=probe, sample=sample)
     >>> M.simulate_data() # Optional
