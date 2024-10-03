@@ -343,7 +343,7 @@ class ExperimentBase:
         # change_with = 'parameter' or 'uncertainty'
         # Plot function syntax: f(model, problem) for 'parameter'
         #                       f(model, problem, state, n_samples) for 'uncertainty'
-        
+
         self._webview_plots[plot_title] = dict(change_with=change_with, func=plot_function)
 
     @property
