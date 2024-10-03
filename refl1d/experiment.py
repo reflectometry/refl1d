@@ -12,17 +12,19 @@ from __future__ import division, print_function
 
 from dataclasses import dataclass, field
 import sys
+from copy import deepcopy
 import os
 from math import pi, log10, floor
 import traceback
 import json
-from typing import Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
+from typing import Optional, Union, Callable, Literal, List, Literal, Protocol, TypedDict
 from warnings import warn
 
 import numpy as np
 from bumps import parameter
 from bumps.parameter import Parameter, Constraint, tag_all
-from bumps.fitproblem import Fitness
+from bumps.fitproblem import Fitness, FitProblem
+from bumps.dream.state import MCMCDraw
 
 from . import material, profile
 from . import __version__
@@ -51,12 +53,24 @@ def plot_sample(sample, instrument=None, roughness_limit=0):
     experiment.plot()
 
 
+class WebviewPlotFunction(Protocol):
+    def __call__(
+        self, model: "ExperimentBase", problem: FitProblem, state: MCMCDraw, n_samples: Optional[int]
+    ) -> dict: ...
+
+
+class WebviewPlotInfo(TypedDict):
+    change_with: Literal["parameter", "uncertainty"]
+    func: WebviewPlotFunction
+
+
 class ExperimentBase:
     probe = None  # type: Optional[Probe]
     interpolation = 0
     _probe_cache = None
     _substrate = None
     _surface = None
+    _webview_plots: dict[str, WebviewPlotInfo]
 
     def parameters(self):
         raise NotImplementedError()
@@ -323,6 +337,19 @@ class ExperimentBase:
             theory = self.reflectivity(interpolation=self.interpolation)
             self.probe.save(filename=basename + "-refl-interp.dat", theory=theory)
 
+    def register_webview_plot(
+        self, plot_title: str, plot_function: WebviewPlotFunction, change_with: Literal["parameter", "uncertainty"]
+    ):
+        # change_with = 'parameter' or 'uncertainty'
+        # Plot function syntax: f(model, problem) for 'parameter'
+        #                       f(model, problem, state, n_samples) for 'uncertainty'
+
+        self._webview_plots[plot_title] = dict(change_with=change_with, func=plot_function)
+
+    @property
+    def webview_plots(self):
+        return self._webview_plots
+
 
 @dataclass(init=False)
 class Experiment(ExperimentBase):
@@ -430,6 +457,7 @@ class Experiment(ExperimentBase):
         if auto_tag:
             tag_all(self.probe.parameters(), "probe")
             tag_all(self.sample.parameters(), "sample")
+        self._webview_plots = {}
 
     @property
     def ismagnetic(self):
@@ -725,6 +753,7 @@ class MixedExperiment(ExperimentBase):
         self._surface = self.samples[0][-1].material
         self._cache = {}
         self.name = name if name is not None else probe.name
+        self._webview_plots = {}
 
     def update(self):
         self._cache = {}
