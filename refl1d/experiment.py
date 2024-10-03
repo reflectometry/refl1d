@@ -340,8 +340,10 @@ class ExperimentBase:
     def register_webview_plot(
         self, plot_title: str, plot_function: WebviewPlotFunction, change_with: Literal["parameter", "uncertainty"]
     ):
-        # Plot function syntax: f(model, problem, state)
         # change_with = 'parameter' or 'uncertainty'
+        # Plot function syntax: f(model, problem) for 'parameter'
+        #                       f(model, problem, state, n_samples) for 'uncertainty'
+        
         self._webview_plots[plot_title] = dict(change_with=change_with, func=plot_function)
 
     @property
