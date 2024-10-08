@@ -76,6 +76,8 @@ jobs:
     needs: build-wheel
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+      
       - name: Retrieve all artifacts
         uses: actions/download-artifact@v4
 
