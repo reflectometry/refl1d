@@ -25,8 +25,14 @@ def build_client(
     # link to the local version of bumps:
     if link_bumps:
         import bumps.webview
-
         bumps_path = Path(bumps.webview.__file__).parent / "client"
+
+        # install the local version of bumps
+        os.chdir(bumps_path)
+        os.system("npm install")
+
+        # link to the local version of bumps
+        os.chdir(client_folder)
         print(f"Linking to the local version of bumps... {bumps_path}")
         os.system(f"npm link {bumps_path}")
     # build the client
