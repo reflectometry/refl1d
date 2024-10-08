@@ -37,8 +37,8 @@ jobs:
         conda activate base
         ./extra/build_conda_packed.sh
         ls artifacts
-        echo "DISTRIBUTABLES=$(ls artifacts/*)" >> $GITHUB_ENV
-        echo "DISTRIBUTABLES=$(ls artifacts/*)"
+        echo "DISTRIBUTABLES='$(ls artifacts/* | tr '\n' ' ')'" >> $GITHUB_ENV
+        echo "DISTRIBUTABLES='$(ls artifacts/* | tr '\n' ' ')'"
 
     - name: Update release assets and text
       uses: actions/github-script@v7
