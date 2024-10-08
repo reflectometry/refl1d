@@ -3,7 +3,7 @@
 ENV_NAME="isolated-base"
 PYTHON_VERSION="3.10"
 PKGNAME="refl1d"
-SUBNAME="webview"
+SUBNAME="packed"
 OUTPUT="artifacts"
 WORKING_DIRECTORY=$(pwd)
 
