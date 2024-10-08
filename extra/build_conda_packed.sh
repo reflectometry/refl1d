@@ -51,9 +51,8 @@ cp ./extra/*.svg $pkgdir/share/icons
 cp ./extra/*.png $pkgdir/share/icons
 
 $bindir/python -m pip install --no-input --no-compile numba
-$bindir/python -m pip install --no-input --no-compile git+https://github.com/bumps/bumps@webview
-$bindir/python -m pip install --no-input --no-compile git+https://github.com/reflectometry/refl1d@webview
-$bindir/python -m pip install --no-compile -r https://raw.githubusercontent.com/bumps/bumps/webview/webview-requirements
+$bindir/python -m pip install --no-input --no-compile "bumps[webview] @ git+https://github.com/bumps/bumps"
+$bindir/python -m pip install --no-input --no-compile git+https://github.com/reflectometry/refl1d
 $bindir/python -m pip install orsopy
 
 # build the client

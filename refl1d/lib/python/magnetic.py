@@ -5,7 +5,6 @@ EPS = sys.float_info.epsilon
 M_PI = pi
 PI4 = 4.0e-6 * pi
 B2SLD = 2.31604654  # Scattering factor for B field 1e-6
-MINIMAL_RHO_M = 1e-2  # in units of 1e-6/A^2
 
 prange = range
 
@@ -306,20 +305,16 @@ def magnetic_amplitude(d, sigma, rho, irho, rhoM, u1, u3, KZ, rho_index, Ra, Rb,
     # assert rho_index is None
     layers = len(d)
     points = len(KZ)
-    if fabs(rhoM[0]) <= MINIMAL_RHO_M and fabs(rhoM[layers - 1]) <= MINIMAL_RHO_M:
-        # calculations for I+ and I- are the same in the fronting and backing.
-        for i in prange(points):
-            Cr4xa(layers, d, sigma, 1.0, rho, irho, rhoM, u1, u3, KZ[i], i, Ra, Rb, Rc, Rd)
-    else:
-        # plus polarization must be before minus polarization because it
-        # fills in all R++, R+-, R-+, R--, but minus polarization only fills
-        # in R-+, R--.
-        for i in prange(points):
-            Cr4xa(layers, d, sigma, 1.0, rho, irho, rhoM, u1, u3, KZ[i], i, Ra, Rb, Rc, Rd)
 
-        # minus polarization
-        for i in prange(points):
-            Cr4xa(layers, d, sigma, -1.0, rho, irho, rhoM, u1, u3, KZ[i], i, Ra, Rb, Rc, Rd)
+    # plus polarization must be before minus polarization because it
+    # fills in all R++, R+-, R-+, R--, but minus polarization only fills
+    # in R-+, R--.
+    for i in prange(points):
+        Cr4xa(layers, d, sigma, 1.0, rho, irho, rhoM, u1, u3, KZ[i], i, Ra, Rb, Rc, Rd)
+
+    # minus polarization
+    for i in prange(points):
+        Cr4xa(layers, d, sigma, -1.0, rho, irho, rhoM, u1, u3, KZ[i], i, Ra, Rb, Rc, Rd)
 
 
 BASE_GUIDE_ANGLE = 270.0
