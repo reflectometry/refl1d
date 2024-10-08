@@ -25,6 +25,7 @@ def build_client(
     # link to the local version of bumps:
     if link_bumps:
         import bumps.webview
+
         bumps_path = Path(bumps.webview.__file__).parent / "client"
 
         # install the local version of bumps
