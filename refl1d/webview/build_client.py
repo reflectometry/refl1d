@@ -30,8 +30,10 @@ def build_client(
         bumps_path = Path(bumps.webview.__file__).parent / "client"
 
         # install the local version of bumps
-        os.chdir(bumps_path)
-        os.system("npm install")
+        if install_dependencies or not (bumps_path / "node_modules").exists():
+            os.chdir(bumps_path)
+            print("Installing node modules for bumps...")
+            os.system("npm install")
 
         # link to the local version of bumps
         os.chdir(client_folder)
