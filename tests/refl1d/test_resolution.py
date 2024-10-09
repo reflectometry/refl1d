@@ -3,9 +3,9 @@ from math import asin, degrees, log, pi, radians, sin, sqrt, tan
 import numpy as np
 from numpy.linalg import norm
 
-from refl1d.models import instrument as inst
+from refl1d.models.probe import instrument as inst
 from refl1d.models.probe.data_loaders import ncnrdata, snsdata
-from refl1d.models.sample import resolution as res
+from refl1d.models.probe import resolution as res
 
 
 def test():

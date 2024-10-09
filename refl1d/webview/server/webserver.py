@@ -18,10 +18,10 @@ from bumps.webview.server.webserver import (
 )
 
 # Register the refl1d model loader
-import refl1d.fitplugin
+from refl1d.models.bumps_interface import fitplugin
 import bumps.cli
 
-bumps.cli.install_plugin(refl1d.fitplugin)
+bumps.cli.install_plugin(fitplugin)
 
 # from . import api  # use side-effects to register refl1d functions
 # from .profile_plot import plot_sld_profile_plotly

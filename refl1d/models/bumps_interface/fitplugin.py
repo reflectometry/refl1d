@@ -11,7 +11,7 @@ __all__ = ["data_view", "model_view", "new_model", "calc_errors", "show_errors"]
 import numpy as np
 
 from ... import names as refl
-from refl1d.models.uncertainty import calc_errors, show_errors
+from ..uncertainty import calc_errors, show_errors
 
 # List of modules that contain dataclasses for the saved json file format
 
@@ -33,7 +33,7 @@ def load_model(filename):
     # TODO: bumps plugin api needs to allow options for loader
     options = None
     if filename.endswith(".staj") or filename.endswith(".sta"):
-        from ...readers.stajconvert import load_mlayer
+        from ..probe.data_loaders.stajconvert import load_mlayer
 
         return refl.FitProblem(load_mlayer(filename))
         # fit_all(problem.fitness, pmp=20)
