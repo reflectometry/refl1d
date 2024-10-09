@@ -38,9 +38,9 @@ def build_client(
         os.system(f"npm link {bumps_path}")
     # build the client
     print("Building the webview client...")
-    cmd = f"npm run build -m {mode}"
+    cmd = f"npm run build -- -m {mode}"
     if sourcemap:
-        cmd += " -- --sourcemap"
+        cmd += " --sourcemap"
     os.system(cmd)
     print("Done.")
 
