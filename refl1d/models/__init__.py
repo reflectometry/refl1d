@@ -1,5 +1,9 @@
+from bumps.parameter import Parameter
+
 from ..deprecated.magnetic import FreeMagnetic, MagneticSlab, MagneticStack, MagneticTwist
 from ..utils.support import sample_data
+# from .bumps_interface.fitplugin import FitPlugin
+from .bumps_interface.fitproblem import FitProblem
 from .experiment import Experiment, MixedExperiment, plot_sample
 from .probe.data_loaders import ncnrdata as NCNR
 from .probe.data_loaders import snsdata as SNS
@@ -17,7 +21,7 @@ from .probe.probe import (
 )
 from .sample.cheby import ChebyVF, FreeformCheby, cheby_approx, cheby_points
 from .sample.flayer import FunctionalMagnetism, FunctionalProfile
-from .sample.layers import Slab, Stack
+from .sample.layers import Repeat, Slab, Stack
 from .sample.magnetism import FreeMagnetism, Magnetism, MagnetismStack, MagnetismTwist
 from .sample.material import SLD, Compound, Material, Mixture, Vacuum
 from .sample.materialdb import (
@@ -41,11 +45,15 @@ from .sample.mono import FreeInterface, FreeLayer
 from .sample.polymer import EndTetheredPolymer, PolymerBrush, PolymerMushroom, VolumeProfile, layer_thickness
 
 __all__ = [
+    ### from Bumps ###
+    "Parameter",
     # from .deprecated.magnetic
     "FreeMagnetic",
     "MagneticSlab",
     "MagneticStack",
     "MagneticTwist",
+    ### bumps_interface ###
+    "FitProblem",
     ### experiment ###
     "Experiment",
     "MixedExperiment",
@@ -78,6 +86,7 @@ __all__ = [
     "FunctionalMagnetism",
     "FunctionalProfile",
     # layers
+    "Repeat",
     "Slab",
     "Stack",
     # magnetism

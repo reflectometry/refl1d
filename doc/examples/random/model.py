@@ -32,7 +32,7 @@
 # Still, it is a good enough starting point, and does lead to some
 # models with low contrast in neighbouring layers.
 
-from refl1d.names import *
+from refl1d.models import *
 
 # Process command line arguments to the model
 

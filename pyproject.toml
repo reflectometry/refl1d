@@ -31,7 +31,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pre-commit", "ruff", "pytest", "pytest-cov", "sphinx", "versioningit"]
+dev = [
+    "pre-commit",
+    "pydantic",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "sphinx",
+    "versioningit",
+]
 full = ["wxpython", "ipython"]
 webview = ["bumps[webview] >= 1.0.0a0"]
 

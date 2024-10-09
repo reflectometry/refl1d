@@ -21,7 +21,7 @@
 
 # First define the materials we will use
 
-from refl1d.names import *
+from refl1d.models import *
 
 nickel = Material("Ni")
 titanium = Material("Ti")

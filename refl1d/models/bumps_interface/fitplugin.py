@@ -10,7 +10,10 @@ __all__ = ["data_view", "model_view", "new_model", "calc_errors", "show_errors"]
 
 import numpy as np
 
-from ... import names as refl
+from ..bumps_interface.fitproblem import FitProblem
+from ..experiment import Experiment
+from ..sample.materialdb import air, silicon
+from ..probe.data_loaders import ncnrdata as NCNR
 from ..uncertainty import calc_errors, show_errors
 
 # List of modules that contain dataclasses for the saved json file format
@@ -35,7 +38,7 @@ def load_model(filename):
     if filename.endswith(".staj") or filename.endswith(".sta"):
         from ..probe.data_loaders.stajconvert import load_mlayer
 
-        return refl.FitProblem(load_mlayer(filename))
+        return FitProblem(load_mlayer(filename))
         # fit_all(problem.fitness, pmp=20)
     elif filename.endswith(".zip"):
         from bumps.fitproblem import load_problem
@@ -65,9 +68,9 @@ def save_json(problem, basename):
 
 
 def new_model():
-    stack = refl.silicon(0, 10) | refl.air
-    instrument = refl.NCNR.NG1()
+    stack = silicon(0, 10) | air
+    instrument = NCNR.NG1()
     probe = instrument.probe(T=np.linspace(0, 5, 200), Tlo=0.2, slits_at_Tlo=2)
-    M = refl.Experiment(sample=stack, probe=probe)
-    problem = refl.FitProblem(M)
+    M = Experiment(sample=stack, probe=probe)
+    problem = FitProblem(M)
     return problem

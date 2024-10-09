@@ -1,4 +1,4 @@
-from refl1d.names import *
+from refl1d.models import *
 
 substrate = SLD("substrate", 4.0)
 L1 = SLD("L1", 2.0)

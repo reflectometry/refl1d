@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 # import matplotlib.lines as mlines
 # %matplotlib notebook
 
-from refl1d.names import *
+from refl1d.models import QProbe, Slab, SLD, Experiment
 
 
 q = np.logspace(np.log10(0.005), np.log10(0.2), num=150)

@@ -21,7 +21,7 @@ def demo(experiment):
 
 def example_experiment():
     import numpy as np
-    from ..names import Experiment, NeutronProbe, Material, silicon, air
+    from ..models import Experiment, NeutronProbe, Material, silicon, air
 
     T = np.linspace(0, 3, 100)
     probe = NeutronProbe(L=4.75, dL=4.75 * 0.02, T=T, dT=T * 0.01)

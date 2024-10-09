@@ -7,9 +7,7 @@
 
 # The following is copied directly from the spin value example
 
-from refl1d.models.experiment import FitProblem
-from refl1d.names import air, SLD, Magnetism, MagnetismTwist, Experiment
-from refl1d.readers import load4
+from refl1d.models import *
 
 Si = SLD(name="Si", rho=2.0737, irho=2.376e-5)
 Cu = SLD(name="Cu", rho=6.5535, irho=8.925e-4)

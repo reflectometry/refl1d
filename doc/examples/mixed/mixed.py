@@ -16,7 +16,7 @@
 # Since silicon and air are defined, the only material we need to
 # define is nickel.
 
-from refl1d.names import *
+from refl1d.models import *
 
 nickel = Material("Ni")
 

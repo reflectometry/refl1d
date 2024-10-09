@@ -12,7 +12,7 @@ Example
 
 Define a silicon wafer with tanh roughness between 0 and 5:
 
-    >>> from refl1d.names import *
+    >>> from refl1d.models import air, silicon
     >>> sample = silicon(interface=Tanh(5, "Si:Air")) | air
 
 The above example uses a function interface.  Other interface include:
@@ -66,8 +66,6 @@ You will need to provide the following methods::
 See the implementation of :class:`Erf` or :class:`Tanh` for a complete example.
 """
 
-from __future__ import division, print_function
-
 __all__ = ["Interface", "Sharp", "Erf", "Tanh", "Linear"]
 
 import numpy as np
@@ -93,8 +91,12 @@ except ImportError:
                 return cls(value)
 
 
-sech = lambda x: 1 / cosh(x)
-asech = lambda x: acosh(1 / x)
+def sech(x):
+    return 1 / cosh(x)
+
+
+def asech(x):
+    return acosh(1 / x)
 
 
 class Interface(object):

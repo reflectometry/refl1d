@@ -1,9 +1,11 @@
-from __future__ import print_function
-
+import sys
 from random import getrandbits
-from numpy.random import uniform
-from refl1d.names import *
+
+import numpy as np
 from bumps.parameter import summarize
+from numpy.random import uniform
+
+from refl1d.models import SLD, Experiment, FitProblem, NeutronProbe, air, silicon
 
 num_layers = int(sys.argv[1])
 init_file = sys.argv[2] if len(sys.argv) > 2 else "/tmp/problem"
@@ -11,7 +13,7 @@ init_file = sys.argv[2] if len(sys.argv) > 2 else "/tmp/problem"
 out = open(init_file, "w")
 seed = getrandbits(16)
 print("seed", seed, file=out)
-numpy.random.seed(int(seed))
+np.random.seed(int(seed))
 
 
 # CONSTRAINTS="unknown"
@@ -48,7 +50,7 @@ layers[-1].interface.value = min(
 
 sample = silicon(0, 5) | layers | air
 
-T = numpy.linspace(0, 5, 100)
+T = np.linspace(0, 5, 100)
 probe = NeutronProbe(T=T, dT=0.01, L=4.75, dL=0.0475)
 
 M = Experiment(probe=probe, sample=sample)

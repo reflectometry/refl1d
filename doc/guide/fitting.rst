@@ -478,7 +478,7 @@ plotting script::
 For the common problem of generating profile error plots aligned on
 a particular interface, you can use the simpler align.py model:
 
-    from refl1d.names import *
+    from refl1d.models import *
     align_errors(model="", store="", align='auto')
 
 If you are using the command line then you should be able to type the

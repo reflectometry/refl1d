@@ -15,7 +15,9 @@ for the purposes.
 
 Example loading data:
 
-    >>> from refl1d.names import *
+    >>> import numpy as np
+    >>> import pylab
+    >>> from refl1d.models import Experiment, NCNR, air, gold, permalloy, sample_data, silicon
     >>> datafile = sample_data('chale207.refl')
     >>> instrument = NCNR.ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
     >>> probe = instrument.load(datafile)
@@ -260,7 +262,7 @@ class XRay(NCNRData, Monochromatic):
     to define the entire divergence.  Note that Probe.sample_broadening
     is a fittable parameter, so you need to access its value::
 
-        >>> from refl1d.names import *
+        >>> from refl1d.models import sample_data, NCNR, 
         >>> file = sample_data("spin_valve01.refl")
         >>> xray = NCNR.XRay(slits_at_Tlo=0)
         >>> data = xray.load(file, sample_broadening=1e-4)

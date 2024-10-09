@@ -8,7 +8,7 @@
 # We use the usual sample definition, except we set the thickness of the
 # nickel layer to 125 |Ang| so that the model does not match the data:
 
-from refl1d.names import *
+from refl1d.models import *
 
 # Turn off resolution bars in plots.  Only do this after you have plotted the
 # data with resolution bars so you know it looks reasonable, and you are not

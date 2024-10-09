@@ -24,10 +24,10 @@
 #    plot_model('PEMU.py')
 #
 
-# Bring in all of the functions from refl1d.names so that we can use them
+# Bring in all of the functions from refl1d.models so that we can use them
 # in the remainder of the script.
 
-from refl1d.names import *
+from refl1d.models import *
 
 # The polymer system is deposited on a gold film with chromium as an
 # adhesion layer. Because these are standard films which are very well-known

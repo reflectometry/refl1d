@@ -1,15 +1,14 @@
+import json
+
 from pydantic_core import core_schema
 from pydantic.json_schema import GenerateJsonSchema, JsonSchemaValue
-from pydantic import TypeAdapter, ConfigDict
+from pydantic import TypeAdapter  # , ConfigDict
 
-from bumps.parameter import *
 from bumps.util import NumpyArray
 
-NDArray = NumpyArray
+from refl1d.models import FitProblem
 
-from refl1d.names import *
-from refl1d.model import *
-from refl1d.fitproblem import FitProblem
+NDArray = NumpyArray
 
 
 class BumpsGenerateJsonSchema(GenerateJsonSchema):
@@ -29,7 +28,5 @@ class BumpsGenerateJsonSchema(GenerateJsonSchema):
 
 TA = TypeAdapter(FitProblem)
 schema = TA.json_schema(schema_generator=BumpsGenerateJsonSchema)
-
-import json
 
 print(json.dumps(schema, indent=2))

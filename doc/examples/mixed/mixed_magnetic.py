@@ -1,4 +1,4 @@
-from refl1d.names import *
+from refl1d.models import *
 
 nickel = Material("Ni")
 

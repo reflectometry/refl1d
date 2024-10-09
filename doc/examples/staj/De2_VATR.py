@@ -1,4 +1,4 @@
-from refl1d.names import *
+from refl1d.models import *
 from refl1d.readers.stajconvert import load_mlayer
 
 # Load neutron model and data from staj file

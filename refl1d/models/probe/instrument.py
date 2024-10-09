@@ -23,12 +23,12 @@ monochromatic instrument with slits of 0.1 mm below 0.5\ |deg| and
 opening slits  above 0.5\ |deg| starting at 0.2 mm.  The monochromatic
 instrument assumes a fixed $\Delta \theta / \theta$ while opening.
 
-    >>> from refl1d.names import *
+    >>> from refl1d.models import Monochromatic, sample_data
     >>> geometry = Monochromatic(instrument="SP:2", radiation="neutron",
     ...    wavelength=5.0042, dLoL=0.009, d_s1=230+1856, d_s2=230,
     ...    Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
 
-This instrument can be used to  a data file, or generate a
+This instrument can be used to load a data file, or generate a
 measurement probe for use in modeling or to read in a previously
 measured data set or generate a probe for simulation:
 

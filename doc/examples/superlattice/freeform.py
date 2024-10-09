@@ -18,7 +18,7 @@
 
 # The materials are straight forward:
 
-from refl1d.names import *
+from refl1d.models import *
 
 chrome = Material("Cr")
 gold = Material("Au")

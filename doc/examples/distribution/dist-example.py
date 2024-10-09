@@ -1,7 +1,10 @@
-import sys, os
+import os
+import sys
+
+import numpy
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from refl1d.names import *
+from refl1d.models import *
 from refl1d.models.dist import Weights, DistributionExperiment
 
 # Materials

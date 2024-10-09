@@ -1,4 +1,4 @@
-"""
+r"""
 Magnetic modeling for 1-D reflectometry.
 
 Magnetic properties are tied to the structural description of the
