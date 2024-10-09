@@ -29,7 +29,6 @@ jobs:
       with:
         auto-update-conda: true
         python-version: ${{ matrix.config.py }}
-        shell: bash
 
     - name: Build conda-packed (all platforms)
       shell: bash -el {0}
