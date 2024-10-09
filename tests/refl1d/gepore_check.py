@@ -161,7 +161,6 @@ def compare(name, layers, Aguide=270, H=0):
     return
 
 
-
 def simple():
     Aguide = 270
     layers = [

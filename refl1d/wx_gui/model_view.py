@@ -15,12 +15,14 @@ from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 from matplotlib.figure import Figure
 
 from refl1d.models.experiment import MixedExperiment
+
 # from .binder import pixel_to_data
 from .interactor import BaseInteractor
 from .profilei import ProfileInteractor
 from .util import CopyImage
 
 IS_MAC = wx.Platform == "__WXMAC__"
+
 
 # ------------------------------------------------------------------------
 class ModelView(wx.Panel):
@@ -79,6 +81,7 @@ class ModelView(wx.Panel):
         self.statusbar = frame.GetStatusBar()
         if self.statusbar is None:
             self.statusbar = frame.CreateStatusBar()
+
         def status_update(msg):
             return self.statusbar.SetStatusText(msg)
 
