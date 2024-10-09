@@ -21,8 +21,8 @@ from .deprecated.magnetic import FreeMagnetic, MagneticSlab, MagneticStack, Magn
 from .models.experiment import Experiment, MixedExperiment, plot_sample
 from .models.sample.cheby import ChebyVF, FreeformCheby, cheby_approx, cheby_points
 from .models.sample.flayer import FunctionalMagnetism, FunctionalProfile
-from .models.instrument import Monochromatic, Pulsed
-from .models.probe import (
+from .models.probe.instrument import Monochromatic, Pulsed
+from .models.probe.probe import (
     NeutronProbe,
     PolarizedNeutronProbe,
     PolarizedQProbe,
@@ -36,10 +36,10 @@ from .models.sample.material import SLD, Compound, Material, Mixture
 from .models.sample.layers import Slab, Stack
 from .models.sample.mono import FreeInterface, FreeLayer
 from .models.sample.polymer import EndTetheredPolymer, PolymerBrush, PolymerMushroom, VolumeProfile, layer_thickness
-from .readers import ncnrdata as NCNR
-from .readers import snsdata as SNS
-from .readers.load4 import load4
-from .readers.stajconvert import load_mlayer, save_mlayer
+from .models.probe.data_loaders import ncnrdata as NCNR
+from .models.probe.data_loaders import snsdata as SNS
+from .models.probe.data_loaders.load4 import load4
+from .models.probe.data_loaders.stajconvert import load_mlayer, save_mlayer
 from .utils.support import sample_data
 
 # Pull in common materials for reflectometry experiments.

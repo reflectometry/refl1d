@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
+# import matplotlib.lines as mlines
 # %matplotlib notebook
 
 from refl1d.names import *

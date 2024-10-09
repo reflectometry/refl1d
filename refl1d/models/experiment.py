@@ -6,30 +6,30 @@ An experiment combines the sample definition with a measurement probe
 to create a fittable reflectometry model.
 """
 
-from dataclasses import dataclass
-import os
-from math import pi, log10, floor
-import traceback
 import json
-from typing import Optional, Union, List, Literal, Protocol, TypedDict
+import os
+import traceback
+from dataclasses import dataclass
+from math import floor, log10, pi
+from typing import List, Literal, Optional, Protocol, TypedDict, Union
 from warnings import warn
 
-from bumps import parameter
-from bumps.parameter import Parameter, tag_all
-from bumps.fitproblem import Fitness, FitProblem
-from bumps.dream.state import MCMCDraw
 import numpy as np
+from bumps import parameter
+from bumps.dream.state import MCMCDraw
+from bumps.fitproblem import Fitness, FitProblem
+from bumps.parameter import Parameter, tag_all
 
 from .. import __version__
-from ..fitting import profile
-from ..fitting.reflectivity import (
+from .sample.reflectivity import (
     BASE_GUIDE_ANGLE as DEFAULT_THETA_M,
     magnetic_amplitude as reflmag,
     reflectivity_amplitude as reflamp,
 )
-from .probe import Probe, PolarizedNeutronProbe
-from .sample import layers, material
 from ..utils import asbytes
+from . import profile
+from .probe.probe import PolarizedNeutronProbe, Probe
+from .sample import layers, material
 
 
 class WebviewPlotFunction(Protocol):
@@ -600,7 +600,7 @@ class Experiment(ExperimentBase):
         return (slabs.w, np.hstack((slabs.sigma, 0)), slabs.rho[0], slabs.irho[0], slabs.rhoM, slabs.thetaM)
 
     def save_staj(self, basename):
-        from ..readers.stajconvert import save_mlayer
+        from .probe.data_loaders.stajconvert import save_mlayer
 
         try:
             if self.probe.R is not None:
@@ -620,8 +620,8 @@ class Experiment(ExperimentBase):
             traceback.print_exc()
 
     def plot_profile(self, plot_shift=None):
-        from bumps.plotutil import auto_shift
         import matplotlib.pyplot as plt
+        from bumps.plotutil import auto_shift
 
         plot_shift = plot_shift if plot_shift is not None else Experiment.profile_shift
         trans = auto_shift(plot_shift)
@@ -835,7 +835,7 @@ def plot_sample(sample, instrument=None, roughness_limit=0):
     Quick plot of a reflectivity sample and the corresponding reflectivity.
     """
     if instrument is None:
-        from .probe import NeutronProbe
+        from .probe.probe import NeutronProbe
 
         probe = NeutronProbe(T=np.arange(0, 5, 0.05), L=5)
     else:

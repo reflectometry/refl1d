@@ -5,10 +5,11 @@
 # Adapted to act as a prototype for the profile plotting in the new GUI for refl1d
 
 from typing import List, TypedDict
-from refl1d.models.experiment import Experiment
+
 from numpy import inf
 import numpy as np
 
+from refl1d.models.experiment import Experiment
 from .colors import COLORS as MULTI_PLOT_COLORS
 
 SINGLE_PLOT_COLORS = ("black", "blue", "green", "gold")

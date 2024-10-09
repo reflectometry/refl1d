@@ -6,7 +6,7 @@ from bumps.util import pushdir
 import numpy as np
 from numpy import radians
 
-from refl1d.fitting.reflectivity import magnetic_amplitude as refl
+from refl1d.models.sample.reflectivity import magnetic_amplitude as refl
 
 H2K = 2.91451e-5
 B2SLD = 2.31929e-06
@@ -154,12 +154,12 @@ def compare(name, layers, Aguide=270, H=0):
     import matplotlib.pyplot as plt
 
     plt.show()
+    # assert np.linalg.norm((R[0] - Rpp) / Rpp) < 1e-13, "fail ++ %s" % name
+    # assert np.linalg.norm((R[1] - Rpm) / Rpm) < 1e-13, "fail +- %s" % name
+    # assert np.linalg.norm((R[2] - Rmp) / Rmp) < 1e-13, "fail -+ %s" % name
+    # assert np.linalg.norm((R[3] - Rmm) / Rmm) < 1e-13, "fail -- %s" % name
     return
 
-    assert np.linalg.norm((R[0] - Rpp) / Rpp) < 1e-13, "fail ++ %s" % name
-    assert np.linalg.norm((R[1] - Rpm) / Rpm) < 1e-13, "fail +- %s" % name
-    assert np.linalg.norm((R[2] - Rmp) / Rmp) < 1e-13, "fail -+ %s" % name
-    assert np.linalg.norm((R[3] - Rmm) / Rmm) < 1e-13, "fail -- %s" % name
 
 
 def simple():

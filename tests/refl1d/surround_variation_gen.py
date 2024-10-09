@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 from numpy import sqrt
 from numpy.random import randn

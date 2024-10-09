@@ -8,8 +8,8 @@ from . import BACKEND_NAME, BACKEND_NAMES
 
 BACKEND_MODULE_NAMES = {
     "c_ext": "refl1d.reflmodule",
-    "numba": "refl1d.lib.numba",
-    "python": "refl1d.lib.python",
+    "numba": "refl1d.models.lib.numba",
+    "python": "refl1d.models.lib.python",
 }
 
 backend = None

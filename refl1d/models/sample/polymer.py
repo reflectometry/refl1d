@@ -413,7 +413,7 @@ class PolymerMushroom(Layer):
         S = Sr + 1j * Si
         try:
             M, S = M[0], S[0]  # Temporary hack
-        except:
+        except Exception:
             pass
 
         phi = self.profile(Pz)
@@ -611,7 +611,7 @@ class EndTetheredPolymer(Layer):
         S = Sr + 1j * Si
         try:
             M, S = M[0], S[0]  # Temporary hack
-        except:
+        except Exception:
             pass
 
         phi = self.profile(Pz)

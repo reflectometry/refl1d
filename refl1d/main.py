@@ -30,7 +30,7 @@ def setup_bumps():
     import bumps.cli
 
     bumps.cli.set_mplconfig(appdatadir="Refl1D-" + __version__)
-    from . import fitplugin
+    from .models.bumps_interface import fitplugin
 
     bumps.cli.install_plugin(fitplugin)
 
@@ -43,7 +43,7 @@ def cli():
 
     # TODO: Add subcommand support to bumps.
     if len(sys.argv) > 2 and sys.argv[1] == "align":
-        from .fitting.uncertainty import run_errors
+        from .models.uncertainty import run_errors
 
         del sys.argv[1]
         run_errors()

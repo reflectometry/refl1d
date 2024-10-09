@@ -5,12 +5,13 @@ Freeform modeling with B-Splines
 """
 
 import numpy as np
+from bumps.bspline import bspline, pbs
+from bumps.parameter import Parameter as Par
+from bumps.parameter import to_dict
 from numpy import inf
-from bumps.parameter import Parameter as Par, to_dict
-from bumps.bspline import pbs, bspline
 
-from refl1d.models.sample.layers import Layer
 from refl1d import utils
+from refl1d.models.sample.layers import Layer
 
 
 # TODO: add left_sld, right_sld to all layers so that fresnel works

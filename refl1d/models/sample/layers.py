@@ -29,8 +29,8 @@ from typing import List, Literal, Optional, Union
 import numpy as np
 from bumps.parameter import Calculation, Parameter
 
-from ...fitting import profile
-from .. import probe
+from .. import profile
+from ..probe.probe import NeutronProbe, XrayProbe
 from ..sample import material as mat
 from .magnetism import BaseMagnetism
 
@@ -395,8 +395,8 @@ class Stack(Layer):
 
         from ... import material
 
-        neutron_probe = probe.NeutronProbe(T=np.arange(0, 5, 100), L=5.0)
-        xray_probe = probe.XrayProbe(T=np.arange(0, 5, 100), L=1.54)
+        neutron_probe = NeutronProbe(T=np.arange(0, 5, 100), L=5.0)
+        xray_probe = XrayProbe(T=np.arange(0, 5, 100), L=1.54)
         slabs = profile.Microslabs(1, dz=dz)
 
         plt.subplot(211)
