@@ -6,6 +6,7 @@ def build_client(
     mode: Literal["development", "production"] = "development",
     sourcemap=False,
     link_bumps=True,
+    cleanup=False,
 ):
     """Build the refl1d webview client."""
     from pathlib import Path
@@ -42,6 +43,13 @@ def build_client(
     if sourcemap:
         cmd += " --sourcemap"
     os.system(cmd)
+
+    if cleanup:
+        print("Cleaning up...")
+        shutil.rmtree(node_modules)
+        shutil.rmtree(bumps_path / "node_modules")
+        print("node_modules folders removed.")
+
     print("Done.")
 
 
@@ -53,10 +61,12 @@ if __name__ == "__main__":
     parser.add_argument("--mode", choices=["development", "production"], default="development", help="Build mode.")
     parser.add_argument("--sourcemap", action="store_true", help="Generate sourcemaps.")
     parser.add_argument("--link-bumps", action="store_false", help="Link to the local version of bumps.")
+    parser.add_argument("--cleanup", action="store_true", help="Remove the node_modules directory.")
     args = parser.parse_args()
     build_client(
         install_dependencies=args.install_dependencies,
         mode=args.mode,
         sourcemap=args.sourcemap,
         link_bumps=args.link_bumps,
+        cleanup=args.cleanup,
     )
