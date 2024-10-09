@@ -13,26 +13,11 @@ jobs:
   build-wheel:
     runs-on: ubuntu-latest
     steps:
-    - name: Setup jq
-      run: sudo apt-get update && sudo apt-get install -y jq
 
     - name: Checkout code
       uses: actions/checkout@v4
       with:
         path: refl1d
-
-    - name: Get latest bumps release tag
-      id: latest_release
-      run: |
-        RELEASE_TAG=$(curl -s https://api.github.com/repos/bumps/bumps/releases/latest | jq -r '.tag_name')
-        echo "BUMPS_RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
-
-    - name: Checkout tools repo
-      uses: actions/checkout@v4
-      with:
-        repository: bumps/bumps
-        ref: ${{ steps.latest_release.outputs.BUMPS_RELEASE_TAG }}
-        path: bumps
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -43,19 +28,10 @@ jobs:
       with:
         node-version: 20
 
-    - name: build bumps webview
-      run: |
-        cd bumps/bumps/webview/client
-        npm install
-        npm link
-
     - name: build refl1d webview
       run: |
-        cd refl1d/refl1d/webview/client
-        npm install
-        npm link bumps-webview-client
-        npm run build_prod
-        npm pack
+        python -m pip install -e ./refl1d
+        python -m refl1d.webview.build_client --mode=production
 
     - name: Install dependencies for building the wheel
       run: |
