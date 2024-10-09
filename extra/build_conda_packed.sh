@@ -59,6 +59,7 @@ $bindir/python -m pip install orsopy
 # build the client
 $bindir/python -m refl1d.webview.build_client --cleanup
 
+cd $tmpdir
 version=$($bindir/python -c "import refl1d; print(refl1d.__version__)")
 mv "$tmpdir/$PKGNAME" "$tmpdir/$PKGNAME-$version"
 
