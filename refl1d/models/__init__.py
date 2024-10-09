@@ -2,6 +2,7 @@ from bumps.parameter import Parameter
 
 from ..deprecated.magnetic import FreeMagnetic, MagneticSlab, MagneticStack, MagneticTwist
 from ..utils.support import sample_data
+
 # from .bumps_interface.fitplugin import FitPlugin
 from .bumps_interface.fitproblem import FitProblem
 from .experiment import Experiment, MixedExperiment, plot_sample
