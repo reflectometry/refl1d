@@ -6,7 +6,8 @@ PKGNAME="refl1d"
 SUBNAME="packed"
 OUTPUT="artifacts"
 SCRIPT_DIR=$(realpath $(dirname "${BASH_SOURCE[0]}"))
-WORKING_DIRECTORY=$(pwd)
+SRC_DIR=$(dirname "$SCRIPT_DIR")
+cd $SRC_DIR
 
 mkdir -p $OUTPUT
 
@@ -52,7 +53,7 @@ cp $SCRIPT_DIR/*.png $pkgdir/share/icons
 # install the packages
 $bindir/python -m pip install --no-input --no-compile numba
 # base path to source is in parent of SCRIPT_DIR
-$bindir/python -m pip install --no-input --no-compile "$SCRIPT_DIR/..[webview]"
+$bindir/python -m pip install --no-input --no-compile .[webview]
 $bindir/python -m pip install orsopy
 
 # build the client
@@ -62,14 +63,14 @@ version=$($bindir/python -c "import refl1d; print(refl1d.__version__)")
 mv "$tmpdir/$PKGNAME" "$tmpdir/$PKGNAME-$version"
 
 case $OSTYPE in 
-  # darwin*) cd $tmpdir && hdiutil create -srcfolder  "$PKGNAME-$version" -volname "Refl1D_Jupyter" "$WORKING_DIRECTORY/Refl1D_Jupyter.dmg" ;; 
-  darwin*) pkgbuild --root $tmpdir --identifier org.reflectometry.$PKGNAME-$SUBNAME --version $version --ownership preserve --install-location /Applications "$WORKING_DIRECTORY/$OUTPUT/$PKGNAME-$SUBNAME-$version-$platform-$(uname -m).pkg" ;;
+  # darwin*) cd $tmpdir && hdiutil create -srcfolder  "$PKGNAME-$version" -volname "Refl1D_Jupyter" "$SRC_DIR/Refl1D_Jupyter.dmg" ;; 
+  darwin*) pkgbuild --root $tmpdir --identifier org.reflectometry.$PKGNAME-$SUBNAME --version $version --ownership preserve --install-location /Applications "$SRC_DIR/$OUTPUT/$PKGNAME-$SUBNAME-$version-$platform-$(uname -m).pkg" ;;
   msys*) conda install -y 7zip ;
          curl -L https://www.7-zip.org/a/7z2106-x64.exe --output 7z_exe ;
          7z e 7z_exe -aoa 7z.sfx ;
-         7z a -mhe=on -mx=1 -sfx".\7z.sfx" "$WORKING_DIRECTORY/$OUTPUT/$PKGNAME-$SUBNAME-$version-$platform-$(uname -m)-self-extracting.exe" "$PKGNAME-$version" ;;
+         7z a -mhe=on -mx=1 -sfx".\7z.sfx" "$SRC_DIR/$OUTPUT/$PKGNAME-$SUBNAME-$version-$platform-$(uname -m)-self-extracting.exe" "$PKGNAME-$version" ;;
 esac
 
-cd $tmpdir && tar -czf "$WORKING_DIRECTORY/$OUTPUT/$PKGNAME-$SUBNAME-$version-$platform-$(uname -m).tar.gz" "$PKGNAME-$version"
-cd $WORKING_DIRECTORY
+cd $tmpdir && tar -czf "$SRC_DIR/$OUTPUT/$PKGNAME-$SUBNAME-$version-$platform-$(uname -m).tar.gz" "$PKGNAME-$version"
+cd $SRC_DIR
 rm -rf $tmpdir
