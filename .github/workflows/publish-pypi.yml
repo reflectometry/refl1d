@@ -48,11 +48,9 @@ jobs:
           refl1d/dist/refl1d-*-py3-none-any.whl
           refl1d/refl1d/webview/client/*.tgz
 
-  publish:
+  update-release:
     needs: build-wheel
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -64,10 +62,6 @@ jobs:
           ls -R artifacts
           echo "PY3_WHL=$(ls artifacts/dist/*.whl)" >> $GITHUB_ENV
           echo "PY3_WHL=$(ls artifacts/dist/*.whl)"
-
-      - name: Generate unstable release text
-        run: |
-          echo "UNSTABLE_TEXT='A persistent prerelease where build artifacts for the current tip will be deposited\n\n## Last updated: $(date +%F)'" >> $GITHUB_ENV
 
       - name: Update unstable release assets and text
         uses: actions/github-script@v7
@@ -88,6 +82,14 @@ jobs:
           files: |
             ${{ env.PY3_WHL }}
 
+  publish:
+    needs: build-wheel
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - name: Retrieve all artifacts
+        uses: actions/download-artifact@v4
       - name: publish distribution to Test PyPI
         env:
           TEST_PYPI_API_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
