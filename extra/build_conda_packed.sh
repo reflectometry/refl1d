@@ -1,10 +1,11 @@
 #!/bin/bash
 
 ENV_NAME="isolated-base"
-PYTHON_VERSION="3.10"
+PYTHON_VERSION="3.11"
 PKGNAME="refl1d"
 SUBNAME="packed"
 OUTPUT="artifacts"
+SCRIPT_DIR=$(realpath $(dirname "${BASH_SOURCE[0]}"))
 WORKING_DIRECTORY=$(pwd)
 
 mkdir -p $OUTPUT
@@ -39,36 +40,23 @@ esac
 
 case "$OSTYPE" in
  "msys") bindir=$envdir ;
-         sitepackages=$envdir/lib/site-packages ;
          platform="Windows";;
  *) bindir=$envdir/bin ;
-    sitepackages=$envdir/lib/python$PYTHON_VERSION/site-packages
     platform="$(uname -s)";;
 esac
 
 mkdir -p $pkgdir/share/icons
-cp ./extra/*.svg $pkgdir/share/icons
-cp ./extra/*.png $pkgdir/share/icons
+cp $SCRIPT_DIR/*.svg $pkgdir/share/icons
+cp $SCRIPT_DIR/*.png $pkgdir/share/icons
 
+# install the packages
 $bindir/python -m pip install --no-input --no-compile numba
-$bindir/python -m pip install --no-input --no-compile "bumps[webview] @ git+https://github.com/bumps/bumps"
-$bindir/python -m pip install --no-input --no-compile git+https://github.com/reflectometry/refl1d
+# base path to source is in parent of SCRIPT_DIR
+$bindir/python -m pip install --no-input --no-compile "$SCRIPT_DIR/..[webview]"
 $bindir/python -m pip install orsopy
 
 # build the client
-export PATH=$bindir:$PATH
-cd $sitepackages/bumps/webview/client
-$bindir/npm install
-
-cd $sitepackages/refl1d/webview/client
-$bindir/npm link ../../../bumps/webview/client
-$bindir/npm install
-$bindir/npm run build
-
-cd $tmpdir
-
-rm -rf $sitepackages/refl1d/webview/client/node_modules
-rm -rf $sitepackages/bumps/webview/client/node_modules
+$bindir/python -m refl1d.webview.build_client --cleanup
 
 version=$($bindir/python -c "import refl1d; print(refl1d.__version__)")
 mv "$tmpdir/$PKGNAME" "$tmpdir/$PKGNAME-$version"
