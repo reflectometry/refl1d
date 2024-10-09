@@ -70,7 +70,7 @@ script-files = ["bin/refl1d_cli.py", "bin/refl1d_gui.py"]
 include = ["refl1d*"]
 
 [project.scripts]
-refl1d = "refl1d.main:main"
+refl1d = "refl1d.main:cli"
 refl1d-webview = "refl1d.webview.server.webserver:main"
 
 [tool.pytest.ini_options]
