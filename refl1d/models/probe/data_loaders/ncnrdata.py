@@ -262,7 +262,7 @@ class XRay(NCNRData, Monochromatic):
     to define the entire divergence.  Note that Probe.sample_broadening
     is a fittable parameter, so you need to access its value::
 
-        >>> from refl1d.models import sample_data, NCNR,
+        >>> from refl1d.models import sample_data, NCNR
         >>> file = sample_data("spin_valve01.refl")
         >>> xray = NCNR.XRay(slits_at_Tlo=0)
         >>> data = xray.load(file, sample_broadening=1e-4)
