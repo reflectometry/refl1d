@@ -81,7 +81,9 @@ problem.randomize()
 # can work.  Exponential distribution isn't suitable for single layer systems
 
 for L in layers:
-    L.thickness.value = min(numpy.random.exponential(400.0 / numpy.sqrt(n)), 950) if n > 1 else numpy.random.uniform(5, 950)
+    L.thickness.value = (
+        min(numpy.random.exponential(400.0 / numpy.sqrt(n)), 950) if n > 1 else numpy.random.uniform(5, 950)
+    )
 
 # Set interface limits based on neighbouring layer thickness, with substrate
 # and surface having infinite thickness.  Choose an interface of at least 1 A
