@@ -11,7 +11,8 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import os
+import sys
 
 print("python %s" % sys.executable)
 
@@ -36,10 +37,11 @@ print("\n".join(sys.path))
 print("== end path ==")
 
 # Register the refl1d model loader
-import refl1d.fitplugin
 import bumps.cli
 
-bumps.cli.install_plugin(refl1d.fitplugin)
+from refl1d.models.bumps_interface import fitplugin
+
+bumps.cli.install_plugin(fitplugin)
 
 # -- General configuration -----------------------------------------------------
 
