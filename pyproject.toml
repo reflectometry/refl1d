@@ -33,7 +33,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pre-commit", "ruff", "pytest", "pytest-cov", "versioningit"]
 full = ["wxpython", "ipython"]
-webview = ["bumps[webview]>=1.0.0a0"]
+webview = ["bumps[webview]"]
 
 [project.urls]
 documentation = "https://refl1d.github.io"
