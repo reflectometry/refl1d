@@ -260,7 +260,11 @@ class _LayerLimit(Calculation):
         self.flayer = flayer
         self.isend = isend
         self.isrho = isrho
-        self.name = str(flayer) + (".rho_" if isrho else ".irho_") + ("end" if isend else "start")
+        self.name = str(flayer) + self._tag
+
+    @property
+    def _tag(self):
+        return (".rho_" if self.isrho else ".irho_") + ("end" if self.isend else "start")
 
     def parameters(self):
         return []
@@ -281,7 +285,11 @@ class _MagnetismLimit(Calculation):
         self.flayer = flayer
         self.isend = isend
         self.isrhoM = isrhoM
-        self.name = str(flayer) + (".rhoM_" if isrhoM else ".thetaM_") + ("end" if isend else "start")
+        self.name = str(flayer) + self._tag
+
+    @property
+    def _tag(self):
+        return (".rhoM_" if self.isrhoM else ".thetaM_") + ("end" if self.isend else "start")
 
     def parameters(self):
         return []
