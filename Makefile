@@ -26,3 +26,4 @@ clean: ## Delete some cruft from builds/testing/etc.
 .PHONY: test
 test: ## Run pytest and doc tests
 	pytest -v
+	python check_examples.py --chisq

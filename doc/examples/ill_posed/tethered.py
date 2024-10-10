@@ -1,6 +1,9 @@
-from refl1d.models import *
-import periodictable
 from copy import copy
+
+import numpy
+import periodictable
+
+from refl1d.models import *
 
 numpy.random.seed(1)
 

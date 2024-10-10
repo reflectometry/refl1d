@@ -1,3 +1,4 @@
+import numpy
 from refl1d.models import *
 
 # FIT USING REFL1D 0.6.12

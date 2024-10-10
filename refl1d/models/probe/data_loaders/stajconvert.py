@@ -74,7 +74,7 @@ def mlayer_to_model(staj, name=None, layers=None):
 
     Returns a new experiment
     """
-    from ..models.experiment import Experiment
+    from ...experiment import Experiment
 
     sample = _mlayer_to_stack(staj, name, layers)
     probe = _load_probe(staj, name, xs="")
@@ -298,7 +298,7 @@ def mlayer_magnetic_to_model(sta, name=None, layers=None):
 
     Returns a new experiment
     """
-    from ..models.experiment import Experiment
+    from ...experiment import Experiment
 
     sample = _mlayer_magnetic_to_stack(sta, name, layers)
     probe = _mlayer_magnetic_to_probe(sta, name)

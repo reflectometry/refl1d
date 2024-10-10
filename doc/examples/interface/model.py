@@ -1,3 +1,5 @@
+import numpy
+
 from refl1d.models import *
 
 

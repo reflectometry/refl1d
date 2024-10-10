@@ -18,6 +18,8 @@
 
 # The materials are straight forward:
 
+import numpy
+
 from refl1d.models import *
 
 chrome = Material("Cr")
