@@ -5,7 +5,7 @@
 #
 # Defining a magnetic model starts as usual.
 
-from refl1d.names import *
+from refl1d.models import *
 
 # We still need the nuclear structure, so define the materials.
 

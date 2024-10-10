@@ -9,7 +9,6 @@ repos:
         args: [--allow-multiple-documents]
       # - id: end-of-file-fixer
       # - id: trailing-whitespace
-
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.6.9
     hooks:

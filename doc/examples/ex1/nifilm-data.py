@@ -11,7 +11,7 @@
 
 # The sample and instrument definition is the same as before:
 
-from refl1d.names import *
+from refl1d.models import *
 
 nickel = Material("Ni")
 sample = silicon(0, 5) | nickel(100, 5) | air
