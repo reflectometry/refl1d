@@ -46,6 +46,7 @@ jobs:
         name: artifacts
         path: |
           refl1d/dist/refl1d-*-py3-none-any.whl
+          refl1d/dist/refl1d*.tar.gz
           refl1d/refl1d/webview/client/*.tgz
 
   update-release:
