@@ -34,7 +34,8 @@ tar -xzf "$ENV_NAME.tar.gz" -C "$envdir"
 case $OSTYPE in 
   darwin*) cp -r ./extra/platform_scripts/refl1d_webview.app "$pkgdir" ;
            cp -r ./extra/platform_scripts/refl1d_shell.app "$pkgdir" ;;
-  msys*) cp ./extra/platform_scripts/refl1d_webview.bat "$pkgdir" ;;
+  msys*) cp ./extra/platform_scripts/refl1d_webview.bat "$pkgdir" ;
+         cp ./extra/platform_scripts/refl1d_shell.bat "$pkgdir" ;;
   linux*) cp -r ./extra/platform_scripts/make_linux_desktop_shortcut.sh "$pkgdir" ;
           cp -r ./extra/platform_scripts/refl1d-webview "$pkgdir" ;;
 esac
