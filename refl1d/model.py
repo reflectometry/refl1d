@@ -275,7 +275,13 @@ class Stack(Layer):
     layers: List[Union["Slab", "Repeat"]]
     thickness: Parameter = field(metadata={"description": "always equals the sum of the layer thicknesses"})
 
-    def __init__(self, layers=None, name="Stack", interface=None, thickness: Optional[Union[Parameter, float]] = None):
+    def __init__(
+        self,
+        layers: Optional[Union["Stack", List[Union["Slab", "Repeat"]]]] = None,
+        name: str = "Stack",
+        interface=None,
+        thickness: Optional[Union[Parameter, float]] = None,
+    ):
         self.name = name
         self.interface = None
         self._layers = []
