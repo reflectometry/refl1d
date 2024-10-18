@@ -19,6 +19,9 @@ class FitProblem(_FitProblem):
     Mainly used to provide a more descriptive __doc__ string, and to allow
     IDEs to provide better type hints.
     """
-
-    __doc__ = _FitProblem.__doc__.replace("Fitness", "Experiment")
+    ### TODO: Replace with the following once the following issue is resolved:
+    #   /refl1d/refl1d/models/bumps_interface/fitproblem.py:docstring of 
+    #   refl1d.models.bumps_interface.fitproblem.FitProblem:10: WARNING: undefined label: 'freevariables' [ref.ref]
+    ###
+    # __doc__ = _FitProblem.__doc__.replace("Fitness", "Experiment")
     models: List[Experiment]

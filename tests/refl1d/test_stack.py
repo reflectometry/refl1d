@@ -1,8 +1,10 @@
-from refl1d.names import Slab, Stack, SLD
-from copy import deepcopy
-from bumps.serialize import serialize, deserialize
 import pickle
+from copy import deepcopy
+
 import dill
+from bumps.serialize import deserialize, serialize
+
+from refl1d.models import SLD, Slab
 
 
 def test_stack_serialization():
