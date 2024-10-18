@@ -1,11 +1,13 @@
 #!/bin/bash
 
 ENV_NAME="isolated-base"
-PYTHON_VERSION="3.10"
+PYTHON_VERSION="3.11"
 PKGNAME="refl1d"
-SUBNAME="webview"
+SUBNAME="packed"
 OUTPUT="artifacts"
-WORKING_DIRECTORY=$(pwd)
+SCRIPT_DIR=$(realpath $(dirname "${BASH_SOURCE[0]}"))
+SRC_DIR=$(dirname "$SCRIPT_DIR")
+cd $SRC_DIR
 
 mkdir -p $OUTPUT
 
@@ -39,49 +41,37 @@ esac
 
 case "$OSTYPE" in
  "msys") bindir=$envdir ;
-         sitepackages=$envdir/lib/site-packages ;
          platform="Windows";;
  *) bindir=$envdir/bin ;
-    sitepackages=$envdir/lib/python$PYTHON_VERSION/site-packages
     platform="$(uname -s)";;
 esac
 
 mkdir -p $pkgdir/share/icons
-cp ./extra/*.svg $pkgdir/share/icons
-cp ./extra/*.png $pkgdir/share/icons
+cp $SCRIPT_DIR/*.svg $pkgdir/share/icons
+cp $SCRIPT_DIR/*.png $pkgdir/share/icons
 
+# install the packages
 $bindir/python -m pip install --no-input --no-compile numba
-$bindir/python -m pip install --no-input --no-compile "bumps[webview] @ git+https://github.com/bumps/bumps"
-$bindir/python -m pip install --no-input --no-compile git+https://github.com/reflectometry/refl1d
+# base path to source is in parent of SCRIPT_DIR
+$bindir/python -m pip install --no-input --no-compile .[webview]
 $bindir/python -m pip install orsopy
 
-# build the client
-export PATH=$bindir:$PATH
-cd $sitepackages/bumps/webview/client
-$bindir/npm install
-
-cd $sitepackages/refl1d/webview/client
-$bindir/npm link ../../../bumps/webview/client
-$bindir/npm install
-$bindir/npm run build
-
 cd $tmpdir
-
-rm -rf $sitepackages/refl1d/webview/client/node_modules
-rm -rf $sitepackages/bumps/webview/client/node_modules
+# build the client
+$bindir/python -m refl1d.webview.build_client --cleanup
 
 version=$($bindir/python -c "import refl1d; print(refl1d.__version__)")
 mv "$tmpdir/$PKGNAME" "$tmpdir/$PKGNAME-$version"
 
 case $OSTYPE in 
-  # darwin*) cd $tmpdir && hdiutil create -srcfolder  "$PKGNAME-$version" -volname "Refl1D_Jupyter" "$WORKING_DIRECTORY/Refl1D_Jupyter.dmg" ;; 
-  darwin*) pkgbuild --root $tmpdir --identifier org.reflectometry.$PKGNAME-$SUBNAME --version $version --ownership preserve --install-location /Applications "$WORKING_DIRECTORY/$OUTPUT/$PKGNAME-$SUBNAME-$version-$platform-$(uname -m).pkg" ;;
+  # darwin*) cd $tmpdir && hdiutil create -srcfolder  "$PKGNAME-$version" -volname "Refl1D_Jupyter" "$SRC_DIR/Refl1D_Jupyter.dmg" ;; 
+  darwin*) pkgbuild --root $tmpdir --identifier org.reflectometry.$PKGNAME-$SUBNAME --version $version --ownership preserve --install-location /Applications "$SRC_DIR/$OUTPUT/$PKGNAME-$SUBNAME-$version-$platform-$(uname -m).pkg" ;;
   msys*) conda install -y 7zip ;
          curl -L https://www.7-zip.org/a/7z2106-x64.exe --output 7z_exe ;
          7z e 7z_exe -aoa 7z.sfx ;
-         7z a -mhe=on -mx=1 -sfx".\7z.sfx" "$WORKING_DIRECTORY/$OUTPUT/$PKGNAME-$SUBNAME-$version-$platform-$(uname -m)-self-extracting.exe" "$PKGNAME-$version" ;;
+         7z a -mhe=on -mx=1 -sfx".\7z.sfx" "$SRC_DIR/$OUTPUT/$PKGNAME-$SUBNAME-$version-$platform-$(uname -m)-self-extracting.exe" "$PKGNAME-$version" ;;
 esac
 
-cd $tmpdir && tar -czf "$WORKING_DIRECTORY/$OUTPUT/$PKGNAME-$SUBNAME-$version-$platform-$(uname -m).tar.gz" "$PKGNAME-$version"
-cd $WORKING_DIRECTORY
+cd $tmpdir && tar -czf "$SRC_DIR/$OUTPUT/$PKGNAME-$SUBNAME-$version-$platform-$(uname -m).tar.gz" "$PKGNAME-$version"
+cd $SRC_DIR
 rm -rf $tmpdir
