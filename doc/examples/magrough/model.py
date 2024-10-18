@@ -1,4 +1,6 @@
-from refl1d.names import *
+import numpy
+
+from refl1d.models import *
 
 nickel = Material("Ni")
 copper = Material("Cu")

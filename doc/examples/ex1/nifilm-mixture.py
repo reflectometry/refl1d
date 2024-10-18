@@ -7,7 +7,7 @@
 # it does demonstrate a way to form a mixture of two materials by volume
 # :download:`nifilm-mixture.py <nifilm-mixture.py>`:
 
-from refl1d.names import *
+from refl1d.models import *
 
 # Here is the mixture formula.  We are giving the mass density along with the
 # chemical formula for each part, followed by the percentage for that part.

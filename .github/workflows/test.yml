@@ -45,5 +45,4 @@ jobs:
       - name: Check that the docs build (linux only)
         if: matrix.config.doc == 1
         run: |
-          pip install sphinx
           make -j 4 -C doc SPHINXOPTS="-W --keep-going" html

@@ -4,7 +4,7 @@
 #
 # We first need to define the materials
 
-from refl1d.names import *
+from refl1d.models import *
 from copy import copy
 
 # === Materials ===

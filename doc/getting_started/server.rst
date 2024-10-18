@@ -11,5 +11,3 @@ You just need to install the refl1d plugin in the bumps server.
 
 
 TODO: show details.
-
-
