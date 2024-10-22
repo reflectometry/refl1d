@@ -14,7 +14,7 @@ script_dir=$(realpath $(dirname $0))
 echo "[Desktop Entry]
 Name=Refl1d-Webview
 Comment=Start the refl1d webview server
-Exec='$script_dir/env/bin/python' -m refl1d.webview.server
+Exec='$script_dir/env/bin/python' -m refl1d.webview.server --use_persistent_path
 Icon=$script_dir/env/share/icons/refl1d-icon.svg
 Terminal=true
 Type=Application
