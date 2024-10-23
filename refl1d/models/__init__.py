@@ -2,8 +2,6 @@ from bumps.parameter import Parameter
 
 from ..deprecated.magnetic import FreeMagnetic, MagneticSlab, MagneticStack, MagneticTwist
 from ..utils.support import sample_data
-
-# from .bumps_interface.fitplugin import FitPlugin
 from .bumps_interface.fitproblem import FitProblem
 from .experiment import Experiment, MixedExperiment, plot_sample
 from .probe.data_loaders import ncnrdata as NCNR
@@ -45,10 +43,16 @@ from .sample.materialdb import (
 from .sample.mono import FreeInterface, FreeLayer
 from .sample.polymer import EndTetheredPolymer, PolymerBrush, PolymerMushroom, VolumeProfile, layer_thickness
 
+
+# Deprecated names
+def ModelFunction(*args, **kw):
+    raise NotImplementedError("ModelFunction no longer supported --- use PDF instead")
+
+
 __all__ = [
     ### from Bumps ###
     "Parameter",
-    # from .deprecated.magnetic
+    ### from .deprecated.magnetic ###
     "FreeMagnetic",
     "MagneticSlab",
     "MagneticStack",
@@ -131,8 +135,3 @@ __all__ = [
     ### utils ###
     "sample_data",
 ]
-
-
-# Deprecated names
-def ModelFunction(*args, **kw):
-    raise NotImplementedError("ModelFunction no longer supported --- use PDF instead")
