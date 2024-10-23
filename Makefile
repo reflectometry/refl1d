@@ -13,3 +13,18 @@ lint: ## Run ruff linting
 .PHONY: format
 format: ## Run ruff formatting
 	@ruff format refl1d/ tests/ setup.py
+
+.PHONY: clean
+clean: ## Delete some cruft from builds/testing/etc.
+	rm -f `find . -type f -name '*.py[co]'`
+	rm -rf `find . -name __pycache__ -o -name "*.egg-info"` \
+		`find . -name 'output-*'` \
+		.coverage build dist \
+		doc/_build doc/api doc/tutorial \
+		.pytest_cache \
+		.ruff_cache 
+
+.PHONY: test
+test: ## Run pytest and doc tests
+	pytest -v
+	python check_examples.py --chisq
