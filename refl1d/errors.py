@@ -119,7 +119,7 @@ def _usage():
     print(run_errors.__doc__)
 
 
-def calc_errors(problem, points):
+def calc_errors(problem, points, parallel: int = 0):
     """
     Align the sample profiles and compute the residual difference from the
     measured reflectivity for a set of points.
@@ -127,6 +127,9 @@ def calc_errors(problem, points):
     The points should be sampled from the posterior probability
     distribution computed from MCMC, bootstrapping or sampled from
     the error ellipse calculated at the minimum.
+
+    The *parallel* parameter controls the number of parallel processes
+    (set to 1 to disable use of ProcessPoolExecutor, or 0 to use all processors).
 
     Each of the returned arguments is a dictionary mapping model number to
     error sample data as follows:
@@ -161,8 +164,26 @@ def calc_errors(problem, points):
 
     # Put best at slot 0, no alignment
     data = [_eval_point(problem, problem.getp())]
-    for p in points:
-        data.append(_eval_point(problem, p))
+
+    if parallel != 1:
+        import concurrent.futures
+        from functools import partial
+
+        def initialize(problem):
+            # this sets up a version of _eval_point
+            # with the problem argument pre-set on the workers
+            global _eval_point
+            _eval_point = partial(_eval_point, problem)
+
+        max_workers = parallel if parallel > 0 else None
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=max_workers, initializer=initialize, initargs=(problem,)
+        ) as executor:
+            results = executor.map(_eval_point, points)
+        data.extend(results)
+    else:
+        for p in points:
+            data.append(_eval_point(problem, p))
 
     profiles, slabs, residuals = zip(*data)
 
