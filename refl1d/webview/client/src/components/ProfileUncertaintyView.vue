@@ -37,8 +37,10 @@ type Payload  = {
   contour_data: {
     [model_name: string]: {
       z: number[],
-      data: { [key: string]: number[][][] },
-    }
+      data: { [key: string]: {
+        [contour_label: string]: number[],
+      }},
+    },
   },
   contours: number[],
 }
@@ -57,12 +59,10 @@ function get_csv_data() {
   for (const [model_name, model_data] of Object.entries(data)) {
     headers.push(`"${model_name} z"`);
     values.push(model_data.z);
-    Object.keys(model_data.data).forEach((key) => {
-      contours_value.forEach((c, ci) => {
-        headers.push(`"${model_name} ${key} (${c} lower)"`);
-        headers.push(`"${model_name} ${key} (${c} upper)"`);
-        values.push(model_data.data[key][ci][0]);
-        values.push(model_data.data[key][ci][1]);
+    Object.entries(model_data.data).forEach(([key, value]) => {
+      Object.entries(value).forEach(([c, v]) => {
+        headers.push(`"${model_name} ${key} ${c}"`);
+        values.push(v);
       });
     });
   }

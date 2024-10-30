@@ -292,6 +292,15 @@ class Stack(Layer):
                 L = [other]
             self._layers.extend(_check_layer(el) for el in L)
 
+    def __setstate__(self, state):
+        # this is a temporary shim (2024-10-29), to accomodate objects that were pickled
+        # before the custom __getstate__ was removed.
+        # TODO: the entire __setstate__ can be removed someday (e.g. in 2026?)
+        if isinstance(state, tuple):
+            self.interface, self._layers, self.name, self.thickness = state
+        else:
+            self.__dict__.update(state)
+
     def __copy__(self):
         stack = Stack()
         stack.interface = self.interface
@@ -599,7 +608,13 @@ class Repeat(Layer):
         return self.interface, self.repeat, self.name, self.stack
 
     def __setstate__(self, state):
-        self.interface, self.repeat, self.name, self.stack = state
+        # this is a temporary shim (2024-10-29), to accomodate objects that were pickled
+        # before the custom __getstate__ was removed.
+        # TODO: the entire __setstate__ can be removed someday (e.g. in 2026?)
+        if isinstance(state, tuple):
+            self.interface, self.repeat, self.name, self.stack = state
+        else:
+            self.__dict__.update(state)
 
     def penalty(self):
         return self.stack.penalty()
