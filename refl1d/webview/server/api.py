@@ -16,7 +16,7 @@ import numpy as np
 
 # from refl1d.uncertainty import show_errors
 from refl1d.models.experiment import Experiment, ExperimentBase, MixedExperiment
-import refl1d.models.probe
+from refl1d.models.probe.probe import PolarizedNeutronProbe
 from .profile_uncertainty import show_errors
 from .profile_plot import plot_multiple_sld_profiles, ModelSpec
 
@@ -96,7 +96,7 @@ def get_single_probe_data(theory, probe, substrate=None, surface=None, polarizat
 
 
 def get_probe_data(theory, probe, substrate=None, surface=None):
-    if isinstance(probe, refl1d.models.probe.PolarizedNeutronProbe):
+    if isinstance(probe, PolarizedNeutronProbe):
         output = []
         for xsi, xsi_th, suffix in zip(probe.xs, theory, ("--", "-+", "+-", "++")):
             if xsi is not None:
