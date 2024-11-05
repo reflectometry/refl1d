@@ -24,7 +24,7 @@ import bumps.cli
 
 bumps.cli.install_plugin(fitplugin)
 
-# from . import api  # use side-effects to register refl1d functions
+from . import api  # use side-effects to register refl1d functions
 # from .profile_plot import plot_sld_profile_plotly
 
 webserver.CDN_TEMPLATE = "https://cdn.jsdelivr.net/npm/refl1d-webview-client@{client_version}/dist/{client_version}"
