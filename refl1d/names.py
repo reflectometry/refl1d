@@ -38,7 +38,8 @@ from .models.probe.probe import (
     PolarizedQProbe,
 )
 from .models.probe.data_loaders.stajconvert import load_mlayer, save_mlayer
-from .models.probe.data_loaders import load4, ncnrdata as NCNR, snsdata as SNS
+from .models.probe.data_loaders.load4 import load4
+from .models.probe.data_loaders import ncnrdata as NCNR, snsdata as SNS
 from .models.probe.instrument import Monochromatic, Pulsed
 from .deprecated.magnetic import MagneticSlab, MagneticTwist, FreeMagnetic, MagneticStack
 from .models.sample.magnetism import Magnetism, MagnetismTwist, FreeMagnetism, MagnetismStack
