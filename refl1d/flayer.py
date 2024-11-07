@@ -126,10 +126,12 @@ class FunctionalProfile(Layer):
         self.tol = tol
         self.magnetism = magnetism
 
-        if profile_params is not None:
-            self.profile_params = profile_params
+        if profile_params is None:
+            # use kw arguments to set initial values for profile parameters
+            self.profile_params = _init_profile_params(name, self.profile, kw, self.RESERVED)
         else:
-            _set_parameters(self, name, self.profile, kw, self.RESERVED)
+            # no need to filter out reserved keywords
+            self.profile_params = _init_profile_params(name, self.profile, profile_params, ())
 
         # TODO: maybe make these lazy (and for magnetism below as well)
         self._set_ends()
@@ -171,7 +173,7 @@ class FunctionalProfile(Layer):
                 "thickness": self.thickness,
                 "interface": self.interface,
                 "profile": self.profile,
-                "parameters": _get_parameters(self),
+                "parameters": self.profile_params,
                 "tol": self.tol,
                 "magnetism": self.magnetism,
             }
@@ -273,10 +275,13 @@ class FunctionalMagnetism(BaseMagnetism):
         self.rhoM_end = Parameter.default(rhoM_end, name=name + " rhoM_end")
         self.thetaM_end = Parameter.default(thetaM_end, name=name + " thetaM_end")
 
-        if profile_params is not None:
-            self.profile_params = profile_params
+        if profile_params is None:
+            # use kw arguments to set initial values for profile parameters
+            self.profile_params = _init_profile_params(name, self.profile, kw, self.RESERVED)
         else:
-            _set_parameters(self, name, self.profile, kw, self.RESERVED)
+            # no need to filter out reserved keywords
+            self.profile_params = _init_profile_params(name, self.profile, profile_params, ())
+
         self._set_ends()
 
     def set_anchor(self, stack, index):
@@ -343,7 +348,7 @@ class FunctionalMagnetism(BaseMagnetism):
 
     def parameters(self):
         parameters = BaseMagnetism.parameters(self)
-        parameters.update(_get_parameters(self))
+        parameters.update(self.profile_params)
         return parameters
 
     def to_dict(self):
@@ -352,7 +357,7 @@ class FunctionalMagnetism(BaseMagnetism):
             to_dict(
                 {
                     "profile": self.profile,
-                    "parameters": _get_parameters(self),
+                    "parameters": self.profile_params,
                     "tol": self.tol,
                 }
             )
@@ -379,35 +384,30 @@ class FunctionalMagnetism(BaseMagnetism):
         return "FunctionalMagnetism(%s)" % self.name
 
 
-def _set_parameters(self, name, profile, kw, reserved):
+def _init_profile_params(name, profile, profile_params, reserved):
     # Query profile function for the list of arguments
-    profile_params = {}
+    output = {}
     vars = inspect.getfullargspec(profile)[0]
     # print "vars", vars
     if inspect.ismethod(profile):
         vars = vars[1:]  # Chop self
     vars = vars[1:]  # Chop z
     # print vars
-    unused = [k for k in kw.keys() if k not in vars]
+    unused = [k for k in profile_params.keys() if k not in vars]
     if len(unused) > 0:
         raise TypeError("Profile got unexpected keyword argument '%s'" % unused[0])
     dups = [k for k in vars if k in reserved]
     if len(dups) > 0:
         raise TypeError("Profile has conflicting argument %r" % dups[0])
     for k in vars:
-        kw.setdefault(k, 0)
-    for k, v in kw.items():
+        output.setdefault(k, 0)
+    for k, v in profile_params.items():
         try:
             pv = [Parameter.default(vi, name=f"{name} {k}[{i}]") for i, vi in enumerate(v)]
         except TypeError:
             pv = Parameter.default(v, name=f"{name} {k}")
-        profile_params[k] = pv
-    self.profile_params = profile_params
-
-
-def _get_parameters(self):
-    return self.profile_params
-    # return {k: getattr(self, k) for k in self.vars}
+        output[k] = pv
+    return output
 
 
 def _get_values(self):
@@ -419,65 +419,3 @@ def _get_values(self):
         else:
             vals[k] = v.value
     return vals
-
-
-@dataclass(init=False)
-class _LayerLimit(Calculation):
-    flayer: FunctionalProfile
-    isend: bool
-    isrho: bool
-
-    def __init__(self, flayer, isend=True, isrho=True, description=None):
-        if description is None:
-            description = f"{'rho' if isrho else 'irho'} Layer Limit, isend={isend}"
-        self.description = description
-        self.flayer = flayer
-        self.isend = isend
-        self.isrho = isrho
-        self.name = str(flayer) + self._tag
-
-    @property
-    def _tag(self):
-        return (".rho_" if self.isrho else ".irho_") + ("end" if self.isend else "start")
-
-    def parameters(self):
-        return []
-
-    def _function(self):
-        z = asarray([0.0, self.flayer.thickness.value])
-        P = self.flayer.profile(asarray(z), **_get_values(self.flayer))
-        index = 1 if self.isend else 0
-        return real(P[index]) if self.isrho else imag(P[index])
-
-    def __repr__(self):
-        return repr(self.flayer) + self._tag
-
-
-class _MagnetismLimit(Calculation):
-    def __init__(self, flayer, isend=True, isrhoM=True, description=None):
-        if description is None:
-            description = f"{'rhoM' if isrhoM else 'thetaM'} Magnetism Limit, isend={isend}"
-        self.description = description
-        self.flayer = flayer
-        self.isend = isend
-        self.isrhoM = isrhoM
-        self.name = str(flayer) + self._tag
-
-    @property
-    def _tag(self):
-        return (".rhoM_" if self.isrhoM else ".thetaM_") + ("end" if self.isend else "start")
-
-    def parameters(self):
-        return []
-
-    def _function(self):
-        zmax = self.flayer._calc_thickness()
-        z = asarray([0.0, zmax])
-        P = self.flayer.profile(z, **_get_values(self.flayer))
-        rhoM, thetaM = P if isinstance(P, tuple) else (P, DEFAULT_THETA_M)
-        rhoM, thetaM = [broadcast_to(v, z.shape) for v in (rhoM, thetaM)]
-        index = -1 if self.isend else 0
-        return rhoM[index] if self.isrhoM else thetaM[index]
-
-    def __repr__(self):
-        return repr(self.flayer) + self._tag
