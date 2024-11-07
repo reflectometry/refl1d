@@ -6,8 +6,7 @@ import inspect
 
 from numpy import real, imag, asarray, broadcast_to
 
-from bumps.parameter import Parameter, to_dict, Calculation, Constant, Expression
-from bumps.util import schema_config
+from bumps.parameter import Parameter, Calculation, Constant, Expression
 from refl1d.material import SLD
 from refl1d.model import Layer, Stack
 from refl1d.magnetism import BaseMagnetism, Magnetism, DEFAULT_THETA_M
@@ -270,7 +269,7 @@ class FunctionalMagnetism(BaseMagnetism):
 
         self._set_ends()
 
-    def set_anchor(self, stack, index):
+    def set_anchor(self, stack: Stack, index):
         stack, start = stack._lookup(index)
         thickness_params = []
         for k in range(start, start + self.extent):
