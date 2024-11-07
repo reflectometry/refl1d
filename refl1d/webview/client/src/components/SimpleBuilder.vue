@@ -269,12 +269,13 @@ function dragEnd() {
         <div class="card">
             <div class="card-body">
               <h5 class="card-title d-inline-block px-2 my-0 align-middle">Simple Slab Model Builder</h5>
-                <button class="btn btn-primary" type="button" aria-expanded="false"
+                <button
+class="btn btn-primary" type="button" aria-expanded="false"
                   aria-controls="builderInstructions" @click="showInstructions = !showInstructions">
                   Instructions
                 </button>
 
-              <p class="card-text collapse" :class="{ show: showInstructions }" id="builderInstructions">
+              <p id="builderInstructions" class="card-text collapse" :class="{ show: showInstructions }">
                   <ul>
                       <li>Click the "Add layer" button to add a new layer.</li>
                       <li>Drag and drop the rows to change the order of the layers.</li>
@@ -291,33 +292,33 @@ function dragEnd() {
         </div>
         <div class="col-auto align-self-center">
           <div class="form-check form-switch m-2" @click="send_model()">
-            <input class="form-check-input" type="checkbox" id="showImaginary_input" v-model="showImaginary">
+            <input id="showImaginary_input" v-model="showImaginary" class="form-check-input" type="checkbox">
             <label class="form-check-label" for="showImaginary_input">Show imaginary SLD</label>
           </div>
           <div class="form-check form-switch m-2" @click="send_model()">
-            <input class="form-check-input" type="checkbox" id="dq_is_FWHM_input" v-model="dq_is_FWHM">
+            <input id="dq_is_FWHM_input" v-model="dq_is_FWHM" class="form-check-input" type="checkbox">
             <label class="form-check-label" for="dq_is_FWHM_input">Resolution as FWHM</label>
           </div>
         </div>
       </div>
-      <div class="row mb-2" v-if="showEditQRange">
+      <div v-if="showEditQRange" class="row mb-2">
         <div class="col">
           <label for="qmin">Q min (Å<sup>-1</sup>)</label>
-          <input class="form-control" type="number" step="0.01" v-model="editQmin">
+          <input v-model="editQmin" class="form-control" type="number" step="0.01">
         </div>
         <div class="col">
           <label for="qmax">Q max (Å<sup>-1</sup>)</label>
-          <input class="form-control" type="number" step="0.01" v-model="editQmax">
+          <input v-model="editQmax" class="form-control" type="number" step="0.01">
         </div>
         <div class="col">
           <label for="qsteps">Q steps</label>
-          <input class="form-control" type="number" step="1" v-model="editQsteps">
+          <input v-model="editQsteps" class="form-control" type="number" step="1">
         </div>
         <div class="col-auto align-self-end">
           <button class="btn btn-secondary mx-2" @click="setQProbe">Apply new Q</button>
         </div>
       </div>
-        <table class="table table-sm" v-if="dictionaryLoaded" id="sortable">
+        <table v-if="dictionaryLoaded" id="sortable" class="table table-sm">
             <thead class="border-bottom py-1 sticky-top text-white bg-secondary">
                 <tr>
                   <th></th>
@@ -331,21 +332,21 @@ function dragEnd() {
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="(layer, key) in sortedLayers" :key="key" @blur.capture="send_model()" class="align-middle">
+                <tr v-for="(layer, key) in sortedLayers" :key="key" class="align-middle" @blur.capture="send_model()">
                     <td  
+                        draggable="true"
+                        class="draggable"
                         @dragstart="dragStart(key, $event)"
                         @dragover="dragOver(key, $event)"
                         @drop="drop(key)"
-                        @dragend="dragEnd"
-                        draggable="true"
-                        class="draggable"><span width=10px class="badge bg-secondary">:</span></td>
-                    <td><textarea class="form-control name" rows=1 cols="40" type="text" v-model="layer.material.name" :title="layer.material.name"/></td>
-                    <td><input class="form-control" v-if="get_slot(layer.thickness) !== null" type="number" step="5" v-model="get_slot(layer.thickness).value"></td>
-                    <td><input class="form-control" v-if="get_slot(layer.material.rho) !== null" type="number" step="0.01" v-model="get_slot(layer.material.rho).value"></td>
-                    <td v-if="showImaginary"><input class="form-control" v-if="get_slot(layer.material.irho) !== null" type="number" step="0.01" v-model="get_slot(layer.material.irho).value"></td>
-                    <td><input class="form-control" v-if="get_slot(layer.interface) !== null" type="number" step="1" v-model="get_slot(layer.interface).value"></td>
+                        @dragend="dragEnd"><span width=10px class="badge bg-secondary">:</span></td>
+                    <td><textarea v-model="layer.material.name" class="form-control name" rows=1 cols="40" type="text" :title="layer.material.name"/></td>
+                    <td><input v-if="get_slot(layer.thickness) !== null" v-model="get_slot(layer.thickness).value" class="form-control" type="number" step="5"></td>
+                    <td><input v-if="get_slot(layer.material.rho) !== null" v-model="get_slot(layer.material.rho).value" class="form-control" type="number" step="0.01"></td>
+                    <td v-if="showImaginary"><input v-if="get_slot(layer.material.irho) !== null" v-model="get_slot(layer.material.irho).value" class="form-control" type="number" step="0.01"></td>
+                    <td><input v-if="get_slot(layer.interface) !== null" v-model="get_slot(layer.interface).value" class="form-control" type="number" step="1"></td>
                     <td><button class="btn btn-danger btn-sm" @click="delete_layer(key)">Delete</button></td>
-                    <td><button class="btn btn-success btn-sm add-layer-after" @click="add_layer(key+1)" title="add layer here">+</button></td>
+                    <td><button class="btn btn-success btn-sm add-layer-after" title="add layer here" @click="add_layer(key+1)">+</button></td>
                 </tr>
             </tbody>
         </table>
@@ -356,13 +357,13 @@ function dragEnd() {
         <div class="col">
             <button class="btn btn-primary m-2" @click="new_model">New model</button>
         </div>
-        <div class="col-auto" v-if="dictionaryLoaded">
+        <div v-if="dictionaryLoaded" class="col-auto">
           <button class="btn btn-secondary m-2" @click="send_model()">Apply changes</button>
         </div>
-        <div class="col-auto" v-if="dictionaryLoaded">
+        <div v-if="dictionaryLoaded" class="col-auto">
           <div class="input-group m-2">
             <button class="btn btn-success btn-sm" @click="add_layer(insert_index)">Add layer at index: </button>
-            <input class="form-control me-4 insert-index" v-model="insert_index" type="number"/>
+            <input v-model="insert_index" class="form-control me-4 insert-index" type="number"/>
           </div>
         </div>
     </div>
