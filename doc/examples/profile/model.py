@@ -100,14 +100,14 @@ flayer.magnetism.set_anchor(sample, "sin")
 # Set the fittable parameters.  Note that the parameters to the function
 # after the first parameter *z* become fittable parameters.
 
-sample["sin"].period.range(0, 100)
-sample["sin"].phase.range(0, 1)
 sample["sin"].thickness.range(0, 1000)
-sample["sin"].magnetism.M1.range(0, 10)
-sample["sin"].magnetism.M2.range(0, 10)
-sample["sin"].magnetism.M3.range(0, 10)
-sample["sin"].magnetism.z1.range(0, 100)
-sample["sin"].magnetism.z2.range(0, 100)
+sample["sin"].profile_params["period"].range(0, 100)
+sample["sin"].profile_params["phase"].range(0, 1)
+sample["sin"].magnetism.profile_params["M1"].range(0, 10)
+sample["sin"].magnetism.profile_params["M2"].range(0, 10)
+sample["sin"].magnetism.profile_params["M3"].range(0, 10)
+sample["sin"].magnetism.profile_params["z1"].range(0, 100)
+sample["sin"].magnetism.profile_params["z2"].range(0, 100)
 
 # Define the model.  Since this is a simulation, we need to define the
 # incident beam in terms of angles, wavelengths and dispersion.  This
