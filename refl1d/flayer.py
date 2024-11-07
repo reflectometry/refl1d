@@ -165,20 +165,6 @@ class FunctionalProfile(Layer):
         # P['interface'] = self.interface
         return P
 
-    def to_dict(self):
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "name": self.name,
-                "thickness": self.thickness,
-                "interface": self.interface,
-                "profile": self.profile,
-                "parameters": self.profile_params,
-                "tol": self.tol,
-                "magnetism": self.magnetism,
-            }
-        )
-
     def render(self, probe, slabs):
         Pw, Pz = slabs.microslabs(self.thickness.value)
         if len(Pw) == 0:
@@ -350,18 +336,6 @@ class FunctionalMagnetism(BaseMagnetism):
         parameters = BaseMagnetism.parameters(self)
         parameters.update(self.profile_params)
         return parameters
-
-    def to_dict(self):
-        ret = BaseMagnetism.to_dict(self)
-        ret.update(
-            to_dict(
-                {
-                    "profile": self.profile,
-                    "parameters": self.profile_params,
-                    "tol": self.tol,
-                }
-            )
-        )
 
     def render(self, probe, slabs, thickness, anchor, sigma):
         Pw, Pz = slabs.microslabs(thickness)
