@@ -11,6 +11,8 @@ Use *run_errors* in a model file to reload the results of a batch DREAM fit.
 
 from __future__ import print_function
 
+import dill
+
 __all__ = [
     "reload_errors",
     "run_errors",
@@ -21,6 +23,7 @@ __all__ = [
     "show_residuals",
 ]
 
+import multiprocessing
 import sys
 import os
 
@@ -119,6 +122,18 @@ def _usage():
     print(run_errors.__doc__)
 
 
+def _initialize_worker(shared_serialized_problem):
+    global _shared_problem
+    _shared_problem = dill.loads(np.asarray(shared_serialized_problem[:], dtype="uint8").tobytes())
+
+
+_shared_problem = None  # used by multiprocessing pool to hold problem
+
+
+def _worker_eval_point(point):
+    return _eval_point(_shared_problem, point)
+
+
 def calc_errors(problem, points, parallel: int = 0):
     """
     Align the sample profiles and compute the residual difference from the
@@ -169,18 +184,18 @@ def calc_errors(problem, points, parallel: int = 0):
         import concurrent.futures
         from functools import partial
 
-        def initialize(problem):
-            # this sets up a version of _eval_point
-            # with the problem argument pre-set on the workers
-            global _eval_point
-            _eval_point = partial(_eval_point, problem)
-
         max_workers = parallel if parallel > 0 else None
-        with concurrent.futures.ProcessPoolExecutor(
-            max_workers=max_workers, initializer=initialize, initargs=(problem,)
-        ) as executor:
-            results = executor.map(_eval_point, points)
-        data.extend(results)
+        serialized_problem_array = np.frombuffer(dill.dumps(problem), dtype="uint8")
+
+        with multiprocessing.Manager() as manager:
+            shared_serialized_problem = manager.Array("B", serialized_problem_array)
+            args = [(shared_serialized_problem, point) for point in points]
+
+            with concurrent.futures.ProcessPoolExecutor(
+                max_workers=max_workers, initializer=_initialize_worker, initargs=(shared_serialized_problem,)
+            ) as executor:
+                results = executor.map(_worker_eval_point, points)
+            data.extend(results)
     else:
         for p in points:
             data.append(_eval_point(problem, p))
