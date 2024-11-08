@@ -7,7 +7,7 @@ import { setupDrawLoop } from "bumps-webview-client/src/setupDrawLoop";
 import { COLORS } from "../colors.mjs";
 import { configWithSVGDownloadButton } from "bumps-webview-client/src/plotly_extras.mjs";
 
-const title = "Reflectivity";
+// const title = "Reflectivity";
 const plot_div = ref<HTMLDivElement | null>(null);
 const plot_offset = ref(0);
 const plot_data = shallowRef<Partial<Plotly.PlotData>>({});
@@ -273,7 +273,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
             if (pp.dR !== undefined && mm.dR !== undefined) {
               const dRm = interp(pp.Q, mm.Q, mm.dR);
               const dSA = dRm.map((dm, i) => {
-                const dp = pp.dR[i];
+                // const dp = pp.dR[i];
                 const p = pp.R[i];
                 const m = Rm[i];
                 return Math.sqrt((4 * ((p * dm) ** 2 + (m * dm) ** 2)) / (p + m) ** 4);
@@ -413,7 +413,7 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
 
   const lowest_xp = xp[0];
   const lowest_fp = fp[0];
-  const highest_xp = xp[xp.length - 1];
+  // const highest_xp = xp[xp.length - 1];
   const highest_fp = fp[fp.length - 1];
 
   let lower_xp = xpv.next();

@@ -1,14 +1,14 @@
 import { createApp, computed } from "vue";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./style.css";
-import { model_file, menu_items, FileBrowserSettings, fileBrowser, socket } from "bumps-webview-client/src/app_state";
+import { model_file, menu_items, fileBrowser, socket } from "bumps-webview-client/src/app_state";
 import App from "bumps-webview-client/src/App.vue";
 import { panels } from "./panels.mjs";
 import { dq_is_FWHM } from "./app_state";
 
 const name = "Refl1D";
 
-async function loadProbeFromFile(ev) {
+async function loadProbeFromFile() {
   if (fileBrowser.value) {
     const settings = {
       title: "Load Probe Data from File",
