@@ -1,6 +1,11 @@
+import asyncio
+from copy import deepcopy
+from functools import lru_cache
 from typing import Union, Dict, List
 from pathlib import Path
 
+from bumps.errplot import error_points_from_state
+# import bumps.webview.server.api as bumps_api
 from bumps.webview.server.api import (
     register,
     get_chisq,
@@ -11,11 +16,11 @@ from bumps.webview.server.api import (
     add_notification,
     logger,
 )
-from bumps.errplot import calc_errors_from_state
 import numpy as np
 
-# from refl1d.uncertainty import show_errors
+from refl1d.models.uncertainty import calc_errors
 from refl1d.models.experiment import Experiment, ExperimentBase, MixedExperiment
+from refl1d.models.probe.data_loaders import load4
 from refl1d.models.probe.probe import PolarizedNeutronProbe
 from .profile_uncertainty import show_errors
 from .profile_plot import plot_multiple_sld_profiles, ModelSpec
@@ -123,8 +128,8 @@ async def get_model_names():
     return output
 
 
-@register
-async def get_profile_uncertainty_plot(
+@lru_cache(maxsize=30)
+def _get_profile_uncertainty_plot(
     auto_align: bool = True,
     align: float = 0.0,
     nshown: int = 5000,
@@ -134,7 +139,7 @@ async def get_profile_uncertainty_plot(
 ):
     if state.problem is None or state.problem.fitProblem is None:
         return None
-    fitProblem = state.problem.fitProblem
+    fitProblem = deepcopy(state.problem.fitProblem)
     uncertainty_state = state.fitting.uncertainty_state
     align_arg = "auto" if auto_align else align
     if uncertainty_state is not None:
@@ -142,7 +147,9 @@ async def get_profile_uncertainty_plot(
 
         start_time = time.time()
         logger.info(f"queueing new profile uncertainty plot... {start_time}")
-        errs = calc_errors_from_state(fitProblem, uncertainty_state, nshown=nshown, random=random, portion=1.0)
+        error_points = error_points_from_state(uncertainty_state, nshown=nshown, random=random, portion=1.0)
+        logger.info(f"points calculated: {time.time() - start_time}")
+        errs = calc_errors(fitProblem, error_points)
         logger.info(f"errors calculated: {time.time() - start_time}")
         error_result = show_errors(errs, npoints=npoints, align=align_arg, residuals=residuals)
         error_result["fig"] = error_result["fig"].to_dict()
@@ -154,6 +161,27 @@ async def get_profile_uncertainty_plot(
         return output
     else:
         return None
+
+
+@register
+async def get_profile_uncertainty_plot(
+    auto_align: bool = True,
+    align: float = 0.0,
+    nshown: int = 5000,
+    npoints: int = 5000,
+    random: bool = True,
+    residuals: bool = False,
+):
+    result = await asyncio.to_thread(
+        _get_profile_uncertainty_plot,
+        auto_align=auto_align,
+        align=align,
+        nshown=nshown,
+        npoints=npoints,
+        random=random,
+        residuals=residuals,
+    )
+    return result
 
 
 @register
@@ -169,7 +197,7 @@ async def load_probe_from_file(pathlist: List[str], filename: str, model_index: 
             await log(f"Error: Can not access model at model_index {model_index} (only {num_models} defined)")
             return
         model: Experiment = models[model_index]
-        probe = refl1d.probe.load4(str(path / filename), FWHM=fwhm)
+        probe = load4(str(path / filename), FWHM=fwhm)
         model.probe = probe
         fitProblem.model_reset()
         fitProblem.model_update()
