@@ -7,7 +7,8 @@ from __future__ import division, with_statement
 from dataclasses import dataclass, field
 from typing import Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 import numpy as np
-from numpy import diff, hstack, sqrt, searchsorted, asarray, cumsum, inf, nonzero, linspace, sort, isnan, clip
+from numpy import (diff, hstack, sqrt, searchsorted, asarray, cumsum,
+                   inf, nonzero, linspace, sort, isnan, clip)
 from bumps.parameter import Parameter as Par, Function as ParFunction, to_dict, Constant
 from bumps.mono import monospline, count_inflections
 
