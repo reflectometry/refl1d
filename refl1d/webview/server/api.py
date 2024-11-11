@@ -5,6 +5,7 @@ from typing import Union, Dict, List
 from pathlib import Path
 
 from bumps.errplot import error_points_from_state
+
 # import bumps.webview.server.api as bumps_api
 from bumps.webview.server.api import (
     register,
