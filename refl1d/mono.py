@@ -7,7 +7,8 @@ from __future__ import division, with_statement
 from dataclasses import dataclass, field
 from typing import Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 import numpy as np
-from numpy import diff, hstack, sqrt, searchsorted, asarray, cumsum, inf, nonzero, linspace, sort, isnan, clip
+from numpy import (diff, hstack, sqrt, searchsorted, asarray, cumsum,
+                   inf, nonzero, linspace, sort, isnan, clip)
 from bumps.parameter import Parameter as Par, Function as ParFunction, to_dict, Constant
 from bumps.mono import monospline, count_inflections
 
@@ -170,18 +171,27 @@ class FreeInterface(Layer):
 
     def profile(self, Pz):
         thickness = self.thickness.value
-        z, p = [hstack((0, cumsum(asarray([v.value for v in vector], "d")))) for vector in (self.dz, self.dp)]
+        z, p = [hstack((0, cumsum(asarray([v.value for v in vector], 'd'))))
+                for vector in (self.dz, self.dp)]
         if p[-1] == 0:
             p[-1] = 1
-        p *= 1 / p[-1]
-        z *= thickness / z[-1]
+        p *= 1/p[-1]
+        # AJC included condition as if z[-1] == 0 then z *= thickness/z[-1] == [nan]*len(z)
+        # This then ends with bumps.mono.Monospline adding an extra element as a result of
+        # line 42 in bumps.mono.Monospline
+        if z[-1] == 0:
+            z[-1] = 1
+        z *= thickness/z[-1]
         profile = clip(monospline(z, p, Pz), 0, 1)
         return profile
 
     def render(self, probe, slabs):
         thickness = self.thickness.value
+
+        # TODO: why is provided if it is ignored?
         # interface ignored for FreeInterface
         # interface = self.interface.value
+
         below_rho, below_irho = self.below.sld(probe)
         above_rho, above_irho = self.above.sld(probe)
         # Pz is the center, Pw is the width
