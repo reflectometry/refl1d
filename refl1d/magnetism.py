@@ -393,9 +393,9 @@ class FreeMagnetism(BaseMagnetism):
             for v, part, limits in zip((rhoM, thetaM, z), ("rhoM", "thetaM", "z"), ((0, None), (0, 360), (0, 1)))
         ]
         if len(self.z) != len(self.rhoM):
-            raise ValueError("Need one z for each rhoM")
+            raise ValueError("must have one position z for each rhoM")
         if len(self.thetaM) > 0 and len(self.rhoM) != len(self.thetaM):
-            raise ValueError("Need one thetaM for each rhoM")
+            raise ValueError("must have one thetaM for each rhoM")
 
     def parameters(self):
         parameters = BaseMagnetism.parameters(self)
