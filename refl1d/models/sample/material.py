@@ -69,13 +69,6 @@ class Scatterer:
     A generic scatterer separates the lookup of the scattering factors
     from the calculation of the scattering length density.  This allows
     programs to fit density and alloy composition more efficiently.
-
-    .. Note::
-       the Scatterer base class is extended by
-       :class:`_MaterialStacker <refl1d.model._MaterialStacker>` so that materials
-       can be implicitly converted to slabs when used in stack construction
-       expressions. It is not done directly to avoid circular dependencies
-       between :mod:`model <refl1d.models.sample.layers>` and :mod:`material <refl1d.models.sample.material>`.
     """
 
     def sld(self, sf) -> Tuple[float, float]:
