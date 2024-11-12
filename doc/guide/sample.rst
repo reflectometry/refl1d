@@ -114,11 +114,11 @@ We have multiple representations for freeform profiles, each with its
 own strengths and weaknesses:
 
    * `monotone cubic interpolation <http://en.wikipedia.org/wiki/Monotone_cubic_interpolation>`_
-     (:mod:`refl1d.mono`)
+     (:mod:`refl1d.models.sample.mono`)
    * `parameteric B-splines <http://en.wikipedia.org/wiki/B-spline>`_
-     (:mod:`refl1d.freeform`)
+     (:mod:`refl1d.deprecated.freeform`)
    * `Chebyshev interpolating polynomials <http://en.wikipedia.org/wiki/Chebyshev_polynomials>`_
-      (:mod:`refl1d.cheby`)
+      (:mod:`refl1d.models.sample.cheby`)
 
 At present, monotone cubic interpolation is the most developed, but work
 on all representations is in flux.  In particular not every representation

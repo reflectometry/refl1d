@@ -184,7 +184,7 @@ def unpolarized_magnetic(*args, **kw):
     """
     Returns the average of magnetic reflectivity for all cross-sections.
 
-    See :class:`magnetic_reflectivity <refl1d.reflectivity.magnetic_reflectivity>` for details.
+    See :class:`magnetic_reflectivity <refl1d.models.sample.reflectivity.magnetic_reflectivity>` for details.
     """
     return reduce(np.add, magnetic_reflectivity(*args, **kw)) / 2.0
 
@@ -207,7 +207,7 @@ def magnetic_amplitude(
     """
     Returns the complex magnetic reflectivity waveform.
 
-    See :class:`magnetic_reflectivity <refl1d.reflectivity.magnetic_reflectivity>` for details.
+    See :class:`magnetic_reflectivity <refl1d.models.sample.reflectivity.magnetic_reflectivity>` for details.
     """
     from ...backends import backend
 

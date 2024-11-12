@@ -1,30 +1,31 @@
 import asyncio
 from copy import deepcopy
 from functools import lru_cache
-from typing import Union, Dict, List
 from pathlib import Path
-import numpy as np
+from typing import Dict, List, Union
 
-from bumps.webview.server.api import (
-    register,
-    get_chisq,
-    state,
-    to_json_compatible_dict,
-    log,
-    now_string,
-    add_notification,
-    logger,
-)
-# import bumps.webview.server.api as bumps_api
 from bumps.errplot import error_points_from_state
 
-# from refl1d.uncertainty import show_errors
+# import bumps.webview.server.api as bumps_api
+from bumps.webview.server.api import (
+    add_notification,
+    get_chisq,
+    log,
+    logger,
+    now_string,
+    register,
+    state,
+    to_json_compatible_dict,
+)
+import numpy as np
+
 from refl1d.models.experiment import Experiment, ExperimentBase, MixedExperiment
+from refl1d.models.probe.data_loaders import load4
 from refl1d.models.probe.probe import PolarizedNeutronProbe
-from refl1d.models.probe.data_loaders.load4 import load4
 from refl1d.models.uncertainty import calc_errors
+
+from .profile_plot import ModelSpec, plot_multiple_sld_profiles
 from .profile_uncertainty import show_errors
-from .profile_plot import plot_multiple_sld_profiles, ModelSpec
 
 # state.problem.serializer = "dataclass"
 

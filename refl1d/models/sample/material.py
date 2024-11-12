@@ -75,7 +75,7 @@ class Scatterer:
        :class:`_MaterialStacker <refl1d.model._MaterialStacker>` so that materials
        can be implicitly converted to slabs when used in stack construction
        expressions. It is not done directly to avoid circular dependencies
-       between :mod:`model <refl1d.model>` and :mod:`material <refl1d.material>`.
+       between :mod:`model <refl1d.models.sample.layers>` and :mod:`material <refl1d.models.sample.material>`.
     """
 
     def sld(self, sf) -> Tuple[float, float]:

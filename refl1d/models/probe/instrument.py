@@ -9,7 +9,7 @@ This module is intended to help define new instrument loaders
 Scanning Reflectometers
 =======================
 
-:mod:`refl1d.instrument` (this module) defines two instrument types:
+:mod:`refl1d.models.probe.instrument` (this module) defines two instrument types:
 :class:`Monochromatic` and :class:`Pulsed`. These represent
 generic scanning and time of flight instruments, respectively.
 

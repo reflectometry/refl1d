@@ -12,7 +12,7 @@ classes can be imported from a module, such as::
     >>> from refl1d.models.sample.layers import Slab
 
 The most common imports have been gathered together in refl1d.models.  This
-allows you to use names like :class:`Slab <refl1d.model.Slab>` directly::
+allows you to use names like :class:`Slab <refl1d.models.sample.layers.Slab>` directly::
 
     >>> from refl1d.models import *
     >>> s = Slab(silicon, thickness=100, interface=10)

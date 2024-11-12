@@ -33,48 +33,48 @@ export interface ParameterLike {
 }
 
 export interface Slab {
-  name: string;
-  thickness: ParameterLike;
-  magnetism: Magnetism | null;
-  material: SLD;
-  interface: ParameterLike;
-  __class__: "refl1d.model.Slab";
+    name: string;
+    thickness: ParameterLike;
+    magnetism: Magnetism | null;
+    material: SLD;
+    interface: ParameterLike;
+    __class__: "refl1d.models.sample.layers.Slab";
 }
 
 export interface Repeat {
-  name: string;
-  interface: ParameterLike;
-  magnetism: Magnetism | null;
-  repeat: ParameterLike;
-  stack: Stack;
-  thickness: ParameterLike;
-  __class__: "refl1d.model.Repeat";
+    name: string;
+    interface: ParameterLike;
+    magnetism: Magnetism | null;
+    repeat: ParameterLike;
+    stack: Stack;
+    thickness: ParameterLike;
+    __class__: "refl1d.models.sample.layers.Repeat";
 }
 
 export interface SLD {
-  name: string;
-  rho: ParameterLike;
-  irho: ParameterLike;
-  __class__: "refl1d.material.SLD";
+    name: string;
+    rho: ParameterLike;
+    irho: ParameterLike;
+    __class__: "refl1d.models.sample.material.SLD";
 }
 
 export interface Magnetism {
-  name: string;
-  rhoM: ParameterLike;
-  thetaM: ParameterLike;
-  phiM: ParameterLike;
-  __class__: "refl1d.material.Magnetism";
+    name: string;
+    rhoM: ParameterLike;
+    thetaM: ParameterLike;
+    phiM: ParameterLike;
+    __class__: "refl1d.models.sample.material.Magnetism";
 }
 
 export interface Stack {
-  layers: (Slab | Repeat)[];
-  __class__: "refl1d.model.Stack";
+    layers: (Slab | Repeat)[];
+    __class__: "refl1d.models.sample.layers.Stack";
 }
 
 export interface Experiment {
-  sample: Stack;
-  probe: QProbe;
-  __class__: "refl1d.experiment.Experiment";
+    sample: Stack;
+    probe: QProbe;
+    __class__: "refl1d.models.probe.experiment.Experiment";
 }
 
 export interface NumpyArray {
@@ -84,6 +84,7 @@ export interface NumpyArray {
 }
 
 export interface QProbe {
+<<<<<<< HEAD
   Q: NumpyArray;
   dQ: NumpyArray;
   name?: string;
@@ -97,3 +98,18 @@ export interface QProbe {
   resolution: "normal" | "uniform";
   __class__: "refl1d.probe.QProbe";
 }
+=======
+    Q: NumpyArray;
+    dQ: NumpyArray;
+    name?: string;
+    filename?: string;
+    intensity: ParameterLike;
+    back_absorption: ParameterLike;
+    background: ParameterLike;
+    back_reflectivity: boolean;
+    R?: NumpyArray;
+    dR?: NumpyArray;
+    resolution: "normal" | "uniform";
+    __class__: "refl1d.models.probe.probe.QProbe";
+}
+>>>>>>> restructure

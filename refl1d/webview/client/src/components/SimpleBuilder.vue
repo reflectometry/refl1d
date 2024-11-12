@@ -80,14 +80,14 @@ function createLayer(
   const irho_param = createParameter("irho", irho, ["-inf", "inf"], true, ["sample"]);
   const thickness_param = createParameter("thickness", thickness, [0, "inf"], true, ["sample"]);
   const interface_param = createParameter("interface", interface_, [0, "inf"], true, ["sample"]);
-  const material: SLD = { __class__: "refl1d.material.SLD", name, rho: rho_param, irho: irho_param };
+  const material: SLD = { name, rho: rho_param, irho: irho_param, __class__: "refl1d.models.sample.material.SLD" };
   const layer: Slab = {
-    __class__: "refl1d.model.Slab",
     name,
     material,
     thickness: thickness_param,
     interface: interface_param,
     magnetism,
+    __class__: "refl1d.models.sample.layers.Slab",
   };
   return layer;
 }
@@ -101,7 +101,7 @@ function createModel(): SerializedModel {
         {
           __class__: "refl1d.experiment.Experiment",
           sample: {
-            __class__: "refl1d.model.Stack",
+            __class__: "refl1d.models.sample.layers.Stack",
             layers: [createLayer("Si", 2.07, 0.0, 0.0, 1.0), createLayer("Vacuum", 0.0, 0.0, 0.0, 0.0)],
           },
           probe: generateQProbe(editQmin.value, editQmax.value, editQsteps.value, 0.0001),
@@ -179,7 +179,7 @@ function resolve_parameter(parameter_like: ParameterLike): Parameter {
 
 function set_parameter_names(stack: Stack) {
   for (const layer of stack.layers) {
-    if (layer.__class__ === "refl1d.model.Repeat") {
+    if (layer.__class__ === "refl1d.models.sample.layers.Repeat") {
       set_parameter_names(layer.stack);
     } else {
       const l = layer as Slab;
@@ -209,7 +209,7 @@ function set_parameter_bounds(stack: Stack) {
     p.bounds.sort((a, b) => a - b);
   };
   for (const layer of stack.layers) {
-    if (layer.__class__ === "refl1d.model.Repeat") {
+    if (layer.__class__ === "refl1d.models.sample.layers.Repeat") {
       set_parameter_bounds(layer.stack);
     } else {
       const l = layer as Slab;
