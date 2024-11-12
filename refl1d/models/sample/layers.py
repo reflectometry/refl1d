@@ -6,7 +6,7 @@ by gaussian interfaces. The layers themselves may be uniform, or the
 scattering density may vary with depth in the layer.
 
 .. Note::
-   By importing model, the definition of :class:`material.Scatterer <refl1d.material.Scatterer>`
+   By importing model, the definition of :class:`material.Scatterer <refl1d.models.sample.material.Scatterer>`
    changes so that materials can be stacked into layers using operator
    overloading:
    - the | operator, (previously known as "bitwise or") joins stacks

@@ -58,7 +58,7 @@ def ModelFunction(*args, **kw):
     raise NotImplementedError("ModelFunction no longer supported --- use PDF instead")
 
 
-logging.warning("\trefl1d.names is deprecated.  Use `refl1d.models.*` instead.")
+logging.warning("\trefl1d.names is deprecated.  Use refl1d.models.* instead.")
 
 PolarizedNeutronQProbe = PolarizedQProbe
 numpy = np

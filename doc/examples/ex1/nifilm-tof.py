@@ -39,7 +39,7 @@ M = instrument.simulate(
 # so much for a time-of-flight measurement, the central points will be
 # measured with much better precision, and the end points will be measured
 # with lower precision.  See
-# :meth:`Pulsed.simulate <refl1d.instrument.Pulsed.simulate>` for details
+# :meth:`Pulsed.simulate <refl1d.models.probe.instrument.Pulsed.simulate>` for details
 # on all simulation parameters.
 
 # Finally, we bundle the simulated measurement as a fit problem which

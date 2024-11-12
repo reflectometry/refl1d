@@ -19,7 +19,7 @@ sample = silicon(0, 5) | nickel(100, 5) | air
 instrument = SNS.Liquids()
 
 # In this case we are loading multiple data sets into the same
-# :class:`ProbeSet <refl1d.probe.ProbeSet>` object.  If your
+# :class:`ProbeSet <refl1d.models.probe.probe.ProbeSet>` object.  If your
 # reduction program stitches together the data for you, then you can simply
 # use ``probe=instrument.load('file')``.
 
@@ -27,9 +27,9 @@ files = ["nifilm-tof-%d.dat" % d for d in (1, 2, 3, 4)]
 probe = ProbeSet(instrument.load(f) for f in files)
 
 # The data and sample are combined into an
-# :class:`Experiment <refl1d.experiment.Experiment>`,
+# :class:`Experiment <refl1d.models.experiment.Experiment>`,
 # which again is bundled as a
-# :class:`FitProblem <refl1d.fitter.FitProblem>`
+# :class:`FitProblem <refl1d.models.bumps_interface.fitproblem.FitProblem>`
 # for the fitting program.
 
 M = Experiment(probe=probe, sample=sample)

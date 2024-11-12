@@ -7,7 +7,7 @@ The following instruments are defined:
 
     MAGIK, PBR, ANDR, NG1, NG7 and XRay
 
-These are :class:`refl1d.instrument.Monochromatic` classes tuned with default
+These are :class:`refl1d.models.probe.instrument.Monochromatic` classes tuned with default
 instrument parameters and loaders for reduced NCNR data.
 
 The instruments can be used to load data or to compute resolution functions
@@ -52,7 +52,7 @@ And for magnetic:
     >>> #h = pylab.ylabel('resolution (1-sigma)')
     >>> #h = pylab.xlabel('Q (inv A)')
 
-See :mod:`instrument <refl1d.instrument>` for details.
+See :mod:`instrument <refl1d.models.probe.instrument>` for details.
 """
 
 import os
@@ -103,7 +103,7 @@ def load_magnetic(filename, Aguide=BASE_GUIDE_ANGLE, H=0, shared_beam=True, **kw
 
     Other keyword arguments are for the individual cross section loaders
     as specified in
-    :class:`instrument.Monochromatic <refl1d.instrument.Monochromatic>`.
+    :class:`instrument.Monochromatic <refl1d.models.probe.instrument.Monochromatic>`.
 
     The data sets should are the base filename with an additional character
     corresponding to the spin state::

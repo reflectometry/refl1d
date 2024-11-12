@@ -43,7 +43,7 @@ sample[5].magnetism.interface_above.range(0, 10)
 # Here's the new loader.  Much simplified since the reduction computes the
 # appropriate $\Delta Q$ for the data points, and we don't need to specify
 # the slit openings and distances for the data set.  The options to the
-# :func:`refl1d.readers.load4` function allow you to override things during
+# :func:`refl1d.models.probe.data_loaders.load4.load4` function allow you to override things during
 # load, such as the sample broadening of the resolution.
 
 probe = load4("refl.txt")

@@ -4,7 +4,7 @@ Run bumps with refl1d plugin.
 
 The *align* subcommand can be used on a completed DREAM fit to redraw the
 profile contours aligned to a different layer boundary.
-See :func:`refl1d.uncertainty.run_errors` for details.
+See :func:`refl1d.models.uncertainty.run_errors` for details.
 """
 
 import sys
