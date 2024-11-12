@@ -47,7 +47,6 @@ import numpy as np
 from numpy import inf, clip, hstack, cumsum, asarray
 from bumps.parameter import Parameter, flatten, to_dict
 from bumps.mono import monospline
-from bumps.util import field, schema, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 
 from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
 
@@ -251,10 +250,12 @@ class MagnetismStack(BaseMagnetism):
 
     def parameters(self):
         parameters = BaseMagnetism.parameters(self)
-        parameters.update(rhoM=self.rhoM,
-                          thetaM=self.thetaM,
-                          #interfaceM=self.interfaceM,
-                          weight=self.weight)
+        parameters.update(
+            rhoM=self.rhoM,
+            thetaM=self.thetaM,
+            # interfaceM=self.interfaceM,
+            weight=self.weight
+        )
         return parameters
 
     def to_dict(self):
