@@ -443,6 +443,7 @@ class FreeMagnetism(BaseMagnetism):
         return "FreeMagnetism"
 
 
+@dataclass(init=False)
 class FreeMagnetismInterface(BaseMagnetism):
     r"""
     Spline change in magnetism throughout layer.
@@ -470,13 +471,24 @@ class FreeMagnetismInterface(BaseMagnetism):
 
     *mbelow* and *mabove* are the rhoM parameter values of
     the above and below layers respectively. Do not specify if
-    layers eiher side are not magnetic.
+    layers either side are not magnetic.
 
     *tbelow* and *tabove* are the thetaM parameter values of
     the above and below layers respectively. Do not specify if
-    layers eiher side are not magnetic.
+    layers either side are not magnetic.
     """
+
+    name: Optional[str]
+    mbelow: Optional[Union[Parameter, float]]
+    mabove: Optional[Union[Parameter, float]]
+    tbelow: Optional[Any]
+    tabove: Optional[Any]
+    dz: List[Union[float, Parameter]]
+    drhoM: List[Union[float, Parameter]]
+    dthetaM: List[Union[float, Parameter]]
+
     magnetic = True
+
     def __init__(self, dz=(), drhoM=(), dthetaM=(),
                  mbelow=0, mabove=0,
                  tbelow=None, tabove=None,
@@ -544,7 +556,7 @@ class FreeMagnetismInterface(BaseMagnetism):
 
         rhoM_fraction = hstack((0, cumsum(asarray([v.value for v in self.drhoM], 'd'))))
         # AJC added since without the line below FreeMagnetismInterface
-        # does not initialise propoerly - fixes strange behaviour at drho=0 on end point
+        # does not initialise properly - fixes strange behaviour at drho=0 on end point
         if rhoM_fraction[-1] == 0:
             rhoM_fraction[-1] = 1
 
