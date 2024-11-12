@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /// <reference types="@types/uuid"/>
-import { ref, onMounted, watch, onUpdated, computed, shallowRef } from "vue";
+import { computed, onMounted, onUpdated, ref, shallowRef, watch } from "vue";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket.ts";
-import { v4 as uuidv4 } from "uuid";
-import * as Plotly from "plotly.js/lib/core";
 import { setupDrawLoop } from "bumps-webview-client/src/setupDrawLoop";
+import * as Plotly from "plotly.js/lib/core";
+import { v4 as uuidv4 } from "uuid";
 
 const title = "Profile";
 const plot_div = ref<HTMLDivElement>();

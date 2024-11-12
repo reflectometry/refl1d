@@ -1,10 +1,10 @@
-import { createApp, computed } from "vue";
+import { computed, createApp } from "vue";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./style.css";
-import { model_file, menu_items, fileBrowser, socket } from "bumps-webview-client/src/app_state";
+import { fileBrowser, menu_items, model_file, socket } from "bumps-webview-client/src/app_state";
 import App from "bumps-webview-client/src/App.vue";
-import { panels } from "./panels.mjs";
 import { dq_is_FWHM } from "./app_state";
+import { panels } from "./panels.mjs";
 
 const name = "Refl1D";
 

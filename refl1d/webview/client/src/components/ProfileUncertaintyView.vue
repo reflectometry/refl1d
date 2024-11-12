@@ -1,12 +1,11 @@
 <script setup lang="ts">
 /// <reference types="@types/uuid"/>
-import { ref, computed, shallowRef } from "vue";
+import { computed, ref, shallowRef } from "vue";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket.ts";
-import { setupDrawLoop } from "bumps-webview-client/src/setupDrawLoop";
 import { configWithSVGDownloadButton } from "bumps-webview-client/src/plotly_extras.mjs";
-
-import { cache } from "../plotcache";
+import { setupDrawLoop } from "bumps-webview-client/src/setupDrawLoop";
 import * as Plotly from "plotly.js/lib/core";
+import { cache } from "../plotcache";
 
 const title = "Profile Uncertainty";
 const plot_div = ref<HTMLDivElement>();

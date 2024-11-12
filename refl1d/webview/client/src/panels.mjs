@@ -1,8 +1,8 @@
 import { panels as bumps_panels } from "bumps-webview-client/src/panels";
 import DataView from "./components/DataView.vue";
 import ModelView from "./components/ModelView.vue";
-import SimpleBuilder from "./components/SimpleBuilder.vue";
 import ProfileUncertaintyView from "./components/ProfileUncertaintyView.vue";
+import SimpleBuilder from "./components/SimpleBuilder.vue";
 
 const refl1d_panels = [
   { title: "Reflectivity", component: DataView },

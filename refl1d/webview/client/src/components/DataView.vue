@@ -1,11 +1,11 @@
 <script setup lang="ts">
 /// <reference types="@types/plotly.js" />
 import { ref, shallowRef } from "vue";
-import * as Plotly from "plotly.js/lib/core";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket.ts";
-import { setupDrawLoop } from "bumps-webview-client/src/setupDrawLoop";
-import { COLORS } from "../colors.mjs";
 import { configWithSVGDownloadButton } from "bumps-webview-client/src/plotly_extras.mjs";
+import { setupDrawLoop } from "bumps-webview-client/src/setupDrawLoop";
+import * as Plotly from "plotly.js/lib/core";
+import { COLORS } from "../colors.mjs";
 
 // const title = "Reflectivity";
 const plot_div = ref<HTMLDivElement | null>(null);
@@ -451,11 +451,14 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
   <div class="container d-flex flex-column flex-grow-1">
     <div class="row">
       <div class="col">
-        <select v-model="reflectivity_type" class="plot-mode" @change="change_plot_type">
-          <option v-for="refl_type in REFLECTIVITY_PLOTS" :key="refl_type" :value="refl_type">{{ refl_type }}</option>
+        <select v-model="reflectivity_type" class="plot-mode" aria-label="Plot Mode" @change="change_plot_type">
+          <option v-for="refl_type in REFLECTIVITY_PLOTS" :key="refl_type" :value="refl_type">
+            {{ refl_type }}
+          </option>
         </select>
       </div>
       <div class="col-auto form-check">
+        <label class="form-check-label">Residuals</label>
         <input
           id="show_residuals"
           v-model="show_residuals"
@@ -463,7 +466,6 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
           type="checkbox"
           @change="draw_plot"
         />
-        <label class="form-check-label" for="show_residuals">Residuals</label>
       </div>
       <div class="col-auto form-check">
         <input id="log_y" v-model="log_y" type="checkbox" class="form-check-input" @change="draw_plot" />
