@@ -52,7 +52,7 @@ async function fetch_and_draw() {
   await Plotly.react(plot_div.value as HTMLDivElement, [...data], layout, config);
 }
 
-function toggle_multiple(value) {
+function toggle_multiple() {
   if (!show_multiple.value) {
     // then we're toggling from multiple to single...
     current_models.value.splice(0, current_models.value.length - 1);
@@ -65,10 +65,11 @@ function toggle_multiple(value) {
 <template>
   <div class="container d-flex flex-grow-1 flex-column">
     <div class="form-check">
-      <label class="form-check-label pe-2" for="multiple">Show multiple</label>
+      <label class="form-check-label pe-2" for="multiple">Show Multiple</label>
       <input id="multiple" v-model="show_multiple" class="form-check-input" type="checkbox" @change="toggle_multiple" />
     </div>
-    <select v-if="show_multiple" v-model="current_models" multiple @change="draw_requested = true">
+    <label for="model" class="form-label"> Models:</label>
+    <select v-if="show_multiple" id="model" v-model="current_models" multiple @change="draw_requested = true">
       <option
         v-for="{ name, part_name, model_index, part_index } in model_names"
         :key="`${model_index}:${part_index}`"
@@ -77,7 +78,7 @@ function toggle_multiple(value) {
         {{ model_index }}:{{ part_index }} --- {{ name ?? "" }}:{{ part_name ?? "" }}
       </option>
     </select>
-    <select v-else v-model="current_models[0]" @change="draw_requested = true">
+    <select v-else id="model" v-model="current_models[0]" @change="draw_requested = true">
       <option
         v-for="{ name, part_name, model_index, part_index } in model_names"
         :key="`${model_index}:${part_index}`"

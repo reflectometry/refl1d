@@ -96,10 +96,10 @@ function createModel(): SerializedModel {
   return {
     references: {},
     object: {
-      __class__: "refl1d.fitproblem.FitProblem",
+      __class__: "refl1d.models.bumps_interface.fitproblem.FitProblem",
       models: [
         {
-          __class__: "refl1d.experiment.Experiment",
+          __class__: "refl1d.models.experiment.Experiment",
           sample: {
             __class__: "refl1d.models.sample.layers.Stack",
             layers: [createLayer("Si", 2.07, 0.0, 0.0, 1.0), createLayer("Vacuum", 0.0, 0.0, 0.0, 0.0)],
@@ -123,7 +123,7 @@ function generateQProbe(qmin: number = 0, qmax: number = 0.1, qsteps: number = 2
     back_absorption: createParameter("back_absorption", 0.0, [0, 1.0], true, ["probe"]),
     back_reflectivity: false,
     resolution: "normal",
-    __class__: "refl1d.probe.QProbe",
+    __class__: "refl1d.models.probe.probe.QProbe",
   };
   return probe;
 }
