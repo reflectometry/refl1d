@@ -28,16 +28,20 @@ export default [
         sourceType: "script",
       },
     },
-    files: [
-      "src/**/*.js",
-      "src/**/*.mjs",
-      "src/**/*.ts",
-      "src/**/*.tsx",
-      "src/**/*.vue"
-    ],
+    files: ["src/**/*.js", "src/**/*.mjs", "src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],
     /** Override rules */
     rules: {
+      "max-len": ["error", { code: 120 }],
+      "prefer-const": 0,
+      "@typescript-eslint/ban-ts-comment": ["error", { "ts-ignore": "allow-with-description" }],
       "@typescript-eslint/no-explicit-any": "off",
+      "prettier/prettier": [
+        "warn",
+        {},
+        {
+          usePrettierrc: true,
+        },
+      ],
       "vuejs-accessibility/label-has-for": [
         "error",
         {
@@ -46,17 +50,6 @@ export default [
           },
         },
       ],
-      "max-len": ["error", { code: 120 }],
-      "prettier/prettier": [
-        "warn",
-        {},
-        {
-          usePrettierrc: true,
-        },
-      ],
-      // "vue/no-v-html": ["off"],
-      // "vue/no-v-text-v-html-on-component": ["off"],
-      // "vuejs-accessibility/mouse-events-have-key-events": ["off"],
     },
   },
 ];

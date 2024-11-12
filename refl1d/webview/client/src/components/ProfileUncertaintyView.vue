@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /// <reference types="@types/uuid"/>
-import { computed, ref, shallowRef } from "vue";
+import { ref, shallowRef } from "vue";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket.ts";
 import { configWithSVGDownloadButton } from "bumps-webview-client/src/plotly_extras.mjs";
 import { setupDrawLoop } from "bumps-webview-client/src/setupDrawLoop";
@@ -51,7 +51,6 @@ const contours = ref<number[]>([]);
 
 function get_csv_data() {
   const data = contour_data.value;
-  const contours_value = contours.value;
   if (Object.keys(data).length === 0) {
     return "";
   }
@@ -184,7 +183,18 @@ async function fetch_and_draw(latest_timestamp?: string) {
       <div ref="plot_div" class="w-100 h-100 plot-div"></div>
       <div
         v-if="drawing_busy"
-        class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center loading"
+        :class="{
+          'position-absolute': true,
+          'top-0': true,
+          'start-0': true,
+          'w-100': true,
+          'h-100': true,
+          'd-flex': true,
+          'flex-column': true,
+          'align-items-center': true,
+          'justify-content-center': true,
+          loading: true,
+        }"
       >
         <span class="spinner-border text-primary"></span>
       </div>

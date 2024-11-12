@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, onUpdated, ref, shallowRef, watch } from "vue";
+import { computed, onMounted, ref, shallowRef } from "vue";
 import type { ComputedRef } from "vue";
-import { Modal } from "bootstrap/dist/js/bootstrap.esm";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket.ts";
 import { v4 as uuidv4 } from "uuid";
 import { dq_is_FWHM } from "../app_state";
@@ -11,14 +10,13 @@ import type {
   Parameter,
   ParameterLike,
   QProbe,
-  Reference,
   SerializedModel,
   Slab,
   SLD,
   Stack,
 } from "../model";
 
-const title = "Builder";
+// const title = "Builder";
 // @ts-ignore: intentionally infinite type recursion
 const modelJson = shallowRef<json>({});
 const showInstructions = ref(false);
@@ -154,7 +152,7 @@ async function newModel() {
     }
   }
   modelJson.value = model;
-  send_model(true, "Simple Builder Model");
+  sendModel(true, "Simple Builder Model");
 }
 
 function get_slot(parameter_like: ParameterLike) {
@@ -224,7 +222,7 @@ function set_parameter_bounds(stack: Stack) {
   }
 }
 
-async function send_model(is_new: boolean = false, name: string | null = null) {
+async function sendModel(is_new: boolean = false, name: string | null = null) {
   for (const model of modelJson.value["object"]["models"]) {
     set_parameter_names(model["sample"]);
     set_parameter_bounds(model["sample"]);
@@ -236,13 +234,13 @@ async function send_model(is_new: boolean = false, name: string | null = null) {
 // Adding and deleting layers
 function delete_layer(index) {
   sortedLayers.value.splice(index, 1);
-  send_model();
+  sendModel();
 }
 
 function add_layer(after_index: number = -1) {
   const new_layer: Slab = createLayer("sld", 2.5, 0.0, 25.0, 1.0);
   sortedLayers.value.splice(after_index, 0, new_layer);
-  send_model();
+  sendModel();
 }
 
 function setQProbe() {
@@ -252,7 +250,7 @@ function setQProbe() {
     editQsteps.value,
     0.0001
   );
-  send_model();
+  sendModel();
 }
 
 const decoder = new TextDecoder("utf-8");
@@ -280,7 +278,7 @@ function drop(index) {
     sortedLayers.value.splice(index, 0, draggedDict);
     dragData.value = null;
   }
-  send_model();
+  sendModel();
 }
 
 function dragEnd() {
@@ -289,7 +287,7 @@ function dragEnd() {
 </script>
 
 <template>
-  <div id="builder" @keyup.enter="send_model()" @keyup.tab="send_model()">
+  <div id="builder">
     <div class="container m-2">
       <div class="card">
         <div class="card-body">
@@ -320,12 +318,24 @@ function dragEnd() {
           <button class="btn btn-primary m-2" @click="showEditQRange = !showEditQRange">Edit Q-range</button>
         </div>
         <div class="col-auto align-self-center">
-          <div class="form-check form-switch m-2" @click="send_model()">
-            <input id="showImaginary_input" v-model="showImaginary" class="form-check-input" type="checkbox" />
+          <div class="form-check form-switch m-2">
+            <input
+              id="showImaginary_input"
+              v-model="showImaginary"
+              class="form-check-input"
+              type="checkbox"
+              @click="sendModel()"
+            />
             <label class="form-check-label" for="showImaginary_input">Show imaginary SLD</label>
           </div>
-          <div class="form-check form-switch m-2" @click="send_model()">
-            <input id="dq_is_FWHM_input" v-model="dq_is_FWHM" class="form-check-input" type="checkbox" />
+          <div class="form-check form-switch m-2">
+            <input
+              id="dq_is_FWHM_input"
+              v-model="dq_is_FWHM"
+              class="form-check-input"
+              type="checkbox"
+              @click="sendModel()"
+            />
             <label class="form-check-label" for="dq_is_FWHM_input">Resolution as FWHM</label>
           </div>
         </div>
@@ -333,15 +343,15 @@ function dragEnd() {
       <div v-if="showEditQRange" class="row mb-2">
         <div class="col">
           <label for="qmin">Q min (Å<sup>-1</sup>)</label>
-          <input v-model="editQmin" class="form-control" type="number" step="0.01" />
+          <input id="qmin" v-model="editQmin" class="form-control" type="number" step="0.01" />
         </div>
         <div class="col">
           <label for="qmax">Q max (Å<sup>-1</sup>)</label>
-          <input v-model="editQmax" class="form-control" type="number" step="0.01" />
+          <input id="qmax" v-model="editQmax" class="form-control" type="number" step="0.01" />
         </div>
         <div class="col">
           <label for="qsteps">Q steps</label>
-          <input v-model="editQsteps" class="form-control" type="number" step="1" />
+          <input id="qsteps" v-model="editQsteps" class="form-control" type="number" step="1" />
         </div>
         <div class="col-auto align-self-end">
           <button class="btn btn-secondary mx-2" @click="setQProbe">Apply new Q</button>
@@ -361,7 +371,7 @@ function dragEnd() {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(layer, key) in sortedLayers" :key="key" class="align-middle" @blur.capture="send_model()">
+          <tr v-for="(layer, key) in sortedLayers" :key="key" class="align-middle" @blur.capture="sendModel()">
             <td
               draggable="true"
               class="draggable"
@@ -374,17 +384,22 @@ function dragEnd() {
             </td>
             <td>
               <textarea
+                id="layer-name"
                 v-model="layer.material.name"
                 class="form-control name"
                 rows="1"
                 cols="40"
                 type="text"
                 :title="layer.material.name"
-              />
+              >
+                <label for="layer-name">Layer Name</label>
+              </textarea>
             </td>
             <td>
+              <label for="layer-thickness" class="visually-hidden">>Layer Thickness</label>
               <input
                 v-if="get_slot(layer.thickness) !== null"
+                id="layer-thickness"
                 v-model="get_slot(layer.thickness).value"
                 class="form-control"
                 type="number"
@@ -392,8 +407,10 @@ function dragEnd() {
               />
             </td>
             <td>
+              <label for="layer-rho" class="visually-hidden">>Layer Rho</label>
               <input
                 v-if="get_slot(layer.material.rho) !== null"
+                id="layer-rho"
                 v-model="get_slot(layer.material.rho).value"
                 class="form-control"
                 type="number"
@@ -401,8 +418,10 @@ function dragEnd() {
               />
             </td>
             <td v-if="showImaginary">
+              <label for="layer-irho" class="visually-hidden">>Layer iRho</label>
               <input
                 v-if="get_slot(layer.material.irho) !== null"
+                id="layer-irho"
                 v-model="get_slot(layer.material.irho).value"
                 class="form-control"
                 type="number"
@@ -410,8 +429,10 @@ function dragEnd() {
               />
             </td>
             <td>
+              <label for="layer-interface" class="visually-hidden">>Layer Interface</label>
               <input
                 v-if="get_slot(layer.interface) !== null"
+                id="layer-interface"
                 v-model="get_slot(layer.interface).value"
                 class="form-control"
                 type="number"
@@ -435,12 +456,13 @@ function dragEnd() {
         <button class="btn btn-primary m-2" @click="newModel">New Model</button>
       </div>
       <div v-if="dictionaryLoaded" class="col-auto">
-        <button class="btn btn-secondary m-2" @click="send_model()">Apply changes</button>
+        <button class="btn btn-secondary m-2" @click="sendModel()">Apply changes</button>
       </div>
       <div v-if="dictionaryLoaded" class="col-auto">
         <div class="input-group m-2">
           <button class="btn btn-success btn-sm" @click="add_layer(insert_index)">Add layer at index:</button>
-          <input v-model="insert_index" class="form-control me-4 insert-index" type="number" />
+          <label for="insert-index" class="visually-hidden">Insert index</label>
+          <input id="insert-index" v-model="insert_index" class="form-control me-4 insert-index" type="number" />
         </div>
       </div>
     </div>

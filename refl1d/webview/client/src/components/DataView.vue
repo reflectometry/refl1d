@@ -458,7 +458,7 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
         </select>
       </div>
       <div class="col-auto form-check">
-        <label class="form-check-label">Residuals</label>
+        <label class="form-check-label" for="show_residuals">Residuals</label>
         <input
           id="show_residuals"
           v-model="show_residuals"

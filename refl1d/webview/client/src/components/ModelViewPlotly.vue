@@ -1,12 +1,12 @@
 <script setup lang="ts">
 /// <reference types="@types/uuid"/>
-import { computed, onMounted, onUpdated, ref, shallowRef, watch } from "vue";
+import { onMounted, ref } from "vue";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket.ts";
 import { setupDrawLoop } from "bumps-webview-client/src/setupDrawLoop";
 import * as Plotly from "plotly.js/lib/core";
 import { v4 as uuidv4 } from "uuid";
 
-const title = "Profile";
+// const title = "Profile";
 const plot_div = ref<HTMLDivElement>();
 const plot_div_id = ref(`div-${uuidv4()}`);
 const model_names = ref<string[]>([]);
@@ -163,7 +163,8 @@ async function fetch_and_draw() {
 
 <template>
   <div class="container d-flex flex-grow-1 flex-column">
-    <select v-model="current_model" @change="draw_requested = true">
+    <label for="model">Model:</label>
+    <select id="model" v-model="current_model" class="form-select" @change="draw_requested = true">
       <option v-for="(name, index) in model_names" :key="index" :value="index">{{ index }}: {{ name ?? "" }}</option>
     </select>
     <div :id="plot_div_id" ref="plot_div" class="flex-grow-1"></div>
