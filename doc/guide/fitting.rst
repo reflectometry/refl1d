@@ -380,7 +380,7 @@ Now model.py is loaded and the best fit parameters are set.
 To produce plots, you will need access to the data and the theory.  This
 can be complex depending on how many models you are fitting and how many
 datasets there are per model.  For :class:`refl1d.models.bumps_interface.fitproblem.FitProblem`
-models, the :class:`refl1d.models.probe.experiment.Experiment` object is referenced
+models, the :class:`refl1d.models.experiment.Experiment` object is referenced
 by *problem.fitness*.  For :class:`refl1d.models.bumps_interface.fitproblem.FitProblem` models,
 you need to use *problem.models[k].fitness* to access the experiment for
 model *k*.  Profiles and reflectivity theory are returned from methods

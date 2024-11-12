@@ -25,7 +25,7 @@ Direct Calculation
 
 Rather than using :class:`Stack <refl1d.models.sample.layers.Stack`,
 :class:`Probe <refl1d.models.probe.probe.Probe>` and
-:class:`Experiment <refl1d.models.probe.experiment.Experiment`,
+:class:`Experiment <refl1d.models.experiment.Experiment`,
 we  can compute reflectivities directly with the functions in
 :mod:`refl1d.models.sample.reflectivity`.  These routines provide the raw
 calculation engines for the optical matrix formalism, converting

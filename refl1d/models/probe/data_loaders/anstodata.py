@@ -39,7 +39,7 @@ def _load_dat(f):
     (filename, name, data) - str, str, tuple of np.ndarray
     """
 
-    # it would be nice to use refl1d.probe.load4 directly. However,
+    # it would be nice to use refl1d.models.probe.data_loaders.load4 directly. However,
     # there are lots of files in the wild that don't use # to denote comments
     # in the header. In addition, it is known that ANSTO datasets emit dQ as
     # FWHM.
