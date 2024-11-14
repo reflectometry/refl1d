@@ -3,7 +3,7 @@ import { computed, onMounted, ref, shallowRef } from "vue";
 import type { ComputedRef } from "vue";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket.ts";
 import { v4 as uuidv4 } from "uuid";
-import { dq_is_FWHM } from "../app_state";
+import { dqIsFWHM } from "../app_state";
 import type {
   BoundsValue,
   Magnetism,
@@ -25,8 +25,8 @@ const editQmin = ref(0);
 const editQmax = ref(0.1);
 const editQsteps = ref(250);
 const activeModel = ref(0);
-const insert_index = ref(-1);
-const parameters_by_id = ref<{ [key: string]: Parameter }>({});
+const insertIndex = ref(-1);
+const parametersById = ref<{ [key: string]: Parameter }>({});
 const dictionaryLoaded = ref(false);
 // Builder options
 const showImaginary = ref(false);
@@ -38,10 +38,6 @@ const props = defineProps<{
 const sortedLayers: ComputedRef<Slab[]> = computed(() => {
   return modelJson.value["object"]["models"][activeModel.value]["sample"]["layers"];
 });
-
-// async function get_model_names() {
-//   model_names.value = await props.socket.asyncEmit("get_model_names");
-// }
 
 props.socket.on("updated_parameters", fetchModel);
 props.socket.on("model_loaded", fetchModel);
@@ -74,16 +70,16 @@ function createLayer(
   interface_: number,
   magnetism: Magnetism | null = null
 ) {
-  const rho_param = createParameter("rho", rho, ["-inf", "inf"], true, ["sample"]);
-  const irho_param = createParameter("irho", irho, ["-inf", "inf"], true, ["sample"]);
-  const thickness_param = createParameter("thickness", thickness, [0, "inf"], true, ["sample"]);
-  const interface_param = createParameter("interface", interface_, [0, "inf"], true, ["sample"]);
-  const material: SLD = { name, rho: rho_param, irho: irho_param, __class__: "refl1d.models.sample.material.SLD" };
+  const rhoParam = createParameter("rho", rho, ["-inf", "inf"], true, ["sample"]);
+  const irhoParam = createParameter("irho", irho, ["-inf", "inf"], true, ["sample"]);
+  const thicknessParam = createParameter("thickness", thickness, [0, "inf"], true, ["sample"]);
+  const interfaceParam = createParameter("interface", interface_, [0, "inf"], true, ["sample"]);
+  const material: SLD = { name, rho: rhoParam, irho: irhoParam, __class__: "refl1d.models.sample.material.SLD" };
   const layer: Slab = {
     name,
     material,
-    thickness: thickness_param,
-    interface: interface_param,
+    thickness: thicknessParam,
+    interface: interfaceParam,
     magnetism,
     __class__: "refl1d.models.sample.layers.Slab",
   };
@@ -111,11 +107,11 @@ function createModel(): SerializedModel {
 }
 
 function generateQProbe(qmin: number = 0, qmax: number = 0.1, qsteps: number = 250, dQ: number = 0.00001) {
-  const Q_arr = Array.from({ length: qsteps }, (_, i) => qmin + (i * (qmax - qmin)) / qsteps);
-  const dQ_arr = Array.from({ length: qsteps }, () => dQ);
+  const qArr = Array.from({ length: qsteps }, (_, i) => qmin + (i * (qmax - qmin)) / qsteps);
+  const dqArr = Array.from({ length: qsteps }, () => dQ);
   const probe: QProbe = {
-    Q: { values: Q_arr, dtype: "float64", __class__: "bumps.util.NumpyArray" },
-    dQ: { values: dQ_arr, dtype: "float64", __class__: "bumps.util.NumpyArray" },
+    Q: { values: qArr, dtype: "float64", __class__: "bumps.util.NumpyArray" },
+    dQ: { values: dqArr, dtype: "float64", __class__: "bumps.util.NumpyArray" },
     background: createParameter("background", 0.0, [0, "inf"], true, ["probe"]),
     intensity: createParameter("intensity", 1.0, [0, "inf"], true, ["probe"]),
     back_absorption: createParameter("back_absorption", 0.0, [0, 1.0], true, ["probe"]),
@@ -134,10 +130,10 @@ async function fetchModel() {
       modelJson.value = {};
       dictionaryLoaded.value = false;
     } else {
-      const json_value = JSON.parse(decoder.decode(json_bytes));
-      modelJson.value = json_value;
+      const jsonValue = JSON.parse(decoder.decode(json_bytes));
+      modelJson.value = jsonValue;
       console.log("modelJson", modelJson.value);
-      parameters_by_id.value = json_value.references;
+      parametersById.value = jsonValue.references;
       dictionaryLoaded.value = true;
     }
   });
@@ -155,91 +151,101 @@ async function newModel() {
   sendModel(true, "Simple Builder Model");
 }
 
-function get_slot(parameter_like: ParameterLike) {
-  // parameter_like can be type: "bumps.parameter.Parameter" or type: "Reference"
-  if (parameter_like == null) {
-    return null;
+function getSlot(parameterLike: ParameterLike) {
+  // parameterLike can be type: "bumps.parameter.Parameter" or type: "Reference"
+  if (parameterLike != null) {
+    const parameter = resolveParameter(parameterLike);
+    return parameter.slot;
   }
-  const parameter = resolve_parameter(parameter_like);
-  return parameter.slot;
+  return null;
 }
 
-function resolve_parameter(parameter_like: ParameterLike): Parameter {
-  // parameter_like can be type: "bumps.parameter.Parameter" or type: "Reference"
-  if (parameter_like.__class__ === "bumps.parameter.Parameter") {
-    return parameter_like as Parameter;
-  } else if (parameter_like.__class__ === "Reference" && parameter_like.id in parameters_by_id.value) {
-    return parameters_by_id.value[parameter_like.id] as Parameter;
+function resolveParameter(parameterLike: ParameterLike): Parameter {
+  // parameterLike can be type: "bumps.parameter.Parameter" or type: "Reference"
+  if (parameterLike.__class__ === "bumps.parameter.Parameter") {
+    return parameterLike as Parameter;
+  } else if (parameterLike.__class__ === "Reference" && parameterLike.id in parametersById.value) {
+    return parametersById.value[parameterLike.id] as Parameter;
   } else {
-    throw new Error(`Parameter with id ${parameter_like.id} not found in parameters_by_id`);
+    throw new Error(`Parameter with id ${parameterLike.id} not found in parametersById`);
   }
 }
 
-function set_parameter_names(stack: Stack) {
+function setParameterNames(stack: Stack) {
   for (const layer of stack.layers) {
     if (layer.__class__ === "refl1d.models.sample.layers.Repeat") {
-      set_parameter_names(layer.stack);
+      setParameterNames(layer.stack);
     } else {
       const l = layer as Slab;
       const { material, thickness, interface: interface_ } = l;
       const { name, rho, irho } = material;
-      const thickness_param = resolve_parameter(thickness);
-      const interface_param = resolve_parameter(interface_);
-      const rho_param = resolve_parameter(rho);
-      const irho_param = resolve_parameter(irho);
+      const thicknessParam = resolveParameter(thickness);
+      const interfaceParam = resolveParameter(interface_);
+      const rhoParam = resolveParameter(rho);
+      const irhoParam = resolveParameter(irho);
       l.name = name;
-      thickness_param.name = `${material.name} thickness`;
-      interface_param.name = `${material.name} interface`;
-      rho_param.name = `${material.name} rho`;
-      irho_param.name = `${material.name} irho`;
+      thicknessParam.name = `${material.name} thickness`;
+      interfaceParam.name = `${material.name} interface`;
+      rhoParam.name = `${material.name} rho`;
+      irhoParam.name = `${material.name} irho`;
     }
   }
 }
 
-function set_parameter_bounds(stack: Stack) {
+function setParameterBounds(stack: Stack) {
   // set the bounds of the fixed parameters
-  const bounds_setter = (p: Parameter) => {
+  const boundsSetter = (p: Parameter) => {
     if (!p.fixed) {
       return;
     }
     const value = p.slot.value;
-    p.bounds = value == 0.0 ? [-0.1, 0.1] : [value * 0.5, value * 1.5];
-    p.bounds.sort((a, b) => a - b);
+    p.bounds = value === 0.0 ? [-0.1, 0.1] : [value * 0.5, value * 1.5];
+    p.bounds.sort((a, b) => {
+      let c =
+        a === "-inf" ? Number.NEGATIVE_INFINITY
+        : a === "inf" ? Number.POSITIVE_INFINITY
+        : a;
+      let d =
+        b === "-inf" ? Number.NEGATIVE_INFINITY
+        : b === "inf" ? Number.POSITIVE_INFINITY
+        : b;
+      return c - d;
+    });
   };
   for (const layer of stack.layers) {
     if (layer.__class__ === "refl1d.models.sample.layers.Repeat") {
-      set_parameter_bounds(layer.stack);
+      setParameterBounds(layer.stack);
     } else {
       const l = layer as Slab;
       const { material, thickness, interface: interface_ } = l;
       const { rho, irho } = material;
-      const thickness_param = resolve_parameter(thickness);
-      const interface_param = resolve_parameter(interface_);
-      const rho_param = resolve_parameter(rho);
-      const irho_param = resolve_parameter(irho);
-      [thickness_param, interface_param, rho_param, irho_param].forEach(bounds_setter);
+      const thicknessParam = resolveParameter(thickness);
+      const interfaceParam = resolveParameter(interface_);
+      const rhoParam = resolveParameter(rho);
+      const irhoParam = resolveParameter(irho);
+      [thicknessParam, interfaceParam, rhoParam, irhoParam].forEach(boundsSetter);
     }
   }
 }
 
 async function sendModel(is_new: boolean = false, name: string | null = null) {
   for (const model of modelJson.value["object"]["models"]) {
-    set_parameter_names(model["sample"]);
-    set_parameter_bounds(model["sample"]);
+    setParameterNames(model["sample"]);
+    setParameterBounds(model["sample"]);
   }
   const json_model = JSON.stringify(modelJson.value);
   await props.socket.asyncEmit("set_serialized_problem", json_model, is_new, name);
 }
 
 // Adding and deleting layers
-function delete_layer(index) {
+function deleteLayer(index) {
   sortedLayers.value.splice(index, 1);
   sendModel();
 }
 
-function add_layer(after_index: number = -1) {
-  const new_layer: Slab = createLayer("sld", 2.5, 0.0, 25.0, 1.0);
-  sortedLayers.value.splice(after_index, 0, new_layer);
+function addLayer(after_index: number = -1) {
+  const newLayer: Slab = createLayer("sld", 2.5, 0.0, 25.0, 1.0);
+  sortedLayers.value.splice(after_index, 0, newLayer);
   sendModel();
 }
 
@@ -330,13 +336,13 @@ function dragEnd() {
           </div>
           <div class="form-check form-switch m-2">
             <input
-              id="dq_is_FWHM_input"
-              v-model="dq_is_FWHM"
+              id="dqIsFWHM_input"
+              v-model="dqIsFWHM"
               class="form-check-input"
               type="checkbox"
               @click="sendModel()"
             />
-            <label class="form-check-label" for="dq_is_FWHM_input">Resolution as FWHM</label>
+            <label class="form-check-label" for="dqIsFWHM_input">Resolution as FWHM</label>
           </div>
         </div>
       </div>
@@ -398,9 +404,9 @@ function dragEnd() {
             <td>
               <label for="layer-thickness" class="visually-hidden">>Layer Thickness</label>
               <input
-                v-if="get_slot(layer.thickness) !== null"
+                v-if="getSlot(layer.thickness) !== null"
                 id="layer-thickness"
-                v-model="get_slot(layer.thickness).value"
+                v-model="getSlot(layer.thickness).value"
                 class="form-control"
                 type="number"
                 step="5"
@@ -409,9 +415,9 @@ function dragEnd() {
             <td>
               <label for="layer-rho" class="visually-hidden">>Layer Rho</label>
               <input
-                v-if="get_slot(layer.material.rho) !== null"
+                v-if="getSlot(layer.material.rho) !== null"
                 id="layer-rho"
-                v-model="get_slot(layer.material.rho).value"
+                v-model="getSlot(layer.material.rho).value"
                 class="form-control"
                 type="number"
                 step="0.01"
@@ -420,9 +426,9 @@ function dragEnd() {
             <td v-if="showImaginary">
               <label for="layer-irho" class="visually-hidden">>Layer iRho</label>
               <input
-                v-if="get_slot(layer.material.irho) !== null"
+                v-if="getSlot(layer.material.irho) !== null"
                 id="layer-irho"
-                v-model="get_slot(layer.material.irho).value"
+                v-model="getSlot(layer.material.irho).value"
                 class="form-control"
                 type="number"
                 step="0.01"
@@ -431,17 +437,17 @@ function dragEnd() {
             <td>
               <label for="layer-interface" class="visually-hidden">>Layer Interface</label>
               <input
-                v-if="get_slot(layer.interface) !== null"
+                v-if="getSlot(layer.interface) !== null"
                 id="layer-interface"
-                v-model="get_slot(layer.interface).value"
+                v-model="getSlot(layer.interface).value"
                 class="form-control"
                 type="number"
                 step="1"
               />
             </td>
-            <td><button class="btn btn-danger btn-sm" @click="delete_layer(key)">Delete</button></td>
+            <td><button class="btn btn-danger btn-sm" @click="deleteLayer(key)">Delete</button></td>
             <td>
-              <button class="btn btn-success btn-sm add-layer-after" title="add layer here" @click="add_layer(key + 1)">
+              <button class="btn btn-success btn-sm add-layer-after" title="add layer here" @click="addLayer(key + 1)">
                 +
               </button>
             </td>
@@ -460,9 +466,9 @@ function dragEnd() {
       </div>
       <div v-if="dictionaryLoaded" class="col-auto">
         <div class="input-group m-2">
-          <button class="btn btn-success btn-sm" @click="add_layer(insert_index)">Add layer at index:</button>
+          <button class="btn btn-success btn-sm" @click="addLayer(insertIndex)">Add layer at index:</button>
           <label for="insert-index" class="visually-hidden">Insert index</label>
-          <input id="insert-index" v-model="insert_index" class="form-control me-4 insert-index" type="number" />
+          <input id="insert-index" v-model="insertIndex" class="form-control me-4 insert-index" type="number" />
         </div>
       </div>
     </div>

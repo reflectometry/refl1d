@@ -5,13 +5,13 @@ import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket.ts";
 import { configWithSVGDownloadButton } from "bumps-webview-client/src/plotly_extras.mjs";
 import { setupDrawLoop } from "bumps-webview-client/src/setupDrawLoop";
 import * as Plotly from "plotly.js/lib/core";
-import { cache } from "../plotcache";
+import { cache } from "../plot_cache";
 
 const title = "Profile Uncertainty";
-const plot_div = ref<HTMLDivElement>();
-const hidden_download = ref<HTMLAnchorElement>();
+const plotDiv = ref<HTMLDivElement>();
+const hiddenDownload = ref<HTMLAnchorElement>();
 const align = ref(0);
-const auto_align = ref(true);
+const autoAlign = ref(true);
 const show_residuals = ref(false);
 const nshown = ref(50);
 const npoints = ref(200);
@@ -77,13 +77,13 @@ function get_csv_data() {
 }
 
 async function download_csv() {
-  const a = hidden_download.value as HTMLAnchorElement;
+  const a = hiddenDownload.value as HTMLAnchorElement;
   a.href = get_csv_data();
   a.click();
 }
 
 async function fetch_and_draw(latest_timestamp?: string) {
-  let { timestamp, plotdata } = (cache[title] as { timestamp: string; plotdata: PlotData }) ?? {};
+  let { timestamp, plotData } = (cache[title] as { timestamp: string; plotData: PlotData }) ?? {};
   const loading_delay = 50; // ms
   // if the plot loads faster than the timeout, don't show spinner
   const show_loader = setTimeout(() => {
@@ -93,22 +93,22 @@ async function fetch_and_draw(latest_timestamp?: string) {
     console.log("fetching new profile uncertainty plot", timestamp, latest_timestamp);
     const payload = (await props.socket.asyncEmit(
       "get_profile_uncertainty_plot",
-      auto_align.value,
+      autoAlign.value,
       align.value,
       nshown.value,
       npoints.value,
       random.value,
       show_residuals.value
     )) as Payload;
-    plotdata = { ...payload.fig };
+    plotData = { ...payload.fig };
     contour_data.value = payload.contour_data;
     contours.value = payload.contours;
     if (latest_timestamp !== undefined) {
-      cache[title] = { timestamp: latest_timestamp, plotdata };
+      cache[title] = { timestamp: latest_timestamp, plotData };
     }
   }
 
-  const { data, layout } = plotdata;
+  const { data, layout } = plotData;
   const config: Partial<Plotly.Config> = {
     responsive: true,
     edits: {
@@ -116,7 +116,7 @@ async function fetch_and_draw(latest_timestamp?: string) {
     },
     ...configWithSVGDownloadButton,
   };
-  await Plotly.react(plot_div.value as HTMLDivElement, [...data], layout, config);
+  await Plotly.react(plotDiv.value as HTMLDivElement, [...data], layout, config);
 
   clearTimeout(show_loader);
   drawing_busy.value = false;
@@ -133,7 +133,7 @@ async function fetch_and_draw(latest_timestamp?: string) {
           <label class="form-check-label pe-2" for="auto-align">Auto-align</label>
           <input
             id="auto-align"
-            v-model="auto_align"
+            v-model="autoAlign"
             class="form-check-input"
             type="checkbox"
             @change="fetch_and_draw()"
@@ -157,7 +157,7 @@ async function fetch_and_draw(latest_timestamp?: string) {
           v-model="align"
           class="form-control"
           type="number"
-          :disabled="auto_align"
+          :disabled="autoAlign"
           @change="fetch_and_draw()"
         />
       </div>
@@ -176,11 +176,11 @@ async function fetch_and_draw(latest_timestamp?: string) {
     </div>
     <div>
       <button class="btn btn-primary btn-sm" @click="download_csv">Download CSV</button>
-      <a ref="hidden_download" class="hidden" download="contours.csv" type="text/csv">Download CSV</a>
+      <a ref="hiddenDownload" class="hidden" download="contours.csv" type="text/csv">Download CSV</a>
     </div>
     <!-- </details> -->
     <div class="flex-grow-1 position-relative">
-      <div ref="plot_div" class="w-100 h-100 plot-div"></div>
+      <div ref="plotDiv" class="w-100 h-100 plot-div"></div>
       <div
         v-if="drawing_busy"
         :class="{

@@ -4,7 +4,7 @@ import ModelView from "./components/ModelView.vue";
 import ProfileUncertaintyView from "./components/ProfileUncertaintyView.vue";
 import SimpleBuilder from "./components/SimpleBuilder.vue";
 
-const refl1d_panels = [
+const refl1dPanels = [
   { title: "Reflectivity", component: DataView },
   { title: "Profile", component: ModelView },
   { title: "Profile Uncertainty", component: ProfileUncertaintyView },
@@ -43,8 +43,8 @@ function insert_panel(panels, insertion_panels, title, after) {
 
 export const panels = [...bumps_panels];
 for (const [replacement_title, replaced_title] of Object.entries(replacements)) {
-  replace_panel(panels, refl1d_panels, replaced_title, replacement_title);
+  replace_panel(panels, refl1dPanels, replaced_title, replacement_title);
 }
 for (const [title, { after }] of Object.entries(insertions)) {
-  insert_panel(panels, refl1d_panels, title, after);
+  insert_panel(panels, refl1dPanels, title, after);
 }

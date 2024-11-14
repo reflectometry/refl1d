@@ -1,10 +1,10 @@
-import { computed, createApp } from "vue";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "./style.css";
-import { fileBrowser, menu_items, model_file, socket } from "bumps-webview-client/src/app_state";
 import App from "bumps-webview-client/src/App.vue";
-import { dq_is_FWHM } from "./app_state";
+import { fileBrowser, menu_items, model_file, socket } from "bumps-webview-client/src/app_state";
+import { computed, createApp } from "vue";
+import { dqIsFWHM } from "./app_state";
 import { panels } from "./panels.mjs";
+import "./style.css";
 
 const name = "Refl1D";
 
@@ -13,7 +13,7 @@ async function loadProbeFromFile() {
     const settings = {
       title: "Load Probe Data from File",
       callback: (pathlist, filename) => {
-        socket.value.asyncEmit("load_probe_from_file", pathlist, filename, 0, dq_is_FWHM.value);
+        socket.value.asyncEmit("load_probe_from_file", pathlist, filename, 0, dqIsFWHM.value);
       },
       show_name_input: true,
       name_input_label: "Filename",
@@ -27,5 +27,5 @@ async function loadProbeFromFile() {
 }
 
 createApp(App, { panels, name }).mount("#app");
-const model_not_loaded = computed(() => model_file.value == null);
-menu_items.value.push({ text: "Load Data into Model", action: loadProbeFromFile, disabled: model_not_loaded });
+const modelNotLoaded = computed(() => model_file.value == null);
+menu_items.value.push({ text: "Load Data into Model", action: loadProbeFromFile, disabled: modelNotLoaded });
