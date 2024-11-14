@@ -31,7 +31,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pre-commit", "ruff", "pytest", "pytest-cov", "versioningit"]
+dev = [
+    "pre-commit",
+    "pydantic",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "sphinx",
+    "versioningit",
+]
 full = ["wxpython", "ipython"]
 webview = ["bumps[webview]"]
 
@@ -46,9 +54,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.ruff]
 line-length = 120
-exclude = [
-    "*.txt",
-]
+exclude = ["*.txt"]
 
 # [tool.ruff.lint]
 # select = [

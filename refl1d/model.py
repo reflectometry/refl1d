@@ -1,5 +1,3 @@
-# This program is in the public domain
-# Author: Paul Kienzle
 """
 Reflectometry models
 
@@ -24,17 +22,11 @@ scattering density may vary with depth in the layer.
 
 __all__ = ["Repeat", "Slab", "Stack", "Layer"]
 
-from copy import copy, deepcopy
+from copy import copy
 from dataclasses import dataclass, field
-import json
-from typing import Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
+from typing import List, Literal, Optional, Union
 
 import numpy as np
-from numpy import inf, nan, pi, sin, cos, tan, sqrt, exp, log, log10, degrees, radians, floor, ceil
-import periodictable
-import periodictable.xsf as xsf
-import periodictable.nsf as nsf
-
 from bumps.parameter import (
     # BaseParameter as BasePar,
     Calculation,
@@ -130,19 +122,6 @@ class Layer:  # Abstract base class
         Print shows the layer name
         """
         return getattr(self, "name", repr(self))
-
-    def to_dict(self):
-        """
-        Return a dictionary representation of the Slab object
-        """
-        raise NotImplementedError("to_dict not defined for " + str(self))
-        # return to_dict({
-        #    'type': type(self).__name__,
-        #    'name': self.name,
-        #    'thickness': self.thickness,
-        #    'interface': self.interface,
-        #    'magnetism': self.magnetism,
-        # })
 
     # Define a little algebra for composing samples
     # Layers can be stacked, repeated, or have length/roughness/magnetism set
@@ -244,21 +223,6 @@ class Slab(Layer):
     def __repr__(self):
         return "Slab(" + repr(self.material) + ")"
 
-    def to_dict(self):
-        """
-        Return a dictionary representation of the Slab object
-        """
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "name": self.name,
-                "thickness": self.thickness,
-                "interface": self.interface,
-                "material": self.material,
-                "magnetism": self.magnetism,
-            }
-        )
-
 
 @dataclass(init=False)
 class Stack(Layer):
@@ -356,19 +320,6 @@ class Stack(Layer):
     def __repr__(self):
         return "Stack(" + ", ".join(repr(L) for L in self._layers) + ")"
 
-    def to_dict(self):
-        """
-        Return a dictionary representation of the Stack object
-        """
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "name": self.name,
-                "interface": self.interface,
-                "layers": self._layers,
-            }
-        )
-
     def parameters(self):
         layers = [L.layer_parameters() for L in self._layers]
         return {"thickness": self.thickness, "layers": layers}
@@ -419,7 +370,7 @@ class Stack(Layer):
                 # import sys; print >>sys.stderr, "magnetism", magnetism
                 anchor = slabs.thickness() + magnetism.dead_below.value
                 s_below = (
-                    nan
+                    np.nan
                     if i == 0
                     else magnetism.interface_below.value
                     if magnetism.interface_below is not None
@@ -445,7 +396,8 @@ class Stack(Layer):
     def _plot(self, dz=1, roughness_limit=0):
         # TODO: unused?
         import matplotlib.pyplot as plt
-        from . import profile, material, probe
+
+        from . import material, probe, profile
 
         neutron_probe = probe.NeutronProbe(T=np.arange(0, 5, 100), L=5.0)
         xray_probe = probe.XrayProbe(T=np.arange(0, 5, 100), L=1.54)
@@ -643,10 +595,8 @@ class Repeat(Layer):
     def __init__(
         self, stack, repeat=1, interface=None, name=None, magnetism=None, thickness: Optional[Parameter] = None
     ):
-        if name is None:
-            name = "multilayer"
-        if interface is None:
-            interface = stack[-1].interface.value
+        name = "multilayer" if name is None else name
+        interface = stack[-1].interface.value if interface is None else interface
         self.magnetism = magnetism
         self.name = name
         self.repeat = Parameter(repeat, limits=(0, None), discrete=True, name=name + " repeats")
@@ -656,21 +606,6 @@ class Repeat(Layer):
         self.thickness = Parameter(name=name + " thickness")
         self.thickness.equals(self.stack.thickness * self.repeat)
         self.interface = Parameter.default(interface, limits=(0, None), name=name + " top interface")
-
-    def to_dict(self):
-        """
-        Return a dictionary representation of the Repeat object
-        """
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "name": self.name,
-                "interface": self.interface,
-                "magnetism": self.magnetism,
-                "repeat": self.repeat,
-                "stack": self.stack,
-            }
-        )
 
     def __setstate__(self, state):
         # this is a temporary shim (2024-10-29), to accomodate objects that were pickled

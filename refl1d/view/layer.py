@@ -2,12 +2,12 @@
 Layer interactor.
 """
 
-from __future__ import division
 from bumps.parameter import Parameter
+
 from refl1d.material import SLD
+
+from .config import disabled_color, pick_radius, rho_color, rhoI_color
 from .interactor import BaseInteractor
-from .config import pick_radius
-from .config import rho_color, rhoI_color, disabled_color
 from .util import setpar
 
 

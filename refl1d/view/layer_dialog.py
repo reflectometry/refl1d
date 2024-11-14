@@ -1,11 +1,9 @@
 import wx
-
+from bumps.gui.input_list import InputListPanel
 from numpy import inf
 
-from bumps.gui.input_list import InputListPanel
-
-from refl1d.names import Slab, FreeLayer, FreeInterface, PolymerBrush
 from refl1d.material import SLD
+from refl1d.names import FreeInterface, FreeLayer, PolymerBrush, Slab
 
 # name, type, description, *args
 # type: 'string'
@@ -269,7 +267,7 @@ def main(stack):
 
 
 if __name__ == "__main__":
-    from refl1d.names import silicon, air
+    from refl1d.names import air, silicon
 
     stack = silicon | air
     main(stack)

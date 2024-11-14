@@ -2,14 +2,15 @@
 Monotonic spline modeling for free interfaces
 """
 
-from __future__ import division, with_statement
+from dataclasses import dataclass
+from typing import Any, List, Optional, Union
 
-from dataclasses import dataclass, field
-from typing import Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
 import numpy as np
-from numpy import diff, hstack, sqrt, searchsorted, asarray, cumsum, inf, nonzero, linspace, sort, isnan, clip
-from bumps.parameter import Parameter as Par, Function as ParFunction, to_dict, Constant
-from bumps.mono import monospline, count_inflections
+from bumps.mono import count_inflections, monospline
+from bumps.parameter import Constant, to_dict
+from bumps.parameter import Function as ParFunction
+from bumps.parameter import Parameter as Par
+from numpy import asarray, clip, cumsum, diff, hstack, inf, sort
 
 from . import util
 from .model import Layer

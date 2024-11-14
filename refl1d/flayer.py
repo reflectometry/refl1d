@@ -1,12 +1,12 @@
 import inspect
 
-from numpy import real, imag, asarray, broadcast_to
+from bumps.parameter import Calculation, Parameter, to_dict
+from numpy import asarray, broadcast_to, imag, real
 
-from bumps.parameter import Parameter, to_dict, Calculation
+from refl1d import util
+from refl1d.magnetism import DEFAULT_THETA_M, BaseMagnetism, Magnetism
 from refl1d.material import SLD
 from refl1d.model import Layer
-from refl1d.magnetism import BaseMagnetism, Magnetism, DEFAULT_THETA_M
-from refl1d import util
 
 
 class FunctionalProfile(Layer):

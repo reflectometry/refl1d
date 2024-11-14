@@ -1,5 +1,3 @@
-# This program is in the public domain
-# Author Paul Kienzle
 """
 Reflectometry materials.
 
@@ -55,14 +53,14 @@ __all__ = [
     "CellVolumeMaterial",
 ]
 
-from dataclasses import dataclass, field
-from typing import Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
+from dataclasses import dataclass
+from typing import Literal, Optional, Tuple, Union
 
 import numpy as np
-from numpy import inf, nan
 import periodictable
+from bumps.parameter import Expression, Parameter
+from numpy import inf, nan
 from periodictable.constants import avogadro_number
-from bumps.parameter import Expression, Parameter, to_dict  # , PARAMETER_TYPES, UnaryExpression
 from periodictable.formulas import Formula as BaseFormula
 
 
@@ -162,16 +160,6 @@ class SLD(Scatterer):
 
     def parameters(self):
         return {"rho": self.rho, "irho": self.irho}
-
-    def to_dict(self):
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "name": self.name,
-                "rho": self.rho,
-                "irho": self.irho,
-            }
-        )
 
     def sld(self, probe):
         return self.rho.value, self.irho.value
@@ -531,13 +519,6 @@ class Compound(Scatterer):
         """
         return {"count": self.count}
 
-    def to_dict(self):
-        return {
-            "type": type(self).__name__,
-            "parts": to_dict(self.parts),
-            "count": to_dict(self.count),
-        }
-
     def formula(self):
         return tuple((c.value, f) for c, f in zip(self.count, self.parts))
 
@@ -659,14 +640,6 @@ class Mixture(Scatterer):
             "base": self.base.parameters(),
             "material": [m.parameters() for m in self.material],
             "fraction": self.fraction,
-        }
-
-    def to_dict(self):
-        return {
-            "type": type(self).__name__,
-            "base": to_dict(self.base),
-            "material": to_dict(self.material),
-            "fraction": to_dict(self.fraction),
         }
 
     def _density(self):

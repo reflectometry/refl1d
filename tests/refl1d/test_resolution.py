@@ -1,7 +1,11 @@
-from math import *
+from math import asin, degrees, log, pi, radians, sin, sqrt, tan
+
 import numpy as np
 from numpy.linalg import norm
-from refl1d import resolution as res, ncnrdata, snsdata, instrument as inst
+
+from refl1d import instrument as inst
+from refl1d import ncnrdata, snsdata
+from refl1d import resolution as res
 
 
 def test():

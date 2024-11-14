@@ -1,5 +1,6 @@
-import numpy as np
 import argparse
+
+import numpy as np
 
 
 def get_optimal_single_oversampling(model, tolerance=0.05, max_oversampling=201, seed=1, verbose=False):

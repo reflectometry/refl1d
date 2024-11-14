@@ -2,22 +2,18 @@
 Reflectometry profile interactor.
 """
 
-from __future__ import division, print_function
-
 import math
 
 import numpy as np
+from matplotlib import transforms
 from numpy import inf
-from .binder import BindArtist, pixel_to_data
-from .config import rho_color, rhoI_color, rhoM_color, thetaM_color
-from .config import layer_hysteresis
 
 from . import registry
+from .binder import BindArtist, pixel_to_data
+from .config import layer_hysteresis, rho_color, rhoI_color, rhoM_color, thetaM_color
 from .interactor import BaseInteractor, safecall
-from .thickness import ThicknessInteractor
 from .interface import InterfaceInteractor
-
-from matplotlib import transforms
+from .thickness import ThicknessInteractor
 
 blend_xy = transforms.blended_transform_factory
 

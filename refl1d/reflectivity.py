@@ -10,8 +10,6 @@ unpolarized_magnetic returns the expected magnitude for a measurement
 of the magnetic scattering using an unpolarized beam.
 """
 
-from __future__ import print_function
-
 from functools import reduce
 
 # __doc__ = "Fundamental reflectivity calculations"
@@ -26,7 +24,7 @@ __all__ = [
 ]
 
 import numpy as np
-from numpy import pi, sin, cos, conj, radians, sqrt, exp, fabs
+from numpy import sin, cos, conj, radians
 
 BASE_GUIDE_ANGLE = 270.0
 

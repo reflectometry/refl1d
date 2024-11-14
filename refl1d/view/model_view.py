@@ -3,26 +3,26 @@ A base panel to draw the profile
 """
 
 import os
-import wx
-
-IS_MAC = wx.Platform == "__WXMAC__"
 
 import numpy as np
-from matplotlib.figure import Figure
-from matplotlib.axes import Subplot
-from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-from matplotlib.backend_bases import FigureManagerBase
-from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
-
+import wx
 from bumps.fitproblem import FitProblem
 from bumps.gui import signal
+from matplotlib.axes import Subplot
+from matplotlib.backend_bases import FigureManagerBase
+from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
+from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
+from matplotlib.figure import Figure
 
 from refl1d.experiment import MixedExperiment
 
+from .interactor import BaseInteractor
+from .profilei import ProfileInteractor
+
 # from .binder import pixel_to_data
 from .util import CopyImage
-from .profilei import ProfileInteractor
-from .interactor import BaseInteractor
+
+IS_MAC = wx.Platform == "__WXMAC__"
 
 
 # ------------------------------------------------------------------------
@@ -82,7 +82,9 @@ class ModelView(wx.Panel):
         self.statusbar = frame.GetStatusBar()
         if self.statusbar is None:
             self.statusbar = frame.CreateStatusBar()
-        status_update = lambda msg: self.statusbar.SetStatusText(msg)
+
+        def status_update(msg):
+            return self.statusbar.SetStatusText(msg)
 
         # Set the profile interactor
         self.profile = ProfileInteractor(self.axes, self.theta_axes, status_update=status_update)

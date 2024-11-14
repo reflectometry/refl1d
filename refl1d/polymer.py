@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-# This program is public domain
-# Authors Paul Kienzle, Richard Sheridan
 r"""
 Layer models for polymer systems.
 
@@ -45,17 +43,14 @@ Profile\ [#Cosgrove]_\ [#deVos]_\ [#Sheridan]_
 
 """
 
-from __future__ import division, print_function, unicode_literals
-
-
 __all__ = ["PolymerBrush", "PolymerMushroom", "EndTetheredPolymer", "VolumeProfile", "layer_thickness"]
 
 import inspect
-from time import time
 from collections import OrderedDict
+from time import time
 
 import numpy as np
-from numpy import real, imag, exp, log, sqrt, pi, hstack, ones_like
+from numpy import exp, hstack, imag, log, ones_like, pi, real, sqrt
 
 try:
     from numpy._core.multiarray import correlate as old_correlate
@@ -463,6 +458,7 @@ class PolymerMushroom(Layer):
         M = Mr + 1j * Mi
         S = Sr + 1j * Si
         try:
+            # TODO: Fix this hack
             M, S = M[0], S[0]  # Temporary hack
         except:
             pass

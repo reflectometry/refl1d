@@ -1,11 +1,10 @@
-from __future__ import division
 from math import log
+
 import numpy
+
+from .config import pick_radius, profile_color, vf_scale
 from .interactor import BaseInteractor
 from .layer import MaterialInteractor
-from .config import pick_radius
-from .config import profile_color
-from .config import vf_scale
 from .util import setpar
 
 
