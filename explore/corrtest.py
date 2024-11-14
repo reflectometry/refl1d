@@ -19,6 +19,7 @@ import numpy as np
 
 from refl1d.material import Vacuum
 
+
 def residual_nllf(v):
     # Normalize the scores so that we are assuming
     z = stats.zscore(v)
