@@ -1,4 +1,3 @@
-# This program is public domain.
 r"""
 Optical matrix form of the reflectivity calculation.
 
@@ -35,10 +34,8 @@ https://doi.org/10.1016/B978-0-444-63739-0.00005-0
 [4] https://en.wikipedia.org/wiki/Prefix_sum
 """
 
-from __future__ import print_function, division
-
 import numpy as np
-from numpy import asarray, isscalar, empty, ones, ones_like
+from numpy import asarray, isscalar, ones, ones_like
 from numpy import sqrt, exp, pi
 
 
@@ -226,7 +223,7 @@ def check():
     rho *= 100  # show point below critical edge
     print("q", q)
     try:
-        from .abeles import refl
+        from ..refl1d.abeles import refl
 
         r_old = refl(q / 2, depth, rho, irho=irho, sigma=sigma)
         print("rold", r_old)

@@ -21,8 +21,7 @@
     "plotly.js": "^2.35.2",
     "socket.io-client": "^4.7.5",
     "uuid": "^9.0.1",
-    "vue": "^3.5.4",
-    "vue-json-viewer": "^3.0.4"
+    "vue": "^3.5.4"
   },
   "devDependencies": {
     "@types/plotly.js": "^2.33.3",

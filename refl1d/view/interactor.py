@@ -10,9 +10,10 @@ def safecall(fn):
     def wrapped(self, *args, **kw):
         try:
             fn(self, *args, **kw)
-        except:
+        except Exception:
             if self._debug:
-                import sys, traceback
+                import sys
+                import traceback
 
                 traceback.print_exc()
                 sys.exit(1)

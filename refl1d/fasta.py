@@ -36,8 +36,6 @@ ratio on the non-swappable hydrogens.
 
 """
 
-from __future__ import division, print_function
-
 import periodictable as pt
 
 

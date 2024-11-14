@@ -2,12 +2,12 @@
 Testing experiment serialization
 """
 
-from __future__ import absolute_import, division, print_function
-import unittest
 import os
+import unittest
+
 import numpy as np
 
-from refl1d.names import QProbe, Slab, SLD, Parameter, Experiment, NeutronProbe, PolarizedNeutronProbe, Magnetism
+from refl1d.names import SLD, Experiment, Magnetism, NeutronProbe, Parameter, PolarizedNeutronProbe, QProbe, Slab
 
 
 class ExperimentJsonTest(unittest.TestCase):

@@ -9,22 +9,19 @@ No guarantee is made regarding absolute correctness, only that the results
 haven't changed since that version.
 """
 
-from __future__ import division, print_function
 import numpy as np
-from numpy.linalg import norm
-
 
 from refl1d.names import Material
 from refl1d.polymer import (
+    EndTetheredPolymer,
     PolymerBrush,
     PolymerMushroom,
-    EndTetheredPolymer,
-    SCFprofile,
-    SCFcache,
-    SCFsolve,
-    SCFeqns,
-    SZdist,
     Propagator,
+    SCFcache,
+    SCFeqns,
+    SCFprofile,
+    SCFsolve,
+    SZdist,
 )
 
 

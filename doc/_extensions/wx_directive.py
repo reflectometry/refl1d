@@ -15,10 +15,14 @@ plot_formats configuration variable.
 
 # Note: adapted from matplotlib.sphinxext.plot_directive by Paul Kienzle
 
-from six.moves import StringIO
-
-import sys, os, glob, shutil, hashlib, imp, warnings
+import imp
+import os
 import re
+import shutil
+import sys
+import warnings
+
+from six.moves import StringIO
 
 try:
     from hashlib import md5
@@ -34,16 +38,13 @@ except ImportError:
     from docutils.parsers.rst.directives.images import Image
 
     align = Image.align
-from docutils import nodes
-import sphinx
-
-import wx
-
 # Matplotlib helper utilities
 import matplotlib.cbook as cbook
 import numpy
 import png
-
+import sphinx
+import wx
+from docutils import nodes
 
 sphinx_version = sphinx.__version__.split(".")
 # The split is necessary for sphinx beta versions where the string is

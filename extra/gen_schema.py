@@ -1,3 +1,10 @@
+"""
+Generate a JSON schema for the FitProblem model.
+Note:
+This script is likely deprecated, and relies on pydantic v1,
+as it makes use of functionality that have been removed in v2.
+"""
+
 import os
 import math
 import json

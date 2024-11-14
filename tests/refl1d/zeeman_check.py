@@ -1,12 +1,14 @@
-from os.path import join as joinpath, dirname, exists, getmtime as filetime
-import tempfile
 import os
+import tempfile
+from os.path import dirname, exists
+from os.path import getmtime as filetime
+from os.path import join as joinpath
 
-import numpy as np
-from numpy import radians
 import matplotlib.pyplot as plt
-
+import numpy as np
 from bumps.util import pushdir
+from numpy import radians
+
 from refl1d.reflectivity import magnetic_amplitude as refl
 
 H2K = 2.91451e-5

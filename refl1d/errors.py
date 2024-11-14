@@ -9,27 +9,25 @@ of the residual values.
 Use *run_errors* in a model file to reload the results of a batch DREAM fit.
 """
 
-from __future__ import print_function
-
 __all__ = [
+    "align_profiles",
+    "calc_errors",
     "reload_errors",
     "run_errors",
-    "calc_errors",
-    "align_profiles",
     "show_errors",
     "show_profiles",
     "show_residuals",
 ]
 
-import sys
 import os
+import sys
 
 import numpy as np
-from bumps.plotutil import next_color, dhsv, plot_quantiles, form_quantiles
 from bumps.errplot import reload_errors
+from bumps.plotutil import dhsv, form_quantiles, next_color, plot_quantiles
 
-from .util import asbytes
 from .reflectivity import BASE_GUIDE_ANGLE
+from .util import asbytes
 
 # CONTOURS = (68, 95, 100)
 # CONTOURS = (57, 68, 84, 95, 100)
