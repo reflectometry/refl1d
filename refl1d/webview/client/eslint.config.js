@@ -1,10 +1,10 @@
-import url from "url";
-import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
-import pluginVue from "eslint-plugin-vue";
 import { FlatCompat } from "@eslint/eslintrc";
 import js from "@eslint/js";
 import prettierConfig from "@vue/eslint-config-prettier";
 import vueTsEslintConfig from "@vue/eslint-config-typescript";
+import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
+import pluginVue from "eslint-plugin-vue";
+import url from "url";
 
 const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
 const compat = new FlatCompat({

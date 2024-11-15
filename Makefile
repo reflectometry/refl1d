@@ -61,4 +61,4 @@ format-backend: ## Run ruff formatting on python code
 .PHONY: format-frontend
 format-frontend: ## Run bun formatting on javascript code
 	cd refl1d/webview/client && \
-		$(FE_CMD) run lint
+		$(FE_CMD) run format
