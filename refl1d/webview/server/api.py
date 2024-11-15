@@ -44,7 +44,8 @@ async def get_plot_data(view: str = "linear"):
         assert isinstance(model, ExperimentBase)
         theory = model.reflectivity()
         probe = model.probe
-        plotdata.append(get_probe_data(theory, probe, model._substrate, model._surface))
+        probe_data = get_probe_data(theory, probe, model._substrate, model._surface)
+        plotdata.append(probe_data)
 
     return to_json_compatible_dict(result)
 
