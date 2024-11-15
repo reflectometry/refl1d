@@ -2,12 +2,12 @@ ROOTDIR = $(shell pwd)
 
 # Check for the presence of bun or npm
 ifneq ($(shell which bun),)
-  FE_CMD=bun
+	FE_CMD=bun
 else ifneq ($(shell which npm),)
-  FE_CMD=npm
+	FE_CMD=npm
 else
-  echo "No frontend build tool found. Please install 'bun' or 'npm'."
-  exit 1
+	echo "No frontend build tool found. Please install 'bun' or 'npm'."
+	exit 1
 endif
 
 # This nifty perl one-liner collects all comments headed by the double "#" symbols next to each target and recycles them as comments
