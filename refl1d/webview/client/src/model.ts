@@ -1,6 +1,6 @@
 /**
- * This file contains the types for the serialized model format used by the refl1d webapp.
- * ! Note that the fields must match the Python model serialization format, and must therefore be snake_case
+ * This file contains the types for the serialized model format used by the refl1d webapp. Note that the fields must
+ * match the Python model serialization format, and must therefore be snake_case
  */
 
 export interface SerializedModel {

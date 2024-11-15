@@ -453,7 +453,8 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
   <div class="container d-flex flex-column flex-grow-1">
     <div class="row">
       <div class="col">
-        <select class="plot-mode" v-model="reflectivity_type" @change="change_plot_type">
+        <label for="plot_mode" class="col-form-label">Plot mode:</label>
+        <select id="plot_mode" v-model="reflectivity_type" class="plot-mode" @change="change_plot_type">
           <option v-for="refl_type in REFLECTIVITY_PLOTS" :key="refl_type" :value="refl_type">
             {{ refl_type }}
           </option>
@@ -461,28 +462,28 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
       </div>
       <div class="col-auto form-check">
         <input
+          id="show_residuals"
+          v-model="show_residuals"
           class="form-check-input"
           type="checkbox"
-          v-model="show_residuals"
-          id="show_residuals"
           @change="draw_plot"
         />
         <label class="form-check-label" for="show_residuals">Residuals</label>
       </div>
       <div class="col-auto form-check">
-        <input type="checkbox" class="form-check-input" id="log_y" v-model="log_y" @change="draw_plot" />
+        <input id="log_y" v-model="log_y" type="checkbox" class="form-check-input" @change="draw_plot" />
         <label for="log_y" class="form-check-label">Log y</label>
       </div>
       <div class="col-auto form-check">
-        <input type="checkbox" class="form-check-input" id="log_x" v-model="log_x" @change="draw_plot" />
+        <input id="log_x" v-model="log_x" type="checkbox" class="form-check-input" @change="draw_plot" />
         <label for="log_x" class="form-check-label">Log x</label>
       </div>
       <div class="col-auto form-check">
         <input
-          type="checkbox"
-          class="form-check-input"
           id="show_resolution"
           v-model="show_resolution"
+          type="checkbox"
+          class="form-check-input"
           @change="draw_plot"
         />
         <label for="show_resolution" class="form-check-label">dQ</label>
@@ -494,18 +495,18 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
       </div>
       <div class="col">
         <input
+          id="plot_offset_control"
+          v-model.number="plot_offset"
           type="range"
           min="0"
           max="1.0"
           step="0.01"
-          id="plot_offset_control"
           class="form-range"
-          v-model.number="plot_offset"
           @input="draw_plot"
         />
       </div>
     </div>
-    <div class="flex-grow-1" ref="plot_div" id="plot_div"></div>
+    <div id="plot_div" ref="plot_div" class="flex-grow-1"></div>
   </div>
 </template>
 
