@@ -46,9 +46,12 @@ type ModelData = {
 };
 
 function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, calculate_residuals: boolean = false) {
-  const theory_traces: Trace[] = [];
-  const data_traces: Trace[] = [];
-  const residuals_traces: Trace[] = [];
+  if (model_data.length === 0) {
+    return { theory_traces: [], data_traces: [], xaxis_label: "Q (Å<sup>-1</sup>)", yaxis_label: "Reflectivity" };
+  }
+  let theory_traces: Trace[] = [];
+  let data_traces: Trace[] = [];
+  let residuals_traces: Trace[] = [];
   let yaxis_label: string = "Reflectivity";
   const xaxis_label: string = "Q (Å<sup>-1</sup>)";
   const offset = plot_offset.value;
@@ -232,7 +235,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
     }
     case "Spin Asymmetry": {
       let plot_index = 0;
-      for (const model of model_data) {
+      for (let model of model_data) {
         const pp = model.find((xs) => xs.polarization === "++");
         const mm = model.find((xs) => xs.polarization === "--");
         const local_offset = plot_index * offset;
@@ -327,7 +330,6 @@ async function change_plot_type() {
 }
 
 async function draw_plot() {
-  // console.log(payload);
   const { theory_traces, data_traces, xaxis_label, yaxis_label } = generate_new_traces(
     plot_data.value,
     reflectivity_type.value,
@@ -451,36 +453,36 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
   <div class="container d-flex flex-column flex-grow-1">
     <div class="row">
       <div class="col">
-        <select v-model="reflectivity_type" class="plot-mode" aria-label="Plot Mode" @change="change_plot_type">
+        <select class="plot-mode" v-model="reflectivity_type" @change="change_plot_type">
           <option v-for="refl_type in REFLECTIVITY_PLOTS" :key="refl_type" :value="refl_type">
             {{ refl_type }}
           </option>
         </select>
       </div>
       <div class="col-auto form-check">
-        <label class="form-check-label" for="show_residuals">Residuals</label>
         <input
-          id="show_residuals"
-          v-model="show_residuals"
           class="form-check-input"
           type="checkbox"
+          v-model="show_residuals"
+          id="show_residuals"
           @change="draw_plot"
         />
+        <label class="form-check-label" for="show_residuals">Residuals</label>
       </div>
       <div class="col-auto form-check">
-        <input id="log_y" v-model="log_y" type="checkbox" class="form-check-input" @change="draw_plot" />
+        <input type="checkbox" class="form-check-input" id="log_y" v-model="log_y" @change="draw_plot" />
         <label for="log_y" class="form-check-label">Log y</label>
       </div>
       <div class="col-auto form-check">
-        <input id="log_x" v-model="log_x" type="checkbox" class="form-check-input" @change="draw_plot" />
+        <input type="checkbox" class="form-check-input" id="log_x" v-model="log_x" @change="draw_plot" />
         <label for="log_x" class="form-check-label">Log x</label>
       </div>
       <div class="col-auto form-check">
         <input
-          id="show_resolution"
-          v-model="show_resolution"
           type="checkbox"
           class="form-check-input"
+          id="show_resolution"
+          v-model="show_resolution"
           @change="draw_plot"
         />
         <label for="show_resolution" class="form-check-label">dQ</label>
@@ -492,18 +494,18 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
       </div>
       <div class="col">
         <input
-          id="plot_offset_control"
-          v-model.number="plot_offset"
           type="range"
           min="0"
           max="1.0"
           step="0.01"
+          id="plot_offset_control"
           class="form-range"
+          v-model.number="plot_offset"
           @input="draw_plot"
         />
       </div>
     </div>
-    <div id="plot_div" ref="plot_div" class="flex-grow-1"></div>
+    <div class="flex-grow-1" ref="plot_div" id="plot_div"></div>
   </div>
 </template>
 
