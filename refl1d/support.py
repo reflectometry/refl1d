@@ -24,7 +24,7 @@ def get_data_path():
 
     # Check for data next to the package.
     try:
-        root = Path(__file__).resolve().parent.parent.parent
+        root = Path(__file__).resolve().parent.parent
         return root / "doc" / "examples"
     except Exception:
         raise RuntimeError("Could not find sample data")
