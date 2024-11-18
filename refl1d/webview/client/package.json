@@ -15,7 +15,7 @@
     "format": "prettier --write src",
     "lint": "eslint src --fix",
     "test:lint": "eslint src",
-    "test:types": "vue-tsc --noEmit --skipLibCheck --composite false"
+    "test:types": "vue-tsc --noEmit --skipLibCheck -p tsconfig.json --composite false"
   },
   "dependencies": {
     "bootstrap": "^5.3.3",

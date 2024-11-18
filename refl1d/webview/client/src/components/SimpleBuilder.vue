@@ -157,7 +157,10 @@ function getSlot(parameterLike: ParameterLike) {
     const parameter = resolveParameter(parameterLike);
     return parameter.slot;
   }
+  // TODO: This should really not return null.
   // return null;
+  return { value: 0.0, __class__: "bumps.parameter.Variable" };
+
 }
 
 function resolveParameter(parameterLike: ParameterLike): Parameter {
@@ -409,7 +412,7 @@ function dragEnd() {
               <input
                 v-if="getSlot(layer.thickness) !== null"
                 id="layer-thickness"
-                v-model="getSlot(layer.thickness).value"
+                v-model="getSlot(layer.thickness).value" 
                 class="form-control"
                 type="number"
                 step="5"

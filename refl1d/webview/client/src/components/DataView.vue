@@ -85,7 +85,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
               const dR = lin_y ? xs.dR : xs.dR.map((t) => t * local_offset);
               data_trace.error_y = { type: "data", array: dR, visible: true };
               if (calculate_residuals) {
-                const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR[i]);
+                const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR![i]);
                 const residuals_trace: Trace = {
                   x: xs.Q,
                   y: residuals,
@@ -145,7 +145,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
               const dR_offset = lin_y ? dR : dR.map((t) => t * local_offset);
               data_trace.error_y = { type: "data", array: dR_offset, visible: true };
               if (calculate_residuals) {
-                const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR[i]);
+                const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR![i]);
                 const residuals_trace: Trace = {
                   x: xs.Q,
                   y: residuals,
@@ -210,7 +210,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
               const offset_dR = dR.map((t) => t * local_offset);
               data_trace.error_y = { type: "data", array: offset_dR, visible: true };
               if (calculate_residuals) {
-                const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR[i]);
+                const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR![i]);
                 const residuals_trace: Trace = {
                   x: xs.Q,
                   y: residuals,
@@ -256,7 +256,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           if (pp.R !== undefined && mm.R !== undefined) {
             const Rm = interp(pp.Q, mm.Q, mm.R);
             const SA = Rm.map((m, i) => {
-              const p = pp.R[i];
+              const p = pp.R![i];
               return (p - m) / (p + m);
             });
             const SA_offset = SA.map((v) => v + local_offset);
@@ -277,7 +277,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
               const dRm = interp(pp.Q, mm.Q, mm.dR);
               const dSA = dRm.map((dm, i) => {
                 // const dp = pp.dR[i];
-                const p = pp.R[i];
+                const p = pp.R![i];
                 const m = Rm[i];
                 return Math.sqrt((4 * ((p * dm) ** 2 + (m * dm) ** 2)) / (p + m) ** 4);
               });
