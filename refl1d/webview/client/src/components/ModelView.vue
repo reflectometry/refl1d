@@ -49,6 +49,9 @@ async function fetch_and_draw() {
     },
     ...configWithSVGDownloadButton,
   };
+  if (plot_div.value === undefined) {
+    return;
+  }
   await Plotly.react(plot_div.value as HTMLDivElement, [...data], layout, config);
 }
 
@@ -60,6 +63,11 @@ function toggle_multiple() {
   }
   Plotly.Plots.resize(plot_div.value as HTMLDivElement);
 }
+
+function requestRedraw() {
+  draw_requested.value = true;
+}
+
 </script>
 
 <template>
@@ -69,7 +77,7 @@ function toggle_multiple() {
       <input id="multiple" v-model="show_multiple" class="form-check-input" type="checkbox" @change="toggle_multiple" />
     </div>
     <label for="model" class="form-label"> Models:</label>
-    <select v-if="show_multiple" id="model" v-model="current_models" multiple @change="draw_requested = true">
+    <select v-if="show_multiple" id="model" v-model="current_models" multiple @change="requestRedraw">
       <option
         v-for="{ name, part_name, model_index, part_index } in model_names"
         :key="`${model_index}:${part_index}`"
@@ -78,7 +86,7 @@ function toggle_multiple() {
         {{ model_index }}:{{ part_index }} --- {{ name ?? "" }}:{{ part_name ?? "" }}
       </option>
     </select>
-    <select v-else id="model" v-model="current_models[0]" @change="draw_requested = true">
+    <select v-else id="model" v-model="current_models[0]" @change="requestRedraw">
       <option
         v-for="{ name, part_name, model_index, part_index } in model_names"
         :key="`${model_index}:${part_index}`"

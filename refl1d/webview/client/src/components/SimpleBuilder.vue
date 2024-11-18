@@ -157,7 +157,7 @@ function getSlot(parameterLike: ParameterLike) {
     const parameter = resolveParameter(parameterLike);
     return parameter.slot;
   }
-  return null;
+  // return null;
 }
 
 function resolveParameter(parameterLike: ParameterLike): Parameter {
