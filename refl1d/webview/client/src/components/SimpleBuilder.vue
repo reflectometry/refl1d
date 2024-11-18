@@ -238,7 +238,7 @@ async function sendModel(is_new: boolean = false, name: string | null = null) {
 }
 
 // Adding and deleting layers
-function deleteLayer(index) {
+function deleteLayer(index: number) {
   sortedLayers.value.splice(index, 1);
   sendModel();
 }
@@ -268,16 +268,19 @@ onMounted(() => {
 // Code for draggable rows
 const dragData = ref<number | null>(null);
 
-function dragStart(index: number, event) {
+function dragStart(index: number, event: DragEvent) {
+  if (event.dataTransfer === null) {
+    return;
+  }
   dragData.value = index;
-  event.dataTransfer.setData("text/plain", index);
+  event.dataTransfer.setData("text/plain", `${index}`);
 }
 
-function dragOver(index, event) {
+function dragOver(index: number, event: DragEvent) {
   event.preventDefault();
 }
 
-function drop(index) {
+function drop(index: number) {
   if (dragData.value !== null) {
     const draggedDict = sortedLayers.value[dragData.value];
     sortedLayers.value.splice(dragData.value, 1);
