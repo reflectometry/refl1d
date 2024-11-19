@@ -266,7 +266,11 @@ def main(stack):
 
 
 if __name__ == "__main__":
+<<<<<<< HEAD:refl1d/wx_gui/layer_dialog.py
     from refl1d.models import air, silicon
+=======
+    from refl1d.names import air, silicon
+>>>>>>> origin/master:refl1d/view/layer_dialog.py
 
     stack = silicon | air
     main(stack)

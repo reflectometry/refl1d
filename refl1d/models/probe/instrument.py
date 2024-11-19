@@ -119,6 +119,7 @@ metadata values are changed, the resolution can be recomputed and the
 display updated.  When the data set is accepted, the final resolution
 calculation can be performed.
 """
+
 # TODO: the resolution calculator should not be responsible for loading
 # the data; maybe do it as a mixin?
 

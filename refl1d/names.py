@@ -12,14 +12,13 @@ small scripts.
 
 import logging
 import sys
-import numpy as np
 
-from periodictable import elements, formula
-from bumps.parameter import Parameter, FreeVariables
+import numpy as np
 from bumps import pmath
-from bumps.pdfwrapper import PDF
 from bumps.fitproblem import FitProblem, MultiFitProblem
-# from bumps.fitproblem import FitProblem  # deprecated
+from bumps.parameter import FreeVariables, Parameter
+from bumps.pdfwrapper import PDF
+from periodictable import elements, formula
 
 from .models.experiment import Experiment, plot_sample, MixedExperiment
 from .models.sample.flayer import FunctionalProfile, FunctionalMagnetism
@@ -49,7 +48,6 @@ from .utils.support import sample_data
 # This could lead to a lot of namespace pollution, and particularly to
 # confusion if the user also does "from periodictable import *" since
 # both of them create elements.
-# Python doesn't allow "from .module import *"
 from .models.sample.materialdb import *
 
 

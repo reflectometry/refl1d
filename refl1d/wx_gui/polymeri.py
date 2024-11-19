@@ -4,9 +4,6 @@ import numpy
 
 from .interactor import BaseInteractor
 from .layer import MaterialInteractor
-from .config import pick_radius
-from .config import profile_color
-from .config import vf_scale
 from .util import setpar
 
 

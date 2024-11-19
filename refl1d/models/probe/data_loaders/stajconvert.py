@@ -1,3 +1,4 @@
+# Author: Paul Kienzle
 """
 Convert staj files to Refl1D models
 """

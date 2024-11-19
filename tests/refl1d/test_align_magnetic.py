@@ -101,11 +101,11 @@ def check_one(nuclear, magnetic, expected):
         for c1, c2 in zip(r1, r2)
     )
     if not good:
+
+        def nice(v):
+            return ", ".join("[" + ", ".join("%g" % c for c in r) + "]" for r in v)
+
         raise ValueError("=== Expected:\n%s\n=== Returned:\n%s\n" % (nice(expected), nice(result[:k])))
-
-
-def nice(v):
-    return ", ".join("[" + ", ".join("%g" % c for c in r) + "]" for r in v)
 
 
 if __name__ == "__main__":

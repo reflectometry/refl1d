@@ -10,6 +10,8 @@ from refl1d.models import FitProblem
 
 NDArray = NumpyArray
 
+NDArray = NumpyArray
+
 
 class BumpsGenerateJsonSchema(GenerateJsonSchema):
     def dataclass_schema(self, schema: core_schema.DataclassSchema) -> JsonSchemaValue:

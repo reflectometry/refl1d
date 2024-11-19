@@ -1,5 +1,3 @@
-# This code is public domain
-
 """
 Pure python Fresnel reflectivity calculator.
 """

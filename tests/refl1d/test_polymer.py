@@ -15,13 +15,12 @@ from refl1d.models import Material
 from refl1d.models.sample.polymer import (
     PolymerBrush,
     PolymerMushroom,
-    EndTetheredPolymer,
-    SCFprofile,
-    SCFcache,
-    SCFsolve,
-    SCFeqns,
-    SZdist,
     Propagator,
+    SCFcache,
+    SCFeqns,
+    SCFprofile,
+    SCFsolve,
+    SZdist,
 )
 
 

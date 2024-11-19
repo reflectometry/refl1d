@@ -1,3 +1,4 @@
+# Author: Paul Kienzle
 r"""
 Scattering length density profile.
 
@@ -57,7 +58,7 @@ using one energy so we only show the first column.
 """
 
 import numpy as np
-from numpy import nan, isnan
+from numpy import isnan, nan
 from scipy.special import erf
 
 from .sample.reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M

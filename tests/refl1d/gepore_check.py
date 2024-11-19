@@ -2,8 +2,8 @@ import os
 from os.path import join as joinpath, dirname, exists, getmtime as filetime
 import tempfile
 
-from bumps.util import pushdir
 import numpy as np
+from bumps.util import pushdir
 from numpy import radians
 
 from refl1d.models.sample.reflectivity import magnetic_amplitude as refl

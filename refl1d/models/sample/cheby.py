@@ -78,14 +78,14 @@ the bounds.  Bounds on the oscillation are easier to control using
 # - Direct methods: random walk should be biased toward the domain
 # - moderately complicated
 
-from bumps.parameter import Parameter as Par, to_dict
-from bumps.cheby import cheby_val, cheby_coeff
-from bumps.cheby import cheby_approx, cheby_points  # pylint: disable=unused-import
 import numpy as np
-from numpy import inf, real, imag
+from bumps.cheby import cheby_approx, cheby_coeff, cheby_points, cheby_val  # pylint: disable=unused-import
+from bumps.parameter import Parameter as Par
+from bumps.parameter import to_dict
+from numpy import imag, inf, real
 
-from .layers import Layer
 from ... import utils
+from .layers import Layer
 
 
 # TODO: add left_sld, right_sld to all layers so that fresnel works

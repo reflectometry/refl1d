@@ -1,23 +1,22 @@
 import asyncio
 from copy import deepcopy
 from functools import lru_cache
-from typing import Union, Dict, List
 from pathlib import Path
-
-from bumps.errplot import error_points_from_state
+from typing import Dict, List, Union
 
 # import bumps.webview.server.api as bumps_api
+import numpy as np
+from bumps.errplot import error_points_from_state
 from bumps.webview.server.api import (
-    register,
+    add_notification,
     get_chisq,
+    log,
+    logger,
+    now_string,
+    register,
     state,
     to_json_compatible_dict,
-    log,
-    now_string,
-    add_notification,
-    logger,
 )
-import numpy as np
 
 from refl1d.models.uncertainty import calc_errors
 from refl1d.models.experiment import Experiment, ExperimentBase, MixedExperiment
@@ -43,7 +42,8 @@ async def get_plot_data(view: str = "linear"):
         assert isinstance(model, ExperimentBase)
         theory = model.reflectivity()
         probe = model.probe
-        plotdata.append(get_probe_data(theory, probe, model._substrate, model._surface))
+        probe_data = get_probe_data(theory, probe, model._substrate, model._surface)
+        plotdata.append(probe_data)
 
     return to_json_compatible_dict(result)
 

@@ -1,3 +1,4 @@
+# Author Paul Kienzle
 """
 Reflectometry materials.
 
@@ -54,12 +55,12 @@ __all__ = [
 ]
 
 from dataclasses import dataclass
-from typing import Optional, Union, Literal, Tuple
+from typing import Literal, Optional, Tuple, Union
 
-from bumps.parameter import Expression, Parameter
 import numpy as np
-from numpy import inf, nan
 import periodictable
+from bumps.parameter import Expression, Parameter
+from numpy import inf, nan
 from periodictable.constants import avogadro_number
 from periodictable.formulas import Formula as BaseFormula
 

@@ -1,4 +1,4 @@
-"""
+r"""
 Optical matrix form of the reflectivity calculation.
 
 This is a pure python implementation of reflectometry which returns the
@@ -223,7 +223,11 @@ def check():
     rho *= 100  # show point below critical edge
     print("q", q)
     try:
+<<<<<<< HEAD
         from refl1d.models.probe.abeles import refl
+=======
+        from ..refl1d.abeles import refl
+>>>>>>> origin/master
 
         r_old = refl(q / 2, depth, rho, irho=irho, sigma=sigma)
         print("rold", r_old)

@@ -19,12 +19,12 @@ __all__ = [
     "show_residuals",
 ]
 
-import sys
 import os
+import sys
 
 import numpy as np
-from bumps.plotutil import next_color, dhsv, plot_quantiles, form_quantiles
 from bumps.errplot import reload_errors
+from bumps.plotutil import dhsv, form_quantiles, next_color, plot_quantiles
 
 from ..utils import asbytes
 from .sample.reflectivity import BASE_GUIDE_ANGLE

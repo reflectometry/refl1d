@@ -5,6 +5,20 @@ ROOTDIR = $(shell pwd)
 help: ## Print this help message
 	@perl -nle'print $& if m{^[/a-zA-Z_-]+:.*?## .*$$}' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-25s\033[0m %s\n", $$1, $$2}'
 
+.PHONY: clean
+clean: ## Delete some cruft from builds/testing/etc.
+	rm -f `find . -type f -name '*.py[co]'`
+	rm -rf `find . -name __pycache__ -o -name "*.egg-info"` \
+		`find . -name 'output-*'` \
+		.coverage build dist \
+		doc/_build doc/api doc/tutorial \
+		.pytest_cache \
+		.ruff_cache 
+
+.PHONY: test
+test: ## Run pytest and doc tests
+	pytest -v
+	python check_examples.py --chisq
 
 .PHONY: lint
 lint: ## Run ruff linting

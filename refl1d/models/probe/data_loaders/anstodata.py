@@ -13,8 +13,8 @@ All the ANSTO instruments emit Q/R/dR/dQ in their output files.
 import os.path
 import re
 
-from bumps.data import maybe_open
 import numpy as np
+from bumps.data import maybe_open
 
 from ..probe import QProbe
 from ..resolution import FWHM2sigma

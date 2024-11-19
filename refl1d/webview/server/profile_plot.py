@@ -6,10 +6,11 @@
 
 from typing import List, TypedDict
 
-from numpy import inf
 import numpy as np
+from numpy import inf
 
 from refl1d.models.experiment import Experiment
+
 from .colors import COLORS as MULTI_PLOT_COLORS
 
 SINGLE_PLOT_COLORS = ("black", "blue", "green", "gold")

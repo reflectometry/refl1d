@@ -1,3 +1,4 @@
+# Author: Paul Kienzle
 """
 Reflectometry models
 
@@ -603,9 +604,6 @@ class Repeat(Layer):
         self.thickness = Parameter(name=name + " thickness")
         self.thickness.equals(self.stack.thickness * self.repeat)
         self.interface = Parameter.default(interface, limits=(0, None), name=name + " top interface")
-
-    def __getstate__(self):
-        return self.interface, self.repeat, self.name, self.stack
 
     def __setstate__(self, state):
         # this is a temporary shim (2024-10-29), to accomodate objects that were pickled

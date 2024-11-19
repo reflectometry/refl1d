@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# Authors Paul Kienzle, Richard Sheridan
+
 r"""
 Layer models for polymer systems.
 
@@ -412,6 +414,7 @@ class PolymerMushroom(Layer):
         M = Mr + 1j * Mi
         S = Sr + 1j * Si
         try:
+            # TODO: Fix this hack
             M, S = M[0], S[0]  # Temporary hack
         except Exception:
             pass
