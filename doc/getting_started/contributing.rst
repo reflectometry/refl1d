@@ -154,8 +154,8 @@ You can see the result by pointing your browser to::
     doc/_build/html/index.html
     doc/_build/latex/Refl1d.pdf
 
-Note that this only works with a unix-like environment for now since we are
-using *make*.  On Windows, you can run sphinx directly from python::
+On Windows, you may first need to install `mingw32-make` via conda, 
+or simply run sphinx directly from python::
 
     cd doc
     python -m sphinx.__init__ -b html -d _build/doctrees . _build/html
