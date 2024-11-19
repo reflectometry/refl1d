@@ -3,7 +3,7 @@ repos:
     hooks:
       - id: run-eslint
         name: run-eslint
-        entry: bash -c "cd refl1d/webview/client && npm run lint"
+        entry: bash -c "cd refl1d/webview/client && npm install && npm run lint"
         language: node
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
