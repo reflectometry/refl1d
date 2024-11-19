@@ -1,6 +1,6 @@
 import numpy as np
 
-from refl1d.models.probe.abeles import refl
+from refl1d.probe.abeles import refl
 
 
 def test():

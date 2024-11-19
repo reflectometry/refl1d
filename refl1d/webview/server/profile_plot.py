@@ -9,7 +9,7 @@ from typing import List, TypedDict
 import numpy as np
 from numpy import inf
 
-from refl1d.models.experiment import Experiment
+from refl1d.experiment import Experiment
 
 from .colors import COLORS as MULTI_PLOT_COLORS
 

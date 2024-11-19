@@ -52,9 +52,9 @@ import numpy.random
 from numpy import log, pi, sign, sqrt
 from periodictable import nsf, xsf
 
-from ...utils import asbytes
 from ..sample.material import Vacuum
 from ..sample.reflectivity import BASE_GUIDE_ANGLE, convolve
+from ..utils import asbytes
 from . import fresnel
 from .resolution import QL2T, TL2Q, dQ_broadening, dTdL2dQ
 from .stitch import stitch

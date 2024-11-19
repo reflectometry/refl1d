@@ -20,16 +20,16 @@ from bumps.dream.state import MCMCDraw
 from bumps.fitproblem import Fitness, FitProblem
 from bumps.parameter import Parameter, tag_all
 
-from .. import __version__
+from . import __version__
 from .sample.reflectivity import (
     BASE_GUIDE_ANGLE as DEFAULT_THETA_M,
     magnetic_amplitude as reflmag,
     reflectivity_amplitude as reflamp,
 )
-from ..utils import asbytes
 from . import profile
 from .probe.probe import PolarizedNeutronProbe, Probe
 from .sample import layers, material
+from .utils import asbytes
 
 
 class WebviewPlotFunction(Protocol):

@@ -18,10 +18,10 @@ from bumps.webview.server.api import (
     to_json_compatible_dict,
 )
 
-from refl1d.models.uncertainty import calc_errors
-from refl1d.models.experiment import Experiment, ExperimentBase, MixedExperiment
-from refl1d.models.probe.data_loaders import load4
-from refl1d.models.probe.probe import PolarizedNeutronProbe
+from refl1d.uncertainty import calc_errors
+from refl1d.experiment import Experiment, ExperimentBase, MixedExperiment
+from refl1d.probe.data_loaders import load4
+from refl1d.probe import PolarizedNeutronProbe
 from .profile_uncertainty import show_errors
 from .profile_plot import plot_multiple_sld_profiles, ModelSpec
 

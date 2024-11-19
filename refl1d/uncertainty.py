@@ -26,8 +26,8 @@ import numpy as np
 from bumps.errplot import reload_errors
 from bumps.plotutil import dhsv, form_quantiles, next_color, plot_quantiles
 
-from ..utils import asbytes
 from .sample.reflectivity import BASE_GUIDE_ANGLE
+from .utils import asbytes
 
 # CONTOURS = (68, 95, 100)
 # CONTOURS = (57, 68, 84, 95, 100)

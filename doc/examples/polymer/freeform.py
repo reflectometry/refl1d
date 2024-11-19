@@ -5,7 +5,7 @@
 # freeform interface which varies the density between layers using a
 # cubic spline interface.
 
-from refl1d.models import *
+from refl1d.names import *
 from copy import copy
 
 # Materials used

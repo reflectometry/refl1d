@@ -23,7 +23,7 @@
 
 import numpy
 
-from refl1d.models import *
+from refl1d.names import *
 
 nickel = Material("Ni")
 titanium = Material("Ti")

@@ -1,6 +1,6 @@
 # Author: Paul Kienzle
 """
-Convert staj files to Refl1D models
+Convert staj files to refl1d
 """
 
 import os

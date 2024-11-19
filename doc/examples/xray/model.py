@@ -51,7 +51,7 @@ References
 
 import sys
 from periodictable import formula, xray_sld, Cu, Ni, Fe, Pt
-from refl1d.models import *
+from refl1d.names import *
 
 # Determine what search we are going to perform
 search = sys.argv[1] if len(sys.argv) > 1 else "rltest"

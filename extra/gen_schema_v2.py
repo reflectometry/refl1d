@@ -6,7 +6,7 @@ from pydantic import TypeAdapter  # , ConfigDict
 
 from bumps.util import NumpyArray
 
-from refl1d.models import FitProblem
+from refl1d.names import FitProblem
 
 NDArray = NumpyArray
 

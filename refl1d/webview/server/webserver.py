@@ -19,7 +19,7 @@ from bumps.webview.server.webserver import (
 )
 
 # Register the refl1d model loader
-from refl1d.models.bumps_interface import fitplugin
+from refl1d.bumps_interface import fitplugin
 import bumps.cli
 
 bumps.cli.install_plugin(fitplugin)

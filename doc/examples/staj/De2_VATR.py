@@ -1,4 +1,4 @@
-from refl1d.models import *
+from refl1d.names import *
 
 # Load neutron model and data from staj file
 # Layer names are ordered from substrate to surface, and defaults to

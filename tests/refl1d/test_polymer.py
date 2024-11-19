@@ -11,8 +11,9 @@ haven't changed since that version.
 
 import numpy as np
 
-from refl1d.models import Material
-from refl1d.models.sample.polymer import (
+from refl1d.names import Material
+from refl1d.sample.polymer import (
+    EndTetheredPolymer,
     PolymerBrush,
     PolymerMushroom,
     Propagator,

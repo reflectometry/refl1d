@@ -3,7 +3,7 @@ from copy import copy
 import numpy
 import periodictable
 
-from refl1d.models import *
+from refl1d.names import *
 
 numpy.random.seed(1)
 

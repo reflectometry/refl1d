@@ -16,7 +16,7 @@ def get_optimal_single_oversampling(model, tolerance=0.05, max_oversampling=201,
       - when all points are within tolerance the loop ends and the function reports the recommended oversampling
 
     Args:
-        model (refl1d.models.experiment.Experiment): an Experiment, containing probe and sample
+        model (refl1d.experiment.Experiment): an Experiment, containing probe and sample
         tolerance (float, optional): allowed deviation of R from ideal R (multiplied by dR). Defaults to 0.05
         max_oversampling (int, optional): A very high oversampling that is expected to exceed
             the requirements for support (used to generate reference R). Defaults to 201.

@@ -4,7 +4,7 @@ import numpy as np
 # import matplotlib.lines as mlines
 # %matplotlib notebook
 
-from refl1d.models import SLD, Experiment, QProbe, Slab
+from refl1d.names import SLD, Experiment, QProbe, Slab
 
 q = np.logspace(np.log10(0.005), np.log10(0.2), num=150)
 dq = 0.02 * q / 2.35

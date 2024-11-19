@@ -21,8 +21,8 @@ class FitProblem(_FitProblem):
     """
 
     ### TODO: Replace with the following once the following issue is resolved:
-    #   /refl1d/refl1d/models/bumps_interface/fitproblem.py:docstring of
-    #   refl1d.models.bumps_interface.fitproblem.FitProblem:10: WARNING: undefined label: 'freevariables' [ref.ref]
+    #   /refl1d/refl1d/bumps_interface/fitproblem.py:docstring of
+    #   refl1d.bumps_interface.fitproblem.FitProblem:10: WARNING: undefined label: 'freevariables' [ref.ref]
     ###
     # __doc__ = _FitProblem.__doc__.replace("Fitness", "Experiment")
     models: List[Experiment]

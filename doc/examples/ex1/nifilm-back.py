@@ -9,7 +9,7 @@
 
 import numpy
 
-from refl1d.models import *
+from refl1d.names import *
 
 nickel = Material("Ni")
 sample = silicon(0, 25) | nickel(100, 5) | air

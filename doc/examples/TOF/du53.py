@@ -1,4 +1,4 @@
-from refl1d.models import *
+from refl1d.names import *
 
 instrument = SNS.Liquids(Tlo=0.3, slits_at_Tlo=0.2, TOF_range=(12000, 40000))
 probes = [

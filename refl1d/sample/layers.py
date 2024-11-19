@@ -7,7 +7,7 @@ by gaussian interfaces. The layers themselves may be uniform, or the
 scattering density may vary with depth in the layer.
 
 .. Note::
-   By importing model, the definition of :class:`material.Scatterer <refl1d.models.sample.material.Scatterer>`
+   By importing model, the definition of :class:`material.Scatterer <refl1d.sample.material.Scatterer>`
    changes so that materials can be stacked into layers using operator
    overloading:
    - the | operator, (previously known as "bitwise or") joins stacks
@@ -395,7 +395,7 @@ class Stack(Layer):
         # TODO: unused?
         import matplotlib.pyplot as plt
 
-        from ... import material
+        from . import material
 
         neutron_probe = NeutronProbe(T=np.arange(0, 5, 100), L=5.0)
         xray_probe = XrayProbe(T=np.arange(0, 5, 100), L=1.54)

@@ -127,7 +127,7 @@ class FunctionalMagnetism(BaseMagnetism):
 
         *tol* is the tolerance for considering values equal
 
-        :class:`refl1d.models.sample.magnetism.BaseMagnetism` parameters
+        :class:`refl1d.sample.magnetism.BaseMagnetism` parameters
 
     The profile function takes a depth vector *z* and returns a magnetism
     vector *rhoM*. For magnetic twist, return a pair of vectors *(rhoM, thetaM)*.

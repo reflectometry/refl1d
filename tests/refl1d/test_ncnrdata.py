@@ -1,6 +1,6 @@
 import os
 
-from refl1d.models.probe.data_loaders import ncnrdata
+from refl1d.probe.data_loaders import ncnrdata
 
 testdir = os.path.dirname(__file__)
 

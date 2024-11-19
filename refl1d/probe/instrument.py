@@ -9,7 +9,7 @@ This module is intended to help define new instrument loaders
 Scanning Reflectometers
 =======================
 
-:mod:`refl1d.models.probe.instrument` (this module) defines two instrument types:
+:mod:`refl1d.probe.instrument` (this module) defines two instrument types:
 :class:`Monochromatic` and :class:`Pulsed`. These represent
 generic scanning and time of flight instruments, respectively.
 
@@ -23,7 +23,7 @@ monochromatic instrument with slits of 0.1 mm below 0.5\ |deg| and
 opening slits  above 0.5\ |deg| starting at 0.2 mm.  The monochromatic
 instrument assumes a fixed $\Delta \theta / \theta$ while opening.
 
-    >>> from refl1d.models import Monochromatic, sample_data
+    >>> from refl1d.names import Monochromatic, sample_data
     >>> geometry = Monochromatic(instrument="SP:2", radiation="neutron",
     ...    wavelength=5.0042, dLoL=0.009, d_s1=230+1856, d_s2=230,
     ...    Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)

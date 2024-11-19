@@ -61,7 +61,7 @@ except ImportError:
     # cruft for numpy < 2
     from numpy.core.multiarray import correlate as old_correlate
 
-from ... import utils
+from .. import utils
 from .layers import Layer
 
 LAMBDA_1 = 1.0 / 6.0  # always assume cubic lattice (1/6) for now

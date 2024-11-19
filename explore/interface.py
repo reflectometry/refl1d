@@ -12,7 +12,7 @@ Example
 
 Define a silicon wafer with tanh roughness between 0 and 5:
 
-    >>> from refl1d.models import air, silicon
+    >>> from refl1d.names import air, silicon
     >>> sample = silicon(interface=Tanh(5, "Si:Air")) | air
 
 The above example uses a function interface.  Other interface include:

@@ -35,7 +35,7 @@
 import numpy
 import sys
 
-from refl1d.models import *
+from refl1d.names import *
 
 # Process command line arguments to the model
 

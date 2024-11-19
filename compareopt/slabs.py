@@ -5,7 +5,7 @@ import numpy as np
 from bumps.parameter import summarize
 from numpy.random import uniform
 
-from refl1d.models import SLD, Experiment, FitProblem, NeutronProbe, air, silicon
+from refl1d.names import SLD, Experiment, FitProblem, NeutronProbe, air, silicon
 
 num_layers = int(sys.argv[1])
 init_file = sys.argv[2] if len(sys.argv) > 2 else "/tmp/problem"

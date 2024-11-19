@@ -14,7 +14,7 @@ os.environ["BUMPS_USE_PYDANTIC"] = "True"
 from pydantic.schema import get_model, schema as make_schema
 from bumps.parameter import Expression, Parameter  # , UnaryExpression
 
-from refl1d.models import FitProblem, Repeat, Stack
+from refl1d.names import FitProblem, Repeat, Stack
 
 base_model = get_model(FitProblem)
 

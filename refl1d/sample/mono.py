@@ -12,7 +12,7 @@ from bumps.parameter import Function as ParFunction
 from bumps.parameter import Parameter as Par
 from numpy import asarray, clip, cumsum, diff, hstack, inf, sort
 
-from ... import utils
+from .. import utils
 from .layers import Layer
 
 

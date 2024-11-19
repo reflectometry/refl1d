@@ -6,7 +6,7 @@ Data Representation
 
 .. contents:: :local:
 
-Data is represented using :class:`Probe <refl1d.models.probe.probe.Probe>` objects.
+Data is represented using :class:`Probe <refl1d.probe.Probe>` objects.
 The probe defines the Q values and the resolution of the individual
 measurements, returning the scattering factors associated with the
 different materials in the sample.  If the measurement has already
@@ -16,8 +16,8 @@ estimated uncertainty.
 Probe objects are independent of the underlying instrument.  When
 data is loaded, it is converted to angle $(\theta, \Delta \theta)$,
 wavelength $(\lambda, \Delta \lambda)$ and reflectivity
-$(R, \Delta R)$, with :class:`NeutronProbe <refl1d.models.probe.probe.NeutronProbe>`
-used for neutron radiation and :class:`XrayProbe <refl1d.models.probe.probe.XrayProbe>`
+$(R, \Delta R)$, with :class:`NeutronProbe <refl1d.probe.NeutronProbe>`
+used for neutron radiation and :class:`XrayProbe <refl1d.probe.XrayProbe>`
 used for X-ray radiation.  Additional properties,
 
 
@@ -53,7 +53,7 @@ The probe object controls the plotting of theory and data curves.  This
 is because the probe which knows details such as the original points
 and the points used in the calculation.
 
-The :class:`refl1d.models.probe.probe.Probe` object has a couple of attributes for
+The :class:`refl1d.probe.Probe` object has a couple of attributes for
 controlling the plot.   These attributes are usually set directly on the
 class rather than the individual data sets so they apply uniformly.
 
@@ -93,7 +93,7 @@ corresponds to a range of $Q$.
 For monochromatic instruments, the wavelength resolution is fixed and
 the angular resolution varies.  For polychromatic instruments, the
 wavelength resolution varies and the angular resolution is fixed.
-Resolution functions are defined in :mod:`refl1d.models.probe.resolution`.
+Resolution functions are defined in :mod:`refl1d.probe.resolution`.
 
 The angular resolution is determined by the geometry (slit positions,
 openings and sample profile) with perhaps an additional contribution
@@ -220,7 +220,7 @@ The instrument resolution is applied to the theory calculation on
 a point by point basis using a value of $\Delta Q$ derived from
 $\Delta\lambda$ and $\Delta\theta$.   Assuming the resolution is
 well approximated by a Gaussian,
-:func:`convolve <refl1d.models.sample.reflectivity.convolve>` applies it to the
+:func:`convolve <refl1d.sample.reflectivity.convolve>` applies it to the
 calculated theory function.
 
 The convolution at each point $k$ is computed from the piece-wise linear
@@ -272,7 +272,7 @@ While the assumption of Gaussian resolution is reasonable on fixed
 wavelength instruments, it is less  so on time of flight instruments,
 which have asymmetric wavelength  distributions.  You can explore the
 effects of different distributions by subclassing
-:class:`Probe <refl1d.models.probe.probe.Probe>`  and overriding the
+:class:`Probe <refl1d.probe.Probe>`  and overriding the
 ``_apply_resolution`` method.  We will happily accept code for
 improved resolution calculators and non-gaussian convolution.
 
@@ -341,7 +341,7 @@ example, the simulation :download:`toffset.py` shows more than 5% error
 in reflectivity for a silicon substrate with a 0.005\ |deg| offset.
 
 The method
-:meth:`Probe.alignment_uncertainty <refl1d.models.probe.probe.Probe.alignment_uncertainty>`
+:meth:`Probe.alignment_uncertainty <refl1d.probe.Probe.alignment_uncertainty>`
 computes the uncertainty in a alignment from the information in a
 rocking curve.  The alignment itself comes from the peak position in
 the rocking curve, with uncertainty determined from the uncertainty
@@ -370,7 +370,7 @@ Scattering Factors
 The effective scattering length density of the material is dependent
 on the composition of the material and on the type and wavelength of
 the probe object.  Using the chemical formula,
-:meth:`scattering_factors <refl1d.models.probe.probe.Probe.scattering_factors>`
+:meth:`scattering_factors <refl1d.probe.Probe.scattering_factors>`
 computes the scattering factors ($\rho$, $\rho_i$, $\rho_{\rm inc}$)
 associated with the material.  This means the same sample representation
 can be used for X-ray and neutron experiments, with mass density as the
@@ -393,7 +393,7 @@ Magnetic scattering factors for the material are not presently
 available in the periodic table.  Interested parties may consider
 extending periodic table with magnetic scattering information and
 adding support to
-:class:`PolarizedNeutronProbe <refl1d.models.probe.probe.PolarizedNeutronProbe>`
+:class:`PolarizedNeutronProbe <refl1d.probe.PolarizedNeutronProbe>`
 
 
 .. [#Daymond2002] M.R. Daymond, P.J. Withers and M.W. Johnson;

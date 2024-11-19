@@ -1,7 +1,7 @@
 import numba
 from .clone_module import clone_module
 
-MODULE = clone_module("refl1d.models.lib.python.contract_profile")
+MODULE = clone_module("refl1d.lib.python.contract_profile")
 
 ALIGN_MAGNETIC_SIG = "i4(f8[:], f8[:], f8[:], f8[:], f8[:], f8[:], f8[:], f8[:], f8[:,:])"
 # @numba.njit(ALIGN_MAGNETIC_SIG, parallel=False, cache=True)

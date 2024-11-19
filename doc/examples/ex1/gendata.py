@@ -5,7 +5,7 @@ Generate Ni-film sample data files so that we can demonstrate file loading.
 from numpy.random import seed
 from bumps.fitproblem import load_problem
 
-from refl1d.models import SNS
+from refl1d.names import SNS
 
 
 def main():

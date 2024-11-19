@@ -6,7 +6,7 @@ Experiment
 
 .. contents:: :local:
 
-The :class:`Experiment <refl1d.models.experiment.Experiment>` object links a
+The :class:`Experiment <refl1d.experiment.Experiment>` object links a
 `sample <sample-guide>`_ with an experimental `probe <data-guide>`_.
 The probe defines the Q values and the resolution of the individual
 measurements, and returns the scattering factors associated with the
@@ -23,11 +23,11 @@ scattering factors.
 Direct Calculation
 ==================
 
-Rather than using :class:`Stack <refl1d.models.sample.layers.Stack`,
-:class:`Probe <refl1d.models.probe.probe.Probe>` and
-:class:`Experiment <refl1d.models.experiment.Experiment`,
+Rather than using :class:`Stack <refl1d.sample.layers.Stack`,
+:class:`Probe <refl1d.probe.Probe>` and
+:class:`Experiment <refl1d.experiment.Experiment`,
 we  can compute reflectivities directly with the functions in
-:mod:`refl1d.models.sample.reflectivity`.  These routines provide the raw
+:mod:`refl1d.sample.reflectivity`.  These routines provide the raw
 calculation engines for the optical matrix formalism, converting
 microslab models of the sample into complex reflectivity amplitudes,
 and convolving the resulting reflectivity with the instrument resolution.
@@ -40,8 +40,8 @@ function to yield reflectivities at intervals of 0.01.
 ::
 
     >>> from numpy import arange
-    >>> from refl1d.models.sample.reflectivity import reflectivity_amplitude as reflamp
-    >>> from refl1d.models.sample.reflectivity import convolve
+    >>> from refl1d.sample.reflectivity import reflectivity_amplitude as reflamp
+    >>> from refl1d.sample.reflectivity import convolve
     >>> Qin = arange(0,0.21,0.001)
     >>> w,rho,irho,sigma = zip((0,2.07,0,5),(0,0,0,0))
     >>> # the last layer has no interface

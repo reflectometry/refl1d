@@ -26,13 +26,13 @@
 #
 # The first step in any model is to load the names of the functions and
 # data that we are going to use.  These are defined in a module named
-# refl1d.models, and we can import them as follows:
+# refl1d.names, and we can import them as follows:
 
 import numpy  # This is the numpy library, which is used for numerical operations
-from refl1d.models import Material, Experiment, NeutronProbe, FitProblem, silicon, air
+from refl1d.names import Material, Experiment, NeutronProbe, FitProblem, silicon, air
 
 # Alternatively, you can import them all, using:
-from refl1d.models import *
+from refl1d.names import *
 # but this is not recommended for anything but simple scripts,
 # and may cause linting issues in your IDE.
 

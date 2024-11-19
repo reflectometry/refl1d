@@ -11,7 +11,7 @@ from bumps.parameter import to_dict
 from numpy import inf
 
 from refl1d import utils
-from refl1d.models.sample.layers import Layer
+from refl1d.sample.layers import Layer
 
 
 # TODO: add left_sld, right_sld to all layers so that fresnel works

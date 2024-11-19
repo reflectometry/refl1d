@@ -100,7 +100,7 @@ def reflectivity_amplitude(
 
     This function does not compute any instrument resolution corrections.
     """
-    from ...backends import backend
+    from ..backends import backend
 
     kz = _dense(kz, "d")
     if rho_index is None:
@@ -184,7 +184,7 @@ def unpolarized_magnetic(*args, **kw):
     """
     Returns the average of magnetic reflectivity for all cross-sections.
 
-    See :class:`magnetic_reflectivity <refl1d.models.sample.reflectivity.magnetic_reflectivity>` for details.
+    See :class:`magnetic_reflectivity <refl1d.sample.reflectivity.magnetic_reflectivity>` for details.
     """
     return reduce(np.add, magnetic_reflectivity(*args, **kw)) / 2.0
 
@@ -207,9 +207,9 @@ def magnetic_amplitude(
     """
     Returns the complex magnetic reflectivity waveform.
 
-    See :class:`magnetic_reflectivity <refl1d.models.sample.reflectivity.magnetic_reflectivity>` for details.
+    See :class:`magnetic_reflectivity <refl1d.sample.reflectivity.magnetic_reflectivity>` for details.
     """
-    from ...backends import backend
+    from ..backends import backend
 
     kz = _dense(kz, "d")
     if rho_index is None:
@@ -240,7 +240,7 @@ def magnetic_amplitude(
 
 
 def calculate_u1_u3(H, rhoM, thetaM, Aguide):
-    from ...backends import backend
+    from ..backends import backend
 
     rhoM, thetaM = (_dense(rhoM, "d")).copy(), _dense(np.radians(thetaM), "d")
     n = len(rhoM)
@@ -319,7 +319,7 @@ def convolve(xi, yi, x, dx, resolution="normal"):
     distribution uses the $1-\sigma$ equivalent distribution width which is
     $1/\sqrt{3}$ times the width of the rectangle.
     """
-    from ...backends import backend
+    from ..backends import backend
 
     xi, yi, x, dx = _dense(xi), _dense(yi), _dense(x), _dense(dx)
     y = np.empty_like(x)
@@ -342,7 +342,7 @@ def convolve_sampled(xi, yi, xp, yp, x, dx):
     resolution *(xp, yp)* is also represented as a piece-wise linear
     spline.
     """
-    from ...backends import backend
+    from ..backends import backend
 
     x = _dense(x)
     y = np.empty_like(x)

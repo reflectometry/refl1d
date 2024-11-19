@@ -4,7 +4,7 @@ from math import erf
 
 from .clone_module import clone_module
 
-MODULE = clone_module("refl1d.models.lib.python.build_profile")
+MODULE = clone_module("refl1d.lib.python.build_profile")
 
 SQRT1_2 = 1.0 / np.sqrt(2.0)
 

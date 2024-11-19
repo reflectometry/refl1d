@@ -84,7 +84,7 @@ from bumps.parameter import Parameter as Par
 from bumps.parameter import to_dict
 from numpy import imag, inf, real
 
-from ... import utils
+from .. import utils
 from .layers import Layer
 
 

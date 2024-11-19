@@ -52,7 +52,7 @@ MODULES = [
     ("models.probe.data_loaders.stajconvert", "Staj File Converter"),
     ("models.probe.fresnel", "Pure python Fresnel reflectivity calculator"),
     ("models.probe.instrument", "Reflectivity instrument definition"),
-    ("models.probe.probe", "Instrument probe"),
+    ("probe", "Instrument probe"),
     ("models.probe.resolution", "Beam resolution calculations"),
     ("models.probe.stitch", "Overlapping reflectivity curve stitching"),
     ("models.profile", "Model profile"),

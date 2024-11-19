@@ -21,10 +21,10 @@ specified when loading the data.  Small errors in alignment of the sample or
 the slits will move the measured critical edge, and so *probe.theta_offset*
 may need to be fitted.  Points near the critical edge are difficult to
 compute correctly with resolution because the reflectivity varies so quickly.
-Using :meth:`refl1d.models.probe.probe.Probe.critical_edge`, the density of the
+Using :meth:`refl1d.probe.Probe.critical_edge`, the density of the
 points used to compute the resolution near the critical edge can be
 increased.  For thick samples  the resolution will integrate over
-multiple Kissig fringes, and :meth:`refl1d.models.probe.probe.Probe.over_sample`
+multiple Kissig fringes, and :meth:`refl1d.probe.Probe.over_sample`
 will be needed to average across them and avoid aliasing effects.
 
 Quick Fit
@@ -379,12 +379,12 @@ Now model.py is loaded and the best fit parameters are set.
 
 To produce plots, you will need access to the data and the theory.  This
 can be complex depending on how many models you are fitting and how many
-datasets there are per model.  For :class:`refl1d.models.bumps_interface.fitproblem.FitProblem`
-models, the :class:`refl1d.models.experiment.Experiment` object is referenced
-by *problem.fitness*.  For :class:`refl1d.models.bumps_interface.fitproblem.FitProblem` models,
+datasets there are per model.  For :class:`refl1d.bumps_interface.fitproblem.FitProblem`
+models, the :class:`refl1d.experiment.Experiment` object is referenced
+by *problem.fitness*.  For :class:`refl1d.bumps_interface.fitproblem.FitProblem` models,
 you need to use *problem.models[k].fitness* to access the experiment for
 model *k*.  Profiles and reflectivity theory are returned from methods
-in experiment.  The :class:`refl1d.models.probe.probe.Probe` data for the experiment is
+in experiment.  The :class:`refl1d.probe.Probe` data for the experiment is
 referenced by *experiment.probe*.  This will have attributes for *Q*, *dQ*,
 *R*, *dR*, *T*, *dT*, and *L*, *dL*, as well as methods for plotting
 the data.   This is not quite so simple: the sample may be non uniform,
@@ -419,7 +419,7 @@ Next we can reload the the error sample data from the DREAM MCMC sequence::
     aligned_profiles = align_profiles(profiles, slabs, 2.5)
     # ... insert profile and residuals uncertainty plots here ...
 
-The function :func:`refl1d.models.uncertainty.calc_errors` provides details on the data
+The function :func:`refl1d.uncertainty.calc_errors` provides details on the data
 structures for *profiles*, *Q* and *residuals*.  Look at the source in
 refl1d/errors.py to see how this data is used to produce the error plots
 with _profiles_overplot, _profiles_contour, _residuals_overplot and
@@ -478,7 +478,7 @@ plotting script::
 For the common problem of generating profile error plots aligned on
 a particular interface, you can use the simpler align.py model:
 
-    from refl1d.models import *
+    from refl1d.names import *
     align_errors(model="", store="", align='auto')
 
 If you are using the command line then you should be able to type the

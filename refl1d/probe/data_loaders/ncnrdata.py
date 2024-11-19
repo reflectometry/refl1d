@@ -7,7 +7,7 @@ The following instruments are defined:
 
     MAGIK, PBR, ANDR, NG1, NG7 and XRay
 
-These are :class:`refl1d.models.probe.instrument.Monochromatic` classes tuned with default
+These are :class:`refl1d.probe.instrument.Monochromatic` classes tuned with default
 instrument parameters and loaders for reduced NCNR data.
 
 The instruments can be used to load data or to compute resolution functions
@@ -17,7 +17,7 @@ Example loading data:
 
     >>> import numpy as np
     >>> import pylab
-    >>> from refl1d.models import Experiment, NCNR, air, gold, permalloy, sample_data, silicon
+    >>> from refl1d.names import Experiment, NCNR, air, gold, permalloy, sample_data, silicon
     >>> datafile = sample_data('chale207.refl')
     >>> instrument = NCNR.ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
     >>> probe = instrument.load(datafile)
@@ -52,7 +52,7 @@ And for magnetic:
     >>> #h = pylab.ylabel('resolution (1-sigma)')
     >>> #h = pylab.xlabel('Q (inv A)')
 
-See :mod:`instrument <refl1d.models.probe.instrument>` for details.
+See :mod:`instrument <refl1d.probe.instrument>` for details.
 """
 
 import os
@@ -103,7 +103,7 @@ def load_magnetic(filename, Aguide=BASE_GUIDE_ANGLE, H=0, shared_beam=True, **kw
 
     Other keyword arguments are for the individual cross section loaders
     as specified in
-    :class:`instrument.Monochromatic <refl1d.models.probe.instrument.Monochromatic>`.
+    :class:`instrument.Monochromatic <refl1d.probe.instrument.Monochromatic>`.
 
     The data sets should are the base filename with an additional character
     corresponding to the spin state::
@@ -262,7 +262,7 @@ class XRay(NCNRData, Monochromatic):
     to define the entire divergence.  Note that Probe.sample_broadening
     is a fittable parameter, so you need to access its value::
 
-        >>> from refl1d.models import sample_data, NCNR
+        >>> from refl1d.names import sample_data, NCNR
         >>> file = sample_data("spin_valve01.refl")
         >>> xray = NCNR.XRay(slits_at_Tlo=0)
         >>> data = xray.load(file, sample_broadening=1e-4)
@@ -361,7 +361,7 @@ def _counting_time(instrument, sample, uncertainty,
         \Delta R &=& \sqrt(D)/I
     """
     import numpy as np
-    from refl1d.models.experiment import Experiment
+    from refl1d.names.experiment import Experiment
     probe = self.probe(**kw)
     M = Experiment(probe=probe, sample=sample)
     if 1: # Fresnel counting

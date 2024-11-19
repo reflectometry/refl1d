@@ -1,7 +1,7 @@
 import numba
 from .clone_module import clone_module
 
-MODULE = clone_module("refl1d.models.lib.python.reflectivity")
+MODULE = clone_module("refl1d.lib.python.reflectivity")
 
 _REFL_SIG = "c16(i8, f8, f8[:], f8[:], f8[:], f8[:])"
 _REFL_LOCALS = {

@@ -1,7 +1,7 @@
 import numba
 from .clone_module import clone_module
 
-MODULE = clone_module("refl1d.models.lib.python.magnetic")
+MODULE = clone_module("refl1d.lib.python.magnetic")
 
 MODULE.prange = numba.prange
 

@@ -2,7 +2,7 @@ import numpy as np
 from numpy import sqrt
 from numpy.random import randn
 
-from refl1d.models import Experiment, Material, Probe, air, silicon, D2O, SNS as snsdata
+from refl1d.names import Experiment, Material, Probe, air, silicon, D2O, SNS as snsdata
 
 Probe.view = "log"  # log, linear, fresnel, or Q**4
 
@@ -88,7 +88,7 @@ def plot_log(data, theory=None):
 
 # TODO: move stitch from an example to a test suite
 def stitch_sets(sets):
-    from refl1d.models.probe import stitch
+    from refl1d.names.probe import stitch
 
     p1, p2 = zip(*sets)
     plot_log(stitch(p1, same_Q=0.001))

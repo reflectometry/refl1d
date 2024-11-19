@@ -2,7 +2,7 @@ from copy import copy
 
 import numpy
 
-from refl1d.models import *
+from refl1d.names import *
 
 # === Materials ===
 SiOx = SLD(name="SiOx", rho=3.47)

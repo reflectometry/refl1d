@@ -1,7 +1,7 @@
 import numpy as np
 
-from refl1d.models.probe import abeles
-from refl1d.models.probe.fresnel import Fresnel
+from refl1d.probe import abeles
+from refl1d.probe.fresnel import Fresnel
 
 
 def test():

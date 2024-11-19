@@ -4,7 +4,7 @@ Layer interactor.
 
 from bumps.parameter import Parameter
 
-from refl1d.models.sample.material import SLD
+from refl1d.sample.material import SLD
 from .interactor import BaseInteractor
 from .util import setpar
 

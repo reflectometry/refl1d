@@ -1,7 +1,7 @@
 import numba
 from .clone_module import clone_module
 
-MODULE = clone_module("refl1d.models.lib.python.convolve")
+MODULE = clone_module("refl1d.lib.python.convolve")
 
 MODULE.prange = numba.prange
 

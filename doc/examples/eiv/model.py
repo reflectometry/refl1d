@@ -11,7 +11,7 @@ an error-in-variables fit.
 
 import numpy as np
 
-from refl1d.models import *
+from refl1d.names import *
 
 # ********** model setup **********
 

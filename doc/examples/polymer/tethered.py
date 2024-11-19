@@ -4,7 +4,7 @@
 #
 # We first need to define the materials
 
-from refl1d.models import *
+from refl1d.names import *
 from copy import copy
 
 # === Materials ===
@@ -17,7 +17,7 @@ H_initiator = SLD(name="H-initiator", rho=0)
 
 # In this case we are using the neutron scattering length density as is
 # standard practice in reflectivity experiments rather than the chemical
-# formula and mass density.  The :class:`SLD <refl1d.models.sample.material.SLD>` class
+# formula and mass density.  The :class:`SLD <refl1d.sample.material.SLD>` class
 # allows us to name the material and define the real and imaginary components
 # of scattering length density $\rho$.  Note that we are using the imaginary
 # $\rho_i$ rather than the absorption coefficient $\mu = 2\lambda\rho_i$
@@ -25,7 +25,7 @@ H_initiator = SLD(name="H-initiator", rho=0)
 # the reflectivity.
 #
 # For the tethered polymer we don't use a simple slab model, but instead
-# define a :class:`PolymerBrush <refl1d.models.sample.polymer.PolymerBrush>`
+# define a :class:`PolymerBrush <refl1d.sample.polymer.PolymerBrush>`
 # layer, which understands that the system is compose of polymer plus
 # solvent, and that the polymer chains tail off like:
 #

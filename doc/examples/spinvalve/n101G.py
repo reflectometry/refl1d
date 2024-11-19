@@ -5,7 +5,7 @@
 #
 # Defining a magnetic model starts as usual.
 
-from refl1d.models import *
+from refl1d.names import *
 
 # We still need the nuclear structure, so define the materials.
 
@@ -19,7 +19,7 @@ IrMn = SLD(name="IrMn", rho=-0.21646, irho=4.245e-2)
 
 # The materials are stacked as usual, but the layers with magnetism have
 # an additional magnetism property specified.  This example use
-# :class:`refl1d.models.sample.magnetism.Magnetism` to define a flat magnetic layer with
+# :class:`refl1d.sample.magnetism.Magnetism` to define a flat magnetic layer with
 # the given magnetic scattering length density *rhoM* and angle *thetaM*.
 #
 # The magnetism is anchored to the corresponding nuclear layer, and by
@@ -33,7 +33,7 @@ IrMn = SLD(name="IrMn", rho=-0.21646, irho=4.245e-2)
 # indicates the interface above.  Using *extent=2*, the single magnetism
 # definition can extend over two consecutive layers.
 #
-# The :class:`refl1d.models.sample.magnetism.MagnetismTwist` allows you to define a magnetic
+# The :class:`refl1d.sample.magnetism.MagnetismTwist` allows you to define a magnetic
 # layer whose values of theta and rho change linearly throughout the layer.
 # There are additional magnetism types defined in :mod:`reflid.magnetism`.
 # Note that the current definition of interface only transitions smoothly

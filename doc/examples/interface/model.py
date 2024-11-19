@@ -1,6 +1,6 @@
 import numpy
 
-from refl1d.models import *
+from refl1d.names import *
 
 
 sharp = FreeInterface(below=silicon, above=gold, dz=[0.01, 1, 0.01], dp=[0.01, 1, 0.01])

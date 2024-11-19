@@ -322,7 +322,7 @@ class Microslabs(object):
         Add magnetic information to the nuclear slabs, introducing new
         slabs as necessary where magnetic and nuclear do not match.
         """
-        from ..backends import backend
+        from .backends import backend
 
         # Nuclear profile (one wavelength only)
         # if self.rho.shape[0] != 1:
@@ -400,7 +400,7 @@ class Microslabs(object):
         self._z_offset = self._z_left
 
     def _contract_profile(self, dA):
-        from ..backends import backend
+        from .backends import backend
 
         if dA is None:
             return
@@ -422,7 +422,7 @@ class Microslabs(object):
         # print "final sld after contract", rho[n-1], self.rho[0][n-1], n
 
     def _contract_magnetic(self, dA):
-        from ..backends import backend
+        from .backends import backend
 
         if dA is None:
             return
@@ -615,7 +615,7 @@ def compute_limited_sigma(thickness, roughness, limit):
 
 
 def _build_profiles_backend(z, offsets, roughness, value):
-    from ..backends import backend
+    from .backends import backend
 
     contrast = (value[:, 1:] - value[:, :-1]).ravel(order="C")
     initial_value = value[:, 0].copy()  # contiguous
