@@ -163,3 +163,7 @@ Now, you can start the Python webview server with::
 and point the client to the server with the `?server=localhost:8080` query string, e.g.
 
     http://localhost:5173/?server=localhost:8080
+
+.. note::
+    A convenience script is available in the `refl1d/webview/` directory to build the client::
+        python -m refl1d.webview.build_client
