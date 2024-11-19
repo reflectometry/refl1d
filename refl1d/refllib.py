@@ -1,3 +1,4 @@
+# Authors: Paul Kienzle, Brian Maranville
 """
 Reflectometry backend loader
 """
