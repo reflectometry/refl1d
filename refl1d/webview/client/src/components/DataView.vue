@@ -491,11 +491,7 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
     </div>
     <div class="row px-2 align-items-center">
       <div class="col-auto">
-        <label
-          for="plot_offset_control"
-          class="col-form-label"
-          >Plot offset</label
-        >
+        <label for="plot_offset_control" class="col-form-label">Plot offset</label>
       </div>
       <div class="col">
         <input

@@ -3,8 +3,8 @@ repos:
     hooks:
       - id: eslint
         name: eslint
-        entry: bash -c "cd refl1d/webview/client && npm install && npm run lint"
-        language: node
+        entry: bash -c "cd refl1d/webview/client && npm run lint"
+        language: system
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
@@ -25,3 +25,4 @@ repos:
 
 ci:
   autoupdate_schedule: monthly
+  skip: [eslint]
