@@ -3,8 +3,8 @@ repos:
     hooks:
       - id: run-eslint
         name: run-eslint
-        entry: curl -fsSL https://bun.sh/install | bash && bash -c "cd refl1d/webview/client && npm run lint"
-        language: system
+        entry: bash -c "cd refl1d/webview/client && npm run lint"
+        language: node
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
