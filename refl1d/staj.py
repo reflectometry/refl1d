@@ -1,3 +1,4 @@
+# Author: Paul Kienzle
 """
 Read and write staj files
 

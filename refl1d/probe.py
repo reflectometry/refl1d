@@ -1,3 +1,5 @@
+# coding=utf-8
+# Author: Paul Kienzle
 """
 Experimental probe.
 
