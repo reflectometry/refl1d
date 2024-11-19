@@ -9,8 +9,6 @@ See :ref:`data-guide` for details.
 
 """
 
-from __future__ import division, print_function, with_statement
-
 import json
 
 # TOF stitching introduces a lot of complexity.
