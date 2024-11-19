@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# Authors Paul Kienzle, Richard Sheridan
+
 r"""
 Layer models for polymer systems.
 
