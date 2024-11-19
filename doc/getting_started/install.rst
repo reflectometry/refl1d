@@ -35,13 +35,6 @@ Refl1D is also available on all platforms from PyPI using pip::
     # if you also want to run the webview, an optional extra is available
     pip install refl1d[webview]
 
-<<<<<<< HEAD
-.. note ::
-    The binary versions will lag the release version until the release
-    process is automated.  Windows and Mac users may want to install using pip as
-    well to get the version with the latest `changes <https://github.com/reflectometry/refl1d/blob/master/CHANGES.rst>`_.
-=======
->>>>>>> origin/master
 
 Installing from source
 ======================
