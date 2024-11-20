@@ -79,7 +79,7 @@ export interface Stack {
 export interface Experiment {
   sample: Stack;
   probe: QProbe;
-  __class__: "refl1d.models.experiment.Experiment";
+  __class__: "refl1d.experiment.Experiment";
 }
 
 export interface NumpyArray {
@@ -100,5 +100,5 @@ export interface QProbe {
   R?: NumpyArray;
   dR?: NumpyArray;
   resolution: "normal" | "uniform";
-  __class__: "refl1d.models.probe.probe.QProbe";
+  __class__: "refl1d.probe.QProbe";
 }
