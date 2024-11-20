@@ -1,3 +1,5 @@
+# coding=utf-8
+# Author: Paul Kienzle
 """
 Experimental probe.
 
@@ -8,8 +10,6 @@ energy of the radiation.
 See :ref:`data-guide` for details.
 
 """
-
-from __future__ import division, print_function, with_statement
 
 import json
 
@@ -750,7 +750,7 @@ class Probe(BaseProbe):
             name = os.path.splitext(os.path.basename(filename))[0]
         qualifier = " " + name if name is not None else ""
         self.intensity = Parameter.default(intensity, name="intensity" + qualifier)
-        self.background = Parameter.default(background, name="background" + qualifier, limits=(0.0, None))
+        self.background = Parameter.default(background, name="background" + qualifier)
         self.back_absorption = Parameter.default(back_absorption, name="back_absorption" + qualifier, limits=(0.0, 1.0))
         self.theta_offset = Parameter.default(theta_offset, name="theta_offset" + qualifier)
         self.sample_broadening = Parameter.default(sample_broadening, name="sample_broadening" + qualifier)

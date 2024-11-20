@@ -67,7 +67,6 @@ function toggle_multiple() {
 function requestRedraw() {
   draw_requested.value = true;
 }
-
 </script>
 
 <template>

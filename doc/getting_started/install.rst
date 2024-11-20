@@ -35,10 +35,6 @@ Refl1D is also available on all platforms from PyPI using pip::
     # if you also want to run the webview, an optional extra is available
     pip install refl1d[webview]
 
-.. note ::
-    The binary versions will lag the release version until the release
-    process is automated.  Windows and Mac users may want to install using pip as
-    well to get the version with the latest `changes <https://github.com/reflectometry/refl1d/blob/master/CHANGES.rst>`_.
 
 Installing from source
 ======================
@@ -120,6 +116,12 @@ to the source code will be reflected in the installed package.  It will also
 install the development dependencies, which include the testing framework
 and other tools used in the development process.
 
+If you are not planning to develop the Vue TS webview client, you can now run the application with::
+
+    refl1d-webview --port 8080
+
+which will automatically open a browser window to the webview.
+
 Javascript Environment
 ----------------------
 
@@ -161,3 +163,7 @@ Now, you can start the Python webview server with::
 and point the client to the server with the `?server=localhost:8080` query string, e.g.
 
     http://localhost:5173/?server=localhost:8080
+
+.. note::
+    A convenience script is available in the `refl1d/webview/` directory to build the client::
+        python -m refl1d.webview.build_client

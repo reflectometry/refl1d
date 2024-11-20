@@ -1,3 +1,4 @@
+# Author: Paul Kienzle
 """
 Convert staj files to Refl1D models
 """
@@ -8,7 +9,7 @@ import numpy as np
 from numpy import tan, cos, sqrt, radians, degrees, pi
 from bumps import parameter
 
-from .staj import MlayerModel, MlayerMagnetic, ERF_FWHM
+from .staj import MlayerModel, MlayerMagnetic
 from .model import Slab, Stack, Repeat
 from .magnetism import Magnetism
 from .material import SLD

@@ -39,7 +39,7 @@
 
 1. Build the docs
 
-    This should happen automatically in Jenkins, but we should do the builds by hand to make sure they are error free.
+    This should happen automatically via Github Actions, but we should do the builds by hand to make sure they are error free.
 
     ```bash
     cd doc && make clean html pdf

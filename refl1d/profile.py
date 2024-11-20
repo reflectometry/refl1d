@@ -1,3 +1,4 @@
+# Author: Paul Kienzle
 """
 Scattering length density profile.
 
