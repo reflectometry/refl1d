@@ -404,6 +404,14 @@ async function draw_plot() {
   await Plotly.react(plot_div.value as HTMLDivElement, [...theory_traces, ...data_traces], layout, config);
 }
 
+/**
+ * Performs linear interpolation of the values in fp at the points in xp to the points in x.
+ *
+ * @param x: the points at which to interpolate
+ * @param xp: the points at which the function is known
+ * @param fp: the values of the function at the points in xp
+ * @returns the interpolated y values at the points in x
+ */
 function interp(x: number[], xp: number[], fp: number[]): number[] {
   // assume x and xp are sorted, monotonically increasing
   if (xp.length != fp.length) {
