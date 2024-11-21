@@ -346,7 +346,7 @@ async function draw_plot() {
     },
     yaxis: {
       title: { text: yaxis_label },
-      exponentformat: "e",
+      exponentformat: "power",
       showexponent: "all",
       type: log_y.value ? "log" : "linear",
       autorange: true,
