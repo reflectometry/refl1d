@@ -15,7 +15,7 @@ import sys
 import numpy as np
 from bumps import pmath
 from bumps.fitproblem import FitProblem, MultiFitProblem
-from bumps.parameter import Parameter, FreeVariables
+from bumps.parameter import FreeVariables, Parameter
 from bumps.pdfwrapper import PDF
 from periodictable import elements, formula
 

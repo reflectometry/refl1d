@@ -38,14 +38,12 @@ Magnetism support is split into two parts: describing the layers
 and anchoring them to the structure.
 """
 
-from __future__ import print_function
-
 from dataclasses import dataclass
 from typing import Optional, Any, Union, Dict, List, Literal
 
 import numpy as np
-from bumps.parameter import Parameter, flatten, to_dict
 from bumps.mono import monospline
+from bumps.parameter import Parameter, flatten, to_dict
 
 from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
 
