@@ -1,13 +1,27 @@
-r"""
+"""
 Resolution calculations
-
 """
 
-from numpy import pi, sqrt, log, degrees, radians, cos, sin, tan
-from numpy import arcsin as asin, ceil
-from numpy import ones_like, arange, isscalar, asarray, hstack
-from numpy import float64
 from typing import TYPE_CHECKING
+
+from numpy import (
+    arange,
+    asarray,
+    ceil,
+    cos,
+    degrees,
+    float64,
+    hstack,
+    isscalar,
+    log,
+    ones_like,
+    pi,
+    radians,
+    sin,
+    sqrt,
+    tan,
+)
+from numpy import arcsin as asin
 
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike

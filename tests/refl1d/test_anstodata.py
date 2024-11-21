@@ -1,5 +1,6 @@
 import os.path
-from numpy.testing import assert_equal, assert_almost_equal
+
+from numpy.testing import assert_almost_equal, assert_equal
 
 from refl1d.anstodata import Platypus
 

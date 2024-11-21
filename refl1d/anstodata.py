@@ -10,11 +10,12 @@ The following instrument is defined::
 All the ANSTO instruments emit Q/R/dR/dQ in their output files.
 """
 
-import re
 import os.path
-import numpy as np
+import re
 
+import numpy as np
 from bumps.data import maybe_open
+
 from .probe import QProbe
 from .resolution import FWHM2sigma
 

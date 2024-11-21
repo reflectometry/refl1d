@@ -1,8 +1,6 @@
 import numpy as np
 from numpy import sqrt
-from numpy.linalg import norm
 from numpy.random import randn
-import os
 
 from refl1d.names import *
 

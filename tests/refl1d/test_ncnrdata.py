@@ -1,4 +1,5 @@
 import os
+
 from refl1d import ncnrdata
 
 testdir = os.path.dirname(__file__)

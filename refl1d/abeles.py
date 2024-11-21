@@ -9,9 +9,7 @@ convenience when a compiler is not available.  The refl1d
 application uses reflmodule to compute reflectivity.
 """
 
-from __future__ import print_function, division
-
-from numpy import asarray, isscalar, empty, ones, ones_like
+from numpy import asarray, isscalar, empty, ndarray, ones, ones_like
 from numpy import sqrt, exp, pi
 
 
@@ -74,8 +72,8 @@ def refl(kz, depth, rho, irho=0, sigma=0, rho_index=None):
     return r
 
 
-def _calc(kz, depth, rho, irho, sigma):
-    # type: (np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray) -> np.ndarray
+def _calc(kz: ndarray, depth: ndarray, rho: ndarray, irho: ndarray, sigma: ndarray) -> ndarray:
+    """Reflectivity as a function of kz for a set of slabs."""
     if len(kz) == 0:
         return kz
 

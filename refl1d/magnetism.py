@@ -1,4 +1,3 @@
-# This program is public domain
 # Author: Paul Kienzle
 r"""
 Magnetic modeling for 1-D reflectometry.

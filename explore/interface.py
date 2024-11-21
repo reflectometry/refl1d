@@ -93,8 +93,12 @@ except ImportError:
                 return cls(value)
 
 
-sech = lambda x: 1 / cosh(x)
-asech = lambda x: acosh(1 / x)
+def sech(x):
+    return 1 / cosh(x)
+
+
+def asech(x):
+    return acosh(1 / x)
 
 
 class Interface(object):

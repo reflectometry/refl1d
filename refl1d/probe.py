@@ -1,7 +1,6 @@
 # coding=utf-8
-# This program is in the public domain
 # Author: Paul Kienzle
-r"""
+"""
 Experimental probe.
 
 The experimental probe describes the incoming beam for the experiment.
@@ -12,7 +11,7 @@ See :ref:`data-guide` for details.
 
 """
 
-from __future__ import with_statement, division, print_function
+import json
 
 # TOF stitching introduces a lot of complexity.
 # Theta offset:
@@ -38,36 +37,29 @@ from __future__ import with_statement, division, print_function
 #   profiles are recalculated
 #
 # Unstitched seems like the better bet.
-
 import os
-import json
 import warnings
 from dataclasses import dataclass
-from enum import Enum
+from typing import TYPE_CHECKING, Any, List, Literal, Optional, Sequence, Tuple, Union
 
 import numpy as np
-from numpy import sqrt, pi, inf, sign, log
-import numpy.random
 import numpy.fft
-from typing import NamedTuple, Optional, Any, Sequence, Union, TYPE_CHECKING
-
-from bumps.util import field, field_desc, Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
-
-from periodictable import nsf, xsf
-from bumps.parameter import Parameter, to_dict, Constant
-from bumps.plotutil import coordinated_colors, auto_shift
+import numpy.random
 from bumps.data import parse_multi, strip_quotes
-from bumps.util import USE_PYDANTIC
+from bumps.parameter import Parameter, to_dict
+from bumps.plotutil import auto_shift, coordinated_colors
+from bumps.util import USE_PYDANTIC, field, field_desc
+from numpy import log, pi, sign, sqrt
+from periodictable import nsf, xsf
 
 if USE_PYDANTIC or TYPE_CHECKING:
     from bumps.util import NDArray
 
 from . import fresnel
 from .material import Vacuum
-from .resolution import QL2T, QT2L, TL2Q, dQdL2dT, dQdT2dLoL, dTdL2dQ
-from .resolution import sigma2FWHM, FWHM2sigma, dQ_broadening
+from .reflectivity import BASE_GUIDE_ANGLE, convolve
+from .resolution import QL2T, QT2L, TL2Q, FWHM2sigma, dQ_broadening, dQdL2dT, dQdT2dLoL, dTdL2dQ, sigma2FWHM
 from .stitch import stitch
-from .reflectivity import convolve, BASE_GUIDE_ANGLE
 from .util import asbytes
 
 PROBE_KW = (
@@ -121,8 +113,8 @@ class BaseProbe:
 
     @property
     def calc_Q(self):
-        """define in derived classes"""
-        raise NotImplemented
+        """Define in derived classes"""
+        raise NotImplementedError
 
     def log10_to_linear(self):
         """
@@ -758,7 +750,7 @@ class Probe(BaseProbe):
             name = os.path.splitext(os.path.basename(filename))[0]
         qualifier = " " + name if name is not None else ""
         self.intensity = Parameter.default(intensity, name="intensity" + qualifier)
-        self.background = Parameter.default(background, name="background" + qualifier, limits=(0.0, None))
+        self.background = Parameter.default(background, name="background" + qualifier)
         self.back_absorption = Parameter.default(back_absorption, name="back_absorption" + qualifier, limits=(0.0, 1.0))
         self.theta_offset = Parameter.default(theta_offset, name="theta_offset" + qualifier)
         self.sample_broadening = Parameter.default(sample_broadening, name="sample_broadening" + qualifier)

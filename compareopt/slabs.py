@@ -1,9 +1,9 @@
-from __future__ import print_function
-
 from random import getrandbits
-from numpy.random import uniform
-from refl1d.names import *
+
 from bumps.parameter import summarize
+from numpy.random import uniform
+
+from refl1d.names import *
 
 num_layers = int(sys.argv[1])
 init_file = sys.argv[2] if len(sys.argv) > 2 else "/tmp/problem"

@@ -1,8 +1,7 @@
-import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
-# %matplotlib notebook
+import numpy as np
 
+# %matplotlib notebook
 import refl1d
 from refl1d.names import *
 

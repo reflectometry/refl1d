@@ -1,6 +1,5 @@
-# This program is public domain
 # Author: Paul Kienzle
-r"""
+"""
 Scattering length density profile.
 
 In order to render a reflectometry model, the theory function calculator
@@ -58,10 +57,8 @@ using one energy so we only show the first column.
     irho = 0 0 0 0 0 ...
 """
 
-from __future__ import division, print_function
-
 import numpy as np
-from numpy import inf, nan, isnan
+from numpy import isnan, nan
 from scipy.special import erf
 
 from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M

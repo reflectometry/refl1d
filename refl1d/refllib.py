@@ -1,6 +1,5 @@
-# This program is public domain
-# Authors: Paul Kienzle and Brian Maranville
-r"""
+# Authors: Paul Kienzle, Brian Maranville
+"""
 Reflectometry backend loader
 """
 
@@ -8,8 +7,8 @@ import importlib
 from . import BACKEND_NAME, BACKEND_NAMES
 
 BACKEND_MODULE_NAMES = {
-    "numba": "refl1d.lib.numba",
     "c_ext": "refl1d.reflmodule",
+    "numba": "refl1d.lib.numba",
     "python": "refl1d.lib.python",
 }
 
@@ -20,7 +19,7 @@ def set_backend(backend_name: BACKEND_NAMES):
     global backend
     backend_module_name = BACKEND_MODULE_NAMES.get(backend_name, None)
     if backend_module_name is None:
-        raise ValueError(f"unknown backend: {backend_name}")
+        raise ValueError(f"Unknown backend: {backend_name}")
     backend = importlib.import_module(backend_module_name)
 
 

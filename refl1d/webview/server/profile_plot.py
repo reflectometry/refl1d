@@ -4,10 +4,12 @@
 # Originally written for use in a jupyter notebook
 # Adapted to act as a prototype for the profile plotting in the new GUI for refl1d
 
-from typing import List, TypedDict, TYPE_CHECKING
-from refl1d.experiment import Experiment
-from numpy import inf
+from typing import TYPE_CHECKING, List, TypedDict
+
 import numpy as np
+from numpy import inf
+
+from refl1d.experiment import Experiment
 
 if TYPE_CHECKING:
     import plotly.graph_objs as go
