@@ -2,8 +2,6 @@
 Monotonic spline modeling for free interfaces
 """
 
-# from __future__ import division, with_statement
-
 from dataclasses import dataclass
 from typing import Any, List, Optional, Union
 

@@ -11,36 +11,35 @@ small scripts.
 """
 
 import sys
+
 import numpy as np
-
-from periodictable import elements, formula
-from bumps.parameter import Parameter, FreeVariables
 from bumps import pmath
-from bumps.pdfwrapper import PDF
 from bumps.fitproblem import FitProblem, MultiFitProblem
-# from bumps.fitproblem import FitProblem  # deprecated
+from bumps.parameter import Parameter, FreeVariables
+from bumps.pdfwrapper import PDF
+from periodictable import elements, formula
 
-from .experiment import Experiment, plot_sample, MixedExperiment
-from .flayer import FunctionalProfile, FunctionalMagnetism
-from .material import SLD, Material, Compound, Mixture
-from .model import Slab, Stack
-from .polymer import PolymerBrush, PolymerMushroom, EndTetheredPolymer, VolumeProfile, layer_thickness
-from .mono import FreeLayer, FreeInterface
-from .cheby import FreeformCheby, ChebyVF, cheby_approx, cheby_points
-from .probe import Probe, ProbeSet, XrayProbe, NeutronProbe, QProbe, PolarizedNeutronProbe, PolarizedQProbe, load4
-from .stajconvert import load_mlayer, save_mlayer
-from . import ncnrdata as NCNR, snsdata as SNS
+from . import ncnrdata as NCNR
+from . import snsdata as SNS
+from .cheby import ChebyVF, FreeformCheby, cheby_approx, cheby_points
+from .experiment import Experiment, MixedExperiment, plot_sample
+from .flayer import FunctionalMagnetism, FunctionalProfile
 from .instrument import Monochromatic, Pulsed
-from .magnetic import MagneticSlab, MagneticTwist, FreeMagnetic, MagneticStack
-from .magnetism import Magnetism, MagnetismTwist, FreeMagnetism, FreeMagnetismInterface, MagnetismStack
-from .support import sample_data
+from .magnetic import FreeMagnetic, MagneticSlab, MagneticStack, MagneticTwist
+from .magnetism import FreeMagnetism, FreeMagnetismInterface, Magnetism, MagnetismStack, MagnetismTwist
+from .material import SLD, Compound, Material, Mixture
 
 # Pull in common materials for reflectometry experiments.
 # This could lead to a lot of namespace pollution, and particularly to
 # confusion if the user also does "from periodictable import *" since
 # both of them create elements.
-# Python doesn't allow "from .module import *"
 from .materialdb import *
+from .model import Slab, Stack
+from .mono import FreeInterface, FreeLayer
+from .polymer import EndTetheredPolymer, PolymerBrush, PolymerMushroom, VolumeProfile, layer_thickness
+from .probe import NeutronProbe, PolarizedNeutronProbe, PolarizedQProbe, Probe, ProbeSet, QProbe, XrayProbe, load4
+from .stajconvert import load_mlayer, save_mlayer
+from .support import sample_data
 
 
 # Deprecated names
