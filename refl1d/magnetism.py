@@ -250,7 +250,7 @@ class MagnetismStack(BaseMagnetism):
             rhoM=self.rhoM,
             thetaM=self.thetaM,
             # interfaceM=self.interfaceM,
-            weight=self.weight
+            weight=self.weight,
         )
         return parameters
 
@@ -485,25 +485,20 @@ class FreeMagnetismInterface(BaseMagnetism):
 
     magnetic = True
 
-    def __init__(self, dz=(), drhoM=(), dthetaM=(),
-                 mbelow=0, mabove=0,
-                 tbelow=None, tabove=None,
-                 name="MagInterface", **kw):
+    def __init__(
+        self, dz=(), drhoM=(), dthetaM=(), mbelow=0, mabove=0, tbelow=None, tabove=None, name="MagInterface", **kw
+    ):
         BaseMagnetism.__init__(self, name=name, **kw)
+
         def parvec(vector, name, limits):
-            return [Parameter.default(p, name=name+"[%d]"%i, limits=limits)
-                    for i, p in enumerate(vector)]
-        self.drhoM, self.dthetaM, self.dz \
-            = [parvec(v, name+" "+part, limits)
-               for v, part, limits
-               in zip((drhoM, dthetaM, dz),
-                      ('drhoM', 'dthetaM', 'dz'),
-                      ((-1, 1), (-1, 1), (0, 1)))
-              ]
-        self.mbelow = Parameter.default(
-            mbelow, name=name + " mbelow", limits=(-np.inf, np.inf))
-        self.mabove = Parameter.default(
-            mabove, name=name + " mabove", limits=(-np.inf, np.inf))
+            return [Parameter.default(p, name=name + "[%d]" % i, limits=limits) for i, p in enumerate(vector)]
+
+        self.drhoM, self.dthetaM, self.dz = [
+            parvec(v, name + " " + part, limits)
+            for v, part, limits in zip((drhoM, dthetaM, dz), ("drhoM", "dthetaM", "dz"), ((-1, 1), (-1, 1), (0, 1)))
+        ]
+        self.mbelow = Parameter.default(mbelow, name=name + " mbelow", limits=(-np.inf, np.inf))
+        self.mabove = Parameter.default(mabove, name=name + " mabove", limits=(-np.inf, np.inf))
 
         # if only tabove or tbelow is defined then they are made equal
         # this is to deal with the situation of a non-magnetic
@@ -515,10 +510,8 @@ class FreeMagnetismInterface(BaseMagnetism):
         elif tabove is None:
             tabove = tbelow
 
-        self.tbelow = Parameter.default(
-            tbelow, name=name + " tbelow", limits=(0, 360))
-        self.tabove = Parameter.default(
-            tabove, name=name + " tabove", limits=(0, 360))
+        self.tbelow = Parameter.default(tbelow, name=name + " tbelow", limits=(0, 360))
+        self.tabove = Parameter.default(tabove, name=name + " tabove", limits=(0, 360))
         if len(self.dz) != len(self.drhoM):
             raise ValueError("Need one dz for each drhoM")
         if len(self.dthetaM) > 0 and len(self.drhoM) != len(self.dthetaM):
@@ -527,40 +520,44 @@ class FreeMagnetismInterface(BaseMagnetism):
     def parameters(self):
         parameters = BaseMagnetism.parameters(self)
         parameters.update(
-            drhoM=self.drhoM, dthetaM=self.dthetaM, dz=self.dz,
-            mbelow=self.mbelow, mabove=self.mabove,
-            tbelow=self.tbelow, tabove=self.tabove,
+            drhoM=self.drhoM,
+            dthetaM=self.dthetaM,
+            dz=self.dz,
+            mbelow=self.mbelow,
+            mabove=self.mabove,
+            tbelow=self.tbelow,
+            tabove=self.tabove,
         )
         return parameters
 
     def to_dict(self):
         result = BaseMagnetism.to_dict(self)
-        result['dz'] = to_dict(self.dz)
-        result['drhoM'] = to_dict(self.drhoM)
-        result['dthetaM'] = to_dict(self.dthetaM)
-        result['mbelow'] = to_dict(self.mbelow)
-        result['mabove'] = to_dict(self.mabove)
-        result['tbelow'] = to_dict(self.tbelow)
-        result['tabove'] = to_dict(self.tabove)
+        result["dz"] = to_dict(self.dz)
+        result["drhoM"] = to_dict(self.drhoM)
+        result["dthetaM"] = to_dict(self.dthetaM)
+        result["mbelow"] = to_dict(self.mbelow)
+        result["mabove"] = to_dict(self.mabove)
+        result["tbelow"] = to_dict(self.tbelow)
+        result["tabove"] = to_dict(self.tabove)
         return result
 
     def profile(self, Pz, thickness):
-        z = np.hstack((0, np.cumsum(np.asarray([v.value for v in self.dz], 'd'))))
+        z = np.hstack((0, np.cumsum(np.asarray([v.value for v in self.dz], "d"))))
         if z[-1] == 0:
             z[-1] = 1
-        z *= thickness/z[-1]
+        z *= thickness / z[-1]
 
-        rhoM_fraction = np.hstack((0, np.cumsum(np.asarray([v.value for v in self.drhoM], 'd'))))
+        rhoM_fraction = np.hstack((0, np.cumsum(np.asarray([v.value for v in self.drhoM], "d"))))
         # AJC added since without the line below FreeMagnetismInterface
         # does not initialise properly - fixes strange behaviour at drho=0 on end point
         if rhoM_fraction[-1] == 0:
             rhoM_fraction[-1] = 1
 
-        rhoM_fraction *= 1/rhoM_fraction[-1]
+        rhoM_fraction *= 1 / rhoM_fraction[-1]
         PrhoM = np.clip(monospline(z, rhoM_fraction, Pz), 0, 1)
 
         if self.dthetaM:
-            thetaM_fraction = np.hstack((0, np.cumsum(np.asarray([v.value for v in self.dthetaM], 'd'))))
+            thetaM_fraction = np.hstack((0, np.cumsum(np.asarray([v.value for v in self.dthetaM], "d"))))
             if thetaM_fraction[-1] == 0:
                 thetaM_fraction[-1] = 1
 
@@ -569,7 +566,7 @@ class FreeMagnetismInterface(BaseMagnetism):
         else:
             # AJC changed from len(z) to PrhoM - since PrhoM is the length of the vector
             # we want PthetaM to match - otherwise slabs.add_magnetism throws an error
-            PthetaM = np.linspace(0., 1., len(PrhoM))
+            PthetaM = np.linspace(0.0, 1.0, len(PrhoM))
 
         return PrhoM, PthetaM
 
@@ -578,12 +575,12 @@ class FreeMagnetismInterface(BaseMagnetism):
         rhoM_profile, thetaM_profile = self.profile(Pz, thickness)
         mbelow, mabove = self.mbelow.value, self.mabove.value
         tbelow, tabove = self.tbelow.value, self.tabove.value
-        rhoM = (1-rhoM_profile)*mbelow + rhoM_profile*mabove
-        thetaM = (1-thetaM_profile)*tbelow + thetaM_profile*tabove
-        slabs.add_magnetism(
-            anchor=anchor, w=Pw, rhoM=rhoM, thetaM=thetaM, sigma=sigma)
+        rhoM = (1 - rhoM_profile) * mbelow + rhoM_profile * mabove
+        thetaM = (1 - thetaM_profile) * tbelow + thetaM_profile * tabove
+        slabs.add_magnetism(anchor=anchor, w=Pw, rhoM=rhoM, thetaM=thetaM, sigma=sigma)
 
     def __str__(self):
-        return "freemagint(%d)"%(len(self.drhoM))
+        return "freemagint(%d)" % (len(self.drhoM))
+
     def __repr__(self):
         return "FreeMagnetismInterface"

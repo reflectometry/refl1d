@@ -127,8 +127,9 @@ class FreeInterface(Layer):
     magnetism: Optional[BaseMagnetism] = None
     # inflections: List[Any]
 
-    def __init__(self, thickness=0, interface=0, below=None, above=None, dz=None, dp=None, name="Interface",
-                 magnetism=None):
+    def __init__(
+        self, thickness=0, interface=0, below=None, above=None, dz=None, dp=None, name="Interface", magnetism=None
+    ):
         self.name = name
         self.below, self.above = below, above
         self.thickness = Par.default(thickness, limits=(0, inf), name=name + " thickness")
@@ -177,17 +178,16 @@ class FreeInterface(Layer):
 
     def profile(self, Pz):
         thickness = self.thickness.value
-        z, p = [hstack((0, cumsum(asarray([v.value for v in vector], 'd'))))
-                for vector in (self.dz, self.dp)]
+        z, p = [hstack((0, cumsum(asarray([v.value for v in vector], "d")))) for vector in (self.dz, self.dp)]
         if p[-1] == 0:
             p[-1] = 1
-        p *= 1/p[-1]
+        p *= 1 / p[-1]
         # AJC included condition as if z[-1] == 0 then z *= thickness/z[-1] == [nan]*len(z)
         # This then ends with bumps.mono.Monospline adding an extra element as a result of
         # line 42 in bumps.mono.Monospline
         if z[-1] == 0:
             z[-1] = 1
-        z *= thickness/z[-1]
+        z *= thickness / z[-1]
         profile = clip(monospline(z, p, Pz), 0, 1)
         return profile
 
