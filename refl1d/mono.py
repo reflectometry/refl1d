@@ -13,6 +13,8 @@ from bumps.parameter import Parameter as Par, Function as ParFunction, to_dict, 
 from bumps.mono import monospline, count_inflections
 
 from . import util
+from .magnetism import BaseMagnetism
+from .material import Scatterer
 from .model import Layer
 
 
@@ -115,16 +117,18 @@ class FreeInterface(Layer):
     with slabs.
     """
 
-    name: Optional[str]
-    below: Optional[Any]
-    above: Optional[Any]
+    name: str
+    below: Scatterer
+    above: Scatterer
     thickness: Par
     interface: Par
-    dz: List[Union[float, Par]]
-    dp: List[Union[float, Par]]
+    dz: List[Par]
+    dp: List[Par]
+    magnetism: Optional[BaseMagnetism] = None
     # inflections: List[Any]
 
-    def __init__(self, thickness=0, interface=0, below=None, above=None, dz=None, dp=None, name="Interface"):
+    def __init__(self, thickness=0, interface=0, below=None, above=None, dz=None, dp=None, name="Interface",
+                 magnetism=None):
         self.name = name
         self.below, self.above = below, above
         self.thickness = Par.default(thickness, limits=(0, inf), name=name + " thickness")
@@ -146,6 +150,7 @@ class FreeInterface(Layer):
         self.dp = [Par.default(p, name=name + " dp[%d]" % i, limits=(0, inf)) for i, p in enumerate(dp)]
         self.inflections = Par(name=name + " inflections")
         self.inflections.equals(ParFunction(inflections, dx=self.dz, dy=self.dp))
+        self.magnetism = magnetism
 
     def parameters(self):
         return {
@@ -156,6 +161,7 @@ class FreeInterface(Layer):
             "below": self.below.parameters(),
             "above": self.above.parameters(),
             "inflections": self.inflections,
+            "magnetism": self.magnetism.parameters() if self.magnetism is not None else None,
         }
 
     def to_dict(self):
