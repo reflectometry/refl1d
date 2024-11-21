@@ -40,11 +40,10 @@ and anchoring them to the structure.
 
 from __future__ import print_function
 
-from dataclasses import dataclass, field
-from typing import Optional, Any, Union, Dict, Callable, Literal, Tuple, List, Literal
+from dataclasses import dataclass
+from typing import Optional, Any, Union, Dict, List, Literal
 
 import numpy as np
-from numpy import inf, clip, hstack, cumsum, asarray
 from bumps.parameter import Parameter, flatten, to_dict
 from bumps.mono import monospline
 
@@ -505,9 +504,9 @@ class FreeMagnetismInterface(BaseMagnetism):
                       ((-1, 1), (-1, 1), (0, 1)))
               ]
         self.mbelow = Parameter.default(
-            mbelow, name=name + " mbelow", limits=(-inf, inf))
+            mbelow, name=name + " mbelow", limits=(-np.inf, np.inf))
         self.mabove = Parameter.default(
-            mabove, name=name + " mabove", limits=(-inf, inf))
+            mabove, name=name + " mabove", limits=(-np.inf, np.inf))
 
         # if only tabove or tbelow is defined then they are made equal
         # this is to deal with the situation of a non-magnetic
@@ -549,27 +548,27 @@ class FreeMagnetismInterface(BaseMagnetism):
         return result
 
     def profile(self, Pz, thickness):
-        z = hstack((0, cumsum(asarray([v.value for v in self.dz], 'd'))))
+        z = np.hstack((0, np.cumsum(np.asarray([v.value for v in self.dz], 'd'))))
         if z[-1] == 0:
             z[-1] = 1
         z *= thickness/z[-1]
 
-        rhoM_fraction = hstack((0, cumsum(asarray([v.value for v in self.drhoM], 'd'))))
+        rhoM_fraction = np.hstack((0, np.cumsum(np.asarray([v.value for v in self.drhoM], 'd'))))
         # AJC added since without the line below FreeMagnetismInterface
         # does not initialise properly - fixes strange behaviour at drho=0 on end point
         if rhoM_fraction[-1] == 0:
             rhoM_fraction[-1] = 1
 
         rhoM_fraction *= 1/rhoM_fraction[-1]
-        PrhoM = clip(monospline(z, rhoM_fraction, Pz), 0, 1)
+        PrhoM = np.clip(monospline(z, rhoM_fraction, Pz), 0, 1)
 
         if self.dthetaM:
-            thetaM_fraction = hstack((0, cumsum(asarray([v.value for v in self.dthetaM], 'd'))))
+            thetaM_fraction = np.hstack((0, np.cumsum(np.asarray([v.value for v in self.dthetaM], 'd'))))
             if thetaM_fraction[-1] == 0:
                 thetaM_fraction[-1] = 1
 
             thetaM_fraction *= 1 / thetaM_fraction[-1]
-            PthetaM = clip(monospline(z, thetaM_fraction, Pz), 0, 1)
+            PthetaM = np.clip(monospline(z, thetaM_fraction, Pz), 0, 1)
         else:
             # AJC changed from len(z) to PrhoM - since PrhoM is the length of the vector
             # we want PthetaM to match - otherwise slabs.add_magnetism throws an error
