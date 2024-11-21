@@ -38,7 +38,7 @@ and anchoring them to the structure.
 """
 
 from dataclasses import dataclass
-from typing import Optional, Any, Union, Dict, List, Literal
+from typing import Dict, List, Literal, Union
 
 import numpy as np
 from bumps.mono import monospline
@@ -474,11 +474,11 @@ class FreeMagnetismInterface(BaseMagnetism):
     layers either side are not magnetic.
     """
 
-    name: Optional[str]
-    mbelow: Optional[Union[Parameter, float]]
-    mabove: Optional[Union[Parameter, float]]
-    tbelow: Optional[Any]
-    tabove: Optional[Any]
+    name: str
+    mbelow: Union[Parameter, float]
+    mabove: Union[Parameter, float]
+    tbelow: Parameter
+    tabove: Parameter
     dz: List[Union[float, Parameter]]
     drhoM: List[Union[float, Parameter]]
     dthetaM: List[Union[float, Parameter]]
