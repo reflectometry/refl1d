@@ -14,11 +14,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Checkout bumps source
+        uses: actions/checkout@v4
+        with:
+          repository: bumps/bumps
+          sparse-checkout: 'bumps/webview/client'
+          path: bumps
+
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
 
       - name: Install packages
         run: bun install
+
+      - name: Use bumps code from source
+        run: |
+          cd ../../../bumps/bumps/webview/client
+          bun install
+          bun link
+          cd ../../../../refl1d/webview/client
+          bun link bumps-webview-client
+
 
       - name: Run test
         run: bun run build
