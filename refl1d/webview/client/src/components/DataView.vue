@@ -2,10 +2,10 @@
 /// <reference types="@types/plotly.js" />
 import { ref, shallowRef } from "vue";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket.ts";
-import { configWithSVGDownloadButton } from "bumps-webview-client/src/plotly_extras.mjs";
+import { configWithSVGDownloadButton } from "bumps-webview-client/src/plotly_extras";
 import { setupDrawLoop } from "bumps-webview-client/src/setupDrawLoop";
 import * as Plotly from "plotly.js/lib/core";
-import { COLORS } from "../colors.mjs";
+import { COLORS } from "../colors";
 
 // const title = "Reflectivity";
 const plot_div = ref<HTMLDivElement | null>(null);

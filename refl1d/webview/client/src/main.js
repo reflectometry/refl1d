@@ -3,7 +3,7 @@ import { computed, createApp } from "vue";
 import { file_menu_items, fileBrowser, model_file, socket } from "bumps-webview-client/src/app_state";
 import App from "bumps-webview-client/src/App.vue";
 import { dqIsFWHM } from "./app_state";
-import { panels } from "./panels.mjs";
+import { panels } from "./panels";
 import "./style.css";
 
 const name = "Refl1D";
