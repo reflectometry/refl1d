@@ -366,7 +366,7 @@ async function draw_plot() {
         x: 0.8,
         yanchor: "top",
         y: -0.05,
-        text: `chisq = ${chisq_str.value}`,
+        text: `\u{03C7}\u{00B2} = ${chisq_str.value}`,
         showarrow: false,
         font: { size: 16 },
       },
