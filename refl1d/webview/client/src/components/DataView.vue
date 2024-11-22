@@ -1,13 +1,13 @@
 <script setup lang="ts">
 /// <reference types="@types/plotly.js" />
 import { ref, shallowRef } from "vue";
-import * as Plotly from "plotly.js/lib/core";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket.ts";
-import { setupDrawLoop } from "bumps-webview-client/src/setupDrawLoop";
-import { COLORS } from "../colors.mjs";
 import { configWithSVGDownloadButton } from "bumps-webview-client/src/plotly_extras.mjs";
+import { setupDrawLoop } from "bumps-webview-client/src/setupDrawLoop";
+import * as Plotly from "plotly.js/lib/core";
+import { COLORS } from "../colors.mjs";
 
-const title = "Reflectivity";
+// const title = "Reflectivity";
 const plot_div = ref<HTMLDivElement | null>(null);
 const plot_offset = ref(0);
 const plot_data = shallowRef<Partial<Plotly.PlotData>>({});
@@ -53,14 +53,14 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
   let data_traces: Trace[] = [];
   let residuals_traces: Trace[] = [];
   let yaxis_label: string = "Reflectivity";
-  let xaxis_label: string = "Q (Å<sup>-1</sup>)";
+  const xaxis_label: string = "Q (Å<sup>-1</sup>)";
   const offset = plot_offset.value;
   switch (view) {
     case "Reflectivity": {
       let plot_index = 0;
       const lin_y = !log_y.value;
-      for (let model of model_data) {
-        for (let xs of model) {
+      for (const model of model_data) {
+        for (const xs of model) {
           const label = `${xs.label} ${xs.polarization}`;
           const color = COLORS[plot_index % COLORS.length];
           const legendgroup = `group_${plot_index}`;
@@ -109,8 +109,8 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
     }
     case "Fresnel (R/R_substrate)": {
       let plot_index = 0;
-      for (let model of model_data) {
-        for (let xs of model) {
+      for (const model of model_data) {
+        for (const xs of model) {
           const label = `${xs.label} ${xs.polarization}`;
           const color = COLORS[plot_index % COLORS.length];
           const legendgroup = `group_${plot_index}`;
@@ -171,8 +171,8 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
     case "RQ^4": {
       // Q4 = 1e-8*Q**-4*self.intensity.value + self.background.value
       let plot_index = 0;
-      for (let model of model_data) {
-        for (let xs of model) {
+      for (const model of model_data) {
+        for (const xs of model) {
           const label = `${xs.label} ${xs.polarization}`;
           const color = COLORS[plot_index % COLORS.length];
           const legendgroup = `group_${plot_index}`;
@@ -276,7 +276,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
             if (pp.dR !== undefined && mm.dR !== undefined) {
               const dRm = interp(pp.Q, mm.Q, mm.dR);
               const dSA = dRm.map((dm, i) => {
-                const dp = pp.dR[i];
+                // const dp = pp.dR[i];
                 const p = pp.R[i];
                 const m = Rm[i];
                 return Math.sqrt((4 * ((p * dm) ** 2 + (m * dm) ** 2)) / (p + m) ** 4);
@@ -346,7 +346,7 @@ async function draw_plot() {
     },
     yaxis: {
       title: { text: yaxis_label },
-      exponentformat: "e",
+      exponentformat: "power",
       showexponent: "all",
       type: log_y.value ? "log" : "linear",
       autorange: true,
@@ -366,7 +366,7 @@ async function draw_plot() {
         x: 0.8,
         yanchor: "top",
         y: -0.05,
-        text: `chisq = ${chisq_str.value}`,
+        text: `<i>\u{03C7}</i><sup>2</sup> = ${chisq_str.value}`,
         showarrow: false,
         font: { size: 16 },
       },
@@ -415,7 +415,7 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
 
   const lowest_xp = xp[0];
   const lowest_fp = fp[0];
-  const highest_xp = xp[xp.length - 1];
+  // const highest_xp = xp[xp.length - 1];
   const highest_fp = fp[fp.length - 1];
 
   let lower_xp = xpv.next();
@@ -453,103 +453,60 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
   <div class="container d-flex flex-column flex-grow-1">
     <div class="row">
       <div class="col">
-        <select
-          class="plot-mode"
-          v-model="reflectivity_type"
-          @change="change_plot_type"
-        >
-          <option
-            v-for="refl_type in REFLECTIVITY_PLOTS"
-            :key="refl_type"
-            :value="refl_type"
-          >
+        <label for="plot_mode" class="col-form-label">Plot mode:</label>
+        <select id="plot_mode" v-model="reflectivity_type" class="plot-mode" @change="change_plot_type">
+          <option v-for="refl_type in REFLECTIVITY_PLOTS" :key="refl_type" :value="refl_type">
             {{ refl_type }}
           </option>
         </select>
       </div>
       <div class="col-auto form-check">
         <input
-          class="form-check-input"
-          type="checkbox"
-          v-model="show_residuals"
           id="show_residuals"
+          v-model="show_residuals"
+          class="form-check-input"
+          type="checkbox"
           @change="draw_plot"
         />
-        <label
-          class="form-check-label"
-          for="show_residuals"
-          >Residuals</label
-        >
+        <label class="form-check-label" for="show_residuals">Residuals</label>
+      </div>
+      <div class="col-auto form-check">
+        <input id="log_y" v-model="log_y" type="checkbox" class="form-check-input" @change="draw_plot" />
+        <label for="log_y" class="form-check-label">Log y</label>
+      </div>
+      <div class="col-auto form-check">
+        <input id="log_x" v-model="log_x" type="checkbox" class="form-check-input" @change="draw_plot" />
+        <label for="log_x" class="form-check-label">Log x</label>
       </div>
       <div class="col-auto form-check">
         <input
-          type="checkbox"
-          class="form-check-input"
-          id="log_y"
-          v-model="log_y"
-          @change="draw_plot"
-        />
-        <label
-          for="log_y"
-          class="form-check-label"
-          >Log y</label
-        >
-      </div>
-      <div class="col-auto form-check">
-        <input
-          type="checkbox"
-          class="form-check-input"
-          id="log_x"
-          v-model="log_x"
-          @change="draw_plot"
-        />
-        <label
-          for="log_x"
-          class="form-check-label"
-          >Log x</label
-        >
-      </div>
-      <div class="col-auto form-check">
-        <input
-          type="checkbox"
-          class="form-check-input"
           id="show_resolution"
           v-model="show_resolution"
+          type="checkbox"
+          class="form-check-input"
           @change="draw_plot"
         />
-        <label
-          for="show_resolution"
-          class="form-check-label"
-          >dQ</label
-        >
+        <label for="show_resolution" class="form-check-label">dQ</label>
       </div>
     </div>
     <div class="row px-2 align-items-center">
       <div class="col-auto">
-        <label
-          for="plot_offset_control"
-          class="col-form-label"
-          >Plot offset</label
-        >
+        <label for="plot_offset_control" class="col-form-label">Plot offset</label>
       </div>
       <div class="col">
         <input
+          id="plot_offset_control"
+          v-model.number="plot_offset"
           type="range"
           min="0"
           max="1.0"
           step="0.01"
-          id="plot_offset_control"
           class="form-range"
-          v-model.number="plot_offset"
           @input="draw_plot"
         />
       </div>
     </div>
-    <div
-      class="flex-grow-1"
-      ref="plot_div"
-      id="plot_div"
-    ></div>
+    <div id="plot_div" ref="plot_div" class="flex-grow-1"></div>
   </div>
 </template>
 

@@ -1,4 +1,10 @@
 repos:
+  - repo: local
+    hooks:
+      - id: eslint
+        name: eslint
+        entry: bash -c "cd refl1d/webview/client && npm run lint"
+        language: system
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
@@ -17,4 +23,5 @@ repos:
       - id: ruff-format
 
 ci:
-    autoupdate_schedule: monthly
+  autoupdate_schedule: monthly
+  skip: [eslint]
