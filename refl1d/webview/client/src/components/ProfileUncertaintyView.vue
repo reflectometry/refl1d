@@ -2,7 +2,7 @@
 /// <reference types="@types/uuid"/>
 import { ref, shallowRef } from "vue";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket.ts";
-import { configWithSVGDownloadButton } from "bumps-webview-client/src/plotly_extras.mjs";
+import { configWithSVGDownloadButton } from "bumps-webview-client/src/plotly_extras";
 import { setupDrawLoop } from "bumps-webview-client/src/setupDrawLoop";
 import * as Plotly from "plotly.js/lib/core";
 import { cache } from "../plot_cache";
