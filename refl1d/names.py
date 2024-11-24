@@ -26,7 +26,7 @@ from .experiment import Experiment, MixedExperiment, plot_sample
 from .flayer import FunctionalMagnetism, FunctionalProfile
 from .instrument import Monochromatic, Pulsed
 from .magnetic import FreeMagnetic, MagneticSlab, MagneticStack, MagneticTwist
-from .magnetism import FreeMagnetism, Magnetism, MagnetismStack, MagnetismTwist
+from .magnetism import FreeMagnetism, FreeMagnetismInterface, Magnetism, MagnetismStack, MagnetismTwist
 from .material import SLD, Compound, Material, Mixture
 
 # Pull in common materials for reflectometry experiments.
