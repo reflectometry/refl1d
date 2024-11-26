@@ -380,7 +380,7 @@ async function draw_plot() {
   };
 
   if (show_residuals.value) {
-    layout.yaxis.domain = [0.4, 1];
+    layout.yaxis!.domain = [0.4, 1];
     // layout.yaxis.anchor = 'x';
     layout.yaxis2 = {
       domain: [0, 0.25],
@@ -390,8 +390,8 @@ async function draw_plot() {
   }
 
   if (reflectivity_type.value === "Spin Asymmetry") {
-    layout.yaxis.range = [-1.5, 1.5];
-    layout.yaxis.autorange = false;
+    layout.yaxis!.range = [-1.5, 1.5];
+    layout.yaxis!.autorange = false;
   }
 
   const config: Partial<Plotly.Config> = {
@@ -436,7 +436,7 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
   }
 
   return x.map((xv) => {
-    while (xv >= upper_xp.value && !upper_xp.done) {
+    while (xv >= upper_xp.value! && !upper_xp.done) {
       lower_xp = upper_xp;
       lower_fp = upper_fp;
       upper_xp = xpv.next();
@@ -450,7 +450,8 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
     } else {
       // xv < upper_xp.value
       return (
-        ((upper_fp.value - lower_fp.value) / (upper_xp.value - lower_xp.value)) * (xv - lower_xp.value) + lower_fp.value
+        ((upper_fp.value! - lower_fp.value!) / (upper_xp.value - lower_xp.value!)) * (xv - lower_xp.value!) +
+        lower_fp.value!
       );
     }
   });
