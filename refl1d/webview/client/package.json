@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build --emptyOutDir -m development",
+    "build": "vite build --sourcemap --emptyOutDir -m development",
     "build_prod": "vite build --emptyOutDir -m production",
     "preview": "vite preview --port 4173",
     "format": "prettier --write src",
@@ -37,6 +37,7 @@
     "@vue/eslint-config-typescript": "^14.1.4",
     "typescript": "5.6.3",
     "vite": "^6.0.2",
+    "vite-svg-loader": "5.1.0",
     "vue-tsc": "^2.1.10",
     "eslint": "^9.16.0",
     "eslint-config-prettier": "^9.1.0",
