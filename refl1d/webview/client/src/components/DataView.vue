@@ -10,7 +10,7 @@ import { COLORS } from "../colors";
 // const title = "Reflectivity";
 const plot_div = ref<HTMLDivElement | null>(null);
 const plot_offset = ref(0);
-const plot_data = shallowRef<Partial<Plotly.PlotData>>({});
+const plot_data = shallowRef<ModelData[][]>([]);
 const chisq_str = ref("");
 
 const log_y = ref(true);
@@ -314,7 +314,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
 
 async function fetch_and_draw() {
   const payload = (await props.socket.asyncEmit("get_plot_data", "linear")) as {
-    plotdata: Partial<Plotly.PlotData>;
+    plotdata: ModelData[][];
     chisq: string;
   };
   plot_data.value = payload.plotdata;

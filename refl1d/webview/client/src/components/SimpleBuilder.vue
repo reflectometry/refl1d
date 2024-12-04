@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, shallowRef } from "vue";
 import type { ComputedRef } from "vue";
-import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket.ts";
+import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket";
 import { v4 as uuidv4 } from "uuid";
 import { dqIsFWHM } from "../app_state";
 import type {
