@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, shallowRef } from "vue";
 import type { ComputedRef } from "vue";
-import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket.ts";
+import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket";
 import { v4 as uuidv4 } from "uuid";
 import { dqIsFWHM } from "../app_state";
 import type {
@@ -157,7 +157,9 @@ function getSlot(parameterLike: ParameterLike) {
     const parameter = resolveParameter(parameterLike);
     return parameter.slot;
   }
-  return null;
+  // TODO: This should really not return null.
+  // return null;
+  return { value: 0.0, __class__: "bumps.parameter.Variable" };
 }
 
 function resolveParameter(parameterLike: ParameterLike): Parameter {
@@ -238,7 +240,7 @@ async function sendModel(is_new: boolean = false, name: string | null = null) {
 }
 
 // Adding and deleting layers
-function deleteLayer(index) {
+function deleteLayer(index: number) {
   sortedLayers.value.splice(index, 1);
   sendModel();
 }
@@ -268,16 +270,19 @@ onMounted(() => {
 // Code for draggable rows
 const dragData = ref<number | null>(null);
 
-function dragStart(index: number, event) {
+function dragStart(index: number, event: DragEvent) {
+  if (event.dataTransfer === null) {
+    return;
+  }
   dragData.value = index;
-  event.dataTransfer.setData("text/plain", index);
+  event.dataTransfer.setData("text/plain", `${index}`);
 }
 
-function dragOver(index, event) {
+function dragOver(index: number, event: DragEvent) {
   event.preventDefault();
 }
 
-function drop(index) {
+function drop(index: number) {
   if (dragData.value !== null) {
     const draggedDict = sortedLayers.value[dragData.value];
     sortedLayers.value.splice(dragData.value, 1);

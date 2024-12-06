@@ -32,6 +32,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "matplotlib", # for testing
     "pre-commit",
     "pydantic",
     "pytest",

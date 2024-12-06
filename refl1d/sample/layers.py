@@ -224,6 +224,7 @@ class Slab(Layer):
 
 @dataclass(init=False)
 class Stack(Layer):
+    # TODO: Finish this docstring
     """
     Reflectometry layer stack
 
