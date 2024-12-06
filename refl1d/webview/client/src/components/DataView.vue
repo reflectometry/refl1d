@@ -32,8 +32,7 @@ const reflectivity_type = ref<ReflectivityPlot>("Reflectivity");
 const MARKER_OPACITY = 0.5;
 type Trace = Partial<Plotly.PlotData>;
 type PolarizationString = "" | "--" | "-+" | "+-" | "++" | "unpolarized";
-// type ModelData = {
-interface ModelData extends Plotly.PlotData {
+type ModelData = {
   label: string;
   polarization: PolarizationString;
   Q: number[];
@@ -44,7 +43,7 @@ interface ModelData extends Plotly.PlotData {
   background_in: number;
   R?: number[];
   dR?: number[];
-}
+};
 
 function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, calculate_residuals: boolean = false) {
   if (model_data.length === 0) {
