@@ -1,6 +1,8 @@
 import os
 import sys
 
+import numpy
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from refl1d.names import *
 from refl1d.dist import Weights, DistributionExperiment

@@ -7,6 +7,8 @@
 #
 # We set up the example as before.
 
+import numpy
+
 from refl1d.names import *
 
 nickel = Material("Ni")

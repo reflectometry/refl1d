@@ -1,7 +1,8 @@
+import numpy
+
 from refl1d.names import *
 
 nickel = Material("Ni")
-
 # nickel = SLD(rho=9.4)
 
 sample = silicon(0, 5) | nickel(10000, 5) | air

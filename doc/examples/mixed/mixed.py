@@ -16,6 +16,8 @@
 # Since silicon and air are defined, the only material we need to
 # define is nickel.
 
+import numpy
+
 from refl1d.names import *
 
 nickel = Material("Ni")

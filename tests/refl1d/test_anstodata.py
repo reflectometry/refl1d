@@ -1,8 +1,8 @@
 import os.path
 
-from numpy.testing import assert_almost_equal, assert_equal
+from numpy.testing import assert_equal, assert_almost_equal
 
-from refl1d.anstodata import Platypus
+from refl1d.probe.data_loaders.anstodata import Platypus
 
 # path to the test file
 pth = os.path.dirname(__file__)

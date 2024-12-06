@@ -18,14 +18,12 @@ from bumps.webview.server.api import (
     to_json_compatible_dict,
 )
 
-import refl1d.probe
-from refl1d.errors import calc_errors
+from refl1d.uncertainty import calc_errors
 from refl1d.experiment import Experiment, ExperimentBase, MixedExperiment
-
-from .profile_plot import ModelSpec, plot_multiple_sld_profiles
-
-# from refl1d.errors import show_errors
+from refl1d.probe.data_loaders import load4
+from refl1d.probe import PolarizedNeutronProbe
 from .profile_uncertainty import show_errors
+from .profile_plot import plot_multiple_sld_profiles, ModelSpec
 
 # state.problem.serializer = "dataclass"
 
@@ -104,7 +102,7 @@ def get_single_probe_data(theory, probe, substrate=None, surface=None, polarizat
 
 
 def get_probe_data(theory, probe, substrate=None, surface=None):
-    if isinstance(probe, refl1d.probe.PolarizedNeutronProbe):
+    if isinstance(probe, PolarizedNeutronProbe):
         output = []
         for xsi, xsi_th, suffix in zip(probe.xs, theory, ("--", "-+", "+-", "++")):
             if xsi is not None:
@@ -200,7 +198,7 @@ async def load_probe_from_file(pathlist: List[str], filename: str, model_index: 
             await log(f"Error: Can not access model at model_index {model_index} (only {num_models} defined)")
             return
         model: Experiment = models[model_index]
-        probe = refl1d.probe.load4(str(path / filename), FWHM=fwhm)
+        probe = load4(str(path / filename), FWHM=fwhm)
         model.probe = probe
         fitProblem.model_reset()
         fitProblem.model_update()
