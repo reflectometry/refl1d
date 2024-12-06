@@ -43,7 +43,7 @@ export interface Slab {
   magnetism: Magnetism | null;
   material: SLD;
   interface: ParameterLike;
-  __class__: "refl1d.model.Slab";
+  __class__: "refl1d.sample.layers.Slab";
 }
 
 export interface Repeat {
@@ -53,14 +53,14 @@ export interface Repeat {
   repeat: ParameterLike;
   stack: Stack;
   thickness: ParameterLike;
-  __class__: "refl1d.model.Repeat";
+  __class__: "refl1d.sample.layers.Repeat";
 }
 
 export interface SLD {
   name: string;
   rho: ParameterLike;
   irho: ParameterLike;
-  __class__: "refl1d.material.SLD";
+  __class__: "refl1d.sample.material.SLD";
 }
 
 export interface Magnetism {
@@ -68,18 +68,18 @@ export interface Magnetism {
   rhoM: ParameterLike;
   thetaM: ParameterLike;
   phiM: ParameterLike;
-  __class__: "refl1d.material.Magnetism";
+  __class__: "refl1d.sample.material.Magnetism";
 }
 
 export interface Stack {
   layers: (Slab | Repeat)[];
-  __class__: "refl1d.model.Stack";
+  __class__: "refl1d.sample.layers.Stack";
 }
 
 export interface Experiment {
   sample: Stack;
   probe: QProbe;
-  __class__: "refl1d.experiment.Experiment";
+  __class__: "refl1d.probe.experiment.Experiment";
 }
 
 export interface NumpyArray {

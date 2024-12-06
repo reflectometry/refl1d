@@ -12,10 +12,10 @@ from bumps.util import push_seed
 from refl1d.names import *
 
 # FunctionalProfile and FunctionalMagnetism are already available from
-# refl1d.names, but a couple of aliases make them a little easier to access.
+# refl1d.sample.flayer, but a couple of aliases make them a little easier to access.
 
-from refl1d.flayer import FunctionalProfile as FP
-from refl1d.flayer import FunctionalMagnetism as FM
+from refl1d.names import FunctionalProfile as FP
+from refl1d.names import FunctionalMagnetism as FM
 
 # Define the nuclear profile function.
 #

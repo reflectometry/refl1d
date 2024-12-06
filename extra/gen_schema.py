@@ -13,8 +13,8 @@ os.environ["BUMPS_USE_PYDANTIC"] = "True"
 
 from pydantic.schema import get_model, schema as make_schema
 from bumps.parameter import Expression, Parameter  # , UnaryExpression
-from refl1d.fitproblem import FitProblem
-from refl1d.model import Repeat, Stack
+
+from refl1d.names import FitProblem, Repeat, Stack
 
 base_model = get_model(FitProblem)
 
@@ -32,7 +32,8 @@ for module in to_resolve:
     get_model(module).update_forward_refs()
 
 schema = {"$schema": "https://json-schema.org/draft-07/schema#", "$id": "refl1d-draft-01"}
-schema.update(get_model(FitProblem).schema())
+# schema.update(get_model(FitProblem).schema())
+schema.update(FitProblem.schema())
 
 
 def remove_default_typename(schema):

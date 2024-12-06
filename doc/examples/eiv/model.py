@@ -9,6 +9,8 @@ below. Choose *fit_strategy = 'nominal'* for a traditional fit, or *'eiv'* for
 an error-in-variables fit.
 """
 
+import numpy as np
+
 from refl1d.names import *
 
 # ********** model setup **********
@@ -26,7 +28,7 @@ sample[1].thickness.range(0, 400)
 # n = 20
 n = 400
 dT, L, dL = 0.02, 4.75, 0.0475
-T = numpy.linspace(0, 5, n)
+T = np.linspace(0, 5, n)
 
 # Set the motor uncertainty and the measurement uncertainty.
 angle_uncertainty = 0.005
@@ -142,7 +144,7 @@ class DQExperiment(Experiment):
         if self.probe.polarized:
             have_data = not all(x is None or x.R is None for x in self.probe.xs)
         else:
-            have_data = not (self.probe.R is None)
+            have_data = self.probe.R is not None
         if not have_data:
             resid = np.zeros(0)
             self._cache["residuals"] = resid

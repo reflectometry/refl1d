@@ -61,3 +61,5 @@ venv.bak/
 .idea
 *.swp
 *.bak
+
+test-files/

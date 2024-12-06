@@ -5,7 +5,7 @@ from numpy import sqrt
 from numpy.linalg import norm
 from numpy.random import randn
 
-from refl1d.names import *
+from refl1d.names import Material, Probe, silicon, air, SNS
 
 Probe.view = "log"  # log, linear, fresnel, or Q**4
 
