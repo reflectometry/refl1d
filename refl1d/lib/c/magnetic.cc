@@ -185,7 +185,6 @@ C * Converted to subroutine from GEPORE.f
 
 //    constants
       const Cplx CR(1.0,0.0);
-      const Cplx CI(0.0,1.0);
       const double PI4=12.566370614359172e-6;
 //    Check for KZ near zero.  If KZ < 0, reverse the indices
       if (KZ<=-1.e-10) {
