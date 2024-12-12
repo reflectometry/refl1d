@@ -10,6 +10,7 @@ __all__ = ["data_view", "model_view", "new_model", "calc_errors", "show_errors"]
 
 import numpy as np
 
+from .migrations import migrate
 from ..bumps_interface.fitproblem import FitProblem
 from ..experiment import Experiment
 from ..sample.materialdb import air, silicon
@@ -74,3 +75,8 @@ def new_model():
     M = Experiment(sample=stack, probe=probe)
     problem = FitProblem(M)
     return problem
+
+
+def migrate_serialized(model_dict):
+    _, migrated = migrate(model_dict)
+    return migrated
