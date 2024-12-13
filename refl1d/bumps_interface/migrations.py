@@ -20,7 +20,7 @@ def migrate(
 
     if from_version is None:
         libraries = serialized.get("libraries", {})
-        from_version = libraries.get("refl1d", {}).get("schema", "0")
+        from_version = libraries.get("refl1d", {}).get("schema_version", "0")
 
     current_version = from_version
     while current_version != to_version:
