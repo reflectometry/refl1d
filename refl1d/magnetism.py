@@ -475,13 +475,13 @@ class FreeMagnetismInterface(BaseMagnetism):
     """
 
     name: str
-    mbelow: Union[Parameter, float]
-    mabove: Union[Parameter, float]
+    mbelow: Parameter
+    mabove: Parameter
     tbelow: Parameter
     tabove: Parameter
-    dz: List[Union[float, Parameter]]
-    drhoM: List[Union[float, Parameter]]
-    dthetaM: List[Union[float, Parameter]]
+    dz: List[Parameter]
+    drhoM: List[Parameter]
+    dthetaM: List[Parameter]
 
     magnetic = True
 
@@ -529,17 +529,6 @@ class FreeMagnetismInterface(BaseMagnetism):
             tabove=self.tabove,
         )
         return parameters
-
-    def to_dict(self):
-        result = BaseMagnetism.to_dict(self)
-        result["dz"] = to_dict(self.dz)
-        result["drhoM"] = to_dict(self.drhoM)
-        result["dthetaM"] = to_dict(self.dthetaM)
-        result["mbelow"] = to_dict(self.mbelow)
-        result["mabove"] = to_dict(self.mabove)
-        result["tbelow"] = to_dict(self.tbelow)
-        result["tabove"] = to_dict(self.tabove)
-        return result
 
     def profile(self, Pz, thickness):
         z = np.hstack((0, np.cumsum(np.asarray([v.value for v in self.dz], "d"))))
