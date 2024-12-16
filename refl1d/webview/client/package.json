@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build --sourcemap --emptyOutDir -m development",
+    "build": "vite build --emptyOutDir -m development",
     "build_prod": "vite build --emptyOutDir -m production",
     "preview": "vite preview --port 4173",
     "format": "prettier --write src",
