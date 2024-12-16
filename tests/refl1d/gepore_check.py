@@ -64,7 +64,7 @@ def gepore(layers, QS, DQ, NQ, EPS, H):
 
     # recompile gepore if necessary
     gepore = joinpath(path, "gepore")
-    gepore_source = joinpath(dirname(__file__), "..", "..", "refl1d", "lib", GEPORE_SRC)
+    gepore_source = joinpath(dirname(__file__), "..", "..", "refl1d", "lib", "c", GEPORE_SRC)
     if not exists(gepore) or filetime(gepore) < filetime(gepore_source):
         status = os.system("gfortran -O2 -o %s %s" % (gepore, gepore_source))
         if status != 0:
@@ -104,7 +104,6 @@ def magnetic_cc(layers, kz, Aguide, H):
 def Rplot(Qz, R, format):
     import matplotlib.pyplot as plt
 
-    plt.hold(True)
     for name, xs in zip(("--", "+-", "-+", "++"), R):
         Rxs = abs(xs) ** 2
         if (Rxs > 1e-8).any():
@@ -117,7 +116,6 @@ def Rplot(Qz, R, format):
 def rplot(Qz, R, format):
     import matplotlib.pyplot as plt
 
-    plt.hold(True)
     plt.figure()
     for name, xs in zip(("++", "+-", "-+", "--"), R):
         rr = xs.real
