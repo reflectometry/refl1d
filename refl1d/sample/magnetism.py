@@ -386,7 +386,7 @@ class FreeMagnetism(BaseMagnetism):
 
         self.rhoM, self.thetaM, self.z = [
             parvec(v, name + " " + part, limits)
-            for v, part, limits in zip((rhoM, thetaM, z), ("rhoM", "thetaM", "z"), ((0, None), (0, 360), (0, 1)))
+            for v, part, limits in zip((rhoM, thetaM, z), ("rhoM", "thetaM", "z"), ((None, None), (0, 360), (0, 1)))
         ]
         if len(self.z) != len(self.rhoM):
             raise ValueError("must have one position z for each rhoM")
