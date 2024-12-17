@@ -22,6 +22,7 @@ from .material import Scatterer
 # TODO: access left_sld, right_sld so freeform doesn't need left, right
 # TODO: restructure to use vector parameters
 # TODO: allow the number of layers to be adjusted by the fit
+@dataclass(init=False)
 class FreeLayer(Layer):
     """
     A freeform section of the sample modeled with splines.
@@ -37,11 +38,21 @@ class FreeLayer(Layer):
     with slabs.
     """
 
-    def __init__(self, below=None, above=None, thickness=0, z=(), rho=(), irho=(), name="Freeform"):
+    name: str
+    below: Scatterer
+    above: Scatterer
+    thickness: Par
+    z: List[Par]
+    rho: List[Par]
+    irho: List[Par]
+    magnetism: Optional[BaseMagnetism] = None
+
+    def __init__(self, below=None, above=None, thickness=0, z=(), rho=(), irho=(), name="Freeform", magnetism=None):
         self.name = name
         self.below, self.above = below, above
         self.thickness = Par.default(thickness, name=name + " thickness", limits=(0, inf))
         self.interface = Constant(0, name=name + " interface")
+
 
         def parvec(vector, name, limits):
             return [Par.default(p, name=name + "[%d]" % i, limits=limits) for i, p in enumerate(vector)]
@@ -55,6 +66,8 @@ class FreeLayer(Layer):
         if len(self.irho) > 0 and len(self.z) != len(self.irho):
             raise ValueError("must have one z for each irho value")
 
+        self.magnetism = magnetism
+
     def parameters(self):
         return {
             "thickness": self.thickness,
@@ -63,6 +76,7 @@ class FreeLayer(Layer):
             "z": self.z,
             "below": self.below.parameters(),
             "above": self.above.parameters(),
+            "magnetism": self.magnetism.parameters() if self.magnetism is not None else None,
         }
 
     def to_dict(self):
