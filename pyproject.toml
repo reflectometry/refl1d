@@ -22,7 +22,7 @@ classifiers = [
 ]
 requires-python = ">=3.9"
 dependencies = [
-    "bumps>=1.0.0a8",
+    "bumps>=1.0.0a11",
     "matplotlib",
     "numba",
     "numpy",
@@ -73,7 +73,7 @@ version = { attr = "refl1d.__version__" }
 script-files = ["bin/refl1d_cli.py", "bin/refl1d_gui.py"]
 
 [tool.setuptools.packages.find]
-include = ["refl1d*"]
+where = ["."]
 
 [project.scripts]
 refl1d = "refl1d.main:cli"

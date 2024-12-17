@@ -2,10 +2,10 @@
 /// <reference types="@types/plotly.js" />
 import { ref, shallowRef } from "vue";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket.ts";
-import { configWithSVGDownloadButton } from "bumps-webview-client/src/plotly_extras.mjs";
+import { configWithSVGDownloadButton } from "bumps-webview-client/src/plotly_extras";
 import { setupDrawLoop } from "bumps-webview-client/src/setupDrawLoop";
 import * as Plotly from "plotly.js/lib/core";
-import { COLORS } from "../colors.mjs";
+import { COLORS } from "../colors";
 
 // const title = "Reflectivity";
 const plot_div = ref<HTMLDivElement | null>(null);
@@ -346,7 +346,7 @@ async function draw_plot() {
     },
     yaxis: {
       title: { text: yaxis_label },
-      exponentformat: "e",
+      exponentformat: "power",
       showexponent: "all",
       type: log_y.value ? "log" : "linear",
       autorange: true,
@@ -366,7 +366,7 @@ async function draw_plot() {
         x: 0.8,
         yanchor: "top",
         y: -0.05,
-        text: `chisq = ${chisq_str.value}`,
+        text: `<i>\u{03C7}</i><sup>2</sup> = ${chisq_str.value}`,
         showarrow: false,
         font: { size: 16 },
       },

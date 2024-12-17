@@ -27,6 +27,8 @@
 # Bring in all of the functions from refl1d.names so that we can use them
 # in the remainder of the script.
 
+import numpy
+
 from refl1d.names import *
 
 # The polymer system is deposited on a gold film with chromium as an

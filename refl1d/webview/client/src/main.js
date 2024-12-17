@@ -1,9 +1,9 @@
 import "bootstrap/dist/css/bootstrap.min.css";
 import { computed, createApp } from "vue";
-import { fileBrowser, menu_items, model_file, socket } from "bumps-webview-client/src/app_state";
+import { file_menu_items, fileBrowser, model_file, socket } from "bumps-webview-client/src/app_state";
 import App from "bumps-webview-client/src/App.vue";
 import { dqIsFWHM } from "./app_state";
-import { panels } from "./panels.mjs";
+import { panels } from "./panels";
 import "./style.css";
 
 const name = "Refl1D";
@@ -28,4 +28,4 @@ async function loadProbeFromFile() {
 
 createApp(App, { panels, name }).mount("#app");
 const modelNotLoaded = computed(() => model_file.value == null);
-menu_items.value.push({ text: "Load Data into Model", action: loadProbeFromFile, disabled: modelNotLoaded });
+file_menu_items.value.push({ text: "Load Data into Model", action: loadProbeFromFile, disabled: modelNotLoaded });

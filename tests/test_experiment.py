@@ -7,7 +7,7 @@ import unittest
 
 import numpy as np
 
-from refl1d.names import SLD, Experiment, Magnetism, NeutronProbe, Parameter, PolarizedNeutronProbe, QProbe, Slab
+from refl1d.names import QProbe, Slab, SLD, Parameter, Experiment, NeutronProbe, PolarizedNeutronProbe, Magnetism
 
 
 class ExperimentJsonTest(unittest.TestCase):

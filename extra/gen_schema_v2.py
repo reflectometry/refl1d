@@ -1,14 +1,14 @@
 import json
 
-from bumps.parameter import *
-from bumps.util import NumpyArray
 from pydantic_core import core_schema
 from pydantic.json_schema import GenerateJsonSchema, JsonSchemaValue
-from pydantic import TypeAdapter
+from pydantic import TypeAdapter  # , ConfigDict
 
-from refl1d.names import *
-from refl1d.model import *
-from refl1d.fitproblem import FitProblem
+from bumps.util import NumpyArray
+
+from refl1d.names import FitProblem
+
+NDArray = NumpyArray
 
 NDArray = NumpyArray
 

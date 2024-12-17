@@ -56,24 +56,24 @@ The complexity comes from multiple sources:
 
      The strength of the interaction can be represented either in
      terms of their scattering length density using
-     :class:`SLD <refl1d.material.SLD>`, or by their chemical
-     formula using :class:`Material <refl1d.material.Material>`, with
+     :class:`SLD <refl1d.sample.material.SLD>`, or by their chemical
+     formula using :class:`Material <refl1d.sample.material.Material>`, with
      scattering length density computed from the information in the
-     probe.  :class:`Mixture <refl1d.material.Mixture>` can be used
+     probe.  :class:`Mixture <refl1d.sample.material.Mixture>` can be used
      to make a composite material whose parts vary be mass or by volume.
 
 :ref:`sample-guide`
 
      Materials are composed into samples, usually as a
-     :class:`Stack <refl1d.model.Stack>` of
-     :class:`Slabs <refl1d.model.Slab>` layers, but more specific profiles
-     such as :class:`PolymerBrush <refl1d.polymer.PolymerBrush>`
+     :class:`Stack <refl1d.sample.layers.Stack>` of
+     :class:`Slabs <refl1d.sample.layers.Slab>` layers, but more specific profiles
+     such as :class:`PolymerBrush <refl1d.sample.polymer.PolymerBrush>`
      are available.  Freeform sections of the profile can be described
-     using :class:`FreeLayer <refl1d.mono.FreeLayer>`, allowing
+     using :class:`FreeLayer <refl1d.sample.mono.FreeLayer>`, allowing
      arbitrary scattering length density profiles within the layer, or
-     :class:`FreeInterface <refl1d.mono.FreeInterface>` allowing
+     :class:`FreeInterface <refl1d.sample.mono.FreeInterface>` allowing
      arbitrary transitions from one SLD to another.  New layer types
-     can be defined by subclassing :class:`Layer <refl1d.model.Layer>`.
+     can be defined by subclassing :class:`Layer <refl1d.sample.layers.Layer>`.
 
 :ref:`experiment-guide`
 
@@ -89,9 +89,9 @@ The complexity comes from multiple sources:
 :ref:`fitting-guide`
 
      One or more experiments can be combined into a
-     :class:`FitProblem <refl1d.fitter.FitProblem>`.  This is then
+     :class:`FitProblem <refl1d.bumps_interface.FitProblem>`.  This is then
      given to one of the many fitters, such as
-     :class:`PTFit <refl1d.fitter.PTFit>`, which adjust the varying
+     :class:`PTFit <bumps.fitters.PTFit>`, which adjust the varying
      parameters, trying to find the best fit.  PTFit can also
      be used for Bayesian analysis in order to estimate the confidence
      in which the parameter values are known.

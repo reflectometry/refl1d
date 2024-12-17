@@ -74,14 +74,14 @@ function createLayer(
   const irhoParam = createParameter("irho", irho, ["-inf", "inf"], true, ["sample"]);
   const thicknessParam = createParameter("thickness", thickness, [0, "inf"], true, ["sample"]);
   const interfaceParam = createParameter("interface", interface_, [0, "inf"], true, ["sample"]);
-  const material: SLD = { name, rho: rhoParam, irho: irhoParam, __class__: "refl1d.material.SLD" };
+  const material: SLD = { name, rho: rhoParam, irho: irhoParam, __class__: "refl1d.sample.material.SLD" };
   const layer: Slab = {
     name,
     material,
     thickness: thicknessParam,
     interface: interfaceParam,
     magnetism,
-    __class__: "refl1d.model.Slab",
+    __class__: "refl1d.sample.layers.Slab",
   };
   return layer;
 }
@@ -90,12 +90,12 @@ function createModel(): SerializedModel {
   return {
     references: {},
     object: {
-      __class__: "refl1d.fitproblem.FitProblem",
+      __class__: "refl1d.bumps_interface.fitproblem.FitProblem",
       models: [
         {
           __class__: "refl1d.experiment.Experiment",
           sample: {
-            __class__: "refl1d.model.Stack",
+            __class__: "refl1d.sample.layers.Stack",
             layers: [createLayer("Si", 2.07, 0.0, 0.0, 1.0), createLayer("Vacuum", 0.0, 0.0, 0.0, 0.0)],
           },
           probe: generateQProbe(editQmin.value, editQmax.value, editQsteps.value, 0.0001),
@@ -173,7 +173,7 @@ function resolveParameter(parameterLike: ParameterLike): Parameter {
 
 function setParameterNames(stack: Stack) {
   for (const layer of stack.layers) {
-    if (layer.__class__ === "refl1d.model.Repeat") {
+    if (layer.__class__ === "refl1d.sample.layers.Repeat") {
       setParameterNames(layer.stack);
     } else {
       const l = layer as Slab;
@@ -213,7 +213,7 @@ function setParameterBounds(stack: Stack) {
     });
   };
   for (const layer of stack.layers) {
-    if (layer.__class__ === "refl1d.model.Repeat") {
+    if (layer.__class__ === "refl1d.sample.layers.Repeat") {
       setParameterBounds(layer.stack);
     } else {
       const l = layer as Slab;

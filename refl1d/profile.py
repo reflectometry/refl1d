@@ -1,5 +1,5 @@
 # Author: Paul Kienzle
-"""
+r"""
 Scattering length density profile.
 
 In order to render a reflectometry model, the theory function calculator
@@ -61,7 +61,7 @@ import numpy as np
 from numpy import isnan, nan
 from scipy.special import erf
 
-from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
+from .sample.reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
 
 
 class Microslabs(object):
@@ -322,7 +322,7 @@ class Microslabs(object):
         Add magnetic information to the nuclear slabs, introducing new
         slabs as necessary where magnetic and nuclear do not match.
         """
-        from .refllib import backend
+        from .backends import backend
 
         # Nuclear profile (one wavelength only)
         # if self.rho.shape[0] != 1:
@@ -400,7 +400,7 @@ class Microslabs(object):
         self._z_offset = self._z_left
 
     def _contract_profile(self, dA):
-        from .refllib import backend
+        from .backends import backend
 
         if dA is None:
             return
@@ -422,7 +422,7 @@ class Microslabs(object):
         # print "final sld after contract", rho[n-1], self.rho[0][n-1], n
 
     def _contract_magnetic(self, dA):
-        from .refllib import backend
+        from .backends import backend
 
         if dA is None:
             return
@@ -615,7 +615,7 @@ def compute_limited_sigma(thickness, roughness, limit):
 
 
 def _build_profiles_backend(z, offsets, roughness, value):
-    from .refllib import backend
+    from .backends import backend
 
     contrast = (value[:, 1:] - value[:, :-1]).ravel(order="C")
     initial_value = value[:, 0].copy()  # contiguous

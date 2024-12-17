@@ -11,8 +11,8 @@ DistristributionExperiment allows the model to be computed for a single
 varying parameter.  Multi-parameter dispersion models are not available.
 """
 
+from bumps.parameter import Parameter
 import numpy as np
-from bumps.parameter import Parameter, to_dict
 
 from .experiment import ExperimentBase
 
@@ -70,19 +70,6 @@ class Weights(object):
     def parameters(self):
         return {"args": self.args, "loc": self.loc, "scale": self.scale}
 
-    def to_dict(self):
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "edges": self.edges.tolist(),
-                "cdf": self.cdf.__name__,  # TODO: can't lookup name
-                "args": self.args,
-                "loc": self.loc,
-                "scale": self.scale,
-                "truncated": self.truncated,
-            }
-        )
-
     def __iter__(self):
         # Find weights and normalize the sum to 1
         centers = (self.edges[:-1] + self.edges[1:]) / 2
@@ -136,18 +123,6 @@ class DistributionExperiment(ExperimentBase):
             "experiment": self.experiment.parameters(),
         }
 
-    def to_dict(self):
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "P": self.P,  # Note: use parameter id to restore
-                "distribution": self.distribution,
-                "experiment": self.experiment,
-                # Don't need self.probe since it is the experiment probe.
-                "coherent": self.coherent,
-            }
-        )
-
     def reflectivity(self, resolution=True, interpolation=0):
         key = ("reflectivity", resolution, interpolation)
         if key not in self._cache:
@@ -199,8 +174,8 @@ class DistributionExperiment(ExperimentBase):
         return self._cache[key]
 
     def plot_profile(self, plot_shift=0.0):
-        import matplotlib.pyplot as plt
         from bumps.plotutil import auto_shift
+        import matplotlib.pyplot as plt
 
         trans = auto_shift(plot_shift)
         z, rho, irho = self.step_profile()

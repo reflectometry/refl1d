@@ -21,6 +21,8 @@
 
 # First define the materials we will use
 
+import numpy
+
 from refl1d.names import *
 
 nickel = Material("Ni")
