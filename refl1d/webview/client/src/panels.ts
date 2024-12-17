@@ -4,7 +4,9 @@ import ModelView from "./components/ModelView.vue";
 import ProfileUncertaintyView from "./components/ProfileUncertaintyView.vue";
 import SimpleBuilder from "./components/SimpleBuilder.vue";
 
-const refl1dPanels = [
+type Panel = { title: string; component: any };
+
+const refl1dPanels: Panel[] = [
   { title: "Reflectivity", component: DataView },
   { title: "Profile", component: ModelView },
   { title: "Profile Uncertainty", component: ProfileUncertaintyView },
@@ -21,7 +23,12 @@ const insertions = {
   Builder: { after: "Uncertainty" },
 };
 
-function replace_panel(panels, replacement_panels, replaced_title, replacement_title) {
+function replace_panel(
+  panels: Panel[],
+  replacement_panels: Panel[],
+  replaced_title: string,
+  replacement_title: string
+) {
   const index = panels.findIndex((p) => p.title === replaced_title);
   const replacement_index = replacement_panels.findIndex((p) => p.title === replacement_title);
   if (index >= 0 && replacement_index >= 0) {
@@ -29,7 +36,7 @@ function replace_panel(panels, replacement_panels, replaced_title, replacement_t
   }
 }
 
-function insert_panel(panels, insertion_panels, title, after) {
+function insert_panel(panels: Panel[], insertion_panels: Panel[], title: string, after: string) {
   let index = panels.findIndex((p) => p.title === after);
   // put it at the end if the after panel is not found
   if (index < 0) {

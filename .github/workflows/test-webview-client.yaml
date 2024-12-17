@@ -56,20 +56,35 @@ jobs:
         run: bun run test:lint
 
   # test that app has no typescript errors
-#   test-types:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v4
+  test-types:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-#       - name: Set up Bun
-#         uses: oven-sh/setup-bun@v2
+      - name: Checkout bumps source
+        uses: actions/checkout@v4
+        with:
+          repository: bumps/bumps
+          sparse-checkout: 'bumps/webview/client'
+          path: bumps
 
-#       - name: Install packages
-#         run: bun install
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
 
-#       - name: Run test
-#         run: bun run test:types
+      - name: Install packages
+        run: bun install
+
+      - name: Use bumps code from source
+        run: |
+          cd ../../../bumps/bumps/webview/client
+          bun install
+          bun link
+          cd ../../../../refl1d/webview/client
+          bun link bumps-webview-client
+
+      - name: Run test
+        run: bun run test:types
 
   # run unit tests
 #   test-unit:
