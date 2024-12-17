@@ -39,7 +39,7 @@ from .probe import (
 from .sample.cheby import ChebyVF, FreeformCheby, cheby_approx, cheby_points
 from .sample.flayer import FunctionalMagnetism, FunctionalProfile
 from .sample.layers import Slab, Stack
-from .sample.magnetism import FreeMagnetism, Magnetism, MagnetismStack, MagnetismTwist
+from .sample.magnetism import FreeMagnetism, FreeMagnetismInterface, Magnetism, MagnetismStack, MagnetismTwist
 from .sample.material import SLD, Compound, Material, Mixture
 
 # Pull in common materials for reflectometry experiments.
