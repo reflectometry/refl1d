@@ -53,7 +53,6 @@ class FreeLayer(Layer):
         self.thickness = Par.default(thickness, name=name + " thickness", limits=(0, inf))
         self.interface = Constant(0, name=name + " interface")
 
-
         def parvec(vector, name, limits):
             return [Par.default(p, name=name + "[%d]" % i, limits=limits) for i, p in enumerate(vector)]
 
