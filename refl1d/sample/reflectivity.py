@@ -142,7 +142,11 @@ def magnetic_reflectivity(*args, **kw):
     Magnetic reflectivity for slab models.
 
     Returns the expected values for the four polarization cross
-    sections (++, +-, -+, --).
+    sections in the order (--, -+, +-, ++)
+    (Note that this order of cross-sections is reversed compared to
+    the direct output of backend.magnetic_amplitude, in order to
+    match the order of probe.xs)
+
     Return reflectivity R^2 from slab model with sharp interfaces.
     returns reflectivities.
 
@@ -232,11 +236,14 @@ def magnetic_amplitude(
     # np.set_printoptions(linewidth=1000)
     # print(np.vstack((depth, np.hstack((sigma, np.nan)), rho, irho, rhoM, thetaM)).T)
 
-    sld_b, u1, u3 = calculate_u1_u3(H, rhoM, thetaM, Aguide)
+    EPS = -Aguide
+    sld_b, u1, u3 = calculate_u1_u3(H, rhoM, thetaM, EPS)
 
     R1, R2, R3, R4 = [np.empty(kz.shape, "D") for pol in (1, 2, 3, 4)]
     backend.magnetic_amplitude(depth, sigma, rho, irho, sld_b, u1, u3, kz, rho_index, R1, R2, R3, R4)
-    return R1, R2, R3, R4
+    # R1 is ++, R2 is +-, R3 is -+, R4 is --
+    # we want to return them in the order --, -+, +-, ++ to match order of probe.xs
+    return R4, R3, R2, R1
 
 
 def calculate_u1_u3(H, rhoM, thetaM, Aguide):
