@@ -3,23 +3,32 @@
  * match the Python model serialization format, and must therefore be snake_case
  */
 
-export interface SerializedModel {
-  references: { [key: string]: Parameter };
-  object: any;
-  $schema: "bumps-draft-02";
-}
-
-export interface Variable {
-  value: number;
-  __class__: "bumps.parameter.Variable";
-}
-
 export interface Reference {
   id: string;
   __class__: "Reference";
 }
 
 export type BoundsValue = number | "-inf" | "inf";
+
+/* Bumps models */
+// Are these necessary? Imported from bumps?
+
+export interface SerializedModel {
+  references: { [key: string]: Parameter };
+  object: any;
+  $schema: "bumps-draft-02";
+}
+
+export interface NumpyArray {
+  values: number[];
+  dtype: string;
+  __class__: "bumps.util.NumpyArray";
+}
+
+export interface Variable {
+  value: number;
+  __class__: "bumps.parameter.Variable";
+}
 
 export interface Parameter {
   id: string;
@@ -36,6 +45,8 @@ export interface ParameterLike {
   id: string;
   __class__: "bumps.parameter.Parameter" | "Reference";
 }
+
+/* Sample models */
 
 export interface Slab {
   name: string;
@@ -76,16 +87,38 @@ export interface Stack {
   __class__: "refl1d.sample.layers.Stack";
 }
 
+/* Experiment models */
+
 export interface Experiment {
+  /*
+   * Why does this not include name, or the other fields?
+   * Why is this a QProbe and not a Probe?
+   */
   sample: Stack;
   probe: QProbe;
-  __class__: "refl1d.probe.experiment.Experiment";
+  __class__: "refl1d.experiment.Experiment";
 }
 
-export interface NumpyArray {
-  values: number[];
-  dtype: string;
-  __class__: "bumps.util.NumpyArray";
+export interface MixedExperiment {
+  name: string;
+  ratio: (number | ParameterLike)[];
+  samples?: Stack[];
+  probe: Probe | PolarizedNeutronProbe;
+  coherent: boolean;
+  interpolation: number;
+  __class__: "refl1d.experiment.MixedExperiment";
+}
+
+/* Probe models */
+
+export interface Probe {
+  /* W... what? should go here? */
+  name?: string;
+}
+
+export interface PolarizedNeutronProbe {
+  /* W... what? should go here? */
+  name: string;
 }
 
 export interface QProbe {
@@ -100,5 +133,5 @@ export interface QProbe {
   R?: NumpyArray;
   dR?: NumpyArray;
   resolution: "normal" | "uniform";
-  __class__: "refl1d.probe.QProbe";
+  __class__: "refl1d.probe.probe.QProbe";
 }
