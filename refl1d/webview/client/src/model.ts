@@ -133,5 +133,5 @@ export interface QProbe {
   R?: NumpyArray;
   dR?: NumpyArray;
   resolution: "normal" | "uniform";
-  __class__: "refl1d.probe.probe.QProbe";
+  __class__: "refl1d.probe.QProbe";
 }

@@ -125,6 +125,8 @@ function generateQProbe(qmin: number = 0, qmax: number = 0.1, qsteps: number = 2
 async function fetchModel() {
   props.socket.asyncEmit("get_model", (payload: ArrayBuffer) => {
     const json_bytes = new Uint8Array(payload);
+    console.debug({ payload });
+
     if (json_bytes.length < 3) {
       // no model defined...
       modelJson.value = {};
