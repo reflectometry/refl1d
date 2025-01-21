@@ -1,6 +1,6 @@
 import url from "url";
 import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
-import pluginVue from "eslint-plugin-vue";
+// import pluginVue from "eslint-plugin-vue";
 import { FlatCompat } from "@eslint/eslintrc";
 import js from "@eslint/js";
 import prettierConfig from "@vue/eslint-config-prettier";
@@ -16,7 +16,7 @@ const compat = new FlatCompat({
 export default [
   /** Extend recommended configs */
   ...compat.extends("plugin:vue/vue3-recommended", "plugin:vuejs-accessibility/recommended", "prettier"),
-  ...pluginVue.configs["flat/recommended"],
+  // ...pluginVue.configs["flat/recommended"],
   ...vueTsEslintConfig(),
   eslintPluginPrettierRecommended,
   prettierConfig,
@@ -39,6 +39,7 @@ export default [
         "error",
         { allowShortCircuit: true, allowTernary: true }, // Temporary fix for indirect dependency @typescript-eslint <= 8.15.0
       ],
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
       "prettier/prettier": [
         "warn",
         {},

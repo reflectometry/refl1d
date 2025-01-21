@@ -48,6 +48,22 @@ export interface ParameterLike {
 
 /* Sample models */
 
+export interface Magnetism {
+  name: string;
+  rhoM: ParameterLike;
+  thetaM: ParameterLike;
+  phiM: ParameterLike;
+  __class__: "refl1d.sample.material.Magnetism";
+}
+
+export interface SLD {
+  name: string;
+  rho: ParameterLike;
+  irho: ParameterLike;
+  __class__: "refl1d.sample.material.SLD";
+}
+
+/** Layer of material */
 export interface Slab {
   name: string;
   thickness: ParameterLike;
@@ -57,6 +73,7 @@ export interface Slab {
   __class__: "refl1d.sample.layers.Slab";
 }
 
+/** Repeated layers of material */
 export interface Repeat {
   name: string;
   interface: ParameterLike;
@@ -67,21 +84,7 @@ export interface Repeat {
   __class__: "refl1d.sample.layers.Repeat";
 }
 
-export interface SLD {
-  name: string;
-  rho: ParameterLike;
-  irho: ParameterLike;
-  __class__: "refl1d.sample.material.SLD";
-}
-
-export interface Magnetism {
-  name: string;
-  rhoM: ParameterLike;
-  thetaM: ParameterLike;
-  phiM: ParameterLike;
-  __class__: "refl1d.sample.material.Magnetism";
-}
-
+/** Stack (sample) of slabs (layers) */
 export interface Stack {
   layers: (Slab | Repeat)[];
   __class__: "refl1d.sample.layers.Stack";
