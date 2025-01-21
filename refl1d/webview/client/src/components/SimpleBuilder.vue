@@ -5,7 +5,6 @@
  TODO: Add a delete stack button
  TODO: Add an "add stack" button to the top?
  TODO: Make stacks draggable
- TODO: Move styling to <style> section
 -->
 
 <script setup lang="ts">
@@ -332,16 +331,14 @@ async function sendModel(is_new: boolean = false, name: string | null = null) {
 
 /** Layer Manipulation Methods */
 
-function deleteLayer(stackIndex: number, layerIndex: number) {
-  sortedSamples.value[stackIndex].splice(layerIndex, 1);
+function addLayer(stackIndex: number, after_index: number = -1) {
+  const newLayer: Slab = createLayer("sld", 2.5, 0.0, 25.0, 1.0);
+  sortedSamples.value[stackIndex].splice(after_index, 0, newLayer);
   sendModel();
 }
 
-function addLayer(stackIndex: number, after_index: number = -1) {
-  console.debug({ stackIndex, after_index });
-
-  const newLayer: Slab = createLayer("sld", 2.5, 0.0, 25.0, 1.0);
-  sortedSamples.value[stackIndex].splice(after_index, 0, newLayer);
+function deleteLayer(stackIndex: number, layerIndex: number) {
+  sortedSamples.value[stackIndex].splice(layerIndex, 1);
   sendModel();
 }
 
@@ -351,6 +348,11 @@ function addStack(stackIndex: number) {
   console.debug({ sortedSamplesBefore: sortedSamples.value });
   sortedSamples.value.splice(stackIndex, 0, newStack);
   console.debug({ sortedSamplesAfter: sortedSamples.value });
+  sendModel();
+}
+
+function deleteStack(stackIndex: number) {
+  sortedSamples.value.splice(stackIndex, 1);
   sendModel();
 }
 
@@ -587,6 +589,7 @@ onMounted(() => {
                 <td></td>
                 <td>
                   <button class="btn btn-success m-2" @click="addStack(sampleKey)">Add Stack</button>
+                  <button class="btn btn-danger m-2" @click="deleteStack(sampleKey)">Delete Stack</button>
                 </td>
                 <td>
                   <div class="input-group m-2">
@@ -665,6 +668,6 @@ button.add-layer-after {
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  height: 100%;
+  /* height: 100%; */
 }
 </style>
