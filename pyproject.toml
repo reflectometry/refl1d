@@ -74,6 +74,7 @@ script-files = ["bin/refl1d_cli.py", "bin/refl1d_gui.py"]
 
 [tool.setuptools.packages.find]
 where = ["."]
+include = ["refl1d*"]
 
 [project.scripts]
 refl1d = "refl1d.main:cli"
