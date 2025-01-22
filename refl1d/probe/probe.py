@@ -1003,7 +1003,7 @@ class Probe(BaseProbe):
 
         """
         Q_c = self.Q_c(substrate, surface)
-        region = OversampledRegion(Q_min=Q_c * (1 - delta), Q_max=Q_c * (1 + delta), n=n)
+        region = OversampledRegion(Q_start=Q_c * (1 - delta), Q_end=Q_c * (1 + delta), n=n)
         self.oversampled_regions.append(region)
         self._apply_oversamplings()
 
