@@ -1047,7 +1047,7 @@ class Probe(BaseProbe):
         rng = numpy.random.RandomState(seed=seed)
         T = rng.normal(self.T[:, None], self.dT[:, None], size=(len(self.dT), n - 1))
         L = rng.normal(self.L[:, None], self.dL[:, None], size=(len(self.dL), n - 1))
-        return T, L
+        return T.flatten(), L.flatten()
 
     def _apply_oversamplings(self):
         T_parts, L_parts = [self.T], [self.L]
