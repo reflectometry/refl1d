@@ -986,9 +986,6 @@ class Probe(BaseProbe):
         *delta* is the relative uncertainty in the material density,
         which defines the range of values which are calculated.
 
-        Note: :meth:`critical_edge` will remove the extra Q calculation
-        points introduced by :meth:`oversample`.
-
         The $n$ points $Q_i$ are evenly distributed around the critical
         edge in $Q_c \pm \delta Q_c$ by varying angle $\theta$ for a
         fixed wavelength $< \lambda >$, the average of all wavelengths
@@ -1034,9 +1031,6 @@ class Probe(BaseProbe):
         bias from uniform Q steps.  Depending on the problem, a value of
         *n* between 20 and 100 should lead to stable values for the convolved
         reflectivity.
-
-        Note: :meth:`oversample` will remove the extra Q calculation
-        points introduced by :meth:`critical_edge`.
         """
 
         self.oversampling = n
