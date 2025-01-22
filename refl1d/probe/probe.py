@@ -91,9 +91,9 @@ def make_probe(**kw):
 
 @dataclass
 class OversampledRegion:
-    Qmin: float
-    Qmax: float
-    dQ: float
+    Q_start: float
+    Q_end: float
+    n: int  # number of points
 
 
 class BaseProbe:
@@ -1050,7 +1050,7 @@ class Probe(BaseProbe):
             T_parts.append(T)
             L_parts.append(L)
         for region in self.oversampled_regions:
-            Q = np.linspace(region.Q_min, region.Q_max, region.n)
+            Q = np.linspace(region.Q_start, region.Q_end, region.n)
             avg_L = np.average(self.L)
             T_parts.append(QL2T(Q=Q, L=avg_L))
             L_parts.append(np.ones_like(Q) * avg_L)
