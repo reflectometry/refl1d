@@ -28,6 +28,7 @@ dependencies = [
     "numpy",
     "periodictable",
     "scipy",
+    "orsopy"
 ]
 
 [project.optional-dependencies]

@@ -3,7 +3,9 @@ repos:
     hooks:
       - id: eslint
         name: eslint
-        entry: bash -c "cd refl1d/webview/client && npm run lint"
+        entry: refl1d/webview/client/node_modules/.bin/eslint  # Path to local ESLint executable
+        args: ["--fix"]  # Automatically fix issues, optional
+        files: ^refl1d/webview/client/src/  # Match files in the specified directory
         language: system
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
