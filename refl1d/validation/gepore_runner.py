@@ -1,13 +1,12 @@
 import os
 from pathlib import Path
 import shutil
+import subprocess
 import tempfile
 from typing import Optional
 
 import numpy as np
 from numpy import radians
-
-import refl1d.lib
 
 B2SLD = 2.31604654e-6
 GEPORE_SRC = "gepore.f"
@@ -20,7 +19,7 @@ class GeporeRunner:
 
     def __init__(self):
         self.binary_path = Path(tempfile.mkdtemp())
-        self.source_folder = Path(refl1d.lib.__file__).parent / "c"
+        self.source_folder = Path(__file__).parent
         self.gepore_src_path = self.source_folder / GEPORE_SRC
         self.gepore_zeeman_src_path = self.source_folder / GEPORE_ZEEMAN_SRC
         self.gepore_binary = self.binary_path / self.binary_name
@@ -84,9 +83,7 @@ class GeporeRunner:
                 )
 
             os.chdir(path)
-            status = os.system("./gepore")
-            if status != 0:
-                raise RuntimeError(f"Could not run gepore {gepore_local}")
+            result = subprocess.run(["./gepore"], capture_output=True, check=True)
 
             rp = np.loadtxt(rp_real).T[1] + 1j * np.loadtxt(rp_imag).T[1]
             rm = np.loadtxt(rm_real).T[1] + 1j * np.loadtxt(rm_imag).T[1]
