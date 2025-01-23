@@ -121,7 +121,6 @@ def run_comparison(
     if save_folder is not None:
         plt.savefig(save_folder / "comparison.png")
         refl1d_output = np.vstack((2 * kz, *Rrefl1d)).T
-        print(refl1d_output.shape)
         np.savetxt(save_folder / "refl1d.dat", refl1d_output, delimiter="\t", header="2kz\tRpp\tRpm\tRmp\tRmm")
 
     Rpp, Rpm, Rmp, Rmm = Rgepore
