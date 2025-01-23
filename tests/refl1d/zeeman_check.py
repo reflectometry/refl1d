@@ -5,7 +5,7 @@ import numpy as np
 from numpy import radians
 
 from refl1d.sample.reflectivity import magnetic_amplitude as magrefl, reflectivity_amplitude as refl
-from gepore_runner import GeporeRunner
+from refl1d.validation.gepore_runner import GeporeRunner
 
 B2SLD = 2.31929e-06
 GEPORE_SRC = "gepore.f"
@@ -415,14 +415,6 @@ def demo():
         compare(*_random_nsf_model(seed=seed), H=1.0, zeeman_corrections=False, nsf_compare=True)
         # compare(*_random_nsf_model(seed=998543), H=0.4, zeeman_corrections=True, nsf_compare=True)
         # plt.show()
-
-
-def write_Chuck_result():
-    kz, R = compare(*Chuck_example(), H=0)  # zeroish field, but magnetic front
-    np.savetxt("Rmm.txt", np.vstack((2 * kz, np.abs(R[3]) ** 2)).T, delimiter="\t")
-    np.savetxt("Rmp.txt", np.vstack((2 * kz, np.abs(R[2]) ** 2)).T, delimiter="\t")
-    np.savetxt("Rpm.txt", np.vstack((2 * kz, np.abs(R[1]) ** 2)).T, delimiter="\t")
-    np.savetxt("Rpp.txt", np.vstack((2 * kz, np.abs(R[0]) ** 2)).T, delimiter="\t")
 
 
 if __name__ == "__main__":
