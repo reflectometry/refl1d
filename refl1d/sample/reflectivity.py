@@ -5,7 +5,7 @@ Slab model reflectivity calculator with optional absorption and roughness.
 The function reflectivity_amplitude returns the complex waveform.
 Slab model with supporting magnetic scattering.  The function
 magnetic_reflectivity returns the complex reflection for the four
-spin polarization cross sections [++, +-, -+, --].  The function
+spin polarization cross sections [--, -+, +-, ++].  The function
 unpolarized_magnetic returns the expected magnitude for a measurement
 of the magnetic scattering using an unpolarized beam.
 """
