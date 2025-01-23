@@ -21,3 +21,4 @@ complex models with many constraints relatively easily.
    profile/model.rst
    random/model.rst
    spinvalve/n101G.rst
+   zeeman/gepore_validation.rst
