@@ -8,5 +8,6 @@ wxPython
 sphinx
 jinja2>=2.8.1
 docutils
+orsopy
 #https://downloads.sourceforge.net/project/py2exe/py2exe/0.6.9/py2exe-0.6.9.zip
 #bumps
