@@ -238,6 +238,3 @@ Rnsf = [np.abs(r) ** 2 for r in rnsf]
 #     ax.set_xlabel("2*kz_in")
 #     ax.set_title("Difference of refl1d (mag. kernel) and\n refl1d (unpol. kernel twice), normalized to sum")
 #     ax.legend()
-
-# .. plot::
-#     plt.plot(Qz, R1[0], label="++")
