@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /// <reference types="@types/plotly.js" />
 import { ref, shallowRef } from "vue";
-import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket.ts";
+import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket";
 import { configWithSVGDownloadButton } from "bumps-webview-client/src/plotly_extras";
 import { setupDrawLoop } from "bumps-webview-client/src/setupDrawLoop";
 import * as Plotly from "plotly.js/lib/core";
@@ -10,7 +10,7 @@ import { COLORS } from "../colors";
 // const title = "Reflectivity";
 const plot_div = ref<HTMLDivElement | null>(null);
 const plot_offset = ref(0);
-const plot_data = shallowRef<Partial<Plotly.PlotData>>({});
+const plot_data = shallowRef<ModelData[][]>([]);
 const chisq_str = ref("");
 
 const log_y = ref(true);
@@ -85,7 +85,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
               const dR = lin_y ? xs.dR : xs.dR.map((t) => t * local_offset);
               data_trace.error_y = { type: "data", array: dR, visible: true };
               if (calculate_residuals) {
-                const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR[i]);
+                const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR![i]);
                 const residuals_trace: Trace = {
                   x: xs.Q,
                   y: residuals,
@@ -145,7 +145,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
               const dR_offset = lin_y ? dR : dR.map((t) => t * local_offset);
               data_trace.error_y = { type: "data", array: dR_offset, visible: true };
               if (calculate_residuals) {
-                const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR[i]);
+                const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR![i]);
                 const residuals_trace: Trace = {
                   x: xs.Q,
                   y: residuals,
@@ -210,7 +210,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
               const offset_dR = dR.map((t) => t * local_offset);
               data_trace.error_y = { type: "data", array: offset_dR, visible: true };
               if (calculate_residuals) {
-                const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR[i]);
+                const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR![i]);
                 const residuals_trace: Trace = {
                   x: xs.Q,
                   y: residuals,
@@ -256,7 +256,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           if (pp.R !== undefined && mm.R !== undefined) {
             const Rm = interp(pp.Q, mm.Q, mm.R);
             const SA = Rm.map((m, i) => {
-              const p = pp.R[i];
+              const p = pp.R![i];
               return (p - m) / (p + m);
             });
             const SA_offset = SA.map((v) => v + local_offset);
@@ -277,7 +277,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
               const dRm = interp(pp.Q, mm.Q, mm.dR);
               const dSA = dRm.map((dm, i) => {
                 // const dp = pp.dR[i];
-                const p = pp.R[i];
+                const p = pp.R![i];
                 const m = Rm[i];
                 return Math.sqrt((4 * ((p * dm) ** 2 + (m * dm) ** 2)) / (p + m) ** 4);
               });
@@ -314,7 +314,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
 
 async function fetch_and_draw() {
   const payload = (await props.socket.asyncEmit("get_plot_data", "linear")) as {
-    plotdata: Partial<Plotly.PlotData>;
+    plotdata: ModelData[][];
     chisq: string;
   };
   plot_data.value = payload.plotdata;
@@ -380,7 +380,7 @@ async function draw_plot() {
   };
 
   if (show_residuals.value) {
-    layout.yaxis.domain = [0.4, 1];
+    layout.yaxis!.domain = [0.4, 1];
     // layout.yaxis.anchor = 'x';
     layout.yaxis2 = {
       domain: [0, 0.25],
@@ -390,8 +390,8 @@ async function draw_plot() {
   }
 
   if (reflectivity_type.value === "Spin Asymmetry") {
-    layout.yaxis.range = [-1.5, 1.5];
-    layout.yaxis.autorange = false;
+    layout.yaxis!.range = [-1.5, 1.5];
+    layout.yaxis!.autorange = false;
   }
 
   const config: Partial<Plotly.Config> = {
@@ -404,6 +404,14 @@ async function draw_plot() {
   await Plotly.react(plot_div.value as HTMLDivElement, [...theory_traces, ...data_traces], layout, config);
 }
 
+/**
+ * Performs linear interpolation of the values in fp at the points in xp to the points in x.
+ *
+ * @param x: the points at which to interpolate
+ * @param xp: the points at which the function is known
+ * @param fp: the values of the function at the points in xp
+ * @returns the interpolated y values at the points in x
+ */
 function interp(x: number[], xp: number[], fp: number[]): number[] {
   // assume x and xp are sorted, monotonically increasing
   if (xp.length != fp.length) {
@@ -428,7 +436,7 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
   }
 
   return x.map((xv) => {
-    while (xv >= upper_xp.value && !upper_xp.done) {
+    while (xv >= upper_xp.value! && !upper_xp.done) {
       lower_xp = upper_xp;
       lower_fp = upper_fp;
       upper_xp = xpv.next();
@@ -442,7 +450,8 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
     } else {
       // xv < upper_xp.value
       return (
-        ((upper_fp.value - lower_fp.value) / (upper_xp.value - lower_xp.value)) * (xv - lower_xp.value) + lower_fp.value
+        ((upper_fp.value! - lower_fp.value!) / (upper_xp.value - lower_xp.value!)) * (xv - lower_xp.value!) +
+        lower_fp.value!
       );
     }
   });
