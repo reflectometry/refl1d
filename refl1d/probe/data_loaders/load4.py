@@ -6,7 +6,6 @@ from bumps.data import parse_multi, strip_quotes
 import numpy as np
 from orsopy.fileio.orso import load_nexus, load_orso
 
-
 # refl1d imports
 from refl1d.probe import (
     NeutronProbe,

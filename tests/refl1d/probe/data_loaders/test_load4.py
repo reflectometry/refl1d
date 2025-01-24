@@ -1,6 +1,5 @@
 # standard imports
 from collections import namedtuple
-import tempfile
 
 # third-party imports
 import numpy as np
