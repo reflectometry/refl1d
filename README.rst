@@ -1,7 +1,7 @@
 Refl1D
 ======
 
-Refl1D is a program for analyzing 1D reflectometry measurements made with
+Refl1D is a program for analyzing 1-D reflectometry measurements made with
 X-ray and neutron beamlines.  The 1-D models give the depth profile for
 material scattering density composed of a mixture of flat and continuously
 varying freeform layers. With polarized neutron measurements, scientists

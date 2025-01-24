@@ -1,9 +1,9 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Union
 
 from bumps.fitproblem import FitProblem as _FitProblem
 
-from ..experiment import Experiment
+from ..experiment import Experiment, MixedExperiment
 
 
 # @dataclass(init=False)
@@ -25,4 +25,4 @@ class FitProblem(_FitProblem):
     #   refl1d.bumps_interface.fitproblem.FitProblem:10: WARNING: undefined label: 'freevariables' [ref.ref]
     ###
     # __doc__ = _FitProblem.__doc__.replace("Fitness", "Experiment")
-    models: List[Experiment]
+    models: List[Union[Experiment, MixedExperiment]]
