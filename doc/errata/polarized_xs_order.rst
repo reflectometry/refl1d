@@ -23,8 +23,6 @@ We have corrected this error in the release 1.0.0 of Refl1D.
 
 *Note that as a result of the original error in interpreting the outputs of the Refl1D 
 magnetic kernel, the figure in the original JAC article has the cross sections labeled incorrectly.
-(an erratum has been submitted to JAC to correct this).*
-
 
 Backward Compatibility
 ----------------------
