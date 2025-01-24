@@ -1,14 +1,17 @@
-# .. _gepore_validation:
+# .. _gepore_zeeman_sf:
 #
-# Validation of the Zeeman effect with gepore.f
-# =============================================
+# Validation of the Zeeman effect with gepore_zeeman.f
+# ====================================================
 #
-# This example demonstrates the use of the gepore.f program to validate
+# This example demonstrates the use of the gepore_zeeman.f program
+# (a modification of the original gepore.f published in the PNR book chapter)
+# to validate
 # a model with strong spin-flip scattering and a high magnetic field
 # (such as measuring a strongly anisotropic sample in a high field that
 # is not parallel to the magnetization).
 
-# The model is a simple slab with a single layer of nickel on a silicon
+# The model is a simple slab with a single layer of magnetic material on
+# a non-magnetic substrate.
 
 import numpy as np
 from refl1d.validation.gepore_runner import GeporeRunner
@@ -133,15 +136,3 @@ R1 = np.abs(r1[::-1]) ** 2
 #     ax.set_xlabel("2*kz_in")
 #     ax.set_title("Difference between gepore and refl1d, normalized to sum")
 #     ax.legend()
-
-# Sanity Check: Non-Spin-Flip Scattering
-# --------------------------------------
-#
-# We can check a simple magnetic model with no spin-flip scattering against
-#
-# * gepore.f as written directly in the PNR book chapter
-# * gepore_zeeman.f (a slightly modified version of gepore.f that includes the Zeeman effect)
-# * refl1d using the magnetic calculation kernel
-# * refl1d using the unpolarized calculation kernel twice, with
-#    * :math:`\rho_{++} = \rho_N + \rho_M`
-#    * :math:`\rho_{--} = \rho_N - \rho_M`
