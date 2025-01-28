@@ -34,7 +34,7 @@ Qz = np.arange(NQ) * DQ + QS
 #
 # * vacuum (all SLD zero)
 # * magnetic layer: :math:`\rho_N = 8.0 \times 10^{-6}, \rho_M = 2.0 \times 10^{-6}, \theta_M = 270^\circ`
-# * non-magnetic cap layer: :math:`\rho_N = 2.0 \times 10^{-6}`
+# * non-magnetic cap layer: :math:`\rho_N = 5.0 \times 10^{-6}`
 # * substrate: non-magnetic with nuclear SLD :math:`\rho_N = 2.0 \times 10^{-6}`
 
 Aguide = 270.0  # guide field in sample plane
