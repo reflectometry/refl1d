@@ -165,7 +165,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           plot_index++;
         }
       }
-      yaxis_label = "Fresnel Reflectivity";
+      yaxis_label = "Fresnel (R/R_substrate)";
       break;
     }
     case "RQ^4": {
@@ -230,7 +230,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           plot_index++;
         }
       }
-      yaxis_label = "Reflectivity / Q<sup>4</sup>";
+      yaxis_label = "R \u{00B7} Q<sup>4</sup>";
       break;
     }
     case "Spin Asymmetry": {
