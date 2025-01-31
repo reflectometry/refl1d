@@ -7,6 +7,8 @@ from bumps.parameter import Parameter
 from refl1d.sample.material import SLD
 from .interactor import BaseInteractor
 from .util import setpar
+from .config import pick_radius
+from .config import rho_color, rhoI_color, disabled_color
 
 
 class MaterialInteractor(BaseInteractor):

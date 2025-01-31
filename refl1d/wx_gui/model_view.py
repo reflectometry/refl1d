@@ -14,7 +14,7 @@ from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg
 from matplotlib.figure import Figure
 
-from refl1d.names.experiment import MixedExperiment
+from refl1d.experiment import MixedExperiment
 
 # from .binder import pixel_to_data
 from .interactor import BaseInteractor

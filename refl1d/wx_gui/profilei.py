@@ -13,6 +13,7 @@ from .binder import BindArtist, pixel_to_data
 from .config import layer_hysteresis, rho_color, rhoI_color, rhoM_color, thetaM_color
 from .interactor import BaseInteractor, safecall
 from .interface import InterfaceInteractor
+from .thickness import ThicknessInteractor
 
 blend_xy = transforms.blended_transform_factory
 
