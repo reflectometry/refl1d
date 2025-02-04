@@ -47,7 +47,7 @@ jobs:
 
       - name: Build the docs
         run: |
-          pip install sphinx nbsphinx
+          pip install sphinx nbsphinx ipython
           make -j 4 -C doc SPHINXOPTS="-W --keep-going" html
 
       - name: Setup Pages
