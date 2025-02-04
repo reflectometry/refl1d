@@ -45,4 +45,6 @@ jobs:
       - name: Check that the docs build (linux only)
         if: matrix.config.doc == 1
         run: |
+          sudo apt-get install -y pandoc
+          python -m pip install nbsphinx
           make -j 4 -C doc SPHINXOPTS="-W --keep-going" html
