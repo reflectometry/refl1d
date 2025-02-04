@@ -43,7 +43,7 @@ results will remain the same as before.
 Validation
 ----------
 
-See :doc:`Gepore Validation </tutorial/validation/gepore_zeeman_sf>` example for a comparison of the results including the
+See :doc:`Gepore Validation </notebooks/gepore_sf>` example for a comparison of the results including the
 correction.
 
 References
