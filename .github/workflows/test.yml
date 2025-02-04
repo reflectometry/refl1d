@@ -46,5 +46,5 @@ jobs:
         if: matrix.config.doc == 1
         run: |
           sudo apt-get install -y pandoc
-          python -m pip install nbsphinx
+          python -m pip install nbsphinx ipython
           make -j 4 -C doc SPHINXOPTS="-W --keep-going" html
