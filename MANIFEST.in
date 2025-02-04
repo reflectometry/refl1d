@@ -18,6 +18,7 @@ include refl1d/webview/client/*.js
 include refl1d/webview/client/*.json
 include refl1d/webview/client/*.txt
 include extra/*.svg extra/*.png
+include refl1d/validation/*.f
 # Delete files
 # ex. prune this that
 prune refl1d/webview/client/node_modules

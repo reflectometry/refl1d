@@ -63,6 +63,7 @@ extensions = [
     "slink",
     #'wx_directive',
     #'numpydoc.numpydoc',
+    "nbsphinx",
 ]
 # plot_formats = [('png', 120), ('pdf', 50)] # Only make 80 dpi plots
 
@@ -285,6 +286,34 @@ slink_vars = dict(
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [("index", "refl1d", program_title, ["Paul Kienzle"], 1)]
+
+# -- header for Jupyter notebooks --------------------------------------------
+# This is processed by Jinja2 and inserted before each notebook
+nbsphinx_prolog = r"""
+{% set docname = 'doc/' + env.doc2path(env.docname, base=None)|string %}
+
+.. raw:: html
+
+    <div class="admonition note">
+      This page was generated from
+      <a class="reference external" href="https://github.com/reflectometry/refl1d/tree/main/{{ docname|e }}">{{ docname|e }}</a>.
+      [<a href="{{ env.docname.split('/')|last|e + '.ipynb' }}" class="reference download internal" download>Download notebook</a>.]
+      <br>
+      Interactive online versions:
+      <span style="white-space: nowrap;"><a href="https://mybinder.org/v2/gh/reflectometry/refl1d/{{ env.config.release|e }}?filepath={{ docname|e }}"><img alt="Binder badge" src="https://mybinder.org/badge_logo.svg" style="vertical-align:text-bottom"></a>.</span>
+      <span style="white-space: nowrap;">
+        <a target="_blank" href="https://colab.research.google.com/github/reflectometry/refl1d/blob/main/{{ docname|e }}">
+            <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+        </a>
+      </span>
+    </div>
+
+.. raw:: latex
+
+    \nbsphinxstartnotebook{\scriptsize\noindent\strut
+    \textcolor{gray}{The following section was generated from
+    \sphinxcode{\sphinxupquote{\strut {{ docname | escape_latex }}}} \dotfill}}
+"""
 
 # Generate API docs
 import genmods

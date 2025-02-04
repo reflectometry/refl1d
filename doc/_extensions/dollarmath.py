@@ -13,27 +13,18 @@ import re
 
 _dollar = re.compile(r"(?:^|(?<=\s|[-(]))[$]([^\n]*?)(?<![\\])[$](?:$|(?=\s|[-.,;:?\\)]))")
 _notdollar = re.compile(r"\\[$]")
+_jupyter = re.compile(r'^\s*{\s*"cells"')
 
 
 def replace_dollar(content):
-    original = content
     content = _dollar.sub(r":math:`\1`", content)
     content = _notdollar.sub("$", content)
-    # if '$' in content:
-    #    import sys
-    #    sys.stdout.write("\n========> not converted\n")
-    #    sys.stdout.write(content)
-    #    sys.stdout.write("\n")
-    # elif '$' in original:
-    #    import sys
-    #    sys.stdout.write("\n========> converted\n")
-    #    sys.stdout.write(content)
-    #    sys.stdout.write("\n")
     return content
 
 
 def rewrite_rst(app, docname, source):
-    source[0] = replace_dollar(source[0])
+    if not _jupyter.match(source[0]):
+        source[0] = replace_dollar(source[0])
 
 
 def rewrite_autodoc(app, what, name, obj, options, lines):

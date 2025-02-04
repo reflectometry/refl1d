@@ -29,11 +29,11 @@ Getting the Code
 
 To get the code, you will need to clone the repository.  If you are planning
 on making only a few small changes, you can clone the repository directly,
-make the changes, document and test, then send a patch (see `Simple patches <#Simple-patches>`_ below).
+make the changes, document and test, then send a patch (see `Simple patches`_ below).
 
 If you are planning on making larger changes, you should fork the repository
 on github, make the changes in your fork, then issue a pull request to the
-main repository (see `Larger changes <#Larger-changes>`_ below).
+main repository (see `Larger changes`_ below).
 
 .. note::
 
