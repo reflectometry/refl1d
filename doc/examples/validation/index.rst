@@ -12,10 +12,10 @@ we will use the version `gepore_zeeman.f` which was created during the preparati
 article on PNR in large magnetic fields in the Journal of Applied Crystallography [2]_
 
 .. toctree::
-    :maxdepth: 2
-    :glob:
+    :maxdepth: 1
 
-    *
+    ../../notebooks/gepore_sf.ipynb
+    ../../notebooks/gepore_nsf.ipynb
 
 .. [1] Majkrzak, C. F., K. V. O'Donovan, and N. F. Berk.
     "Polarized neutron reflectometry."
