@@ -824,7 +824,7 @@ class Text2Code(TextCodeConverter):
         for line in block:
             if line.lstrip() and self.get_indent(line) < self._codeindent:
                 raise ValueError(
-                    "code block contains line less indented " "than %d spaces \n%r" % (self._codeindent, block)
+                    "code block contains line less indented than %d spaces \n%r" % (self._codeindent, block)
                 )
             yield line.replace(" " * self._codeindent, "", 1)
 
@@ -1296,7 +1296,7 @@ class PylitOptions(object):
         p.add_option(
             "--codeindent",
             type="int",
-            help="Number of spaces to indent code blocks with " "text2code (default %d)" % defaults.codeindent,
+            help="Number of spaces to indent code blocks with text2code (default %d)" % defaults.codeindent,
         )
 
         # Output file handling

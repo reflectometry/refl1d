@@ -167,7 +167,7 @@ class FunctionalMagnetism(BaseMagnetism):
     # TODO: is there a sane way of computing magnetism thickness in advance?
     def _calc_thickness(self):
         if self.anchor is None:
-            raise ValueError("Need layer.magnetism.set_anchor(stack, layer) to compute" " magnetic thickness.")
+            raise ValueError("Need layer.magnetism.set_anchor(stack, layer) to compute magnetic thickness.")
         stack, index = self.anchor
         stack, start = stack._lookup(index)
         total = 0

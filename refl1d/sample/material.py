@@ -84,13 +84,13 @@ class Scatterer:
         """
         Interface for a material stacker, to support e.g., *stack = Si | air*.
         """
-        raise NotImplementedError("failed monkey-patch: material stacker needs" " to replace __or__ in Scatterer")
+        raise NotImplementedError("failed monkey-patch: material stacker needs to replace __or__ in Scatterer")
 
     def __call__(self, *args, **kw):
         """
         Interface for a material stacker, to support e.g., *stack = Si(thickness=)*.
         """
-        raise NotImplementedError("failed monkey-patch: material stacker needs" " to replace __call__ in Scatterer")
+        raise NotImplementedError("failed monkey-patch: material stacker needs to replace __call__ in Scatterer")
 
     def __str__(self):
         return self.name

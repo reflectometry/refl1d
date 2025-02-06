@@ -135,7 +135,7 @@ class Layer:  # Abstract base class
         if not isinstance(other, int) or not other > 1:
             raise TypeError("Repeat count must be an integer > 1")
         if isinstance(self, Slab):
-            raise TypeError("Cannot repeat single slab" "")
+            raise TypeError("Cannot repeat single slab")
         stack = Stack()
         stack.add(self)
         r = Repeat(stack=stack, repeat=other)
