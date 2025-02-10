@@ -1,15 +1,18 @@
-import { panels as bumps_panels } from "bumps-webview-client/src/panels";
+import { shared_state } from "bumps-webview-client/src/app_state";
+import { panels as bumps_panels, type Panel } from "bumps-webview-client/src/panels";
 import DataView from "./components/DataView.vue";
 import ModelView from "./components/ModelView.vue";
 import ProfileUncertaintyView from "./components/ProfileUncertaintyView.vue";
 import SimpleBuilder from "./components/SimpleBuilder.vue";
 
-type Panel = { title: string; component: any };
-
 const refl1dPanels: Panel[] = [
   { title: "Reflectivity", component: DataView },
   { title: "Profile", component: ModelView },
-  { title: "Profile Uncertainty", component: ProfileUncertaintyView },
+  {
+    title: "Profile Uncertainty",
+    component: ProfileUncertaintyView,
+    show: () => shared_state.uncertainty_available?.available ?? false,
+  },
   { title: "Builder", component: SimpleBuilder },
 ];
 
