@@ -14,7 +14,8 @@ article on PNR in large magnetic fields in the Journal of Applied Crystallograph
 .. toctree::
     :maxdepth: 1
 
-    ../../notebooks/gepore_sf.ipynb
+    ../../notebooks/gepore_sf_outofplane.ipynb
+    ../../notebooks/gepore_sf_inplane.ipynb
     ../../notebooks/gepore_nsf.ipynb
 
 .. [1] Majkrzak, C. F., K. V. O'Donovan, and N. F. Berk.
