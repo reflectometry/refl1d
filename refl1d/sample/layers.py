@@ -568,7 +568,7 @@ def _check_layer(el):
     elif isinstance(el, mat.Scatterer):
         return Slab(el)
     else:
-        raise TypeError("Can only stack materials and layers, not %s" % el)
+        raise TypeError(f"Can only stack materials and layers, not {el} (of type {type(el)})")
 
 
 @dataclass(init=False)
