@@ -16,7 +16,7 @@ choices effectively cancel each other out almost all the time.
 
 The exception is when there is significant splitting in the spin-flip cross sections,
 which occurs when there is a significant applied field **and** a significant projection of the
-magnetic moment perpendiculat to that applied field.  In this case, the energy corrections
+magnetic moment perpendicular to that applied field.  In this case, the energy corrections
 are applied to the wrong elements, leading to incorrect results.
 
 We have corrected this error in the release 1.0.0 of Refl1D.
