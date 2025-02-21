@@ -39,7 +39,7 @@ dev = [
     "pytest",
     "pytest-cov",
     "ruff",
-    "sphinx",
+    "sphinx < 8.2",
     "versioningit",
 ]
 full = ["wxpython", "ipython"]
