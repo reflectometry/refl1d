@@ -16,7 +16,7 @@ jobs:
           - { os: ubuntu-latest, py: 3.9 }
           - { os: ubuntu-latest, py: "3.10" }
           - { os: ubuntu-latest, py: "3.11" }
-          - { os: ubuntu-latest, py: "3.12", doc: 1 , whl: 1 }
+          - { os: ubuntu-latest, py: "3.12", doc: 1, whl: 1 }
           - { os: windows-latest, py: "3.12", whl: 1 }
           - { os: macos-latest, py: "3.12" }
 
@@ -49,5 +49,6 @@ jobs:
       - name: Check that the docs build (linux only)
         if: matrix.config.doc == 1
         run: |
+          sudo apt-get install -y pandoc
           source .venv/bin/activate
           make -j 4 -C doc SPHINXOPTS="-W --keep-going" html
