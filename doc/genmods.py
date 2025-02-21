@@ -41,7 +41,6 @@ MODULES = [
     ("deprecated.freeform", "Freeform - Parametric B-Spline"),
     ("backends", "Backends for low level reflectivity calculations"),
     ("bumps_interface.fitplugin", "Bumps plugin definition for reflectivity models"),
-    ("bumps_interface.fitproblem", "Bumps FitProblem definition for reflectivity models"),
     ("dist", "Non-uniform samples"),
     ("experiment", "Reflectivity fitness function"),
     ("probe", "Instrument probe"),
