@@ -296,7 +296,7 @@ nbsphinx_prolog = r"""
 
     <div class="admonition note">
       This page was generated from
-      <a class="reference external" href="https://github.com/reflectometry/refl1d/tree/main/{{ docname|e }}">{{ docname|e }}</a>.
+      <a class="reference external" href="https://github.com/{{ env.config.github_user }}/{{ env.config.github_user }}/tree/{{ env.config.release|e }}/{{ docname|e }}">{{ docname|e }}</a>.
       [<a href="{{ env.docname.split('/')|last|e + '.ipynb' }}" class="reference download internal" download>Download notebook</a>.]
       <br>
       Interactive online versions:
