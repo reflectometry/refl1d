@@ -296,13 +296,13 @@ nbsphinx_prolog = r"""
 
     <div class="admonition note">
       This page was generated from
-      <a class="reference external" href="https://github.com/{{ env.config.github_user }}/{{ env.config.github_user }}/tree/{{ env.config.release|e }}/{{ docname|e }}">{{ docname|e }}</a>.
+      <a class="reference external" href="https://github.com/reflectometry/refl1d/tree/master/{{ docname|e }}">{{ docname|e }}</a>.
       [<a href="{{ env.docname.split('/')|last|e + '.ipynb' }}" class="reference download internal" download>Download notebook</a>.]
       <br>
       Interactive online versions:
-      <span style="white-space: nowrap;"><a href="https://mybinder.org/v2/gh/reflectometry/refl1d/{{ env.config.release|e }}?filepath={{ docname|e }}"><img alt="Binder badge" src="https://mybinder.org/badge_logo.svg" style="vertical-align:text-bottom"></a>.</span>
+      <span style="white-space: nowrap;"><a href="https://mybinder.org/v2/gh/reflectometry/refl1d/master?filepath={{ docname|e }}"><img alt="Binder badge" src="https://mybinder.org/badge_logo.svg" style="vertical-align:text-bottom"></a>.</span>
       <span style="white-space: nowrap;">
-        <a target="_blank" href="https://colab.research.google.com/github/reflectometry/refl1d/blob/main/{{ docname|e }}">
+        <a target="_blank" href="https://colab.research.google.com/github/reflectometry/refl1d/blob/master/{{ docname|e }}">
             <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
         </a>
       </span>
