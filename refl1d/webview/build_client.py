@@ -34,7 +34,7 @@ def build_client(
         cleanup_bumps_packages()
         bumps_path = Path(bumps.webview.__file__).parent / "client"
         # pack it up for install...
-        os.system(f"npm pack {bumps_path}")
+        os.system(f"npm pack {bumps_path} --quiet")
         # get the package filename:
         bumps_package_file = next(client_folder.glob("bumps-webview-client*.tgz"))
         os.system(f"npm install {bumps_package_file} --no-save")
