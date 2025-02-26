@@ -289,6 +289,12 @@ man_pages = [("index", "refl1d", program_title, ["Paul Kienzle"], 1)]
 
 # -- header for Jupyter notebooks --------------------------------------------
 # This is processed by Jinja2 and inserted before each notebook
+import subprocess
+try:
+    git_tag = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
+except subprocess.CalledProcessError:
+    git_tag = "master"
+
 nbsphinx_prolog = r"""
 {% set docname = 'doc/' + env.doc2path(env.docname, base=None)|string %}
 
@@ -296,13 +302,13 @@ nbsphinx_prolog = r"""
 
     <div class="admonition note">
       This page was generated from
-      <a class="reference external" href="https://github.com/reflectometry/refl1d/tree/master/{{ docname|e }}">{{ docname|e }}</a>.
+      <a class="reference external" href="https://github.com/reflectometry/refl1d/blob/<TAG>/{{ docname|e }}">{{ docname|e }}</a>.
       [<a href="{{ env.docname.split('/')|last|e + '.ipynb' }}" class="reference download internal" download>Download notebook</a>.]
       <br>
       Interactive online versions:
-      <span style="white-space: nowrap;"><a href="https://mybinder.org/v2/gh/reflectometry/refl1d/master?filepath={{ docname|e }}"><img alt="Binder badge" src="https://mybinder.org/badge_logo.svg" style="vertical-align:text-bottom"></a>.</span>
+      <span style="white-space: nowrap;"><a href="https://mybinder.org/v2/gh/reflectometry/refl1d/<TAG>?filepath={{ docname|e }}"><img alt="Binder badge" src="https://mybinder.org/badge_logo.svg" style="vertical-align:text-bottom"></a>.</span>
       <span style="white-space: nowrap;">
-        <a target="_blank" href="https://colab.research.google.com/github/reflectometry/refl1d/blob/master/{{ docname|e }}">
+        <a target="_blank" href="https://colab.research.google.com/github/reflectometry/refl1d/blob/<TAG>/{{ docname|e }}">
             <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
         </a>
       </span>
@@ -313,7 +319,7 @@ nbsphinx_prolog = r"""
     \nbsphinxstartnotebook{\scriptsize\noindent\strut
     \textcolor{gray}{The following section was generated from
     \sphinxcode{\sphinxupquote{\strut {{ docname | escape_latex }}}} \dotfill}}
-"""
+""".replace("<TAG>", git_tag)
 
 # Generate API docs
 import genmods
