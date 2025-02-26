@@ -290,8 +290,9 @@ man_pages = [("index", "refl1d", program_title, ["Paul Kienzle"], 1)]
 # -- header for Jupyter notebooks --------------------------------------------
 # This is processed by Jinja2 and inserted before each notebook
 import subprocess
+
 try:
-    git_tag = subprocess.check_output(['git', 'rev-parse', 'HEAD']).decode('ascii').strip()
+    git_tag = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("ascii").strip()
 except subprocess.CalledProcessError:
     git_tag = "master"
 
