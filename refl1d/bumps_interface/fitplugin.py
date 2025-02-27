@@ -8,10 +8,11 @@ the two.
 
 __all__ = ["data_view", "model_view", "new_model", "calc_errors", "show_errors"]
 
+from typing import cast
 import numpy as np
 
 from .migrations import migrate
-from ..bumps_interface.fitproblem import FitProblem
+from bumps.fitproblem import FitProblem
 from ..experiment import Experiment
 from ..sample.materialdb import air, silicon
 from ..probe.data_loaders import ncnrdata as NCNR
@@ -39,7 +40,7 @@ def load_model(filename):
     if filename.endswith(".staj") or filename.endswith(".sta"):
         from ..probe.data_loaders.stajconvert import load_mlayer
 
-        return FitProblem(load_mlayer(filename))
+        return FitProblem[Experiment](load_mlayer(filename))
         # fit_all(problem.fitness, pmp=20)
     elif filename.endswith(".zip"):
         from bumps.fitproblem import load_problem
@@ -52,11 +53,11 @@ def load_model(filename):
         with ZipFS(filename) as zf:
             for f in zf.filelist:
                 if f.filename.endswith(".py"):
-                    return load_problem(f.filename, options=options)
+                    return cast(FitProblem[Experiment], load_problem(f.filename, options=options))
     elif filename.endswith(".json"):
-        from bumps.serialize import load
+        from bumps.serialize import load_file
 
-        return load(filename)
+        return cast(FitProblem[Experiment], load_file(filename))
     else:
         return None
 

@@ -27,7 +27,7 @@ from .sample.reflectivity import (
     reflectivity_amplitude as reflamp,
 )
 from . import profile
-from .probe.probe import PolarizedNeutronProbe, Probe
+from .probe.probe import PolarizedNeutronProbe, Probe, QProbe, PolarizedQProbe
 from .sample import layers, material
 from .utils import asbytes
 
@@ -382,7 +382,7 @@ class Experiment(ExperimentBase):
 
     name: str
     sample: Optional[layers.Stack]
-    probe: Union[Probe, PolarizedNeutronProbe]
+    probe: Union[Probe, PolarizedNeutronProbe, QProbe, PolarizedQProbe]
     roughness_limit: float
     dz: Union[float, Literal[None]]
     dA: Union[float, Literal[None]]
