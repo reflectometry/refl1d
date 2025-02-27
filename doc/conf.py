@@ -292,9 +292,12 @@ man_pages = [("index", "refl1d", program_title, ["Paul Kienzle"], 1)]
 import subprocess
 
 try:
-    git_tag = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("ascii").strip()
+    git_tag = subprocess.check_output(["git", "describe", "--exact-match", "--tags"]).decode("ascii").strip()
 except subprocess.CalledProcessError:
-    git_tag = "master"
+    try:
+        git_tag = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode("ascii").strip()
+    except subprocess.CalledProcessError:
+        git_tag = "master"
 
 nbsphinx_prolog = r"""
 {% set docname = 'doc/' + env.doc2path(env.docname, base=None)|string %}
