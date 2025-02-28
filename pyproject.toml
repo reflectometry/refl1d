@@ -22,16 +22,28 @@ classifiers = [
 ]
 requires-python = ">=3.9"
 dependencies = [
-    "bumps>=1.0.0a7",
+    "bumps>=1.0.0a12",
     "matplotlib",
     "numba",
     "numpy",
     "periodictable",
     "scipy",
+    "orsopy"
 ]
 
 [project.optional-dependencies]
-dev = ["pre-commit", "ruff", "pytest", "pytest-cov", "versioningit"]
+dev = [
+    "ipython",
+    "matplotlib", # for testing
+    "nbsphinx",
+    "pre-commit",
+    "pydantic",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "sphinx < 8.2",
+    "versioningit",
+]
 full = ["wxpython", "ipython"]
 webview = ["bumps[webview]"]
 
@@ -46,9 +58,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.ruff]
 line-length = 120
-exclude = [
-    "*.txt",
-]
+exclude = ["*.txt"]
 
 # [tool.ruff.lint]
 # select = [
@@ -67,6 +77,7 @@ version = { attr = "refl1d.__version__" }
 script-files = ["bin/refl1d_cli.py", "bin/refl1d_gui.py"]
 
 [tool.setuptools.packages.find]
+where = ["."]
 include = ["refl1d*"]
 
 [project.scripts]
@@ -74,7 +85,8 @@ refl1d = "refl1d.main:cli"
 refl1d-webview = "refl1d.webview.server.webserver:main"
 
 [tool.pytest.ini_options]
-addopts = "--doctest-modules --doctest-glob=*.rst --cov=refl1d"
+# TODO: remove --assert=plain when https://github.com/scipy/scipy/issues/22236 is resolved
+addopts = "--doctest-modules --doctest-glob=*.rst --cov=bumps --assert=plain"
 doctest_optionflags = ["ELLIPSIS", "NORMALIZE_WHITESPACE"]
 testpaths = ["refl1d", "tests", "doc/getting_started", "doc/guide"]
 norecursedirs = ["view", "mystic", "bin", "webview/client", "explore"]

@@ -11,7 +11,8 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import os
+import sys
 
 print("python %s" % sys.executable)
 
@@ -36,10 +37,11 @@ print("\n".join(sys.path))
 print("== end path ==")
 
 # Register the refl1d model loader
-import refl1d.fitplugin
 import bumps.cli
 
-bumps.cli.install_plugin(refl1d.fitplugin)
+from refl1d.bumps_interface import fitplugin
+
+bumps.cli.install_plugin(fitplugin)
 
 # -- General configuration -----------------------------------------------------
 
@@ -61,6 +63,7 @@ extensions = [
     "slink",
     #'wx_directive',
     #'numpydoc.numpydoc',
+    "nbsphinx",
 ]
 # plot_formats = [('png', 120), ('pdf', 50)] # Only make 80 dpi plots
 
@@ -152,12 +155,12 @@ html_theme_options = {}
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-# html_logo = 'logo.png'
+html_logo = "_static/refl1d-icon.svg"
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-# html_favicon = None
+html_favicon = "_static/refl1d-icon_48x48x32.png"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -283,6 +286,34 @@ slink_vars = dict(
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [("index", "refl1d", program_title, ["Paul Kienzle"], 1)]
+
+# -- header for Jupyter notebooks --------------------------------------------
+# This is processed by Jinja2 and inserted before each notebook
+nbsphinx_prolog = r"""
+{% set docname = 'doc/' + env.doc2path(env.docname, base=None)|string %}
+
+.. raw:: html
+
+    <div class="admonition note">
+      This page was generated from
+      <a class="reference external" href="https://github.com/reflectometry/refl1d/tree/master/{{ docname|e }}">{{ docname|e }}</a>.
+      [<a href="{{ env.docname.split('/')|last|e + '.ipynb' }}" class="reference download internal" download>Download notebook</a>.]
+      <br>
+      Interactive online versions:
+      <span style="white-space: nowrap;"><a href="https://mybinder.org/v2/gh/reflectometry/refl1d/master?filepath={{ docname|e }}"><img alt="Binder badge" src="https://mybinder.org/badge_logo.svg" style="vertical-align:text-bottom"></a>.</span>
+      <span style="white-space: nowrap;">
+        <a target="_blank" href="https://colab.research.google.com/github/reflectometry/refl1d/blob/master/{{ docname|e }}">
+            <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+        </a>
+      </span>
+    </div>
+
+.. raw:: latex
+
+    \nbsphinxstartnotebook{\scriptsize\noindent\strut
+    \textcolor{gray}{The following section was generated from
+    \sphinxcode{\sphinxupquote{\strut {{ docname | escape_latex }}}} \dotfill}}
+"""
 
 # Generate API docs
 import genmods

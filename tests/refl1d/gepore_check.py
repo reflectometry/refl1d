@@ -1,12 +1,12 @@
+import os
 from os.path import join as joinpath, dirname, exists, getmtime as filetime
 import tempfile
-import os
 
 import numpy as np
+from bumps.util import pushdir
 from numpy import radians
 
-from bumps.util import pushdir
-from refl1d.reflectivity import magnetic_amplitude as refl
+from refl1d.sample.reflectivity import magnetic_amplitude as refl
 
 H2K = 2.91451e-5
 B2SLD = 2.31929e-06
@@ -64,7 +64,7 @@ def gepore(layers, QS, DQ, NQ, EPS, H):
 
     # recompile gepore if necessary
     gepore = joinpath(path, "gepore")
-    gepore_source = joinpath(dirname(__file__), "..", "..", "refl1d", "lib", GEPORE_SRC)
+    gepore_source = joinpath(dirname(__file__), "..", "..", "refl1d", "lib", "c", GEPORE_SRC)
     if not exists(gepore) or filetime(gepore) < filetime(gepore_source):
         status = os.system("gfortran -O2 -o %s %s" % (gepore, gepore_source))
         if status != 0:
@@ -104,7 +104,6 @@ def magnetic_cc(layers, kz, Aguide, H):
 def Rplot(Qz, R, format):
     import matplotlib.pyplot as plt
 
-    plt.hold(True)
     for name, xs in zip(("--", "+-", "-+", "++"), R):
         Rxs = abs(xs) ** 2
         if (Rxs > 1e-8).any():
@@ -117,7 +116,6 @@ def Rplot(Qz, R, format):
 def rplot(Qz, R, format):
     import matplotlib.pyplot as plt
 
-    plt.hold(True)
     plt.figure()
     for name, xs in zip(("++", "+-", "-+", "--"), R):
         rr = xs.real
@@ -154,12 +152,11 @@ def compare(name, layers, Aguide=270, H=0):
     import matplotlib.pyplot as plt
 
     plt.show()
+    # assert np.linalg.norm((R[0] - Rpp) / Rpp) < 1e-13, "fail ++ %s" % name
+    # assert np.linalg.norm((R[1] - Rpm) / Rpm) < 1e-13, "fail +- %s" % name
+    # assert np.linalg.norm((R[2] - Rmp) / Rmp) < 1e-13, "fail -+ %s" % name
+    # assert np.linalg.norm((R[3] - Rmm) / Rmm) < 1e-13, "fail -- %s" % name
     return
-
-    assert np.linalg.norm((R[0] - Rpp) / Rpp) < 1e-13, "fail ++ %s" % name
-    assert np.linalg.norm((R[1] - Rpm) / Rpm) < 1e-13, "fail +- %s" % name
-    assert np.linalg.norm((R[2] - Rmp) / Rmp) < 1e-13, "fail -+ %s" % name
-    assert np.linalg.norm((R[3] - Rmm) / Rmm) < 1e-13, "fail -- %s" % name
 
 
 def simple():

@@ -1,10 +1,11 @@
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
+
 import numpy as np
 
 if TYPE_CHECKING:
     import plotly.graph_objs as go
 
-from refl1d.errors import align_profiles, form_quantiles, _find_offset
+from refl1d.uncertainty import _find_offset, align_profiles, form_quantiles
 from .colors import COLORS
 
 ErrorType = tuple[

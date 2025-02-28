@@ -29,7 +29,7 @@ probe = ProbeSet(instrument.load(f) for f in files)
 # The data and sample are combined into an
 # :class:`Experiment <refl1d.experiment.Experiment>`,
 # which again is bundled as a
-# :class:`FitProblem <refl1d.fitter.FitProblem>`
+# :class:`FitProblem <refl1d.bumps_interface.fitproblem.FitProblem>`
 # for the fitting program.
 
 M = Experiment(probe=probe, sample=sample)

@@ -1,3 +1,5 @@
+import numpy
+
 from refl1d.names import *
 
 substrate = SLD("substrate", 4.0)
