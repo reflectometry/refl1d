@@ -77,7 +77,7 @@ class GeporeRunner:
         for IP, IM in ((0.0, 1.0), (1.0, 0.0)):
             with open(header, "w") as fid:
                 fid.write(
-                    f"{NL} {NC} {QS} {DQ} {NQ} {radians(EPS)} ({IP},0.0) ({IM},0.0) {1e-6 * ROINP} {1e-6 * ROINM} {1e-6 * ROSUP} {1e-6* ROSUM}\n"
+                    f"{NL} {NC} {QS} {DQ} {NQ} {radians(EPS)} ({IP},0.0) ({IM},0.0) {1e-6 * ROINP} {1e-6 * ROINM} {1e-6 * ROSUP} {1e-6 * ROSUM}\n"
                     # "%d %d %f %f %d %f (%f,0.0) (%f,0.0) %e %e %e %e\n"
                     # % (NL, NC, QS, DQ, NQ, radians(EPS), IP, IM, 1e-6 * ROINP, 1e-6 * ROINM, 1e-6 * ROSUP, 1e-6 * ROSUM)
                 )
