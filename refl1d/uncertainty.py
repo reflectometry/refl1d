@@ -121,7 +121,7 @@ def _usage():
 
 def _initialize_worker(shared_serialized_problem):
     global _shared_problem
-    _shared_problem = dill.loads(np.asarray(shared_serialized_problem[:], dtype="uint8").tobytes())
+    _shared_problem = dill.loads(shared_serialized_problem[:].tobytes())
 
 
 _shared_problem = None  # used by multiprocessing pool to hold problem
@@ -182,10 +182,10 @@ def calc_errors(problem, points, parallel: int = 0):
         from functools import partial
 
         max_workers = parallel if parallel > 0 else None
-        serialized_problem_array = np.frombuffer(dill.dumps(problem), dtype="uint8")
+        serialized_problem = dill.dumps(problem)
 
         with multiprocessing.Manager() as manager:
-            shared_serialized_problem = manager.Array("B", serialized_problem_array)
+            shared_serialized_problem = manager.Array("B", serialized_problem)
             args = [(shared_serialized_problem, point) for point in points]
 
             with concurrent.futures.ProcessPoolExecutor(
