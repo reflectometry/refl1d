@@ -90,7 +90,7 @@ function createModel(): SerializedModel {
   return {
     references: {},
     object: {
-      __class__: "refl1d.bumps_interface.fitproblem.FitProblem",
+      __class__: "bumps.fitproblem.FitProblem",
       models: [
         {
           __class__: "refl1d.experiment.Experiment",
