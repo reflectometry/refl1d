@@ -11,5 +11,7 @@
 		<!-- Allow JIT Entitlement -->
 		<key>com.apple.security.cs.allow-jit</key>
 		<true/>
+		<key>com.apple.security.cs.disable-executable-page-protection</key>
+		<true/>
 	</dict>
 </plist>
