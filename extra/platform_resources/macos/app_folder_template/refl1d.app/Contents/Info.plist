@@ -9,7 +9,7 @@
     <key>CFBundleExecutable</key>
     <string>refl1d_webview</string>
     <key>CFBundleIconFile</key>
-    <string>share/icons/refl1d</string>
+    <string>refl1d</string>
     <key>CFBundleIdentifier</key>
     <string>org.reflectometry.refl1d-webview</string>
     <key>CFBundleInfoDictionaryVersion</key>
