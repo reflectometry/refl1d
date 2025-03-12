@@ -71,9 +71,11 @@ jobs:
         mkdir -p $BUILD_DIR
         APP_FOLDER="$BUILD_DIR/$PRODUCT_NAME"
         APP="$APP_FOLDER/${PACKAGE_NAME}.app"
+        PYTHON_FRAMEWORK="$APP/Contents/Frameworks/python.framework"
+        PYTHON_ENV="$PYTHON_FRAMEWORK/Resources/env"
         ln -s /Applications "$BUILD_DIR/Applications"
-        cp -r "extra/platform_resources/macos/app_folder_template" "$APP_FOLDER"
-        cp -R -P "conda_packed" "$APP/Contents/Resources"
+        cp -R -P "extra/platform_resources/macos/app_folder_template" "$APP_FOLDER"
+        cp -R -P "conda_packed" "$PYTHON_ENV"
         plutil -replace CFBundleVersion -string "$VERSION" "$APP/Contents/Info.plist"
 
         sign_file() {
@@ -87,16 +89,17 @@ jobs:
         }
 
         # Sign shared libraries
-        find $APP -name "*\.so" -print0 | while IFS= read -r -d '' file; do sign_file "$file"; done;
-        find $APP -name "*\.dylib" -print0 | while IFS= read -r -d '' file; do sign_file "$file"; done;
-        find "$APP/Contents/Resources/bin" -type f -perm +111 -print0 | while IFS= read -r -d '' file; do sign_file "$file"; done;
+        find "$PYTHON_ENV" -name "*\.so" -print0 | while IFS= read -r -d '' file; do sign_file "$file"; done;
+        find "$PYTHON_ENV" -name "*\.dylib" -print0 | while IFS= read -r -d '' file; do sign_file "$file"; done;
 
-        # Sign binaries with entitlements (especially python)
-        find "$APP/Contents/Resources/bin" -name "python*" -print0 | while IFS= read -r -d '' file; do sign_with_entitlements "$file"; done;
+        # Sign python framework with entitlements
+        sign_with_entitlements "$PYTHON_FRAMEWORK/Versions/A/Resources/Entitlements.plist"
+        sign_with_entitlements "$PYTHON_FRAMEWORK"
+        find "$PYTHON_ENV/bin" -name "python*" -print0 | while IFS= read -r -d '' file; do sign_with_entitlements "$file"; done;
 
         # use the entitlement from the original location:
-        codesign --verify --options=runtime --entitlements "${SRC_ENTITLEMENTS}" --timestamp --verbose=4 --force --sign "${DEVELOPER_IDENTITY}" "$APP/Contents/Entitlements.plist"
-        codesign --verify --options=runtime --entitlements "${SRC_ENTITLEMENTS}" --timestamp --verbose=4 --force --sign "${DEVELOPER_IDENTITY}" $APP
+        # codesign --verify --options=runtime --timestamp --verbose=4 --force --sign "${DEVELOPER_IDENTITY}" "$APP/Contents/Entitlements.plist"
+        codesign --verify --options=runtime --timestamp --verbose=4 --force --sign "${DEVELOPER_IDENTITY}" $APP
         codesign --verify --options=runtime --timestamp --verbose=4 --force --sign "${DEVELOPER_IDENTITY}" "$APP_FOLDER/refl1d_shell.app"
 
         DMG="artifacts/$FULL_PACKAGE_NAME.dmg"
