@@ -8,7 +8,7 @@
     
     <!-- Framework Identity -->
     <key>CFBundleExecutable</key>
-    <string>Resources/env/bin/python3.12</string>
+    <string></string>
     <key>CFBundleIdentifier</key>
     <string>org.reflectometry.refl1d.pythonframework</string>
     <key>CFBundleInfoDictionaryVersion</key>
@@ -16,16 +16,12 @@
     
     <!-- Version Information -->
     <key>CFBundleShortVersionString</key>
-    <string>3.12</string>
+    <string>1.0</string>
     <key>CFBundleVersion</key>
-    <string>3.12</string>
+    <string>1</string>
     
     <!-- Framework Type -->
     <key>CFBundlePackageType</key>
     <string>FMWK</string>
-    
-    <!-- Python Specific -->
-    <key>PythonVersion</key>
-    <string>3.12</string>
 </dict>
 </plist>
