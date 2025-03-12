@@ -80,13 +80,20 @@ jobs:
             codesign --force --timestamp --options=runtime --verify --verbose=4 --sign "${DEVELOPER_IDENTITY}" "$1"
         }
 
-        #  Do signing...
-        find "$APP/Contents/Resources/bin" -type f -perm +111 -print0 | while IFS= read -r -d '' file; do sign_file "$file"; done;
+        SRC_ENTITLEMENTS="extra/platform_resources/macos/app_folder_template/${PACKAGE_NAME}.app/Contents/Entitlements.plist"
+
+        sign_with_entitlements() {
+          codesign --verify --options=runtime --entitlements "${SRC_ENTITLEMENTS}" --timestamp --verbose=4 --force --sign "${DEVELOPER_IDENTITY}" "$1"
+        }
+
+        # Sign binaries with entitlements (especially python)
+        find "$APP/Contents/Resources/bin" -type f -perm +111 -print0 | while IFS= read -r -d '' file; do sign_with_entitlements "$file"; done;
+
+        # Sign shared libraries
         find $APP -name "*\.so" -print0 | while IFS= read -r -d '' file; do sign_file "$file"; done;
         find $APP -name "*\.dylib" -print0 | while IFS= read -r -d '' file; do sign_file "$file"; done;
 
         # use the entitlement from the original location:
-        SRC_ENTITLEMENTS="extra/platform_resources/macos/app_folder_template/${PACKAGE_NAME}.app/Contents/Entitlements.plist"
         codesign --verify --options=runtime --entitlements "${SRC_ENTITLEMENTS}" --timestamp --verbose=4 --force --sign "${DEVELOPER_IDENTITY}" "$APP/Contents/Entitlements.plist"
         codesign --verify --options=runtime --entitlements "${SRC_ENTITLEMENTS}" --timestamp --verbose=4 --force --sign "${DEVELOPER_IDENTITY}" $APP
         codesign --verify --options=runtime --timestamp --verbose=4 --force --sign "${DEVELOPER_IDENTITY}" "$APP_FOLDER/refl1d_shell.app"
