@@ -91,11 +91,12 @@ jobs:
         # Sign shared libraries
         find "$PYTHON_ENV" -name "*\.so" -print0 | while IFS= read -r -d '' file; do sign_file "$file"; done;
         find "$PYTHON_ENV" -name "*\.dylib" -print0 | while IFS= read -r -d '' file; do sign_file "$file"; done;
+        find "$PYTHON_ENV/bin" -type f -perm +111 -print0 | while IFS= read -r -d '' file; do sign_file "$file"; done;
 
         # Sign python framework with entitlements
         sign_with_entitlements "$PYTHON_FRAMEWORK/Versions/A/Resources/Entitlements.plist"
-        sign_with_entitlements "$PYTHON_FRAMEWORK"
         find "$PYTHON_ENV/bin" -name "python*" -print0 | while IFS= read -r -d '' file; do sign_with_entitlements "$file"; done;
+        sign_with_entitlements "$PYTHON_FRAMEWORK"
 
         # use the entitlement from the original location:
         # codesign --verify --options=runtime --timestamp --verbose=4 --force --sign "${DEVELOPER_IDENTITY}" "$APP/Contents/Entitlements.plist"
