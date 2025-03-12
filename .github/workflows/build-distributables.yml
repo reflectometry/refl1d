@@ -82,7 +82,7 @@ jobs:
             codesign --force --timestamp --options=runtime --verify --verbose=4 --sign "${DEVELOPER_IDENTITY}" "$1"
         }
 
-        SRC_ENTITLEMENTS="extra/platform_resources/macos/app_folder_template/${PACKAGE_NAME}.app/Contents/Entitlements.plist"
+        SRC_ENTITLEMENTS="extra/platform_resources/macos/app_folder_template/${PACKAGE_NAME}.app/Contents/Frameworks/python.framework/Resources/Entitlements.plist"
 
         sign_with_entitlements() {
           codesign --verify --options=runtime --entitlements "${SRC_ENTITLEMENTS}" --timestamp --verbose=4 --force --sign "${DEVELOPER_IDENTITY}" "$1"
