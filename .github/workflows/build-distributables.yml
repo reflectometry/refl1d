@@ -86,12 +86,13 @@ jobs:
           codesign --verify --options=runtime --entitlements "${SRC_ENTITLEMENTS}" --timestamp --verbose=4 --force --sign "${DEVELOPER_IDENTITY}" "$1"
         }
 
-        # Sign binaries with entitlements (especially python)
-        find "$APP/Contents/Resources/bin" -type f -perm +111 -print0 | while IFS= read -r -d '' file; do sign_with_entitlements "$file"; done;
-
         # Sign shared libraries
         find $APP -name "*\.so" -print0 | while IFS= read -r -d '' file; do sign_file "$file"; done;
         find $APP -name "*\.dylib" -print0 | while IFS= read -r -d '' file; do sign_file "$file"; done;
+        find "$APP/Contents/Resources/bin" -type f -perm +111 -print0 | while IFS= read -r -d '' file; do sign_file "$file"; done;
+
+        # Sign binaries with entitlements (especially python)
+        find "$APP/Contents/Resources/bin/python*" -type f -perm +111 -print0 | while IFS= read -r -d '' file; do sign_with_entitlements "$file"; done;
 
         # use the entitlement from the original location:
         codesign --verify --options=runtime --entitlements "${SRC_ENTITLEMENTS}" --timestamp --verbose=4 --force --sign "${DEVELOPER_IDENTITY}" "$APP/Contents/Entitlements.plist"
