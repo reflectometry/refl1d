@@ -95,12 +95,13 @@ jobs:
 
         # Sign python framework with entitlements
         sign_with_entitlements "$PYTHON_FRAMEWORK/Versions/A/Resources/Entitlements.plist"
-        sign_with_entitlements "$PYTHON_FRAMEWORK"
         PYTHON_EXECUTABLE="$(realpath $PYTHON_ENV/bin/python)"
         sign_with_entitlements "$PYTHON_EXECUTABLE"
+        sign_with_entitlements "$PYTHON_FRAMEWORK"
 
         # use the entitlement from the original location:
         # codesign --verify --options=runtime --timestamp --verbose=4 --force --sign "${DEVELOPER_IDENTITY}" "$APP/Contents/Entitlements.plist"
+        codesign --verify --options=runtime --timestamp --verbose=4 --force --sign "${DEVELOPER_IDENTITY}" "$APP/Contents/MacOS/${PACKAGE_NAME}_webview"
         codesign --verify --options=runtime --timestamp --verbose=4 --force --sign "${DEVELOPER_IDENTITY}" $APP
         codesign --verify --options=runtime --timestamp --verbose=4 --force --sign "${DEVELOPER_IDENTITY}" "$APP_FOLDER/refl1d_shell.app"
 
