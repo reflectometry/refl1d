@@ -70,6 +70,29 @@ def _migrate_0_to_1(serialized: dict):
     return "1", output
 
 
+def _migrate_1_to_2(serialized: dict):
+    """
+    Replace refl1d.bumps_interface.fitproblem.FitProblem with bumps.fitproblem.FitProblem
+    """
+
+    def remap(obj):
+        if isinstance(obj, dict):
+            if TYPE_KEY in obj:
+                classname: str = obj[TYPE_KEY]
+                if classname == "refl1d.bumps_interface.fitproblem.FitProblem":
+                    obj[TYPE_KEY] = "bumps.fitproblem.FitProblem"
+            for v in obj.values():
+                remap(v)
+        elif isinstance(obj, list):
+            for v in obj:
+                remap(v)
+
+    output = deepcopy(serialized)
+    remap(output)
+    return "2", output
+
+
 MIGRATIONS = {
     "0": _migrate_0_to_1,
+    "1": _migrate_1_to_2,
 }
