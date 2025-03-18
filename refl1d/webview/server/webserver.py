@@ -9,6 +9,7 @@ from pathlib import Path
 
 # import numpy as np
 from bumps.webview.server import webserver
+from bumps.webview.server.cli import BumpsOptions, SERIALIZERS
 from bumps.webview.server.webserver import (
     # start_app,
     # sio,
@@ -31,8 +32,8 @@ webserver.CLIENT_PATH = Path(__file__).parent.parent / "client"
 
 
 @dataclass
-class Refl1DOptions(webserver.BumpsOptions):
-    serializer: webserver.SERIALIZERS = "dataclass"
+class Refl1DOptions(BumpsOptions):
+    serializer: SERIALIZERS = "dataclass"
     headless: bool = True
 
 
