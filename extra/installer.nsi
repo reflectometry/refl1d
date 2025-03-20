@@ -10,9 +10,12 @@
 !ifndef PRODUCT_NAME
     !define PRODUCT_NAME "Refl1D"
 !endif
-!define PRODUCT_DESCRIPTION "Bayesian Uncertainty Modeling for the Physical Sciences"
-!define COPYRIGHT "Copyright © 2018 The Refl1D developers"
-!define PRODUCT_VERSION 1.0.0.1013
+!define /date CurrentYear "%Y"
+!define PRODUCT_DESCRIPTION "Refl1D reflectometry fitting package"
+!define COPYRIGHT "Copyright ${CurrentYear} The Refl1D developers"
+!ifndef PRODUCT_VERSION
+    !define PRODUCT_VERSION "1.0.0.0"
+!endif
 !define SETUP_VERSION 1.0.0.0
 !ifndef SRC
     !define SRC "..\conda_packed"
@@ -86,7 +89,7 @@ Section "Start Menu Shortcuts" SEC02
     CreateDirectory "$SMPROGRAMS\${PRODUCT_NAME}"
     CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\Refl1DWebview.lnk" \
         "$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" \
-        '-Command ""$INSTDIR\python.exe -m refl1d.webview.server""' \
+        '-NoProfile -Command ""$INSTDIR\python.exe -m refl1d.webview.server""' \
         "$INSTDIR\share\icons\refl1d.ico"
     SetOutPath "%USERPROFILE%"
     CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\Refl1DPowershell.lnk" \
@@ -96,8 +99,16 @@ Section "Start Menu Shortcuts" SEC02
 
 SectionEnd
 
-Section "CLI Commands"
-    DetailPrint "Setting up console commands..."    
+Section "Desktop Shortcut" SEC03
+    SetShellVarContext current
+    CreateShortCut "$DESKTOP\${PRODUCT_NAME}.lnk" \
+        "$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" \
+        '-NoProfile -Command ""$INSTDIR\python.exe -m refl1d.webview.server""' \
+        "$INSTDIR\share\icons\refl1d.ico"
+SectionEnd
+
+Section "CLI Commands" SEC04
+    DetailPrint "Setting up console commands..."
     nsExec::Exec '"$INSTDIR\Scripts\conda-unpack.exe"'
     Pop $0
     DetailPrint "Return code: $0"
