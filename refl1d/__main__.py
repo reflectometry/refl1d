@@ -1,8 +1,8 @@
 """
-Bumps application.
+Refl1D application.
 
-Run "bumps --help" for details, or "python -m bumps -help" if
-bumps isn't on your path.
+Run "refl1d --help" for details, or "python -m refl1d -help" if
+refl1d isn't on your path.
 """
 
 from refl1d.webview.server.cli import main
