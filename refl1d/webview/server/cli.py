@@ -1,6 +1,7 @@
 """
 ***Warning***: importing cli modifies the behaviour of bumps
 """
+
 from pathlib import Path
 
 from bumps.webview.server import cli
@@ -13,16 +14,18 @@ from . import api  # uses side-effects to register refl1d functions
 
 CLIENT_PATH = Path(__file__).parent.parent / "client"
 
-#from dataclasses import dataclass
-#from bumps.webview.server.cli import BumpsOptions, SERIALIZERS
-#@dataclass
-#class Refl1DOptions(BumpsOptions):
+# from dataclasses import dataclass
+# from bumps.webview.server.cli import BumpsOptions, SERIALIZERS
+# @dataclass
+# class Refl1DOptions(BumpsOptions):
 #    serializer: SERIALIZERS = "dataclass"
 #    headless: bool = True
-#bumps_cli.OPTIONS_CLASS = Refl1DOptions
+# bumps_cli.OPTIONS_CLASS = Refl1DOptions
+
 
 def main():
     cli.plugin_main(name="refl1d", client=CLIENT_PATH)
+
 
 if __name__ == "__main__":
     main()
