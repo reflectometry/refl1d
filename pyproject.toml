@@ -22,7 +22,7 @@ classifiers = [
 ]
 requires-python = ">=3.9"
 dependencies = [
-    "bumps>=1.0.0a12",
+    "bumps>=1.0.0a15",
     "matplotlib",
     "numba",
     "numpy",
@@ -76,6 +76,9 @@ version = { attr = "refl1d.__version__" }
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["refl1d*"]
+
+[tool.setuptools.data-files]
+"share/icons" = ["extra/*.png", "extra/*.svg", "extra/*.ico", "extra/*.icns"]
 
 [project.scripts]
 refl1d = "refl1d.webview.server.cli:main"
