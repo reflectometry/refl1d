@@ -11,7 +11,7 @@ import os
 import traceback
 from dataclasses import dataclass
 from math import floor, log10, pi
-from typing import List, Literal, Optional, Protocol, TypedDict, Union
+from typing import List, Literal, Optional, Protocol, Sequence, TypedDict, Union
 from warnings import warn
 
 import numpy as np
@@ -19,6 +19,7 @@ from bumps import parameter
 from bumps.dream.state import MCMCDraw
 from bumps.fitproblem import Fitness, FitProblem
 from bumps.parameter import Parameter, tag_all
+from refl1d.probe import ProbeSet
 
 from . import __version__
 from .sample.reflectivity import (
@@ -382,7 +383,7 @@ class Experiment(ExperimentBase):
 
     name: str
     sample: Optional[layers.Stack]
-    probe: Union[Probe, PolarizedNeutronProbe, QProbe, PolarizedQProbe]
+    probe: Union[Probe, PolarizedNeutronProbe, QProbe, PolarizedQProbe, ProbeSet]
     roughness_limit: float
     dz: Union[float, Literal[None]]
     dA: Union[float, Literal[None]]
@@ -411,7 +412,7 @@ class Experiment(ExperimentBase):
         self.sample = sample
         self._substrate = self.sample[0].material
         self._surface = self.sample[-1].material
-        self.probe = probe
+        self.probe = ProbeSet(probe) if isinstance(probe, Sequence) else probe
         self.roughness_limit = roughness_limit
         if dz is None:
             dz = nice((2 * pi / probe.Q.max()) / 10)
