@@ -22,22 +22,26 @@ classifiers = [
 ]
 requires-python = ">=3.9"
 dependencies = [
-    "bumps>=1.0.0a12",
+    "bumps>=1.0.0b2",
     "matplotlib",
     "numba",
     "numpy",
     "periodictable",
     "scipy",
+    "orsopy"
 ]
 
 [project.optional-dependencies]
 dev = [
+    "ipython",
+    "matplotlib", # for testing
+    "nbsphinx",
     "pre-commit",
     "pydantic",
     "pytest",
     "pytest-cov",
     "ruff",
-    "sphinx",
+    "sphinx < 8.2",
     "versioningit",
 ]
 full = ["wxpython", "ipython"]
@@ -69,16 +73,15 @@ exclude = ["*.txt"]
 [tool.setuptools.dynamic]
 version = { attr = "refl1d.__version__" }
 
-[tool.setuptools]
-script-files = ["bin/refl1d_cli.py", "bin/refl1d_gui.py"]
-
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["refl1d*"]
 
+[tool.setuptools.data-files]
+"share/icons" = ["extra/*.png", "extra/*.svg", "extra/*.ico", "extra/*.icns"]
+
 [project.scripts]
-refl1d = "refl1d.main:cli"
-refl1d-webview = "refl1d.webview.server.webserver:main"
+refl1d = "refl1d.webview.server.cli:main"
 
 [tool.pytest.ini_options]
 # TODO: remove --assert=plain when https://github.com/scipy/scipy/issues/22236 is resolved

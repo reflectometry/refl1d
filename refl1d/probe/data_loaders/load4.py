@@ -1,10 +1,13 @@
+# standard imports
 import json
 
-import numpy as np
+# third party imports
 from bumps.data import parse_multi, strip_quotes
+import numpy as np
+from orsopy.fileio.orso import load_nexus, load_orso
 
-from ...sample.reflectivity import BASE_GUIDE_ANGLE
-from ..probe import (
+# refl1d imports
+from refl1d.probe import (
     NeutronProbe,
     PolarizedNeutronProbe,
     PolarizedQProbe,
@@ -12,18 +15,36 @@ from ..probe import (
     QProbe,
     XrayProbe,
 )
-from ..resolution import QL2T, QT2L, FWHM2sigma, dQdL2dT, dQdT2dLoL, sigma2FWHM
+from refl1d.probe.resolution import QL2T, QT2L, FWHM2sigma, dQdL2dT, dQdT2dLoL, sigma2FWHM
+from refl1d.sample.reflectivity import BASE_GUIDE_ANGLE
 
 
-def parse_orso(filename, *args, **kwargs):
-    """load an ORSO text (.ort) or binary (.orb) file"""
+def parse_orso(filename):
+    """
+    Load an ORSO text (.ort) or binary (.orb) file containing one or more datasets
+
+    Parameters
+    ----------
+    filename : str
+        The path to the ORSO file to be loaded.
+
+    Returns
+    -------
+    list of tuple
+        A list of tuples, each containing a header dictionary and a data array derived from each loaded dataset.
+        The header dictionary contains metadata about the measurement,
+        and the data array contains the measurement data.
+
+    Notes
+    -----
+    The function supports both ORSO text (.ort) and binary (.orb) files.
+    The polarization information is converted using a predefined mapping.
+    The header dictionary includes keys for polarization, angle, angular resolution,
+    wavelength, and wavelength resolution.
+    """
     if filename.endswith(".ort"):
-        from orsopy.fileio.orso import load_orso
-
         entries = load_orso(filename)
     elif filename.endswith(".orb"):
-        from orsopy.fileio.orso import load_nexus
-
         entries = load_nexus(filename)
 
     POL_CONVERSION = {
@@ -45,6 +66,23 @@ def parse_orso(filename, *args, **kwargs):
         header_out = {"polarization": polarization}
 
         def get_key(orso_name, refl1d_name, refl1d_resolution_name):
+            """
+            Extract value and error from one of the ORSO columns. If no column corresponding
+            to entry `orso_name` is found, search in the instrument settings.
+
+            Parameters
+            ----------
+            orso_name : str
+                The name of the ORSO column or instrument setting to extract.
+            refl1d_name : str
+                The corresponding refl1d name for the value of entry `orso_name`
+            refl1d_resolution_name : str
+                The corresponding refl1d error name the error of entry `orso_name`
+
+            Notes
+            -----
+            This function requires the instrument setting `orso_name` to have a "magnitue" and "error" attribute.
+            """
             column_index = next(
                 (i for i, c in enumerate(columns) if getattr(c, "physical_quantity", None) == orso_name),
                 None,

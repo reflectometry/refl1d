@@ -1,13 +1,18 @@
-import { panels as bumps_panels } from "bumps-webview-client/src/panels";
+import { shared_state } from "bumps-webview-client/src/app_state";
+import { panels as bumps_panels, type Panel } from "bumps-webview-client/src/panels";
 import DataView from "./components/DataView.vue";
 import ModelView from "./components/ModelView.vue";
 import ProfileUncertaintyView from "./components/ProfileUncertaintyView.vue";
 import SimpleBuilder from "./components/SimpleBuilder.vue";
 
-const refl1dPanels = [
+const refl1dPanels: Panel[] = [
   { title: "Reflectivity", component: DataView },
   { title: "Profile", component: ModelView },
-  { title: "Profile Uncertainty", component: ProfileUncertaintyView },
+  {
+    title: "Profile Uncertainty",
+    component: ProfileUncertaintyView,
+    show: () => shared_state.uncertainty_available?.available ?? false,
+  },
   { title: "Builder", component: SimpleBuilder },
 ];
 
@@ -21,7 +26,12 @@ const insertions = {
   Builder: { after: "Uncertainty" },
 };
 
-function replace_panel(panels, replacement_panels, replaced_title, replacement_title) {
+function replace_panel(
+  panels: Panel[],
+  replacement_panels: Panel[],
+  replaced_title: string,
+  replacement_title: string
+) {
   const index = panels.findIndex((p) => p.title === replaced_title);
   const replacement_index = replacement_panels.findIndex((p) => p.title === replacement_title);
   if (index >= 0 && replacement_index >= 0) {
@@ -29,7 +39,7 @@ function replace_panel(panels, replacement_panels, replaced_title, replacement_t
   }
 }
 
-function insert_panel(panels, insertion_panels, title, after) {
+function insert_panel(panels: Panel[], insertion_panels: Panel[], title: string, after: string) {
   let index = panels.findIndex((p) => p.title === after);
   // put it at the end if the after panel is not found
   if (index < 0) {

@@ -1106,7 +1106,11 @@ class NeutronProbe(Probe):
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
 
+@dataclass(init=False)
 class ProbeSet(Probe):
+    name: Optional[str]
+    probes: Sequence[Probe]
+
     def __init__(self, probes, name=None):
         self.probes = list(probes)
         self.R = np.hstack([p.R for p in self.probes])
