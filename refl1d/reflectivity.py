@@ -74,6 +74,7 @@ def reflectivity_amplitude(
     irho=0,
     sigma=0,
     rho_index=None,
+    autosample=False,
 ):
     r"""
     Calculate reflectivity amplitude $r(k_z)$ from slab model.
@@ -131,12 +132,16 @@ def reflectivity_amplitude(
     # irho[irho < 0] = 0.
     # print depth.shape, rho.shape, irho.shape, sigma.shape
     # print depth.dtype, rho.dtype, irho.dtype, sigma.dtype
-    r = np.empty(kz.shape, "D")
-    # print "amplitude", depth, rho, kz, rho_index
-    # print depth.shape, sigma.shape, rho.shape, irho.shape, kz.shape
-    backend.reflectivity_amplitude(depth, sigma, rho, irho, kz, rho_index, r)
+    if autosample:
+        calc_kz, r = backend.autosampled_reflectivity_amplitude(kz, depth, sigma, rho, irho, rho_index)
+    else:
+        r = np.empty(kz.shape, "D")
+        # print "amplitude", depth, rho, kz, rho_index
+        # print depth.shape, sigma.shape, rho.shape, irho.shape, kz.shape
+        backend.reflectivity_amplitude(depth, sigma, rho, irho, kz, rho_index, r)
+        calc_kz = kz
 
-    return r
+    return calc_kz, r
 
 
 def magnetic_reflectivity(*args, **kw):

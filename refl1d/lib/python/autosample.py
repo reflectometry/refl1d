@@ -42,7 +42,7 @@ def oversample_inplace(kz, dR, tol, w, rho, irho, sigma, max_sampling_iterations
     r = np.empty_like(kz, dtype=complex128)
     reflectivity_amplitude(w, sigma, rho, irho, -new_kz, rho_index, r)
     R = (r * np.conj(r)).real
-    mapped_dR = dR.copy()
+    mapped_dR = dR.copy() / R
     out_of_tolerance = 1
     iterations = 0
     total_inserts = 0
@@ -91,13 +91,14 @@ def oversample_inplace(kz, dR, tol, w, rho, irho, sigma, max_sampling_iterations
         new_R = (new_r * np.conj(new_r)).real
 
         new_kz = insert(new_kz, to_split + 1, new_kz_vals)
+        r = insert(r, to_split + 1, new_r)
         R = insert(R, to_split + 1, new_R)
         mapped_dR = insert(mapped_dR, np.clip(to_split - 1, 0, None), new_dR)
 
         iterations += 1
         out_of_tolerance = np.sum(out_of_tol)
 
-    return new_kz, np.sum(out_of_tol), R, mapped_dR
+    return new_kz, np.sum(out_of_tol), r, mapped_dR
 
 
 def apply_autosampling(model, tolerance=0.05):
@@ -106,9 +107,15 @@ def apply_autosampling(model, tolerance=0.05):
     print("kz.shape", kz.shape)
     calc_q, calc_r = model.reflectivity()
     print(calc_r.shape, model.probe.dR.shape)
-    dR = model.probe.dR / calc_r
-    linear_kz = np.linspace(model.probe.Q.min() / 2, model.probe.Q.max() / 2, 100, endpoint=True)
-    linear_dR = np.interp(linear_kz, model.probe.Q / 2, np.abs(model.probe.dR / calc_r))
-    new_kz, out_of_tol, R, dR = oversample_inplace(calc_q / 2.0, dR, tolerance, w, rho, irho, sigma)
+    # dR = model.probe.dR / calc_r
+    # print(calc_r)
+    # linear_kz = np.linspace(model.probe.Q.min() / 2, model.probe.Q.max() / 2, 100, endpoint=True)
+    # linear_dR = np.interp(linear_kz, model.probe.Q / 2, np.abs(model.probe.dR / calc_r))
+    new_kz, out_of_tol, r, dR = oversample_inplace(calc_q / 2.0, model.probe.dR, tolerance, w, rho, irho, sigma)
     # new_kz, out_of_tol, R, dR = oversample_inplace(linear_kz, linear_dR, tolerance, w, rho, irho, sigma)
-    return new_kz, out_of_tol, R, dR
+    return new_kz, out_of_tol, r, dR
+
+
+def autosampled_reflectivity_amplitude(kz, depth, sigma, rho, irho, rho_index, dR, tolerance=0.05):
+    calc_kz, out_of_tol, r, dR = oversample_inplace(kz, dR, tolerance, depth, rho, irho, sigma)
+    return calc_kz, r

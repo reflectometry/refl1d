@@ -500,7 +500,7 @@ class Experiment(ExperimentBase):
             self._cache[key] = True
         return self._slabs
 
-    def _reflamp(self):
+    def _reflamp(self, autosample=False):
         # calc_q = self.probe.calc_Q
         # return calc_q, calc_q
         key = "calc_r"
@@ -528,7 +528,8 @@ class Experiment(ExperimentBase):
                     sigma=sigma,
                 )
             else:
-                calc_r = reflamp(-calc_q / 2, depth=w, rho=rho, irho=irho, sigma=sigma)
+                calc_kz, calc_r = reflamp(-calc_q / 2, depth=w, rho=rho, irho=irho, sigma=sigma, autosample=autosample)
+                calc_q = -2 * calc_kz
             if False and np.isnan(calc_r).any():
                 print("w", w)
                 print("rho", rho)
@@ -560,7 +561,7 @@ class Experiment(ExperimentBase):
             self._cache[key] = res
         return self._cache[key]
 
-    def reflectivity(self, resolution=True, interpolation=0):
+    def reflectivity(self, resolution=True, interpolation=0, autosample=False):
         """
         Calculate predicted reflectivity.
 
