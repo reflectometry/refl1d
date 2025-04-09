@@ -1,10 +1,11 @@
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
+
 import numpy as np
 
 if TYPE_CHECKING:
     import plotly.graph_objs as go
 
-from refl1d.errors import align_profiles, form_quantiles, _find_offset
+from refl1d.uncertainty import _find_offset, align_profiles, form_quantiles
 from .colors import COLORS
 
 ErrorType = tuple[
@@ -239,12 +240,13 @@ def _draw_contours(
         col=col,
         secondary_y=secondary_y,
     )
-    q = _plot_quantiles(
+    named_contours = _plot_quantiles(
         zp, fp, contours, color, alpha=None, fig=fig, row=row, col=col, legendgroup=legendgroup, secondary_y=secondary_y
     )
+    named_contours["best"] = fp[0]
     # Plot the best
     # axes.plot(zp, fp[0], '-', label=label, color=dark(color))
-    return q
+    return named_contours
 
 
 def _profile_labels(fig: "go.Figure", row: Optional[int] = None, col: Optional[int] = None, magnetic: bool = False):
@@ -366,9 +368,12 @@ def _plot_quantiles(
     """
     _, q = form_quantiles(y, contours)
 
+    output = {}
     if alpha is None:
         alpha = 2.0 / (len(q) + 1)
-    for lo, hi in q:
+    for contour, (lo, hi) in zip(contours, q):
+        output[f"{contour} percent lower"] = lo
+        output[f"{contour} percent upper"] = hi
         fig.add_scattergl(
             x=x,
             y=lo,
@@ -396,4 +401,4 @@ def _plot_quantiles(
             legendgroup=legendgroup,
             secondary_y=secondary_y,
         )
-    return q
+    return output

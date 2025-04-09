@@ -113,8 +113,6 @@ with embedded documentation.
 #
 # ::
 
-from __future__ import print_function
-
 _version = "0.7.9"
 
 __docformat__ = "restructuredtext"
@@ -137,8 +135,10 @@ __docformat__ = "restructuredtext"
 #
 # ::
 
-import os, sys
-import re, optparse
+import os  # noqa: E402
+import sys  # noqa: E402
+import re  # noqa: E402
+import optparse  # noqa: E402
 
 
 # DefaultDict
@@ -367,7 +367,7 @@ defaults.overwrite = "update"
 # Try to import optional extensions::
 
 try:
-    import pylit_elisp
+    import pylit_elisp  # type: ignore # noqa: F401
 except ImportError:
     pass
 
@@ -824,7 +824,7 @@ class Text2Code(TextCodeConverter):
         for line in block:
             if line.lstrip() and self.get_indent(line) < self._codeindent:
                 raise ValueError(
-                    "code block contains line less indented " "than %d spaces \n%r" % (self._codeindent, block)
+                    "code block contains line less indented than %d spaces \n%r" % (self._codeindent, block)
                 )
             yield line.replace(" " * self._codeindent, "", 1)
 
@@ -1296,7 +1296,7 @@ class PylitOptions(object):
         p.add_option(
             "--codeindent",
             type="int",
-            help="Number of spaces to indent code blocks with " "text2code (default %d)" % defaults.codeindent,
+            help="Number of spaces to indent code blocks with text2code (default %d)" % defaults.codeindent,
         )
 
         # Output file handling

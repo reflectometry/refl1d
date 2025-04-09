@@ -4,13 +4,12 @@
 # Originally written for use in a jupyter notebook
 # Adapted to act as a prototype for the profile plotting in the new GUI for refl1d
 
-from typing import List, TypedDict, TYPE_CHECKING
-from refl1d.experiment import Experiment
-from numpy import inf
-import numpy as np
+from typing import List, TypedDict
 
-if TYPE_CHECKING:
-    import plotly.graph_objs as go
+import numpy as np
+from numpy import inf
+
+from refl1d.experiment import Experiment
 
 from .colors import COLORS as MULTI_PLOT_COLORS
 

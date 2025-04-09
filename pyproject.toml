@@ -14,7 +14,7 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: Science/Research",
-    "License :: Public Domain",
+    "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Topic :: Scientific/Engineering :: Chemistry",
@@ -22,18 +22,30 @@ classifiers = [
 ]
 requires-python = ">=3.9"
 dependencies = [
-    "bumps>=1.0.0a0",
+    "bumps>=1.0.0b2",
     "matplotlib",
     "numba",
     "numpy",
     "periodictable",
     "scipy",
+    "orsopy"
 ]
 
 [project.optional-dependencies]
-dev = ["pre-commit", "ruff", "pytest", "pytest-cov", "versioningit"]
+dev = [
+    "ipython",
+    "matplotlib", # for testing
+    "nbsphinx",
+    "pre-commit",
+    "pydantic",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "sphinx < 8.2",
+    "versioningit",
+]
 full = ["wxpython", "ipython"]
-webview = ["bumps[webview]>=1.0.0a0"]
+webview = ["bumps[webview]"]
 
 [project.urls]
 documentation = "https://refl1d.github.io"
@@ -46,9 +58,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.ruff]
 line-length = 120
-exclude = [
-    "*.txt",
-]
+exclude = ["*.txt"]
 
 # [tool.ruff.lint]
 # select = [
@@ -63,18 +73,19 @@ exclude = [
 [tool.setuptools.dynamic]
 version = { attr = "refl1d.__version__" }
 
-[tool.setuptools]
-script-files = ["bin/refl1d_cli.py", "bin/refl1d_gui.py"]
-
 [tool.setuptools.packages.find]
+where = ["."]
 include = ["refl1d*"]
 
+[tool.setuptools.data-files]
+"share/icons" = ["extra/*.png", "extra/*.svg", "extra/*.ico", "extra/*.icns"]
+
 [project.scripts]
-refl1d = "refl1d.main:main"
-refl1d-webview = "refl1d.webview.server.webserver:main"
+refl1d = "refl1d.webview.server.cli:main"
 
 [tool.pytest.ini_options]
-addopts = "--doctest-modules --doctest-glob=*.rst --cov=refl1d"
+# TODO: remove --assert=plain when https://github.com/scipy/scipy/issues/22236 is resolved
+addopts = "--doctest-modules --doctest-glob=*.rst --cov=bumps --assert=plain"
 doctest_optionflags = ["ELLIPSIS", "NORMALIZE_WHITESPACE"]
 testpaths = ["refl1d", "tests", "doc/getting_started", "doc/guide"]
 norecursedirs = ["view", "mystic", "bin", "webview/client", "explore"]
@@ -85,14 +96,6 @@ python_functions = ["test", "*_test", "test_*"]
 [tool.versioningit.vcs]
 method = "git"
 default-tag = "0.0.1"
-
-[tool.versioningit.next-version]
-method = "smallest"
-
-[tool.versioningit.format]
-distance = "{next_version}.dev{distance}"
-dirty = "{version}+d{build_date:%Y%m%d}"
-distance-dirty = "{next_version}.dev{distance}+d{build_date:%Y%m%d%H%M}"
 
 [tool.versioningit.write]
 file = "refl1d/_version.py"

@@ -1,5 +1,5 @@
+import numpy
 from refl1d.names import *
-from copy import copy
 
 # FIT USING REFL1D 0.6.12
 # === Data files ===

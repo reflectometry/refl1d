@@ -1,6 +1,4 @@
 # pylint: disable=invalid-name
-# This program is in the public domain
-# Author: Paul Kienzle
 """
 Experiment definition
 
@@ -8,49 +6,32 @@ An experiment combines the sample definition with a measurement probe
 to create a fittable reflectometry model.
 """
 
-from __future__ import division, print_function
-
-from dataclasses import dataclass, field
-import sys
-from copy import deepcopy
-import os
-from math import pi, log10, floor
-import traceback
 import json
-from typing import Optional, Union, Callable, Literal, List, Literal, Protocol, TypedDict
+import os
+import traceback
+from dataclasses import dataclass
+from math import floor, log10, pi
+from typing import List, Literal, Optional, Protocol, Sequence, TypedDict, Union
 from warnings import warn
 
 import numpy as np
 from bumps import parameter
-from bumps.parameter import Parameter, Constraint, tag_all
-from bumps.fitproblem import Fitness, FitProblem
 from bumps.dream.state import MCMCDraw
+from bumps.fitproblem import Fitness, FitProblem
+from bumps.parameter import Parameter, tag_all
+from refl1d.probe import ProbeSet
 
-from . import material, profile
 from . import __version__
-from .reflectivity import autosample_reflectivity_amplitude, reflectivity_amplitude as reflamp
-from .reflectivity import magnetic_amplitude as reflmag
-from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
-from . import model
-from .probe import Probe, NeutronProbe, PolarizedNeutronProbe
-
-# print("Using pure python reflectivity calculator")
-# from .abeles import refl as reflamp
-from .util import asbytes
-
-
-def plot_sample(sample, instrument=None, roughness_limit=0):
-    """
-    Quick plot of a reflectivity sample and the corresponding reflectivity.
-    """
-    if instrument is None:
-        from .probe import NeutronProbe
-
-        probe = NeutronProbe(T=np.arange(0, 5, 0.05), L=5)
-    else:
-        probe = instrument.simulate()
-    experiment = Experiment(sample=sample, probe=probe, roughness_limit=roughness_limit)
-    experiment.plot()
+from .sample.reflectivity import (
+    BASE_GUIDE_ANGLE as DEFAULT_THETA_M,
+    magnetic_amplitude as reflmag,
+    reflectivity_amplitude as reflamp,
+    autosample_reflectivity_amplitude as autosample_reflamp,
+)
+from . import profile
+from .probe.probe import PolarizedNeutronProbe, Probe, QProbe, PolarizedQProbe
+from .sample import layers, material
+from .utils import asbytes
 
 
 class WebviewPlotFunction(Protocol):
@@ -67,6 +48,7 @@ class WebviewPlotInfo(TypedDict):
 class ExperimentBase:
     probe = None  # type: Optional[Probe]
     interpolation = 0
+    autosample = True
     _probe_cache = None
     _substrate = None
     _surface = None
@@ -75,10 +57,7 @@ class ExperimentBase:
     def parameters(self):
         raise NotImplementedError()
 
-    def to_dict(self):
-        raise NotImplementedError()
-
-    def reflectivity(self, resolution=True, interpolation=0):
+    def reflectivity(self, resolution=True, interpolation=0, autosample=False):
         raise NotImplementedError()
 
     def magnetic_step_profile(self):
@@ -137,7 +116,7 @@ class ExperimentBase:
             # Trigger reflectivity calculation even if there is no data to
             # compare against so that we can profile simulation code, and
             # so that simulation smoke tests are run more thoroughly.
-            QR = self.reflectivity()
+            QR = self.reflectivity(autosample=self.autosample)
             if (self.probe.polarized and all(x is None or x.R is None for x in self.probe.xs)) or (
                 not self.probe.polarized and self.probe.R is None
             ):
@@ -222,7 +201,7 @@ class ExperimentBase:
         """Save simulated data to a file"""
         self.probe.write_data(filename, **kw)
 
-    def simulate_data(self, noise=2.0):
+    def simulate_data(self, noise=2.0, autosample=False):
         """
         Simulate a random data set for the model.
 
@@ -235,7 +214,7 @@ class ExperimentBase:
             use dR from the data if present, otherwise default to 2%.
         """
         # TODO: can't do perfect data while setting default uncertainty
-        theory = self.reflectivity(resolution=True)
+        theory = self.reflectivity(resolution=True, autosample=autosample)
         self.probe.simulate_data(theory, noise=noise)
 
     def save(self, basename):
@@ -405,8 +384,8 @@ class Experiment(ExperimentBase):
     """
 
     name: str
-    sample: Optional[model.Stack]
-    probe: Union[Probe, PolarizedNeutronProbe]
+    sample: Optional[layers.Stack]
+    probe: Union[Probe, PolarizedNeutronProbe, QProbe, PolarizedQProbe, ProbeSet]
     roughness_limit: float
     dz: Union[float, Literal[None]]
     dA: Union[float, Literal[None]]
@@ -418,7 +397,7 @@ class Experiment(ExperimentBase):
 
     def __init__(
         self,
-        sample: Optional[model.Stack] = None,
+        sample: Optional[layers.Stack] = None,
         probe=None,
         name=None,
         roughness_limit=0,
@@ -435,7 +414,7 @@ class Experiment(ExperimentBase):
         self.sample = sample
         self._substrate = self.sample[0].material
         self._surface = self.sample[-1].material
-        self.probe = probe
+        self.probe = ProbeSet(probe) if isinstance(probe, Sequence) else probe
         self.roughness_limit = roughness_limit
         if dz is None:
             dz = nice((2 * pi / probe.Q.max()) / 10)
@@ -458,6 +437,7 @@ class Experiment(ExperimentBase):
             tag_all(self.probe.parameters(), "probe")
             tag_all(self.sample.parameters(), "sample")
         self._webview_plots = {}
+        self.autosample = False
 
     @property
     def ismagnetic(self):
@@ -471,21 +451,6 @@ class Experiment(ExperimentBase):
             "sample": self.sample.parameters(),
             "probe": self.probe.parameters(),
         }
-
-    def to_dict(self):
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "name": self.name,
-                "sample": self.sample,
-                "probe": self.probe,
-                "roughness_limit": self.roughness_limit,
-                "dz": self.dz,
-                "dA": self.dA,
-                "step_interfaces": self.step_interfaces,
-                "interpolation": self.interpolation,
-            }
-        )
 
     def _render_slabs(self):
         """
@@ -529,10 +494,10 @@ class Experiment(ExperimentBase):
                 )
             else:
                 if autosample:
-                    calc_kz, calc_r = autosample_reflectivity_amplitude(
-                        -calc_q / 2, depth=w, rho=rho, irho=irho, sigma=sigma, dR=self.probe.dR, tolerance=0.05
+                    calc_kz, calc_r = autosample_reflamp(
+                        calc_q / 2, depth=w, rho=rho, irho=irho, sigma=sigma, dR=self.probe.dR, tolerance=0.05
                     )
-                    calc_q = -2 * calc_kz
+                    calc_q = 2 * calc_kz
                 else:
                     calc_r = reflamp(-calc_q / 2, depth=w, rho=rho, irho=irho, sigma=sigma, autosample=autosample)
             if False and np.isnan(calc_r).any():
@@ -566,12 +531,14 @@ class Experiment(ExperimentBase):
             self._cache[key] = res
         return self._cache[key]
 
-    def reflectivity(self, resolution=True, interpolation=0, autosample=False):
+    def reflectivity(self, resolution=True, interpolation=0, autosample=None):
         """
         Calculate predicted reflectivity.
 
         If *resolution* is true include resolution effects.
         """
+        if autosample is None:
+            autosample = self.autosample
         key = ("reflectivity", resolution, interpolation)
         if key not in self._cache:
             calc_q, calc_r = self._reflamp(autosample=autosample)
@@ -645,7 +612,7 @@ class Experiment(ExperimentBase):
         return (slabs.w, np.hstack((slabs.sigma, 0)), slabs.rho[0], slabs.irho[0], slabs.rhoM, slabs.thetaM)
 
     def save_staj(self, basename):
-        from .stajconvert import save_mlayer
+        from .probe.data_loaders.stajconvert import save_mlayer
 
         try:
             if self.probe.R is not None:
@@ -743,7 +710,7 @@ class MixedExperiment(ExperimentBase):
 
     name: str
     ratio: List[Union[float, Parameter]]
-    samples: Optional[List[model.Stack]]
+    samples: Optional[List[layers.Stack]]
     probe: Union[Probe, PolarizedNeutronProbe]
     coherent: bool
     interpolation: float
@@ -772,20 +739,6 @@ class MixedExperiment(ExperimentBase):
             "ratio": self.ratio,
             "probe": self.probe.parameters(),
         }
-
-    def to_dict(self):
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "name": self.name,
-                "samples": self.samples,
-                "ratio": self.ratio,
-                "probe": self.probe,
-                "parts": self.parts,
-                "coherent": self.coherent,
-                "interpolation": self.interpolation,
-            }
-        )
 
     def _reflamp(self):
         """
@@ -879,6 +832,30 @@ class MixedExperiment(ExperimentBase):
         return sum(s.penalty() for s in self.samples)
 
 
+def nice(v, digits=2):
+    """Fix v to a value with a given number of digits of precision"""
+    if v == 0.0:
+        return v
+    sign = v / abs(v)
+    place = floor(log10(abs(v)))
+    scale = 10 ** (place - (digits - 1))
+    return sign * floor(abs(v) / scale + 0.5) * scale
+
+
+def plot_sample(sample, instrument=None, roughness_limit=0):
+    """
+    Quick plot of a reflectivity sample and the corresponding reflectivity.
+    """
+    if instrument is None:
+        from .probe.probe import NeutronProbe
+
+        probe = NeutronProbe(T=np.arange(0, 5, 0.05), L=5)
+    else:
+        probe = instrument.simulate()
+    experiment = Experiment(sample=sample, probe=probe, roughness_limit=roughness_limit)
+    experiment.plot()
+
+
 def _polarized_nonmagnetic(r):
     """Convert nonmagnetic data to polarized representation.
 
@@ -912,13 +889,3 @@ def _amplitude_to_magnitude(r, ismagnetic, polarized):
         if polarized:
             R = _polarized_nonmagnetic(R)
     return R
-
-
-def nice(v, digits=2):
-    """Fix v to a value with a given number of digits of precision"""
-    if v == 0.0:
-        return v
-    sign = v / abs(v)
-    place = floor(log10(abs(v)))
-    scale = 10 ** (place - (digits - 1))
-    return sign * floor(abs(v) / scale + 0.5) * scale

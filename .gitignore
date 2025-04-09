@@ -24,6 +24,7 @@ refl1d-webview-client*.tgz
 /bumps-*
 /Refl1D.pdf
 /output-*
+test-files/
 
 # Build
 *.so
@@ -60,3 +61,5 @@ venv.bak/
 .idea
 *.swp
 *.bak
+
+test-files/

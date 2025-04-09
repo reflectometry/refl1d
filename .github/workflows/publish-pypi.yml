@@ -1,0 +1,98 @@
+name: Publish to PyPI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  release:
+    types: [published]
+
+jobs:
+  # Build a pure Python wheel and upload as an artifact
+  build-wheel:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        path: refl1d
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: build refl1d webview
+      run: |
+        python -m pip install -e ./refl1d
+        python -m refl1d.webview.build_client --cleanup
+
+    - name: Install dependencies for building the wheel
+      run: |
+        python -m pip install build
+
+    - name: Create the wheel
+      run: python -m build refl1d
+
+    - name: Upload the wheel artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: artifacts
+        path: |
+          refl1d/dist/refl1d-*-py3-none-any.whl
+          refl1d/dist/refl1d*.tar.gz
+          refl1d/refl1d/webview/client/*.tgz
+
+  update-release:
+    needs: build-wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Retrieve all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: show files
+        run: |
+          ls -R artifacts
+          echo "PY3_WHL=$(ls artifacts/dist/*.whl)" >> $GITHUB_ENV
+          echo "PY3_WHL=$(ls artifacts/dist/*.whl)"
+
+      - name: Update current release
+        if: startsWith(github.ref, 'refs/tags')
+        uses: johnwbyrd/update-release@v1.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            ${{ env.PY3_WHL }}
+
+  publish:
+    needs: build-wheel
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - name: Retrieve all artifacts
+        uses: actions/download-artifact@v4
+      - name: publish distribution to Test PyPI
+        env:
+          TEST_PYPI_API_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
+        if: env.TEST_PYPI_API_TOKEN != null
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: artifacts/dist/
+
+      - name: Publish distribution to PyPI
+        if: startsWith(github.ref, 'refs/tags')
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: artifacts/dist/

@@ -1,184 +1,156 @@
-from os.path import join as joinpath, dirname, exists, getmtime as filetime
-import tempfile
-import os
-
+import functools
+from pathlib import Path
+import matplotlib.pyplot as plt
 import numpy as np
 from numpy import radians
-import matplotlib.pyplot as plt
 
-from bumps.util import pushdir
-from refl1d.reflectivity import magnetic_amplitude as refl
+from refl1d.sample.reflectivity import magnetic_amplitude as magrefl, reflectivity_amplitude as refl
+from refl1d.validation.gepore_runner import GeporeRunner
 
-H2K = 2.91451e-5
 B2SLD = 2.31929e-06
-GEPORE_SRC = "gepore_zeeman.f"
+GEPORE_SRC = "gepore.f"
+GEPORE_ZEEMAN_SRC = "gepore_zeeman.f"
 
-
-def add_H(layers, H=0.0, AGUIDE=270.0):
-    """Take H (vector) as input and add H to 4piM:"""
-    new_layers = []
-    for layer in layers:
-        thickness, sld_n, sld_m, theta_m, phi_m = layer
-        # we read phi_m, but it must be zero so we don't use it.
-        sld_m_x = sld_m * np.cos(theta_m * np.pi / 180.0)  # phi_m = 0
-        sld_m_y = sld_m * np.sin(theta_m * np.pi / 180.0)  # phi_m = 0
-        sld_m_z = 0.0  # by Maxwell's equations, H_demag = mz so we'll just cancel it here
-        sld_h = B2SLD * 1.0e6 * H
-        # this code was completely wrong except for the case AGUIDE=270
-        sld_h_x = 0  # by definition, H is along the z,lab direction and x,lab = x,sam so Hx,sam must = 0
-        sld_h_y = -sld_h * np.sin(AGUIDE * np.pi / 180.0)
-        sld_h_z = sld_h * np.cos(AGUIDE * np.pi / 180.0)
-        sld_b_x = sld_h_x + sld_m_x
-        sld_b_y = sld_h_y + sld_m_y
-        sld_b_z = sld_h_z + sld_m_z
-        sld_b = np.sqrt((sld_b_z) ** 2 + (sld_b_y) ** 2 + (sld_b_x) ** 2)
-        # this was wrong:
-        # theta_b = np.arctan2(sld_b_y, sld_b_x)
-        theta_b = np.arccos(sld_b_x / sld_b)
-        # this didn't hurt anything but is also unneeded:
-        # theta_b = np.mod(theta_b, 2.0*np.pi)
-        # this wasn't even close to correct:
-        # phi_b = np.arcsin(sld_b_z/sld_b)
-        phi_b = np.arctan2(sld_b_z, sld_b_y)
-        phi_b = np.mod(phi_b, 2.0 * np.pi)
-        new_layer = [thickness, sld_n, sld_b, theta_b * 180.0 / np.pi, phi_b * 180.0 / np.pi]
-        new_layers.append(new_layer)
-    return new_layers
-
-
-def gepore(layers, QS, DQ, NQ, EPS, H):
-    # if H != 0:
-    layers = add_H(layers, H, AGUIDE=EPS)
-    # layers = add_H(layers, H, EPS-270, 0)
-    depth, rho, rhoB, thetaB, phiB = list(zip(*layers))
-
-    NL = len(rho) - 2
-    NC = 1
-    ROSUP = rho[-1] + rhoB[-1]
-    ROSUM = rho[-1] - rhoB[-1]
-    ROINP = rho[0] + rhoB[0]
-    ROINM = rho[0] - rhoB[0]
-
-    path = tempfile.gettempdir()
-    header = joinpath(path, "inpt.d")
-    layers = joinpath(path, "tro.d")
-    rm_real = joinpath(path, "rrem.d")
-    rm_imag = joinpath(path, "rimm.d")
-    rp_real = joinpath(path, "rrep.d")
-    rp_imag = joinpath(path, "rimp.d")
-
-    # recompile gepore if necessary
-    gepore = joinpath(path, "gepore")
-    gepore_source = joinpath(dirname(__file__), "..", "..", "refl1d", "lib", GEPORE_SRC)
-    if not exists(gepore) or filetime(gepore) < filetime(gepore_source):
-        status = os.system("gfortran -O2 -o %s %s" % (gepore, gepore_source))
-        if status != 0:
-            raise RuntimeError("Could not compile %r" % gepore_source)
-        if not exists(gepore):
-            raise RuntimeError("No gepore created in %r" % gepore)
-
-    with open(layers, "w") as fid:
-        for T, BN, PN, THE, PHI in list(zip(depth, rho, rhoB, thetaB, phiB))[1:-1]:
-            fid.write("%f %e %e %f %f\n" % (T, 1e-6 * BN, 1e-6 * PN, radians(THE), radians(PHI)))
-
-    for IP in (0.0, 1.0):
-        with open(header, "w") as fid:
-            fid.write(
-                "%d %d %f %f %d %f (%f,0.0) (%f,0.0) %e %e %e %e\n"
-                % (NL, NC, QS, DQ, NQ, radians(EPS), IP, 1 - IP, 1e-6 * ROINP, 1e-6 * ROINM, 1e-6 * ROSUP, 1e-6 * ROSUM)
-            )
-        with pushdir(path):
-            status = os.system("./gepore")  # >/dev/null')
-            if status != 0:
-                raise RuntimeError("Could not run gepore")
-        rp = np.loadtxt(rp_real).T[1] + 1j * np.loadtxt(rp_imag).T[1]
-        rm = np.loadtxt(rm_real).T[1] + 1j * np.loadtxt(rm_imag).T[1]
-        if IP == 1.0:
-            Rpp, Rpm = rp, rm
-        else:
-            Rmp, Rmm = rp, rm
-    return Rmm, Rpm, Rmp, Rpp
+XS_LABELS = ["++", "+-", "-+", "--"]
 
 
 def magnetic_cc(layers, kz, Aguide, H):
     depth, rho, rhoM, thetaM, phiM = list(zip(*layers))
-    R = refl(kz, depth, rho, 0, rhoM, thetaM, 0, Aguide, H)
-    return R
+    R = magrefl(kz, depth, rho, 0, rhoM, thetaM, 0, Aguide, H)
+    # magnetic_amplitude returns cross-sections in order --, -+, +-, ++
+    # so we need to reverse them here to compare to gepore outputs
+    return R[::-1]
 
 
-def Rplot(title, Qz, R, format, dataset):
+def nsf_refl(layers, kz, Aguide, H):
+    depth, rho, rhoM, thetaM, phiM = list(zip(*layers))
+    rho_plus = rho - rhoM * np.sin(radians(thetaM))  # in our convention, thetaM == 270 means aligned with the field
+    rho_minus = rho + rhoM * np.sin(radians(thetaM))
+    R_plus = refl(kz, depth, rho_plus, 0, 0, None)
+    R_minus = refl(kz, depth, rho_minus, 0, 0, None)
+    sf = np.zeros_like(R_plus)
+    return R_plus, sf, sf, R_minus
+
+
+def Rplot(axes, Qz, R, format, dataset, **plot_kw):
     """plot reflectivity"""
     # plt.hold(True)
-    for name, xs in zip(("++", "+-", "-+", "--"), R):
-        # for name,xs in zip(('--','-+','+-','++'),R):
-        Rxs = abs(xs) ** 2
+    axes.set_prop_cycle(None)
+    for name, xs in zip(XS_LABELS, R):
+        Rxs = xs * xs.conj()
         if (Rxs > 1e-8).any():
-            plt.plot(Qz, Rxs, format, label=name + dataset)
-    plt.xlabel("$2k_{z0}$", size="large")
-    plt.ylabel("R")
-    plt.legend()
-    plt.yscale("log")
-    plt.title(title)
+            axes.plot(Qz, Rxs, format, label=name + dataset, **plot_kw)
 
 
 def rplot(Qz, R, format):
     """plot real and imaginary"""
     # plt.hold(True)
     plt.figure()
-    for name, xs in zip(("++", "+-", "-+", "--"), R):
+    for name, xs in zip(XS_LABELS, R):
         rr = xs.real
         if (rr > 1e-8).any():
             plt.plot(Qz, rr, format, label=name + "r")
     plt.legend()
     plt.figure()
-    for name, xs in zip(("++", "+-", "-+", "--"), R):
+    for name, xs in zip(XS_LABELS, R):
         ri = xs.imag
         if (ri > 1e-8).any():
             plt.plot(Qz, ri, format, label=name + "i")
     plt.legend()
 
     plt.figure()
-    for name, xs in zip(("++", "+-", "-+", "--"), R):
+    for name, xs in zip(XS_LABELS, R):
         phi = np.arctan2(xs.imag, xs.real)
         if (ri > 1e-8).any():
             plt.plot(Qz, phi, format, label=name + "i")
     plt.legend()
 
 
-def profile_plot(layers):
+def profile_plot(axes: plt.Axes, layers):
     dz, rho, rhoM, thetaM, phiM = np.asarray(layers).T
     z = np.cumsum([np.hstack((-dz[0], dz))])
     rho, rhoM, thetaM = [np.hstack((v[0], v)) for v in (rho, rhoM, thetaM)]
-    plt.step(z, rho, label="rho")
-    plt.step(z, rhoM, label="rhoM")
-    plt.step(z, thetaM * 2 * np.pi / 360.0, label="thetaM")
-    plt.legend()
+    axes.step(z, rho, label="rho")
+    axes.step(z, rhoM, label="rhoM")
+    axes.step(z, thetaM * 2 * np.pi / 360.0, label="thetaM")
+    axes.legend()
 
 
-def compare(name, layers, Aguide=270, H=0):
+def run_comparison(
+    gepore_runner, name, layers, Aguide=270, H=0, zeeman_corrections=True, nsf_compare=False, save_output=True
+):
+    if save_output:
+        folder_name = f"{name.replace(' ', '_')}_H{H:.3f}_A{Aguide:.3f}_z{zeeman_corrections}"
+        save_folder = (Path("output") / folder_name).absolute()
+        save_folder.mkdir(exist_ok=True, parents=True)
+    else:
+        save_folder = None
+
+    figure = plt.figure()
+    axes = figure.subplots(2, 1)
+    figure.tight_layout()
+    ax_refl: plt.Axes = axes[0]
+    ax_profile: plt.Axes = axes[1]
+
     QS = 0.001
-    DQ = 0.0002
-    NQ = 300
-    Rgepore = gepore(layers, QS, DQ, NQ, Aguide, H)
+    DQ = 0.0004
+    NQ = 80
+    EPS = -Aguide
+    Rgepore = gepore_runner.run(
+        layers, QS, DQ, NQ, EPS, H, zeeman_corrections=zeeman_corrections, output_folder=save_folder
+    )
 
     Qz = np.arange(NQ) * DQ + QS
     kz = Qz / 2
     Rrefl1d = magnetic_cc(layers, kz, Aguide, H)
 
-    plt.subplot(211)
     title = "%s H=%g" % (name, H)
-    Rplot(title, Qz, Rgepore, "-", "gepore")
-    Rplot(title, 2 * kz, Rrefl1d, "-.", "refl1d")
+    Rplot(ax_refl, Qz, Rgepore, "-", "gepore")
+    Rplot(ax_refl, 2 * kz, Rrefl1d, "o", "refl1d", markevery=1, fillstyle="none", markersize=3)
+    if nsf_compare:
+        Rnsf = nsf_refl(layers, kz, Aguide, H)
+        Rplot(ax_refl, 2 * kz, Rnsf, "+", "nsf", markevery=1, fillstyle="none", markersize=3)
+    ax_refl.set_title(title)
+    ax_refl.set_xlabel("$2k_{z0}$", size="large")
+    ax_refl.set_ylabel("R")
+    ax_refl.set_yscale("log")
+    ax_refl.legend()
 
-    plt.subplot(212)
-    profile_plot(layers)
+    profile_plot(ax_profile, layers)
+
+    if save_folder is not None:
+        plt.savefig(save_folder / "comparison.png")
+        refl1d_output = np.vstack((2 * kz, *Rrefl1d)).T
+        np.savetxt(save_folder / "refl1d.dat", refl1d_output, delimiter="\t", header="2kz\tRpp\tRpm\tRmp\tRmm")
+
+    Rpp, Rpm, Rmp, Rmm = Rgepore
+    for index, (name, Rg, R1) in enumerate(zip(XS_LABELS, Rgepore, Rrefl1d)):
+        if np.any(R1 > 1e-8):
+            mask = np.logical_and(R1 > 1e-8, np.isfinite(R1))
+            norm_diff_real = (Rg.real[mask] - R1.real[mask]) / R1.real[mask]
+            max_diff = np.linalg.norm(norm_diff_real)
+            # max_diff = np.max(np.abs(norm_diff_real[np.isfinite(norm_diff_real)]))
+            # assert max_diff < 1e-6
+            print(f"{name} gepore vs refl1d magnetic: {max_diff:.2e}")
+        if nsf_compare:
+            Rn = Rnsf[index]
+            if np.any(Rn > 1e-8):
+                mask = np.logical_and(Rn > 1e-8, np.isfinite(Rn))
+                norm_diff_real = (R1.real[mask] - Rn.real[mask]) / Rn.real[mask]
+                max_diff = np.linalg.norm(norm_diff_real)
+                RR1 = np.abs(R1) ** 2
+                RRn = np.abs(Rn) ** 2
+                norm_diff_RR = (RR1[mask] - RRn[mask]) / RRn[mask]
+                max_diff_RR = np.linalg.norm(norm_diff_RR)
+                print(f"{name} refl1d magnetic vs refl1d nsf: {max_diff:.2e}")
+                print(f"{name} refl1d magnetic vs refl1d nsf RR: {max_diff_RR:.2e}")
+
+    # assert np.linalg.norm((Rrefl1d[0] - Rpp) / Rpp) < 1e-13, "fail ++ %s" % name
+    # assert np.linalg.norm((Rrefl1d[1] - Rpm) / Rpm) < 1e-13, "fail +- %s" % name
+    # assert np.linalg.norm((Rrefl1d[2] - Rmp) / Rmp) < 1e-13, "fail -+ %s" % name
+    # assert np.linalg.norm((Rrefl1d[3] - Rmm) / Rmm) < 1e-13, "fail -- %s" % name
 
     return kz, Rrefl1d
-
-    assert np.linalg.norm((R[0] - Rpp) / Rpp) < 1e-13, "fail ++ %s" % name
-    assert np.linalg.norm((R[1] - Rpm) / Rpm) < 1e-13, "fail +- %s" % name
-    assert np.linalg.norm((R[2] - Rmp) / Rmp) < 1e-13, "fail -+ %s" % name
-    assert np.linalg.norm((R[3] - Rmm) / Rmm) < 1e-13, "fail -- %s" % name
 
 
 def simple():
@@ -186,8 +158,8 @@ def simple():
     layers = [
         # depth rho rhoM thetaM phiM
         [0, 0.0, 0.0, 270, 0],
-        [200, 4.0, 1.0, 359.9, 0.0],
-        [200, 2.0, 1.0, 270, 0.0],
+        [2000, 4.0, 2.0, 270, 0.0],
+        [2000, 2.0, 2.0, 270, 0.0],
         [0, 4.0, 0.0, 270, 0.0],
     ]
     return "Si-Fe-Au-Air", layers, Aguide
@@ -292,6 +264,40 @@ def Kirby_example():
     return "Kirby example", layers, Aguide
 
 
+def validation_test_0():
+    Aguide = 5
+    # thickness	sld	mu	thetaM	sldm    roughness(ignore)
+    # 0.000	0.000	0.000	90.00	0.000	0.000
+    # 50.00	4.000	0.000	90.00	0.000	0.000
+    # 825.0	9.060	0.000	90.00	0.000	0.000
+    # 0.000	2.070	0.000	90.00	0.000	0.000
+    layers = [
+        # depth rho rhoM thetaM phiM
+        [0, 0.0, 0.0, 90.0, 0.0],
+        [50, 4.0, 0.0, 90.0, 0.0],
+        [825, 9.06, 0.0, 90.0, 0.0],
+        [0, 2.07, 0.0, 90.0, 0.0],
+    ]
+    return "validation test 0", layers[::-1], Aguide
+
+
+def validation_test_1():
+    Aguide = 270
+    # thickness	rho	sldi(ignore)	thetaM	rhoM    roughness
+    # 0	4	0	90.00	0	0
+    # 200	2	0	90.00	1	0
+    # 200	4	0	180.0	1	0
+    # 0	0	0	90.00	0	0
+    layers = [
+        # depth rho rhoM thetaM phiM
+        [0, 4.0, 0.0, 90.0, 0.0],
+        [200, 2.0, 1.0, 90.0, 0.0],
+        [200, 4.0, 1.0, 180.0, 0.0],
+        [0, 0.0, 0.0, 90.0, 0.0],
+    ]
+    return "validation test 1", layers[::-1], Aguide
+
+
 def zeeman_paper_example():
     Aguide = 6.52298771199324
     layers = [
@@ -302,6 +308,32 @@ def zeeman_paper_example():
         [0, 2.07, 0.0, 270.0, 0.0],
     ]
     return "zeeman paper", layers, Aguide
+
+
+def spinflip_difference():
+    Aguide = 0
+    layers = [
+        # depth rho rhoM thetaM phiM
+        [0, 0.0, 0.0, 1.0, 0.0],
+        [200, 4.5, 2.0, 1.0, 0.0],
+        [200, 4.5, 2.0, 1.0, 0.0],
+        [0, 2.07, 0.0, 1.0, 0.0],
+    ]
+    return "SF difference", layers, Aguide
+
+
+def Saerbeck_SmCo5(Aguide=270):
+    layers = [
+        # depth rho rhoM thetaM phiM
+        [0, 0.0, 0.0, 270, 0.0],
+        [5.931, 8.01, 0.0, 270, 0.0],  # TaOx
+        [24.4, 4.75, 0.0, 270, 0.0],  # Ta
+        [144.3, 5.55, 3.594, 230, 0.0],  # Fe
+        [240, 2.2365, 0.845, 210, 0.0],  # SmCo5
+        [81.75, 3.1408, 0.0, 270, 0.0],  # Cr
+        [0, 5.971, 0.0, 270, 0.0],  # MgO
+    ]
+    return "Saerbeck SmCo5", layers, Aguide
 
 
 def _random_model(Nlayers=10, seed=None):
@@ -322,34 +354,66 @@ def _random_model(Nlayers=10, seed=None):
     return "random(%d)" % seed, layers, Aguide
 
 
+def _random_nsf_model(Nlayers=10, seed=None):
+    if seed is None:
+        seed = np.random.randint(1000000)
+    np.random.seed(seed)
+    dz = np.random.rand(Nlayers) * 2000.0 / Nlayers
+    dz[0] = dz[-1] = 100.0
+    rho = 8 * (np.random.rand(Nlayers) - 0.1)
+    rhoM = 2 * np.random.rand(Nlayers)
+    thetaM = 270.0 * np.ones(Nlayers)
+    rhoM[0] = rhoM[-1] = 0.0
+    phiM = np.zeros_like(dz)
+    layers = np.vstack((dz, rho, rhoM, thetaM, phiM)).T.tolist()
+    Aguide = 270.0
+    # Aguide = 273.
+    return "random_nsf(%d)" % seed, layers, Aguide
+
+
+def simplest_pure_SF():
+    Aguide = 0.00000001
+    layers = [
+        # depth rho rhoM thetaM phiM
+        [0, 0.0, 0.0, 90.0, 0.0],
+        [500, 8.0, 2.0, 90.0, 0.0],
+        [0, 2.0, 0.0, 90.0, 0.0],
+    ]
+    return "simplest pure SF", layers, Aguide
+
+
 def demo():
     """run demo"""
-    # plt.figure(); compare(*simple())
-    # plt.figure(); compare(*twist())
-    # plt.figure(); compare(*magsub())
-    # plt.figure(); compare(*magsurf())
-    plt.figure()
-    compare(*zf_Yaohua_example(), H=0.4)  # 4000 gauss
-    plt.figure()
-    compare(*zf_Yaohua_example(), H=0.0005)  # 5 Gauss
-    plt.figure()
-    compare(*Kirby_example(), H=0.244)
-    # plt.figure(); compare(*NSF_example(), H=0.00005) # Earth's field, 0.5G
-    # plt.figure(); compare(*NSF_example(), H=1.0) # 1 tesla
-    # plt.figure(); compare(*Chuck_example(), H=0) # zeroish field, but magnetic front
-    # plt.figure(); compare(*_random_model(), H=0)
-    plt.figure()
-    compare(*_random_model(), H=np.random.rand() * 2)
-    # plt.figure(); compare(*_random_model(seed=998543), H=2)
-    plt.show()
-
-
-def write_Chuck_result():
-    kz, R = compare(*Chuck_example(), H=0)  # zeroish field, but magnetic front
-    np.savetxt("Rmm.txt", np.vstack((2 * kz, np.abs(R[3]) ** 2)).T, delimiter="\t")
-    np.savetxt("Rmp.txt", np.vstack((2 * kz, np.abs(R[2]) ** 2)).T, delimiter="\t")
-    np.savetxt("Rpm.txt", np.vstack((2 * kz, np.abs(R[1]) ** 2)).T, delimiter="\t")
-    np.savetxt("Rpp.txt", np.vstack((2 * kz, np.abs(R[0]) ** 2)).T, delimiter="\t")
+    with GeporeRunner() as runner:
+        compare = functools.partial(run_comparison, runner)
+        # compare(*simple(), zeeman_corrections=False)
+        # compare(*simple(), zeeman_corrections=True, nsf_compare=True)
+        # compare(*simplest_pure_SF(), H=0.5, zeeman_corrections=True)
+        # compare(*simplest_pure_SF(), H=0.5, zeeman_corrections=False)
+        # compare(*twist())
+        # compare(*magsub())
+        # compare(*magsurf())
+        # compare(*zf_Yaohua_example(), H=0.4)  # 4000 gauss
+        # compare(*zf_Yaohua_example(), H=0.0005)  # 5 Gauss
+        # compare(*Kirby_example(), H=0.244)
+        # compare(*zeeman_paper_example(), H=0.244)
+        # compare(*zeeman_paper_example(), H=0)
+        # compare(*spinflip_difference(), H=0.244)
+        # compare(*Saerbeck_SmCo5(), H=0.300)
+        # compare(*Saerbeck_SmCo5(Aguide=90), H=0.0)
+        # compare(*NSF_example(), H=0.00005) # Earth's field, 0.5G
+        # compare(*NSF_example(), H=1.0) # 1 tesla
+        # compare(*Chuck_example(), H=0) # zeroish field, but magnetic front
+        # compare(*_random_model(), H=0)
+        # compare(*validation_test_0(), H=0.244)
+        # compare(*validation_test_1(), H=0)
+        # compare(*_random_model(), H=np.random.rand() * 2)
+        # compare(*_random_model(seed=998543), H=2)
+        seed = np.random.randint(1000000)
+        compare(*_random_nsf_model(seed=seed), H=1.0, nsf_compare=True)
+        compare(*_random_nsf_model(seed=seed), H=1.0, zeeman_corrections=False, nsf_compare=True)
+        # compare(*_random_nsf_model(seed=998543), H=0.4, zeeman_corrections=True, nsf_compare=True)
+        # plt.show()
 
 
 if __name__ == "__main__":
