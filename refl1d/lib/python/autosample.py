@@ -117,6 +117,9 @@ def apply_autosampling(model, tolerance=0.05):
 
 
 def autosampled_reflectivity_amplitude(depth, sigma, rho, irho, kz, rho_index, dR, tolerance=0.05):
+    if dR is None:
+        dR = np.full_like(kz, 0.01)
+
     if len(dR) != len(kz):
         raise ValueError("len(dR) != len(kz)")
 

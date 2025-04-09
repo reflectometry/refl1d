@@ -41,3 +41,4 @@ MODULE.oversample_inplace = oversample_inplace
 
 get_refl_args = MODULE.get_refl_args
 apply_autosampling = MODULE.apply_autosampling
+autosampled_reflectivity_amplitude = MODULE.autosampled_reflectivity_amplitude

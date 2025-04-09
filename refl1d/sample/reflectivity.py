@@ -169,7 +169,7 @@ def autosample_reflectivity_amplitude(
     """
     Calculate reflectivity amplitude $r(k_z)$ from slab model.
     """
-    from .refllib import backend
+    from ..backends import backend
 
     kz, depth, rho, irho, sigma, rho_index = prepare_slabs(
         kz=kz,
