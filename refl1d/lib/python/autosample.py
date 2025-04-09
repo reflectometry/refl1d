@@ -116,6 +116,9 @@ def apply_autosampling(model, tolerance=0.05):
     return new_kz, out_of_tol, r, dR
 
 
-def autosampled_reflectivity_amplitude(kz, depth, sigma, rho, irho, rho_index, dR, tolerance=0.05):
+def autosampled_reflectivity_amplitude(depth, sigma, rho, irho, kz, rho_index, dR, tolerance=0.05):
+    if len(dR) != len(kz):
+        raise ValueError("len(dR) != len(kz)")
+
     calc_kz, out_of_tol, r, dR = oversample_inplace(kz, dR, tolerance, depth, rho, irho, sigma)
     return calc_kz, r

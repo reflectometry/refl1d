@@ -28,7 +28,7 @@ from bumps.dream.state import MCMCDraw
 
 from . import material, profile
 from . import __version__
-from .reflectivity import reflectivity_amplitude as reflamp
+from .reflectivity import autosample_reflectivity_amplitude, reflectivity_amplitude as reflamp
 from .reflectivity import magnetic_amplitude as reflmag
 from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
 from . import model
@@ -528,8 +528,13 @@ class Experiment(ExperimentBase):
                     sigma=sigma,
                 )
             else:
-                calc_kz, calc_r = reflamp(-calc_q / 2, depth=w, rho=rho, irho=irho, sigma=sigma, autosample=autosample)
-                calc_q = -2 * calc_kz
+                if autosample:
+                    calc_kz, calc_r = autosample_reflectivity_amplitude(
+                        -calc_q / 2, depth=w, rho=rho, irho=irho, sigma=sigma, dR=self.probe.dR, tolerance=0.05
+                    )
+                    calc_q = -2 * calc_kz
+                else:
+                    calc_r = reflamp(-calc_q / 2, depth=w, rho=rho, irho=irho, sigma=sigma, autosample=autosample)
             if False and np.isnan(calc_r).any():
                 print("w", w)
                 print("rho", rho)
@@ -569,7 +574,7 @@ class Experiment(ExperimentBase):
         """
         key = ("reflectivity", resolution, interpolation)
         if key not in self._cache:
-            calc_q, calc_r = self._reflamp()
+            calc_q, calc_r = self._reflamp(autosample=autosample)
             calc_R = _amplitude_to_magnitude(calc_r, ismagnetic=self.ismagnetic, polarized=self.probe.polarized)
             res = self.probe.apply_beam(calc_q, calc_R, resolution=resolution, interpolation=interpolation)
             self._cache[key] = res

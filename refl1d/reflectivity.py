@@ -67,6 +67,42 @@ def reflectivity(*args, **kw):
     return (r * conj(r)).real
 
 
+def prepare_slabs(
+    kz=None,
+    depth=None,
+    rho=None,
+    irho=0,
+    sigma=0,
+    rho_index=None,
+):
+    kz = _dense(kz, "d")
+    if rho_index is None:
+        rho_index = np.zeros(kz.shape, "i")
+    else:
+        rho_index = _dense(rho_index, "i")
+
+    depth = _dense(depth, "d")
+    if np.isscalar(sigma):
+        sigma = sigma * np.ones(len(depth) - 1, "d")
+    else:
+        sigma = _dense(sigma, "d")
+    rho = _dense(rho, "d")
+    # promote rho and irho to 2d, for multi-wavelength
+    if rho.ndim == 1:
+        rho.resize((1, rho.shape[0]))
+    if np.isscalar(irho):
+        irho = irho * np.ones_like(rho)
+    else:
+        irho = _dense(irho, "d")
+    if irho.ndim == 1:
+        irho.resize((1, irho.shape[0]))
+
+    # print(irho.shape, irho[:,0], irho[:,-1])
+    irho = abs(irho) + 1e-30
+
+    return kz, depth, rho, irho, sigma, rho_index
+
+
 def reflectivity_amplitude(
     kz=None,
     depth=None,
@@ -105,41 +141,50 @@ def reflectivity_amplitude(
     """
     from .refllib import backend
 
-    kz = _dense(kz, "d")
-    if rho_index is None:
-        rho_index = np.zeros(kz.shape, "i")
-    else:
-        rho_index = _dense(rho_index, "i")
+    kz, depth, rho, irho, sigma, rho_index = prepare_slabs(
+        kz=kz,
+        depth=depth,
+        rho=rho,
+        irho=irho,
+        sigma=sigma,
+        rho_index=rho_index,
+    )
 
-    depth = _dense(depth, "d")
-    if np.isscalar(sigma):
-        sigma = sigma * np.ones(len(depth) - 1, "d")
-    else:
-        sigma = _dense(sigma, "d")
-    rho = _dense(rho, "d")
-    # promote rho and irho to 2d, for multi-wavelength
-    if rho.ndim == 1:
-        rho.resize((1, rho.shape[0]))
-    if np.isscalar(irho):
-        irho = irho * np.ones_like(rho)
-    else:
-        irho = _dense(irho, "d")
-    if irho.ndim == 1:
-        irho.resize((1, irho.shape[0]))
+    r = np.empty(kz.shape, "D")
+    # print "amplitude", depth, rho, kz, rho_index
+    # print depth.shape, sigma.shape, rho.shape, irho.shape, kz.shape
+    backend.reflectivity_amplitude(depth, sigma, rho, irho, kz, rho_index, r)
 
-    # print(irho.shape, irho[:,0], irho[:,-1])
-    irho = abs(irho) + 1e-30
-    # irho[irho < 0] = 0.
-    # print depth.shape, rho.shape, irho.shape, sigma.shape
-    # print depth.dtype, rho.dtype, irho.dtype, sigma.dtype
-    if autosample:
-        calc_kz, r = backend.autosampled_reflectivity_amplitude(kz, depth, sigma, rho, irho, rho_index)
-    else:
-        r = np.empty(kz.shape, "D")
-        # print "amplitude", depth, rho, kz, rho_index
-        # print depth.shape, sigma.shape, rho.shape, irho.shape, kz.shape
-        backend.reflectivity_amplitude(depth, sigma, rho, irho, kz, rho_index, r)
-        calc_kz = kz
+    return r
+
+
+def autosample_reflectivity_amplitude(
+    kz=None,
+    depth=None,
+    rho=None,
+    irho=0,
+    sigma=0,
+    rho_index=None,
+    dR=None,
+    tolerance=0.05,
+):
+    """
+    Calculate reflectivity amplitude $r(k_z)$ from slab model.
+    """
+    from .refllib import backend
+
+    kz, depth, rho, irho, sigma, rho_index = prepare_slabs(
+        kz=kz,
+        depth=depth,
+        rho=rho,
+        irho=irho,
+        sigma=sigma,
+        rho_index=rho_index,
+    )
+
+    calc_kz, r = backend.autosampled_reflectivity_amplitude(
+        depth, sigma, rho, irho, kz, rho_index, dR, tolerance=tolerance
+    )
 
     return calc_kz, r
 
