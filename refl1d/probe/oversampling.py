@@ -80,6 +80,122 @@ def get_optimal_single_oversampling(model, tolerance=0.05, max_oversampling=201,
     return oversampling, optimal_oversampling, Q
 
 
+def get_optimal_single_autosampling(model, tolerance=0.05, min_autosampling=0.005, seed=1, verbose=False):
+    """
+    Determine how much oversampling is required to adequately calculate resolution smearing
+
+    Algorithm:
+      - the model is oversampled to a very high number (max_oversampling)
+      - smeared R is calculated at max_oversampling and stored as reference "ideal" R
+      - oversampling is iterated (starting at 1), and smeared R is calculated and compared to "ideal" R
+      - points are "within tolerance" if (R(Q) - R_ref(Q)) / dR(Q) < tolerance
+      - the value of oversampling at which a point becomes within tolerance is recorded for that point
+      - when all points are within tolerance the loop ends and the function reports the recommended oversampling
+
+    Args:
+        model (refl1d.experiment.Experiment): an Experiment, containing probe and sample
+        tolerance (float, optional): allowed deviation of R from ideal R (multiplied by dR). Defaults to 0.05
+        max_oversampling (int, optional): A very high oversampling that is expected to exceed
+            the requirements for support (used to generate reference R). Defaults to 201.
+
+    Returns:
+        oversampling (int): suggested oversampling to get all R within tolerance
+        optimal_oversampling: for each probe, per-Q array of oversampling needed to get R(Q) within tolerance
+    """
+    # get a list of probes, which will have length one for unpolarized:
+    probes = model.probe.xs if hasattr(model.probe, "xs") else [model.probe]
+    # sample = model.sample
+
+    # initialize the per-Q recommended oversampling to max_oversampling
+    optimal_oversampling = [None if p is None else np.ones_like(p.dR, dtype=int) * min_autosampling for p in probes]
+    Q = []
+    # model.probe.oversample(max_oversampling, seed=seed)
+
+    model._cache = {}
+    R_ref = model.reflectivity(autosample=True, tolerance=min_autosampling)
+    if not isinstance(R_ref, list):
+        R_ref = [R_ref]
+
+    max_diff = np.inf
+    autosampling_tol = 10
+    while max_diff > tolerance and autosampling_tol > min_autosampling:
+        autosampling_tol *= 0.8
+        if verbose:
+            print("trying autosampling_tol = {:d}".format(autosampling_tol), end="\r")
+        model._cache = {}
+        R = model.reflectivity(autosample=True, tolerance=autosampling_tol)
+        if not isinstance(R, list):
+            R = [R]
+        current_max_diff = 0
+        for oos, p, r, r_ref in zip(optimal_oversampling, probes, R, R_ref):
+            if p is None:
+                Q.append(None)
+                continue
+
+            Q.append(p.Q)
+            diff = np.abs(r[1] - r_ref[1]) / p.dR
+            current_max_diff = max(current_max_diff, diff.max())
+
+            # if an R value is now within tolerance, and the optimal_oversampling has not been set
+            # (which is indicated by the fact that it is still set to max_oversampling), then
+            # set it to the current oversampling:
+            to_set = np.logical_and(diff < tolerance, oos == min_autosampling)
+            oos[to_set] = autosampling_tol
+
+            # if an R value is now out of tolerance, make sure that the optimal_oversampling is reset
+            # to the "unset" value of max_oversampling
+            to_reset = diff > tolerance
+            oos[to_reset] = min_autosampling
+
+        max_diff = current_max_diff  # to be checked against tolerance on the next iteration
+
+    # reset model cache again before leaving
+    model._cache = {}
+    if verbose:
+        print("Recommended autosampling_tol: {:d}".format(autosampling_tol))
+
+    return autosampling_tol, optimal_oversampling, Q
+
+
+def analyze_fitproblem_autosample(problem, tolerance=0.05, min_autosampling=0.005, seed=1, plot=False):
+    if plot:
+        from matplotlib import pyplot as plt
+    models = problem.models if hasattr(problem, "models") else [problem]
+    autosampling_tol = []
+    local_autosampling_tol = []
+    for i_model, model in enumerate(models):
+        print("model: {:d}".format(i_model))
+        tol_i = []
+        local_tol_i = []
+        autosampling_tol.append(tol_i)
+        local_autosampling_tol.append(local_tol_i)
+        parts = model.parts if hasattr(model, "parts") else [model]
+        for i_part, part in enumerate(parts):
+            # print(part)
+            tol_ii, local_tol_ii, Q = get_optimal_single_autosampling(part, tolerance, min_autosampling, seed=seed)
+            print("\tpart: {:d}, autosampling_tol: {:f}".format(i_part, tol_ii))
+            tol_i.append(tol_ii)
+            local_tol_i.append(local_tol_ii)
+            if plot:
+                plt.figure()
+                for i_oos, (oos, qq) in enumerate(zip(local_tol_ii, Q)):
+                    if oos is not None:
+                        plt.plot(qq, oos, label="xs: {:d}".format(i_oos))
+                plt.title("model: {:d}, part: {:d}".format(i_model, i_part))
+                plt.xlabel("Q (inv. A)")
+                plt.ylabel("required autosampling tol")
+                plt.legend()
+
+        # there is one probe instance shared between parts in MixedExperiment: use
+        # largest recommended oversampling.
+        # parts[0].probe.oversample(max(tol_i))
+
+    if plot:
+        plt.show()
+
+    return autosampling_tol, local_autosampling_tol
+
+
 def analyze_fitproblem(problem, tolerance=0.05, max_oversampling=201, seed=1, plot=False):
     if plot:
         from matplotlib import pyplot as plt

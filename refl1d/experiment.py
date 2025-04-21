@@ -465,7 +465,7 @@ class Experiment(ExperimentBase):
             self._cache[key] = True
         return self._slabs
 
-    def _reflamp(self, autosample=False):
+    def _reflamp(self, autosample=False, tolerance=0.5):
         # calc_q = self.probe.calc_Q
         # return calc_q, calc_q
         key = "calc_r"
@@ -495,7 +495,7 @@ class Experiment(ExperimentBase):
             else:
                 if autosample:
                     calc_kz, calc_r = autosample_reflamp(
-                        calc_q / 2, depth=w, rho=rho, irho=irho, sigma=sigma, dR=self.probe.dR, tolerance=0.05
+                        calc_q / 2, depth=w, rho=rho, irho=irho, sigma=sigma, dR=self.probe.dR, tolerance=tolerance
                     )
                     calc_q = 2 * calc_kz
                 else:
@@ -531,7 +531,7 @@ class Experiment(ExperimentBase):
             self._cache[key] = res
         return self._cache[key]
 
-    def reflectivity(self, resolution=True, interpolation=0, autosample=None):
+    def reflectivity(self, resolution=True, interpolation=0, autosample=None, tolerance=0.1):
         """
         Calculate predicted reflectivity.
 
@@ -541,7 +541,7 @@ class Experiment(ExperimentBase):
             autosample = self.autosample
         key = ("reflectivity", resolution, interpolation)
         if key not in self._cache:
-            calc_q, calc_r = self._reflamp(autosample=autosample)
+            calc_q, calc_r = self._reflamp(autosample=autosample, tolerance=tolerance)
             calc_R = _amplitude_to_magnitude(calc_r, ismagnetic=self.ismagnetic, polarized=self.probe.polarized)
             res = self.probe.apply_beam(calc_q, calc_R, resolution=resolution, interpolation=interpolation)
             self._cache[key] = res
