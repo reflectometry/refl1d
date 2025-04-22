@@ -210,7 +210,7 @@ async function fetchModel() {
       throw new Error("Model type not recognized");
     }
 
-    let badModel: boolean;
+    let badModel: boolean = false;
     switch (modelType.value) {
       case "simple":
         if (model["sample"]["layers"].some((layer: Slab) => layer.material === undefined)) {
