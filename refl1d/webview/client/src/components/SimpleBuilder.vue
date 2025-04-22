@@ -117,23 +117,57 @@ function createLayer(
 }
 
 function createModel(): SerializedModel {
-  return {
-    references: {},
-    object: {
-      __class__: "bumps.fitproblem.FitProblem",
-      models: [
-        {
-          __class__: "refl1d.experiment.Experiment",
-          sample: {
-            __class__: "refl1d.sample.layers.Stack",
-            layers: [createLayer("Si", 2.07, 0.0, 0.0, 1.0), createLayer("Vacuum", 0.0, 0.0, 0.0, 0.0)],
+  if (mixed === true) {
+    // TODO: Created by Copilot, check if it's correct
+    return {
+      references: {},
+      object: {
+        __class__: "refl1d.bumps_interface.fitproblem.FitProblem",
+        models: [
+          {
+            __class__: "refl1d.experiment.MixedExperiment",
+            samples: [
+              {
+                __class__: "refl1d.experiment.Experiment",
+                sample: {
+                  __class__: "refl1d.sample.layers.Stack",
+                  layers: [createLayer("Si", 2.07, 0.0, 0.0, 1.0), createLayer("Vacuum", 0.0, 0.0, 0.0, 0.0)],
+                },
+                probe: generateQProbe(editQmin.value, editQmax.value, editQsteps.value, 0.0001),
+              },
+              {
+                __class__: "refl1d.experiment.Experiment",
+                sample: {
+                  __class__: "refl1d.sample.layers.Stack",
+                  layers: [createLayer("Si", 2.07, 0.0, 0.0, 1.0), createLayer("Vacuum", 0.0, 0.0, 0.0, 0.0)],
+                },
+                probe: generateQProbe(editQmin.value, editQmax.value, editQsteps.value, 0.0001),
+              },
+            ],
           },
-          probe: generateQProbe(editQmin.value, editQmax.value, editQsteps.value, 0.0001),
-        },
-      ],
-    },
-    $schema: "bumps-draft-02",
-  };
+        ],
+      },
+      $schema: "bumps-draft-02",
+    };
+  } else {
+    return {
+      references: {},
+      object: {
+        __class__: "bumps.fitproblem.FitProblem",
+        models: [
+          {
+            __class__: "refl1d.experiment.Experiment",
+            sample: {
+              __class__: "refl1d.sample.layers.Stack",
+              layers: [createLayer("Si", 2.07, 0.0, 0.0, 1.0), createLayer("Vacuum", 0.0, 0.0, 0.0, 0.0)],
+            },
+            probe: generateQProbe(editQmin.value, editQmax.value, editQsteps.value, 0.0001),
+          },
+        ],
+      },
+      $schema: "bumps-draft-02",
+    };
+  }
 }
 
 function generateQProbe(qmin: number = 0, qmax: number = 0.1, qsteps: number = 250, dQ: number = 0.00001) {
@@ -182,61 +216,6 @@ async function fetchModel() {
       }
     }
   });
-}
-
-// TODO: Update to handle creatingMixedExperiment
-function createModel(mixed: boolean = false): SerializedModel {
-  if (mixed === true) {
-    // TODO: Created by Copilot, check if it's correct
-    return {
-      references: {},
-      object: {
-        __class__: "refl1d.bumps_interface.fitproblem.FitProblem",
-        models: [
-          {
-            __class__: "refl1d.experiment.MixedExperiment",
-            samples: [
-              {
-                __class__: "refl1d.experiment.Experiment",
-                sample: {
-                  __class__: "refl1d.sample.layers.Stack",
-                  layers: [createLayer("Si", 2.07, 0.0, 0.0, 1.0), createLayer("Vacuum", 0.0, 0.0, 0.0, 0.0)],
-                },
-                probe: generateQProbe(editQmin.value, editQmax.value, editQsteps.value, 0.0001),
-              },
-              {
-                __class__: "refl1d.experiment.Experiment",
-                sample: {
-                  __class__: "refl1d.sample.layers.Stack",
-                  layers: [createLayer("Si", 2.07, 0.0, 0.0, 1.0), createLayer("Vacuum", 0.0, 0.0, 0.0, 0.0)],
-                },
-                probe: generateQProbe(editQmin.value, editQmax.value, editQsteps.value, 0.0001),
-              },
-            ],
-          },
-        ],
-      },
-      $schema: "bumps-draft-02",
-    };
-  } else {
-    return {
-      references: {},
-      object: {
-        __class__: "refl1d.bumps_interface.fitproblem.FitProblem",
-        models: [
-          {
-            __class__: "refl1d.experiment.Experiment",
-            sample: {
-              __class__: "refl1d.sample.layers.Stack",
-              layers: [createLayer("Si", 2.07, 0.0, 0.0, 1.0), createLayer("Vacuum", 0.0, 0.0, 0.0, 0.0)],
-            },
-            probe: generateQProbe(editQmin.value, editQmax.value, editQsteps.value, 0.0001),
-          },
-        ],
-      },
-      $schema: "bumps-draft-02",
-    };
-  }
 }
 
 async function newModel() {
