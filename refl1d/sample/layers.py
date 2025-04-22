@@ -135,7 +135,7 @@ class Layer:  # Abstract base class
         if not isinstance(other, int) or not other > 1:
             raise TypeError("Repeat count must be an integer > 1")
         if isinstance(self, Slab):
-            raise TypeError("Cannot repeat single slab" "")
+            raise TypeError("Cannot repeat single slab")
         stack = Stack()
         stack.add(self)
         r = Repeat(stack=stack, repeat=other)
@@ -569,7 +569,7 @@ def _check_layer(el):
     elif isinstance(el, mat.Scatterer):
         return Slab(el)
     else:
-        raise TypeError("Can only stack materials and layers, not %s" % el)
+        raise TypeError(f"Can only stack materials and layers, not {el} (of type {type(el)})")
 
 
 @dataclass(init=False)

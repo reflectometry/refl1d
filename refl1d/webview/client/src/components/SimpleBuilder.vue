@@ -116,6 +116,26 @@ function createLayer(
   return layer;
 }
 
+function createModel(): SerializedModel {
+  return {
+    references: {},
+    object: {
+      __class__: "bumps.fitproblem.FitProblem",
+      models: [
+        {
+          __class__: "refl1d.experiment.Experiment",
+          sample: {
+            __class__: "refl1d.sample.layers.Stack",
+            layers: [createLayer("Si", 2.07, 0.0, 0.0, 1.0), createLayer("Vacuum", 0.0, 0.0, 0.0, 0.0)],
+          },
+          probe: generateQProbe(editQmin.value, editQmax.value, editQsteps.value, 0.0001),
+        },
+      ],
+    },
+    $schema: "bumps-draft-02",
+  };
+}
+
 function generateQProbe(qmin: number = 0, qmax: number = 0.1, qsteps: number = 250, dQ: number = 0.00001) {
   const qArr = Array.from({ length: qsteps }, (_, i) => qmin + (i * (qmax - qmin)) / qsteps);
   const dqArr = Array.from({ length: qsteps }, () => dQ);
@@ -139,6 +159,7 @@ const decoder = new TextDecoder("utf-8");
 async function fetchModel() {
   props.socket.asyncEmit("get_model", (payload: ArrayBuffer) => {
     const json_bytes = new Uint8Array(payload);
+    console.debug({ payload });
 
     if (json_bytes.length < 3) {
       // no model defined...

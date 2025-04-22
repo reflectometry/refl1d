@@ -14,12 +14,15 @@ from numpy import asarray, clip, cumsum, diff, hstack, inf, sort
 
 from .. import utils
 from .layers import Layer
+from .magnetism import BaseMagnetism
+from .material import Scatterer
 
 
 # TODO: add left_sld, right_sld to all layers so that fresnel works
 # TODO: access left_sld, right_sld so freeform doesn't need left, right
 # TODO: restructure to use vector parameters
 # TODO: allow the number of layers to be adjusted by the fit
+@dataclass(init=False)
 class FreeLayer(Layer):
     """
     A freeform section of the sample modeled with splines.
@@ -35,7 +38,16 @@ class FreeLayer(Layer):
     with slabs.
     """
 
-    def __init__(self, below=None, above=None, thickness=0, z=(), rho=(), irho=(), name="Freeform"):
+    name: str
+    below: Scatterer
+    above: Scatterer
+    thickness: Par
+    z: List[Par]
+    rho: List[Par]
+    irho: List[Par]
+    magnetism: Optional[BaseMagnetism] = None
+
+    def __init__(self, below=None, above=None, thickness=0, z=(), rho=(), irho=(), name="Freeform", magnetism=None):
         self.name = name
         self.below, self.above = below, above
         self.thickness = Par.default(thickness, name=name + " thickness", limits=(0, inf))
@@ -53,6 +65,8 @@ class FreeLayer(Layer):
         if len(self.irho) > 0 and len(self.z) != len(self.irho):
             raise ValueError("must have one z for each irho value")
 
+        self.magnetism = magnetism
+
     def parameters(self):
         return {
             "thickness": self.thickness,
@@ -61,6 +75,7 @@ class FreeLayer(Layer):
             "z": self.z,
             "below": self.below.parameters(),
             "above": self.above.parameters(),
+            "magnetism": self.magnetism.parameters() if self.magnetism is not None else None,
         }
 
     def to_dict(self):
@@ -115,16 +130,19 @@ class FreeInterface(Layer):
     with slabs.
     """
 
-    name: Optional[str]
-    below: Optional[Any]
-    above: Optional[Any]
+    name: str
+    below: Scatterer
+    above: Scatterer
     thickness: Par
     interface: Par
-    dz: List[Union[float, Par]]
-    dp: List[Union[float, Par]]
+    dz: List[Par]
+    dp: List[Par]
+    magnetism: Optional[BaseMagnetism] = None
     # inflections: List[Any]
 
-    def __init__(self, thickness=0, interface=0, below=None, above=None, dz=None, dp=None, name="Interface"):
+    def __init__(
+        self, thickness=0, interface=0, below=None, above=None, dz=None, dp=None, name="Interface", magnetism=None
+    ):
         self.name = name
         self.below, self.above = below, above
         self.thickness = Par.default(thickness, limits=(0, inf), name=name + " thickness")
@@ -140,12 +158,11 @@ class FreeInterface(Layer):
         if len(dz) != len(dp):
             raise ValueError("Need one dz for every dp")
 
-        # if len(z) != len(vf)+2:
-        #    raise ValueError("Only need vf for interior z, so len(z)=len(vf)+2")
         self.dz = [Par.default(p, name=name + " dz[%d]" % i, limits=(0, inf)) for i, p in enumerate(dz)]
         self.dp = [Par.default(p, name=name + " dp[%d]" % i, limits=(0, inf)) for i, p in enumerate(dp)]
         self.inflections = Par(name=name + " inflections")
         self.inflections.equals(ParFunction(inflections, dx=self.dz, dy=self.dp))
+        self.magnetism = magnetism
 
     def parameters(self):
         return {
@@ -156,6 +173,7 @@ class FreeInterface(Layer):
             "below": self.below.parameters(),
             "above": self.above.parameters(),
             "inflections": self.inflections,
+            "magnetism": self.magnetism.parameters() if self.magnetism is not None else None,
         }
 
     def to_dict(self):
@@ -175,14 +193,22 @@ class FreeInterface(Layer):
         if p[-1] == 0:
             p[-1] = 1
         p *= 1 / p[-1]
+        # AJC included condition as if z[-1] == 0 then z *= thickness/z[-1] == [nan]*len(z)
+        # This then ends with bumps.mono.Monospline adding an extra element as a result of
+        # line 42 in bumps.mono.Monospline
+        if z[-1] == 0:
+            z[-1] = 1
         z *= thickness / z[-1]
         profile = clip(monospline(z, p, Pz), 0, 1)
         return profile
 
     def render(self, probe, slabs):
         thickness = self.thickness.value
+
+        # TODO: why is provided if it is ignored?
         # interface ignored for FreeInterface
         # interface = self.interface.value
+
         below_rho, below_irho = self.below.sld(probe)
         above_rho, above_irho = self.above.sld(probe)
         # Pz is the center, Pw is the width
