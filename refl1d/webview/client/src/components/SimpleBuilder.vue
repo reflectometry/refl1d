@@ -1,10 +1,5 @@
 <!-- 
  TODO: Implement sortedSamples as Stack[] instead of Slab[][] to handle Repeat layers
- TODO: Fix layer values are linked between stacks for some reason
- TODO: Implement a way to add a new stack
- TODO: Add a delete stack button
- TODO: Add an "add stack" button to the top?
- TODO: Make stacks draggable
 -->
 
 <script setup lang="ts">
@@ -47,7 +42,7 @@ const props = defineProps<{
   socket: AsyncSocket;
 }>();
 
-/** Returns a list of Slab[] based on the currently active model */
+/** Returns a list of list of Slab based on the currently active model */
 const sortedSamples: ComputedRef<Slab[][]> = computed(() => {
   const samples: Slab[][] = [];
   let model = modelJson.value["object"]["models"][activeModel.value];
@@ -147,7 +142,7 @@ function createModel(mixed: boolean = false): SerializedModel {
           },
         ],
       },
-      $schema: "bumps-draft-02",
+      $schema: "bumps-draft-03",
     };
   } else {
     return {
@@ -165,7 +160,7 @@ function createModel(mixed: boolean = false): SerializedModel {
           },
         ],
       },
-      $schema: "bumps-draft-02",
+      $schema: "bumps-draft-03",
     };
   }
 }
@@ -197,21 +192,44 @@ async function fetchModel() {
       // no model defined...
       modelJson.value = {};
       dictionaryLoaded.value = false;
-    } else {
-      const jsonValue = JSON.parse(decoder.decode(json_bytes));
-      modelJson.value = jsonValue;
-      console.debug("Loaded model: ", modelJson.value);
-      parametersById.value = jsonValue.references;
-      dictionaryLoaded.value = true;
+      return;
+    }
 
-      let model = modelJson.value["object"]["models"][activeModel.value];
-      if (model.hasOwnProperty("sample")) {
-        modelType.value = "simple";
-      } else if (model.hasOwnProperty("samples")) {
-        modelType.value = "mixed";
-      } else {
-        throw new Error("Model type not recognized");
-      }
+    const jsonValue = JSON.parse(decoder.decode(json_bytes));
+    modelJson.value = jsonValue;
+    console.debug("Loaded model: ", modelJson.value);
+    parametersById.value = jsonValue.references;
+    dictionaryLoaded.value = true;
+
+    let model = modelJson.value["object"]["models"][activeModel.value];
+    if (model.hasOwnProperty("sample")) {
+      modelType.value = "simple";
+    } else if (model.hasOwnProperty("samples")) {
+      modelType.value = "mixed";
+    } else {
+      throw new Error("Model type not recognized");
+    }
+
+    let badModel: boolean;
+    switch (modelType.value) {
+      case "simple":
+        if (model["sample"]["layers"].some((layer: Slab) => layer.material === undefined)) {
+          badModel = true;
+        }
+        break;
+      case "mixed":
+        model["samples"].forEach((sample: { layers: Slab[] }) => {
+          if (sample["layers"].some((layer: Slab) => layer.material === undefined)) {
+            badModel = true;
+          }
+        });
+        break;
+    }
+    if (badModel) {
+      console.error("Model is not valid - some layers are missing material property");
+      modelJson.value = {};
+      dictionaryLoaded.value = false;
+      return;
     }
   });
 }
@@ -248,13 +266,7 @@ function resolveParameter(parameterLike: ParameterLike): Parameter {
   }
 }
 
-// function setParameterNames(stack: Stack) {
 function setParameterNames(sample: Slab[]) {
-  //   for (const layer of stack.layers) {
-  //     if (layer.__class__ === "refl1d.sample.layers.Repeat") {
-  //       setParameterNames(layer.stack);
-  //     } else {
-  // }
   for (const layer of sample) {
     const { material, thickness, interface: interface_ } = layer;
     const { name, rho, irho } = material;
@@ -270,7 +282,6 @@ function setParameterNames(sample: Slab[]) {
   }
 }
 
-// function setParameterBounds(stack: Stack) {
 function setParameterBounds(sample: Slab[]) {
   /** set the bounds of the fixed parameters */
   const boundsSetter = (p: Parameter) => {
@@ -291,11 +302,7 @@ function setParameterBounds(sample: Slab[]) {
       return c - d;
     });
   };
-  // for (const layer of stack.layers) {
-  //   if (layer.__class__ === "refl1d.sample.layers.Repeat") {
-  //     setParameterBounds(layer.stack);
-  //   } else {
-  // }
+
   for (const layer of sample) {
     const l = layer as Slab;
     const { material, thickness, interface: interface_ } = l;
@@ -343,9 +350,8 @@ function deleteLayer(stackIndex: number, layerIndex: number) {
 function addStack(stackIndex: number) {
   modelType.value = "mixed";
   const newStack: Slab[] = [createLayer("sld", 2.5, 0.0, 25.0, 1.0)];
-  console.log({ sortedSamplesBefore: sortedSamples.value });
-  sortedSamples.value.splice(stackIndex, 0, newStack);
-  console.log({ sortedSamplesAfter: sortedSamples.value });
+  console.log({ newStack });
+  sortedSamples.value.splice(stackIndex + 1, 0, newStack);
   sendModel();
 }
 
