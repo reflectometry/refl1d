@@ -1609,7 +1609,9 @@ class PolarizedNeutronProbe:
             else:
                 calc_Q = Q_union
 
-            self.calc_Qo = Q_union
+            self.Q = Q_union
+            self.dQ = dQ_union
+            self.calc_Qo = calc_Q
             self._union_cache_key = union_cache_key
 
     @property
