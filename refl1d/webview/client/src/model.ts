@@ -11,12 +11,11 @@ export interface Reference {
 export type BoundsValue = number | "-inf" | "inf";
 
 /* Bumps models */
-// Are these necessary? Imported from bumps?
 
 export interface SerializedModel {
   references: { [key: string]: Parameter };
   object: any;
-  $schema: "bumps-draft-02";
+  $schema: "bumps-draft-03";
 }
 
 export interface NumpyArray {

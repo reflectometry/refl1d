@@ -64,7 +64,6 @@ const sortedSamples: ComputedRef<Slab[][]> = computed(() => {
     default:
       throw new Error("Model type not recognized");
   }
-  console.debug({ sortedSamples: samples });
   return samples;
 });
 
@@ -117,6 +116,7 @@ function createLayer(
 }
 
 function createModel(mixed: boolean = false): SerializedModel {
+  modelType.value = mixed ? "mixed" : "simple";
   if (mixed === true) {
     // TODO: Created by Copilot, check if it's correct
     return {
@@ -193,8 +193,6 @@ const decoder = new TextDecoder("utf-8");
 async function fetchModel() {
   props.socket.asyncEmit("get_model", (payload: ArrayBuffer) => {
     const json_bytes = new Uint8Array(payload);
-    console.debug({ payload });
-
     if (json_bytes.length < 3) {
       // no model defined...
       modelJson.value = {};
@@ -345,9 +343,9 @@ function deleteLayer(stackIndex: number, layerIndex: number) {
 function addStack(stackIndex: number) {
   modelType.value = "mixed";
   const newStack: Slab[] = [createLayer("sld", 2.5, 0.0, 25.0, 1.0)];
-  console.debug({ sortedSamplesBefore: sortedSamples.value });
+  console.log({ sortedSamplesBefore: sortedSamples.value });
   sortedSamples.value.splice(stackIndex, 0, newStack);
-  console.debug({ sortedSamplesAfter: sortedSamples.value });
+  console.log({ sortedSamplesAfter: sortedSamples.value });
   sendModel();
 }
 
