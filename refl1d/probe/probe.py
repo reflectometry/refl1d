@@ -1508,7 +1508,7 @@ class PolarizedNeutronProbe:
             for index, xs_name in enumerate(self._xs_names):
                 setattr(self, xs_name, xs[index])
 
-        self._theta_offsets = None
+        self._union_cache_key = None
         if name is None and self.mm is not None:
             name = self.mm.name
         self.name = name
@@ -1590,15 +1590,14 @@ class PolarizedNeutronProbe:
     def oversample(self, n=20, seed=1):
         self.oversampling = n
         self.oversampling_seed = seed
-        # reset cache for _calculate_union
-        self._theta_offsets = None
 
     oversample.__doc__ = Probe.oversample.__doc__
 
     def _calculate_union(self):
         theta_offsets = [x.theta_offset.value for x in self.xs if x is not None]
-        if self._theta_offsets is not None and theta_offsets == self._theta_offsets:
-            # no change in offsets: use cached values of measurement union
+        union_cache_key = (theta_offsets, self.oversampling, self.oversampling_seed)
+        if self._union_cache_key == union_cache_key:
+            # no change in offsets or oversampling: use cached values of measurement union
             return
         else:
             Q_union, dQ_union = Qmeasurement_union(self.xs)
@@ -1611,7 +1610,7 @@ class PolarizedNeutronProbe:
                 calc_Q = Q_union
 
             self.calc_Qo = Q_union
-            self._theta_offsets = theta_offsets
+            self._union_cache_key = union_cache_key
 
     @property
     def calc_Q(self):
