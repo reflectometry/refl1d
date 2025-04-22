@@ -5,8 +5,6 @@ import ModelView from "./components/ModelView.vue";
 import ProfileUncertaintyView from "./components/ProfileUncertaintyView.vue";
 import SimpleBuilder from "./components/SimpleBuilder.vue";
 
-type Panel = { title: string; component: any; show?: () => boolean };
-
 const refl1dPanels: Panel[] = [
   { title: "Reflectivity", component: DataView },
   { title: "Profile", component: ModelView },

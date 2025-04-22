@@ -116,7 +116,7 @@ function createLayer(
   return layer;
 }
 
-function createModel(): SerializedModel {
+function createModel(mixed: boolean = false): SerializedModel {
   if (mixed === true) {
     // TODO: Created by Copilot, check if it's correct
     return {
