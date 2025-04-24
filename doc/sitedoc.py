@@ -56,7 +56,10 @@ def fit_model(filename):
     # x,fx = fit.DEFit(p).solve(steps=200, pop=10)
     # x,fx = fit.PTFit(p).solve(steps=100,burn=400)
     # x.fx = fit.BFGSFit(p).solve(steps=200)
-    x, fx = fit.SimplexFit(p).solve(steps=200)
+    # TODO -- after bumps update MonitorRunner might not need args
+    # ... and possibly solve won't require the monitors arg at all
+    monitors = fit.MonitorRunner([], None)
+    x, fx = fit.SimplexFit(p).solve(monitors=monitors, steps=200)
     chisq = p(x)
     print("chisq=%g" % chisq)
     if chisq > 2:
