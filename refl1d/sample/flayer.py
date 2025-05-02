@@ -257,7 +257,6 @@ class FunctionalMagnetism(BaseMagnetism):
         # TODO: we are not including the calculated parameters
         return {**BaseMagnetism.parameters(self), **self.pars}
 
-
     # Allow dot access to members of the parameter dictionary. Existing attributes
     # of the object take precedence.
     def __setattr__(self, key, value):
