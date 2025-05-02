@@ -12,6 +12,7 @@ from .layers import Layer, Stack
 from .magnetism import DEFAULT_THETA_M, BaseMagnetism, Magnetism
 from .material import SLD
 
+
 @dataclass
 class FunctionalProfile(Layer):
     """
@@ -57,6 +58,7 @@ class FunctionalProfile(Layer):
                                     rhoL=L1.rho, rhoR=L3.rho)
         sample = L1 | profile | L3
     """
+
     thickness: Parameter
     interface: Constant
     profile: Callable = None
@@ -107,11 +109,11 @@ class FunctionalProfile(Layer):
         # Fill calculation slots
         self.start.rho.slot = Calculation(
             description="profile rho at z=0",
-            function=lambda: real(self._eval([0.])[0]),
+            function=lambda: real(self._eval([0.0])[0]),
         )
         self.start.irho.slot = Calculation(
             description="profile irho at z=0",
-            function=lambda: imag(self._eval([0.])[0]),
+            function=lambda: imag(self._eval([0.0])[0]),
         )
         self.end.rho.slot = Calculation(
             description="profile rho at z=thickness",
@@ -145,6 +147,7 @@ class FunctionalProfile(Layer):
         # TODO: Is the following is sufficient for interfacial roughness?
         # slabs.sigma[0] = float(self.interface)
 
+
 @dataclass
 class FunctionalMagnetism(BaseMagnetism):
     """
@@ -166,6 +169,7 @@ class FunctionalMagnetism(BaseMagnetism):
     See :class:`FunctionalProfile` for a description of the the profile
     function.
     """
+
     profile: Callable
     tol: float = 1e-3
 
@@ -202,9 +206,7 @@ class FunctionalMagnetism(BaseMagnetism):
 
         self.start = start if start is not None else Magnetism(name=name + " start")
         self.end = end if end is not None else Magnetism(name=name + " end")
-        self.thickness = (
-            Parameter.default(0, name=name + " thickness") if thickness is None else thickness
-        )
+        self.thickness = Parameter.default(0, name=name + " thickness") if thickness is None else thickness
         self.pars = _parse_parameters(name, profile, kw) if pars is None else pars
         for name, par in self.pars.items():
             setattr(self, name, par)
@@ -213,11 +215,11 @@ class FunctionalMagnetism(BaseMagnetism):
         # Fill calculation slots
         self.start.rhoM.slot = Calculation(
             description="profile magnetic SLD at z=0",
-            function=lambda: self._eval([0.])[0][0],
+            function=lambda: self._eval([0.0])[0][0],
         )
         self.start.thetaM.slot = Calculation(
             description="profile magnetic angle at z=0",
-            function=lambda: self._eval([0.])[1][0],
+            function=lambda: self._eval([0.0])[1][0],
         )
         self.end.rhoM.slot = Calculation(
             description="profile magnetic SLD z=thickness",
@@ -227,9 +229,9 @@ class FunctionalMagnetism(BaseMagnetism):
             description="profile magnetic angle at z=thickness",
             function=lambda: self._eval([float(self.thickness)])[1][0],
         )
-        #print(f"...FM {self.start=}, {self.end=}, {self.end.rhoM=}, {self.thickness=}")
+        # print(f"...FM {self.start=}, {self.end=}, {self.end.rhoM=}, {self.thickness=}")
 
-    def set_anchor(self, stack: Stack, index: Union[str,int]):
+    def set_anchor(self, stack: Stack, index: Union[str, int]):
         """
         Rebuild thickness calculation whenever the sample stack changes. Called from
         :func:`set_magnetism_anchors`.
@@ -292,6 +294,7 @@ def _parse_parameters(name, profile, kw):
             pv = Parameter.default(v, name=f"{name} {k}")
         pars[k] = pv
     return pars
+
 
 # TODO: Magnetism can't access the nuclear stack.
 def set_magnetism_anchors(stack):
