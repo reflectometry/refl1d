@@ -166,10 +166,10 @@ class Magnetism(BaseMagnetism):
         )
 
     def __str__(self):
-        return "magnetism(%g)" % self.rhoM.value
+        return f"magnetism({float(self.rhoM):g})"
 
     def __repr__(self):
-        return "Magnetism(rhoM=%g, thetaM=%g)" % (self.rhoM.value, self.thetaM.value)
+        return f"Magnetism(rhoM={float(self.rhoM):g}, thetaM={float(self.thetaM):g})"
 
 
 @dataclass(init=False)
