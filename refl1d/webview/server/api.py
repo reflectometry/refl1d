@@ -143,9 +143,9 @@ def _get_profile_uncertainty_plot(
     if state.problem is None or state.problem.fitProblem is None:
         return None
     fitProblem = deepcopy(state.problem.fitProblem)
-    uncertainty_state = state.fitting.uncertainty_state
+    uncertainty_state = state.fitting.fit_state
     align_arg = "auto" if auto_align else align
-    if uncertainty_state is not None:
+    if uncertainty_state is not None and hasattr(uncertainty_state, "draw"):
         import time
 
         start_time = time.time()
