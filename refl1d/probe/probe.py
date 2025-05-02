@@ -1371,7 +1371,9 @@ class QProbe(BaseProbe):
         self,
         Q,
         dQ,
-        data=None,
+        R=None,
+        dR=None,
+        data=None,  # deprecated
         name=None,
         filename=None,
         intensity=1,
@@ -1389,12 +1391,12 @@ class QProbe(BaseProbe):
 
         self.back_reflectivity = back_reflectivity
 
-        if data is not None:
+        if R is None and dR is None and data is not None:
+            # deprecated way of loading R and dR
             R, dR = data
-        else:
-            R, dR = None, None
 
-        self.Q, self.dQ = Q, dQ
+        self.Q = numpy.asarray(Q)
+        self.dQ = numpy.asarray(dQ)
         self.R = R
         self.dR = dR
         self.unique_L = None
