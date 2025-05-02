@@ -37,7 +37,7 @@ from .probe import (
     XrayProbe,
 )
 from .sample.cheby import ChebyVF, FreeformCheby, cheby_approx, cheby_points
-from .sample.flayer import FunctionalMagnetism, FunctionalProfile
+from .sample.flayer import FunctionalMagnetism, FunctionalProfile, set_magnetism_anchors
 from .sample.layers import Slab, Stack
 from .sample.magnetism import FreeMagnetism, FreeMagnetismInterface, Magnetism, MagnetismStack, MagnetismTwist
 from .sample.material import SLD, Compound, Material, Mixture

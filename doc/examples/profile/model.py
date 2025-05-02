@@ -32,6 +32,7 @@ from refl1d.names import FunctionalMagnetism as FM
 
 def nuc(z, period, phase):
     """Nuclear profile"""
+    # print("nuc", period, phase, z)
     return sin(2 * pi * (z / period + phase))
 
 
@@ -58,7 +59,8 @@ def mag(z, z1, z2, M1, M2, M3):
     $re^{kz_2} = M_2$, and $a,b$ are set such that $az_2 + b = M_2$
     and $az_{\rm end} + b = M_3$.
     """
-    # Make sure z1 > z2, swapping if they are different.  Note that in the
+
+    # print("mag", z1, z2, M1, M2, M3, z)
     # posterior probability this will set P(z1, z2)=P(z2, z1) always.
     if z1 > z2:
         z1, z2 = z2, z1
@@ -91,11 +93,10 @@ sample = silicon(0, 5) | flayer | flayer.end(35, 15, magnetism=flayer.magnetism.
 
 # Need to be able to compute the thickness of the functional magnetic
 # layer, which unfortunately requires the layer stack and an index.
-# The index can be layer number, layer name, or if there are multiple
-# layers with the same name, (layer name, k), where the magnetism
-# is attached to the kth layer.
+# set_magnetism_anchors(sample) needs to be called whenever layers are
+# added or removed.
 
-flayer.magnetism.set_anchor(sample, "sin")
+set_magnetism_anchors(sample)
 
 # Set the fittable parameters.  Note that the parameters to the function
 # after the first parameter *z* become fittable parameters.
