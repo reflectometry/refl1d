@@ -5,7 +5,7 @@ from typing import Dict, Optional, Callable, Union
 import numpy as np
 from numpy import asarray, broadcast_to, imag, real
 
-from bumps.parameter import Calculation, Constant, Parameter
+from bumps.parameter import Calculation, Constant, Parameter, ValueProtocol
 
 from refl1d import utils
 from .layers import Layer, Stack
@@ -102,8 +102,6 @@ class FunctionalProfile(Layer):
         self.start = start if start is not None else SLD(name + " start")
         self.end = end if end is not None else SLD(name + " end")
         self.pars = _parse_parameters(name, profile, kw) if pars is None else pars
-        for name, par in self.pars.items():
-            setattr(self, name, par)
 
         # TODO: profile call is duplicated if asking for both rho and irho
         # Fill calculation slots
@@ -123,6 +121,23 @@ class FunctionalProfile(Layer):
             description="profile irho at z=thickness",
             function=lambda: imag(self._eval([float(self.thickness)])[0]),
         )
+
+    # Allow dot access to members of the parameter dictionary. Existing attributes
+    # of the object take precedence.
+    def __setattr__(self, key, value):
+        # print(f"setting {key}")
+        if self.pars and key in self.pars and key not in self.__dict__:
+            if not isinstance(value, ValueProtocol):
+                raise TypeError("Can only assign parameter or expression to a parameter slot")
+            self.__dict__["pars"][key] = value
+        else:
+            super().__setattr__(key, value)
+
+    def __getattr__(self, key):
+        # print(f"getting {key}")
+        if self.pars and key in self.pars:
+            return self.pars[key]
+        raise AttributeError(f"{type(self)!r} has no attribute {key!r}")
 
     def _eval(self, Pz):
         args = {k: float(v) for k, v in self.pars.items()}
@@ -208,8 +223,6 @@ class FunctionalMagnetism(BaseMagnetism):
         self.end = end if end is not None else Magnetism(name=name + " end")
         self.thickness = Parameter.default(0, name=name + " thickness") if thickness is None else thickness
         self.pars = _parse_parameters(name, profile, kw) if pars is None else pars
-        for name, par in self.pars.items():
-            setattr(self, name, par)
 
         # TODO: profile call is duplicated if asking for both rhoM and thetaM
         # Fill calculation slots
@@ -243,6 +256,24 @@ class FunctionalMagnetism(BaseMagnetism):
     def parameters(self):
         # TODO: we are not including the calculated parameters
         return {**BaseMagnetism.parameters(self), **self.pars}
+
+
+    # Allow dot access to members of the parameter dictionary. Existing attributes
+    # of the object take precedence.
+    def __setattr__(self, key, value):
+        # print(f"setting {key}")
+        if self.pars and key in self.pars and key not in self.__dict__:
+            if not isinstance(value, ValueProtocol):
+                raise TypeError("Can only assign parameter or expression to a parameter slot")
+            self.__dict__["pars"][key] = value
+        else:
+            super().__setattr__(key, value)
+
+    def __getattr__(self, key):
+        # print(f"getting {key}")
+        if self.pars and key in self.pars:
+            return self.pars[key]
+        raise AttributeError(f"{type(self)!r} has no attribute {key!r}")
 
     def _eval(self, Pz):
         args = {k: float(v) for k, v in self.pars.items()}
