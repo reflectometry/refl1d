@@ -856,7 +856,7 @@ class Probe(BaseProbe):
         idx = np.argsort(Q)
         self.calc_T = T[idx]
         self.calc_L = L[idx]
-        self.calc_Qo = Q[idx]
+        self.calc_Qo = np.unique(Q[idx])
 
         # Only keep the scattering factors that you need
         self.unique_L = np.unique(self.calc_L)
@@ -1398,7 +1398,7 @@ class QProbe(BaseProbe):
         self.R = R
         self.dR = dR
         self.unique_L = None
-        self.calc_Qo = self.Q
+        self.calc_Qo = np.unique(self.Q)
         self.name = name
         self.filename = filename
         self.resolution = resolution
@@ -1425,7 +1425,7 @@ class QProbe(BaseProbe):
         rng = numpy.random.RandomState(seed=seed)
         extra = rng.normal(self.Q, self.dQ, size=(n - 1, len(self.Q)))
         calc_Q = np.hstack((self.Q, extra.flatten()))
-        self.calc_Qo = np.sort(calc_Q)
+        self.calc_Qo = np.unique(calc_Q)
 
     oversample.__doc__ = Probe.oversample.__doc__
 
@@ -1433,7 +1433,7 @@ class QProbe(BaseProbe):
         Q_c = self.Q_c(substrate, surface)
         extra = np.linspace(Q_c * (1 - delta), Q_c * (1 + delta), n)
         calc_Q = np.hstack((self.Q, extra, 0))
-        self.calc_Qo = np.sort(calc_Q)
+        self.calc_Qo = np.unique(calc_Q)
 
     critical_edge.__doc__ = Probe.critical_edge.__doc__
 
@@ -1603,13 +1603,14 @@ class PolarizedNeutronProbe:
                 rng = numpy.random.RandomState(seed=self.oversampling_seed)
                 extra = rng.normal(Q_union, dQ_union, size=(self.oversampling - 1, len(Q_union)))
                 calc_Q = np.hstack((Q_union, extra.flatten()))
-                calc_Q = np.sort(calc_Q)
             else:
                 calc_Q = Q_union
 
             self.Q = Q_union
             self.dQ = dQ_union
-            self.calc_Qo = calc_Q
+            # only record the unique values of Q for calculation
+            # (np.unique will sort the values)
+            self.calc_Qo = np.unique(calc_Q)
             self._union_cache_key = union_cache_key
 
     @property
@@ -1857,7 +1858,7 @@ class PolarizedQProbe(PolarizedNeutronProbe):
         if oversampling is not None:
             self.oversample(oversampling, oversampling_seed)
         self.Q, self.dQ = Qmeasurement_union(self.xs)
-        self.calc_Qo = self.Q
+        self.calc_Qo = np.unique(self.Q)
 
     @property
     def calc_Q(self):
