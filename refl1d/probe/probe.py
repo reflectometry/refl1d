@@ -1447,8 +1447,6 @@ def Qmeasurement_union(xs):
         if x is not None:
             Qset |= set(zip(x.Q, x.dQ))
     Q, dQ = [np.array(v) for v in zip(*sorted(Qset))]
-    if abs(Q[1:] - Q[:-1]).any() < 1e-14:
-        raise ValueError("Q values differ by less than 1e-14")
     return Q, dQ
 
 
