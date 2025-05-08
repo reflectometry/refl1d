@@ -1438,30 +1438,6 @@ class QProbe(BaseProbe):
     critical_edge.__doc__ = Probe.critical_edge.__doc__
 
 
-def measurement_union(xs):
-    """
-    Determine the unique (T, dT, L, dL) across all datasets.
-    """
-
-    # First gather a set of unique tuples in angle and wavelength
-    TL = set()
-    for x in xs:
-        if x is not None:
-            TL |= set(zip(x.calc_T, x.calc_T + x.theta_offset.value, x.calc_L))
-    To, T, L = zip(*[item for item in TL])
-    To, T, L = [np.asarray(v) for v in (To, T, L)]
-
-    # Convert to Q, dQ
-    Q = TL2Q(T, L)
-
-    # Sort by Q
-    idx = np.argsort(Q)
-    To, T, L, Q = To[idx], T[idx], L[idx], Q[idx]
-    if abs(Q[1:] - Q[:-1]).any() < 1e-14:
-        raise ValueError("Q is not unique")
-    return To, T, L, Q
-
-
 def Qmeasurement_union(xs):
     """
     Determine the unique Q, dQ across all datasets.
@@ -1532,7 +1508,7 @@ class PolarizedNeutronProbe:
             for index, xs_name in enumerate(self._xs_names):
                 setattr(self, xs_name, xs[index])
 
-        self._theta_offsets = None
+        self._union_cache_key = None
         if name is None and self.mm is not None:
             name = self.mm.name
         self.name = name
@@ -1611,54 +1587,38 @@ class PolarizedNeutronProbe:
                 x.theta_offset = theta_offset
                 x.sample_broadening = sample_broadening
 
-    def oversample(self, n, seed=1):
-        for xs in self.xs:
-            if xs is not None:
-                xs.oversample(n, seed=1)
-        self._theta_offsets = None
+    def oversample(self, n=20, seed=1):
+        self.oversampling = n
+        self.oversampling_seed = seed
 
     oversample.__doc__ = Probe.oversample.__doc__
 
     def _calculate_union(self):
         theta_offsets = [x.theta_offset.value for x in self.xs if x is not None]
-        if self._theta_offsets is not None and theta_offsets == self._theta_offsets:
-            # no change in offsets: use cached values of measurement union
+        union_cache_key = (theta_offsets, self.oversampling, self.oversampling_seed)
+        if self._union_cache_key == union_cache_key:
+            # no change in offsets or oversampling: use cached values of measurement union
             return
-
-        unique_offsets = set(theta_offsets)
-        shared_offset = theta_offsets[0] if len(unique_offsets) == 1 else None
-        if shared_offset is not None and self._theta_offsets is not None:
-            # offset is shared, and measurement_union has been calculated before
-            # (so self.To is already populated)
-            self.T = self._To + shared_offset
-            Q = TL2Q(T=self.T, L=self.L)
-            self.calc_Qo = Q
         else:
-            # unshared offsets changed, or union has not been calculated before
-            # returned T has offset applied, To does not
-            self._To, self.T, self.L, self.Q = measurement_union(self.xs)
-            self._set_calc(self.T, self.L)
+            Q_union, dQ_union = Qmeasurement_union(self.xs)
+            if self.oversampling is not None:
+                rng = numpy.random.RandomState(seed=self.oversampling_seed)
+                extra = rng.normal(Q_union, dQ_union, size=(self.oversampling - 1, len(Q_union)))
+                calc_Q = np.hstack((Q_union, extra.flatten()))
+                calc_Q = np.sort(calc_Q)
+            else:
+                calc_Q = Q_union
 
-        self._theta_offsets = theta_offsets
+            self.Q = Q_union
+            self.dQ = dQ_union
+            self.calc_Qo = calc_Q
+            self._union_cache_key = union_cache_key
 
     @property
     def calc_Q(self):
         # print('calculating calc_Q...')
         self._calculate_union()
         return self.calc_Qo if not self.back_reflectivity else -self.calc_Qo
-
-    def _set_calc(self, T, L):
-        # TODO: shouldn't clone code from probe
-        Q = TL2Q(T=T, L=L)
-
-        idx = np.argsort(Q)
-        self.calc_T = T[idx]
-        self.calc_L = L[idx]
-        self.calc_Qo = Q[idx]
-
-        # Only keep the scattering factors that you need
-        self.unique_L = np.unique(self.calc_L)
-        self._L_idx = np.searchsorted(self.unique_L, L)
 
     def apply_beam(self, Q, R, resolution=True, interpolation=0):
         """
@@ -1674,11 +1634,9 @@ class PolarizedNeutronProbe:
 
     def scattering_factors(self, material, density):
         # doc string is inherited from parent (see below)
-        rho, irho, rho_incoh = nsf.neutron_sld(material, wavelength=self.unique_L[0], density=density)
-        # TODO: support wavelength dependent systems
-        # print("sf", str(material), type(rho), type(irho[0]))
-        return rho, irho, rho_incoh
-        # return rho, irho[self._L_idx], rho_incoh
+        # grab a non-null cross-section to get a representative wavelength
+        first_probe = next(xs for xs in self.xs if xs is not None)
+        return first_probe.scattering_factors(material, density)
 
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
