@@ -1856,8 +1856,9 @@ class PolarizedQProbe(PolarizedNeutronProbe):
         self._check()
         self.name = name if name is not None else self.pp.name
         self.unique_L = None
-        self.Aguide = Parameter.default(Aguide, name="Aguide " + self.name, limits=[-360, 360])
-        self.H = Parameter.default(H, name="H " + self.name)
+        qualifier = " " + self.name if self.name is not None else ""
+        self.Aguide = Parameter.default(Aguide, name="Aguide" + qualifier, limits=[-360, 360])
+        self.H = Parameter.default(H, name="H" + qualifier)
         if oversampling is not None:
             self.oversample(oversampling, oversampling_seed)
         self.Q, self.dQ = Qmeasurement_union(self.xs)
