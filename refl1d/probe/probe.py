@@ -1327,7 +1327,8 @@ class ProbeSet(Probe):
         return QProbe(
             Q,
             dQ,
-            data=(R, dR),
+            R=R,
+            dR=dR,
             intensity=Po.intensity,
             background=Po.background,
             back_absorption=Po.back_absorption,
@@ -1360,19 +1361,13 @@ class QProbe(BaseProbe):
 
     polarized = False
 
-    @classmethod
-    def from_dict(cls, **kw):
-        R = kw.pop("R", None)
-        dR = kw.pop("dR", None)
-        if R is not None and dR is not None:
-            kw["data"] = (R, dR)
-        return cls(**kw)
-
     def __init__(
         self,
         Q,
         dQ,
-        data=None,
+        R=None,
+        dR=None,
+        data=None,  # deprecated
         name=None,
         filename=None,
         intensity=1,
@@ -1390,12 +1385,14 @@ class QProbe(BaseProbe):
 
         self.back_reflectivity = back_reflectivity
 
-        if data is not None:
+        if R is None and dR is None and data is not None:
+            # deprecated way of loading R and dR
+            # TODO: remove this
+            warnings.warn("data argument is deprecated, use R and dR instead")
             R, dR = data
-        else:
-            R, dR = None, None
 
-        self.Q, self.dQ = Q, dQ
+        self.Q = numpy.asarray(Q)
+        self.dQ = numpy.asarray(dQ)
         self.R = R
         self.dR = dR
         self.unique_L = None
@@ -1854,8 +1851,9 @@ class PolarizedQProbe(PolarizedNeutronProbe):
         self._check()
         self.name = name if name is not None else self.pp.name
         self.unique_L = None
-        self.Aguide = Parameter.default(Aguide, name="Aguide " + self.name, limits=[-360, 360])
-        self.H = Parameter.default(H, name="H " + self.name)
+        qualifier = " " + self.name if self.name is not None else ""
+        self.Aguide = Parameter.default(Aguide, name="Aguide" + qualifier, limits=[-360, 360])
+        self.H = Parameter.default(H, name="H" + qualifier)
         if oversampling is not None:
             self.oversample(oversampling, oversampling_seed)
         self.Q, self.dQ = Qmeasurement_union(self.xs)
