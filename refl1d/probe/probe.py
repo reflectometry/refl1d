@@ -1386,6 +1386,8 @@ class QProbe(BaseProbe):
 
         if R is None and dR is None and data is not None:
             # deprecated way of loading R and dR
+            # TODO: remove this
+            warnings.warn("data argument is deprecated, use R and dR instead")
             R, dR = data
 
         self.Q = numpy.asarray(Q)
