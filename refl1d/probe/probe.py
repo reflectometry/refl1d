@@ -1326,7 +1326,8 @@ class ProbeSet(Probe):
         return QProbe(
             Q,
             dQ,
-            data=(R, dR),
+            R=R,
+            dR=dR,
             intensity=Po.intensity,
             background=Po.background,
             back_absorption=Po.back_absorption,
@@ -1358,14 +1359,6 @@ class QProbe(BaseProbe):
     resolution: Literal["normal", "uniform"]
 
     polarized = False
-
-    @classmethod
-    def from_dict(cls, **kw):
-        R = kw.pop("R", None)
-        dR = kw.pop("dR", None)
-        if R is not None and dR is not None:
-            kw["data"] = (R, dR)
-        return cls(**kw)
 
     def __init__(
         self,
