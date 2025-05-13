@@ -856,7 +856,7 @@ class Probe(BaseProbe):
         idx = np.argsort(Q)
         self.calc_T = T[idx]
         self.calc_L = L[idx]
-        self.calc_Qo = np.unique(Q[idx])
+        self._calc_Q = np.unique(Q[idx])
 
         # Only keep the scattering factors that you need
         self.unique_L = np.unique(self.calc_L)
@@ -893,11 +893,12 @@ class Probe(BaseProbe):
 
     @property
     def calc_Q(self):
+        # TODO: cache this value if theta_offset is not changing
         if self.theta_offset.value != 0:
-            Q = TL2Q(T=self.calc_T + self.theta_offset.value, L=self.calc_L)
-            # TODO: this may break the Q order on measurements with varying L
+            # NOTE: np.unique sorts the array
+            Q = np.unique(TL2Q(T=self.calc_T + self.theta_offset.value, L=self.calc_L))
         else:
-            Q = self.calc_Qo
+            Q = self._calc_Q
         return Q if not self.back_reflectivity else -Q
 
     def parameters(self):
@@ -948,7 +949,7 @@ class Probe(BaseProbe):
         be biased toward valleys.
         """
         # Assumes self contains sorted Qo and associated T, L
-        # Note: calc_Qo is already sorted
+        # Note: _calc_Q is already sorted
         Q = np.arange(self.Qo[0], self.Qo[-1], dQ)
         idx = np.unique(np.searchsorted(self.Qo, Q))
         # print len(idx), len(self.Qo)
@@ -1398,14 +1399,14 @@ class QProbe(BaseProbe):
         self.R = R
         self.dR = dR
         self.unique_L = None
-        self.calc_Qo = np.unique(self.Q)
+        self._calc_Q = np.unique(self.Q)
         self.name = name
         self.filename = filename
         self.resolution = resolution
 
     @property
     def calc_Q(self):
-        return self.calc_Qo if not self.back_reflectivity else -self.calc_Qo
+        return self._calc_Q if not self.back_reflectivity else -self._calc_Q
 
     def parameters(self):
         return {
@@ -1425,7 +1426,7 @@ class QProbe(BaseProbe):
         rng = numpy.random.RandomState(seed=seed)
         extra = rng.normal(self.Q, self.dQ, size=(n - 1, len(self.Q)))
         calc_Q = np.hstack((self.Q, extra.flatten()))
-        self.calc_Qo = np.unique(calc_Q)
+        self._calc_Q = np.unique(calc_Q)
 
     oversample.__doc__ = Probe.oversample.__doc__
 
@@ -1433,7 +1434,7 @@ class QProbe(BaseProbe):
         Q_c = self.Q_c(substrate, surface)
         extra = np.linspace(Q_c * (1 - delta), Q_c * (1 + delta), n)
         calc_Q = np.hstack((self.Q, extra, 0))
-        self.calc_Qo = np.unique(calc_Q)
+        self._calc_Q = np.unique(calc_Q)
 
     critical_edge.__doc__ = Probe.critical_edge.__doc__
 
@@ -1610,14 +1611,14 @@ class PolarizedNeutronProbe:
             self.dQ = dQ_union
             # only record the unique values of Q for calculation
             # (np.unique will sort the values)
-            self.calc_Qo = np.unique(calc_Q)
+            self._calc_Q = np.unique(calc_Q)
             self._union_cache_key = union_cache_key
 
     @property
     def calc_Q(self):
         # print('calculating calc_Q...')
         self._calculate_union()
-        return self.calc_Qo if not self.back_reflectivity else -self.calc_Qo
+        return self._calc_Q if not self.back_reflectivity else -self._calc_Q
 
     def apply_beam(self, Q, R, resolution=True, interpolation=0):
         """
@@ -1858,11 +1859,11 @@ class PolarizedQProbe(PolarizedNeutronProbe):
         if oversampling is not None:
             self.oversample(oversampling, oversampling_seed)
         self.Q, self.dQ = Qmeasurement_union(self.xs)
-        self.calc_Qo = np.unique(self.Q)
+        self._calc_Q = np.unique(self.Q)
 
     @property
     def calc_Q(self):
-        return self.calc_Qo if not self.back_reflectivity else -self.calc_Qo
+        return self._calc_Q if not self.back_reflectivity else -self._calc_Q
 
 
 # Deprecated old long name
