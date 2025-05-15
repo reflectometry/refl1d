@@ -7,6 +7,7 @@ from pathlib import Path
 from bumps.webview.server import cli
 
 from . import api  # uses side-effects to register refl1d functions
+from refl1d import __version__
 
 # Register the refl1d model loader
 # from refl1d.bumps_interface import fitplugin
@@ -24,7 +25,7 @@ CLIENT_PATH = Path(__file__).parent.parent / "client"
 
 
 def main():
-    cli.plugin_main(name="refl1d", client=CLIENT_PATH)
+    cli.plugin_main(name="refl1d", client=CLIENT_PATH, version=__version__)
 
 
 if __name__ == "__main__":
