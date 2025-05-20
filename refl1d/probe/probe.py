@@ -1095,9 +1095,11 @@ class NeutronProbe(Probe):
 
 
 @dataclass(init=False)
-class ProbeSet(Probe):
+class ProbeSet:
     name: Optional[str]
     probes: Sequence[Probe]
+
+    polarized = False
 
     def __init__(self, probes, name=None):
         self.probes = list(probes)
