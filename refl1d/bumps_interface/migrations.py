@@ -30,6 +30,17 @@ def migrate(
     return current_version, serialized
 
 
+def full_migration(serialized: dict) -> dict:
+    """
+    Migrate a serialized object to the current schema version.
+    This is a convenience function that migrates from the earliest version to the current version.
+    """
+    current_version, migrated = migrate(serialized)
+    if current_version != CURRENT_SCHEMA_VERSION:
+        raise ValueError(f"Migration did not reach the current schema version: {CURRENT_SCHEMA_VERSION}")
+    return migrated
+
+
 def _migrate_0_to_1(serialized: dict):
     MAPPINGS = {
         "refl1d.abeles": "refl1d.probe.abeles",

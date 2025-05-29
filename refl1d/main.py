@@ -14,24 +14,13 @@ import sys
 from . import __version__
 
 
-def setup_bumps():
-    """
-    Install the refl1d plugin into bumps, but don't run main.
-    """
-    import bumps.cli
-
-    bumps.cli.set_mplconfig(appdatadir="Refl1D-" + __version__)
-    from .bumps_interface import fitplugin
-
-    bumps.cli.install_plugin(fitplugin)
-
-
 def cli():
     """
     Install the Refl1D plugin into bumps and run the command line interface.
     """
-    setup_bumps()
+    import bumps.plugin
 
+    bumps.plugin.ACTIVE_PLUGIN_NAME = "refl1d"
     # TODO: Add subcommand support to bumps.
     if len(sys.argv) > 2 and sys.argv[1] == "align":
         from .uncertainty import run_errors
@@ -48,9 +37,10 @@ def gui():
     """
     Install the Refl1D plugin into bumps and run the graphical user interface.
     """
-    setup_bumps()
+    import bumps.plugin
     import bumps.gui.gui_app
 
+    bumps.plugin.ACTIVE_PLUGIN_NAME = "refl1d"
     bumps.gui.gui_app.main()
 
 

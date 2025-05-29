@@ -52,6 +52,27 @@ documentation = "https://refl1d.github.io"
 homepage = "https://refl1d.github.io"
 repository = "https://github.com/reflectometry/refl1d"
 
+[project.entry-points."bumps.serialization.migration"]
+refl1d = "refl1d.bumps_interface.migrations:full_migration"
+
+[project.entry-points."bumps.model.load"]
+refl1d = "refl1d.bumps_interface.fitplugin:load_model"
+
+[project.entry-points."bumps.model.new"]
+refl1d = "refl1d.bumps_interface.fitplugin:new_model"
+
+[project.entry-points."bumps.serialize.save_json"]
+refl1d = "refl1d.bumps_interface.fitplugin:save_json"
+
+[project.entry-points."bumps.wx_gui.data_view"]
+refl1d = "refl1d.wx_gui.data_view:DataView"
+
+[project.entry-points."bumps.wx_gui.model_view"]
+refl1d = "refl1d.wx_gui.model_view:ModelView"
+
+[project.entry-points."bumps.errplot.matplotlib"]
+refl1d = "refl1d.bumps_interface.fitplugin:errplot"
+
 [build-system]
 requires = ["setuptools", "versioningit"]
 build-backend = "setuptools.build_meta"
