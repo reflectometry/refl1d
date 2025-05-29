@@ -34,7 +34,7 @@ def model_view():
     return ModelView
 
 
-def load_model(filename):
+def load_model(filename: str):
     # TODO: bumps plugin api needs to allow options for loader
     options = None
     if filename.endswith(".staj") or filename.endswith(".sta"):
@@ -42,18 +42,6 @@ def load_model(filename):
 
         return FitProblem[Experiment](load_mlayer(filename))
         # fit_all(problem.fitness, pmp=20)
-    elif filename.endswith(".zip"):
-        from bumps.fitproblem import load_problem
-
-        # Note: bumps.vfs.vfs_init() must be called very early
-        try:
-            from bumps.vfs import ZipFS
-        except ImportError:
-            raise NotImplementedError("need newer bumps to load model from zip")
-        with ZipFS(filename) as zf:
-            for f in zf.filelist:
-                if f.filename.endswith(".py"):
-                    return cast(FitProblem[Experiment], load_problem(f.filename, options=options))
     elif filename.endswith(".json"):
         from bumps.serialize import load_file
 
