@@ -70,8 +70,11 @@ refl1d = "refl1d.wx_gui.data_view:DataView"
 [project.entry-points."bumps.wx_gui.model_view"]
 refl1d = "refl1d.wx_gui.model_view:ModelView"
 
-[project.entry-points."bumps.errplot.matplotlib"]
-refl1d = "refl1d.bumps_interface.fitplugin:errplot"
+[project.entry-points."bumps.calc_errors"]
+refl1d = "refl1d.uncertainty:calc_errors"
+
+[project.entry-points."bumps.show_errors.maptlotlib"]
+refl1d = "refl1d.uncertainty:show_errors"
 
 [build-system]
 requires = ["setuptools", "versioningit"]
