@@ -43,7 +43,7 @@ MODULES = [
     ("bumps_interface.fitplugin", "Bumps plugin definition for reflectivity models"),
     ("dist", "Non-uniform samples"),
     ("experiment", "Reflectivity fitness function"),
-    ("probe", "Instrument probe"),
+    ("probe.probe", "Instrument probe"),
     ("probe.abeles", "Pure python reflectivity calculator"),
     ("probe.data_loaders.anstodata", "Reader for ANSTO data format"),
     ("probe.data_loaders.ncnrdata", "NCNR Data"),
