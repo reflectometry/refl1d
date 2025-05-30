@@ -36,13 +36,6 @@ print("== path ==")
 print("\n".join(sys.path))
 print("== end path ==")
 
-# Register the refl1d model loader
-import bumps.cli
-
-from refl1d.bumps_interface import fitplugin
-
-bumps.cli.install_plugin(fitplugin)
-
 # -- General configuration -----------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
