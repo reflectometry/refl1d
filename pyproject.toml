@@ -73,7 +73,7 @@ refl1d = "refl1d.wx_gui.model_view:ModelView"
 [project.entry-points."bumps.calc_errors"]
 refl1d = "refl1d.uncertainty:calc_errors"
 
-[project.entry-points."bumps.show_errors.maptlotlib"]
+[project.entry-points."bumps.show_errors.matplotlib"]
 refl1d = "refl1d.uncertainty:show_errors"
 
 [build-system]
