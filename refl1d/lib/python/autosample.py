@@ -128,7 +128,9 @@ def autosampled_reflectivity_amplitude(depth, sigma, rho, irho, kz, rho_index, d
     return calc_kz, r
 
 
-def oversample_magnetic_inplace(kz, dR, tol, w, rho, irho, sigma, rhoM, thetaM, max_sampling_iterations=100):
+def oversample_magnetic_inplace(
+    kz, dRa, dRb, dRc, dRd, tol, w, rho, irho, sigma, rhoM, thetaM, H, Aguide, max_sampling_iterations=100
+):
     # dR is a list of relative errors in R for each cross-section present,
     # and will be None for missing cross-sections.
 
@@ -136,14 +138,25 @@ def oversample_magnetic_inplace(kz, dR, tol, w, rho, irho, sigma, rhoM, thetaM, 
 
     new_kz = kz.copy()
     rho_index = np.zeros(kz.shape, int32)
-    Ra = np.empty_like(kz, dtype=complex128)
-    Rb = np.empty_like(kz, dtype=complex128)
-    Rc = np.empty_like(kz, dtype=complex128)
-    Rd = np.empty_like(kz, dtype=complex128)
+    ra = np.empty_like(kz, dtype=complex128)
+    rb = np.empty_like(kz, dtype=complex128)
+    rc = np.empty_like(kz, dtype=complex128)
+    rd = np.empty_like(kz, dtype=complex128)
+    u1 = np.empty_like(rhoM, dtype=complex128)
+    u3 = np.empty_like(rhoM, dtype=complex128)
 
-    magnetic_amplitude(w, sigma, rho, irho, rhoM, u1, u3, -new_kz, rho_index, Ra, Rb, Rc, Rd)
-    R = (r * np.conj(r)).real
-    mapped_dR = dR.copy() / R
+    calculate_u1_u3(H, rhoM, thetaM, Aguide, u1, u3)
+    magnetic_amplitude(w, sigma, rho, irho, rhoM, u1, u3, -new_kz, rho_index, ra, rb, rc, rd)
+    Ra = (ra * np.conj(ra)).real
+    Rb = (rb * np.conj(rb)).real
+    Rc = (rc * np.conj(rc)).real
+    Rd = (rd * np.conj(rd)).real
+
+    mapped_dRa = dRa.copy() / Ra if dRa is not None else None
+    mapped_dRb = dRb.copy() / Rb if dRb is not None else None
+    mapped_dRc = dRc.copy() / Rc if dRc is not None else None
+    mapped_dRd = dRd.copy() / Rd if dRd is not None else None
+
     out_of_tolerance = 1
     iterations = 0
     total_inserts = 0
@@ -154,12 +167,28 @@ def oversample_magnetic_inplace(kz, dR, tol, w, rho, irho, sigma, rhoM, thetaM, 
         d23 = new_kz[1:-1] - new_kz[2:]
         d13 = new_kz[:-2] - new_kz[2:]
 
-        y1 = R[:-2]
-        y2 = R[1:-1]
-        y3 = R[2:]
+        ya1 = Ra[:-2]
+        ya2 = Ra[1:-1]
+        ya3 = Ra[2:]
+
+        yb1 = Rb[:-2]
+        yb2 = Rb[1:-1]
+        yb3 = Rb[2:]
+
+        yc1 = Rc[:-2]
+        yc2 = Rc[1:-1]
+        yc3 = Rc[2:]
+
+        yd1 = Rd[:-2]
+        yd2 = Rd[1:-1]
+        yd3 = Rd[2:]
 
         # dy1 = mapped_dR[:-2]
-        dy2 = mapped_dR[1:-1]
+        dya2 = mapped_dRa[1:-1] if mapped_dRa is not None else None
+        dyb2 = mapped_dRb[1:-1] if mapped_dRb is not None else None
+        dyc2 = mapped_dRc[1:-1] if mapped_dRc is not None else None
+        dyd2 = mapped_dRd[1:-1] if mapped_dRd is not None else None
+
         # dy3 = mapped_dR[2:]
 
         common = (y1 * d23 - y2 * d13 + y3 * d12) / (6.0 * d13)
