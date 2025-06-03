@@ -94,7 +94,7 @@ def oversample_inplace(kz, dR, tol, w, rho, irho, sigma, max_sampling_iterations
         new_kz = insert(new_kz, to_split + 1, new_kz_vals)
         r = insert(r, to_split + 1, new_r)
         R = insert(R, to_split + 1, new_R)
-        mapped_dR = insert(mapped_dR, np.clip(to_split - 1, 0, None), new_dR)
+        mapped_dR = insert(mapped_dR, to_split, new_dR)
 
         iterations += 1
         out_of_tolerance = np.sum(out_of_tol)
@@ -129,7 +129,7 @@ def autosampled_reflectivity_amplitude(depth, sigma, rho, irho, kz, rho_index, d
 
 
 def oversample_magnetic_inplace(
-    kz, dRa, dRb, dRc, dRd, tol, w, rho, irho, sigma, rhoM, thetaM, H, Aguide, max_sampling_iterations=100
+    kz, dRa, dRb, dRc, dRd, tol, w, rho, irho, sigma, sld_b, u1, u3, max_sampling_iterations=100
 ):
     # dR is a list of relative errors in R for each cross-section present,
     # and will be None for missing cross-sections.
@@ -137,106 +137,135 @@ def oversample_magnetic_inplace(
     # remove cross-sections that have dR == None
 
     new_kz = kz.copy()
-    rho_index = np.zeros(kz.shape, int32)
+    rho_index = np.zeros_like(kz, dtype=int32)
     ra = np.empty_like(kz, dtype=complex128)
     rb = np.empty_like(kz, dtype=complex128)
     rc = np.empty_like(kz, dtype=complex128)
     rd = np.empty_like(kz, dtype=complex128)
-    u1 = np.empty_like(rhoM, dtype=complex128)
-    u3 = np.empty_like(rhoM, dtype=complex128)
 
-    calculate_u1_u3(H, rhoM, thetaM, Aguide, u1, u3)
-    magnetic_amplitude(w, sigma, rho, irho, rhoM, u1, u3, -new_kz, rho_index, ra, rb, rc, rd)
+    magnetic_amplitude(w, sigma, rho, irho, sld_b, u1, u3, -new_kz, rho_index, ra, rb, rc, rd)
     Ra = (ra * np.conj(ra)).real
     Rb = (rb * np.conj(rb)).real
     Rc = (rc * np.conj(rc)).real
     Rd = (rd * np.conj(rd)).real
 
-    mapped_dRa = dRa.copy() / Ra if dRa is not None else None
-    mapped_dRb = dRb.copy() / Rb if dRb is not None else None
-    mapped_dRc = dRc.copy() / Rc if dRc is not None else None
-    mapped_dRd = dRd.copy() / Rd if dRd is not None else None
+    mapped_dRa = dRa.copy() / Ra if dRa is not None else np.zeros(kz.shape, dtype=float64)
+    mapped_dRb = dRb.copy() / Rb if dRb is not None else np.zeros(kz.shape, dtype=float64)
+    mapped_dRc = dRc.copy() / Rc if dRc is not None else np.zeros(kz.shape, dtype=float64)
+    mapped_dRd = dRd.copy() / Rd if dRd is not None else np.zeros(kz.shape, dtype=float64)
 
-    out_of_tolerance = 1
     iterations = 0
     total_inserts = 0
     total_calc_R = 0
     out_of_tol = np.zeros((10), dtype=boolean)
-    while out_of_tolerance > 0 and iterations < max_sampling_iterations:
-        d12 = new_kz[:-2] - new_kz[1:-1]
-        d23 = new_kz[1:-1] - new_kz[2:]
-        d13 = new_kz[:-2] - new_kz[2:]
+    for xsi in range(1):
+        R = [Ra, Rb, Rc, Rd][xsi]
+        mapped_dR = [mapped_dRa, mapped_dRb, mapped_dRc, mapped_dRd][xsi]
+        if [dRa, dRb, dRc, dRd][xsi] is None:
+            continue
+        out_of_tolerance = 1
+        # print(f"Starting oversampling for cross-section {xsi} with tolerance {tol}")
+        while out_of_tolerance > 0 and iterations < max_sampling_iterations:
+            d12 = new_kz[:-2] - new_kz[1:-1]
+            d23 = new_kz[1:-1] - new_kz[2:]
+            d13 = new_kz[:-2] - new_kz[2:]
 
-        ya1 = Ra[:-2]
-        ya2 = Ra[1:-1]
-        ya3 = Ra[2:]
+            y1 = R[:-2]
+            y2 = R[1:-1]
+            y3 = R[2:]
 
-        yb1 = Rb[:-2]
-        yb2 = Rb[1:-1]
-        yb3 = Rb[2:]
+            # dy1 = mapped_dR[:-2]
+            dy2 = mapped_dR[1:-1]
+            # dy3 = mapped_dR[2:]
 
-        yc1 = Rc[:-2]
-        yc2 = Rc[1:-1]
-        yc3 = Rc[2:]
+            common = (y1 * d23 - y2 * d13 + y3 * d12) / (6.0 * d13)
+            a1, a2 = (d12 / d23 * common), (d23 / d12 * common)
 
-        yd1 = Rd[:-2]
-        yd2 = Rd[1:-1]
-        yd3 = Rd[2:]
+            dx = new_kz[1:] - new_kz[:-1]
+            # print(dict(a1=a1.shape, R=R.shape, d12=d12.shape, dx=dx.shape))
 
-        # dy1 = mapped_dR[:-2]
-        dya2 = mapped_dRa[1:-1] if mapped_dRa is not None else None
-        dyb2 = mapped_dRb[1:-1] if mapped_dRb is not None else None
-        dyc2 = mapped_dRc[1:-1] if mapped_dRc is not None else None
-        dyd2 = mapped_dRd[1:-1] if mapped_dRd is not None else None
+            rel_distance = np.zeros_like(dx, dtype=float64)
+            # out_of_tol = np.zeros_like(dx, dtype=boolean)
 
-        # dy3 = mapped_dR[2:]
+            # print("max diff: ", (abs(a1) / (dy2 * y2)).max())
+            diff1 = np.abs(a1) / (dy2 * y2)
+            diff2 = np.abs(a2) / (dy2 * y2)
+            # out2 = np.array(np.abs(a2) / (dy2 * y2) > tol, dtype=boolean)
+            rel_distance[:-1] += diff1
+            rel_distance[1:] += diff2
+            out_of_tol = rel_distance > tol
+            # out_of_tol[:-1] += out1
+            # out_of_tol[1:] += out2
 
-        common = (y1 * d23 - y2 * d13 + y3 * d12) / (6.0 * d13)
-        a1, a2 = (d12 / d23 * common), (d23 / d12 * common)
+            # print(f"out_of_tol: {np.sum(out_of_tol)}\n")
+            to_split = np.arange(len(dx), dtype=int32)[out_of_tol]
+            new_kz_vals = new_kz[to_split] + dx[to_split] / 2.0
+            new_dRa = mapped_dRa[to_split]
+            new_dRb = mapped_dRb[to_split]
+            new_dRc = mapped_dRc[to_split]
+            new_dRd = mapped_dRd[to_split]
+            # new_dR = mapped_dR[to_split]
 
-        dx = new_kz[1:] - new_kz[:-1]
-        # print(dict(a1=a1.shape, R=R.shape, d12=d12.shape, dx=dx.shape))
+            # new_r = np.empty_like(new_kz_vals, dtype=complex128)
+            new_ra = np.empty_like(new_kz_vals, dtype=complex128)
+            new_rb = np.empty_like(new_kz_vals, dtype=complex128)
+            new_rc = np.empty_like(new_kz_vals, dtype=complex128)
+            new_rd = np.empty_like(new_kz_vals, dtype=complex128)
 
-        rel_distance = np.zeros_like(dx, dtype=float64)
-        # out_of_tol = np.zeros_like(dx, dtype=boolean)
+            magnetic_amplitude(
+                w, sigma, rho, irho, sld_b, u1, u3, -new_kz_vals, rho_index, new_ra, new_rb, new_rc, new_rd
+            )
+            # reflectivity_amplitude(w, sigma, rho, irho, -new_kz_vals, new_rho_index, new_r)
+            new_Ra = (new_ra * np.conj(new_ra)).real
+            new_Rb = (new_rb * np.conj(new_rb)).real
+            new_Rc = (new_rc * np.conj(new_rc)).real
+            new_Rd = (new_rd * np.conj(new_rd)).real
 
-        # print("max diff: ", (abs(a1) / (dy2 * y2)).max())
-        diff1 = np.abs(a1) / (dy2 * y2)
-        diff2 = np.abs(a2) / (dy2 * y2)
-        # out2 = np.array(np.abs(a2) / (dy2 * y2) > tol, dtype=boolean)
-        rel_distance[:-1] += diff1
-        rel_distance[1:] += diff2
-        out_of_tol = rel_distance > tol
-        # out_of_tol[:-1] += out1
-        # out_of_tol[1:] += out2
+            # new_R = (new_r * np.conj(new_r)).real
 
-        # print(f"out_of_tol: {np.sum(out_of_tol)}\n")
-        to_split = np.arange(len(dx), dtype=int32)[out_of_tol]
-        new_kz_vals = new_kz[to_split] + dx[to_split] / 2.0
-        new_dR = mapped_dR[to_split]
+            new_kz = insert(new_kz, to_split + 1, new_kz_vals)
 
-        new_r = np.empty_like(new_kz_vals, dtype=complex128)
-        new_rho_index = np.zeros(new_kz_vals.shape, int32)
-        reflectivity_amplitude(w, sigma, rho, irho, -new_kz_vals, new_rho_index, new_r)
-        new_R = (new_r * np.conj(new_r)).real
+            ra = insert(ra, to_split + 1, new_ra)
+            rb = insert(rb, to_split + 1, new_rb)
+            rc = insert(rc, to_split + 1, new_rc)
+            rd = insert(rd, to_split + 1, new_rd)
 
-        new_kz = insert(new_kz, to_split + 1, new_kz_vals)
-        r = insert(r, to_split + 1, new_r)
-        R = insert(R, to_split + 1, new_R)
-        mapped_dR = insert(mapped_dR, np.clip(to_split - 1, 0, None), new_dR)
+            Ra = insert(Ra, to_split + 1, new_Ra)
+            Rb = insert(Rb, to_split + 1, new_Rb)
+            Rc = insert(Rc, to_split + 1, new_Rc)
+            Rd = insert(Rd, to_split + 1, new_Rd)
 
-        iterations += 1
-        out_of_tolerance = np.sum(out_of_tol)
+            R = [Ra, Rb, Rc, Rd][xsi]
 
-    return new_kz, np.sum(out_of_tol), r, mapped_dR
+            mapped_dRa = insert(mapped_dRa, to_split, new_dRa) if mapped_dRa is not None else None
+            mapped_dRb = insert(mapped_dRb, to_split, new_dRb) if mapped_dRb is not None else None
+            mapped_dRc = insert(mapped_dRc, to_split, new_dRc) if mapped_dRc is not None else None
+            mapped_dRd = insert(mapped_dRd, to_split, new_dRd) if mapped_dRd is not None else None
+
+            mapped_dR = [mapped_dRa, mapped_dRb, mapped_dRc, mapped_dRd][xsi]
+
+            # mapped_dR = insert(mapped_dR, np.clip(to_split - 1, 0, None), new_dR)
+
+            iterations += 1
+            out_of_tolerance = np.sum(out_of_tol)
+            # print(f"out_of_tol: {np.sum(out_of_tol)}\n")
+
+    return new_kz, np.sum(out_of_tol), ra, rb, rc, rd, mapped_dRa, mapped_dRb, mapped_dRc, mapped_dRd
 
 
-def autosampled_magnetic_amplitude(depth, sigma, rho, irho, rhoM, thetaM, kz, rho_index, dR, tolerance=0.05):
-    if dR is None:
-        dR = np.full_like(kz, 0.01)
+def autosampled_magnetic_amplitude(
+    depth, sigma, rho, irho, sld_b, u1, u3, kz, rho_index, dRa, dRb, dRc, dRd, tolerance=0.05
+):
+    if dRa is None and dRb is None and dRc is None and dRd is None:
+        dRa = np.full_like(kz, 0.01)
+        dRb = np.full_like(kz, 0.01)
+        dRc = np.full_like(kz, 0.01)
+        dRd = np.full_like(kz, 0.01)
 
-    if len(dR) != len(kz):
+    if any([len(dR) != len(kz) for dR in [dRa, dRb, dRc, dRd] if dR is not None]):
         raise ValueError("len(dR) != len(kz)")
 
-    calc_kz, out_of_tol, r, dR = oversample_magnetic_inplace
-    return calc_kz, r
+    calc_kz, out_of_tol, ra, rb, rc, rd, dRa, dRb, dRc, dRd = oversample_magnetic_inplace(
+        kz, dRa, dRb, dRc, dRd, tolerance, depth, rho, irho, sigma, sld_b, u1, u3
+    )
+    return calc_kz, ra, rb, rc, rd

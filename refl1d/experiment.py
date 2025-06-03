@@ -27,6 +27,7 @@ from .sample.reflectivity import (
     magnetic_amplitude as reflmag,
     reflectivity_amplitude as reflamp,
     autosample_reflectivity_amplitude as autosample_reflamp,
+    autosample_magnetic_amplitude as autosample_magnetic_reflamp,
 )
 from . import profile
 from .probe.probe import PolarizedNeutronProbe, Probe, QProbe, PolarizedQProbe
@@ -481,17 +482,43 @@ class Experiment(ExperimentBase):
                 rhoM, thetaM = slabs.rhoM, slabs.thetaM
                 Aguide = self.probe.Aguide.value
                 H = self.probe.H.value
-                calc_r = reflmag(
-                    -calc_q / 2,
-                    depth=w,
-                    rho=rho[0],
-                    irho=irho[0],
-                    rhoM=rhoM,
-                    thetaM=thetaM,
-                    Aguide=Aguide,
-                    H=H,
-                    sigma=sigma,
-                )
+                if autosample:
+                    xs = self.probe.xs
+                    dRa = xs[0].dR if xs[0] is not None else None
+                    dRb = xs[1].dR if xs[1] is not None else None
+                    dRc = xs[2].dR if xs[2] is not None else None
+                    dRd = xs[3].dR if xs[3] is not None else None
+
+                    calc_kz, calc_rd, calc_rc, calc_rb, calc_ra = autosample_magnetic_reflamp(
+                        calc_q / 2,
+                        depth=w,
+                        rho=rho[0],
+                        irho=irho[0],
+                        rhoM=rhoM,
+                        thetaM=thetaM,
+                        Aguide=Aguide,
+                        H=H,
+                        sigma=sigma,
+                        dRa=dRa,
+                        dRb=dRb,
+                        dRc=dRc,
+                        dRd=dRd,
+                        tolerance=tolerance,
+                    )
+                    calc_q = 2 * calc_kz
+                    calc_r = (calc_rd, calc_rc, calc_rb, calc_ra)
+                else:
+                    calc_r = reflmag(
+                        -calc_q / 2,
+                        depth=w,
+                        rho=rho[0],
+                        irho=irho[0],
+                        rhoM=rhoM,
+                        thetaM=thetaM,
+                        Aguide=Aguide,
+                        H=H,
+                        sigma=sigma,
+                    )
             else:
                 if autosample:
                     calc_kz, calc_r = autosample_reflamp(

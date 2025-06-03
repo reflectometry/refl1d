@@ -11,6 +11,8 @@ __all__ = [
     "contract_mag",
     "rebin_counts",
     "rebin_counts_2D",
+    "autosampled_reflectivity_amplitude",
+    "autosampled_magnetic_amplitude",
 ]
 
 from .reflectivity import reflectivity_amplitude
@@ -25,4 +27,4 @@ from .contract_profile import contract_by_area
 from .contract_profile import contract_mag
 from .rebin import rebin_counts
 from .rebin import rebin_counts_2D
-from .autosample import autosampled_reflectivity_amplitude
+from .autosample import autosampled_reflectivity_amplitude, autosampled_magnetic_amplitude

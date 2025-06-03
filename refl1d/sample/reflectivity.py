@@ -296,6 +296,65 @@ def magnetic_amplitude(
     return R4, R3, R2, R1
 
 
+def autosample_magnetic_amplitude(
+    kz,
+    depth,
+    rho,
+    irho=0,
+    rhoM=0,
+    thetaM=0,
+    sigma=0,
+    Aguide=-90,
+    H=0,
+    rho_index=None,
+    dRa=None,
+    dRb=None,
+    dRc=None,
+    dRd=None,
+    tolerance=0.05,
+):
+    """
+    Returns the complex magnetic reflectivity waveform.
+
+    See :class:`magnetic_reflectivity <refl1d.sample.reflectivity.magnetic_reflectivity>` for details.
+    """
+    from ..backends import backend
+
+    kz = _dense(kz, "d")
+    if rho_index is None:
+        rho_index = np.zeros(kz.shape, "i")
+    else:
+        rho_index = _dense(rho_index, "i")
+    n = len(depth)
+    if np.isscalar(irho):
+        irho = irho * np.ones(n, "d")
+    if np.isscalar(rhoM):
+        rhoM = rhoM * np.ones(n, "d")
+    if np.isscalar(thetaM):
+        thetaM = thetaM * np.ones(n, "d")
+    if np.isscalar(sigma):
+        sigma = sigma * np.ones(n - 1, "d")
+
+    # kz = -kz
+    # depth, rho, irho, sigma, rhoM, thetaM = [v[::-1] for v in (depth, rho, irho, sigma, rhoM, thetaM)]
+    depth, rho, irho, sigma = [_dense(a, "d") for a in (depth, rho, irho, sigma)]
+    # np.set_printoptions(linewidth=1000)
+    # print(np.vstack((depth, np.hstack((sigma, np.nan)), rho, irho, rhoM, thetaM)).T)
+
+    EPS = -Aguide
+    sld_b, u1, u3 = calculate_u1_u3(H, rhoM, thetaM, EPS)
+
+    # def autosampled_magnetic_amplitude(depth, sigma, rho, irho, rhoM, thetaM, H, Aguide, kz, rho_index, dRa, dRb, dRc, dRd, tolerance=0.05):
+
+    # depth, sigma, rho, irho, sld_b, u1, u3, kz, rho_index, dRa, dRb, dRc, dRd, tolerance=0.05)
+    calc_kz, Ra, Rb, Rc, Rd = backend.autosampled_magnetic_amplitude(
+        depth, sigma, rho, irho, sld_b, u1, u3, kz, rho_index, dRa, dRb, dRc, dRd, tolerance=tolerance
+    )
+    # R1 is ++, R2 is +-, R3 is -+, R4 is --
+    # we want to return them in the order --, -+, +-, ++ to match order of probe.xs
+    return calc_kz, Rd, Rc, Rb, Ra
+
+
 def calculate_u1_u3(H, rhoM, thetaM, Aguide):
     from ..backends import backend
 
