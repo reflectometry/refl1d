@@ -531,8 +531,17 @@ class Experiment(ExperimentBase):
                     )
             else:
                 if autosample:
+                    # extend calc_q to cover the edges + 3*probe.dQ
+                    calc_kz = np.hstack(
+                        (
+                            calc_q[0] / 2.0 - 3.0 * self.probe.dQ[0],
+                            calc_q / 2.0,
+                            calc_q[-1] / 2.0 + 3.0 * self.probe.dQ[-1],
+                        )
+                    )
+                    dR = np.pad(self.probe.dR, (1, 1), mode="edge") if self.probe.dR is not None else None
                     calc_kz, calc_r = autosample_reflamp(
-                        calc_q / 2, depth=w, rho=rho, irho=irho, sigma=sigma, dR=self.probe.dR, tolerance=tolerance
+                        calc_kz, depth=w, rho=rho, irho=irho, sigma=sigma, dR=dR, tolerance=tolerance
                     )
                     calc_q = 2 * calc_kz
                 else:
