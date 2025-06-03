@@ -484,13 +484,23 @@ class Experiment(ExperimentBase):
                 H = self.probe.H.value
                 if autosample:
                     xs = self.probe.xs
-                    dRa = xs[0].dR if xs[0] is not None else None
-                    dRb = xs[1].dR if xs[1] is not None else None
-                    dRc = xs[2].dR if xs[2] is not None else None
-                    dRd = xs[3].dR if xs[3] is not None else None
+                    # the padding is to ensure that the shape of dR matches the shape of calc_q
+                    # (duplicates the first and last value)
+                    dRa = np.pad(xs[0].dR, (1, 1), mode="edge") if xs[0] is not None else None
+                    dRb = np.pad(xs[1].dR, (1, 1), mode="edge") if xs[1] is not None else None
+                    dRc = np.pad(xs[2].dR, (1, 1), mode="edge") if xs[2] is not None else None
+                    dRd = np.pad(xs[3].dR, (1, 1), mode="edge") if xs[3] is not None else None
 
+                    # extend calc_q to cover the edges + 3*probe.dQ
+                    calc_kz = np.hstack(
+                        (
+                            np.clip([calc_q[0] / 2.0 - 3.0 * self.probe.dQ[0]], 0, None),
+                            calc_q / 2.0,
+                            np.clip([calc_q[-1] / 2.0 + 3.0 * self.probe.dQ[-1]], 0, None),
+                        )
+                    )
                     calc_kz, calc_rd, calc_rc, calc_rb, calc_ra = autosample_magnetic_reflamp(
-                        calc_q / 2,
+                        calc_kz,
                         depth=w,
                         rho=rho[0],
                         irho=irho[0],
@@ -558,7 +568,7 @@ class Experiment(ExperimentBase):
             self._cache[key] = res
         return self._cache[key]
 
-    def reflectivity(self, resolution=True, interpolation=0, autosample=None, tolerance=0.1):
+    def reflectivity(self, resolution=True, interpolation=0, autosample=None, tolerance=None):
         """
         Calculate predicted reflectivity.
 
@@ -566,6 +576,8 @@ class Experiment(ExperimentBase):
         """
         if autosample is None:
             autosample = self.autosample
+        if tolerance is None:
+            tolerance = getattr(self, "tolerance", 0.1)
         key = ("reflectivity", resolution, interpolation)
         if key not in self._cache:
             calc_q, calc_r = self._reflamp(autosample=autosample, tolerance=tolerance)
