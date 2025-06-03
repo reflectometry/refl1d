@@ -76,7 +76,7 @@ async def get_profile_plots(model_specs: List[ModelSpec]):
 
 def get_single_probe_data(theory, probe, substrate=None, surface=None, polarization=""):
     fresnel_calculator = probe.fresnel(substrate, surface)
-    Q, FQ = probe.apply_beam(probe.calc_Q, fresnel_calculator(probe.calc_Qo))
+    Q, FQ = probe.apply_beam(probe.calc_Q, fresnel_calculator(probe._calc_Q))
     Q, R = theory
     output: Dict[str, Union[str, np.ndarray]]
     assert isinstance(FQ, np.ndarray)
@@ -143,9 +143,9 @@ def _get_profile_uncertainty_plot(
     if state.problem is None or state.problem.fitProblem is None:
         return None
     fitProblem = deepcopy(state.problem.fitProblem)
-    uncertainty_state = state.fitting.uncertainty_state
+    uncertainty_state = state.fitting.fit_state
     align_arg = "auto" if auto_align else align
-    if uncertainty_state is not None:
+    if uncertainty_state is not None and hasattr(uncertainty_state, "draw"):
         import time
 
         start_time = time.time()

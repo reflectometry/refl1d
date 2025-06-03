@@ -856,7 +856,7 @@ class Probe(BaseProbe):
         idx = np.argsort(Q)
         self.calc_T = T[idx]
         self.calc_L = L[idx]
-        self.calc_Qo = Q[idx]
+        self._calc_Q = np.unique(Q[idx])
 
         # Only keep the scattering factors that you need
         self.unique_L = np.unique(self.calc_L)
@@ -893,11 +893,12 @@ class Probe(BaseProbe):
 
     @property
     def calc_Q(self):
+        # TODO: cache this value if theta_offset is not changing
         if self.theta_offset.value != 0:
-            Q = TL2Q(T=self.calc_T + self.theta_offset.value, L=self.calc_L)
-            # TODO: this may break the Q order on measurements with varying L
+            # NOTE: np.unique sorts the array
+            Q = np.unique(TL2Q(T=self.calc_T + self.theta_offset.value, L=self.calc_L))
         else:
-            Q = self.calc_Qo
+            Q = self._calc_Q
         return Q if not self.back_reflectivity else -Q
 
     def parameters(self):
@@ -948,7 +949,7 @@ class Probe(BaseProbe):
         be biased toward valleys.
         """
         # Assumes self contains sorted Qo and associated T, L
-        # Note: calc_Qo is already sorted
+        # Note: _calc_Q is already sorted
         Q = np.arange(self.Qo[0], self.Qo[-1], dQ)
         idx = np.unique(np.searchsorted(self.Qo, Q))
         # print len(idx), len(self.Qo)
@@ -1094,9 +1095,11 @@ class NeutronProbe(Probe):
 
 
 @dataclass(init=False)
-class ProbeSet(Probe):
+class ProbeSet:
     name: Optional[str]
     probes: Sequence[Probe]
+
+    polarized = False
 
     def __init__(self, probes, name=None):
         self.probes = list(probes)
@@ -1326,7 +1329,8 @@ class ProbeSet(Probe):
         return QProbe(
             Q,
             dQ,
-            data=(R, dR),
+            R=R,
+            dR=dR,
             intensity=Po.intensity,
             background=Po.background,
             back_absorption=Po.back_absorption,
@@ -1359,19 +1363,13 @@ class QProbe(BaseProbe):
 
     polarized = False
 
-    @classmethod
-    def from_dict(cls, **kw):
-        R = kw.pop("R", None)
-        dR = kw.pop("dR", None)
-        if R is not None and dR is not None:
-            kw["data"] = (R, dR)
-        return cls(**kw)
-
     def __init__(
         self,
         Q,
         dQ,
-        data=None,
+        R=None,
+        dR=None,
+        data=None,  # deprecated
         name=None,
         filename=None,
         intensity=1,
@@ -1389,23 +1387,25 @@ class QProbe(BaseProbe):
 
         self.back_reflectivity = back_reflectivity
 
-        if data is not None:
+        if R is None and dR is None and data is not None:
+            # deprecated way of loading R and dR
+            # TODO: remove this
+            warnings.warn("data argument is deprecated, use R and dR instead")
             R, dR = data
-        else:
-            R, dR = None, None
 
-        self.Q, self.dQ = Q, dQ
+        self.Q = numpy.asarray(Q)
+        self.dQ = numpy.asarray(dQ)
         self.R = R
         self.dR = dR
         self.unique_L = None
-        self.calc_Qo = self.Q
+        self._calc_Q = np.unique(self.Q)
         self.name = name
         self.filename = filename
         self.resolution = resolution
 
     @property
     def calc_Q(self):
-        return self.calc_Qo if not self.back_reflectivity else -self.calc_Qo
+        return self._calc_Q if not self.back_reflectivity else -self._calc_Q
 
     def parameters(self):
         return {
@@ -1425,7 +1425,7 @@ class QProbe(BaseProbe):
         rng = numpy.random.RandomState(seed=seed)
         extra = rng.normal(self.Q, self.dQ, size=(n - 1, len(self.Q)))
         calc_Q = np.hstack((self.Q, extra.flatten()))
-        self.calc_Qo = np.sort(calc_Q)
+        self._calc_Q = np.unique(calc_Q)
 
     oversample.__doc__ = Probe.oversample.__doc__
 
@@ -1433,33 +1433,9 @@ class QProbe(BaseProbe):
         Q_c = self.Q_c(substrate, surface)
         extra = np.linspace(Q_c * (1 - delta), Q_c * (1 + delta), n)
         calc_Q = np.hstack((self.Q, extra, 0))
-        self.calc_Qo = np.sort(calc_Q)
+        self._calc_Q = np.unique(calc_Q)
 
     critical_edge.__doc__ = Probe.critical_edge.__doc__
-
-
-def measurement_union(xs):
-    """
-    Determine the unique (T, dT, L, dL) across all datasets.
-    """
-
-    # First gather a set of unique tuples in angle and wavelength
-    TL = set()
-    for x in xs:
-        if x is not None:
-            TL |= set(zip(x.calc_T, x.calc_T + x.theta_offset.value, x.calc_L))
-    To, T, L = zip(*[item for item in TL])
-    To, T, L = [np.asarray(v) for v in (To, T, L)]
-
-    # Convert to Q, dQ
-    Q = TL2Q(T, L)
-
-    # Sort by Q
-    idx = np.argsort(Q)
-    To, T, L, Q = To[idx], T[idx], L[idx], Q[idx]
-    if abs(Q[1:] - Q[:-1]).any() < 1e-14:
-        raise ValueError("Q is not unique")
-    return To, T, L, Q
 
 
 def Qmeasurement_union(xs):
@@ -1471,8 +1447,6 @@ def Qmeasurement_union(xs):
         if x is not None:
             Qset |= set(zip(x.Q, x.dQ))
     Q, dQ = [np.array(v) for v in zip(*sorted(Qset))]
-    if abs(Q[1:] - Q[:-1]).any() < 1e-14:
-        raise ValueError("Q values differ by less than 1e-14")
     return Q, dQ
 
 
@@ -1532,7 +1506,7 @@ class PolarizedNeutronProbe:
             for index, xs_name in enumerate(self._xs_names):
                 setattr(self, xs_name, xs[index])
 
-        self._theta_offsets = None
+        self._union_cache_key = None
         if name is None and self.mm is not None:
             name = self.mm.name
         self.name = name
@@ -1611,54 +1585,39 @@ class PolarizedNeutronProbe:
                 x.theta_offset = theta_offset
                 x.sample_broadening = sample_broadening
 
-    def oversample(self, n, seed=1):
-        for xs in self.xs:
-            if xs is not None:
-                xs.oversample(n, seed=1)
-        self._theta_offsets = None
+    def oversample(self, n=20, seed=1):
+        self.oversampling = n
+        self.oversampling_seed = seed
 
     oversample.__doc__ = Probe.oversample.__doc__
 
     def _calculate_union(self):
         theta_offsets = [x.theta_offset.value for x in self.xs if x is not None]
-        if self._theta_offsets is not None and theta_offsets == self._theta_offsets:
-            # no change in offsets: use cached values of measurement union
+        union_cache_key = (theta_offsets, self.oversampling, self.oversampling_seed)
+        if self._union_cache_key == union_cache_key:
+            # no change in offsets or oversampling: use cached values of measurement union
             return
-
-        unique_offsets = set(theta_offsets)
-        shared_offset = theta_offsets[0] if len(unique_offsets) == 1 else None
-        if shared_offset is not None and self._theta_offsets is not None:
-            # offset is shared, and measurement_union has been calculated before
-            # (so self.To is already populated)
-            self.T = self._To + shared_offset
-            Q = TL2Q(T=self.T, L=self.L)
-            self.calc_Qo = Q
         else:
-            # unshared offsets changed, or union has not been calculated before
-            # returned T has offset applied, To does not
-            self._To, self.T, self.L, self.Q = measurement_union(self.xs)
-            self._set_calc(self.T, self.L)
+            Q_union, dQ_union = Qmeasurement_union(self.xs)
+            if self.oversampling is not None:
+                rng = numpy.random.RandomState(seed=self.oversampling_seed)
+                extra = rng.normal(Q_union, dQ_union, size=(self.oversampling - 1, len(Q_union)))
+                calc_Q = np.hstack((Q_union, extra.flatten()))
+            else:
+                calc_Q = Q_union
 
-        self._theta_offsets = theta_offsets
+            self.Q = Q_union
+            self.dQ = dQ_union
+            # only record the unique values of Q for calculation
+            # (np.unique will sort the values)
+            self._calc_Q = np.unique(calc_Q)
+            self._union_cache_key = union_cache_key
 
     @property
     def calc_Q(self):
         # print('calculating calc_Q...')
         self._calculate_union()
-        return self.calc_Qo if not self.back_reflectivity else -self.calc_Qo
-
-    def _set_calc(self, T, L):
-        # TODO: shouldn't clone code from probe
-        Q = TL2Q(T=T, L=L)
-
-        idx = np.argsort(Q)
-        self.calc_T = T[idx]
-        self.calc_L = L[idx]
-        self.calc_Qo = Q[idx]
-
-        # Only keep the scattering factors that you need
-        self.unique_L = np.unique(self.calc_L)
-        self._L_idx = np.searchsorted(self.unique_L, L)
+        return self._calc_Q if not self.back_reflectivity else -self._calc_Q
 
     def apply_beam(self, Q, R, resolution=True, interpolation=0):
         """
@@ -1674,11 +1633,9 @@ class PolarizedNeutronProbe:
 
     def scattering_factors(self, material, density):
         # doc string is inherited from parent (see below)
-        rho, irho, rho_incoh = nsf.neutron_sld(material, wavelength=self.unique_L[0], density=density)
-        # TODO: support wavelength dependent systems
-        # print("sf", str(material), type(rho), type(irho[0]))
-        return rho, irho, rho_incoh
-        # return rho, irho[self._L_idx], rho_incoh
+        # grab a non-null cross-section to get a representative wavelength
+        first_probe = next(xs for xs in self.xs if xs is not None)
+        return first_probe.scattering_factors(material, density)
 
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
@@ -1896,16 +1853,17 @@ class PolarizedQProbe(PolarizedNeutronProbe):
         self._check()
         self.name = name if name is not None else self.pp.name
         self.unique_L = None
-        self.Aguide = Parameter.default(Aguide, name="Aguide " + self.name, limits=[-360, 360])
-        self.H = Parameter.default(H, name="H " + self.name)
+        qualifier = " " + self.name if self.name is not None else ""
+        self.Aguide = Parameter.default(Aguide, name="Aguide" + qualifier, limits=[-360, 360])
+        self.H = Parameter.default(H, name="H" + qualifier)
         if oversampling is not None:
             self.oversample(oversampling, oversampling_seed)
         self.Q, self.dQ = Qmeasurement_union(self.xs)
-        self.calc_Qo = self.Q
+        self._calc_Q = np.unique(self.Q)
 
     @property
     def calc_Q(self):
-        return self.calc_Qo if not self.back_reflectivity else -self.calc_Qo
+        return self._calc_Q if not self.back_reflectivity else -self._calc_Q
 
 
 # Deprecated old long name
