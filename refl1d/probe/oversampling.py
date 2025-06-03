@@ -80,7 +80,7 @@ def get_optimal_single_oversampling(model, tolerance=0.05, max_oversampling=201,
     return oversampling, optimal_oversampling, Q
 
 
-def get_optimal_single_autosampling(model, tolerance=0.05, min_autosampling=0.005, seed=1, verbose=False):
+def get_optimal_single_autosampling(model, tolerance=0.05, min_autosampling=0.0005, seed=1, verbose=False):
     """
     Determine how much oversampling is required to adequately calculate resolution smearing
 
@@ -117,9 +117,9 @@ def get_optimal_single_autosampling(model, tolerance=0.05, min_autosampling=0.00
         R_ref = [R_ref]
 
     max_diff = np.inf
-    autosampling_tol = 10
+    autosampling_tol = 16
     while max_diff > tolerance and autosampling_tol > min_autosampling:
-        autosampling_tol *= 0.8
+        autosampling_tol *= 0.5
         if verbose:
             print("trying autosampling_tol = {:d}".format(autosampling_tol), end="\r")
         model._cache = {}
@@ -152,7 +152,7 @@ def get_optimal_single_autosampling(model, tolerance=0.05, min_autosampling=0.00
     # reset model cache again before leaving
     model._cache = {}
     if verbose:
-        print("Recommended autosampling_tol: {:d}".format(autosampling_tol))
+        print("Recommended autosampling_tol: {:f}".format(autosampling_tol))
 
     return autosampling_tol, optimal_oversampling, Q
 
@@ -176,11 +176,13 @@ def analyze_fitproblem_autosample(problem, tolerance=0.05, min_autosampling=0.00
             print("\tpart: {:d}, autosampling_tol: {:f}".format(i_part, tol_ii))
             tol_i.append(tol_ii)
             local_tol_i.append(local_tol_ii)
+            part.autosample = True
+            part.tolerance = tol_ii
             if plot:
                 plt.figure()
                 for i_oos, (oos, qq) in enumerate(zip(local_tol_ii, Q)):
                     if oos is not None:
-                        plt.plot(qq, oos, label="xs: {:d}".format(i_oos))
+                        plt.semilogy(qq, oos, label="xs: {:d}".format(i_oos))
                 plt.title("model: {:d}, part: {:d}".format(i_model, i_part))
                 plt.xlabel("Q (inv. A)")
                 plt.ylabel("required autosampling tol")
