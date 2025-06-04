@@ -123,11 +123,12 @@ def get_optimal_single_autosampling(model, tolerance=0.05, min_autosampling=0.00
         if verbose:
             print("trying autosampling_tol = {:d}".format(autosampling_tol), end="\r")
         model._cache = {}
-        R = model.reflectivity(autosample=True, tolerance=autosampling_tol)
-        if not isinstance(R, list):
-            R = [R]
+        QR = model.reflectivity(autosample=True, tolerance=autosampling_tol)
+        # QR is a tuple of (calc_Q, cacl_R) or a list of such tuples
+        if not isinstance(QR, list):
+            QR = [QR]
         current_max_diff = 0
-        for oos, p, r, r_ref in zip(optimal_oversampling, probes, R, R_ref):
+        for oos, p, r, r_ref in zip(optimal_oversampling, probes, QR, R_ref):
             if p is None:
                 Q.append(None)
                 continue
@@ -173,20 +174,76 @@ def analyze_fitproblem_autosample(problem, tolerance=0.05, min_autosampling=0.00
         for i_part, part in enumerate(parts):
             # print(part)
             tol_ii, local_tol_ii, Q = get_optimal_single_autosampling(part, tolerance, min_autosampling, seed=seed)
-            print("\tpart: {:d}, autosampling_tol: {:f}".format(i_part, tol_ii))
+            print(
+                "\tpart: {:d}, autosampling_tol: {:f}, new Q length / Q length: {:f}".format(
+                    i_part, tol_ii, len(part.probe.calc_Q) / len(part.probe.Q)
+                )
+            )
             tol_i.append(tol_ii)
             local_tol_i.append(local_tol_ii)
             part.autosample = True
             part.tolerance = tol_ii
             if plot:
-                plt.figure()
+                fig = plt.figure()
+                axes = fig.add_subplot(111)
                 for i_oos, (oos, qq) in enumerate(zip(local_tol_ii, Q)):
                     if oos is not None:
-                        plt.semilogy(qq, oos, label="xs: {:d}".format(i_oos))
-                plt.title("model: {:d}, part: {:d}".format(i_model, i_part))
-                plt.xlabel("Q (inv. A)")
-                plt.ylabel("required autosampling tol")
-                plt.legend()
+                        axes.semilogy(qq, oos, label="xs: {:d}".format(i_oos))
+                axes.set_title("model: {:d}, part: {:d}".format(i_model, i_part))
+                axes.set_xlabel("Q (inv. A)")
+                axes.set_ylabel("required autosampling tol")
+                fig.legend()
+
+                fig2 = plt.figure()
+                axes2 = fig2.add_subplot(111)
+                # stash the original calc_Q, which is used to calculate the reflectivity
+                calc_Q = part.probe.calc_Q
+                part.probe._calc_Q = part.probe.Q  # use the original Q for plotting
+                part._cache = {}  # reset cache to avoid using cached R
+                Q, R = part._reflamp(autosample=False)
+                part._cache = {}  # reset cache to avoid using cached R
+
+                part.probe._calc_Q = calc_Q  # restore the original calc_Q
+                calc_Q, calc_R = part._reflamp(autosample=False)
+
+                if isinstance(calc_R, tuple):
+                    for xsi, xsR in enumerate(calc_R):
+                        if part.probe.xs[xsi] is None:
+                            continue
+                        axes2.semilogy(
+                            calc_Q,
+                            np.abs(xsR) ** 2,
+                            label=f"autosampled xs[{xsi}]",
+                            linestyle="None",
+                            marker="*",
+                            markersize=1,
+                        )
+                        axes2.semilogy(
+                            Q,
+                            np.abs(R[xsi]) ** 2,
+                            label=f"data xs[{xsi}]",
+                            linestyle="None",
+                            marker="o",
+                            markersize=5,
+                            markerfacecolor="none",
+                        )
+                else:
+                    axes2.semilogy(
+                        calc_Q, np.abs(calc_R) ** 2, label="autosampled R", linestyle="None", marker="*", markersize=1
+                    )
+                    axes2.semilogy(
+                        Q,
+                        np.abs(R) ** 2,
+                        label="data R",
+                        linestyle="None",
+                        marker="o",
+                        markersize=5,
+                        markerfacecolor="none",
+                    )
+                axes2.set_title("model: {:d}, part: {:d} calc R".format(i_model, i_part))
+                axes2.set_xlabel("Q (inv. A)")
+                axes2.set_ylabel("R(Q)")
+                fig2.legend()
 
         # there is one probe instance shared between parts in MixedExperiment: use
         # largest recommended oversampling.
