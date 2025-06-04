@@ -484,6 +484,8 @@ class Experiment(ExperimentBase):
                 H = self.probe.H.value
                 if autosample:
                     xs = self.probe.xs
+                    Q = self.probe.Q
+                    dQ = self.probe.dQ
                     # the padding is to ensure that the shape of dR matches the shape of calc_q
                     # (duplicates the first and last value)
                     dRa = np.pad(xs[0].dR, (1, 1), mode="edge") if xs[0] is not None else None
@@ -494,9 +496,9 @@ class Experiment(ExperimentBase):
                     # extend calc_q to cover the edges + 3*probe.dQ
                     calc_kz = np.hstack(
                         (
-                            np.clip([calc_q[0] / 2.0 - 3.0 * self.probe.dQ[0]], 0, None),
-                            calc_q / 2.0,
-                            np.clip([calc_q[-1] / 2.0 + 3.0 * self.probe.dQ[-1]], 0, None),
+                            np.clip([Q[0] / 2.0 - 3.0 * dQ[0]], 0, None),
+                            Q / 2.0,
+                            np.clip([Q[-1] / 2.0 + 3.0 * dQ[-1]], 0, None),
                         )
                     )
                     calc_kz, calc_rd, calc_rc, calc_rb, calc_ra = autosample_magnetic_reflamp(
@@ -516,6 +518,7 @@ class Experiment(ExperimentBase):
                         tolerance=tolerance,
                     )
                     calc_q = 2 * calc_kz
+                    self.probe._calc_Q = calc_q
                     calc_r = (calc_rd, calc_rc, calc_rb, calc_ra)
                 else:
                     calc_r = reflmag(
@@ -532,11 +535,13 @@ class Experiment(ExperimentBase):
             else:
                 if autosample:
                     # extend calc_q to cover the edges + 3*probe.dQ
+                    Q = self.probe.Q
+                    dQ = self.probe.dQ
                     calc_kz = np.hstack(
                         (
-                            calc_q[0] / 2.0 - 3.0 * self.probe.dQ[0],
-                            calc_q / 2.0,
-                            calc_q[-1] / 2.0 + 3.0 * self.probe.dQ[-1],
+                            Q[0] / 2.0 - 3.0 * dQ[0],
+                            Q / 2.0,
+                            Q[-1] / 2.0 + 3.0 * dQ[-1],
                         )
                     )
                     dR = np.pad(self.probe.dR, (1, 1), mode="edge") if self.probe.dR is not None else None
@@ -544,6 +549,7 @@ class Experiment(ExperimentBase):
                         calc_kz, depth=w, rho=rho, irho=irho, sigma=sigma, dR=dR, tolerance=tolerance
                     )
                     calc_q = 2 * calc_kz
+                    self.probe._calc_Q = calc_q
                 else:
                     calc_r = reflamp(-calc_q / 2, depth=w, rho=rho, irho=irho, sigma=sigma, autosample=autosample)
             if False and np.isnan(calc_r).any():
