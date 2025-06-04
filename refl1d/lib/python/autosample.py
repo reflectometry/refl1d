@@ -43,27 +43,36 @@ def oversample_inplace(kz, dR, tol, w, rho, irho, sigma, max_sampling_iterations
     r = np.empty_like(kz, dtype=complex128)
     reflectivity_amplitude(w, sigma, rho, irho, -new_kz, rho_index, r)
     R = (r * np.conj(r)).real
-    mapped_dR = dR.copy() / R
+    mapped_dR = dR.copy()
     out_of_tolerance = 1
     iterations = 0
     total_inserts = 0
     total_calc_R = 0
     out_of_tol = np.zeros((10), dtype=boolean)
     while out_of_tolerance > 0 and iterations < max_sampling_iterations:
-        d12 = new_kz[:-2] - new_kz[1:-1]
-        d23 = new_kz[1:-1] - new_kz[2:]
-        d13 = new_kz[:-2] - new_kz[2:]
+        d12 = new_kz[:-2] - new_kz[1:-1]  # delta between first and second points
+        d23 = new_kz[1:-1] - new_kz[2:]  # delta between second and third points
+        d13 = new_kz[:-2] - new_kz[2:]  # delta between first and third points
 
-        y1 = R[:-2]
-        y2 = R[1:-1]
-        y3 = R[2:]
+        y1 = R[:-2]  # first point reflectivity
+        y2 = R[1:-1]  # second point reflectivity
+        y3 = R[2:]  # third point reflectivity
 
         # dy1 = mapped_dR[:-2]
-        dy2 = mapped_dR[1:-1]
+        dy2 = mapped_dR[1:-1]  # second point mapped dR
         # dy3 = mapped_dR[2:]
 
+        # Calculate the common term for the cubic interpolation
         common = (y1 * d23 - y2 * d13 + y3 * d12) / (6.0 * d13)
-        a1, a2 = (d12 / d23 * common), (d23 / d12 * common)
+        # Calculate the coefficients for the cubic interpolation
+        a1 = d12 / d23 * common
+        # a1 is the average difference between the quadratic interpolation
+        # between the first and second points, (also going through the third point)
+        # and the linear interpolation between the first and second points
+        a2 = d23 / d12 * common
+        # a2 is the average difference between the quadratic interpolation
+        # between the second and third points, (also going through the first point)
+        # and the linear interpolation between the second and third points
 
         dx = new_kz[1:] - new_kz[:-1]
         # print(dict(a1=a1.shape, R=R.shape, d12=d12.shape, dx=dx.shape))
@@ -72,8 +81,9 @@ def oversample_inplace(kz, dR, tol, w, rho, irho, sigma, max_sampling_iterations
         # out_of_tol = np.zeros_like(dx, dtype=boolean)
 
         # print("max diff: ", (abs(a1) / (dy2 * y2)).max())
-        diff1 = np.abs(a1) / (dy2 * y2)
-        diff2 = np.abs(a2) / (dy2 * y2)
+        # diff is the difference scaled by the acceptable error in the reflectivity
+        diff1 = np.abs(a1) / dy2
+        diff2 = np.abs(a2) / dy2
         # out2 = np.array(np.abs(a2) / (dy2 * y2) > tol, dtype=boolean)
         rel_distance[:-1] += diff1
         rel_distance[1:] += diff2
@@ -149,10 +159,10 @@ def oversample_magnetic_inplace(
     Rc = (rc * np.conj(rc)).real
     Rd = (rd * np.conj(rd)).real
 
-    mapped_dRa = dRa.copy() / Ra if dRa is not None else np.zeros(kz.shape, dtype=float64)
-    mapped_dRb = dRb.copy() / Rb if dRb is not None else np.zeros(kz.shape, dtype=float64)
-    mapped_dRc = dRc.copy() / Rc if dRc is not None else np.zeros(kz.shape, dtype=float64)
-    mapped_dRd = dRd.copy() / Rd if dRd is not None else np.zeros(kz.shape, dtype=float64)
+    mapped_dRa = dRa.copy() if dRa is not None else np.zeros(kz.shape, dtype=float64)
+    mapped_dRb = dRb.copy() if dRb is not None else np.zeros(kz.shape, dtype=float64)
+    mapped_dRc = dRc.copy() if dRc is not None else np.zeros(kz.shape, dtype=float64)
+    mapped_dRd = dRd.copy() if dRd is not None else np.zeros(kz.shape, dtype=float64)
 
     iterations = 0
     total_inserts = 0
@@ -188,8 +198,8 @@ def oversample_magnetic_inplace(
             # out_of_tol = np.zeros_like(dx, dtype=boolean)
 
             # print("max diff: ", (abs(a1) / (dy2 * y2)).max())
-            diff1 = np.abs(a1) / (dy2 * y2)
-            diff2 = np.abs(a2) / (dy2 * y2)
+            diff1 = np.abs(a1) / dy2
+            diff2 = np.abs(a2) / dy2
             # out2 = np.array(np.abs(a2) / (dy2 * y2) > tol, dtype=boolean)
             rel_distance[:-1] += diff1
             rel_distance[1:] += diff2
@@ -263,7 +273,7 @@ def autosampled_magnetic_amplitude(
         dRd = np.full_like(kz, 0.01)
 
     if any([len(dR) != len(kz) for dR in [dRa, dRb, dRc, dRd] if dR is not None]):
-        raise ValueError("len(dR) != len(kz)")
+        raise ValueError(f"len(dR) != len(kz)({len(kz)})", [len(dR) for dR in [dRa, dRb, dRc, dRd] if dR is not None])
 
     calc_kz, out_of_tol, ra, rb, rc, rd, dRa, dRb, dRc, dRd = oversample_magnetic_inplace(
         kz, dRa, dRb, dRc, dRd, tolerance, depth, rho, irho, sigma, sld_b, u1, u3
