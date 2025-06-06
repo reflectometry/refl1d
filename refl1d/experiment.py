@@ -488,10 +488,10 @@ class Experiment(ExperimentBase):
                     dQ = self.probe.dQ
                     # the padding is to ensure that the shape of dR matches the shape of calc_q
                     # (duplicates the first and last value)
-                    dRa = np.pad(xs[0].dR, (1, 1), mode="edge") if xs[0] is not None else None
-                    dRb = np.pad(xs[1].dR, (1, 1), mode="edge") if xs[1] is not None else None
-                    dRc = np.pad(xs[2].dR, (1, 1), mode="edge") if xs[2] is not None else None
-                    dRd = np.pad(xs[3].dR, (1, 1), mode="edge") if xs[3] is not None else None
+                    dRa = np.pad(xs[0].dR / float(xs[0].intensity), (1, 1), mode="edge") if xs[0] is not None else None
+                    dRb = np.pad(xs[1].dR / float(xs[1].intensity), (1, 1), mode="edge") if xs[1] is not None else None
+                    dRc = np.pad(xs[2].dR / float(xs[2].intensity), (1, 1), mode="edge") if xs[2] is not None else None
+                    dRd = np.pad(xs[3].dR / float(xs[3].intensity), (1, 1), mode="edge") if xs[3] is not None else None
 
                     # extend calc_q to cover the edges + 3*probe.dQ
                     calc_kz = np.hstack(
@@ -537,6 +537,7 @@ class Experiment(ExperimentBase):
                     # extend calc_q to cover the edges + 3*probe.dQ
                     Q = self.probe.Q
                     dQ = self.probe.dQ
+                    intensity = float(self.probe.intensity)
                     calc_kz = np.hstack(
                         (
                             Q[0] / 2.0 - 3.0 * dQ[0],
@@ -544,7 +545,7 @@ class Experiment(ExperimentBase):
                             Q[-1] / 2.0 + 3.0 * dQ[-1],
                         )
                     )
-                    dR = np.pad(self.probe.dR, (1, 1), mode="edge") if self.probe.dR is not None else None
+                    dR = np.pad(self.probe.dR / intensity, (1, 1), mode="edge") if self.probe.dR is not None else None
                     calc_kz, calc_r = autosample_reflamp(
                         calc_kz, depth=w, rho=rho, irho=irho, sigma=sigma, dR=dR, tolerance=tolerance
                     )
