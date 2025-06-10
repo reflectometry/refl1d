@@ -150,7 +150,7 @@ def _get_profile_uncertainty_plot(
 
         start_time = time.time()
         logger.info(f"queueing new profile uncertainty plot... {start_time}")
-        error_points = error_points_from_state(uncertainty_state, nshown=nshown, random=random, portion=1.0)
+        error_points = error_points_from_state(uncertainty_state, nshown=nshown, random=random, portion=None)
         logger.info(f"points calculated: {time.time() - start_time}")
         errs = calc_errors(fitProblem, error_points)
         logger.info(f"errors calculated: {time.time() - start_time}")
