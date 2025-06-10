@@ -1440,7 +1440,8 @@ class QProbe(BaseProbe):
 
 def Qmeasurement_union(xs):
     """
-    Determine the unique Q, dQ across all datasets.
+    Determine the unique Q, dQ across all datasets, with the minimum dR for
+    any Q value.  This could be use to stitch together datasets.
     """
     Qset = set()
     for x in xs:
