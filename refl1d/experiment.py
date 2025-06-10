@@ -537,7 +537,7 @@ class Experiment(ExperimentBase):
                     # extend calc_q to cover the edges + 3*probe.dQ
                     Q = self.probe.Q
                     dQ = self.probe.dQ
-                    intensity = float(self.probe.intensity)
+                    intensity = float(self.probe.intensity) if hasattr(self.probe, "intensity") else 1.0
                     calc_kz = np.hstack(
                         (
                             Q[0] / 2.0 - 3.0 * dQ[0],
