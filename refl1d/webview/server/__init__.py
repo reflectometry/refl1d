@@ -1,1 +1,1 @@
-from .cli import refl1d_server
+from .cli import start_refl1d_server

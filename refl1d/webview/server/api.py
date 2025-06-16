@@ -16,6 +16,16 @@ from bumps.webview.server.api import (
     register,
     state,
     to_json_compatible_dict,
+    # For jupyter users:
+    set_problem,
+    start_fit_thread,
+    wait_for_fit_complete,
+    get_convergence_plot,
+    get_correlation_plot,
+    get_data_plot,
+    load_session,
+    load_problem_file,
+    set_session_output_file,
 )
 
 from refl1d.uncertainty import calc_errors
