@@ -24,7 +24,7 @@ def main():
     cli.plugin_main(name="refl1d", client=CLIENT_PATH, version=__version__)
 
 
-def refl1d_server():
+def start_refl1d_server():
     """
     Start a Jupyter server for the webview.
     This returns an asyncio.Task object that should be awaited
