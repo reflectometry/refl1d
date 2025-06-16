@@ -1,1 +1,1 @@
-from .cli import start_jupyter_server
+from .cli import refl1d_server
