@@ -89,7 +89,7 @@ Section "Start Menu Shortcuts" SEC02
     CreateDirectory "$SMPROGRAMS\${PRODUCT_NAME}"
     CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\Refl1DWebview.lnk" \
         "$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" \
-        '-NoProfile -Command ""$INSTDIR\python.exe -m refl1d.webview.server --use-persistent-path""' \
+        '-NoProfile -Command ""$INSTDIR\python.exe -m refl1d --use-persistent-path""' \
         "$INSTDIR\share\icons\refl1d.ico"
     SetOutPath "%USERPROFILE%"
     CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\Refl1DPowershell.lnk" \
@@ -103,7 +103,7 @@ Section "Desktop Shortcut" SEC03
     SetShellVarContext current
     CreateShortCut "$DESKTOP\${PRODUCT_NAME}.lnk" \
         "$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" \
-        '-NoProfile -Command ""$INSTDIR\python.exe -m refl1d.webview.server""' \
+        '-NoProfile -Command ""$INSTDIR\python.exe -m refl1d --use-persistent-path""' \
         "$INSTDIR\share\icons\refl1d.ico"
 SectionEnd
 
