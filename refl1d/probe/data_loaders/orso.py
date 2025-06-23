@@ -69,7 +69,7 @@ def parse_orso(filename):
 
             Notes
             -----
-            This function requires the instrument setting `orso_name` to have a "magnitue" and "error" attribute.
+            This function requires the instrument setting `orso_name` to have a "magnitude" and "error" attribute.
             """
             column_index = next(
                 (i for i, c in enumerate(columns) if getattr(c, "physical_quantity", None) == orso_name),
