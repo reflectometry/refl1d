@@ -17,7 +17,7 @@ conda create -y -p "$ISOLATED_ENV" "python=${PYTHON_VERSION:-3.12}" "nodejs" "mi
 cd "$SCRIPT_DIR"
 conda activate "$ISOLATED_ENV"
 
-python -m pip install --no-input --no-compile "..[webview]"
+python -m pip install --no-input --no-compile ".."
 python -m "${PACKAGE_NAME:-refl1d}.webview.build_client" --cleanup --install-dependencies
 
 conda deactivate
