@@ -42,7 +42,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           sudo apt-get install -y pandoc
-          python -m pip install .[dev,webview] build
+          python -m pip install .[dev] build
 
       - name: Build the docs
         run: |
