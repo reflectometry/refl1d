@@ -123,16 +123,15 @@ function generateQProbe(qmin: number = 0, qmax: number = 0.1, qsteps: number = 2
 }
 
 async function fetchModel() {
-  props.socket.asyncEmit("get_model", (payload: ArrayBuffer) => {
-    const json_bytes = new Uint8Array(payload);
+  props.socket.asyncEmit("get_model", (payload: string) => {
     console.debug({ payload });
 
-    if (json_bytes.length < 3) {
+    if (payload.length < 3) {
       // no model defined...
       modelJson.value = {};
       dictionaryLoaded.value = false;
     } else {
-      const jsonValue = JSON.parse(decoder.decode(json_bytes));
+      const jsonValue = JSON.parse(payload);
       modelJson.value = jsonValue;
       console.log("modelJson", modelJson.value);
       parametersById.value = jsonValue.references;
@@ -262,8 +261,6 @@ function setQProbe() {
   );
   sendModel();
 }
-
-const decoder = new TextDecoder("utf-8");
 
 onMounted(() => {
   fetchModel();
