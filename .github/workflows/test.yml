@@ -36,7 +36,7 @@ jobs:
 
       - name: Install the project
         run: |
-          uv sync --extra dev --extra webview --dev
+          uv sync --extra dev --dev
           uv build
 
       - name: Run tests
