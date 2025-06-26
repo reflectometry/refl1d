@@ -1,4 +1,4 @@
-"""
+r"""
 Magnetic modeling for 1-D reflectometry.
 
 ** Deprecated ** use magnetism to set magnetism on a nuclear layer

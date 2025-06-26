@@ -1,4 +1,4 @@
-"""
+r"""
 Reflectometry instrument definitions.
 
 An instrument definition contains all the information necessary to compute

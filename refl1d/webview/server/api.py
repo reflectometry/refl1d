@@ -16,6 +16,16 @@ from bumps.webview.server.api import (
     register,
     state,
     to_json_compatible_dict,
+    # For jupyter users:
+    set_problem,
+    start_fit_thread,
+    wait_for_fit_complete,
+    get_convergence_plot,
+    get_correlation_plot,
+    get_data_plot,
+    load_session,
+    load_problem_file,
+    set_session_output_file,
 )
 
 from refl1d.uncertainty import calc_errors
@@ -150,7 +160,7 @@ def _get_profile_uncertainty_plot(
 
         start_time = time.time()
         logger.info(f"queueing new profile uncertainty plot... {start_time}")
-        error_points = error_points_from_state(uncertainty_state, nshown=nshown, random=random, portion=1.0)
+        error_points = error_points_from_state(uncertainty_state, nshown=nshown, random=random, portion=None)
         logger.info(f"points calculated: {time.time() - start_time}")
         errs = calc_errors(fitProblem, error_points)
         logger.info(f"errors calculated: {time.time() - start_time}")

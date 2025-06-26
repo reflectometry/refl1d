@@ -22,7 +22,7 @@ class ExperimentJsonTest(unittest.TestCase):
         # Q-resolution array
         q_resolution = q_values * 0.02 + 0.0001
 
-        probe = QProbe(q_values, q_resolution, data=(zeros, ones))
+        probe = QProbe(q_values, q_resolution, R=zeros, dR=ones)
 
         # Note: I don't use the usual shorthand to define the sample on purpose,
         #       so I see explicitly what I'm using.
