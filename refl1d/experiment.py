@@ -486,12 +486,10 @@ class Experiment(ExperimentBase):
                     xs = self.probe.xs
                     Q = self.probe.Q
                     dQ = self.probe.dQ
+                    dR = self.probe.dR
                     # the padding is to ensure that the shape of dR matches the shape of calc_q
                     # (duplicates the first and last value)
-                    dRa = np.pad(xs[0].dR / float(xs[0].intensity), (1, 1), mode="edge") if xs[0] is not None else None
-                    dRb = np.pad(xs[1].dR / float(xs[1].intensity), (1, 1), mode="edge") if xs[1] is not None else None
-                    dRc = np.pad(xs[2].dR / float(xs[2].intensity), (1, 1), mode="edge") if xs[2] is not None else None
-                    dRd = np.pad(xs[3].dR / float(xs[3].intensity), (1, 1), mode="edge") if xs[3] is not None else None
+                    padded_dR = np.pad(dR, (1, 1), mode="edge") if dR is not None else None
 
                     # extend calc_q to cover the edges + 3*probe.dQ
                     calc_kz = np.hstack(
@@ -511,10 +509,7 @@ class Experiment(ExperimentBase):
                         Aguide=Aguide,
                         H=H,
                         sigma=sigma,
-                        dRa=dRa,
-                        dRb=dRb,
-                        dRc=dRc,
-                        dRd=dRd,
+                        dR=padded_dR,
                         tolerance=tolerance,
                     )
                     calc_q = 2 * calc_kz

@@ -307,10 +307,7 @@ def autosample_magnetic_amplitude(
     Aguide=-90,
     H=0,
     rho_index=None,
-    dRa=None,
-    dRb=None,
-    dRc=None,
-    dRd=None,
+    dR=None,
     tolerance=0.05,
 ):
     """
@@ -348,7 +345,7 @@ def autosample_magnetic_amplitude(
 
     # depth, sigma, rho, irho, sld_b, u1, u3, kz, rho_index, dRa, dRb, dRc, dRd, tolerance=0.05)
     calc_kz, Ra, Rb, Rc, Rd = backend.autosampled_magnetic_amplitude(
-        depth, sigma, rho, irho, sld_b, u1, u3, kz, rho_index, dRa, dRb, dRc, dRd, tolerance=tolerance
+        depth, sigma, rho, irho, sld_b, u1, u3, kz, rho_index, dR, tolerance=tolerance
     )
     # R1 is ++, R2 is +-, R3 is -+, R4 is --
     # we want to return them in the order --, -+, +-, ++ to match order of probe.xs

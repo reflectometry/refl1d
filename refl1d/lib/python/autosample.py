@@ -138,13 +138,8 @@ def autosampled_reflectivity_amplitude(depth, sigma, rho, irho, kz, rho_index, d
     return calc_kz, r
 
 
-def oversample_magnetic_inplace(
-    kz, dRa, dRb, dRc, dRd, tol, w, rho, irho, sigma, sld_b, u1, u3, max_sampling_iterations=100
-):
-    # dR is a list of relative errors in R for each cross-section present,
-    # and will be None for missing cross-sections.
-
-    # remove cross-sections that have dR == None
+def oversample_magnetic_inplace(kz, dR, tol, w, rho, irho, sigma, sld_b, u1, u3, max_sampling_iterations=100):
+    # dR is a list of relative errors in R for all kz values
 
     new_kz = kz.copy()
     rho_index = np.zeros_like(kz, dtype=int32)
@@ -159,20 +154,17 @@ def oversample_magnetic_inplace(
     Rc = (rc * np.conj(rc)).real
     Rd = (rd * np.conj(rd)).real
 
-    mapped_dRa = dRa.copy() if dRa is not None else np.zeros(kz.shape, dtype=float64)
-    mapped_dRb = dRb.copy() if dRb is not None else np.zeros(kz.shape, dtype=float64)
-    mapped_dRc = dRc.copy() if dRc is not None else np.zeros(kz.shape, dtype=float64)
-    mapped_dRd = dRd.copy() if dRd is not None else np.zeros(kz.shape, dtype=float64)
+    mapped_dR = dR.copy() if dR is not None else np.zeros(kz.shape, dtype=float64)
 
     iterations = 0
     total_inserts = 0
     total_calc_R = 0
     out_of_tol = np.zeros((10), dtype=boolean)
-    for xsi in range(1):
+    for xsi in range(4):
         R = [Ra, Rb, Rc, Rd][xsi]
-        mapped_dR = [mapped_dRa, mapped_dRb, mapped_dRc, mapped_dRd][xsi]
-        if [dRa, dRb, dRc, dRd][xsi] is None:
-            continue
+        # mapped_dR = [mapped_dRa, mapped_dRb, mapped_dRc, mapped_dRd][xsi]
+        # if [dRa, dRb, dRc, dRd][xsi] is None:
+        #     continue
         out_of_tolerance = 1
         # print(f"Starting oversampling for cross-section {xsi} with tolerance {tol}")
         while out_of_tolerance > 0 and iterations < max_sampling_iterations:
@@ -210,13 +202,8 @@ def oversample_magnetic_inplace(
             # print(f"out_of_tol: {np.sum(out_of_tol)}\n")
             to_split = np.arange(len(dx), dtype=int32)[out_of_tol]
             new_kz_vals = new_kz[to_split] + dx[to_split] / 2.0
-            new_dRa = mapped_dRa[to_split]
-            new_dRb = mapped_dRb[to_split]
-            new_dRc = mapped_dRc[to_split]
-            new_dRd = mapped_dRd[to_split]
-            # new_dR = mapped_dR[to_split]
+            new_dR = mapped_dR[to_split]
 
-            # new_r = np.empty_like(new_kz_vals, dtype=complex128)
             new_ra = np.empty_like(new_kz_vals, dtype=complex128)
             new_rb = np.empty_like(new_kz_vals, dtype=complex128)
             new_rc = np.empty_like(new_kz_vals, dtype=complex128)
@@ -225,7 +212,6 @@ def oversample_magnetic_inplace(
             magnetic_amplitude(
                 w, sigma, rho, irho, sld_b, u1, u3, -new_kz_vals, rho_index, new_ra, new_rb, new_rc, new_rd
             )
-            # reflectivity_amplitude(w, sigma, rho, irho, -new_kz_vals, new_rho_index, new_r)
             new_Ra = (new_ra * np.conj(new_ra)).real
             new_Rb = (new_rb * np.conj(new_rb)).real
             new_Rc = (new_rc * np.conj(new_rc)).real
@@ -246,36 +232,23 @@ def oversample_magnetic_inplace(
             Rd = insert(Rd, to_split + 1, new_Rd)
 
             R = [Ra, Rb, Rc, Rd][xsi]
-
-            mapped_dRa = insert(mapped_dRa, to_split, new_dRa) if mapped_dRa is not None else None
-            mapped_dRb = insert(mapped_dRb, to_split, new_dRb) if mapped_dRb is not None else None
-            mapped_dRc = insert(mapped_dRc, to_split, new_dRc) if mapped_dRc is not None else None
-            mapped_dRd = insert(mapped_dRd, to_split, new_dRd) if mapped_dRd is not None else None
-
-            mapped_dR = [mapped_dRa, mapped_dRb, mapped_dRc, mapped_dRd][xsi]
-
-            # mapped_dR = insert(mapped_dR, np.clip(to_split - 1, 0, None), new_dR)
+            mapped_dR = insert(mapped_dR, np.clip(to_split - 1, 0, None), new_dR)
 
             iterations += 1
             out_of_tolerance = np.sum(out_of_tol)
             # print(f"out_of_tol: {np.sum(out_of_tol)}\n")
 
-    return new_kz, np.sum(out_of_tol), ra, rb, rc, rd, mapped_dRa, mapped_dRb, mapped_dRc, mapped_dRd
+    return new_kz, np.sum(out_of_tol), ra, rb, rc, rd, mapped_dR
 
 
-def autosampled_magnetic_amplitude(
-    depth, sigma, rho, irho, sld_b, u1, u3, kz, rho_index, dRa, dRb, dRc, dRd, tolerance=0.05
-):
-    if dRa is None and dRb is None and dRc is None and dRd is None:
-        dRa = np.full_like(kz, 0.01)
-        dRb = np.full_like(kz, 0.01)
-        dRc = np.full_like(kz, 0.01)
-        dRd = np.full_like(kz, 0.01)
+def autosampled_magnetic_amplitude(depth, sigma, rho, irho, sld_b, u1, u3, kz, rho_index, dR, tolerance=0.05):
+    if dR is None:
+        dR = np.full_like(kz, 0.01)
 
-    if any([len(dR) != len(kz) for dR in [dRa, dRb, dRc, dRd] if dR is not None]):
-        raise ValueError(f"len(dR) != len(kz)({len(kz)})", [len(dR) for dR in [dRa, dRb, dRc, dRd] if dR is not None])
+    if len(dR) != len(kz):
+        raise ValueError("len(dR) != len(kz)")
 
-    calc_kz, out_of_tol, ra, rb, rc, rd, dRa, dRb, dRc, dRd = oversample_magnetic_inplace(
-        kz, dRa, dRb, dRc, dRd, tolerance, depth, rho, irho, sigma, sld_b, u1, u3
+    calc_kz, out_of_tol, ra, rb, rc, rd, dR = oversample_magnetic_inplace(
+        kz, dR, tolerance, depth, rho, irho, sigma, sld_b, u1, u3
     )
     return calc_kz, ra, rb, rc, rd

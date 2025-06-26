@@ -1443,12 +1443,32 @@ def Qmeasurement_union(xs):
     Determine the unique Q, dQ across all datasets, with the minimum dR for
     any Q value.  This could be use to stitch together datasets.
     """
-    Qset = set()
-    for x in xs:
-        if x is not None:
-            Qset |= set(zip(x.Q, x.dQ))
-    Q, dQ = [np.array(v) for v in zip(*sorted(Qset))]
-    return Q, dQ
+
+    non_null_xs = [x for x in xs if x is not None]
+
+    if all(x.dR is not None for x in non_null_xs):
+        stacked_dR = np.hstack([x.dR for x in non_null_xs])
+        dR_sorting_index = np.argsort(stacked_dR)
+    else:
+        stacked_dR = None
+        dR_sorting_index = None
+
+    Qset = np.concatenate([np.vstack((x.Q, x.dQ)).T for x in non_null_xs])
+    if dR_sorting_index is not None:
+        # sort by dR
+        Qset = Qset[dR_sorting_index]
+
+    # remove duplicates
+    Qset, indices = np.unique(Qset, axis=0, return_index=True)
+    Q = Qset[:, 0]
+    dQ = Qset[:, 1]
+
+    if dR_sorting_index is not None:
+        dR = stacked_dR[dR_sorting_index][indices]
+    else:
+        dR = None
+
+    return Q, dQ, dR
 
 
 optional_xs = Union[NeutronProbe, Literal[None]]
@@ -1599,7 +1619,7 @@ class PolarizedNeutronProbe:
             # no change in offsets or oversampling: use cached values of measurement union
             return
         else:
-            Q_union, dQ_union = Qmeasurement_union(self.xs)
+            Q_union, dQ_union, dR_union = Qmeasurement_union(self.xs)
             if self.oversampling is not None:
                 rng = numpy.random.RandomState(seed=self.oversampling_seed)
                 extra = rng.normal(Q_union, dQ_union, size=(self.oversampling - 1, len(Q_union)))
@@ -1609,6 +1629,7 @@ class PolarizedNeutronProbe:
 
             self.Q = Q_union
             self.dQ = dQ_union
+            self.dR = dR_union
             # only record the unique values of Q for calculation
             # (np.unique will sort the values)
             self._calc_Q = np.unique(calc_Q)
@@ -1859,7 +1880,7 @@ class PolarizedQProbe(PolarizedNeutronProbe):
         self.H = Parameter.default(H, name="H" + qualifier)
         if oversampling is not None:
             self.oversample(oversampling, oversampling_seed)
-        self.Q, self.dQ = Qmeasurement_union(self.xs)
+        self.Q, self.dQ, self.dR = Qmeasurement_union(self.xs)
         self._calc_Q = np.unique(self.Q)
 
     @property
