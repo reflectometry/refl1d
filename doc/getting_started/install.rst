@@ -33,7 +33,7 @@ Refl1D is also available on all platforms from PyPI using pip::
     pip install refl1d
     
     # if you also want to run the webview, an optional extra is available
-    pip install refl1d[webview]
+    pip install refl1d
 
 
 Installing from source
@@ -84,7 +84,7 @@ dependencies::
 
 If you want to run the webview, you can install the optional extra::
 
-    pip install .[webview]
+    pip install .
 
 
 Installing for Development
@@ -107,9 +107,6 @@ If you are planning to contribute to the project, you will want to install
 the package in development mode, including the dev dependencies::
 
     pip install -e .[dev]
-
-    # or if you plan to develop the webview
-    pip install -e .[dev,webview]
 
 This will install the package in development mode, so that changes you make
 to the source code will be reflected in the installed package.  It will also

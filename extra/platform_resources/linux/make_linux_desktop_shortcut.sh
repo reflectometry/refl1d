@@ -14,7 +14,7 @@ script_dir=$(realpath $(dirname $0))
 echo "[Desktop Entry]
 Name=Refl1d-Webview
 Comment=Start the refl1d webview server
-Exec='$script_dir/env/bin/python' -m refl1d.webview.server --use_persistent_path
+Exec='$script_dir/env/bin/python' -m refl1d --use-persistent-path
 Icon=$script_dir/env/share/icons/refl1d-icon.svg
 Terminal=true
 Type=Application
@@ -23,3 +23,8 @@ Categories=Development;
 
 # Make the desktop shortcut executable
 chmod +x $desktop_dir/Refl1dWebviewServer.desktop
+
+# refresh the desktop environment to recognize the new shortcut
+if command -v xdg-desktop-menu &> /dev/null; then
+    xdg-desktop-menu forceupdate
+fi

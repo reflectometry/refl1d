@@ -35,7 +35,7 @@ Submit requests and pull requests to the project
 
 |CI| |RTD| |DOI|
 
-.. |CI| image:: https://github.com/reflectometry/refl1d/workflows/Test/badge.svg
+.. |CI| image:: https://github.com/reflectometry/refl1d/actions/workflows/test.yml/badge.svg
    :alt: Build status
    :target: https://github.com/reflectometry/refl1d/actions
 

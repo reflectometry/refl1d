@@ -2,9 +2,9 @@
 name: Build sphinx docs and deploy to Pages
 
 on:
-  # Runs on pushes targeting the default branch
-  push:
-    branches: ["master"]
+  # Runs on publishing a new release
+  release:
+    types: [published]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -42,7 +42,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           sudo apt-get install -y pandoc
-          python -m pip install .[dev,webview] build
+          python -m pip install .[dev] build
 
       - name: Build the docs
         run: |

@@ -246,7 +246,7 @@ def zf_Yaohua_example():
     return "Yaohua example", layers, Aguide
 
 
-def Chuck_test():
+def Chuck_example():
     Aguide = 270
     layers = [
         # depth rho rhoM thetaM phiM
@@ -275,7 +275,7 @@ def demo():
     plt.figure()
     compare(*NSF_example(), H=1.0)  # 1 tesla
     plt.figure()
-    compare(*Chuck_test(), H=0.0000001)  # 0ish field, but magnetic front
+    compare(*Chuck_example(), H=0.0000001)  # 0ish field, but magnetic front
     plt.show()
 
 
