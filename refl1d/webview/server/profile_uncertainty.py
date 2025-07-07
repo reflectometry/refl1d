@@ -367,11 +367,13 @@ def _plot_quantiles(
     default value, alpha=2./(#contours+1), works pretty well.
     """
     _, q = form_quantiles(y, contours)
+    # contours are sorted and reversed in form_quantiles
+    output_contours = reversed(sorted(contours))
 
     output = {}
     if alpha is None:
         alpha = 2.0 / (len(q) + 1)
-    for contour, (lo, hi) in zip(contours, q):
+    for contour, (lo, hi) in zip(output_contours, q):
         output[f"{contour} percent lower"] = lo
         output[f"{contour} percent upper"] = hi
         fig.add_scattergl(
