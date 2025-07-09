@@ -402,6 +402,7 @@ async function draw_plot() {
     ...configWithSVGDownloadButton,
   };
   await Plotly.react(plot_div.value as HTMLDivElement, [...theory_traces, ...data_traces], layout, config);
+  await Plotly.Plots.resize(plot_div.value as HTMLDivElement);
 }
 
 /**
