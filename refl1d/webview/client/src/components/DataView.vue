@@ -402,6 +402,7 @@ async function draw_plot() {
     ...configWithSVGDownloadButton,
   };
   await Plotly.react(plot_div.value as HTMLDivElement, [...theory_traces, ...data_traces], layout, config);
+  await Plotly.Plots.resize(plot_div.value as HTMLDivElement);
 }
 
 /**
@@ -462,14 +463,20 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
   <div class="container d-flex flex-column flex-grow-1">
     <div class="row">
       <div class="col">
-        <label for="plot_mode" class="col-form-label">Plot mode:</label>
-        <select id="plot_mode" v-model="reflectivity_type" class="plot-mode" @change="change_plot_type">
-          <option v-for="refl_type in REFLECTIVITY_PLOTS" :key="refl_type" :value="refl_type">
-            {{ refl_type }}
-          </option>
-        </select>
+        <div class="row">
+          <div class="col-auto">
+            <label for="plot_offset" class="col-form-label">Plot mode:</label>
+          </div>
+          <div class="col">
+            <select id="plot_mode" v-model="reflectivity_type" class="w-100 my-2" @change="change_plot_type">
+              <option v-for="refl_type in REFLECTIVITY_PLOTS" :key="refl_type" :value="refl_type">
+                {{ refl_type }}
+              </option>
+            </select>
+          </div>
+        </div>
       </div>
-      <div class="col-auto form-check">
+      <div class="col-auto form-check my-2">
         <input
           id="show_residuals"
           v-model="show_residuals"
@@ -479,15 +486,15 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
         />
         <label class="form-check-label" for="show_residuals">Residuals</label>
       </div>
-      <div class="col-auto form-check">
+      <div class="col-auto form-check my-2">
         <input id="log_y" v-model="log_y" type="checkbox" class="form-check-input" @change="draw_plot" />
         <label for="log_y" class="form-check-label">Log y</label>
       </div>
-      <div class="col-auto form-check">
+      <div class="col-auto form-check my-2">
         <input id="log_x" v-model="log_x" type="checkbox" class="form-check-input" @change="draw_plot" />
         <label for="log_x" class="form-check-label">Log x</label>
       </div>
-      <div class="col-auto form-check">
+      <div class="col-auto form-check my-2">
         <input
           id="show_resolution"
           v-model="show_resolution"
@@ -518,9 +525,3 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
     <div id="plot_div" ref="plot_div" class="flex-grow-1"></div>
   </div>
 </template>
-
-<style scoped>
-.plot-mode {
-  width: 100%;
-}
-</style>

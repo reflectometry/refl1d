@@ -165,7 +165,7 @@ def main():
     if opts.pars:
         load_best(problem, opts.pars)
 
-    analyze_fitproblem(problem, opts.tolerance, opts.max_oversampling, opts.plot)
+    analyze_fitproblem(problem, tolerance=opts.tolerance, max_oversampling=opts.max_oversampling, plot=opts.plot)
 
 
 if __name__ == "__main__":
