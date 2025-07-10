@@ -57,7 +57,7 @@ def test():
     # is used by refl1d for all operations on the model.
 
     assert numpy.allclose(
-        probe.calc_Qo,
+        probe.calc_Q,
         numpy.array(
             [
                 0.0,
@@ -97,7 +97,7 @@ def test():
     probe.oversample(3, seed=1)
 
     assert numpy.allclose(
-        probe.calc_Qo,
+        probe.calc_Q,
         numpy.array(
             [
                 -0.00027897,
@@ -197,7 +197,7 @@ def test():
     probe.critical_edge(substrate=silicon, surface=air, n=25, delta=0.2)
 
     assert numpy.allclose(
-        probe.calc_Qo,
+        probe.calc_Q,
         numpy.array(
             [
                 -0.00027897,
