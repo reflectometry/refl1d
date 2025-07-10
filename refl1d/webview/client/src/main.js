@@ -22,7 +22,7 @@ async function loadProbeFromFile() {
     const settings = {
       title: "Load Probe Data from File",
       callback: (pathlist, filename) => {
-        socket.value.asyncEmit("load_probe_from_file", pathlist, filename, 0, dqIsFWHM.value);
+        socket.asyncEmit("load_probe_from_file", pathlist, filename, 0, dqIsFWHM.value);
       },
       show_name_input: true,
       name_input_label: "Filename",
