@@ -1468,8 +1468,8 @@ class QProbe(BaseProbe):
     def critical_edge(self, substrate=None, surface=None, n=51, delta=0.25, clear_existing=False):
         """
         Create a new OversampledRegion around the critical edge.
-        If an existing OversampledRegion exists and clear_existing is True,
-        it will be cleared before adding the new region,
+        If any existing OversampledRegion exists and clear_existing is True,
+        self.oversampled_regions will be cleared before adding the new region,
         else an error will be thrown.
         """
         if not clear_existing and self.oversampled_regions:
