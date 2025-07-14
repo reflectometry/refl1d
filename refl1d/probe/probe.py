@@ -1456,7 +1456,7 @@ class QProbe(BaseProbe):
     def _get_normal_oversampling_points(self, n, seed):
         rng = numpy.random.RandomState(seed=seed)
         extra = rng.normal(self.Q, self.dQ, size=(n - 1, len(self.Q)))
-        return extra
+        return extra.flatten()
 
     def oversample(self, n=20, seed=1):
         self.oversampling = n
