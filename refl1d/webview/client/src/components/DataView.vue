@@ -16,6 +16,7 @@ const chisq_str = ref("");
 const log_y = ref(true);
 const log_x = ref(false);
 const show_resolution = ref(true);
+const subtract_background = ref(true);
 const show_residuals = ref(false);
 
 const props = defineProps<{
@@ -39,8 +40,8 @@ type ModelData = {
   dQ?: number[];
   theory: number[];
   fresnel: number[];
-  intensity_in: number;
-  background_in: number;
+  intensity: number;
+  background: number;
   R?: number[];
   dR?: number[];
 };
@@ -65,10 +66,11 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           const color = COLORS[plot_index % COLORS.length];
           const legendgroup = `group_${plot_index}`;
           const local_offset = lin_y ? plot_index * offset : Math.pow(10, plot_index * offset);
-          const y = lin_y ? xs.theory.map((t) => t + local_offset) : xs.theory.map((t) => t * local_offset);
+          const background_offset = subtract_background.value ? xs.background : 0.0;
+          const y = lin_y ? xs.theory.map((t) => t - background_offset + local_offset) : xs.theory.map((t) => (t - background_offset) * local_offset);
           theory_traces.push({ x: xs.Q, y: y, mode: "lines", name: label + " theory", line: { width: 2, color } });
           if (xs.R !== undefined) {
-            const R = lin_y ? xs.R.map((t) => t + local_offset) : xs.R.map((t) => t * local_offset);
+            const R = lin_y ? xs.R.map((t) => t + background_offset + local_offset) : xs.R.map((t) => (t + background_offset) * local_offset);
             const data_trace: Trace = {
               x: xs.Q,
               y: R,
@@ -115,8 +117,9 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           const color = COLORS[plot_index % COLORS.length];
           const legendgroup = `group_${plot_index}`;
           const lin_y = !log_y.value;
+          const background_offset = subtract_background.value ? xs.background : 0.0;          
           const local_offset = lin_y ? plot_index * offset : Math.pow(10, plot_index * offset);
-          const theory = xs.theory.map((y, i) => y / xs.fresnel[i]);
+          const theory = xs.theory.map((y, i) => (y - background_offset) / (xs.fresnel[i] - background_offset));
           const offset_theory = lin_y ? theory.map((t) => t + local_offset) : theory.map((t) => t * local_offset);
           theory_traces.push({
             x: xs.Q,
@@ -126,7 +129,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
             line: { width: 2, color },
           });
           if (xs.R !== undefined) {
-            const R = xs.R.map((y, i) => y / xs.fresnel[i]);
+            const R = xs.R.map((y, i) => (y + background_offset) / (xs.fresnel[i] - background_offset));
             const offset_R = lin_y ? R.map((t) => t + local_offset) : R.map((t) => t * local_offset);
             const data_trace: Trace = {
               x: xs.Q,
@@ -141,7 +144,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
               data_trace.error_x = { type: "data", array: xs.dQ, visible: true };
             }
             if (xs.dR !== undefined) {
-              const dR = xs.dR.map((dy, i) => dy / xs.fresnel[i]);
+              const dR = xs.dR.map((dy, i) => dy / (xs.fresnel[i] - background_offset));
               const dR_offset = lin_y ? dR : dR.map((t) => t * local_offset);
               data_trace.error_y = { type: "data", array: dR_offset, visible: true };
               if (calculate_residuals) {
@@ -177,11 +180,11 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           const color = COLORS[plot_index % COLORS.length];
           const legendgroup = `group_${plot_index}`;
           const local_offset = Math.pow(10, plot_index * offset);
-          const { intensity_in, background_in } = xs;
-          const intensity = intensity_in ?? 1.0;
-          const background = background_in ?? 0.0;
-          const Q4 = xs.Q.map((qq) => 1e-8 * Math.pow(qq, -4) * intensity + background);
-          const theory = xs.theory.map((t, i) => t / Q4[i]);
+          const { intensity, background } = xs;
+          const intensity_scale = intensity ?? 1.0;
+          const background_offset = subtract_background.value ? background : 0.0;
+          const Q4 = xs.Q.map((qq) => 1e-8 * Math.pow(qq, -4) * intensity_scale);
+          const theory = xs.theory.map((t, i) => (t - background_offset) / Q4[i]);
           const offset_theory = theory.map((t) => t * local_offset);
           theory_traces.push({
             x: xs.Q,
@@ -191,7 +194,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
             line: { width: 2, color },
           });
           if (xs.R !== undefined) {
-            const R = xs.R.map((r, i) => r / Q4[i]);
+            const R = xs.R.map((r, i) => (r + background_offset) / Q4[i]);
             const offset_R = R.map((t) => t * local_offset);
             const data_trace: Trace = {
               x: xs.Q,
@@ -503,6 +506,16 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
           @change="draw_plot"
         />
         <label for="show_resolution" class="form-check-label">dQ</label>
+      </div>
+      <div class="col-auto form-check my-2">
+        <input
+          id="subtract_background"
+          v-model="subtract_background"
+          type="checkbox"
+          class="form-check-input"
+          @change="draw_plot"
+        />
+        <label for="subtract_background" class="form-check-label">R<sub>bkg</sub></label>
       </div>
     </div>
     <div class="row px-2 align-items-center">
