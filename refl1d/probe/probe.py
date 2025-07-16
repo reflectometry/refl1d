@@ -1859,24 +1859,24 @@ def _interpolate_Q(Q, dQ, n):
     return Q, dQ
 
 
-def _get_oversampled_values(Q_in, dQ_in, oversampling, oversampling_seed, oversampled_regions: List[OversampledRegion]):
-    calc_Q_parts = [Q_in]
+def _get_oversampled_values(V_in, dV_in, oversampling, oversampling_seed, oversampled_regions: List[OversampledRegion]):
+    V_parts = [V_in]
     if oversampling is not None:
-        calc_Q_parts.append(_get_normal_oversampling_points(Q_in, dQ_in, oversampling, oversampling_seed))
+        V_parts.append(_get_normal_oversampling_points(V_in, dV_in, oversampling, oversampling_seed))
     for region in oversampled_regions:
-        calc_Q_parts.append(np.linspace(region.Q_start, region.Q_end, region.n))
-    calc_Q = np.hstack(calc_Q_parts)
-    return np.unique(calc_Q)  # remove duplicates and sort
+        V_parts.append(np.linspace(region.Q_start, region.Q_end, region.n))
+    V = np.hstack(V_parts)
+    return np.unique(V)  # remove duplicates and sort
 
 
-def _get_normal_oversampling_points(Q, dQ, n, seed):
+def _get_normal_oversampling_points(V_in, dV_in, n, seed):
     rng = numpy.random.RandomState(seed=seed)
-    # prepend values out to -3*dQ and +3*dQ
+    # prepend values out to -3*dV_in and +3*dV_in
     append_points = np.arange(1.0, 4.0)
     prepend_points = -append_points[::-1]
-    Q = np.concatenate((prepend_points * dQ[0] + Q[0], Q, append_points * dQ[-1] + Q[-1]))
-    dQ = np.concatenate((np.full(3, dQ[0]), dQ, np.full(3, dQ[-1])))
-    extra = rng.normal(Q, dQ, size=(n - 1, len(Q)))
+    V = np.concatenate((prepend_points * dV_in[0] + V_in[0], V_in, append_points * dV_in[-1] + V_in[-1]))
+    dV = np.concatenate((np.full(3, dV_in[0]), dV_in, np.full(3, dV_in[-1])))
+    extra = rng.normal(V, dV, size=(n - 1, len(V)))
     return extra.flatten()
 
 
@@ -1896,6 +1896,7 @@ class PolarizedQProbe(PolarizedNeutronProbe):
         H=0,
         oversampling: Optional[int] = None,
         oversampling_seed: int = 1,
+        oversampled_regions: Optional[List[OversampledRegion]] = None,
     ):
         if any([mm, mp, pm, pp]):
             if xs is not None:
@@ -1913,10 +1914,11 @@ class PolarizedQProbe(PolarizedNeutronProbe):
         qualifier = " " + self.name if self.name is not None else ""
         self.Aguide = Parameter.default(Aguide, name="Aguide" + qualifier, limits=[-360, 360])
         self.H = Parameter.default(H, name="H" + qualifier)
-        if oversampling is not None:
-            self.oversample(oversampling, oversampling_seed)
-        self.Q, self.dQ = Qmeasurement_union(self.xs)
-        self._calc_Q = np.unique(self.Q)
+        self.oversampling = oversampling
+        self.oversampling_seed = oversampling_seed
+        self.oversampled_regions = oversampled_regions if oversampled_regions is not None else []
+        # this sets self.Q, self.dQ, self._calc_Q:
+        self._calculate_union()
 
     @property
     def calc_Q(self):
