@@ -67,10 +67,16 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           const legendgroup = `group_${plot_index}`;
           const local_offset = lin_y ? plot_index * offset : Math.pow(10, plot_index * offset);
           const background_offset = subtract_background.value ? xs.background : 0.0;
-          const y = lin_y ? xs.theory.map((t) => t - background_offset + local_offset) : xs.theory.map((t) => (t - background_offset) * local_offset);
+          const y =
+            lin_y ?
+              xs.theory.map((t) => t - background_offset + local_offset)
+            : xs.theory.map((t) => (t - background_offset) * local_offset);
           theory_traces.push({ x: xs.Q, y: y, mode: "lines", name: label + " theory", line: { width: 2, color } });
           if (xs.R !== undefined) {
-            const R = lin_y ? xs.R.map((t) => t + background_offset + local_offset) : xs.R.map((t) => (t + background_offset) * local_offset);
+            const R =
+              lin_y ?
+                xs.R.map((t) => t + background_offset + local_offset)
+              : xs.R.map((t) => (t + background_offset) * local_offset);
             const data_trace: Trace = {
               x: xs.Q,
               y: R,
@@ -117,7 +123,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           const color = COLORS[plot_index % COLORS.length];
           const legendgroup = `group_${plot_index}`;
           const lin_y = !log_y.value;
-          const background_offset = subtract_background.value ? xs.background : 0.0;          
+          const background_offset = subtract_background.value ? xs.background : 0.0;
           const local_offset = lin_y ? plot_index * offset : Math.pow(10, plot_index * offset);
           const theory = xs.theory.map((y, i) => (y - background_offset) / (xs.fresnel[i] - background_offset));
           const offset_theory = lin_y ? theory.map((t) => t + local_offset) : theory.map((t) => t * local_offset);
