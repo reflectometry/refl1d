@@ -1871,12 +1871,16 @@ def _get_oversampled_values(V_in, dV_in, oversampling, oversampling_seed, oversa
 
 def _get_normal_oversampling_points(V_in, dV_in, n, seed):
     rng = numpy.random.RandomState(seed=seed)
+
+    # TODO: allow extending the range of V_in to support resolution
     # prepend values out to -3*dV_in and +3*dV_in
-    append_points = np.arange(1.0, 4.0)
-    prepend_points = -append_points[::-1]
-    V = np.concatenate((prepend_points * dV_in[0] + V_in[0], V_in, append_points * dV_in[-1] + V_in[-1]))
-    dV = np.concatenate((np.full(3, dV_in[0]), dV_in, np.full(3, dV_in[-1])))
-    extra = rng.normal(V, dV, size=(n - 1, len(V)))
+    #
+    # append_points = np.arange(1.0, 4.0)
+    # prepend_points = -append_points[::-1]
+    # V = np.concatenate((prepend_points * dV_in[0] + V_in[0], V_in, append_points * dV_in[-1] + V_in[-1]))
+    # dV = np.concatenate((np.full(3, dV_in[0]), dV_in, np.full(3, dV_in[-1])))
+
+    extra = rng.normal(V_in, dV_in, size=(n - 1, len(V_in)))
     return extra.flatten()
 
 
