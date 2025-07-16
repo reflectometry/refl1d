@@ -1041,8 +1041,9 @@ class Probe(BaseProbe):
     def _apply_oversamplings(self):
         T_parts, L_parts = [self.T], [self.L]
         if self.oversampling is not None:
-            T = _get_normal_oversampling_points(self.T, self.dT, self.oversampling, self.oversampling_seed)
-            L = _get_normal_oversampling_points(self.L, self.dL, self.oversampling, self.oversampling_seed)
+            rng = np.random.RandomState(seed=self.oversampling_seed)
+            T = _get_normal_oversampling_points(self.T, self.dT, self.oversampling, rng)
+            L = _get_normal_oversampling_points(self.L, self.dL, self.oversampling, rng)
             T_parts.append(T)
             L_parts.append(L)
         for region in self.oversampled_regions:
@@ -1862,16 +1863,15 @@ def _interpolate_Q(Q, dQ, n):
 def _get_oversampled_values(V_in, dV_in, oversampling, oversampling_seed, oversampled_regions: List[OversampledRegion]):
     V_parts = [V_in]
     if oversampling is not None:
-        V_parts.append(_get_normal_oversampling_points(V_in, dV_in, oversampling, oversampling_seed))
+        rng = numpy.random.RandomState(seed=oversampling_seed)
+        V_parts.append(_get_normal_oversampling_points(V_in, dV_in, oversampling, rng))
     for region in oversampled_regions:
         V_parts.append(np.linspace(region.Q_start, region.Q_end, region.n))
     V = np.hstack(V_parts)
     return np.unique(V)  # remove duplicates and sort
 
 
-def _get_normal_oversampling_points(V_in, dV_in, n, seed):
-    rng = numpy.random.RandomState(seed=seed)
-
+def _get_normal_oversampling_points(V_in, dV_in, n, rng):
     # TODO: allow extending the range of V_in to support resolution
     # prepend values out to -3*dV_in and +3*dV_in
     #
@@ -1880,7 +1880,7 @@ def _get_normal_oversampling_points(V_in, dV_in, n, seed):
     # V = np.concatenate((prepend_points * dV_in[0] + V_in[0], V_in, append_points * dV_in[-1] + V_in[-1]))
     # dV = np.concatenate((np.full(3, dV_in[0]), dV_in, np.full(3, dV_in[-1])))
 
-    extra = rng.normal(V_in, dV_in, size=(n - 1, len(V_in)))
+    extra = rng.normal(V_in[:, None], dV_in[:, None], size=(len(V_in), n - 1))
     return extra.flatten()
 
 
