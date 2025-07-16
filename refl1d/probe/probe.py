@@ -1038,16 +1038,11 @@ class Probe(BaseProbe):
         self.oversampling_seed = seed
         self._apply_oversamplings()
 
-    def _get_normal_oversampling_points(self, n, seed):
-        rng = numpy.random.RandomState(seed=seed)
-        T = rng.normal(self.T[:, None], self.dT[:, None], size=(len(self.dT), n - 1))
-        L = rng.normal(self.L[:, None], self.dL[:, None], size=(len(self.dL), n - 1))
-        return T.flatten(), L.flatten()
-
     def _apply_oversamplings(self):
         T_parts, L_parts = [self.T], [self.L]
         if self.oversampling is not None:
-            T, L = self._get_normal_oversampling_points(self.oversampling, self.oversampling_seed)
+            T = _get_normal_oversampling_points(self.T, self.dT, self.oversampling, self.oversampling_seed)
+            L = _get_normal_oversampling_points(self.L, self.dL, self.oversampling, self.oversampling_seed)
             T_parts.append(T)
             L_parts.append(L)
         for region in self.oversampled_regions:
@@ -1445,18 +1440,9 @@ class QProbe(BaseProbe):
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
     def _apply_oversamplings(self):
-        calc_Q_parts = [self.Q]
-        if self.oversampling is not None:
-            calc_Q_parts.append(self._get_normal_oversampling_points(self.oversampling, self.oversampling_seed))
-        for region in self.oversampled_regions:
-            calc_Q_parts.append(np.linspace(region.Q_start, region.Q_end, region.n))
-        calc_Q = np.hstack(calc_Q_parts)
-        self._calc_Q = np.sort(calc_Q)
-
-    def _get_normal_oversampling_points(self, n, seed):
-        rng = numpy.random.RandomState(seed=seed)
-        extra = rng.normal(self.Q, self.dQ, size=(n - 1, len(self.Q)))
-        return extra.flatten()
+        self._calc_Q = _get_oversampled_values(
+            self.Q, self.dQ, self.oversampling, self.oversampling_seed, self.oversampled_regions
+        )
 
     def oversample(self, n=20, seed=1):
         self.oversampling = n
@@ -1522,6 +1508,7 @@ class PolarizedNeutronProbe:
     Aguide: Parameter
     oversampling: Optional[int] = None
     oversampling_seed: int = 1
+    oversampled_regions: List[OversampledRegion] = field(default_factory=list)
 
     view = None  # Default to Probe.view when None
     show_resolution = None  # Default to Probe.show_resolution when None
@@ -1541,6 +1528,7 @@ class PolarizedNeutronProbe:
         H=0,
         oversampling=None,
         oversampling_seed=1,
+        oversampled_regions: Optional[List[OversampledRegion]] = None,
     ):
         if any([mm, mp, pm, pp]):
             if xs is not None:
@@ -1557,7 +1545,6 @@ class PolarizedNeutronProbe:
         if name is None and self.mm is not None:
             name = self.mm.name
         self.name = name
-        self._calculate_union()
         # self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
         #     = measurement_union(xs)
         # self._set_calc(self.T, self.L)
@@ -1565,8 +1552,10 @@ class PolarizedNeutronProbe:
         spec = " " + name if name else ""
         self.H = Parameter.default(H, name="H" + spec)
         self.Aguide = Parameter.default(Aguide, name="Aguide" + spec, limits=[-360, 360])
-        if oversampling is not None:
-            self.oversample(oversampling, oversampling_seed)
+        self.oversampling = oversampling
+        self.oversampling_seed = oversampling_seed
+        self.oversampled_regions = oversampled_regions if oversampled_regions is not None else []
+        self._calculate_union()
 
     @property
     def xs(self) -> List[Union[NeutronProbe, None]]:
@@ -1640,16 +1629,16 @@ class PolarizedNeutronProbe:
 
     def _calculate_union(self):
         theta_offsets = [x.theta_offset.value for x in self.xs if x is not None]
-        union_cache_key = (theta_offsets, self.oversampling, self.oversampling_seed)
+        union_cache_key = (theta_offsets, self.oversampling, self.oversampling_seed, tuple(self.oversampled_regions))
         if self._union_cache_key == union_cache_key:
             # no change in offsets or oversampling: use cached values of measurement union
             return
         else:
             Q_union, dQ_union = Qmeasurement_union(self.xs)
-            if self.oversampling is not None:
-                rng = numpy.random.RandomState(seed=self.oversampling_seed)
-                extra = rng.normal(Q_union, dQ_union, size=(self.oversampling - 1, len(Q_union)))
-                calc_Q = np.hstack((Q_union, extra.flatten()))
+            if self.oversampling is not None or self.oversampled_regions:
+                calc_Q = _get_oversampled_values(
+                    Q_union, dQ_union, self.oversampling, self.oversampling_seed, self.oversampled_regions
+                )
             else:
                 calc_Q = Q_union
 
@@ -1868,6 +1857,27 @@ def _interpolate_Q(Q, dQ, n):
         Q = np.interp(subindex, index, Q)
         dQ = np.interp(subindex, index, dQ)
     return Q, dQ
+
+
+def _get_oversampled_values(Q_in, dQ_in, oversampling, oversampling_seed, oversampled_regions: List[OversampledRegion]):
+    calc_Q_parts = [Q_in]
+    if oversampling is not None:
+        calc_Q_parts.append(_get_normal_oversampling_points(Q_in, dQ_in, oversampling, oversampling_seed))
+    for region in oversampled_regions:
+        calc_Q_parts.append(np.linspace(region.Q_start, region.Q_end, region.n))
+    calc_Q = np.hstack(calc_Q_parts)
+    return np.unique(calc_Q)  # remove duplicates and sort
+
+
+def _get_normal_oversampling_points(Q, dQ, n, seed):
+    rng = numpy.random.RandomState(seed=seed)
+    # prepend values out to -3*dQ and +3*dQ
+    append_points = np.arange(1.0, 4.0)
+    prepend_points = -append_points[::-1]
+    Q = np.concatenate((prepend_points * dQ[0] + Q[0], Q, append_points * dQ[-1] + Q[-1]))
+    dQ = np.concatenate((np.full(3, dQ[0]), dQ, np.full(3, dQ[-1])))
+    extra = rng.normal(Q, dQ, size=(n - 1, len(Q)))
+    return extra.flatten()
 
 
 @dataclass(init=False)
