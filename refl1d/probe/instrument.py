@@ -35,14 +35,14 @@ measured data set or generate a probe for simulation:
     >>> from numpy import linspace, loadtxt
     >>> datafile = sample_data('10ndt001.refl')
     >>> Q, R, dR = loadtxt(datafile).T
-    >>> probe = geometry.probe(Q=Q, data=(R, dR))
+    >>> probe = geometry.probe(Q=Q, R=R, dR=dR)
     >>> simulation = geometry.probe(T=linspace(0, 5, 51))
 
 All instrument parameters can be specified when constructing the probe,
 replacing the defaults that are associated with the instrument.  For
 example, to include sample broadening effects in the resolution:
 
-    >>> probe2 = geometry.probe(Q=Q, data=(R, dR), sample_broadening=0.1,
+    >>> probe2 = geometry.probe(Q=Q, R=R, dR=dR, sample_broadening=0.1,
     ...    name="probe2")
 
 For magnetic systems a polarized beam probe is needed::
@@ -78,7 +78,7 @@ For example, the above SP:2 instrument could be defined as follows:
     ...    d_s2 = 230.0          # mm
     ...    def load(self, filename, **kw):
     ...        Q, R, dR = loadtxt(datafile).T
-    ...        probe = self.probe(Q=Q, data=(R, dR), **kw)
+    ...        probe = self.probe(Q=Q, R=R, dR=dR, **kw)
     ...        return probe
 
 This definition can then be used to define the measurement geometry.  We
@@ -776,7 +776,7 @@ class GenericMonochromatic(Monochromatic):
             Q, dQ, R, dR, L = data
         if "Q" not in kw: kw["Q"] = Q
         T, dT, L, dL = self.resolution(**kw)
-        kw.update(dict(T=T, dT=dT, L=L, dL=dL, data=(R, dR),
+        kw.update(dict(T=T, dT=dT, L=L, dL=dL, R=R, dR=dR,
                        radiation=self.radiation))
         return make_probe(**kw)
 
@@ -797,6 +797,6 @@ class GenericPulsed(Pulsed):
         dL = binwidths(L)
         T = kw.pop('T', QL2T(Q, L))
         T, dT, L, dL = self.resolution(L=L, dL=dL, T=T, **kw)
-        return make_probe(T=T, dT=dT, L=L, dL=dL, data=(R, dR),
+        return make_probe(T=T, dT=dT, L=L, dL=dL, R=R, dR=dR,
                           radiation=self.radiation, **kw)
 '''
