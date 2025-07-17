@@ -147,10 +147,7 @@ class FunctionalProfile(Layer):
         raise AttributeError(f"{type(self)!r} has no attribute {key!r}")
 
     def _eval(self, Pz):
-        args = {
-            k: asarray([float(vi) for vi in v]) if isinstance(v, list) else float(v)
-            for k, v in self.pars.items()
-            }
+        args = {k: asarray([float(vi) for vi in v]) if isinstance(v, list) else float(v) for k, v in self.pars.items()}
         # if self.profile is None:
         #     return np.full_like(Pz, np.nan, dtype=complex)
         return asarray(self.profile(asarray(Pz), **args))
@@ -285,10 +282,7 @@ class FunctionalMagnetism(BaseMagnetism):
         raise AttributeError(f"{type(self)!r} has no attribute {key!r}")
 
     def _eval(self, Pz):
-        args = {
-            k: asarray([float(vi) for vi in v]) if isinstance(v, list) else float(v)
-            for k, v in self.pars.items()
-            }
+        args = {k: asarray([float(vi) for vi in v]) if isinstance(v, list) else float(v) for k, v in self.pars.items()}
         Pz = asarray(Pz)
         # if self.profile is None:
         #     return np.full_like(Pz, np.nan), np.full_like(Pz, np.nan)
@@ -335,9 +329,9 @@ def _parse_parameters(name, profile, kw):
     # not supplied by the caller.
     defaults = argspec.defaults or ()
     if len(defaults) > len(vars):
-        defaults = defaults[-len(vars) : ]
+        defaults = defaults[-len(vars) :]
     if len(defaults) < len(vars):
-        defaults = [None]*(len(vars)-len(defaults)) + list(defaults)
+        defaults = [None] * (len(vars) - len(defaults)) + list(defaults)
     for k, v in zip(vars, defaults):
         kw.setdefault(k, v)
 
