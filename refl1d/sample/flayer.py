@@ -34,20 +34,27 @@ class FunctionalProfile(Layer):
 
     The profile function takes a depth vector *z* returns a density vector
     *rho*. For absorbing profiles, return complex vector *rho + irho*1j*.
+    *z* is guaranteed to be increasing, with step size 2*z[0]. The
+    remaining profile arguments are added as fittable parameters to
+    the layer.
 
-    Fitting parameters are the available named arguments to the function.
-    The first argument is a depth vector, which is the array of depths at
-    which the profile is to be evaluated.  It is guaranteed to be increasing,
-    with step size 2*z[0].
+    The profile parameters can be initialized using key=value arguments to
+    to FunctionalProfile. If the value is a sequence, then a list of parameters
+    will be created, one for each sequence element. These will be converted
+    to numpy vectors prior to calling the profile function. If no value is
+    supplied, the parameter will use the default name=value from the profile
+    function.
 
-    Initial values for the function parameters can be given using name=value.
-    These values can be scalars or fitting parameters.  The function will
-    be called with the current parameter values as arguments.  The layer
-    thickness can be computed as :func:`layer_thickness`.
+    The attributes *start* and *end* are the SLD at at the start and end of
+    the profile respectively. The *rho* and *irho* attributes for these SLDs
+    can be used in parameter expressions for other layers. Note that each
+    one is implemented as a separate call to the profile function, using z=0
+    for start and z=thickness for end.
 
-    There is no mechanism for querying the larger profile to determine the
-    value of the *rho* at the layer boundaries.  If needed, this information
-    will have to be communicated through shared parameters.  For example::
+    Within the profile function there is no mechanism for querying the larger
+    profile to determine the value of the *rho* at the layer boundaries.  If
+    needed, this information will have to be communicated through shared
+    parameters.  For example::
 
         L1 = SLD('L1', rho=2.07)
         L3 = SLD('L3', rho=4)
@@ -140,7 +147,7 @@ class FunctionalProfile(Layer):
         raise AttributeError(f"{type(self)!r} has no attribute {key!r}")
 
     def _eval(self, Pz):
-        args = {k: float(v) for k, v in self.pars.items()}
+        args = {k: asarray([float(vi) for vi in v]) if isinstance(v, list) else float(v) for k, v in self.pars.items()}
         # if self.profile is None:
         #     return np.full_like(Pz, np.nan, dtype=complex)
         return asarray(self.profile(asarray(Pz), **args))
@@ -275,7 +282,7 @@ class FunctionalMagnetism(BaseMagnetism):
         raise AttributeError(f"{type(self)!r} has no attribute {key!r}")
 
     def _eval(self, Pz):
-        args = {k: float(v) for k, v in self.pars.items()}
+        args = {k: asarray([float(vi) for vi in v]) if isinstance(v, list) else float(v) for k, v in self.pars.items()}
         Pz = asarray(Pz)
         # if self.profile is None:
         #     return np.full_like(Pz, np.nan), np.full_like(Pz, np.nan)
@@ -305,17 +312,30 @@ class FunctionalMagnetism(BaseMagnetism):
 
 def _parse_parameters(name, profile, kw):
     # Query profile function for the list of arguments
-    vars = inspect.getfullargspec(profile)[0]
+    argspec = inspect.getfullargspec(profile)
+    vars = argspec.args
+
     # print "vars", vars
     if inspect.ismethod(profile):
         vars = vars[1:]  # Chop self
     vars = vars[1:]  # Chop z
+
     # print vars
     unused = [k for k in kw.keys() if k not in vars]
     if len(unused) > 0:
         raise TypeError("Profile got unexpected keyword argument '%s'" % unused[0])
-    for k in vars:
-        kw.setdefault(k, 0)
+
+    # Plug the default value from the function definition into any parameters
+    # not supplied by the caller.
+    defaults = argspec.defaults or ()
+    if len(defaults) > len(vars):
+        defaults = defaults[-len(vars) :]
+    if len(defaults) < len(vars):
+        defaults = [None] * (len(vars) - len(defaults)) + list(defaults)
+    for k, v in zip(vars, defaults):
+        kw.setdefault(k, v)
+
+    # Create the parameter dictionary.
     pars = {}
     for k, v in kw.items():
         try:
