@@ -2,6 +2,7 @@
 ***Warning***: importing cli modifies the behaviour of bumps
 """
 
+import sys
 import asyncio
 from pathlib import Path
 
@@ -21,7 +22,17 @@ CLIENT_PATH = Path(__file__).parent.parent / "client"
 
 
 def main():
-    cli.plugin_main(name="refl1d", client=CLIENT_PATH, version=__version__)
+    if len(sys.argv) > 1 and sys.argv[1] == "align":
+        # Command line tool to regenerate the profile uncertainty plot:
+        #
+        #   refl1d align <model>.py <store> [<layer>.<offset>] [0|1|2|n]
+        #
+        from refl1d.uncertainty import run_errors
+
+        del sys.argv[1]
+        run_errors()
+    else:
+        cli.plugin_main(name="refl1d", client=CLIENT_PATH, version=__version__)
 
 
 def start_refl1d_server():
