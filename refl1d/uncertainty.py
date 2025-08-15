@@ -64,7 +64,7 @@ def run_errors(**kw):
 
         *nshown*, *random* :
 
-            see :func:`bumps.errplot.calc_errors_from_state`
+            see :func:`bumps.errplot.error_points_from_state`
 
         *contours*, *npoints*, *plots*, *save* :
 
