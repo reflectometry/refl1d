@@ -281,7 +281,7 @@ def show_errors(errors, contours=CONTOURS, npoints=200, align="auto", plots=1, s
         _save_profile_data(errors, contours=contours, npoints=npoints, align=align, save=save)
         _save_residual_data(errors, contours=contours, save=save)
     if plots == 0:
-        ... # Contours saved but no plotting
+        ...  # Contours saved but no plotting
     elif plots == 1:  # Subplots for profiles/residuals
         if fig is None:
             fig = plt.gcf()
