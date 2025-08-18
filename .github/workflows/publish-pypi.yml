@@ -56,7 +56,7 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Retrieve all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
 
       - name: show files
         run: |
@@ -79,7 +79,7 @@ jobs:
       id-token: write
     steps:
       - name: Retrieve all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
       - name: publish distribution to Test PyPI
         env:
           TEST_PYPI_API_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
