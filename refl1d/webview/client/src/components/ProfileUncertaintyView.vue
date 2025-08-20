@@ -123,6 +123,7 @@ async function fetch_and_draw(new_timestamp?: string) {
 async function disableAutoAlign() {
   if (autoAlign.value) {
     autoAlign.value = false;
+    await fetch_and_draw();
   }
 }
 </script>
