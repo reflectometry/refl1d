@@ -2,7 +2,7 @@ import asyncio
 from copy import deepcopy
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 # import bumps.webview.server.api as bumps_api
 import numpy as np
@@ -151,6 +151,7 @@ def _get_profile_uncertainty_plot(
     npoints: int = 5000,
     random: bool = True,
     residuals: bool = False,
+    latest_timestamp: Optional[str] = None,
 ):
     if state.problem is None or state.problem.fitProblem is None:
         return None
@@ -186,6 +187,7 @@ async def get_profile_uncertainty_plot(
     npoints: int = 5000,
     random: bool = True,
     residuals: bool = False,
+    latest_timestamp: Optional[str] = None,
 ):
     result = await asyncio.to_thread(
         _get_profile_uncertainty_plot,
@@ -195,6 +197,7 @@ async def get_profile_uncertainty_plot(
         npoints=npoints,
         random=random,
         residuals=residuals,
+        latest_timestamp=latest_timestamp,
     )
     return result
 

@@ -5,7 +5,6 @@ import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket";
 import { configWithSVGDownloadButton } from "bumps-webview-client/src/plotly_extras";
 import { setupDrawLoop } from "bumps-webview-client/src/setupDrawLoop";
 import * as Plotly from "plotly.js/lib/core";
-import { cache } from "../plot_cache";
 
 const title = "Profile Uncertainty";
 const plotDiv = ref<HTMLDivElement>();
@@ -19,6 +18,7 @@ const random = ref(true);
 // don't use the one from setupDrawLoop because we are calling
 // fetch_and_draw locally:
 const drawing_busy = ref(false);
+const latest_timestamp = ref<string | undefined>();
 
 const props = defineProps<{
   socket: AsyncSocket;
@@ -82,31 +82,29 @@ async function download_csv() {
   a.click();
 }
 
-async function fetch_and_draw(latest_timestamp?: string) {
-  let { timestamp, plotData } = (cache[title] as { timestamp: string; plotData: PlotData }) ?? {};
+async function fetch_and_draw(new_timestamp?: string) {
+  if (new_timestamp) {
+    latest_timestamp.value = new_timestamp;
+  }
   const loading_delay = 50; // ms
   // if the plot loads faster than the timeout, don't show spinner
   const show_loader = setTimeout(() => {
     drawing_busy.value = true;
   }, loading_delay);
-  if (latest_timestamp === undefined || timestamp !== latest_timestamp) {
-    console.log("fetching new profile uncertainty plot", timestamp, latest_timestamp);
-    const payload = (await props.socket.asyncEmit(
-      "get_profile_uncertainty_plot",
-      autoAlign.value,
-      align.value,
-      nshown.value,
-      npoints.value,
-      random.value,
-      show_residuals.value
-    )) as Payload;
-    plotData = { ...payload.fig };
-    contour_data.value = payload.contour_data;
-    contours.value = payload.contours;
-    if (latest_timestamp !== undefined) {
-      cache[title] = { timestamp: latest_timestamp, plotData };
-    }
-  }
+  console.log("fetching new profile uncertainty plot", latest_timestamp);
+  const payload = (await props.socket.asyncEmit(
+    "get_profile_uncertainty_plot",
+    autoAlign.value,
+    align.value,
+    nshown.value,
+    npoints.value,
+    random.value,
+    show_residuals.value,
+    latest_timestamp.value
+  )) as Payload;
+  const plotData = { ...payload.fig };
+  contour_data.value = payload.contour_data;
+  contours.value = payload.contours;
 
   const { data, layout } = plotData;
   const config: Partial<Plotly.Config> = {
