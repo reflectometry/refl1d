@@ -974,9 +974,11 @@ class Probe(BaseProbe):
             self.dR = self.dR[idx]
         self._set_calc(self.T, self.L)
 
-    def critical_edge(self, substrate=None, surface=None, n=51, delta=0.25):
+    def critical_edge(self, substrate=None, surface=None, n=51, delta=0.25, clear_existing=False):
         r"""
         Oversample points near the critical edge.
+
+        To replace an existing critical edge region, set *clear_existing* to True.
 
         The critical edge is defined by the difference in scattering
         potential for the *substrate* and *surface* materials, or the
@@ -1003,9 +1005,14 @@ class Probe(BaseProbe):
             \theta_i &= \sin^{-1}(Q_i \lambda_i / 4 \pi)
 
         """
+        if not clear_existing and self.oversampled_regions:
+            raise ValueError(
+                "Cannot add critical edge region when oversampled regions already exist. "
+                "Set clear_existing=True to clear existing regions."
+            )
         Q_c = self.Q_c(substrate, surface)
         region = OversampledRegion(Q_start=Q_c * (1 - delta), Q_end=Q_c * (1 + delta), n=n)
-        self.oversampled_regions.append(region)
+        self.oversampled_regions = [region]  # Clear existing regions if clear_existing is True
         self._apply_oversamplings()
 
     def oversample(self, n=20, seed=1):
