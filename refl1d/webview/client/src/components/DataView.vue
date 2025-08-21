@@ -75,8 +75,8 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           if (xs.R !== undefined) {
             const R =
               lin_y ?
-                xs.R.map((t) => t + background_offset + local_offset)
-              : xs.R.map((t) => (t + background_offset) * local_offset);
+                xs.R.map((t) => t - background_offset + local_offset)
+              : xs.R.map((t) => (t - background_offset) * local_offset);
             const data_trace: Trace = {
               x: xs.Q,
               y: R,
@@ -135,7 +135,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
             line: { width: 2, color },
           });
           if (xs.R !== undefined) {
-            const R = xs.R.map((y, i) => (y + background_offset) / (xs.fresnel[i] - background_offset));
+            const R = xs.R.map((y, i) => (y - background_offset) / (xs.fresnel[i] - background_offset));
             const offset_R = lin_y ? R.map((t) => t + local_offset) : R.map((t) => t * local_offset);
             const data_trace: Trace = {
               x: xs.Q,
@@ -200,7 +200,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
             line: { width: 2, color },
           });
           if (xs.R !== undefined) {
-            const R = xs.R.map((r, i) => (r + background_offset) / Q4[i]);
+            const R = xs.R.map((r, i) => (r - background_offset) / Q4[i]);
             const offset_R = R.map((t) => t * local_offset);
             const data_trace: Trace = {
               x: xs.Q,
