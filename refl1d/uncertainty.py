@@ -47,7 +47,7 @@ def run_errors(**kw):
 
     Type the following to regenerate the profile contour plots plots:
 
-        $ refl1d align <model>.py <store> [<align>] [0|1|2|n]
+        $ refl1d align <model>.py <store> [<layer>.<offset>] [0|1|2|n]
 
     Align is either auto for the current behaviour, or it is an interface
     number. You can align on the center of a layer by adding 0.5 to the
@@ -64,7 +64,7 @@ def run_errors(**kw):
 
         *nshown*, *random* :
 
-            see :func:`bumps.errplot.calc_errors_from_state`
+            see :func:`bumps.errplot.error_points_from_state`
 
         *contours*, *npoints*, *plots*, *save* :
 
@@ -110,6 +110,7 @@ def run_errors(**kw):
         import matplotlib.pyplot as plt
 
         plt.show()
+
     sys.exit(0)  # Force refl1d to terminate.
 
 
@@ -276,9 +277,11 @@ def show_errors(errors, contours=CONTOURS, npoints=200, align="auto", plots=1, s
     if fig is not None and plots != 1:
         raise ValueError("can only pass in a figure object if exactly 1 plot is requested")
 
-    if plots == 0:  # Don't create plots, just save the data
+    if save:  # Don't create plots, just save the data
         _save_profile_data(errors, contours=contours, npoints=npoints, align=align, save=save)
         _save_residual_data(errors, contours=contours, save=save)
+    if plots == 0:
+        ...  # Contours saved but no plotting
     elif plots == 1:  # Subplots for profiles/residuals
         if fig is None:
             fig = plt.gcf()
