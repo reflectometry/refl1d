@@ -67,16 +67,17 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           const legendgroup = `group_${plot_index}`;
           const local_offset = lin_y ? plot_index * offset : Math.pow(10, plot_index * offset);
           const background_offset = subtract_background.value ? xs.background : 0.0;
+          const intensity_scale = subtract_background.value ? xs.intensity : 1.0;
           const y =
             lin_y ?
-              xs.theory.map((t) => t - background_offset + local_offset)
-            : xs.theory.map((t) => (t - background_offset) * local_offset);
+              xs.theory.map((t) => (t - background_offset) / intensity_scale + local_offset)
+            : xs.theory.map((t) => ((t - background_offset) / intensity_scale) * local_offset);
           theory_traces.push({ x: xs.Q, y: y, mode: "lines", name: label + " theory", line: { width: 2, color } });
           if (xs.R !== undefined) {
             const R =
               lin_y ?
-                xs.R.map((t) => t - background_offset + local_offset)
-              : xs.R.map((t) => (t - background_offset) * local_offset);
+                xs.R.map((t) => (t - background_offset) / intensity_scale + local_offset)
+              : xs.R.map((t) => ((t - background_offset) / intensity_scale) * local_offset);
             const data_trace: Trace = {
               x: xs.Q,
               y: R,
@@ -90,7 +91,8 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
               data_trace.error_x = { type: "data", array: xs.dQ, visible: true };
             }
             if (xs.dR !== undefined) {
-              const dR = lin_y ? xs.dR : xs.dR.map((t) => t * local_offset);
+              const dR =
+                lin_y ? xs.dR.map((t) => t / intensity_scale) : xs.dR.map((t) => (t / intensity_scale) * local_offset);
               data_trace.error_y = { type: "data", array: dR, visible: true };
               if (calculate_residuals) {
                 const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR![i]);
@@ -187,7 +189,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           const legendgroup = `group_${plot_index}`;
           const local_offset = Math.pow(10, plot_index * offset);
           const { intensity, background } = xs;
-          const intensity_scale = intensity ?? 1.0;
+          const intensity_scale = subtract_background.value ? intensity : 1.0;
           const background_offset = subtract_background.value ? background : 0.0;
           const Q4 = xs.Q.map((qq) => 1e-8 * Math.pow(qq, -4) * intensity_scale);
           const theory = xs.theory.map((t, i) => (t - background_offset) / Q4[i]);
@@ -247,6 +249,13 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
       for (let model of model_data) {
         const pp = model.find((xs) => xs.polarization === "++");
         const mm = model.find((xs) => xs.polarization === "--");
+        const { intensity: pp_intensity, background: pp_background } = pp as ModelData;
+        const { intensity: mm_intensity, background: mm_background } = mm as ModelData;
+        const pp_intensity_scale = subtract_background.value ? pp_intensity : 1.0;
+        const mm_intensity_scale = subtract_background.value ? mm_intensity : 1.0;
+
+        const pp_background_offset = subtract_background.value ? pp_background : 0.0;
+        const mm_background_offset = subtract_background.value ? mm_background : 0.0;
         const local_offset = plot_index * offset;
 
         if (pp !== undefined && mm !== undefined) {
@@ -256,16 +265,19 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
 
           const Tm = interp(pp.Q, mm.Q, mm.theory);
           const TSA = Tm.map((m, i) => {
-            const p = pp.theory[i];
-            return (p - m) / (p + m) + local_offset;
+            const p_corr = (pp.theory[i] - pp_background_offset) / pp_intensity_scale;
+            const m_corr = (mm.theory[i] - mm_background_offset) / mm_intensity_scale;
+            return (p_corr - m_corr) / (p_corr + m_corr) + local_offset;
           });
 
           theory_traces.push({ x: pp.Q, y: TSA, mode: "lines", name: label + " theory", line: { width: 2, color } });
 
           if (pp.R !== undefined && mm.R !== undefined) {
             const Rm = interp(pp.Q, mm.Q, mm.R);
-            const SA = Rm.map((m, i) => {
-              const p = pp.R![i];
+            const p_corr = pp.R.map((r) => (r - pp_background_offset) / pp_intensity_scale);
+            const m_corr = Rm.map((r) => (r - mm_background_offset) / mm_intensity_scale);
+            const SA = m_corr.map((m, i) => {
+              const p = p_corr[i];
               return (p - m) / (p + m);
             });
             const SA_offset = SA.map((v) => v + local_offset);
@@ -285,10 +297,11 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
             if (pp.dR !== undefined && mm.dR !== undefined) {
               const dRm = interp(pp.Q, mm.Q, mm.dR);
               const dSA = dRm.map((dm, i) => {
-                // const dp = pp.dR[i];
-                const p = pp.R![i];
-                const m = Rm[i];
-                return Math.sqrt((4 * ((p * dm) ** 2 + (m * dm) ** 2)) / (p + m) ** 4);
+                const dp_corr = pp.dR![i] / pp_intensity_scale;
+                const dm_corr = dm / mm_intensity_scale;
+                const p = p_corr[i];
+                const m = m_corr[i];
+                return Math.sqrt((4 * ((p * dm_corr) ** 2 + (m * dp_corr) ** 2)) / (p + m) ** 4);
               });
               data_trace.error_y = { type: "data", array: dSA, visible: true };
               if (calculate_residuals) {
