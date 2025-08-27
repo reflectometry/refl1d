@@ -16,7 +16,7 @@ const chisq_str = ref("");
 const log_y = ref(true);
 const log_x = ref(false);
 const show_resolution = ref(true);
-const subtract_background = ref(true);
+const apply_corrections = ref(true);
 const show_residuals = ref(false);
 
 const props = defineProps<{
@@ -66,8 +66,8 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           const color = COLORS[plot_index % COLORS.length];
           const legendgroup = `group_${plot_index}`;
           const local_offset = lin_y ? plot_index * offset : Math.pow(10, plot_index * offset);
-          const background_offset = subtract_background.value ? xs.background : 0.0;
-          const intensity_scale = subtract_background.value ? xs.intensity : 1.0;
+          const background_offset = apply_corrections.value ? xs.background : 0.0;
+          const intensity_scale = apply_corrections.value ? xs.intensity : 1.0;
           const y =
             lin_y ?
               xs.theory.map((t) => (t - background_offset) / intensity_scale + local_offset)
@@ -125,7 +125,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           const color = COLORS[plot_index % COLORS.length];
           const legendgroup = `group_${plot_index}`;
           const lin_y = !log_y.value;
-          const background_offset = subtract_background.value ? xs.background : 0.0;
+          const background_offset = apply_corrections.value ? xs.background : 0.0;
           const local_offset = lin_y ? plot_index * offset : Math.pow(10, plot_index * offset);
           const theory = xs.theory.map((y, i) => (y - background_offset) / (xs.fresnel[i] - background_offset));
           const offset_theory = lin_y ? theory.map((t) => t + local_offset) : theory.map((t) => t * local_offset);
@@ -189,8 +189,8 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           const legendgroup = `group_${plot_index}`;
           const local_offset = Math.pow(10, plot_index * offset);
           const { intensity, background } = xs;
-          const intensity_scale = subtract_background.value ? intensity : 1.0;
-          const background_offset = subtract_background.value ? background : 0.0;
+          const intensity_scale = apply_corrections.value ? intensity : 1.0;
+          const background_offset = apply_corrections.value ? background : 0.0;
           const Q4 = xs.Q.map((qq) => 1e-8 * Math.pow(qq, -4) * intensity_scale);
           const theory = xs.theory.map((t, i) => (t - background_offset) / Q4[i]);
           const offset_theory = theory.map((t) => t * local_offset);
@@ -251,11 +251,11 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
         const mm = model.find((xs) => xs.polarization === "--");
         const { intensity: pp_intensity, background: pp_background } = pp as ModelData;
         const { intensity: mm_intensity, background: mm_background } = mm as ModelData;
-        const pp_intensity_scale = subtract_background.value ? pp_intensity : 1.0;
-        const mm_intensity_scale = subtract_background.value ? mm_intensity : 1.0;
+        const pp_intensity_scale = apply_corrections.value ? pp_intensity : 1.0;
+        const mm_intensity_scale = apply_corrections.value ? mm_intensity : 1.0;
 
-        const pp_background_offset = subtract_background.value ? pp_background : 0.0;
-        const mm_background_offset = subtract_background.value ? mm_background : 0.0;
+        const pp_background_offset = apply_corrections.value ? pp_background : 0.0;
+        const mm_background_offset = apply_corrections.value ? mm_background : 0.0;
         const local_offset = plot_index * offset;
 
         if (pp !== undefined && mm !== undefined) {
@@ -528,13 +528,18 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
       </div>
       <div class="col-auto form-check my-2">
         <input
-          id="subtract_background"
-          v-model="subtract_background"
+          id="apply_corrections"
+          v-model="apply_corrections"
           type="checkbox"
           class="form-check-input"
           @change="draw_plot"
         />
-        <label for="subtract_background" class="form-check-label">R<sub>bkg</sub></label>
+        <label
+          for="apply_corrections"
+          class="form-check-label"
+          title="Apply background and intensity corrections to data instead of theory"
+          >R<sub>corr</sub></label
+        >
       </div>
     </div>
     <div class="row px-2 align-items-center">
