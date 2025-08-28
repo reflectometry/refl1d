@@ -29,6 +29,7 @@ from .probe.data_loaders.stajconvert import load_mlayer, save_mlayer
 from .probe.instrument import Monochromatic, Pulsed
 from .probe import (
     NeutronProbe,
+    OversampledRegion,
     PolarizedNeutronProbe,
     PolarizedQProbe,
     Probe,
