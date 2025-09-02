@@ -116,7 +116,8 @@ class BaseMagnetism:
         """
         if self.name == "LAYER":
             for p in flatten(self.parameters()):
-                p.name = p.name.replace("LAYER", name)
+                if "LAYER" in p.name:
+                    p.name = p.name.replace("LAYER", name)
             self.name = name
 
 
