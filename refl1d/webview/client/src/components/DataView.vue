@@ -339,6 +339,13 @@ async function fetch_and_draw() {
     plotdata: ModelData[][];
     chisq: string;
   };
+  if (payload?.plotdata == null) {
+    // clear plot and return if no plot data is available
+    if (plot_div.value) {
+      await Plotly.purge(plot_div.value);
+    }
+    return;
+  }
   plot_data.value = payload.plotdata;
   chisq_str.value = payload.chisq;
   await draw_plot();
