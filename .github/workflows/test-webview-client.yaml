@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: bumps/bumps
-          sparse-checkout: 'bumps/webview/client'
+          sparse-checkout: "bumps/webview/client"
           path: bumps
 
       - name: Set up Bun
@@ -34,7 +34,6 @@ jobs:
           bun link
           cd ../../../../refl1d/webview/client
           bun link bumps-webview-client
-
 
       - name: Run test
         run: bun run build
@@ -66,7 +65,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: bumps/bumps
-          sparse-checkout: 'bumps/webview/client'
+          sparse-checkout: "bumps/webview/client"
           path: bumps
 
       - name: Set up Bun
