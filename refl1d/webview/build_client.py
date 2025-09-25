@@ -4,6 +4,7 @@ import shutil
 
 from bumps import webview as bumps_webview
 
+
 def build_client(
     install_dependencies=False,
     sourcemap=False,
