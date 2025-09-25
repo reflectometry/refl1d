@@ -353,6 +353,12 @@ def _data_as_probe(
     data_T = fetch_key("angle", T)
     data_L = fetch_key("wavelength", L)
 
+    # Apply index to T and L if they are arrays
+    if data_T is not None and hasattr(data_T, "__getitem__"):
+        data_T = data_T[index]
+    if data_L is not None and hasattr(data_L, "__getitem__"):
+        data_L = data_L[index]
+
     # If one of T and L is missing, reconstruct it from Q
     if data_T is None and data_L is not None:
         data_T = QL2T(data_Q, data_L)
@@ -373,6 +379,12 @@ def _data_as_probe(
         if data_L is None:
             raise ValueError("Need L to determine dL for %r" % name)
         data_dL = data_dL(data_L)
+
+    # Apply index to dT and dL if they are arrays
+    if data_dT is not None and hasattr(data_dT, "__getitem__"):
+        data_dT = data_dT[index]
+    if data_dL is not None and hasattr(data_dL, "__getitem__"):
+        data_dL = data_dL[index]
 
     # Convert input dT,dL to FWHM if necessary.
     if data_dL is not None and not FWHM:
