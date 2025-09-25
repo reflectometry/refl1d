@@ -18,13 +18,16 @@
     "test:types": "vue-tsc --noEmit --skipLibCheck -p tsconfig.json --composite false"
   },
   "dependencies": {
-    "bootstrap": "^5.3.3",
-    "comlink": "^4.4.2",
+    "@msgpack/msgpack": "^3.1.2",
+    "bootstrap": "^5.3.7",
+    "date-fns": "^4.1.0",
     "json-difference": "^1.16.1",
-    "plotly.js": "^2.35.3",
+    "mpld3": "^0.5.10",
+    "plotly.js": "^3.0.1",
     "socket.io-client": "^4.8.1",
-    "uuid": "^11.0.5",
-    "vue": "^3.5.13"
+    "uuid": "^11.1.0",
+    "vue": "^3.5.17",
+    "vue-json-pretty": "^2.5.0"
   },
   "devDependencies": {
     "@tsconfig/node22": "22.0.0",
