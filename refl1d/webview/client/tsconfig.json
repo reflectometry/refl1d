@@ -1,5 +1,5 @@
 {
-  "extends": ["@tsconfig/node24/tsconfig.json", "@vue/tsconfig/tsconfig.json"],
+  "extends": ["@tsconfig/node-lts/tsconfig.json", "@vue/tsconfig/tsconfig.json"],
   "include": ["src/**/*"],
   "exclude": [
     "node_modules/",
