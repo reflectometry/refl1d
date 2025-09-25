@@ -10,6 +10,11 @@ def build_client(
     cleanup=False,
 ):
     """Build the refl1d webview client."""
+
+    def cleanup_bumps_packages():
+        for bumps_package_file in client_dir.glob("bumps-webview-client*.tgz"):
+            bumps_package_file.unlink()
+
     if shutil.which("bun"):
         tool = "bun"
     elif shutil.which("npm"):
@@ -17,38 +22,32 @@ def build_client(
     else:
         raise RuntimeError("npm/bun is not installed. Please install either npm or bun.")
 
-    client_folder = (Path(__file__).parent / "client").resolve()
-    node_modules = client_folder / "node_modules"
-    os.chdir(client_folder)
+    client_dir = (Path(__file__).parent / "client").resolve()
+    node_modules = client_dir / "node_modules"
+    os.chdir(client_dir)
 
     if install_dependencies or not node_modules.exists():
         print("Installing node modules...")
         os.system(f"{tool} install")
 
-    # install to the local version of bumps:
-    def cleanup_bumps_packages():
-        for bumps_package_file in client_folder.glob("bumps-webview-client*.tgz"):
-            bumps_package_file.unlink()
-
     if reinstall_bumps:
         import bumps.webview
 
         print("Reinstalling bumps...")
-
         cleanup_bumps_packages()
 
-        bumps_path = Path(bumps.webview.__file__).parent / "client"
-        os.system(f"{tool} install --prefix {bumps_path}")
-        shutil.copytree(bumps_path / "src", node_modules / "bumps-webview-client" / "src", dirs_exist_ok=True)
-        for file in bumps_path.iterdir():
-            if file.is_file():
-                shutil.copy(file, node_modules / "bumps-webview-client" / file.name)
+        # pack it up for install...
+        bumps_dir = Path(bumps.webview.__file__).parent / "client"
+        if tool == "bun":
+            os.chdir(bumps_dir)
+            os.system(f"bun pm pack {bumps_dir} --destination {client_dir}")
+            os.chdir(client_dir)
+        else:
+            os.system(f"npm pack {bumps_dir} --quiet")
 
-        # # pack it up for install...
-        # os.system(f"npm pack {bumps_path} --quiet")
-        # # get the package filename:
-        # bumps_package_file = next(client_folder.glob("bumps-webview-client*.tgz"))
-        # os.system(f"npm install {bumps_package_file} --no-save")
+        # install packed library
+        bumps_package_file = next(client_dir.glob("bumps-webview-client*.tgz"))
+        os.system(f"{tool} install {bumps_package_file} --no-save")
 
     # build the client
     print("Building the webview client...")
