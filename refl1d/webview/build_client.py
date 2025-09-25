@@ -2,11 +2,11 @@ import os
 from pathlib import Path
 import shutil
 
+from bumps import webview as bumps_webview
 
 def build_client(
     install_dependencies=False,
     sourcemap=False,
-    reinstall_bumps=False,
     cleanup=False,
 ):
     """Build the refl1d webview client."""
@@ -30,24 +30,21 @@ def build_client(
         print("Installing node modules...")
         os.system(f"{tool} install")
 
-    if reinstall_bumps:
-        import bumps.webview
+    print("Reinstalling bumps...")
+    cleanup_bumps_packages()
 
-        print("Reinstalling bumps...")
-        cleanup_bumps_packages()
+    # pack it up for install...
+    bumps_dir = Path(bumps_webview.__file__).parent / "client"
+    if tool == "bun":
+        os.chdir(bumps_dir)
+        os.system(f"bun pm pack {bumps_dir} --destination {client_dir}")
+        os.chdir(client_dir)
+    else:
+        os.system(f"npm pack {bumps_dir} --quiet")
 
-        # pack it up for install...
-        bumps_dir = Path(bumps.webview.__file__).parent / "client"
-        if tool == "bun":
-            os.chdir(bumps_dir)
-            os.system(f"bun pm pack {bumps_dir} --destination {client_dir}")
-            os.chdir(client_dir)
-        else:
-            os.system(f"npm pack {bumps_dir} --quiet")
-
-        # install packed library
-        bumps_package_file = next(client_dir.glob("bumps-webview-client*.tgz"))
-        os.system(f"{tool} install {bumps_package_file} --no-save")
+    # install packed library
+    bumps_package_file = next(client_dir.glob("bumps-webview-client*.tgz"))
+    os.system(f"{tool} install {bumps_package_file} --no-save")
 
     # build the client
     print("Building the webview client...")
@@ -60,7 +57,7 @@ def build_client(
         print("Cleaning up...")
         shutil.rmtree(node_modules)
         cleanup_bumps_packages()
-        print("node_modules folders removed.")
+        print("Removed node_modules folders.")
 
     print("Done.")
 
@@ -71,12 +68,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Build the webview client.")
     parser.add_argument("--install-dependencies", action="store_true", help="Install dependencies.")
     parser.add_argument("--sourcemap", action="store_true", help="Generate sourcemaps.")
-    parser.add_argument("--reinstall-bumps", action="store_true", help="Re-install the local version of bumps.")
     parser.add_argument("--cleanup", action="store_true", help="Remove the node_modules directory.")
     args = parser.parse_args()
     build_client(
         install_dependencies=args.install_dependencies,
         sourcemap=args.sourcemap,
-        reinstall_bumps=args.reinstall_bumps,
         cleanup=args.cleanup,
     )
