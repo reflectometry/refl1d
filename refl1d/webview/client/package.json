@@ -30,7 +30,8 @@
     "vue-json-pretty": "^2.5.0"
   },
   "devDependencies": {
-    "@tsconfig/node22": "22.0.0",
+    "@tsconfig/node24": "^24.0.1",
+    "@types/node": "^24.5.2",
     "@types/plotly.js": "^2.35.1",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-vue": "^5.2.1",
