@@ -6,6 +6,7 @@ import sys
 import asyncio
 from pathlib import Path
 
+from bumps import __version__ as bumps_version
 from bumps.webview.server import cli
 
 from . import api  # uses side-effects to register refl1d functions
@@ -32,6 +33,12 @@ def main():
         del sys.argv[1]
         run_errors()
     else:
+        print(f"""
+{"=" * 50}
+Refl1d version:\t{__version__}
+with Bumps:\t{bumps_version}
+""")
+
         cli.plugin_main(name="refl1d", client=CLIENT_PATH, version=__version__)
 
 
