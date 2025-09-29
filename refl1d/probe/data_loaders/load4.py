@@ -87,25 +87,45 @@ def parse_orso(filename):
                 (i for i, c in enumerate(columns) if getattr(c, "physical_quantity", None) == orso_name),
                 None,
             )
+            resolution_index = None
             if column_index is not None:
                 # NOTE: this is based on column being second index (under debate in ORSO)
                 header_out[refl1d_name] = data[:, column_index]
                 cname = columns[column_index].name
-                resolution_index = next(
-                    (i for i, c in enumerate(columns) if getattr(c, "error_of", None) == cname),
-                    None,
+                resolution_index, resolution_column = next(
+                    ((i, c) for i, c in enumerate(columns) if getattr(c, "error_of", None) == cname),
+                    (None, None),
                 )
                 if resolution_index is not None:
                     header_out[refl1d_resolution_name] = data[:, resolution_index]
-            else:
-                v = getattr(settings, orso_name, None)
-                if hasattr(v, "magnitude"):
-                    header_out[refl1d_name] = v.magnitude
-                if hasattr(v, "error"):
-                    header_out[refl1d_resolution_name] = v.error.error_value
+                    if resolution_column.value_is == "FWHM":
+                        header_out[refl1d_resolution_name] = FWHM2sigma(header_out[refl1d_resolution_name])
+
+            # Fall back to instrument_settings if no column found
+            v = getattr(settings, orso_name, None)
+            if hasattr(v, "magnitude") and column_index is None:
+                # only set if not already set from column
+                header_out[refl1d_name] = v.magnitude
+            if hasattr(v, "error") and resolution_index is None:
+                header_out[refl1d_resolution_name] = v.error.error_value
+                if v.error.value_is == "FWHM":
+                    header_out[refl1d_resolution_name] = float(FWHM2sigma(header_out[refl1d_resolution_name]))
 
         get_key("incident_angle", "angle", "angular_resolution")
         get_key("wavelength", "wavelength", "wavelength_resolution")
+
+        # convert error columns from FWHM to sigma if they are present
+        # and need conversion
+        if len(columns) >= 3:
+            # third column is always uncertainty on reflectivity
+            dR_col = columns[2]
+            if dR_col.value_is == "FWHM":
+                data[:, 2] = FWHM2sigma(data[:, 2])
+        if len(columns) >= 4:
+            # fourth column is always uncertainty on Q
+            dQ_col = columns[3]
+            if dQ_col.value_is == "FWHM":
+                data[:, 3] = FWHM2sigma(data[:, 3])
 
         entries_out.append((header_out, np.array(data).T))
     return entries_out
@@ -232,6 +252,8 @@ def load4(
 
     if filename.endswith(".ort") or filename.endswith(".orb"):
         entries = parse_orso(filename)
+        FWHM = False  # ORSO files specify sigma vs. FWHM and will be converted to sigma
+        # TODO: ORSO also specifies resolution type (normal vs. uniform vs. triangular etc.)
     else:
         json_header_encoding = True  # for .refl files, header values are json-encoded
         entries = parse_multi(filename, keysep=keysep, sep=sep, comment=comment)
@@ -345,19 +367,13 @@ def _data_as_probe(
             return override
         elif key in header:
             v = decoder(header[key])
-            return np.array(v)[index] if isinstance(v, list) else v
+            return np.array(v)[index] if hasattr(v, "__getitem__") else v
         else:
             return None
 
     # Get T and L, either from user input or from datafile.
     data_T = fetch_key("angle", T)
     data_L = fetch_key("wavelength", L)
-
-    # Apply index to T and L if they are arrays
-    if data_T is not None and hasattr(data_T, "__getitem__"):
-        data_T = data_T[index]
-    if data_L is not None and hasattr(data_L, "__getitem__"):
-        data_L = data_L[index]
 
     # If one of T and L is missing, reconstruct it from Q
     if data_T is None and data_L is not None:
@@ -379,12 +395,6 @@ def _data_as_probe(
         if data_L is None:
             raise ValueError("Need L to determine dL for %r" % name)
         data_dL = data_dL(data_L)
-
-    # Apply index to dT and dL if they are arrays
-    if data_dT is not None and hasattr(data_dT, "__getitem__"):
-        data_dT = data_dT[index]
-    if data_dL is not None and hasattr(data_dL, "__getitem__"):
-        data_dL = data_dL[index]
 
     # Convert input dT,dL to FWHM if necessary.
     if data_dL is not None and not FWHM:
