@@ -12,13 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Checkout bumps source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: bumps/bumps
-          sparse-checkout: 'bumps/webview/client'
+          sparse-checkout: "bumps/webview/client"
           path: bumps
 
       - name: Set up Bun
@@ -35,7 +35,6 @@ jobs:
           cd ../../../../refl1d/webview/client
           bun link bumps-webview-client
 
-
       - name: Run test
         run: bun run build
 
@@ -44,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
@@ -60,13 +59,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Checkout bumps source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: bumps/bumps
-          sparse-checkout: 'bumps/webview/client'
+          sparse-checkout: "bumps/webview/client"
           path: bumps
 
       - name: Set up Bun
@@ -91,7 +90,7 @@ jobs:
 #     runs-on: ubuntu-latest
 #     steps:
 #       - name: Checkout code
-#         uses: actions/checkout@v4
+#         uses: actions/checkout@v5
 
 #       - name: Set up Bun
 #         uses: oven-sh/setup-bun@v2
@@ -102,12 +101,12 @@ jobs:
 #       - name: Run test
 #         run: bun run test:unit
 
-  # run end to end integration tests
+# run end to end integration tests
 #   test-e2e:
 #     runs-on: ubuntu-latest
 #     steps:
 #       - name: Checkout code
-#         uses: actions/checkout@v4
+#         uses: actions/checkout@v5
 
 #       - name: Set up Bun
 #         uses: oven-sh/setup-bun@v2

@@ -37,7 +37,7 @@ See :ref:`data-guide` for details.
 
 import os
 import warnings
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, List, Literal, Optional, Sequence, Tuple, Union
 
 from bumps.parameter import Parameter, to_dict
@@ -87,6 +87,13 @@ def make_probe(**kw):
         return NeutronProbe(**kw)
     else:
         return XrayProbe(**kw)
+
+
+@dataclass
+class OversampledRegion:
+    Q_start: float
+    Q_end: float
+    n: int  # number of points
 
 
 class BaseProbe:
@@ -696,6 +703,7 @@ class Probe(BaseProbe):
     resolution: Literal["normal", "uniform"] = "uniform"
     oversampling: Optional[int] = None
     oversampling_seed: int = 1
+    oversampled_regions: List[OversampledRegion] = field(default_factory=list)
     radiation: Literal["neutron", "xray"] = "xray"
 
     polarized = False
@@ -736,6 +744,7 @@ class Probe(BaseProbe):
         resolution: Literal["normal", "uniform"] = "normal",
         oversampling=None,
         oversampling_seed=1,
+        oversampled_regions: Optional[List[OversampledRegion]] = None,
     ):
         if T is None or L is None:
             raise TypeError("T and L required")
@@ -763,8 +772,10 @@ class Probe(BaseProbe):
         self.name = name
         self.filename = filename
         self.resolution = resolution
-        if oversampling is not None:
-            self.oversample(oversampling, oversampling_seed)
+        self.oversampling = oversampling
+        self.oversampling_seed = oversampling_seed
+        self.oversampled_regions = oversampled_regions if oversampled_regions is not None else []
+        self._apply_oversamplings()
 
     def _set_TLR(self, T, dT, L, dL, R, dR, dQ):
         # if L is None:
@@ -963,9 +974,11 @@ class Probe(BaseProbe):
             self.dR = self.dR[idx]
         self._set_calc(self.T, self.L)
 
-    def critical_edge(self, substrate=None, surface=None, n=51, delta=0.25):
+    def critical_edge(self, substrate=None, surface=None, n=51, delta=0.25, clear_existing=False):
         r"""
         Oversample points near the critical edge.
+
+        To replace an existing critical edge region, set *clear_existing* to True.
 
         The critical edge is defined by the difference in scattering
         potential for the *substrate* and *surface* materials, or the
@@ -975,9 +988,6 @@ class Probe(BaseProbe):
 
         *delta* is the relative uncertainty in the material density,
         which defines the range of values which are calculated.
-
-        Note: :meth:`critical_edge` will remove the extra Q calculation
-        points introduced by :meth:`oversample`.
 
         The $n$ points $Q_i$ are evenly distributed around the critical
         edge in $Q_c \pm \delta Q_c$ by varying angle $\theta$ for a
@@ -994,19 +1004,16 @@ class Probe(BaseProbe):
             \lambda_i &= < \lambda > \\
             \theta_i &= \sin^{-1}(Q_i \lambda_i / 4 \pi)
 
-        If $Q_c$ is imaginary, then $-|Q_c|$ is used instead, so this
-        routine can be used for reflectivity signals which scan from
-        back reflectivity to front reflectivity.  For completeness,
-        the angle $\theta = 0$ is added as well.
         """
+        if not clear_existing and self.oversampled_regions:
+            raise ValueError(
+                "Cannot add critical edge region when oversampled regions already exist. "
+                "Set clear_existing=True to clear existing regions."
+            )
         Q_c = self.Q_c(substrate, surface)
-        Q = np.linspace(Q_c * (1 - delta), Q_c * (1 + delta), n)
-        L = np.average(self.L)
-        T = QL2T(Q=Q, L=L)
-        T = np.hstack((self.T, T, 0))
-        L = np.hstack((self.L, [L] * (n + 1)))
-        # print Q
-        self._set_calc(T, L)
+        region = OversampledRegion(Q_start=Q_c * (1 - delta), Q_end=Q_c * (1 + delta), n=n)
+        self.oversampled_regions = [region]  # Clear existing regions if clear_existing is True
+        self._apply_oversamplings()
 
     def oversample(self, n=20, seed=1):
         """
@@ -1032,19 +1039,28 @@ class Probe(BaseProbe):
         bias from uniform Q steps.  Depending on the problem, a value of
         *n* between 20 and 100 should lead to stable values for the convolved
         reflectivity.
-
-        Note: :meth:`oversample` will remove the extra Q calculation
-        points introduced by :meth:`critical_edge`.
         """
 
-        rng = numpy.random.RandomState(seed=seed)
-        T = rng.normal(self.T[:, None], self.dT[:, None], size=(len(self.dT), n - 1))
-        L = rng.normal(self.L[:, None], self.dL[:, None], size=(len(self.dL), n - 1))
-        T = np.hstack((self.T, T.flatten()))
-        L = np.hstack((self.L, L.flatten()))
-        self._set_calc(T, L)
         self.oversampling = n
         self.oversampling_seed = seed
+        self._apply_oversamplings()
+
+    def _apply_oversamplings(self):
+        T_parts, L_parts = [self.T], [self.L]
+        if self.oversampling is not None:
+            rng = np.random.RandomState(seed=self.oversampling_seed)
+            T = _get_normal_oversampling_points(self.T, self.dT, self.oversampling, rng)
+            L = _get_normal_oversampling_points(self.L, self.dL, self.oversampling, rng)
+            T_parts.append(T)
+            L_parts.append(L)
+        for region in self.oversampled_regions:
+            Q = np.linspace(region.Q_start, region.Q_end, region.n)
+            avg_L = np.average(self.L)
+            T_parts.append(QL2T(Q=Q, L=avg_L))
+            L_parts.append(np.ones_like(Q) * avg_L)
+        T = np.hstack(T_parts)
+        L = np.hstack(L_parts)
+        self._set_calc(T, L)
 
 
 class XrayProbe(Probe):
@@ -1360,6 +1376,9 @@ class QProbe(BaseProbe):
     R: "NDArray"
     dR: "NDArray"
     resolution: Literal["normal", "uniform"]
+    oversampling: Optional[int]
+    oversampling_seed: int
+    oversampled_regions: List[OversampledRegion]
 
     polarized = False
 
@@ -1377,6 +1396,9 @@ class QProbe(BaseProbe):
         back_absorption=1,
         back_reflectivity=False,
         resolution: Literal["normal", "uniform"] = "normal",
+        oversampling: Optional[int] = None,
+        oversampling_seed: int = 1,
+        oversampled_regions: Optional[List[OversampledRegion]] = None,
     ):
         if not name and filename:
             name = os.path.splitext(os.path.basename(filename))[0]
@@ -1402,6 +1424,10 @@ class QProbe(BaseProbe):
         self.name = name
         self.filename = filename
         self.resolution = resolution
+        self.oversampling = oversampling
+        self.oversampling_seed = oversampling_seed
+        self.oversampled_regions = oversampled_regions if oversampled_regions is not None else []
+        self._apply_oversamplings()
 
     @property
     def calc_Q(self):
@@ -1421,19 +1447,34 @@ class QProbe(BaseProbe):
 
     scattering_factors.__doc__ = Probe.scattering_factors.__doc__
 
+    def _apply_oversamplings(self):
+        self._calc_Q = _get_oversampled_values(
+            self.Q, self.dQ, self.oversampling, self.oversampling_seed, self.oversampled_regions
+        )
+
     def oversample(self, n=20, seed=1):
-        rng = numpy.random.RandomState(seed=seed)
-        extra = rng.normal(self.Q, self.dQ, size=(n - 1, len(self.Q)))
-        calc_Q = np.hstack((self.Q, extra.flatten()))
-        self._calc_Q = np.unique(calc_Q)
+        self.oversampling = n
+        self.oversampling_seed = seed
+        self._apply_oversamplings()
 
     oversample.__doc__ = Probe.oversample.__doc__
 
-    def critical_edge(self, substrate=None, surface=None, n=51, delta=0.25):
+    def critical_edge(self, substrate=None, surface=None, n=51, delta=0.25, clear_existing=False):
+        """
+        Create a new OversampledRegion around the critical edge.
+        If any existing OversampledRegion exists and clear_existing is True,
+        self.oversampled_regions will be cleared before adding the new region,
+        else an error will be thrown.
+        """
+        if not clear_existing and self.oversampled_regions:
+            raise ValueError(
+                "Cannot add critical edge region when oversampled regions already exist. "
+                "Set clear_existing=True to clear existing regions."
+            )
         Q_c = self.Q_c(substrate, surface)
-        extra = np.linspace(Q_c * (1 - delta), Q_c * (1 + delta), n)
-        calc_Q = np.hstack((self.Q, extra, 0))
-        self._calc_Q = np.unique(calc_Q)
+        region = OversampledRegion(Q_start=Q_c * (1 - delta), Q_end=Q_c * (1 + delta), n=n)
+        self.oversampled_regions = [region]  # Clear existing regions if clear_existing is True
+        self._apply_oversamplings()
 
     critical_edge.__doc__ = Probe.critical_edge.__doc__
 
@@ -1496,6 +1537,7 @@ class PolarizedNeutronProbe:
     Aguide: Parameter
     oversampling: Optional[int] = None
     oversampling_seed: int = 1
+    oversampled_regions: List[OversampledRegion] = field(default_factory=list)
 
     view = None  # Default to Probe.view when None
     show_resolution = None  # Default to Probe.show_resolution when None
@@ -1515,6 +1557,7 @@ class PolarizedNeutronProbe:
         H=0,
         oversampling=None,
         oversampling_seed=1,
+        oversampled_regions: Optional[List[OversampledRegion]] = None,
     ):
         if any([mm, mp, pm, pp]):
             if xs is not None:
@@ -1531,7 +1574,6 @@ class PolarizedNeutronProbe:
         if name is None and self.mm is not None:
             name = self.mm.name
         self.name = name
-        self._calculate_union()
         # self.T, self.dT, self.L, self.dL, self.Q, self.dQ \
         #     = measurement_union(xs)
         # self._set_calc(self.T, self.L)
@@ -1539,8 +1581,10 @@ class PolarizedNeutronProbe:
         spec = " " + name if name else ""
         self.H = Parameter.default(H, name="H" + spec)
         self.Aguide = Parameter.default(Aguide, name="Aguide" + spec, limits=[-360, 360])
-        if oversampling is not None:
-            self.oversample(oversampling, oversampling_seed)
+        self.oversampling = oversampling
+        self.oversampling_seed = oversampling_seed
+        self.oversampled_regions = oversampled_regions if oversampled_regions is not None else []
+        self._calculate_union()
 
     @property
     def xs(self) -> List[Union[NeutronProbe, None]]:
@@ -1614,16 +1658,16 @@ class PolarizedNeutronProbe:
 
     def _calculate_union(self):
         theta_offsets = [x.theta_offset.value for x in self.xs if x is not None]
-        union_cache_key = (theta_offsets, self.oversampling, self.oversampling_seed)
+        union_cache_key = (theta_offsets, self.oversampling, self.oversampling_seed, tuple(self.oversampled_regions))
         if self._union_cache_key == union_cache_key:
             # no change in offsets or oversampling: use cached values of measurement union
             return
         else:
             Q_union, dQ_union, dR_union = Qmeasurement_union(self.xs)
-            if self.oversampling is not None:
-                rng = numpy.random.RandomState(seed=self.oversampling_seed)
-                extra = rng.normal(Q_union, dQ_union, size=(self.oversampling - 1, len(Q_union)))
-                calc_Q = np.hstack((Q_union, extra.flatten()))
+            if self.oversampling is not None or self.oversampled_regions:
+                calc_Q = _get_oversampled_values(
+                    Q_union, dQ_union, self.oversampling, self.oversampling_seed, self.oversampled_regions
+                )
             else:
                 calc_Q = Q_union
 
@@ -1845,6 +1889,30 @@ def _interpolate_Q(Q, dQ, n):
     return Q, dQ
 
 
+def _get_oversampled_values(V_in, dV_in, oversampling, oversampling_seed, oversampled_regions: List[OversampledRegion]):
+    V_parts = [V_in]
+    if oversampling is not None:
+        rng = numpy.random.RandomState(seed=oversampling_seed)
+        V_parts.append(_get_normal_oversampling_points(V_in, dV_in, oversampling, rng))
+    for region in oversampled_regions:
+        V_parts.append(np.linspace(region.Q_start, region.Q_end, region.n))
+    V = np.hstack(V_parts)
+    return np.unique(V)  # remove duplicates and sort
+
+
+def _get_normal_oversampling_points(V_in, dV_in, n, rng):
+    # TODO: allow extending the range of V_in to support resolution
+    # prepend values out to -3*dV_in and +3*dV_in
+    #
+    # append_points = np.arange(1.0, 4.0)
+    # prepend_points = -append_points[::-1]
+    # V = np.concatenate((prepend_points * dV_in[0] + V_in[0], V_in, append_points * dV_in[-1] + V_in[-1]))
+    # dV = np.concatenate((np.full(3, dV_in[0]), dV_in, np.full(3, dV_in[-1])))
+
+    extra = rng.normal(V_in[:, None], dV_in[:, None], size=(len(V_in), n - 1))
+    return extra.flatten()
+
+
 @dataclass(init=False)
 class PolarizedQProbe(PolarizedNeutronProbe):
     polarized = True
@@ -1861,6 +1929,7 @@ class PolarizedQProbe(PolarizedNeutronProbe):
         H=0,
         oversampling: Optional[int] = None,
         oversampling_seed: int = 1,
+        oversampled_regions: Optional[List[OversampledRegion]] = None,
     ):
         if any([mm, mp, pm, pp]):
             if xs is not None:
@@ -1878,10 +1947,11 @@ class PolarizedQProbe(PolarizedNeutronProbe):
         qualifier = " " + self.name if self.name is not None else ""
         self.Aguide = Parameter.default(Aguide, name="Aguide" + qualifier, limits=[-360, 360])
         self.H = Parameter.default(H, name="H" + qualifier)
-        if oversampling is not None:
-            self.oversample(oversampling, oversampling_seed)
-        self.Q, self.dQ, self.dR = Qmeasurement_union(self.xs)
-        self._calc_Q = np.unique(self.Q)
+        self.oversampling = oversampling
+        self.oversampling_seed = oversampling_seed
+        self.oversampled_regions = oversampled_regions if oversampled_regions is not None else []
+        # this sets self.Q, self.dQ, self._calc_Q:
+        self._calculate_union()
 
     @property
     def calc_Q(self):

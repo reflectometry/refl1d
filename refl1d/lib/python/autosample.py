@@ -38,12 +38,12 @@ def get_refl_args(experiment):
 
 
 def oversample_inplace(kz, dR, tol, w, rho, irho, sigma, max_sampling_iterations=100):
-    new_kz = kz.copy()
+    new_kz = kz
     rho_index = np.zeros(kz.shape, int32)
     r = np.empty_like(kz, dtype=complex128)
     reflectivity_amplitude(w, sigma, rho, irho, -new_kz, rho_index, r)
     R = (r * np.conj(r)).real
-    mapped_dR = dR.copy()
+    mapped_dR = dR
     out_of_tolerance = 1
     iterations = 0
     total_inserts = 0

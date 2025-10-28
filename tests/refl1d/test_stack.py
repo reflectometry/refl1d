@@ -2,6 +2,8 @@ import pickle
 from copy import deepcopy
 
 import dill
+import cloudpickle
+
 from bumps.serialize import deserialize, serialize
 
 from refl1d.names import SLD, Slab
@@ -32,6 +34,11 @@ def test_stack_serialization():
     assert dill_t.value == 160
     dill_s[0].thickness.value += 40
     assert dill_t.value == 200
+
+    cloudpickle_t, cloudpickle_s = cloudpickle.loads(cloudpickle.dumps([thickness_plus, sample]))
+    assert cloudpickle_t.value == 160
+    cloudpickle_s[0].thickness.value += 40
+    assert cloudpickle_t.value == 200
 
     assert thickness_plus.value == 160
     sample[0].thickness.value += 40
@@ -65,6 +72,11 @@ def test_repeat_serialization():
     assert dill_t.value == 340
     dill_s.stack[0].thickness.value += 40
     assert dill_t.value == 500
+
+    cloudpickle_t, cloudpickle_s = cloudpickle.loads(cloudpickle.dumps([thickness_plus, sample]))
+    assert cloudpickle_t.value == 340
+    cloudpickle_s.stack[0].thickness.value += 40
+    assert cloudpickle_t.value == 500
 
     assert thickness_plus.value == 340
     sample.stack[0].thickness.value += 40

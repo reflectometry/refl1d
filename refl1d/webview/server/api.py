@@ -2,7 +2,7 @@ import asyncio
 from copy import deepcopy
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 # import bumps.webview.server.api as bumps_api
 import numpy as np
@@ -86,7 +86,9 @@ async def get_profile_plots(model_specs: List[ModelSpec]):
 
 def get_single_probe_data(theory, probe, substrate=None, surface=None, polarization=""):
     fresnel_calculator = probe.fresnel(substrate, surface)
-    Q, FQ = probe.apply_beam(probe.calc_Q, fresnel_calculator(probe._calc_Q))
+    direction_multiplier = -1.0 if probe.back_reflectivity else 1.0
+    calc_Q = probe.calc_Q
+    Q, FQ = probe.apply_beam(calc_Q, fresnel_calculator(calc_Q * direction_multiplier))
     Q, R = theory
     output: Dict[str, Union[str, np.ndarray]]
     assert isinstance(FQ, np.ndarray)
@@ -149,6 +151,7 @@ def _get_profile_uncertainty_plot(
     npoints: int = 5000,
     random: bool = True,
     residuals: bool = False,
+    latest_timestamp: Optional[str] = None,
 ):
     if state.problem is None or state.problem.fitProblem is None:
         return None
@@ -184,6 +187,7 @@ async def get_profile_uncertainty_plot(
     npoints: int = 5000,
     random: bool = True,
     residuals: bool = False,
+    latest_timestamp: Optional[str] = None,
 ):
     result = await asyncio.to_thread(
         _get_profile_uncertainty_plot,
@@ -193,6 +197,7 @@ async def get_profile_uncertainty_plot(
         npoints=npoints,
         random=random,
         residuals=residuals,
+        latest_timestamp=latest_timestamp,
     )
     return result
 

@@ -15,18 +15,18 @@ jobs:
     steps:
 
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         path: refl1d
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: '3.11'
 
-    - uses: actions/setup-node@v4
+    - uses: actions/setup-node@v5
       with:
-        node-version: 20
+        node-version: 24
 
     - name: build refl1d webview
       run: |
@@ -53,16 +53,16 @@ jobs:
     needs: build-wheel
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Retrieve all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
 
       - name: show files
         run: |
-          ls -R artifacts
-          echo "PY3_WHL=$(ls artifacts/dist/*.whl)" >> $GITHUB_ENV
-          echo "PY3_WHL=$(ls artifacts/dist/*.whl)"
+          ls -R dist
+          echo "PY3_WHL=$(ls dist/*.whl)" >> $GITHUB_ENV
+          echo "PY3_WHL=$(ls dist/*.whl)"
 
       - name: Update current release
         if: startsWith(github.ref, 'refs/tags')
@@ -79,7 +79,7 @@ jobs:
       id-token: write
     steps:
       - name: Retrieve all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
       - name: publish distribution to Test PyPI
         env:
           TEST_PYPI_API_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
@@ -89,10 +89,10 @@ jobs:
           skip-existing: true
           password: ${{ secrets.TEST_PYPI_API_TOKEN }}
           repository-url: https://test.pypi.org/legacy/
-          packages-dir: artifacts/dist/
+          packages-dir: dist/
 
       - name: Publish distribution to PyPI
         if: startsWith(github.ref, 'refs/tags')
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: artifacts/dist/
+          packages-dir: dist/

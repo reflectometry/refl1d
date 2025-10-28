@@ -121,7 +121,7 @@ def get_optimal_single_autosampling(model, tolerance=0.05, min_autosampling=0.00
     while max_diff > tolerance and autosampling_tol > min_autosampling:
         autosampling_tol *= 0.5
         if verbose:
-            print("trying autosampling_tol = {:d}".format(autosampling_tol), end="\r")
+            print("trying autosampling_tol = {:f}".format(autosampling_tol), end="\r")
         model._cache = {}
         QR = model.reflectivity(autosample=True, tolerance=autosampling_tol)
         # QR is a tuple of (calc_Q, cacl_R) or a list of such tuples
