@@ -3,14 +3,18 @@ from collections import namedtuple
 
 # third-party imports
 import numpy as np
-from orsopy.fileio.orso import load_orso, save_nexus
+from orsopy.fileio.orso import load_orso, save_nexus, Orso, OrsoDataset, Column, ErrorColumn
+from orsopy.fileio.base import ErrorValue, Value
+from orsopy.fileio.data_source import InstrumentSettings
 import pytest
 
 # refl1d imports
-from refl1d.probe.data_loaders.load4 import parse_orso
+from refl1d import probe
+from refl1d.probe.data_loaders.load4 import parse_orso, load4, sigma2FWHM, FWHM2sigma
 
 
 OrsoFiles = namedtuple("OrsoFiles", ["ort", "orb"])
+ArrayTOrsoFiles = namedtuple("ArrayTOrsoFiles", ["scalar_dT", "array_dT"])
 
 
 @pytest.fixture
@@ -98,6 +102,67 @@ def orsofiles(tmp_path):
     yield OrsoFiles(ort=ort_file_path, orb=orb_file_path)
 
 
+@pytest.fixture
+def theta_column_orso_files(tmp_path):
+    # Generate files with different T and dT formats
+
+    orso_obj = Orso.empty()
+    orso_obj.columns = [
+        Column(name="Qz", unit="1/angstrom", physical_quantity="normal momentum transfer"),
+        Column(name="R", unit="", physical_quantity="specular reflectivity"),
+        ErrorColumn(error_of="R", error_type="uncertainty", value_is="sigma"),
+        ErrorColumn(error_of="Qz", error_type="resolution", value_is="sigma"),
+        Column(name="theta", unit="degrees", physical_quantity="incident_angle"),
+        # ErrorColumn(error_of="theta", error_type="resolution", value_is="sigma"),
+    ]
+    # Create test data
+    Qz = np.array([0.01, 0.02, 0.03, 0.04])
+    R = np.array([1.0, 0.8, 0.6, 0.4])
+    dR = np.array([0.1, 0.08, 0.06, 0.04])
+    dQ = np.array([0.001, 0.002, 0.003, 0.004])
+    T = np.array([0.005, 0.010, 0.015, 0.020])  # Array of angles
+    dT_array = np.array([0.001, 0.002, 0.003, 0.004])  # Array of angular resolutions
+    dT_scalar = 0.001  # Scalar angular resolution, FWHM, in degrees
+    dLoL_target = 1e-4  # expected output of dQdT2dLoL
+    T_rad = np.radians(T)
+
+    # Set up dQ for scalar dT
+    dT_scalar_rad = np.radians(dT_scalar)
+    dQoQ_scalar = np.sqrt(dT_scalar_rad**2 / np.tan(T_rad) ** 2 + dLoL_target**2)
+    dQ_scalar_FWHM = dQoQ_scalar * Qz
+    dQ_scalar_sigma = FWHM2sigma(dQ_scalar_FWHM)
+
+    # Set up dQ for array dT
+    dQoQ_array = np.sqrt((np.radians(dT_array) / np.tan(T_rad)) ** 2 + dLoL_target**2)
+    dQ_array_FWHM = dQoQ_array * Qz
+    dQ_array_sigma = FWHM2sigma(dQ_array_FWHM)
+
+    dT_errorvalue = ErrorValue(error_value=dT_scalar, value_is="FWHM", error_type="resolution", distribution="gaussian")
+    dL_errorvalue = ErrorValue(error_value=None, value_is="sigma", error_type="resolution", distribution="gaussian")
+    instrument_settings = InstrumentSettings(
+        incident_angle=Value(magnitude=float(np.mean(T)), error=dT_errorvalue, unit="deg"),
+        wavelength=Value(magnitude=None, error=dL_errorvalue, unit="angstrom"),
+    )
+    orso_obj.data_source.measurement.instrument_settings = instrument_settings
+
+    # create dataset with scalar dT
+    orso_dataset = OrsoDataset(orso_obj, np.vstack((Qz, R, dR, dQ_scalar_sigma, T)).T)
+    scalar_dT_filename = "test_t_array_dt_scalar.ort"
+    orso_dataset.save(tmp_path / scalar_dT_filename)
+
+    # add dT as column
+    orso_obj.columns.append(ErrorColumn(error_of="theta", error_type="resolution", value_is="FWHM"))
+    # create new dataset with dT as array
+    orso_dataset = OrsoDataset(orso_obj, np.vstack((Qz, R, dR, dQ_array_sigma, T, dT_array)).T)
+    array_dT_filename = "test_t_array_dt_array.ort"
+    orso_dataset.save(tmp_path / array_dT_filename)
+
+    yield ArrayTOrsoFiles(
+        scalar_dT=str(tmp_path / scalar_dT_filename),
+        array_dT=str(tmp_path / array_dT_filename),
+    )
+
+
 def test_parse_orso(orsofiles):
     ortset = parse_orso(orsofiles.ort)
 
@@ -129,3 +194,42 @@ def test_parse_orso(orsofiles):
     header_other, data_other = orbset[0]
     assert header == header_other
     assert np.allclose(data, data_other)
+
+
+def test_T_dT_data_range(theta_column_orso_files):
+    """Test that T and dT are correctly read from Orso files with different formats."""
+    # Load the probe from the .ort file with dT as scalar
+    scalar_dT_file = theta_column_orso_files.scalar_dT
+    probe_scalar_dT = load4(scalar_dT_file, radiation="neutron")
+    assert np.allclose(probe_scalar_dT.T, [0.005, 0.010, 0.015, 0.020])
+    assert np.allclose(probe_scalar_dT.dL / probe_scalar_dT.L, 1e-4)  # dL/L should match target
+    assert np.allclose(probe_scalar_dT.dT, [0.001, 0.001, 0.001, 0.001])  # dT should be broadcasted
+    expected_L = 4 * np.pi * np.sin(np.radians(probe_scalar_dT.T)) / probe_scalar_dT.Q
+    assert np.allclose(probe_scalar_dT.L, expected_L)
+    assert len(probe_scalar_dT.dL) == len(probe_scalar_dT.Q)
+
+    # Load with data_range
+    probe_scalar_dT_range = load4(scalar_dT_file, radiation="neutron", data_range=(1, -1))
+    assert np.allclose(probe_scalar_dT_range.T, [0.010, 0.015])
+    assert np.allclose(probe_scalar_dT_range.dT, [0.001, 0.001])  # dT should be broadcasted
+    expected_L_scalar_range = 4 * np.pi * np.sin(np.radians(probe_scalar_dT_range.T)) / probe_scalar_dT_range.Q
+    assert np.allclose(probe_scalar_dT_range.L, expected_L_scalar_range)
+    assert len(probe_scalar_dT_range.dL) == len(probe_scalar_dT_range.Q)
+
+    # Load the probe from the .ort file with dT as array
+    array_dT_file = theta_column_orso_files.array_dT
+    probe_array_dT = load4(array_dT_file, radiation="neutron")
+    assert np.allclose(probe_array_dT.T, [0.005, 0.010, 0.015, 0.020])
+    assert np.allclose(probe_array_dT.dT, [0.001, 0.002, 0.003, 0.004])  # dT should match input array
+    assert np.allclose(probe_array_dT.dL / probe_array_dT.L, 1e-4)  # dL/L should match target
+    expected_L_array = 4 * np.pi * np.sin(np.radians(probe_array_dT.T)) / probe_array_dT.Q
+    assert np.allclose(probe_array_dT.L, expected_L_array)
+    assert len(probe_array_dT.dL) == len(probe_array_dT.Q)
+
+    # Load with data range
+    probe_array_dT_range = load4(array_dT_file, radiation="neutron", data_range=(1, -1))
+    assert np.allclose(probe_array_dT_range.T, [0.010, 0.015])
+    assert np.allclose(probe_array_dT_range.dT, [0.002, 0.003])  # dT should match input array
+    expected_L_array_range = 4 * np.pi * np.sin(np.radians(probe_array_dT_range.T)) / probe_array_dT_range.Q
+    assert np.allclose(probe_array_dT_range.L, expected_L_array_range)  # dL/L should match target
+    assert len(probe_array_dT_range.dL) == len(probe_array_dT_range.Q)
