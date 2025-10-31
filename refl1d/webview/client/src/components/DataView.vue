@@ -66,8 +66,8 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           const color = COLORS[plot_index % COLORS.length];
           const legendgroup = `group_${plot_index}`;
           const local_offset = lin_y ? plot_index * offset : Math.pow(10, plot_index * offset);
-          const background_offset = apply_corrections.value ? xs.background : 0.0;
-          const intensity_scale = apply_corrections.value ? xs.intensity : 1.0;
+          const background_offset = apply_corrections.value ? (xs.background ?? 0.0) : 0.0;
+          const intensity_scale = apply_corrections.value ? (xs.intensity ?? 1.0) : 1.0;
           const y =
             lin_y ?
               xs.theory.map((t) => (t - background_offset) / intensity_scale + local_offset)
