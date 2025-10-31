@@ -1636,7 +1636,7 @@ class PolarizedNeutronProbe:
     oversample.__doc__ = Probe.oversample.__doc__
 
     def _calculate_union(self):
-        theta_offsets = [x.theta_offset.value for x in self.xs if x is not None]
+        theta_offsets = [x.theta_offset.value for x in self.xs if x is not None and hasattr(x, "theta_offset")]
         union_cache_key = (theta_offsets, self.oversampling, self.oversampling_seed, tuple(self.oversampled_regions))
         if self._union_cache_key == union_cache_key:
             # no change in offsets or oversampling: use cached values of measurement union
@@ -1929,6 +1929,7 @@ class PolarizedQProbe(PolarizedNeutronProbe):
         self.oversampling_seed = oversampling_seed
         self.oversampled_regions = oversampled_regions if oversampled_regions is not None else []
         # this sets self.Q, self.dQ, self._calc_Q:
+        self._union_cache_key = None
         self._calculate_union()
 
     @property
