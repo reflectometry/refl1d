@@ -35,10 +35,35 @@ async function loadProbeFromFile() {
   }
 }
 
+async function export_model_script() {
+  if (fileBrowser.value) {
+    const settings = {
+      title: "Export Model Script to File",
+      callback: (pathlist, filename) => {
+        socket.asyncEmit("export_model_script", pathlist, filename);
+      },
+      show_name_input: true,
+      name_input_label: "Filename",
+      require_name: true,
+      show_files: false,
+      chosenfile_in: "model.py",
+      search_patterns: [".py"],
+    };
+    fileBrowser.value.open(settings);
+  }
+}
+
 createApp(App, { panels, socket, singlePanel, name }).mount("#app");
 const modelNotLoaded = computed(() => shared_state.model_file == null);
-file_menu_items.value.push({
-  text: "Load Data into Model",
-  action: loadProbeFromFile,
-  disabled: modelNotLoaded,
-});
+file_menu_items.value.push(
+  {
+    text: "Load Data into Model",
+    action: loadProbeFromFile,
+    disabled: modelNotLoaded,
+  },
+  {
+    text: "Export Model Script",
+    action: export_model_script,
+    disabled: modelNotLoaded,
+  }
+);
