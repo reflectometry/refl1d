@@ -34,6 +34,7 @@ from refl1d.probe.data_loaders.load4 import load4
 from refl1d.probe import PolarizedNeutronProbe, ProbeSet
 from .profile_uncertainty import show_errors
 from .profile_plot import plot_multiple_sld_profiles, ModelSpec
+from .scriptify import serialize_fitproblem as scriptify_fitproblem
 
 # state.problem.serializer = "dataclass"
 
@@ -223,3 +224,13 @@ async def load_probe_from_file(pathlist: List[str], filename: str, model_index: 
         state.shared.updated_model = now_string()
         state.shared.updated_parameters = now_string()
         await add_notification(content=f"from {filename} to model {model_index}", title="Data loaded:", timeout=2000)
+
+
+@register
+async def export_model_script(model_index: int = 0):
+    fitProblem = state.problem.fitProblem if state.problem is not None else None
+    if fitProblem is None:
+        await log("Error: Can't export model if no problem defined")
+    else:
+        s = scriptify_fitproblem(fitProblem)
+        return s
