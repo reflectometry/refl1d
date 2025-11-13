@@ -130,7 +130,9 @@ def serialize_sample(sample: Stack, counter: int = None) -> Tuple[str, str]:
         ]
         s_parameter = "\n".join(s_parameters)
 
-        s_stack = f"{slabs_name} = [\n    {',\n    '.join(s_slabs)},\n]"
+        # Create the separator outside the f-string to avoid backslash in f-string expression (Python 3.10 compatibility)
+        separator = ",\n    "
+        s_stack = f"{slabs_name} = [\n    {separator.join(s_slabs)},\n]"
         return f"{s_stack}\n\n{sample_name} = Stack({slabs_name})\n{s_parameter}", sample_name
     else:
         raise NotImplementedError("Only Stack is supported.")
@@ -352,5 +354,7 @@ def serialize_qprobe(probe: QProbe):
             f"dR={probe.dR.tolist() if probe.dR is not None else 'None'}",
             f'resolution="{probe.resolution}"',
         ]
-        s_probe = f"QProbe(\n    {',\n    '.join(s_probe_args)},\n)"
+        # Create the separator outside the f-string to avoid backslash in f-string expression (Python 3.10 compatibility)
+        separator = ",\n    "
+        s_probe = f"QProbe(\n    {separator.join(s_probe_args)},\n)"
     return s_probe
