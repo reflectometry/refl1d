@@ -149,10 +149,11 @@ def set_fitrange(param: Parameter, path: str):
     Returns:
         str: A string representation of the fit range.
     """
+    range_str = f"{path}.range({param.bounds[0]}, {param.bounds[1]}) # {param.name}"
     if param.fittable and not param.fixed:
-        return f"{path}.range({param.bounds[0]}, {param.bounds[1]})"
+        return range_str
     else:
-        return f"# {path}.range({param.bounds[0]}, {param.bounds[1]})"
+        return f"# {range_str}"
 
 
 def serialize_experiment(experiment: Experiment, counter: int = None) -> Tuple[str, str]:
