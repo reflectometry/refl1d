@@ -227,10 +227,13 @@ async def load_probe_from_file(pathlist: List[str], filename: str, model_index: 
 
 
 @register
-async def export_model_script(model_index: int = 0):
+async def export_model_script(pathlist: List[str], filename: str):
+    path = Path(*pathlist)
     fitProblem = state.problem.fitProblem if state.problem is not None else None
     if fitProblem is None:
         await log("Error: Can't export model if no problem defined")
     else:
         s = scriptify_fitproblem(fitProblem)
-        return s
+        with open(path / filename, "w") as f:
+            f.write(s)
+        await add_notification(content=f"to {filename}", title="Model exported:", timeout=2000)
