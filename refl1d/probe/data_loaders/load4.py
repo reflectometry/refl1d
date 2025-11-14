@@ -439,6 +439,6 @@ def _data_as_probe(
         qprobe_args = probe_args.copy()
         qprobe_args.pop("theta_offset")
         qprobe_args.pop("sample_broadening")
-        probe = QProbe(data_Q, data_dQ, data=(data_R, data_dR), **qprobe_args)
+        probe = QProbe(data_Q, data_dQ, R=data_R, dR=data_dR, **qprobe_args)
 
     return probe
