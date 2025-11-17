@@ -1,7 +1,7 @@
 from dataclasses import asdict
 import json
 from textwrap import dedent
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 from refl1d.experiment import Experiment, FitProblem, MixedExperiment, Parameter, QProbe
 from refl1d.probe.probe import BaseProbe, Probe, PolarizedNeutronProbe, QProbe, ProbeSet
 from refl1d.sample.material import SLD
@@ -184,10 +184,8 @@ def serialize_experiment(experiment: Experiment, counter: int = None) -> Tuple[s
     experiment_name = f"experiment{counter_string}"
     if isinstance(experiment, Experiment):
         s_sample, sample_name = serialize_sample(experiment.sample, counter=counter)
-        probe_name = f"probe{counter_string}"
-        serialized_probe = serialize_probe(experiment.probe)
+        s_probe, probe_name = serialize_probe(experiment.probe, counter=counter)
         # serialized_probe = json.dumps( bumps.serialize.serialize(experiment.probe) )
-        s_probe = f"{probe_name} = {serialized_probe}\n"  # Add specific probe details here"
         s_header = comment_header(f"Experiment{counter_string}")
         s_experiment = f"{experiment_name} = Experiment(sample={sample_name}, probe={probe_name}, dz=1.0, step_interfaces=False, dA=1.0)"
         return f"{s_header}\n\n{s_probe}\n{s_sample}\n{DOCSTRING}\n{s_experiment}", experiment_name
@@ -237,35 +235,60 @@ def comment_header(header: str) -> str:
     return f"{'#' * width}\n# {header} #\n{'#' * width}\n"
 
 
-def serialize_probe(probe: BaseProbe) -> Tuple[str, str]:
+def serialize_probe(probe: BaseProbe, counter: Optional[int] = None) -> Tuple[str, str]:
     """
     Serialize a BaseProbe instance to a string representation.
 
     Parameters:
         probe (BaseProbe): The BaseProbe instance to serialize.
-
+        counter (Optional[int]): An optional counter to differentiate multiple probes.
     Returns:
         str: A string representation of the BaseProbe instance.
     """
-    if hasattr(probe, "filename"):
-        filename = probe.filename
-    elif hasattr(probe, "xs"):
-        for xs in probe.xs:
-            if getattr(xs, "filename", None) is not None:
-                filename = xs.filename
+    suffix = f"_{counter}" if counter is not None else ""
+    probe_name = f"probe{suffix}"
+
+    # Try to get filename from probe or its xs
+    filename = getattr(probe, "filename", None)
+    if filename is None:
+        for xs in getattr(probe, "xs", []):
+            filename = getattr(xs, "filename", None)
+            if filename is not None:
                 break
-    print("filename: ", filename)
+
     if filename is not None:
-        return f'load4("{filename}")'
+        s_probe = f'load4("{filename}")'
 
     if isinstance(probe, ProbeSet):
         raise NotImplementedError("ProbeSet is not supported.")
     elif isinstance(probe, Probe):
-        return serialize_plain_probe(probe)
+        s_probe = serialize_plain_probe(probe)
     elif isinstance(probe, QProbe):
-        return serialize_qprobe(probe)
+        s_probe = serialize_qprobe(probe)
     else:
         raise NotImplementedError("Only Probe is supported.")
+
+    # Initialize bounds for intensity and background if not set
+    if probe.intensity.bounds is None:
+        probe.intensity.bounds = (0.8, 1.2)
+    if probe.background.bounds is None:
+        probe.background.bounds = (0.0, 1e-4)
+
+    s_parameters = [
+        set_fitrange(probe.intensity, f"{probe_name}.intensity"),
+        set_fitrange(probe.background, f"{probe_name}.background"),
+    ]
+
+    theta_offset = getattr(probe, "theta_offset", None)
+    sample_broadening = getattr(probe, "sample_broadening", None)
+    if theta_offset is not None:
+        s_parameters.append(set_fitrange(theta_offset, f"{probe_name}.theta_offset"))
+    if sample_broadening is not None:
+        s_parameters.append(set_fitrange(sample_broadening, f"{probe_name}.sample_broadening"))
+
+    s_parameter = "\n".join(s_parameters)
+
+    return f"{probe_name} = {s_probe}\n\n{s_parameter}\n", probe_name
 
 
 def serialize_plain_probe(probe: Probe):
