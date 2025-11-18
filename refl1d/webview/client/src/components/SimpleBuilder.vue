@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, shallowRef } from "vue";
 import type { ComputedRef } from "vue";
+import { fileBrowser } from "bumps-webview-client/src/app_state";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket";
 import { v4 as uuidv4 } from "uuid";
 import { dqIsFWHM } from "../app_state";
@@ -262,6 +263,24 @@ function setQProbe() {
   sendModel();
 }
 
+async function exportModelScript() {
+  if (fileBrowser.value) {
+    const settings = {
+      title: "Export Model Script to File",
+      callback: (pathlist: string[], filename: string) => {
+        props.socket.asyncEmit("export_model_script", pathlist, filename);
+      },
+      show_name_input: true,
+      name_input_label: "Filename",
+      require_name: true,
+      show_files: false,
+      chosenfile_in: "model.py",
+      search_patterns: [".py"],
+    };
+    fileBrowser.value.open(settings);
+  }
+}
+
 onMounted(() => {
   fetchModel();
 });
@@ -464,6 +483,7 @@ function dragEnd() {
     <div class="row">
       <div class="col">
         <button class="btn btn-primary m-2" @click="newModel">New Model</button>
+        <button v-if="dictionaryLoaded" class="btn btn-secondary m-2" @click="exportModelScript">Export script</button>
       </div>
       <div v-if="dictionaryLoaded" class="col-auto">
         <button class="btn btn-secondary m-2" @click="sendModel()">Apply changes</button>
