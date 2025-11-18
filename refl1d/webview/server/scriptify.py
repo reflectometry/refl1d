@@ -41,8 +41,12 @@ def serialize_material(material: Union[mat.SLD, mat.MaterialTypes, mat.Vacuum]) 
     """
     if isinstance(material, mat.SLD):
         return serialize_sld(material)
+    elif isinstance(material, mat.Vacuum):
+        return "air"
+    elif isinstance(material, mat.BulkDensityMaterial):
+        return serialize_bulk_density_material(material)
     else:
-        raise NotImplementedError("Only SLD materials are supported.")
+        raise NotImplementedError(f"Only SLD, BulkDensityMaterial and Vacuum are supported, not {type(material)}.")
 
 
 def serialize_sld(sld: SLD) -> str:
@@ -56,6 +60,19 @@ def serialize_sld(sld: SLD) -> str:
         str: A string representation of the SLD instance.
     """
     return f'SLD(name="{sld.name}", rho={sld.rho.value}, irho={sld.irho.value})'
+
+
+def serialize_bulk_density_material(material: mat.BulkDensityMaterial) -> str:
+    """
+    Serialize a BulkDensityMaterial instance to a string representation.
+
+    Parameters:
+        material (BulkDensityMaterial): The BulkDensityMaterial instance to serialize.
+
+    Returns:
+        str: A string representation of the BulkDensityMaterial instance.
+    """
+    return f'BulkDensityMaterial(name="{material.name}", formula="{material.formula}", density={material.density.value}, use_incoherent={material.use_incoherent.value}, sld_scale={material.sld_scale.value})'
 
 
 def serialize_magnetism(magnetism: mag.Magnetism) -> str:
@@ -103,8 +120,10 @@ def serialize_sample(sample: Stack, counter: int = None) -> Tuple[str, str]:
             s_slabs.append(s_slab)
             s_thickness.append(set_fitrange(slab.thickness, f"{slab_name}.thickness"))
             s_interface.append(set_fitrange(slab.interface, f"{slab_name}.interface"))
-            s_rho.append(set_fitrange(slab.material.rho, f"{slab_name}.material.rho"))
-            s_irho.append(set_fitrange(slab.material.irho, f"{slab_name}.material.irho"))
+            if hasattr(slab.material, "rho"):
+                s_rho.append(set_fitrange(slab.material.rho, f"{slab_name}.material.rho"))
+            if hasattr(slab.material, "irho"):
+                s_irho.append(set_fitrange(slab.material.irho, f"{slab_name}.material.irho"))
             if slab.magnetism is not None:
                 s_rhoM.append(set_fitrange(slab.magnetism.rhoM, f"{slab_name}.magnetism.rhoM"))
                 s_thetaM.append(set_fitrange(slab.magnetism.thetaM, f"{slab_name}.magnetism.thetaM"))
@@ -149,7 +168,11 @@ def set_fitrange(param: Parameter, path: str):
     Returns:
         str: A string representation of the fit range.
     """
-    range_str = f"{path}.range({param.bounds[0]}, {param.bounds[1]}) # {param.name}"
+
+    bounds = getattr(param, "bounds", None)
+    if bounds is None:
+        bounds = getattr(param, "limits", None)
+    range_str = f"{path}.range({bounds[0]}, {bounds[1]}) # {param.name}"
     if param.fittable and not param.fixed:
         return range_str
     else:
