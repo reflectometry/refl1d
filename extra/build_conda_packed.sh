@@ -18,7 +18,7 @@ cd "$SCRIPT_DIR"
 conda activate "$ISOLATED_ENV"
 
 python -m pip install --no-input --no-compile ".."
-python -m "${PACKAGE_NAME:-refl1d}.webview.build_client" --cleanup --install-dependencies
+python -m "${PACKAGE_NAME:-refl1d}.webview.build_client" --cleanup
 
 conda deactivate
 conda-pack -p "$ISOLATED_ENV" --format=no-archive --output="$SRC_DIR/$OUTPUT"
