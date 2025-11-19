@@ -6,7 +6,7 @@ from bumps import webview as bumps_webview
 
 
 def build_client(
-    install_dependencies=False,
+    no_deps=False,
     sourcemap=False,
     cleanup=False,
 ):
@@ -27,7 +27,7 @@ def build_client(
     node_modules = client_dir / "node_modules"
     os.chdir(client_dir)
 
-    if install_dependencies or not node_modules.exists():
+    if not no_deps or not node_modules.exists():
         print("Installing node modules...")
         os.system(f"{tool} install")
 
@@ -67,12 +67,12 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Build the webview client.")
-    parser.add_argument("--install-dependencies", action="store_true", help="Install dependencies.")
+    parser.add_argument("--no-deps", action="store_true", help="Don't install npm dependencies.")
     parser.add_argument("--sourcemap", action="store_true", help="Generate sourcemaps.")
     parser.add_argument("--cleanup", action="store_true", help="Remove the node_modules directory.")
     args = parser.parse_args()
     build_client(
-        install_dependencies=args.install_dependencies,
+        no_deps=args.no_deps,
         sourcemap=args.sourcemap,
         cleanup=args.cleanup,
     )
