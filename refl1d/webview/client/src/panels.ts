@@ -30,11 +30,11 @@ function replace_panel(
   panels: Panel[],
   replacement_panels: Panel[],
   replaced_title: string,
-  replacement_title: string
+  replacement_title: string,
 ) {
   const index = panels.findIndex((p) => p.title === replaced_title);
   const replacement_index = replacement_panels.findIndex((p) => p.title === replacement_title);
-  if (index >= 0 && replacement_index >= 0) {
+  if (replacement_panels[replacement_index] !== undefined) {
     panels.splice(index, 1, replacement_panels[replacement_index]);
   }
 }
@@ -46,8 +46,9 @@ function insert_panel(panels: Panel[], insertion_panels: Panel[], title: string,
     index = panels.length - 1;
   }
   const insertion_index = insertion_panels.findIndex((p) => p.title === title);
-  if (insertion_index >= 0) {
-    panels.splice(index + 1, 0, insertion_panels[insertion_index]);
+  const panel_to_insert = insertion_panels[insertion_index];
+  if (panel_to_insert !== undefined) {
+    panels.splice(index + 1, 0, panel_to_insert);
   }
 }
 
