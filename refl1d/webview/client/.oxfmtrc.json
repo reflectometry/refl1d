@@ -1,0 +1,6 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "__note__": "This is the configuration file for oxfmt. See oxc.rs/docs/guide/usage/formatter/config-file-reference.html",
+  "printWidth": 120,
+  "trailingComma": "es5"
+}

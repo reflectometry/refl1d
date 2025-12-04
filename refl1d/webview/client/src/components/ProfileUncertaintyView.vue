@@ -67,7 +67,7 @@ function get_csv_data() {
     });
   }
   const n = values[0].length;
-  const lines = new Array(n + 1);
+  const lines = Array.from({ length: n + 1 });
   lines[0] = headers.join(",");
   for (let i = 0; i < n; i++) {
     lines[i + 1] = values.map((v) => v[i].toPrecision(6)).join(",");

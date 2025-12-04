@@ -1,9 +1,9 @@
 import { shared_state } from "bumps-webview-client/src/app_state";
 import { panels as bumps_panels, type Panel } from "bumps-webview-client/src/panels";
-import DataView from "./components/DataView.vue";
-import ModelView from "./components/ModelView.vue";
-import ProfileUncertaintyView from "./components/ProfileUncertaintyView.vue";
-import SimpleBuilder from "./components/SimpleBuilder.vue";
+import DataView from "@/components/DataView.vue";
+import ModelView from "@/components/ModelView.vue";
+import ProfileUncertaintyView from "@/components/ProfileUncertaintyView.vue";
+import SimpleBuilder from "@/components/SimpleBuilder.vue";
 
 const refl1dPanels: Panel[] = [
   { title: "Reflectivity", component: DataView },
@@ -34,7 +34,7 @@ function replace_panel(
 ) {
   const index = panels.findIndex((p) => p.title === replaced_title);
   const replacement_index = replacement_panels.findIndex((p) => p.title === replacement_title);
-  if (index >= 0 && replacement_index >= 0) {
+  if (index >= 0 && replacement_index >= 0 && replacement_panels[replacement_index]) {
     panels.splice(index, 1, replacement_panels[replacement_index]);
   }
 }
@@ -46,7 +46,7 @@ function insert_panel(panels: Panel[], insertion_panels: Panel[], title: string,
     index = panels.length - 1;
   }
   const insertion_index = insertion_panels.findIndex((p) => p.title === title);
-  if (insertion_index >= 0) {
+  if (insertion_index >= 0 && insertion_panels[insertion_index]) {
     panels.splice(index + 1, 0, insertion_panels[insertion_index]);
   }
 }
