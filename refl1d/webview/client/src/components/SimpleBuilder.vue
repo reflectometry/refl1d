@@ -302,7 +302,8 @@ function dragOver(index: number, event: DragEvent) {
 
 function drop(index: number) {
   if (dragData.value !== null) {
-    const draggedDict = sortedLayers.value[dragData.value];
+    // we know the dragged row exists, or the event couldn't have fired
+    const draggedDict = sortedLayers.value[dragData.value] as Slab;
     sortedLayers.value.splice(dragData.value, 1);
     sortedLayers.value.splice(index, 0, draggedDict);
     dragData.value = null;
