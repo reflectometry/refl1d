@@ -12,8 +12,9 @@
     "build": "vite build --emptyOutDir -m development",
     "build_prod": "vite build --emptyOutDir -m production",
     "preview": "vite preview --port 4173",
-    "lint": "biome check src --fix",
-    "test:lint": "biome check src",
+    "format": "biome format --write",
+    "lint": "eslint src --fix",
+    "test:lint": "eslint src",
     "test:types": "vue-tsc --noEmit --skipLibCheck -p tsconfig.json --composite false"
   },
   "dependencies": {
@@ -21,24 +22,27 @@
     "bootstrap": "^5.3.8",
     "date-fns": "^4.1.0",
     "json-difference": "^1.16.1",
-    "mpld3": "^0.5.11",
-    "plotly.js": "^3.1.2",
+    "mpld3": "^0.5.12",
+    "plotly.js": "^3.3.0",
     "socket.io-client": "^4.8.1",
-    "uuid": "^11.1.0",
-    "vue": "^3.5.22",
+    "uuid": "^13.0.0",
+    "vue": "^3.5.25",
     "vue-json-pretty": "^2.6.0"
   },
   "devDependencies": {
-    "@tsconfig/node-lts": "^22.0.2",
-    "@types/node": "^24.9.2",
+    "@tsconfig/node-lts": "^24.0.0",
+    "@types/node": "^24.10.1",
     "@types/plotly.js": "^3.0.8",
-    "@types/uuid": "^11.0.0",
-    "@vitejs/plugin-vue": "^6.0.1",
+    "@vitejs/plugin-vue": "^6.0.2",
+    "@vue/eslint-config-typescript": "^14.6.0",
     "@vue/tsconfig": "^0.8.1",
-    "@biomejs/biome": "^2.3.2",
+    "@biomejs/biome": "^2.3.8",
+    "eslint": "^9.39.1",
+    "eslint-plugin-vue": "^10.6.2",
+    "eslint-plugin-vuejs-accessibility": "^2.4.1",
     "typescript": "^5.9.3",
-    "vite": "^7.1.12",
+    "vite": "^7.2.6",
     "vite-svg-loader": "5.1.0",
-    "vue-tsc": "^3.1.2"
+    "vue-tsc": "^3.1.5"
   }
 }

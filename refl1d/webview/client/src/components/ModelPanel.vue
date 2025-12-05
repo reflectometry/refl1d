@@ -1,10 +1,9 @@
 <script setup lang="ts">
-/// <reference types="@types/uuid"/>
-import { onMounted, ref } from "vue";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket";
 import { configWithSVGDownloadButton } from "bumps-webview-client/src/plotly_extras";
 import { setupDrawLoop } from "bumps-webview-client/src/setupDrawLoop";
 import * as Plotly from "plotly.js/lib/core";
+import { onMounted, ref } from "vue";
 
 const title = "Profile";
 const plot_div = ref<HTMLDivElement>();
@@ -72,29 +71,55 @@ function requestRedraw() {
 <template>
   <div class="container d-flex flex-grow-1 flex-column">
     <div class="form-check">
-      <label class="form-check-label pe-2" for="multiple">Show Multiple</label>
-      <input id="multiple" v-model="show_multiple" class="form-check-input" type="checkbox" @change="toggle_multiple" />
+      <label
+        class="form-check-label pe-2"
+        for="multiple"
+      >Show Multiple</label>
+      <input
+        id="multiple"
+        v-model="show_multiple"
+        class="form-check-input"
+        type="checkbox"
+        @change="toggle_multiple"
+      >
     </div>
-    <label for="model" class="form-label"> Models:</label>
-    <select v-if="show_multiple" id="model" v-model="current_models" multiple @change="requestRedraw">
+    <label
+      for="model"
+      class="form-label"
+    > Models:</label>
+    <select
+      v-if="show_multiple"
+      id="model"
+      v-model="current_models"
+      multiple
+      @change="requestRedraw"
+    >
       <option
         v-for="{ name, part_name, model_index, part_index } in model_names"
         :key="`${model_index}:${part_index}`"
         :value="[model_index, part_index]"
       >
-        {{ model_index }}:{{ part_index }} --- {{ name ?? "" }}:{{ part_name ?? "" }}
+        {{ model_index }}:{{ part_index }} — {{ name ?? "" }}:{{ part_name ?? "" }}
       </option>
     </select>
-    <select v-else id="model" v-model="current_models[0]" @change="requestRedraw">
+    <select
+      v-else
+      id="model"
+      v-model="current_models[0]"
+      @change="requestRedraw"
+    >
       <option
         v-for="{ name, part_name, model_index, part_index } in model_names"
         :key="`${model_index}:${part_index}`"
         :value="[model_index, part_index]"
       >
-        {{ model_index }}:{{ part_index }} --- {{ name ?? "" }}:{{ part_name ?? "" }}
+        {{ model_index }}:{{ part_index }} — {{ name ?? "" }}:{{ part_name ?? "" }}
       </option>
     </select>
-    <div ref="plot_div" class="flex-grow-1"></div>
+    <div
+      ref="plot_div"
+      class="flex-grow-1"
+    />
   </div>
 </template>
 

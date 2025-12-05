@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, shallowRef } from "vue";
-import type { ComputedRef } from "vue";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket";
 import { v4 as uuidv4 } from "uuid";
+import type { ComputedRef } from "vue";
+import { computed, onMounted, ref, shallowRef } from "vue";
 import { dqIsFWHM } from "../app_state";
 import type {
   BoundsValue,
@@ -11,13 +11,13 @@ import type {
   ParameterLike,
   QProbe,
   SerializedModel,
-  Slab,
   SLD,
+  Slab,
   Stack,
 } from "../model";
 
 // const title = "Builder";
-// @ts-ignore: intentionally infinite type recursion
+// @ts-expect-error: intentionally infinite type recursion
 const modelJson = shallowRef<json>({});
 const showInstructions = ref(false);
 const showEditQRange = ref(false);
@@ -47,7 +47,7 @@ function createParameter(
   value: number,
   limits: [BoundsValue, BoundsValue] = ["-inf", "inf"],
   fixed: boolean = true,
-  tags: string[] = []
+  tags: string[] = [],
 ) {
   const par: Parameter = {
     id: uuidv4(),
@@ -68,7 +68,7 @@ function createLayer(
   irho: number,
   thickness: number,
   interface_: number,
-  magnetism: Magnetism | null = null
+  magnetism: Magnetism | null = null,
 ) {
   const rhoParam = createParameter("rho", rho, ["-inf", "inf"], true, ["sample"]);
   const irhoParam = createParameter("irho", irho, ["-inf", "inf"], true, ["sample"]);
@@ -204,14 +204,8 @@ function setParameterBounds(stack: Stack) {
     const value = p.slot.value;
     p.bounds = value === 0.0 ? [-0.1, 0.1] : [value * 0.5, value * 1.5];
     p.bounds.sort((a, b) => {
-      let c =
-        a === "-inf" ? Number.NEGATIVE_INFINITY
-        : a === "inf" ? Number.POSITIVE_INFINITY
-        : a;
-      let d =
-        b === "-inf" ? Number.NEGATIVE_INFINITY
-        : b === "inf" ? Number.POSITIVE_INFINITY
-        : b;
+      const c = a === "-inf" ? Number.NEGATIVE_INFINITY : a === "inf" ? Number.POSITIVE_INFINITY : a;
+      const d = b === "-inf" ? Number.NEGATIVE_INFINITY : b === "inf" ? Number.POSITIVE_INFINITY : b;
       return c - d;
     });
   };
@@ -257,7 +251,7 @@ function setQProbe() {
     editQmin.value,
     editQmax.value,
     editQsteps.value,
-    0.0001
+    0.0001,
   );
   sendModel();
 }
@@ -301,7 +295,9 @@ function dragEnd() {
     <div class="container m-2">
       <div class="card">
         <div class="card-body">
-          <h5 class="card-title d-inline-block px-2 my-0 align-middle">Simple Slab Model Builder</h5>
+          <h5 class="card-title d-inline-block px-2 my-0 align-middle">
+            Simple Slab Model Builder
+          </h5>
           <button
             class="btn btn-primary"
             type="button"
@@ -312,7 +308,11 @@ function dragEnd() {
             Instructions
           </button>
 
-          <div id="builderInstructions" class="card-text collapse" :class="{ show: showInstructions }">
+          <div
+            id="builderInstructions"
+            class="card-text collapse"
+            :class="{ show: showInstructions }"
+          >
             <ul>
               <li>Click the "Add layer" button to add a new layer.</li>
               <li>Drag and drop the rows to change the order of the layers.</li>
@@ -325,7 +325,12 @@ function dragEnd() {
     <div class="container mt-4">
       <div class="row justify-content-end">
         <div class="col">
-          <button class="btn btn-primary m-2" @click="showEditQRange = !showEditQRange">Edit Q-range</button>
+          <button
+            class="btn btn-primary m-2"
+            @click="showEditQRange = !showEditQRange"
+          >
+            Edit Q-range
+          </button>
         </div>
         <div class="col-auto align-self-center">
           <div class="form-check form-switch m-2">
@@ -335,8 +340,11 @@ function dragEnd() {
               class="form-check-input"
               type="checkbox"
               @click="sendModel()"
-            />
-            <label class="form-check-label" for="showImaginary_input">Show imaginary SLD</label>
+            >
+            <label
+              class="form-check-label"
+              for="showImaginary_input"
+            >Show imaginary SLD</label>
           </div>
           <div class="form-check form-switch m-2">
             <input
@@ -345,43 +353,83 @@ function dragEnd() {
               class="form-check-input"
               type="checkbox"
               @click="sendModel()"
-            />
-            <label class="form-check-label" for="dqIsFWHM_input">Resolution as FWHM</label>
+            >
+            <label
+              class="form-check-label"
+              for="dqIsFWHM_input"
+            >Resolution as FWHM</label>
           </div>
         </div>
       </div>
-      <div v-if="showEditQRange" class="row mb-2">
+      <div
+        v-if="showEditQRange"
+        class="row mb-2"
+      >
         <div class="col">
           <label for="qmin">Q min (Å<sup>-1</sup>)</label>
-          <input id="qmin" v-model="editQmin" class="form-control" type="number" step="0.01" />
+          <input
+            id="qmin"
+            v-model="editQmin"
+            class="form-control"
+            type="number"
+            step="0.01"
+          >
         </div>
         <div class="col">
           <label for="qmax">Q max (Å<sup>-1</sup>)</label>
-          <input id="qmax" v-model="editQmax" class="form-control" type="number" step="0.01" />
+          <input
+            id="qmax"
+            v-model="editQmax"
+            class="form-control"
+            type="number"
+            step="0.01"
+          >
         </div>
         <div class="col">
           <label for="qsteps">Q steps</label>
-          <input id="qsteps" v-model="editQsteps" class="form-control" type="number" step="1" />
+          <input
+            id="qsteps"
+            v-model="editQsteps"
+            class="form-control"
+            type="number"
+            step="1"
+          >
         </div>
         <div class="col-auto align-self-end">
-          <button class="btn btn-secondary mx-2" @click="setQProbe">Apply new Q</button>
+          <button
+            class="btn btn-secondary mx-2"
+            @click="setQProbe"
+          >
+            Apply new Q
+          </button>
         </div>
       </div>
-      <table v-if="dictionaryLoaded" id="sortable" class="table table-sm">
+      <table
+        v-if="dictionaryLoaded"
+        id="sortable"
+        class="table table-sm"
+      >
         <thead class="border-bottom py-1 sticky-top text-white bg-secondary">
           <tr>
-            <th></th>
+            <th />
             <th>Layer</th>
             <th>Thickness</th>
             <th>Rho</th>
-            <th v-if="showImaginary">iRho</th>
+            <th v-if="showImaginary">
+              iRho
+            </th>
             <th>Interface</th>
-            <th></th>
-            <th></th>
+            <th />
+            <th />
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(layer, key) in sortedLayers" :key="key" class="align-middle" @blur.capture="sendModel()">
+          <tr
+            v-for="(layer, key) in sortedLayers"
+            :key="key"
+            class="align-middle"
+            @blur.capture="sendModel()"
+          >
             <td
               draggable="true"
               class="draggable"
@@ -390,7 +438,10 @@ function dragEnd() {
               @drop="drop(key)"
               @dragend="dragEnd"
             >
-              <span width="10px" class="badge bg-secondary">:</span>
+              <span
+                width="10px"
+                class="badge bg-secondary"
+              >:</span>
             </td>
             <td>
               <textarea
@@ -406,7 +457,10 @@ function dragEnd() {
               </textarea>
             </td>
             <td>
-              <label for="layer-thickness" class="visually-hidden">>Layer Thickness</label>
+              <label
+                for="layer-thickness"
+                class="visually-hidden"
+              >>Layer Thickness</label>
               <input
                 v-if="getSlot(layer.thickness) !== null"
                 id="layer-thickness"
@@ -414,10 +468,13 @@ function dragEnd() {
                 class="form-control"
                 type="number"
                 step="5"
-              />
+              >
             </td>
             <td>
-              <label for="layer-rho" class="visually-hidden">>Layer Rho</label>
+              <label
+                for="layer-rho"
+                class="visually-hidden"
+              >>Layer Rho</label>
               <input
                 v-if="getSlot(layer.material.rho) !== null"
                 id="layer-rho"
@@ -425,10 +482,13 @@ function dragEnd() {
                 class="form-control"
                 type="number"
                 step="0.01"
-              />
+              >
             </td>
             <td v-if="showImaginary">
-              <label for="layer-irho" class="visually-hidden">>Layer iRho</label>
+              <label
+                for="layer-irho"
+                class="visually-hidden"
+              >>Layer iRho</label>
               <input
                 v-if="getSlot(layer.material.irho) !== null"
                 id="layer-irho"
@@ -436,10 +496,13 @@ function dragEnd() {
                 class="form-control"
                 type="number"
                 step="0.01"
-              />
+              >
             </td>
             <td>
-              <label for="layer-interface" class="visually-hidden">>Layer Interface</label>
+              <label
+                for="layer-interface"
+                class="visually-hidden"
+              >>Layer Interface</label>
               <input
                 v-if="getSlot(layer.interface) !== null"
                 id="layer-interface"
@@ -447,32 +510,74 @@ function dragEnd() {
                 class="form-control"
                 type="number"
                 step="1"
-              />
+              >
             </td>
-            <td><button class="btn btn-danger btn-sm" @click="deleteLayer(key)">Delete</button></td>
             <td>
-              <button class="btn btn-success btn-sm add-layer-after" title="add layer here" @click="addLayer(key + 1)">
+              <button
+                class="btn btn-danger btn-sm"
+                @click="deleteLayer(key)"
+              >
+                Delete
+              </button>
+            </td>
+            <td>
+              <button
+                class="btn btn-success btn-sm add-layer-after"
+                title="add layer here"
+                @click="addLayer(key + 1)"
+              >
                 +
               </button>
             </td>
           </tr>
         </tbody>
       </table>
-      <p v-else>Load data to start building a model</p>
+      <p v-else>
+        Load data to start building a model
+      </p>
     </div>
 
     <div class="row">
       <div class="col">
-        <button class="btn btn-primary m-2" @click="newModel">New Model</button>
+        <button
+          class="btn btn-primary m-2"
+          @click="newModel"
+        >
+          New Model
+        </button>
       </div>
-      <div v-if="dictionaryLoaded" class="col-auto">
-        <button class="btn btn-secondary m-2" @click="sendModel()">Apply changes</button>
+      <div
+        v-if="dictionaryLoaded"
+        class="col-auto"
+      >
+        <button
+          class="btn btn-secondary m-2"
+          @click="sendModel()"
+        >
+          Apply changes
+        </button>
       </div>
-      <div v-if="dictionaryLoaded" class="col-auto">
+      <div
+        v-if="dictionaryLoaded"
+        class="col-auto"
+      >
         <div class="input-group m-2">
-          <button class="btn btn-success btn-sm" @click="addLayer(insertIndex)">Add layer at index:</button>
-          <label for="insert-index" class="visually-hidden">Insert index</label>
-          <input id="insert-index" v-model="insertIndex" class="form-control me-4 insert-index" type="number" />
+          <button
+            class="btn btn-success btn-sm"
+            @click="addLayer(insertIndex)"
+          >
+            Add layer at index:
+          </button>
+          <label
+            for="insert-index"
+            class="visually-hidden"
+          >Insert index</label>
+          <input
+            id="insert-index"
+            v-model="insertIndex"
+            class="form-control me-4 insert-index"
+            type="number"
+          >
         </div>
       </div>
     </div>
@@ -480,7 +585,9 @@ function dragEnd() {
     <div class="container m-2">
       <div class="card bg-warning">
         <div class="card-body">
-          <h5 class="card-title">Limitations and future features</h5>
+          <h5 class="card-title">
+            Limitations and future features
+          </h5>
           <div class="card-text">
             <ul>
               <li>This builder can currently only do non-magnetic models.</li>

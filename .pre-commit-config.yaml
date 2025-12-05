@@ -13,8 +13,8 @@ repos:
       - id: check-merge-conflict
       - id: check-yaml
         args: [--allow-multiple-documents]
-      # - id: end-of-file-fixer
-      # - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.13.3
     hooks:
@@ -25,3 +25,4 @@ repos:
 ci:
   autoupdate_schedule: monthly
   skip: [frontend-lint]
+

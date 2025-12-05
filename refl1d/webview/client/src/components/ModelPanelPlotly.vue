@@ -1,10 +1,9 @@
 <script setup lang="ts">
-/// <reference types="@types/uuid"/>
-import { onMounted, ref } from "vue";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket";
 import { setupDrawLoop } from "bumps-webview-client/src/setupDrawLoop";
 import * as Plotly from "plotly.js/lib/core";
 import { v4 as uuidv4 } from "uuid";
+import { onMounted, ref } from "vue";
 
 // const title = "Profile";
 const plot_div = ref<HTMLDivElement>();
@@ -18,21 +17,38 @@ const props = defineProps<{
 
 const { draw_requested } = setupDrawLoop("updated_parameters", props.socket, fetch_and_draw);
 
-props.socket.on("model_loaded", async () => {
+async function get_model_names() {
   const new_model_names = (await props.socket.asyncEmit("get_model_names")) as string[];
+  if (new_model_names == null) {
+    return;
+  }
   model_names.value = new_model_names;
+}
+
+props.socket.on("model_loaded", get_model_names);
+
+onMounted(async () => {
+  await get_model_names();
 });
 
-onMounted(() => {
-  props.socket.asyncEmit("get_topic_messages", "model_loaded", (messages) => {
-    const new_model_names = messages?.[0]?.message?.model_names;
-    if (new_model_names != null) {
-      model_names.value = new_model_names;
-    }
-  });
-});
+interface ProfileData {
+  step_profile: {
+    z: number[];
+    rho: number[];
+    irho: number[];
+    rhoM?: number[];
+    thetaM?: number[];
+  };
+  smooth_profile: {
+    z: number[];
+    rho: number[];
+    irho: number[];
+    rhoM?: number[];
+    thetaM?: number[];
+  };
+}
 
-function generate_new_traces(profile_data) {
+function generate_new_traces(profile_data: ProfileData) {
   const traces: (Plotly.Data & { x: number[]; y: number[] })[] = [];
   const { step_profile, smooth_profile } = profile_data;
   console.log(profile_data);
@@ -164,10 +180,25 @@ async function fetch_and_draw() {
 <template>
   <div class="container d-flex flex-grow-1 flex-column">
     <label for="model">Model:</label>
-    <select id="model" v-model="current_model" class="form-select" @change="draw_requested = true">
-      <option v-for="(name, index) in model_names" :key="index" :value="index">{{ index }}: {{ name ?? "" }}</option>
+    <select
+      id="model"
+      v-model="current_model"
+      class="form-select"
+      @change="draw_requested = true"
+    >
+      <option
+        v-for="(name, index) in model_names"
+        :key="index"
+        :value="index"
+      >
+        {{ index }}: {{ name ?? "" }}
+      </option>
     </select>
-    <div :id="plot_div_id" ref="plot_div" class="flex-grow-1"></div>
+    <div
+      :id="plot_div_id"
+      ref="plot_div"
+      class="flex-grow-1"
+    />
   </div>
 </template>
 

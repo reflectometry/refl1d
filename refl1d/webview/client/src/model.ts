@@ -11,11 +11,11 @@ export interface Reference {
 export type BoundsValue = number | "-inf" | "inf";
 
 /* Bumps models */
-// Are these necessary? Imported from bumps?
+// TODO: Are these necessary? Imported from bumps?
 
 export interface SerializedModel {
   references: { [key: string]: Parameter };
-  object: any;
+  object: object;
   $schema: "bumps-draft-02";
 }
 
@@ -112,12 +112,12 @@ export interface MixedExperiment {
 /* Probe models */
 
 export interface Probe {
-  /* W... what? should go here? */
+  /* TODO: what should go here? */
   name?: string;
 }
 
 export interface PolarizedNeutronProbe {
-  /* W... what? should go here? */
+  /* TODO: what should go here? */
   name: string;
 }
 
