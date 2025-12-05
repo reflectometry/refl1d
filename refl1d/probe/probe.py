@@ -824,6 +824,13 @@ class Probe(BaseProbe):
         # oversample() for a more accurate resolution calculations.
         self._set_calc(self.T, self.L)
 
+    def _QdQ_key(self):
+        """
+        Return a tuple that changes if the calculated Q or dQ values of this
+        probe object change (when theta_offset or sample_broadening change).
+        """
+        return (self.theta_offset.value, self.sample_broadening.value)
+
     @staticmethod
     def alignment_uncertainty(w, I, d=0):
         r"""
@@ -1433,6 +1440,13 @@ class QProbe(BaseProbe):
     def calc_Q(self):
         return self._calc_Q if not self.back_reflectivity else -self._calc_Q
 
+    def _QdQ_key(self):
+        """
+        Return a tuple that changes if the calculated Q or dQ values of this
+        probe object change.
+        """
+        return ()
+
     def parameters(self):
         return {
             "intensity": self.intensity,
@@ -1636,8 +1650,8 @@ class PolarizedNeutronProbe:
     oversample.__doc__ = Probe.oversample.__doc__
 
     def _calculate_union(self):
-        theta_offsets = [x.theta_offset.value for x in self.xs if x is not None]
-        union_cache_key = (theta_offsets, self.oversampling, self.oversampling_seed, tuple(self.oversampled_regions))
+        QdQ_keys = [x._QdQ_key() for x in self.xs if x is not None]
+        union_cache_key = (QdQ_keys, self.oversampling, self.oversampling_seed, tuple(self.oversampled_regions))
         if self._union_cache_key == union_cache_key:
             # no change in offsets or oversampling: use cached values of measurement union
             return
@@ -1929,6 +1943,7 @@ class PolarizedQProbe(PolarizedNeutronProbe):
         self.oversampling_seed = oversampling_seed
         self.oversampled_regions = oversampled_regions if oversampled_regions is not None else []
         # this sets self.Q, self.dQ, self._calc_Q:
+        self._union_cache_key = None
         self._calculate_union()
 
     @property

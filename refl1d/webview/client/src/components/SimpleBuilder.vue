@@ -256,6 +256,24 @@ function setQProbe() {
   sendModel();
 }
 
+async function exportModelScript() {
+  if (fileBrowser.value) {
+    const settings = {
+      title: "Export Model Script to File",
+      callback: (pathlist: string[], filename: string) => {
+        props.socket.asyncEmit("export_model_script", pathlist, filename);
+      },
+      show_name_input: true,
+      name_input_label: "Filename",
+      require_name: true,
+      show_files: false,
+      chosenfile_in: "model.py",
+      search_patterns: [".py"],
+    };
+    fileBrowser.value.open(settings);
+  }
+}
+
 onMounted(() => {
   fetchModel();
 });
