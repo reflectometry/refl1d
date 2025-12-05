@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { fileBrowser } from "bumps-webview-client/src/app_state";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket";
 import { v4 as uuidv4 } from "uuid";
 import type { ComputedRef } from "vue";
 import { computed, onMounted, ref, shallowRef } from "vue";
-import { dqIsFWHM } from "../app_state";
+import { dqIsFWHM } from "@/app_state";
+
 import type {
   BoundsValue,
   Magnetism,
