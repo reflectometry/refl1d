@@ -100,7 +100,7 @@ async function fetch_and_draw(new_timestamp?: string) {
     npoints.value,
     random.value,
     show_residuals.value,
-    latest_timestamp.value
+    latest_timestamp.value,
   )) as Payload;
   const plotData = { ...payload.fig };
   contour_data.value = payload.contour_data;

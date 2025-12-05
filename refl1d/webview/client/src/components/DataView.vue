@@ -68,15 +68,13 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           const local_offset = lin_y ? plot_index * offset : Math.pow(10, plot_index * offset);
           const background_offset = apply_corrections.value ? xs.background : 0.0;
           const intensity_scale = apply_corrections.value ? xs.intensity : 1.0;
-          const y =
-            lin_y ?
-              xs.theory.map((t) => (t - background_offset) / intensity_scale + local_offset)
+          const y = lin_y
+            ? xs.theory.map((t) => (t - background_offset) / intensity_scale + local_offset)
             : xs.theory.map((t) => ((t - background_offset) / intensity_scale) * local_offset);
           theory_traces.push({ x: xs.Q, y: y, mode: "lines", name: label + " theory", line: { width: 2, color } });
           if (xs.R !== undefined) {
-            const R =
-              lin_y ?
-                xs.R.map((t) => (t - background_offset) / intensity_scale + local_offset)
+            const R = lin_y
+              ? xs.R.map((t) => (t - background_offset) / intensity_scale + local_offset)
               : xs.R.map((t) => ((t - background_offset) / intensity_scale) * local_offset);
             const data_trace: Trace = {
               x: xs.Q,
@@ -91,8 +89,9 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
               data_trace.error_x = { type: "data", array: xs.dQ, visible: true };
             }
             if (xs.dR !== undefined) {
-              const dR =
-                lin_y ? xs.dR.map((t) => t / intensity_scale) : xs.dR.map((t) => (t / intensity_scale) * local_offset);
+              const dR = lin_y
+                ? xs.dR.map((t) => t / intensity_scale)
+                : xs.dR.map((t) => (t / intensity_scale) * local_offset);
               data_trace.error_y = { type: "data", array: dR, visible: true };
               if (calculate_residuals) {
                 const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR![i]);
@@ -362,7 +361,7 @@ async function draw_plot() {
   const { theory_traces, data_traces, xaxis_label, yaxis_label } = generate_new_traces(
     plot_data.value,
     reflectivity_type.value,
-    show_residuals.value
+    show_residuals.value,
   );
   const layout: Partial<Plotly.Layout> = {
     uirevision: reflectivity_type.value,

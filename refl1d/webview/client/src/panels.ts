@@ -30,7 +30,7 @@ function replace_panel(
   panels: Panel[],
   replacement_panels: Panel[],
   replaced_title: string,
-  replacement_title: string
+  replacement_title: string,
 ) {
   const index = panels.findIndex((p) => p.title === replaced_title);
   const replacement_index = replacement_panels.findIndex((p) => p.title === replacement_title);
