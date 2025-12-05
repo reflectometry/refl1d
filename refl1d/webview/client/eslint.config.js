@@ -43,6 +43,23 @@ export default [
           },
         },
       ],
+      "vue/max-attributes-per-line": [
+        "error",
+        {
+          singleline: {
+            max: 5,
+          },
+        },
+      ],
+      "vue/html-self-closing": [
+        "error",
+        {
+          html: {
+            void: "any",
+            normal: "any",
+          },
+        },
+      ],
     },
   },
 ];
