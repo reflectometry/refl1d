@@ -66,11 +66,11 @@ function get_csv_data() {
       });
     });
   }
-  const n = values[0].length;
+  const n = values[0]?.length ?? 0;
   const lines = Array.from({ length: n + 1 });
   lines[0] = headers.join(",");
   for (let i = 0; i < n; i++) {
-    lines[i + 1] = values.map((v) => v[i].toPrecision(6)).join(",");
+    lines[i + 1] = values.map((v) => v[i]?.toPrecision(6)).join(",");
     //keys.map(k => data[k][i].toPrecision(6)).join(',');
   }
   return "data:text/csv;charset=utf-8," + encodeURIComponent(lines.join("\n"));
