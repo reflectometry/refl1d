@@ -7,13 +7,9 @@
 *.pyd
 *.pyc
 **/__pycache__/
-**/node_modules/
-/refl1d/webview/client/dist/
 *.swp
 *.so
 *.bak
-refl1d-webview-client*.tgz
-bumps-webview-client*.tgz
 /build/
 /dist/
 /refl1d.egg-info/
@@ -60,8 +56,6 @@ venv.bak/
 .idea
 *.swp
 *.bak
-
-test-files/
 
 # Unused lock files
 bun.lock

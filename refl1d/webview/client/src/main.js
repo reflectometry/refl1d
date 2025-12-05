@@ -1,8 +1,8 @@
 import "bootstrap/dist/css/bootstrap.min.css";
-import { computed, createApp } from "vue";
-import { file_menu_items, fileBrowser, shared_state } from "bumps-webview-client/src/app_state";
 import App from "bumps-webview-client/src/App.vue";
+import { file_menu_items, fileBrowser, shared_state } from "bumps-webview-client/src/app_state";
 import { io } from "socket.io-client";
+import { computed, createApp } from "vue";
 import { dqIsFWHM } from "./app_state";
 import { panels } from "./panels";
 import "./style.css";

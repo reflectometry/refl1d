@@ -1,10 +1,9 @@
 <script setup lang="ts">
-/// <reference types="@types/uuid"/>
-import { ref, shallowRef } from "vue";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket";
 import { configWithSVGDownloadButton } from "bumps-webview-client/src/plotly_extras";
 import { setupDrawLoop } from "bumps-webview-client/src/setupDrawLoop";
 import * as Plotly from "plotly.js/lib/core";
+import { ref, shallowRef } from "vue";
 
 const title = "Profile Uncertainty";
 const plotDiv = ref<HTMLDivElement>();
@@ -66,11 +65,11 @@ function get_csv_data() {
       });
     });
   }
-  const n = values[0].length;
-  const lines = new Array(n + 1);
+  const n = values[0]?.length ?? 0;
+  const lines = Array.from({ length: n + 1 });
   lines[0] = headers.join(",");
   for (let i = 0; i < n; i++) {
-    lines[i + 1] = values.map((v) => v[i].toPrecision(6)).join(",");
+    lines[i + 1] = values.map((v) => v[i]?.toPrecision(6)).join(",");
     //keys.map(k => data[k][i].toPrecision(6)).join(',');
   }
   return "data:text/csv;charset=utf-8," + encodeURIComponent(lines.join("\n"));
@@ -100,7 +99,7 @@ async function fetch_and_draw(new_timestamp?: string) {
     npoints.value,
     random.value,
     show_residuals.value,
-    latest_timestamp.value
+    latest_timestamp.value,
   )) as Payload;
   const plotData = { ...payload.fig };
   contour_data.value = payload.contour_data;
@@ -135,32 +134,50 @@ async function disableAutoAlign() {
     <div class="row g-3">
       <div class="col-md-3 align-middle text-end">
         <div>
-          <label class="form-check-label pe-2" for="auto-align">Auto-align</label>
+          <label
+            class="form-check-label pe-2"
+            for="auto-align"
+          >Auto-align</label>
           <input
             id="auto-align"
             v-model="autoAlign"
             class="form-check-input"
             type="checkbox"
             @change="fetch_and_draw()"
-          />
+          >
         </div>
         <div>
-          <label class="form-check-label pe-2" for="show_residuals">Show residuals</label>
+          <label
+            class="form-check-label pe-2"
+            for="show_residuals"
+          >Show residuals</label>
           <input
             id="show_residuals"
             v-model="show_residuals"
             class="form-check-input"
             type="checkbox"
             @change="fetch_and_draw()"
-          />
+          >
         </div>
         <div>
-          <label class="form-check-label pe-2" for="randomize">Random draw</label>
-          <input id="randomize" v-model="random" class="form-check-input" type="checkbox" @change="fetch_and_draw()" />
+          <label
+            class="form-check-label pe-2"
+            for="randomize"
+          >Random draw</label>
+          <input
+            id="randomize"
+            v-model="random"
+            class="form-check-input"
+            type="checkbox"
+            @change="fetch_and_draw()"
+          >
         </div>
       </div>
       <div class="col-md-3 align-middle position-relative">
-        <label class="form-label" for="align-interface">Alignment interface</label>
+        <label
+          class="form-label"
+          for="align-interface"
+        >Alignment interface</label>
         <input
           id="align-interface"
           v-model="align"
@@ -168,33 +185,68 @@ async function disableAutoAlign() {
           type="number"
           :disabled="autoAlign"
           @change="fetch_and_draw()"
-        />
+        >
         <!-- eslint-disable
            vuejs-accessibility/no-static-element-interactions, 
            vuejs-accessibility/click-events-have-key-events
         -->
-        <span v-if="autoAlign" class="position-absolute top-0 start-0 w-100 h-100" @click="disableAutoAlign"></span>
+        <span
+          v-if="autoAlign"
+          class="position-absolute top-0 start-0 w-100 h-100"
+          @click="disableAutoAlign"
+        />
         <!-- eslint-enable
            vuejs-accessibility/no-static-element-interactions, 
            vuejs-accessibility/click-events-have-key-events
         -->
       </div>
       <div class="col-md-3 align-middle">
-        <label class="form-label" for="n-shown">Sample size</label>
-        <input id="n-shown" v-model="nshown" class="form-control" type="number" @change="fetch_and_draw()" />
+        <label
+          class="form-label"
+          for="n-shown"
+        >Sample size</label>
+        <input
+          id="n-shown"
+          v-model="nshown"
+          class="form-control"
+          type="number"
+          @change="fetch_and_draw()"
+        >
       </div>
       <div class="col-md-3 align-middle">
-        <label class="form-label" for="n-points">z steps</label>
-        <input id="n-points" v-model="npoints" class="form-control" type="number" @change="fetch_and_draw()" />
+        <label
+          class="form-label"
+          for="n-points"
+        >z steps</label>
+        <input
+          id="n-points"
+          v-model="npoints"
+          class="form-control"
+          type="number"
+          @change="fetch_and_draw()"
+        >
       </div>
     </div>
     <div>
-      <button class="btn btn-primary btn-sm" @click="download_csv">Download CSV</button>
-      <a ref="hiddenDownload" class="hidden" download="contours.csv" type="text/csv">Download CSV</a>
+      <button
+        class="btn btn-primary btn-sm"
+        @click="download_csv"
+      >
+        Download CSV
+      </button>
+      <a
+        ref="hiddenDownload"
+        class="hidden"
+        download="contours.csv"
+        type="text/csv"
+      >Download CSV</a>
     </div>
     <!-- </details> -->
     <div class="flex-grow-1 position-relative">
-      <div ref="plotDiv" class="w-100 h-100 plot-div"></div>
+      <div
+        ref="plotDiv"
+        class="w-100 h-100 plot-div"
+      />
       <div
         v-if="drawing_busy"
         :class="{
@@ -210,7 +262,7 @@ async function disableAutoAlign() {
           loading: true,
         }"
       >
-        <span class="spinner-border text-primary"></span>
+        <span class="spinner-border text-primary" />
       </div>
     </div>
   </div>
