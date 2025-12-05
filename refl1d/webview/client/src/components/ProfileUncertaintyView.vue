@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/// <reference types="@types/uuid"/>
 import { ref, shallowRef } from "vue";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket";
 import { configWithSVGDownloadButton } from "bumps-webview-client/src/plotly_extras";
@@ -66,11 +65,11 @@ function get_csv_data() {
       });
     });
   }
-  const n = values[0].length;
-  const lines = new Array(n + 1);
+  const n = values[0]?.length ?? 0;
+  const lines = Array.from({ length: n + 1 });
   lines[0] = headers.join(",");
   for (let i = 0; i < n; i++) {
-    lines[i + 1] = values.map((v) => v[i].toPrecision(6)).join(",");
+    lines[i + 1] = values.map((v) => v[i]?.toPrecision(6)).join(",");
     //keys.map(k => data[k][i].toPrecision(6)).join(',');
   }
   return "data:text/csv;charset=utf-8," + encodeURIComponent(lines.join("\n"));
@@ -100,7 +99,7 @@ async function fetch_and_draw(new_timestamp?: string) {
     npoints.value,
     random.value,
     show_residuals.value,
-    latest_timestamp.value
+    latest_timestamp.value,
   )) as Payload;
   const plotData = { ...payload.fig };
   contour_data.value = payload.contour_data;
@@ -189,7 +188,9 @@ async function disableAutoAlign() {
       </div>
     </div>
     <div>
-      <button class="btn btn-primary btn-sm" @click="download_csv">Download CSV</button>
+      <button class="btn btn-primary btn-sm" @click="download_csv">
+        Download CSV
+      </button>
       <a ref="hiddenDownload" class="hidden" download="contours.csv" type="text/csv">Download CSV</a>
     </div>
     <!-- </details> -->

@@ -68,15 +68,13 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           const local_offset = lin_y ? plot_index * offset : Math.pow(10, plot_index * offset);
           const background_offset = apply_corrections.value ? xs.background : 0.0;
           const intensity_scale = apply_corrections.value ? xs.intensity : 1.0;
-          const y =
-            lin_y ?
-              xs.theory.map((t) => (t - background_offset) / intensity_scale + local_offset)
+          const y = lin_y
+            ? xs.theory.map((t) => (t - background_offset) / intensity_scale + local_offset)
             : xs.theory.map((t) => ((t - background_offset) / intensity_scale) * local_offset);
           theory_traces.push({ x: xs.Q, y: y, mode: "lines", name: label + " theory", line: { width: 2, color } });
           if (xs.R !== undefined) {
-            const R =
-              lin_y ?
-                xs.R.map((t) => (t - background_offset) / intensity_scale + local_offset)
+            const R = lin_y
+              ? xs.R.map((t) => (t - background_offset) / intensity_scale + local_offset)
               : xs.R.map((t) => ((t - background_offset) / intensity_scale) * local_offset);
             const data_trace: Trace = {
               x: xs.Q,
@@ -91,11 +89,12 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
               data_trace.error_x = { type: "data", array: xs.dQ, visible: true };
             }
             if (xs.dR !== undefined) {
-              const dR =
-                lin_y ? xs.dR.map((t) => t / intensity_scale) : xs.dR.map((t) => (t / intensity_scale) * local_offset);
+              const dR = lin_y
+                ? xs.dR.map((t) => t / intensity_scale)
+                : xs.dR.map((t) => (t / intensity_scale) * local_offset);
               data_trace.error_y = { type: "data", array: dR, visible: true };
               if (calculate_residuals) {
-                const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR![i]);
+                const residuals = xs.R.map((r, i) => (r - xs.theory[i]!) / xs.dR![i]!);
                 const residuals_trace: Trace = {
                   x: xs.Q,
                   y: residuals,
@@ -127,7 +126,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           const lin_y = !log_y.value;
           const background_offset = apply_corrections.value ? xs.background : 0.0;
           const local_offset = lin_y ? plot_index * offset : Math.pow(10, plot_index * offset);
-          const theory = xs.theory.map((y, i) => (y - background_offset) / (xs.fresnel[i] - background_offset));
+          const theory = xs.theory.map((y, i) => (y - background_offset) / (xs.fresnel![i]! - background_offset));
           const offset_theory = lin_y ? theory.map((t) => t + local_offset) : theory.map((t) => t * local_offset);
           theory_traces.push({
             x: xs.Q,
@@ -137,7 +136,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
             line: { width: 2, color },
           });
           if (xs.R !== undefined) {
-            const R = xs.R.map((y, i) => (y - background_offset) / (xs.fresnel[i] - background_offset));
+            const R = xs.R.map((y, i) => (y - background_offset) / (xs.fresnel![i]! - background_offset));
             const offset_R = lin_y ? R.map((t) => t + local_offset) : R.map((t) => t * local_offset);
             const data_trace: Trace = {
               x: xs.Q,
@@ -152,11 +151,11 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
               data_trace.error_x = { type: "data", array: xs.dQ, visible: true };
             }
             if (xs.dR !== undefined) {
-              const dR = xs.dR.map((dy, i) => dy / (xs.fresnel[i] - background_offset));
+              const dR = xs.dR.map((dy, i) => dy / (xs.fresnel![i]! - background_offset));
               const dR_offset = lin_y ? dR : dR.map((t) => t * local_offset);
               data_trace.error_y = { type: "data", array: dR_offset, visible: true };
               if (calculate_residuals) {
-                const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR![i]);
+                const residuals = xs.R.map((r, i) => (r - xs.theory[i]!) / xs.dR![i]!);
                 const residuals_trace: Trace = {
                   x: xs.Q,
                   y: residuals,
@@ -192,7 +191,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           const intensity_scale = apply_corrections.value ? intensity : 1.0;
           const background_offset = apply_corrections.value ? background : 0.0;
           const Q4 = xs.Q.map((qq) => 1e-8 * Math.pow(qq, -4) * intensity_scale);
-          const theory = xs.theory.map((t, i) => (t - background_offset) / Q4[i]);
+          const theory = xs.theory.map((t, i) => (t - background_offset) / Q4![i]!);
           const offset_theory = theory.map((t) => t * local_offset);
           theory_traces.push({
             x: xs.Q,
@@ -202,7 +201,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
             line: { width: 2, color },
           });
           if (xs.R !== undefined) {
-            const R = xs.R.map((r, i) => (r - background_offset) / Q4[i]);
+            const R = xs.R.map((r, i) => (r - background_offset) / Q4![i]!);
             const offset_R = R.map((t) => t * local_offset);
             const data_trace: Trace = {
               x: xs.Q,
@@ -217,11 +216,11 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
               data_trace.error_x = { type: "data", array: xs.dQ, visible: true };
             }
             if (xs.dR !== undefined) {
-              const dR = xs.dR.map((dy, i) => dy / Q4[i]);
+              const dR = xs.dR.map((dy, i) => dy / Q4[i]!);
               const offset_dR = dR.map((t) => t * local_offset);
               data_trace.error_y = { type: "data", array: offset_dR, visible: true };
               if (calculate_residuals) {
-                const residuals = xs.R.map((r, i) => (r - xs.theory[i]) / xs.dR![i]);
+                const residuals = xs.R.map((r, i) => (r - xs.theory[i]!) / xs.dR![i]!);
                 const residuals_trace: Trace = {
                   x: xs.Q,
                   y: residuals,
@@ -264,9 +263,9 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           const legendgroup = `group_${plot_index}`;
 
           const Tm = interp(pp.Q, mm.Q, mm.theory);
-          const TSA = Tm.map((m, i) => {
-            const p_corr = (pp.theory[i] - pp_background_offset) / pp_intensity_scale;
-            const m_corr = (mm.theory[i] - mm_background_offset) / mm_intensity_scale;
+          const TSA = Tm.map((_m, i) => {
+            const p_corr = (pp.theory[i]! - pp_background_offset) / pp_intensity_scale;
+            const m_corr = (mm.theory[i]! - mm_background_offset) / mm_intensity_scale;
             return (p_corr - m_corr) / (p_corr + m_corr) + local_offset;
           });
 
@@ -277,7 +276,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
             const p_corr = pp.R.map((r) => (r - pp_background_offset) / pp_intensity_scale);
             const m_corr = Rm.map((r) => (r - mm_background_offset) / mm_intensity_scale);
             const SA = m_corr.map((m, i) => {
-              const p = p_corr[i];
+              const p = p_corr[i]!;
               return (p - m) / (p + m);
             });
             const SA_offset = SA.map((v) => v + local_offset);
@@ -297,15 +296,15 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
             if (pp.dR !== undefined && mm.dR !== undefined) {
               const dRm = interp(pp.Q, mm.Q, mm.dR);
               const dSA = dRm.map((dm, i) => {
-                const dp_corr = pp.dR![i] / pp_intensity_scale;
+                const dp_corr = pp.dR![i]! / pp_intensity_scale;
                 const dm_corr = dm / mm_intensity_scale;
-                const p = p_corr[i];
-                const m = m_corr[i];
+                const p = p_corr[i]!;
+                const m = m_corr[i]!;
                 return Math.sqrt((4 * ((p * dm_corr) ** 2 + (m * dp_corr) ** 2)) / (p + m) ** 4);
               });
               data_trace.error_y = { type: "data", array: dSA, visible: true };
               if (calculate_residuals) {
-                const residuals = SA.map((v, i) => (v - TSA[i]) / dSA[i]);
+                const residuals = SA.map((v, i) => (v - TSA![i]!) / dSA[i]!);
                 const residuals_trace: Trace = {
                   x: pp.Q,
                   y: residuals,
@@ -362,7 +361,7 @@ async function draw_plot() {
   const { theory_traces, data_traces, xaxis_label, yaxis_label } = generate_new_traces(
     plot_data.value,
     reflectivity_type.value,
-    show_residuals.value
+    show_residuals.value,
   );
   const layout: Partial<Plotly.Layout> = {
     uirevision: reflectivity_type.value,
@@ -448,13 +447,17 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
     throw new Error(`lengths of xp (${xp.length}) and fp (${fp.length}) must match`);
   }
 
+  if (xp.length < 2) {
+    throw new Error("length of xp, fp must be > 1");
+  }
+
   const xpv = xp.values();
   const fpv = fp.values();
 
-  const lowest_xp = xp[0];
-  const lowest_fp = fp[0];
+  const lowest_xp = xp[0]!;
+  const lowest_fp = fp[0]!;
   // const highest_xp = xp[xp.length - 1];
-  const highest_fp = fp[fp.length - 1];
+  const highest_fp = fp[fp.length - 1]!;
 
   let lower_xp = xpv.next();
   let lower_fp = fpv.next();
@@ -484,7 +487,7 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
         lower_fp.value!
       );
     }
-  });
+  }) as number[];
 }
 </script>
 
@@ -545,8 +548,7 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
           for="apply_corrections"
           class="form-check-label"
           title="Apply background and intensity corrections to data instead of theory"
-          >R<sub>corr</sub></label
-        >
+        >R<sub>corr</sub></label>
       </div>
     </div>
     <div class="row px-2 align-items-center">

@@ -48,7 +48,7 @@ function createParameter(
   value: number,
   limits: [BoundsValue, BoundsValue] = ["-inf", "inf"],
   fixed: boolean = true,
-  tags: string[] = []
+  tags: string[] = [],
 ) {
   const par: Parameter = {
     id: uuidv4(),
@@ -69,7 +69,7 @@ function createLayer(
   irho: number,
   thickness: number,
   interface_: number,
-  magnetism: Magnetism | null = null
+  magnetism: Magnetism | null = null,
 ) {
   const rhoParam = createParameter("rho", rho, ["-inf", "inf"], true, ["sample"]);
   const irhoParam = createParameter("irho", irho, ["-inf", "inf"], true, ["sample"]);
@@ -205,14 +205,8 @@ function setParameterBounds(stack: Stack) {
     const value = p.slot.value;
     p.bounds = value === 0.0 ? [-0.1, 0.1] : [value * 0.5, value * 1.5];
     p.bounds.sort((a, b) => {
-      let c =
-        a === "-inf" ? Number.NEGATIVE_INFINITY
-        : a === "inf" ? Number.POSITIVE_INFINITY
-        : a;
-      let d =
-        b === "-inf" ? Number.NEGATIVE_INFINITY
-        : b === "inf" ? Number.POSITIVE_INFINITY
-        : b;
+      let c = a === "-inf" ? Number.NEGATIVE_INFINITY : a === "inf" ? Number.POSITIVE_INFINITY : a;
+      let d = b === "-inf" ? Number.NEGATIVE_INFINITY : b === "inf" ? Number.POSITIVE_INFINITY : b;
       return c - d;
     });
   };
@@ -258,7 +252,7 @@ function setQProbe() {
     editQmin.value,
     editQmax.value,
     editQsteps.value,
-    0.0001
+    0.0001,
   );
   sendModel();
 }
@@ -302,7 +296,7 @@ function dragOver(index: number, event: DragEvent) {
 
 function drop(index: number) {
   if (dragData.value !== null) {
-    const draggedDict = sortedLayers.value[dragData.value];
+    const draggedDict = sortedLayers.value[dragData.value] as Slab;
     sortedLayers.value.splice(dragData.value, 1);
     sortedLayers.value.splice(index, 0, draggedDict);
     dragData.value = null;
@@ -320,7 +314,9 @@ function dragEnd() {
     <div class="container m-2">
       <div class="card">
         <div class="card-body">
-          <h5 class="card-title d-inline-block px-2 my-0 align-middle">Simple Slab Model Builder</h5>
+          <h5 class="card-title d-inline-block px-2 my-0 align-middle">
+            Simple Slab Model Builder
+          </h5>
           <button
             class="btn btn-primary"
             type="button"
@@ -344,7 +340,9 @@ function dragEnd() {
     <div class="container mt-4">
       <div class="row justify-content-end">
         <div class="col">
-          <button class="btn btn-primary m-2" @click="showEditQRange = !showEditQRange">Edit Q-range</button>
+          <button class="btn btn-primary m-2" @click="showEditQRange = !showEditQRange">
+            Edit Q-range
+          </button>
         </div>
         <div class="col-auto align-self-center">
           <div class="form-check form-switch m-2">
@@ -383,7 +381,9 @@ function dragEnd() {
           <input id="qsteps" v-model="editQsteps" class="form-control" type="number" step="1" />
         </div>
         <div class="col-auto align-self-end">
-          <button class="btn btn-secondary mx-2" @click="setQProbe">Apply new Q</button>
+          <button class="btn btn-secondary mx-2" @click="setQProbe">
+            Apply new Q
+          </button>
         </div>
       </div>
       <table v-if="dictionaryLoaded" id="sortable" class="table table-sm">
@@ -393,7 +393,9 @@ function dragEnd() {
             <th>Layer</th>
             <th>Thickness</th>
             <th>Rho</th>
-            <th v-if="showImaginary">iRho</th>
+            <th v-if="showImaginary">
+              iRho
+            </th>
             <th>Interface</th>
             <th></th>
             <th></th>
@@ -468,7 +470,11 @@ function dragEnd() {
                 step="1"
               />
             </td>
-            <td><button class="btn btn-danger btn-sm" @click="deleteLayer(key)">Delete</button></td>
+            <td>
+              <button class="btn btn-danger btn-sm" @click="deleteLayer(key)">
+                Delete
+              </button>
+            </td>
             <td>
               <button class="btn btn-success btn-sm add-layer-after" title="add layer here" @click="addLayer(key + 1)">
                 +
@@ -477,20 +483,30 @@ function dragEnd() {
           </tr>
         </tbody>
       </table>
-      <p v-else>Load data to start building a model</p>
+      <p v-else>
+        Load data to start building a model
+      </p>
     </div>
 
     <div class="row">
       <div class="col">
-        <button class="btn btn-primary m-2" @click="newModel">New Model</button>
-        <button v-if="dictionaryLoaded" class="btn btn-secondary m-2" @click="exportModelScript">Export script</button>
+        <button class="btn btn-primary m-2" @click="newModel">
+          New Model
+        </button>
+        <button v-if="dictionaryLoaded" class="btn btn-secondary m-2" @click="exportModelScript">
+          Export script
+        </button>
       </div>
       <div v-if="dictionaryLoaded" class="col-auto">
-        <button class="btn btn-secondary m-2" @click="sendModel()">Apply changes</button>
+        <button class="btn btn-secondary m-2" @click="sendModel()">
+          Apply changes
+        </button>
       </div>
       <div v-if="dictionaryLoaded" class="col-auto">
         <div class="input-group m-2">
-          <button class="btn btn-success btn-sm" @click="addLayer(insertIndex)">Add layer at index:</button>
+          <button class="btn btn-success btn-sm" @click="addLayer(insertIndex)">
+            Add layer at index:
+          </button>
           <label for="insert-index" class="visually-hidden">Insert index</label>
           <input id="insert-index" v-model="insertIndex" class="form-control me-4 insert-index" type="number" />
         </div>
@@ -500,7 +516,9 @@ function dragEnd() {
     <div class="container m-2">
       <div class="card bg-warning">
         <div class="card-body">
-          <h5 class="card-title">Limitations and future features</h5>
+          <h5 class="card-title">
+            Limitations and future features
+          </h5>
           <div class="card-text">
             <ul>
               <li>This builder can currently only do non-magnetic models.</li>
