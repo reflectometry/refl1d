@@ -1,9 +1,9 @@
 repos:
   - repo: local
     hooks:
-      - id: eslint
-        name: eslint
-        entry: bash -c "cd refl1d/webview/client && npm run lint"
+      - id: frontend-lint
+        name: frontend-lint
+        entry: bash -c 'cd refl1d/webview/client && if command -v bun >/dev/null 2>&1; then bun run lint; elif command -v npm >/dev/null 2>&1; then npm run lint; else echo "Need bun or npm to run lint" >&2; exit 1; fi'
         language: system
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -16,7 +16,7 @@ repos:
       # - id: end-of-file-fixer
       # - id: trailing-whitespace
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.7
+    rev: v0.14.8
     hooks:
       # - id: ruff
       #   args: [--fix, --exit-non-zero-on-fix]
@@ -24,4 +24,4 @@ repos:
 
 ci:
   autoupdate_schedule: monthly
-  skip: [eslint]
+  skip: [frontend-lint]
