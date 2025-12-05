@@ -49,7 +49,7 @@ function createParameter(
   value: number,
   limits: [BoundsValue, BoundsValue] = ["-inf", "inf"],
   fixed: boolean = true,
-  tags: string[] = [],
+  tags: string[] = []
 ) {
   const par: Parameter = {
     id: uuidv4(),
@@ -70,7 +70,7 @@ function createLayer(
   irho: number,
   thickness: number,
   interface_: number,
-  magnetism: Magnetism | null = null,
+  magnetism: Magnetism | null = null
 ) {
   const rhoParam = createParameter("rho", rho, ["-inf", "inf"], true, ["sample"]);
   const irhoParam = createParameter("irho", irho, ["-inf", "inf"], true, ["sample"]);
@@ -253,7 +253,7 @@ function setQProbe() {
     editQmin.value,
     editQmax.value,
     editQsteps.value,
-    0.0001,
+    0.0001
   );
   sendModel();
 }
@@ -315,9 +315,7 @@ function dragEnd() {
     <div class="container m-2">
       <div class="card">
         <div class="card-body">
-          <h5 class="card-title d-inline-block px-2 my-0 align-middle">
-            Simple Slab Model Builder
-          </h5>
+          <h5 class="card-title d-inline-block px-2 my-0 align-middle">Simple Slab Model Builder</h5>
           <button
             class="btn btn-primary"
             type="button"
@@ -360,11 +358,12 @@ function dragEnd() {
               class="form-check-input"
               type="checkbox"
               @click="sendModel()"
-            >
+            />
             <label
               class="form-check-label"
               for="showImaginary_input"
-            >Show imaginary SLD</label>
+              >Show imaginary SLD</label
+            >
           </div>
           <div class="form-check form-switch m-2">
             <input
@@ -373,11 +372,12 @@ function dragEnd() {
               class="form-check-input"
               type="checkbox"
               @click="sendModel()"
-            >
+            />
             <label
               class="form-check-label"
               for="dqIsFWHM_input"
-            >Resolution as FWHM</label>
+              >Resolution as FWHM</label
+            >
           </div>
         </div>
       </div>
@@ -393,7 +393,7 @@ function dragEnd() {
             class="form-control"
             type="number"
             step="0.01"
-          >
+          />
         </div>
         <div class="col">
           <label for="qmax">Q max (Å<sup>-1</sup>)</label>
@@ -403,7 +403,7 @@ function dragEnd() {
             class="form-control"
             type="number"
             step="0.01"
-          >
+          />
         </div>
         <div class="col">
           <label for="qsteps">Q steps</label>
@@ -413,7 +413,7 @@ function dragEnd() {
             class="form-control"
             type="number"
             step="1"
-          >
+          />
         </div>
         <div class="col-auto align-self-end">
           <button
@@ -435,9 +435,7 @@ function dragEnd() {
             <th>Layer</th>
             <th>Thickness</th>
             <th>Rho</th>
-            <th v-if="showImaginary">
-              iRho
-            </th>
+            <th v-if="showImaginary">iRho</th>
             <th>Interface</th>
             <th />
             <th />
@@ -461,7 +459,8 @@ function dragEnd() {
               <span
                 width="10px"
                 class="badge bg-secondary"
-              >:</span>
+                >:</span
+              >
             </td>
             <td>
               <textarea
@@ -480,7 +479,8 @@ function dragEnd() {
               <label
                 for="layer-thickness"
                 class="visually-hidden"
-              >>Layer Thickness</label>
+                >>Layer Thickness</label
+              >
               <input
                 v-if="getSlot(layer.thickness) !== null"
                 id="layer-thickness"
@@ -488,13 +488,14 @@ function dragEnd() {
                 class="form-control"
                 type="number"
                 step="5"
-              >
+              />
             </td>
             <td>
               <label
                 for="layer-rho"
                 class="visually-hidden"
-              >>Layer Rho</label>
+                >>Layer Rho</label
+              >
               <input
                 v-if="getSlot(layer.material.rho) !== null"
                 id="layer-rho"
@@ -502,13 +503,14 @@ function dragEnd() {
                 class="form-control"
                 type="number"
                 step="0.01"
-              >
+              />
             </td>
             <td v-if="showImaginary">
               <label
                 for="layer-irho"
                 class="visually-hidden"
-              >>Layer iRho</label>
+                >>Layer iRho</label
+              >
               <input
                 v-if="getSlot(layer.material.irho) !== null"
                 id="layer-irho"
@@ -516,13 +518,14 @@ function dragEnd() {
                 class="form-control"
                 type="number"
                 step="0.01"
-              >
+              />
             </td>
             <td>
               <label
                 for="layer-interface"
                 class="visually-hidden"
-              >>Layer Interface</label>
+                >>Layer Interface</label
+              >
               <input
                 v-if="getSlot(layer.interface) !== null"
                 id="layer-interface"
@@ -530,7 +533,7 @@ function dragEnd() {
                 class="form-control"
                 type="number"
                 step="1"
-              >
+              />
             </td>
             <td>
               <button
@@ -552,9 +555,7 @@ function dragEnd() {
           </tr>
         </tbody>
       </table>
-      <p v-else>
-        Load data to start building a model
-      </p>
+      <p v-else>Load data to start building a model</p>
     </div>
 
     <div class="row">
@@ -564,6 +565,13 @@ function dragEnd() {
           @click="newModel"
         >
           New Model
+        </button>
+        <button
+          v-if="dictionaryLoaded"
+          class="btn btn-secondary m-2"
+          @click="exportModelScript"
+        >
+          Export script
         </button>
       </div>
       <div
@@ -591,13 +599,14 @@ function dragEnd() {
           <label
             for="insert-index"
             class="visually-hidden"
-          >Insert index</label>
+            >Insert index</label
+          >
           <input
             id="insert-index"
             v-model="insertIndex"
             class="form-control me-4 insert-index"
             type="number"
-          >
+          />
         </div>
       </div>
     </div>
@@ -605,9 +614,7 @@ function dragEnd() {
     <div class="container m-2">
       <div class="card bg-warning">
         <div class="card-body">
-          <h5 class="card-title">
-            Limitations and future features
-          </h5>
+          <h5 class="card-title">Limitations and future features</h5>
           <div class="card-text">
             <ul>
               <li>This builder can currently only do non-magnetic models.</li>
