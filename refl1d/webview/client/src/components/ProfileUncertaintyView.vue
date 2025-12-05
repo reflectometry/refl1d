@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/// <reference types="@types/uuid"/>
 import { ref, shallowRef } from "vue";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket";
 import { configWithSVGDownloadButton } from "bumps-webview-client/src/plotly_extras";
