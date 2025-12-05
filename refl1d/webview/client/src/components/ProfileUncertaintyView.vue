@@ -189,7 +189,9 @@ async function disableAutoAlign() {
       </div>
     </div>
     <div>
-      <button class="btn btn-primary btn-sm" @click="download_csv">Download CSV</button>
+      <button class="btn btn-primary btn-sm" @click="download_csv">
+        Download CSV
+      </button>
       <a ref="hiddenDownload" class="hidden" download="contours.csv" type="text/csv">Download CSV</a>
     </div>
     <!-- </details> -->

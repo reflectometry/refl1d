@@ -545,8 +545,7 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
           for="apply_corrections"
           class="form-check-label"
           title="Apply background and intensity corrections to data instead of theory"
-          >R<sub>corr</sub></label
-        >
+        >R<sub>corr</sub></label>
       </div>
     </div>
     <div class="row px-2 align-items-center">

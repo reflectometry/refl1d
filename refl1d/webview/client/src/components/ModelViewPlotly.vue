@@ -165,7 +165,9 @@ async function fetch_and_draw() {
   <div class="container d-flex flex-grow-1 flex-column">
     <label for="model">Model:</label>
     <select id="model" v-model="current_model" class="form-select" @change="draw_requested = true">
-      <option v-for="(name, index) in model_names" :key="index" :value="index">{{ index }}: {{ name ?? "" }}</option>
+      <option v-for="(name, index) in model_names" :key="index" :value="index">
+        {{ index }}: {{ name ?? "" }}
+      </option>
     </select>
     <div :id="plot_div_id" ref="plot_div" class="flex-grow-1"></div>
   </div>
