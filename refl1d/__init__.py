@@ -27,7 +27,7 @@ except ImportError:
 __schema_version__ = "2"
 
 BACKEND_NAMES = Literal["numba", "c_ext", "python"]
-BACKEND_NAME: BACKEND_NAMES = os.environ.get("REFL1D_BACKEND", "numba")
+BACKEND_NAME: BACKEND_NAMES = os.environ.get("REFL1D_BACKEND", "numba")  # type: ignore[assignment]
 
 
 def use(backend_name: BACKEND_NAMES):
