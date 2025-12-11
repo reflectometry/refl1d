@@ -17,7 +17,7 @@ H_initiator = SLD(name="H-initiator", rho=0)
 
 # In this case we are using the neutron scattering length density as is
 # standard practice in reflectivity experiments rather than the chemical
-# formula and mass density.  The :class:`SLD <refl1d.material.SLD>` class
+# formula and mass density.  The :class:`SLD <refl1d.sample.material.SLD>` class
 # allows us to name the material and define the real and imaginary components
 # of scattering length density $\rho$.  Note that we are using the imaginary
 # $\rho_i$ rather than the absorption coefficient $\mu = 2\lambda\rho_i$
@@ -25,7 +25,7 @@ H_initiator = SLD(name="H-initiator", rho=0)
 # the reflectivity.
 #
 # For the tethered polymer we don't use a simple slab model, but instead
-# define a :class:`PolymerBrush <refl1d.polymer.PolymerBrush>`
+# define a :class:`PolymerBrush <refl1d.sample.polymer.PolymerBrush>`
 # layer, which understands that the system is compose of polymer plus
 # solvent, and that the polymer chains tail off like:
 #
@@ -49,18 +49,14 @@ H_initiator = SLD(name="H-initiator", rho=0)
 # The tethered polymer layer definition looks like
 
 
-
 # === Sample ===
 # Deuterated sample
-D_brush = PolymerBrush(polymer=D_polystyrene, solvent=D_toluene,
-                       base_vf=70, base=120, length=80, power=2,
-                       sigma=10)
+D_brush = PolymerBrush(polymer=D_polystyrene, solvent=D_toluene, base_vf=70, base=120, length=80, power=2, sigma=10)
 
 # This layer can be combined with the remaining layers to form the
 # deuterated measurement sample
 
-D = (silicon(0, 5) | SiOx(100, 5) | D_initiator(100, 20) | D_brush(400, 0)
-     | D_toluene)
+D = silicon(0, 5) | SiOx(100, 5) | D_initiator(100, 20) | D_brush(400, 0) | D_toluene
 
 # The stack notation ``material(thickness, interface) | ...`` is performing
 # a number of tasks for you.  One thing it is doing is wrapping materials
@@ -87,8 +83,8 @@ D = (silicon(0, 5) | SiOx(100, 5) | D_initiator(100, 20) | D_brush(400, 0)
 
 
 # Undeuterated sample is a copy of the deuterated sample
-H_brush = copy(D_brush)       # Share tethered polymer parameters...
-H_brush.solvent = H_toluene   # ... but use different solvent
+H_brush = copy(D_brush)  # Share tethered polymer parameters...
+H_brush.solvent = H_toluene  # ... but use different solvent
 H = silicon | SiOx | H_initiator | H_brush | H_toluene
 
 # We want to share thickness and interface between the two systems
@@ -118,7 +114,7 @@ for i in (0, 1, 2):
 D[1].thickness.range(0, 200)
 D[2].thickness.range(0, 200)
 D_polystyrene.rho.range(6.2, 6.5)
-SiOx.rho.range(2.07, 4.16) # Si to SiO2
+SiOx.rho.range(2.07, 4.16)  # Si to SiO2
 D_toluene.rho.pmp(5)
 D_initiator.rho.range(0, 1.5)
 D_brush.base_vf.range(50, 80)
@@ -150,8 +146,8 @@ H_initiator.rho.range(-0.5, 0.5)
 
 # === Data files ===
 instrument = NCNR.NG7(Qlo=0.005, slits_at_Qlo=0.075)
-D_probe = instrument.load('10ndt001.refl', back_reflectivity=True)
-H_probe = instrument.load('10nht001.refl', back_reflectivity=True)
+D_probe = instrument.load("10ndt001.refl", back_reflectivity=True)
+H_probe = instrument.load("10nht001.refl", back_reflectivity=True)
 
 D_probe.theta_offset.range(-0.1, 0.1)
 

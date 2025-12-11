@@ -1,4 +1,3 @@
-
 # Soft material structures
 # =========================
 #
@@ -28,6 +27,8 @@
 # Bring in all of the functions from refl1d.names so that we can use them
 # in the remainder of the script.
 
+import numpy
+
 from refl1d.names import *
 
 # The polymer system is deposited on a gold film with chromium as an
@@ -36,8 +37,8 @@ from refl1d.names import *
 # these layers.
 
 # == Sample definition ==
-chrome = Material('Cr')
-gold = Material('Au')
+chrome = Material("Cr")
+gold = Material("Au")
 
 # The polymer system consists of two polymers, deuterated and non-deuterated
 # PDADMA/PSS.  Since the neutron scattering cross section for deuterium is
@@ -51,13 +52,13 @@ gold = Material('Au')
 # rather than making assumptions about the specific chemical composition of the
 # mixture.
 
-PDADMA_dPSS = SLD(name ='PDADMA dPSS',rho = 2.77)
-PDADMA_PSS = SLD(name = 'PDADMA PSS',rho = 1.15)
+PDADMA_dPSS = SLD(name="PDADMA dPSS", rho=2.77)
+PDADMA_PSS = SLD(name="PDADMA PSS", rho=1.15)
 
 # The polymer materials are stacked into a bilayer, with thickness
 # estimates based on ellipsometery measurements (as stated in the paper).
 
-bilayer = PDADMA_PSS(178,10) | PDADMA_dPSS(44.3,10)
+bilayer = PDADMA_PSS(178, 10) | PDADMA_dPSS(44.3, 10)
 
 # The bilayer is repeated 5 times and stacked on the chromium/gold substrate
 # In this system we expect the kinetics of the surface diffusion to differ
@@ -67,8 +68,9 @@ bilayer = PDADMA_PSS(178,10) | PDADMA_dPSS(44.3,10)
 # expected to vary widely from one-another, the repeat notation could not
 # have been used at all.
 
-sample = (silicon(0,5) | chrome(30,3) | gold(120,5)
-          | (bilayer)*4 | PDADMA_PSS(178,10) | PDADMA_dPSS(44.3,10) | air)
+sample = (
+    silicon(0, 5) | chrome(30, 3) | gold(120, 5) | (bilayer) * 4 | PDADMA_PSS(178, 10) | PDADMA_dPSS(44.3, 10) | air
+)
 
 # Now that the model sample is built, we can start adding ranges to the fit
 # parameters. We assume that the chromium and gold layers are well known through
@@ -80,8 +82,8 @@ sample = (silicon(0,5) | chrome(30,3) | gold(120,5)
 # pure undeuterated SLD.
 
 # == Fit parameters ==
-PDADMA_dPSS.rho.range(1.15,2.77)
-PDADMA_PSS.rho.range(1.15,2.77)
+PDADMA_dPSS.rho.range(1.15, 2.77)
+PDADMA_PSS.rho.range(1.15, 2.77)
 
 # We are primarily interested in the interfacial roughness so we will
 # fit those as well.  First we define the interfaces within the repeated
@@ -90,13 +92,13 @@ PDADMA_PSS.rho.range(1.15,2.77)
 # the repeated bilayer, which is the 0-origin index of the bilayer in the
 # stack.
 
-sample[3][0].interface.range(5,45)
-sample[3][1].interface.range(5,45)
+sample[3][0].interface.range(5, 45)
+sample[3][1].interface.range(5, 45)
 
 # The interface between the stack and the next layer is controlled from
 # the repeated bilayer.
 
-sample[3].interface.range(5,45)
+sample[3].interface.range(5, 45)
 
 # Because the top bilayer has different dynamics, we optimize the interfaces
 # independenly. Although we want the optimiser to threat these parameters
@@ -104,8 +106,8 @@ sample[3].interface.range(5,45)
 # overall nature of the diffusion is expected to be the same and so we use the
 # same limits.
 
-sample[4].interface.range(5,45)
-sample[5].interface.range(5,45)
+sample[4].interface.range(5, 45)
+sample[5].interface.range(5, 45)
 
 
 # Finally we need to associate the sample with a measurement.  We do not

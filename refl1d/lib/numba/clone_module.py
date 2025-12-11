@@ -1,5 +1,5 @@
-import numba
 import importlib.util
+
 
 def clone_module(original_module: str):
     spec = importlib.util.find_spec(original_module)

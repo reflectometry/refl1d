@@ -1,16 +1,19 @@
 .. _installing:
 
-**************************
-Installing the application
-**************************
+*****************
+Installing Refl1D
+*****************
 
 .. contents:: :local:
 
 | Windows installer: :slink:`%(winexe)s`
 | Source: :slink:`%(srczip)s`
 
-Recent versions of the Refl1D application are available for windows
-from `github <https://github.com/reflectometry/refl1d/releases/latest>`_.
+
+Installing Latest Release
+=========================
+
+A Windows installer is available from `github <https://github.com/reflectometry/refl1d/releases/latest>`_.
 The file `Refl1D-VERSION-exe.zip` contains python, the application, the
 supporting libraries and everything else needed to run the application.
 
@@ -25,91 +28,139 @@ The installed python is a full version of python. If your specialized
 reflectometry models need additional python packages, then you can
 use `python -m pip` in the extracted directory to install them.
 
-Linux users will need to install from using pip::
+Refl1D is also available on all platforms from PyPI using pip::
 
-    pip install refl1d wxpython
+    pip install refl1d
+    
+    # if you also want to run the webview, an optional extra is available
+    pip install refl1d
 
-Note that the binary versions will lag the release version until the release
-process is automated.  Windows and Mac users may want to install using pip as
-well to get the version with the latest
-`changes <https://github.com/reflectometry/refl1d/blob/master/CHANGES.rst>`_.
 
 Installing from source
 ======================
 
-Installing the application from source requires a working python environment.
-See below for operating system specific instructions.
+Requirements
+------------
 
-Our base scientific python environment contains the following packages as
-well as their dependencies:
+    - `Python <https://www.python.org/downloads/>`_ >= 3.10 
+    - git
 
-    - python 3
-    - numpy
-    - scipy
-    - matplotlib
-    - wxpython
+You can either use Python from the `python.org <https://www.python.org/downloads/>_` site, or if you prefer, 
+you can use miniforge. Miniforge is an open version of the `conda` program, and is pre-configured to use the `conda-forge` repository.
+This repo is the most useful for open scientific application development.
 
-Once your environment is in place, you can install directly from PyPI
-using pip::
+You can get an installer for your system (MacOS, Windows or Linux) here: https://github.com/conda-forge/miniforge?tab=readme-ov-file#miniforge3
 
-    pip install refl1d
+Run the installer, then from a terminal window (PowerShell or Terminal in Windows) run::
 
-This will install refl1d, bumps and periodictable.
+    conda init 
 
-You can run the program by typing:
+then close and re-open your terminal.
 
-    python -m refl1d.main
 
-If this fails, then follow the instructions in :ref:`contributing` to install
-from the source archive directly.
+Setup Environment
+-----------------
 
-Windows
--------
+You can create a new virtual environment for Refl1D, or install it in your base environment.  To create a new environment, run::
 
-There are couple of options for setting up a python environment on windows:
+    # if using miniforge
+    conda create -n refl1d
+    conda activate refl1d
 
-  - `python.org <https://www.python.org/>`_, and
-  - `Anaconda <https://www.anaconda.com/distribution/>`_.
+    # if using regular python
+    python -m venv refl1d
+    source refl1d/bin/activate
 
-With most pypi packages now bundled with wheels, it is now easy to set up a
-development environment using the official python package.  Similarly,
-anaconda provides binaries for all the refl1d dependencies.
 
-You will need a C/C++ compiler.  If you already have Microsoft Visual C
-installed you are done. If not, you can use the MinGW compiler that is supplied
-with your python environment or download your own.  You can set MinGW
-as the default compiler by creating the file *Lib\distutils\\distutils.cfg*
-in your python directory (e.g., *C:\\Python3.8*) with the following content::
+Installation
+------------
 
-    [build]
-    compiler=mingw32
+To install the application from source, clone the repository and install the
+dependencies::
 
-Once the python is prepared, you can install the periodic table and bumps
-package using the Windows console.
+    git clone https://github.com/reflectometry/refl1d.git
+    cd refl1d
+    pip install .
 
-Linux
------
+If you want to run the webview, you can install the optional extra::
 
-Linux distributions will provide the base required packages.  You
-will need to refer to your distribution documentation for details.
+    pip install .
 
-On debian/ubuntu, the command will be something like::
 
-    sudo apt-get install python3-{matplotlib,numpy,scipy,wxgtk4.0,pyparsing,setuptools}
+Installing for Development
+==========================
 
-For development you also want nose and sphinx::
+Refl1d depends closely on the `bumps <https://github.com/bumps/bumps>`_,
+which also goes through frequent development. If you are also working with the
+scattering length density calculator or the fitting engine, or if you need the 
+latest unreleased version of bumps, you may want to install bumps from source.
+Clone the bumps repository and install from source in your refl1d virtual environment::
 
-    sudo apt-get install python-{nose,sphinx}
+    git clone https://github.com/bumps/bumps.git
+    pip install -e ./bumps
 
-Latex is needed to build the pdf documentation.
 
-OS/X
-----
+Python Environment
+------------------
 
-Similar to windows, you can install the official python distribution or
-use Anaconda.  You will need to install the Xcode command line utilities
-to get the compiler.
+If you are planning to contribute to the project, you will want to install
+the package in development mode, including the dev dependencies::
 
-To run the interactive interface on OS/X you may need to use::
+    pip install -e .[dev]
 
-    pythonw -m refl1d.main --edit
+This will install the package in development mode, so that changes you make
+to the source code will be reflected in the installed package.  It will also
+install the development dependencies, which include the testing framework
+and other tools used in the development process.
+
+If you are not planning to develop the Vue TS webview client, you can now run the application with::
+
+    refl1d-webview --port 8080
+
+which will automatically open a browser window to the webview.
+
+Javascript Environment
+----------------------
+
+If you are planning to develop the webview (client), you will need to install
+a Javascript environment.
+
+* `Node.js <https://nodejs.org/en/download/>`_ can be installed from the website, or using conda::
+
+    conda install -c conda-forge nodejs
+
+* `Bun <https://bun.sh/>`_ is a fast-performing drop-in replacement for npm, and is available on all platforms. 
+
+Similar to the Python environment, you may want to install and link the ``bumps-webview-client`` in your Refl1d Javascript environment::
+
+    cd /path/to/bumps/bumps/webview/client
+    npm install # or bun install
+    npm link    # or bun link
+
+    cd /path/to/refl1d/refl1d/webview/client
+    npm install                     # or bun install
+    npm link bumps-webview-client   # or bun link bumps-webview-client
+
+To build the client, run::
+
+    cd /path/to/refl1d/refl1d/webview/client
+    npm run build   # or bun build
+
+If you are developing the client, you can run the client in development mode.
+In this mode, any changes to client code are immediately reflected in a connected running client::
+
+    npm run dev   # or bun run dev
+
+This starts the client and shows the URL to connect to in the terminal (typically http://localhost:5173).
+
+Now, you can start the Python webview server with::
+
+    refl1d-webview --headless --port 8080
+
+and point the client to the server with the `?server=localhost:8080` query string, e.g.
+
+    http://localhost:5173/?server=localhost:8080
+
+.. note::
+    A convenience script is available in the `refl1d/webview/` directory to build the client::
+        python -m refl1d.webview.build_client

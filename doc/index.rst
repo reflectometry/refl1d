@@ -20,3 +20,4 @@ Contents
    tutorial/index.rst
    guide/index.rst
    api/index.rst
+   errata/index.rst

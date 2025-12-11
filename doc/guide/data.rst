@@ -93,7 +93,7 @@ corresponds to a range of $Q$.
 For monochromatic instruments, the wavelength resolution is fixed and
 the angular resolution varies.  For polychromatic instruments, the
 wavelength resolution varies and the angular resolution is fixed.
-Resolution functions are defined in :mod:`refl1d.resolution`.
+Resolution functions are defined in :mod:`refl1d.probe.resolution`.
 
 The angular resolution is determined by the geometry (slit positions,
 openings and sample profile) with perhaps an additional contribution
@@ -220,7 +220,7 @@ The instrument resolution is applied to the theory calculation on
 a point by point basis using a value of $\Delta Q$ derived from
 $\Delta\lambda$ and $\Delta\theta$.   Assuming the resolution is
 well approximated by a Gaussian,
-:func:`convolve <refl1d.reflectivity.convolve>` applies it to the
+:func:`convolve <refl1d.sample.reflectivity.convolve>` applies it to the
 calculated theory function.
 
 The convolution at each point $k$ is computed from the piece-wise linear

@@ -4,13 +4,12 @@
 # Originally written for use in a jupyter notebook
 # Adapted to act as a prototype for the profile plotting in the new GUI for refl1d
 
-from typing import List, TypedDict, TYPE_CHECKING
-from refl1d.experiment import Experiment
-from numpy import inf
-import numpy as np
+from typing import List, TypedDict
 
-if TYPE_CHECKING:
-    import plotly.graph_objs as go
+import numpy as np
+from numpy import inf
+
+from refl1d.experiment import Experiment
 
 from .colors import COLORS as MULTI_PLOT_COLORS
 
@@ -24,7 +23,6 @@ MULTI_PLOT_STYLES = ["solid", "dash", "dashdot", "dot"]
 
 class FindLayers:
     def __init__(self, experiment, axes=None, x_offset=0):
-
         self.experiment = experiment
         self.axes = axes
         self.x_offset = x_offset
@@ -39,7 +37,7 @@ class FindLayers:
     def _find_layer_boundaries(self):
         offset = self.x_offset
         boundary = [-inf, offset]
-        if hasattr(self.experiment, 'sample'):
+        if hasattr(self.experiment, "sample"):
             for L in self.experiment.sample[1:-1]:
                 dx = L.thickness.value
                 offset += dx
@@ -56,7 +54,7 @@ class FindLayers:
     def label_offsets(self):
         z = self.boundary[1:-1]
         left = -20
-        middle = [(a + b) / 2. for a, b in zip(z[:-1], z[1:])]
+        middle = [(a + b) / 2.0 for a, b in zip(z[:-1], z[1:])]
         right = z[-1] + 20
         return [left] + middle + [right]
 
@@ -65,16 +63,15 @@ class FindLayers:
         Reset all markers, for plotly plots
         """
         import plotly.graph_objs as go
+
         # self.clear_markers()
         if not isinstance(self.axes, go.Figure):
-            raise ValueError(
-                "reset_markers_plotly can only be used with type: axes=plotly.graph_objs.Figure")
+            raise ValueError("reset_markers_plotly can only be used with type: axes=plotly.graph_objs.Figure")
 
         fig = self.axes
 
         # Add bars
-        fittable = [self.experiment.sample[idx].thickness.fittable
-                    for idx, _ in enumerate(self.boundary[1:-1])]
+        fittable = [self.experiment.sample[idx].thickness.fittable for idx, _ in enumerate(self.boundary[1:-1])]
         fittable[0] = False  # First interface is not fittable
 
         for f, z_pos in zip(fittable, self.boundary[1:-1]):
@@ -83,9 +80,11 @@ class FindLayers:
             else:
                 line_dict = dict(dash="solid")
 
-            fig.add_vline(x=z_pos, opacity=0.75,
-                          line=line_dict,
-                          )
+            fig.add_vline(
+                x=z_pos,
+                opacity=0.75,
+                line=line_dict,
+            )
 
         # for f,m in zip(fittable,self.markers):
         #     if not f: m.set(linestyle='--', linewidth=1.25)
@@ -95,14 +94,9 @@ class FindLayers:
         offsets = self.label_offsets()
         labels = self.sample_labels()
         for label_pos, label in zip(offsets, labels):
-            fig.add_annotation(text=label,
-                               textangle=-30,
-                               x=label_pos,
-                               yref="paper",
-                               y=1.0,
-                               yanchor="bottom",
-                               showarrow=False
-                               )
+            fig.add_annotation(
+                text=label, textangle=-30, x=label_pos, yref="paper", y=1.0, yanchor="bottom", showarrow=False
+            )
 
 
 def generate_best_profile(model: Experiment):
@@ -111,6 +105,7 @@ def generate_best_profile(model: Experiment):
     else:
         best = model.smooth_profile()
     return best
+
 
 # ============================================================================= #
 # Plotting script below
@@ -130,6 +125,7 @@ class PlotItem(TypedDict):
 
 def plot_multiple_sld_profiles(plot_items: List[PlotItem]):
     import plotly.graph_objs as go
+
     fig = go.Figure()
     nplots = len(plot_items)
     multiplot = nplots > 1
@@ -145,123 +141,142 @@ def plot_multiple_sld_profiles(plot_items: List[PlotItem]):
             colors = SINGLE_PLOT_COLORS
         line_styles = MULTI_PLOT_STYLES if multiplot else SINGLE_PLOT_STYLES
         legendgroup = f"{model_index}:{sample_index} ({model.name})" if multiplot else None
-        plot_sld_profile_plotly(model, fig, colors=colors,
-                                line_styles=line_styles, legendgroup=legendgroup)
+        plot_sld_profile_plotly(model, fig, colors=colors, line_styles=line_styles, legendgroup=legendgroup)
     return fig
 
 
 def plot_sld_profile_plotly(model, fig, colors=SINGLE_PLOT_COLORS, line_styles=SINGLE_PLOT_STYLES, legendgroup=None):
     if model.ismagnetic:
-        z_best, rho_best, irho_best, rhoM_best, thetaM_best = generate_best_profile(
-            model)
-        yaxis_title = 'SLD: ρ, ρ<sub>i</sub>, ρ<sub>M</sub> / 10<sup>-6</sup> Å<sup>-2</sup>'
+        z_best, rho_best, irho_best, rhoM_best, thetaM_best = generate_best_profile(model)
+        yaxis_title = "SLD: ρ, ρ<sub>i</sub>, ρ<sub>M</sub> / 10<sup>-6</sup> Å<sup>-2</sup>"
     else:
         z_best, rho_best, irho_best = generate_best_profile(model)
-        yaxis_title = 'SLD: ρ, ρ<sub>i</sub> / 10<sup>-6</sup> Å<sup>-2</sup>'
+        yaxis_title = "SLD: ρ, ρ<sub>i</sub> / 10<sup>-6</sup> Å<sup>-2</sup>"
 
-    hovertemplate = f"(%{{x}}, %{{y}})<br>{legendgroup if legendgroup is not None else ''} %{{data.hovertext}}<extra></extra>"
+    hovertemplate = (
+        f"(%{{x}}, %{{y}})<br>{legendgroup if legendgroup is not None else ''} %{{data.hovertext}}<extra></extra>"
+    )
 
-    fig.add_scatter(x=z_best, y=rho_best, name='ρ',
-                    legendgroup=legendgroup,
-                    legendgrouptitle_text=legendgroup,
-                    hovertemplate=hovertemplate,
-                    hovertext="SLD",
-                    line={
-                        "color": colors[0],
-                        "dash": line_styles[0],
-                    })
+    fig.add_scatter(
+        x=z_best,
+        y=rho_best,
+        name="ρ",
+        legendgroup=legendgroup,
+        legendgrouptitle_text=legendgroup,
+        hovertemplate=hovertemplate,
+        hovertext="SLD",
+        line={
+            "color": colors[0],
+            "dash": line_styles[0],
+        },
+    )
 
-    fig.add_scatter(x=z_best, y=irho_best, name="ρ<sub>i</sub>",
-                    legendgroup=legendgroup,
-                    hovertemplate=hovertemplate,
-                    hovertext="Im. SLD",
-                    line={
-                        "color": colors[1],
-                        "dash": line_styles[1],
-                    })
+    fig.add_scatter(
+        x=z_best,
+        y=irho_best,
+        name="ρ<sub>i</sub>",
+        legendgroup=legendgroup,
+        hovertemplate=hovertemplate,
+        hovertext="Im. SLD",
+        line={
+            "color": colors[1],
+            "dash": line_styles[1],
+        },
+    )
 
     if model.ismagnetic:
-        fig.add_scatter(x=z_best, y=rhoM_best, name="ρ<sub>M</sub>",
-                        legendgroup=legendgroup,
-                        hovertemplate=hovertemplate,
-                        hovertext="Mag. SLD",
-                        line={
-                            "color": colors[2],
-                            "dash": line_styles[2],
-                        })
+        fig.add_scatter(
+            x=z_best,
+            y=rhoM_best,
+            name="ρ<sub>M</sub>",
+            legendgroup=legendgroup,
+            hovertemplate=hovertemplate,
+            hovertext="Mag. SLD",
+            line={
+                "color": colors[2],
+                "dash": line_styles[2],
+            },
+        )
 
-        fig.add_scatter(x=z_best, y=thetaM_best,
-                        name="θ<sub>M</sub>", yaxis="y2",
-                        legendgroup=legendgroup,
-                        hovertemplate=hovertemplate,
-                        hovertext="Theta M",
-                        line={
-                            "color": colors[3],
-                            "dash": line_styles[3],
-                        })
+        fig.add_scatter(
+            x=z_best,
+            y=thetaM_best,
+            name="θ<sub>M</sub>",
+            yaxis="y2",
+            legendgroup=legendgroup,
+            hovertemplate=hovertemplate,
+            hovertext="Theta M",
+            line={
+                "color": colors[3],
+                "dash": line_styles[3],
+            },
+        )
 
         # TODO: need to make axis scaling for thetaM dependent on if thetaM exceeds 0-360
-        fig.update_layout(yaxis2={
-            'title': {'text': 'Magnetic Angle θ<sub>M</sub> / °'},
-            'type': 'linear',
-            'autorange': False,
-            'range': [0, 360],
-            'anchor': 'x',
-            'overlaying': 'y',
-            'side': 'right',
-            'ticks': "inside",
-            # 'ticklen': 20,
-        })
+        fig.update_layout(
+            yaxis2={
+                "title": {"text": "Magnetic Angle θ<sub>M</sub> / °"},
+                "type": "linear",
+                "autorange": False,
+                "range": [0, 360],
+                "anchor": "x",
+                "overlaying": "y",
+                "side": "right",
+                "ticks": "inside",
+                # 'ticklen': 20,
+            }
+        )
 
     fig.update_layout(uirevision=1, plot_bgcolor="white")
-    fig.update_layout(xaxis={
-        'title': {'text': 'depth (Å)'},
-        'type': 'linear',
-        'autorange': True,
-        # 'gridcolor': "Grey",
-        'ticks': "inside",
-        # 'ticklen': 20,
-        'showline': True,
-        'linewidth': 1,
-        'linecolor': 'black',
-        'mirror': "ticks",
-        'side': 'bottom'
-    })
+    fig.update_layout(
+        xaxis={
+            "title": {"text": "depth (Å)"},
+            "type": "linear",
+            "autorange": True,
+            # 'gridcolor': "Grey",
+            "ticks": "inside",
+            # 'ticklen': 20,
+            "showline": True,
+            "linewidth": 1,
+            "linecolor": "black",
+            "mirror": "ticks",
+            "side": "bottom",
+        }
+    )
 
-    fig.update_layout(yaxis={
-        'title': {'text': yaxis_title},
-        'exponentformat': 'e',
-        'showexponent': 'all',
-        'type': 'linear',
-        'autorange': True,
-        # 'gridcolor': "Grey",
-        'ticks': "inside",
-        # 'ticklen': 20,
-        'showline': True,
-        'linewidth': 1,
-        'linecolor': 'black',
-        'mirror': True
-    })
+    fig.update_layout(
+        yaxis={
+            "title": {"text": yaxis_title},
+            "exponentformat": "e",
+            "showexponent": "all",
+            "type": "linear",
+            "autorange": True,
+            # 'gridcolor': "Grey",
+            "ticks": "inside",
+            # 'ticklen': 20,
+            "showline": True,
+            "linewidth": 1,
+            "linecolor": "black",
+            "mirror": True,
+        }
+    )
 
-    fig.update_layout(margin={
-        "l": 75,
-        "r": 50,
-        "t": 50,
-        "b": 75,
-        "pad": 4
-    })
+    fig.update_layout(margin={"l": 75, "r": 50, "t": 50, "b": 75, "pad": 4})
 
-    fig.update_layout(legend={
-        "x": -0.1,
-        "bgcolor": "rgba(255,215,0,0.15)",
-        # "traceorder": "reversed"
-    })
+    fig.update_layout(
+        legend={
+            "x": -0.1,
+            "bgcolor": "rgba(255,215,0,0.15)",
+            # "traceorder": "reversed"
+        }
+    )
 
     marker_positions = FindLayers(model, axes=fig)
     marker_positions.reset_markers_plotly()
 
     # fig.show(renderer='firefox')
     return fig
+
 
 # def plot_contours(model, title, savepath=None, nsamples=1000, show_contours=True, show_mag=True, savetitle=None,
 #                   store=None, ultranest=False, dream=False, align=0):

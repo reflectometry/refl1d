@@ -311,8 +311,8 @@ when reporting your results:
     distribution.  This sample can then used to estimate the probability
     distribution for each individual parameter.
 
-    [1] Kienzle P. A., Krycka J., A., and Patel, N.  Refl1D: Interactive
-    depth profile modeler.  http://www.reflectometry.org/danse/software
+    [1] Kienzle P. A., Krycka J., A., and Patel, N. Refl1D: Interactive
+    depth profile modeler.  http://refl1d.readthedocs.org
 
     [2] Vrugt J. A., ter Braak C. J. F., Diks C. G. H., Higdon D.,
     Robinson B. A., and Hyman J. M.  Accelerating Markov chain Monte Carlo
@@ -379,9 +379,9 @@ Now model.py is loaded and the best fit parameters are set.
 
 To produce plots, you will need access to the data and the theory.  This
 can be complex depending on how many models you are fitting and how many
-datasets there are per model.  For :class:`refl1d.fitproblem.FitProblem`
+datasets there are per model.  For :class:`refl1d.bumps_interface.fitproblem.FitProblem`
 models, the :class:`refl1d.experiment.Experiment` object is referenced
-by *problem.fitness*.  For :class:`refl1d.fitproblem.FitProblem` models,
+by *problem.fitness*.  For :class:`refl1d.bumps_interface.fitproblem.FitProblem` models,
 you need to use *problem.models[k].fitness* to access the experiment for
 model *k*.  Profiles and reflectivity theory are returned from methods
 in experiment.  The :class:`refl1d.probe.Probe` data for the experiment is
@@ -410,7 +410,7 @@ Next we can reload the the error sample data from the DREAM MCMC sequence::
 
     from bumps.dream.state import load_state
     from bumps.errplot import calc_errors_from_state
-    from refl1d.errors import align_profiles
+    from refl1d.uncertainty import align_profiles
 
     state = load_state(os.path.join(store, model[:-3]))
     state.mark_outliers()
@@ -419,7 +419,7 @@ Next we can reload the the error sample data from the DREAM MCMC sequence::
     aligned_profiles = align_profiles(profiles, slabs, 2.5)
     # ... insert profile and residuals uncertainty plots here ...
 
-The function :func:`refl1d.errors.calc_errors` provides details on the data
+The function :func:`refl1d.uncertainty.calc_errors` provides details on the data
 structures for *profiles*, *Q* and *residuals*.  Look at the source in
 refl1d/errors.py to see how this data is used to produce the error plots
 with _profiles_overplot, _profiles_contour, _residuals_overplot and

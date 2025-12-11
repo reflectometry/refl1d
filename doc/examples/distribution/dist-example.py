@@ -1,16 +1,22 @@
-import sys, os; sys.path.insert(0,os.path.dirname(os.path.abspath(__file__)))
+import os
+import sys
+
+import numpy
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from refl1d.names import *
 from refl1d.dist import Weights, DistributionExperiment
 
 # Materials
-nickel = Material('Ni', fitby='relative_density')
+nickel = Material("Ni", fitby="relative_density")
 
-ridge = silicon(0,5) | nickel(1000,5) | air
-valley = silicon(0,5) | air
+ridge = silicon(0, 5) | nickel(1000, 5) | air
+valley = silicon(0, 5) | air
 
 T = numpy.linspace(0, 1.5, 200)
 probe = NeutronProbe(T=T, dT=0.01, L=4.75, dL=0.0475)
 M = Experiment(sample=ridge, probe=probe)
+
 
 def mixture_cdf(x, loc=0, scale=1):
     r"""
@@ -27,16 +33,16 @@ def mixture_cdf(x, loc=0, scale=1):
     pure nickel layer, then set $m = 1-p_n - b$.  If all portions of the
     sample are some mixture of the two, then $b \lt 0$ and $m \gt 1-b$.
     """
-    return numpy.clip((x-loc)/scale, 0, 1)
+    return numpy.clip((x - loc) / scale, 0, 1)
+
+
 edges = numpy.linspace(0, 1, 21)
 
-dist = Weights(edges=numpy.linspace(0, 1, 41), truncated=False,
-               cdf=mixture_cdf, loc=0.4, scale=0.2)
-DM = DistributionExperiment(experiment=M, P=nickel.relative_density,
-                            distribution=dist)
+dist = Weights(edges=numpy.linspace(0, 1, 41), truncated=False, cdf=mixture_cdf, loc=0.4, scale=0.2)
+DM = DistributionExperiment(experiment=M, P=nickel.relative_density, distribution=dist)
 DM.simulate_data(0.05)
-#DM.plot_weights()
-#import matplotlib.pyplot as plt; plt.figure()
-#nickel.relative_density.value=0.5
-#M.update()
+# DM.plot_weights()
+# import matplotlib.pyplot as plt; plt.figure()
+# nickel.relative_density.value=0.5
+# M.update()
 problem = FitProblem(DM)

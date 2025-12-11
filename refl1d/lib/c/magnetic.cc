@@ -12,7 +12,6 @@
 #define M_PI 3.141592653589793
 #endif
 
-#define MINIMAL_RHO_M 1e-2  // in units of 1e-6/A^2
 const double EPS = std::numeric_limits<double>::epsilon();
 const double B2SLD = 2.31604654;  // Scattering factor for B field 1e-6
 
@@ -186,7 +185,6 @@ C * Converted to subroutine from GEPORE.f
 
 //    constants
       const Cplx CR(1.0,0.0);
-      const Cplx CI(0.0,1.0);
       const double PI4=12.566370614359172e-6;
 //    Check for KZ near zero.  If KZ < 0, reverse the indices
       if (KZ<=-1.e-10) {
@@ -437,35 +435,24 @@ magnetic_amplitude(const int layers,
 {
   Cplx dummy1,dummy2;
   int ip;
-  if (fabs(rhoM[0]) <= MINIMAL_RHO_M && fabs(rhoM[layers-1]) <= MINIMAL_RHO_M) {
-    ip = 1; // calculations for I+ and I- are the same in the fronting and backing.
-    #ifdef _OPENMP
-    #pragma omp parallel for
-    #endif
-    for (int i=0; i < points; i++) {
-      const int offset = layers*(rho_index != NULL?rho_index[i]:0);
-      Cr4xa(layers,d,sigma,ip,rho+offset,irho+offset,rhoM,u1,u3,
-            KZ[i],Ra[i],Rb[i],Rc[i],Rd[i]);
-    }
-  } else {
-    ip = 1; // plus polarization
-    #ifdef _OPENMP
-    #pragma omp parallel for
-    #endif
-    for (int i=0; i < points; i++) {
-      const int offset = layers*(rho_index != NULL?rho_index[i]:0);
-      Cr4xa(layers,d,sigma,ip,rho+offset,irho+offset,rhoM,u1,u3,
-            KZ[i],Ra[i],Rb[i],dummy1,dummy2);
-    }
-    ip = -1; // minus polarization
-    #ifdef _OPENMP
-    #pragma omp parallel for
-    #endif
-    for (int i=0; i < points; i++) {
-      const int offset = layers*(rho_index != NULL?rho_index[i]:0);
-      Cr4xa(layers,d,sigma,ip,rho+offset,irho+offset,rhoM,u1,u3,
-            KZ[i],dummy1,dummy2,Rc[i],Rd[i]);
-    }
+
+  ip = 1; // plus polarization
+  #ifdef _OPENMP
+  #pragma omp parallel for
+  #endif
+  for (int i=0; i < points; i++) {
+    const int offset = layers*(rho_index != NULL?rho_index[i]:0);
+    Cr4xa(layers,d,sigma,ip,rho+offset,irho+offset,rhoM,u1,u3,
+          KZ[i],Ra[i],Rb[i],dummy1,dummy2);
+  }
+  ip = -1; // minus polarization
+  #ifdef _OPENMP
+  #pragma omp parallel for
+  #endif
+  for (int i=0; i < points; i++) {
+    const int offset = layers*(rho_index != NULL?rho_index[i]:0);
+    Cr4xa(layers,d,sigma,ip,rho+offset,irho+offset,rhoM,u1,u3,
+          KZ[i],dummy1,dummy2,Rc[i],Rd[i]);
   }
 }
 

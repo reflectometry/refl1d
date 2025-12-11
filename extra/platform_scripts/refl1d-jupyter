@@ -1,7 +1,4 @@
-#!./env/bin/python
-# -*- coding: utf-8 -*-
-from tkinter import filedialog as fd
-import jupyterlab.labapp as lab
+#!/usr/bin/env bash
 
-start_folder = fd.askdirectory()
-lab.main(argv=[f'--notebook-dir={start_folder}'])
+source ./env/bin/activate
+python -c "from tkinter import filedialog as fd; import jupyterlab.labapp as lab; start_folder = fd.askdirectory(title='Choose working folder for Jupyter session'); lab.main(argv=[f'--notebook-dir={start_folder}'])"

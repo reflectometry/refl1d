@@ -1,4 +1,3 @@
-# This program is public domain
 # Author: Paul Kienzle
 r"""
 Scattering length density profile.
@@ -57,13 +56,13 @@ using one energy so we only show the first column.
     >>> print("irho = %s ..."%(" ".join("%g"%v for v in S.irho[0, :5])))
     irho = 0 0 0 0 0 ...
 """
-from __future__ import division, print_function
 
 import numpy as np
-from numpy import inf, nan, isnan
+from numpy import isnan, nan
 from scipy.special import erf
 
-from .reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
+from .sample.reflectivity import BASE_GUIDE_ANGLE as DEFAULT_THETA_M
+
 
 class Microslabs(object):
     """
@@ -94,8 +93,8 @@ class Microslabs(object):
         self._slabs_mag = np.empty(shape=(0, nprobe, 2))
         self.dz = dz
         self._magnetic_sections = []
-        self._z_left = self._z_right = 0.
-        self._z_offset = 0.
+        self._z_left = self._z_right = 0.0
+        self._z_offset = 0.0
 
     def microslabs(self, thickness=0):
         """
@@ -119,7 +118,7 @@ class Microslabs(object):
         """
         # TODO: force dz onto a common boundary to avoid remeshing
         # in the smooth profile function
-        edges = np.arange(0, thickness + self.dz, self.dz, dtype='d')
+        edges = np.arange(0, thickness + self.dz, self.dz, dtype="d")
         edges[-1] = thickness
         centers = (edges[1:] + edges[:-1]) / 2
         widths = edges[1:] - edges[:-1]
@@ -191,8 +190,8 @@ class Microslabs(object):
         """
         Extend the micro slab model with a single layer.
         """
-        #self.extend(w=[w], sigma=[sigma], rho=[rho], irho=[irho])
-        #return
+        # self.extend(w=[w], sigma=[sigma], rho=[rho], irho=[irho])
+        # return
         self._reserve(1)
         self._slabs[self._num_slabs, 0] = w
         self._slabs[self._num_slabs, 1] = sigma
@@ -208,11 +207,10 @@ class Microslabs(object):
         representing the magnetic roughness, which may be different
         from the nuclear roughness at the layer boundaries.
         """
-        w = np.asarray(w, 'd')
+        w = np.asarray(w, "d")
         if np.isscalar(sigma):
             sigma = (sigma, sigma)
-        self._magnetic_sections.append((np.vstack((w, rhoM, thetaM)),
-                                        anchor, sigma))
+        self._magnetic_sections.append((np.vstack((w, rhoM, thetaM)), anchor, sigma))
 
     def thickness(self):
         """
@@ -222,17 +220,17 @@ class Microslabs(object):
         surface layers.  Normally these will be zero, but the contract
         profile operation may result in large values for either.
         """
-        return np.sum(self._slabs[1:self._num_slabs, 0])
+        return np.sum(self._slabs[1 : self._num_slabs, 0])
 
     @property
     def w(self):
         "Thickness (A)"
-        return self._slabs[:self._num_slabs, 0]
+        return self._slabs[: self._num_slabs, 0]
 
     @property
     def sigma(self):
         "rms roughness (A)"
-        return self._slabs[:self._num_slabs - 1, 1]
+        return self._slabs[: self._num_slabs - 1, 1]
 
     @property
     def surface_sigma(self):
@@ -242,12 +240,12 @@ class Microslabs(object):
     @property
     def rho(self):
         "Scattering length density (10^-6 number density)"
-        return self._slabs_rho[:self._num_slabs, :, 0].T
+        return self._slabs_rho[: self._num_slabs, :, 0].T
 
     @property
     def irho(self):
         "Absorption (10^-6 number density)"
-        return self._slabs_rho[:self._num_slabs, :, 1].T
+        return self._slabs_rho[: self._num_slabs, :, 1].T
 
     @property
     def ismagnetic(self):
@@ -277,7 +275,6 @@ class Microslabs(object):
         Magnetic roughness is ignored for now.
         """
         self.sigma[:] = compute_limited_sigma(self.w, self.sigma, limit)
-
 
     def finalize(self, step_interfaces, dA):
         """
@@ -317,18 +314,18 @@ class Microslabs(object):
         """
         self.w[0] = self.w[-1] = 0
         offset = np.cumsum(self.w[:-1])
-        self._z_left = min(-10, np.min(offset - 3*self.sigma))
-        self._z_right = max(offset[-1]+10, np.max(offset + 3*self.sigma))
+        self._z_left = min(-10, np.min(offset - 3 * self.sigma))
+        self._z_right = max(offset[-1] + 10, np.max(offset + 3 * self.sigma))
 
     def _align_magnetic_and_nuclear(self):
         """
         Add magnetic information to the nuclear slabs, introducing new
         slabs as necessary where magnetic and nuclear do not match.
         """
-        from .refllib import backend
+        from .backends import backend
 
         # Nuclear profile (one wavelength only)
-        #if self.rho.shape[0] != 1:
+        # if self.rho.shape[0] != 1:
         #    raise ValueError("wavelength-dependent magnetism not supported")
         w, sigma, rho, irho = self.w, self.sigma, self.rho[0], self.irho[0]
 
@@ -337,17 +334,16 @@ class Microslabs(object):
 
         # Align nuclear and magnetic
         w, sigma, rho, irho, wM, sigmaM, rhoM, thetaM = [
-            np.ascontiguousarray(v, 'd')
-            for v in (w, sigma, rho, irho, wM, sigmaM, rhoM, thetaM)
-            ]
-        output = np.empty((len(w)+len(wM), 6), 'd')
+            np.ascontiguousarray(v, "d") for v in (w, sigma, rho, irho, wM, sigmaM, rhoM, thetaM)
+        ]
+        output = np.empty((len(w) + len(wM), 6), "d")
         n = backend.align_magnetic(w, sigma, rho, irho, wM, sigmaM, rhoM, thetaM, output)
 
         # Store the resulting profile
         self._reserve(n - self._num_slabs)  # make sure there is space
         self._num_slabs = n
         self.w[:] = output[:n, 0]
-        self.sigma[:] = output[:n-1, 1]
+        self.sigma[:] = output[: n - 1, 1]
         self.rho[0][:] = output[:n, 2]
         self.irho[0][:] = output[:n, 3]
         self.rhoM = output[:n, 4]
@@ -364,7 +360,7 @@ class Microslabs(object):
         better performance on models with large sections of constant
         scattering potential.
         """
-        z = np.arange(self._z_left, self._z_right + 0.5*self.dz, self.dz)
+        z = np.arange(self._z_left, self._z_right + 0.5 * self.dz, self.dz)
         n_slabs = len(z)
         n_profiles = self.rho.shape[0]
         offsets = np.cumsum(self.w[:-1])  # assumes w[0] == 0 in _set_z_range
@@ -383,13 +379,13 @@ class Microslabs(object):
 
         rho = profiles[0:Nrho]
         # print('rho:', self.rho.shape, rho.shape)
-        irho = profiles[Nrho:Nrho+Nirho]
+        irho = profiles[Nrho : Nrho + Nirho]
         if self.ismagnetic:
-            rhoM = profiles[Nrho+Nirho]
-            thetaM = profiles[Nrho+Nirho+1]
+            rhoM = profiles[Nrho + Nirho]
+            thetaM = profiles[Nrho + Nirho + 1]
 
         w = self.dz * np.ones(n_slabs)
-        w[0] = w[-1] = 0.
+        w[0] = w[-1] = 0.0
 
         # update slabs
         self._reserve(n_slabs - self._num_slabs)
@@ -404,7 +400,7 @@ class Microslabs(object):
         self._z_offset = self._z_left
 
     def _contract_profile(self, dA):
-        from .refllib import backend
+        from .backends import backend
 
         if dA is None:
             return
@@ -415,21 +411,18 @@ class Microslabs(object):
             # layers will get extremely slow
             return
 
-        w, sigma, rho, irho = [
-            np.ascontiguousarray(v, 'd')
-            for v in (self.w, self.sigma, self.rho[0], self.irho[0])
-            ]
-        #print "final sld before contract", rho[-1]
+        w, sigma, rho, irho = [np.ascontiguousarray(v, "d") for v in (self.w, self.sigma, self.rho[0], self.irho[0])]
+        # print "final sld before contract", rho[-1]
         n = backend.contract_by_area(w, sigma, rho, irho, dA)
         self._num_slabs = n
         self.w[:] = w[:n]
         self.rho[0, :] = rho[:n]
         self.irho[0, :] = irho[:n]
-        self.sigma[:] = sigma[:n-1]
-        #print "final sld after contract", rho[n-1], self.rho[0][n-1], n
+        self.sigma[:] = sigma[: n - 1]
+        # print "final sld after contract", rho[n-1], self.rho[0][n-1], n
 
     def _contract_magnetic(self, dA):
-        from .refllib import backend
+        from .backends import backend
 
         if dA is None:
             return
@@ -440,10 +433,11 @@ class Microslabs(object):
             # layers will get extremely slow
             return
 
-        w, sigma, rho, irho, rhoM, thetaM = \
-            [np.ascontiguousarray(v, 'd')
-             for v in (self.w, self.sigma, self.rho[0], self.irho[0], self.rhoM, self.thetaM)]
-        #print "final sld before contract", rho[-1]
+        w, sigma, rho, irho, rhoM, thetaM = [
+            np.ascontiguousarray(v, "d")
+            for v in (self.w, self.sigma, self.rho[0], self.irho[0], self.rhoM, self.thetaM)
+        ]
+        # print "final sld before contract", rho[-1]
         n = backend.contract_mag(w, sigma, rho, irho, rhoM, thetaM, dA)
         self._num_slabs = n
         self.w[:] = w[:n]
@@ -451,9 +445,9 @@ class Microslabs(object):
         self.irho[0][:] = irho[:n]
         self.rhoM = rhoM[:n]
         self.thetaM = thetaM[:n]
-        self.sigma[:] = sigma[:n-1]
-        #self.sigma[:] = 0
-        #print "final sld after contract", rho[n-1], self.rho[0][n-1], n
+        self.sigma[:] = sigma[: n - 1]
+        # self.sigma[:] = 0
+        # print "final sld after contract", rho[n-1], self.rho[0][n-1], n
 
     def _DEAD_apply_smoothness(self, dA, smoothness=0.3):
         """
@@ -478,7 +472,7 @@ class Microslabs(object):
         # TODO: refine this so that it can look forward as well as back
         # TODO: also need to avoid changing explicit sigma=0...
         w, sigma, rho, irho = self.w, self.sigma, self.rho[0], self.irho[0]
-        step = (abs(np.diff(rho)) + abs(np.diff(irho)))
+        step = abs(np.diff(rho)) + abs(np.diff(irho))
         step[:-1] *= w[1:-1]  # compute dA of step; substrate uses w=1
         idx = np.nonzero(sigma == 0)[0]
         fix = step[idx] < 3 * dA
@@ -494,11 +488,10 @@ class Microslabs(object):
         irho = np.vstack([self.irho[0, :], self.irho[0, :]]).T.flatten()
         if len(self.w) > 2:
             offsets = np.cumsum(self.w[0:-1])
-            z = np.vstack([np.hstack([-10, offsets]),
-                           np.hstack([offsets, offsets[-1]+10])]).T.flatten()
+            z = np.vstack([np.hstack([-10, offsets]), np.hstack([offsets, offsets[-1] + 10])]).T.flatten()
         else:
             z = np.array([-10, 0, 0, 10])
-        return z+self._z_offset, rho, irho
+        return z + self._z_offset, rho, irho
 
     def magnetic_step_profile(self):
         """
@@ -509,7 +502,7 @@ class Microslabs(object):
         z, rho, irho = self.step_profile()
         rhoM = np.vstack([self.rhoM, self.rhoM]).T.flatten()
         thetaM = np.vstack([self.thetaM, self.thetaM]).T.flatten()
-        return z+self._z_offset, rho, irho, rhoM, thetaM
+        return z + self._z_offset, rho, irho, rhoM, thetaM
 
     def smooth_profile(self, dz=0.1):
         """
@@ -521,7 +514,7 @@ class Microslabs(object):
 
         The returned profile has uniform step size *dz*.
         """
-        z = np.arange(self._z_left, self._z_right + 0.5*dz, dz)
+        z = np.arange(self._z_left, self._z_right + 0.5 * dz, dz)
         offsets = np.cumsum(self.w[:-1]) + self._z_offset
         values = np.vstack([self.rho[0], self.irho[0]])
         profiles = _build_profiles_backend(z, offsets, self.sigma, values)
@@ -532,7 +525,7 @@ class Microslabs(object):
         """
         Return a profile representation of the magnetic microslab structure.
         """
-        z = np.arange(self._z_left, self._z_right + 0.5*dz, dz)
+        z = np.arange(self._z_left, self._z_right + 0.5 * dz, dz)
         offsets = np.cumsum(self.w[:-1]) + self._z_offset
         values = np.vstack([self.rho[0], self.irho[0], self.rhoM, self.thetaM])
         profiles = _build_profiles_backend(z, offsets, self.sigma, values)
@@ -546,9 +539,9 @@ class Microslabs(object):
         # Find the magnetic blocks
         blocks, offsets, sigmas = zip(*self._magnetic_sections)
 
-        #print "blocks", blocks
-        #print "offsets", offsets
-        #print "sigmas", sigmas
+        # print "blocks", blocks
+        # print "offsets", offsets
+        # print "sigmas", sigmas
         # * Splice the blocks together with rhoM=0 in the gaps and
         #   thetaM=(thetaM_below+thetaM_above)/2 in the gaps.
         # * Result is:
@@ -572,7 +565,7 @@ class Microslabs(object):
                     thetaM = B[2, 0]
                     interfaces.append(0)
                 else:
-                    thetaM = (B[2, 0] + blocks[i - 1][2, -1]) / 2.
+                    thetaM = (B[2, 0] + blocks[i - 1][2, -1]) / 2.0
                     interfaces.append(sigmas[i - 1][1])
                 slices.append([[w], [0], [thetaM]])
                 interfaces.append(sigmas[i][0])
@@ -604,8 +597,9 @@ class Microslabs(object):
 
         wM, rhoM, thetaM = [np.hstack(v) for v in zip(*slices)]
         sigmaM = np.array(interfaces)
-        #print "result", wM, rhoM, thetaM, sigmaM
+        # print "result", wM, rhoM, thetaM, sigmaM
         return wM, sigmaM, rhoM, thetaM
+
 
 def compute_limited_sigma(thickness, roughness, limit):
     # Limit roughness to the depths of the surrounding layers.  Roughness
@@ -621,9 +615,10 @@ def compute_limited_sigma(thickness, roughness, limit):
 
 
 def _build_profiles_backend(z, offsets, roughness, value):
-    from .refllib import backend
+    from .backends import backend
+
     contrast = (value[:, 1:] - value[:, :-1]).ravel(order="C")
-    initial_value = value[:, 0].copy() # contiguous
+    initial_value = value[:, 0].copy()  # contiguous
 
     NZ = len(z)
     # Number of profiles:
@@ -651,7 +646,7 @@ def build_profile(z, offset, roughness, value):
     return result
 
 
-SQRT1_2 = 1. / np.sqrt(2.0)
+SQRT1_2 = 1.0 / np.sqrt(2.0)
 
 
 def blend(z, sigma, offset):

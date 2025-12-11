@@ -1,7 +1,4 @@
-.settings
-.coverage
-.pytest_cache
-.ipynb_checkpoints
+# Refl1d/Bumps specific
 .mplconfig
 .project
 .pydevproject
@@ -16,6 +13,7 @@
 *.so
 *.bak
 refl1d-webview-client*.tgz
+bumps-webview-client*.tgz
 /build/
 /dist/
 /refl1d.egg-info/
@@ -26,4 +24,45 @@ refl1d-webview-client*.tgz
 /refl1d-*
 /bumps-*
 /Refl1D.pdf
+/output-*
+test-files/
+
+# Build
+*.so
+__pycache__/
+*.py[cod]
+/build/
+/dist/
+/*.egg-info/
+/EGG-INFO
 /.eggs
+refl1d/_version.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Test droppings
+.coverage
+.pytest_cache
+
+# Editor droppings
+.settings
+.ipynb_checkpoints
+.project
+.pydevproject
+.spyderproject
+.idea
+*.swp
+*.bak
+
+test-files/
+
+# Unused lock files
+bun.lock
+uv.lock
