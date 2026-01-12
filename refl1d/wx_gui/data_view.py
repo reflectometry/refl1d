@@ -31,13 +31,13 @@ class DataView(wx.Panel):
         canvas = FigureCanvas(self, wx.ID_ANY, figure)
 
         # Wx-Pylab magic ...
-        # Make our canvas an active figure manager for pylab so that when
-        # pylab plotting statements are executed they will operate on our
+        # Make our canvas an active figure manager for matplotlib so that when
+        # pyplot plotting statements are executed they will operate on our
         # canvas and not create a new frame and canvas for display purposes.
         # This technique allows this application to execute code that uses
-        # pylab stataments to generate plots and embed these plots in our
+        # pyplot stataments to generate plots and embed these plots in our
         # application window(s).  Use _activate_figure() to set.
-        self.pylab_interface = EmbeddedPylab(canvas)
+        self.pyplot_interface = EmbeddedPylab(canvas)
 
         # Instantiate the matplotlib navigation toolbar and explicitly show it.
         mpl_toolbar = Toolbar(canvas)
@@ -197,7 +197,7 @@ class DataView(wx.Panel):
                     continue
 
             # Redraw the canvas with newly calculated reflectivity
-            with self.pylab_interface:
+            with self.pyplot_interface:
                 ax = plt.gca()
                 # print "reset",reset, ax.get_autoscalex_on(), ax.get_xlim()
                 range_x = ax.get_xlim()
