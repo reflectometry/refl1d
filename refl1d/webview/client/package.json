@@ -33,7 +33,7 @@
     "@ianvs/prettier-plugin-sort-imports": "^4.4.1",
     "@tsconfig/node-lts": "^22.0.2",
     "@types/node": "^24.5.2",
-    "@types/plotly.js": "^2.35.1",
+    "@types/plotly.js": "^3.0.9",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "@vue/eslint-config-prettier": "10.1.0",
