@@ -99,13 +99,13 @@ def parse_orso(filename):
     return entries_out
 
 
-def orso_sample_converter(model: orsopy_model.SampleModel):
+def orso_samplemodel_converter(model: orsopy_model.SampleModel):
     """
     Convert an ORSO sample model to a refl1d Stack model.
 
     Parameters
     ----------
-    model : ORSOSample
+    model : orsopy_model.SampleModel
         The ORSO sample model to convert.
 
     Returns
@@ -166,8 +166,10 @@ def orso_material_converter(material: ORSOMaterial):
         for component, fraction in material.composition.items():
             # TODO: how are we supposed to get the number density from ORSO?
             number_density = ResolverSLDDB().resolve_formula(component)  #  in 1/nm³
-            cmaterial = NumberDensityMaterial(formula=component, number_density=number_density)
-            parts.extend([cmaterial, fraction])
+            cmaterial = NumberDensityMaterial(
+                formula=component, number_density=number_density * 1e21
+            )  # convert to 1/cm³
+            parts.extend([cmaterial, fraction * 100])  # convert to percentage for Mixture
         # Mixture is expecting a list [base, M2, F2, M3, F3, ...]
         # but ORSO Composit does not have a base material,
         # so we will set that to vacuum with fraction 0.0 (implicitly)
