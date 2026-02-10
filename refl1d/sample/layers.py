@@ -188,7 +188,7 @@ class Slab(Layer):
 
     name: str
     thickness: Parameter
-    interface: Optional[Parameter] = None
+    interface: Optional[Parameter]
     magnetism: Optional[BaseMagnetism]
     material: Union[mat.SLD, mat.MaterialTypes, mat.Vacuum]
 

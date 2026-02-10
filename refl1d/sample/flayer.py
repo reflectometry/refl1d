@@ -1,14 +1,19 @@
+from dataclasses import dataclass
 import inspect
+from typing import Dict, Optional, Callable, Union
 
-from bumps.parameter import Calculation, Parameter, to_dict
+import numpy as np
 from numpy import asarray, broadcast_to, imag, real
 
+from bumps.parameter import Calculation, Constant, Parameter, ValueProtocol
+
 from refl1d import utils
-from .layers import Layer
+from .layers import Layer, Stack
 from .magnetism import DEFAULT_THETA_M, BaseMagnetism, Magnetism
 from .material import SLD
 
 
+@dataclass
 class FunctionalProfile(Layer):
     """
     Generic profile function
@@ -29,20 +34,27 @@ class FunctionalProfile(Layer):
 
     The profile function takes a depth vector *z* returns a density vector
     *rho*. For absorbing profiles, return complex vector *rho + irho*1j*.
+    *z* is guaranteed to be increasing, with step size 2*z[0]. The
+    remaining profile arguments are added as fittable parameters to
+    the layer.
 
-    Fitting parameters are the available named arguments to the function.
-    The first argument is a depth vector, which is the array of depths at
-    which the profile is to be evaluated.  It is guaranteed to be increasing,
-    with step size 2*z[0].
+    The profile parameters can be initialized using key=value arguments to
+    to FunctionalProfile. If the value is a sequence, then a list of parameters
+    will be created, one for each sequence element. These will be converted
+    to numpy vectors prior to calling the profile function. If no value is
+    supplied, the parameter will use the default name=value from the profile
+    function.
 
-    Initial values for the function parameters can be given using name=value.
-    These values can be scalars or fitting parameters.  The function will
-    be called with the current parameter values as arguments.  The layer
-    thickness can be computed as :func:`layer_thickness`.
+    The attributes *start* and *end* are the SLD at at the start and end of
+    the profile respectively. The *rho* and *irho* attributes for these SLDs
+    can be used in parameter expressions for other layers. Note that each
+    one is implemented as a separate call to the profile function, using z=0
+    for start and z=thickness for end.
 
-    There is no mechanism for querying the larger profile to determine the
-    value of the *rho* at the layer boundaries.  If needed, this information
-    will have to be communicated through shared parameters.  For example::
+    Within the profile function there is no mechanism for querying the larger
+    profile to determine the value of the *rho* at the layer boundaries.  If
+    needed, this information will have to be communicated through shared
+    parameters.  For example::
 
         L1 = SLD('L1', rho=2.07)
         L3 = SLD('L3', rho=4)
@@ -54,69 +66,111 @@ class FunctionalProfile(Layer):
         sample = L1 | profile | L3
     """
 
-    RESERVED = ("thickness", "interface", "profile", "tol", "magnetism", "name")
+    thickness: Parameter
+    interface: Constant
+    profile: Callable = None
+    tol: float = 0
+    magnetism: Optional[BaseMagnetism] = None
+    name: str = ""
+
+    # Attributes required for serialize/deserialize
+    start: SLD = None
+    end: SLD = None
+    pars: Dict[str, Parameter] = None
 
     # TODO: test that thickness(z) matches the thickness of the layer
-    def __init__(self, thickness=0, interface=0, profile=None, tol=1e-3, magnetism=None, name=None, **kw):
+    def __init__(
+        self,
+        thickness=0,
+        interface=0,
+        profile=None,
+        tol=1e-3,
+        magnetism=None,
+        name=None,
+        start=None,
+        end=None,
+        pars=None,
+        **kw,
+    ):
+        # print(f"building FP with {thickness=} {interface=} {profile=} {name=} {start=} {end=} {pars=} {kw=}")
         if not name:
             name = profile.__name__
-        if interface != 0:
+        # TODO: maybe we already handle interface with the blend function?
+        if float(interface) != 0:
             raise NotImplementedError("interface not yet supported")
-        if profile is None:
-            raise TypeError("Need profile")
+
         self.name = name
         self.thickness = Parameter.default(thickness, name=name + " thickness")
-        self.interface = Parameter.default(interface, name=name + " interface")
+        self.interface = Constant(float(interface), name=name + " interface")
         self.profile = profile
         self.tol = tol
         self.magnetism = magnetism
 
-        # TODO: maybe make these lazy (and for magnetism below as well)
-        rho_start = _LayerLimit(self, isend=False, isrho=True)
-        irho_start = _LayerLimit(self, isend=False, isrho=False)
-        rho_end = _LayerLimit(self, isend=True, isrho=True)
-        irho_end = _LayerLimit(self, isend=True, isrho=False)
-        self.start = SLD(name + " start", rho=rho_start, irho=irho_start)
-        self.end = SLD(name + " end", rho=rho_end, irho=irho_end)
+        self.start = start if start is not None else SLD(name + " start")
+        self.end = end if end is not None else SLD(name + " end")
+        self.pars = _parse_parameters(name, profile, kw) if pars is None else pars
 
-        _set_parameters(self, name, profile, kw, self.RESERVED)
+        # TODO: profile call is duplicated if asking for both rho and irho
+        # Fill calculation slots
+        self.start.rho.slot = Calculation(
+            description="profile rho at z=0",
+            function=lambda: real(self._eval([0.0])[0]),
+        )
+        self.start.irho.slot = Calculation(
+            description="profile irho at z=0",
+            function=lambda: imag(self._eval([0.0])[0]),
+        )
+        self.end.rho.slot = Calculation(
+            description="profile rho at z=thickness",
+            function=lambda: real(self._eval([float(self.thickness)])[0]),
+        )
+        self.end.irho.slot = Calculation(
+            description="profile irho at z=thickness",
+            function=lambda: imag(self._eval([float(self.thickness)])[0]),
+        )
+
+    # Allow dot access to members of the parameter dictionary. Existing attributes
+    # of the object take precedence.
+    def __setattr__(self, key, value):
+        # print(f"setting {key}")
+        if self.pars and key in self.pars and key not in self.__dict__:
+            if not isinstance(value, ValueProtocol):
+                raise TypeError("Can only assign parameter or expression to a parameter slot")
+            self.__dict__["pars"][key] = value
+        else:
+            super().__setattr__(key, value)
+
+    def __getattr__(self, key):
+        # print(f"getting {key}")
+        if self.pars and key in self.pars:
+            return self.pars[key]
+        raise AttributeError(f"{type(self)!r} has no attribute {key!r}")
+
+    def _eval(self, Pz):
+        args = {k: asarray([float(vi) for vi in v]) if isinstance(v, list) else float(v) for k, v in self.pars.items()}
+        # if self.profile is None:
+        #     return np.full_like(Pz, np.nan, dtype=complex)
+        return asarray(self.profile(asarray(Pz), **args))
 
     def parameters(self):
-        P = _get_parameters(self)
-        P["thickness"] = self.thickness
-        # P['interface'] = self.interface
-        return P
-
-    def to_dict(self):
-        return to_dict(
-            {
-                "type": type(self).__name__,
-                "name": self.name,
-                "thickness": self.thickness,
-                "interface": self.interface,
-                "profile": self.profile,
-                "parameters": _get_parameters(self),
-                "tol": self.tol,
-                "magnetism": self.magnetism,
-            }
-        )
+        # TODO: we are not including the calculated parameters
+        return {**self.pars, "thickness": self.thickness}
 
     def render(self, probe, slabs):
         Pw, Pz = slabs.microslabs(self.thickness.value)
         if len(Pw) == 0:
             return
-        # print kw
-        # TODO: always return rho, irho from profile function
-        # return value may be a constant for rho or irho
-        phi = asarray(self.profile(Pz, **_get_values(self)))
+        phi = self._eval(Pz)
         if phi.shape != Pz.shape:
             raise TypeError("profile function '%s' did not return array phi(z)" % self.profile.__name__)
         Pw, phi = utils.merge_ends(Pw, phi, tol=self.tol)
         # P = M*phi + S*(1-phi)
         slabs.extend(rho=[real(phi)], irho=[imag(phi)], w=Pw)
-        # slabs.interface(self.interface.value)
+        # TODO: Is the following is sufficient for interfacial roughness?
+        # slabs.sigma[0] = float(self.interface)
 
 
+@dataclass
 class FunctionalMagnetism(BaseMagnetism):
     """
     Functional magnetism profile.
@@ -138,73 +192,115 @@ class FunctionalMagnetism(BaseMagnetism):
     function.
     """
 
-    RESERVED = ("profile", "tol", "name", "extent", "dead_below", "dead_above", "interface_below", "interface_above")
+    profile: Callable
+    tol: float = 1e-3
+
+    # Attributes required for serialize/deserialize
+    start: Magnetism = None
+    end: Magnetism = None
+    thickness: Parameter = None
+    pars: Dict[str, Parameter] = None
+
+    BASE_PARS = ("extent", "dead_below", "dead_above", "interface_below", "interface_above")
     magnetic = True
 
-    def __init__(self, profile=None, tol=1e-3, name=None, **kw):
-        if not name:
-            name = profile.__name__
+    def __init__(
+        self,
+        profile=None,
+        tol=1e-3,
+        name=None,
+        start=None,
+        end=None,
+        thickness=None,
+        pars=None,
+        **kw,
+    ):
+        # print(f"building FM with {profile=}, {tol=}, {name=}, {start=}, {end=}, {thickness=}, {pars=}, {kw=}")
         if profile is None:
             raise TypeError("Need profile")
+        if not name:
+            name = profile.__name__
         # strip magnetism keywords from list of keywords
-        magkw = dict((a, kw.pop(a)) for a in set(self.RESERVED) & set(kw.keys()))
+        magkw = dict((a, kw.pop(a)) for a in set(self.BASE_PARS) & set(kw.keys()))
         BaseMagnetism.__init__(self, name=name, **magkw)
         self.profile = profile
         self.tol = tol
 
-        _set_parameters(self, name, profile, kw, self.RESERVED)
-        rhoM_start = _MagnetismLimit(self, isend=False, isrhoM=True)
-        rhoM_end = _MagnetismLimit(self, isend=True, isrhoM=True)
-        thetaM_start = _MagnetismLimit(self, isend=False, isrhoM=False)
-        thetaM_end = _MagnetismLimit(self, isend=True, isrhoM=False)
-        self.start = Magnetism(rhoM=rhoM_start, thetaM=thetaM_start)
-        self.end = Magnetism(rhoM=rhoM_end, thetaM=thetaM_end)
-        self.anchor = None
+        self.start = start if start is not None else Magnetism(name=name + " start")
+        self.end = end if end is not None else Magnetism(name=name + " end")
+        self.thickness = Parameter.default(0, name=name + " thickness") if thickness is None else thickness
+        self.pars = _parse_parameters(name, profile, kw) if pars is None else pars
 
-    def set_anchor(self, stack, index):
-        self.anchor = (stack, index)
+        # TODO: profile call is duplicated if asking for both rhoM and thetaM
+        # Fill calculation slots
+        self.start.rhoM.slot = Calculation(
+            description="profile magnetic SLD at z=0",
+            function=lambda: self._eval([0.0])[0][0],
+        )
+        self.start.thetaM.slot = Calculation(
+            description="profile magnetic angle at z=0",
+            function=lambda: self._eval([0.0])[1][0],
+        )
+        self.end.rhoM.slot = Calculation(
+            description="profile magnetic SLD z=thickness",
+            function=lambda: self._eval([float(self.thickness)])[0][0],
+        )
+        self.end.thetaM.slot = Calculation(
+            description="profile magnetic angle at z=thickness",
+            function=lambda: self._eval([float(self.thickness)])[1][0],
+        )
+        # print(f"...FM {self.start=}, {self.end=}, {self.end.rhoM=}, {self.thickness=}")
 
-    # TODO: is there a sane way of computing magnetism thickness in advance?
-    def _calc_thickness(self):
-        if self.anchor is None:
-            raise ValueError("Need layer.magnetism.set_anchor(stack, layer) to compute magnetic thickness.")
-        stack, index = self.anchor
+    def set_anchor(self, stack: Stack, index: Union[str, int]):
+        """
+        Rebuild thickness calculation whenever the sample stack changes. Called from
+        :func:`set_magnetism_anchors`.
+        """
         stack, start = stack._lookup(index)
-        total = 0
-        for k in range(start, start + self.extent):
-            total += stack[k].thickness.value
-        total -= self.dead_below.value + self.dead_above.value
-        return total
+        total_thickness = sum(stack[k].thickness for k in range(start, start + self.extent))
+        self.thickness.equals(total_thickness - (self.dead_below + self.dead_above))
 
     def parameters(self):
-        parameters = BaseMagnetism.parameters(self)
-        parameters.update(_get_parameters(self))
-        return parameters
+        # TODO: we are not including the calculated parameters
+        return {**BaseMagnetism.parameters(self), **self.pars}
 
-    def to_dict(self):
-        ret = BaseMagnetism.to_dict(self)
-        ret.update(
-            to_dict(
-                {
-                    "profile": self.profile,
-                    "parameters": _get_parameters(self),
-                    "tol": self.tol,
-                }
-            )
-        )
+    # Allow dot access to members of the parameter dictionary. Existing attributes
+    # of the object take precedence.
+    def __setattr__(self, key, value):
+        # print(f"setting {key}")
+        if self.pars and key in self.pars and key not in self.__dict__:
+            if not isinstance(value, ValueProtocol):
+                raise TypeError("Can only assign parameter or expression to a parameter slot")
+            self.__dict__["pars"][key] = value
+        else:
+            super().__setattr__(key, value)
 
-    def render(self, probe, slabs, thickness, anchor, sigma):
-        Pw, Pz = slabs.microslabs(thickness)
-        if len(Pw) == 0:
-            return
-        P = self.profile(Pz, **_get_values(self))
+    def __getattr__(self, key):
+        # print(f"getting {key}")
+        if self.pars and key in self.pars:
+            return self.pars[key]
+        raise AttributeError(f"{type(self)!r} has no attribute {key!r}")
 
+    def _eval(self, Pz):
+        args = {k: asarray([float(vi) for vi in v]) if isinstance(v, list) else float(v) for k, v in self.pars.items()}
+        Pz = asarray(Pz)
+        # if self.profile is None:
+        #     return np.full_like(Pz, np.nan), np.full_like(Pz, np.nan)
+        P = self.profile(Pz, **args)
         rhoM, thetaM = P if isinstance(P, tuple) else (P, DEFAULT_THETA_M)
         try:
             # rhoM or thetaM may be constant, lists or arrays (but not tuples!)
             rhoM, thetaM = [broadcast_to(v, Pz.shape) for v in (rhoM, thetaM)]
         except ValueError:
-            raise TypeError("profile function '%s' did not return array rhoM(z)" % self.profile.__name__)
+            raise TypeError(f"Profile function for '{self.name}' returns incorrect shape")
+        return rhoM, thetaM
+
+    def render(self, probe, slabs, thickness, anchor, sigma):
+        Pw, Pz = slabs.microslabs(thickness)
+        if len(Pw) == 0:
+            return
+        rhoM, thetaM = self._eval(Pz)
+
         P = rhoM + thetaM * 0.001j  # combine rhoM/thetaM so they can be merged
         Pw, P = utils.merge_ends(Pw, P, tol=self.tol)
         rhoM, thetaM = P.real, P.imag * 1000  # split out rhoM,thetaM again
@@ -214,94 +310,51 @@ class FunctionalMagnetism(BaseMagnetism):
         return "FunctionalMagnetism(%s)" % self.name
 
 
-def _set_parameters(self, name, profile, kw, reserved):
+def _parse_parameters(name, profile, kw):
     # Query profile function for the list of arguments
-    vars = inspect.getfullargspec(profile)[0]
+    argspec = inspect.getfullargspec(profile)
+    vars = argspec.args
+
     # print "vars", vars
     if inspect.ismethod(profile):
         vars = vars[1:]  # Chop self
     vars = vars[1:]  # Chop z
+
     # print vars
     unused = [k for k in kw.keys() if k not in vars]
     if len(unused) > 0:
         raise TypeError("Profile got unexpected keyword argument '%s'" % unused[0])
-    dups = [k for k in vars if k in reserved]
-    if len(dups) > 0:
-        raise TypeError("Profile has conflicting argument %r" % dups[0])
-    for k in vars:
-        kw.setdefault(k, 0)
+
+    # Plug the default value from the function definition into any parameters
+    # not supplied by the caller.
+    defaults = argspec.defaults or ()
+    if len(defaults) > len(vars):
+        defaults = defaults[-len(vars) :]
+    if len(defaults) < len(vars):
+        defaults = [None] * (len(vars) - len(defaults)) + list(defaults)
+    for k, v in zip(vars, defaults):
+        kw.setdefault(k, v)
+
+    # Create the parameter dictionary.
+    pars = {}
     for k, v in kw.items():
         try:
             pv = [Parameter.default(vi, name=f"{name} {k}[{i}]") for i, vi in enumerate(v)]
         except TypeError:
             pv = Parameter.default(v, name=f"{name} {k}")
-        setattr(self, k, pv)
-    self._parameters = vars
+        pars[k] = pv
+    return pars
 
 
-def _get_parameters(self):
-    return {k: getattr(self, k) for k in self._parameters}
+# TODO: Magnetism can't access the nuclear stack.
+def set_magnetism_anchors(stack):
+    """
+    Find all magnetism objects in the stack and set their anchors.
 
-
-def _get_values(self):
-    vals = {}
-    for k in self._parameters:
-        v = getattr(self, k)
-        if isinstance(v, list):
-            vals[k] = asarray([vk.value for vk in v], "d")
-        else:
-            vals[k] = v.value
-    return vals
-
-
-class _LayerLimit(Calculation):
-    def __init__(self, flayer, isend=True, isrho=True):
-        self.description = f"{'rho' if isrho else 'irho'} Layer Limit, isend={isend}"
-        self.flayer = flayer
-        self.isend = isend
-        self.isrho = isrho
-        self.name = str(flayer) + self._tag
-
-    @property
-    def _tag(self):
-        return (".rho_" if self.isrho else ".irho_") + ("end" if self.isend else "start")
-
-    def parameters(self):
-        return []
-
-    def _function(self):
-        z = asarray([0.0, self.flayer.thickness.value])
-        P = self.flayer.profile(asarray(z), **_get_values(self.flayer))
-        index = 1 if self.isend else 0
-        return real(P[index]) if self.isrho else imag(P[index])
-
-    def __repr__(self):
-        return repr(self.flayer) + self._tag
-
-
-class _MagnetismLimit(Calculation):
-    def __init__(self, flayer, isend=True, isrhoM=True):
-        self.description = f"{'rhoM' if isrhoM else 'thetaM'} Magnetism Limit, isend={isend}"
-        self.flayer = flayer
-        self.isend = isend
-        self.isrhoM = isrhoM
-        self.name = str(flayer) + self._tag
-
-    @property
-    def _tag(self):
-        return (".rhoM_" if self.isrhoM else ".thetaM_") + ("end" if self.isend else "start")
-
-    def parameters(self):
-        return []
-
-    def _function(self):
-        zmax = self.flayer._calc_thickness()
-        z = asarray([0.0, zmax])
-        P = self.flayer.profile(z, **_get_values(self.flayer))
-        rhoM, thetaM = P if isinstance(P, tuple) else (P, DEFAULT_THETA_M)
-        rhoM, thetaM = [broadcast_to(v, z.shape) for v in (rhoM, thetaM)]
-        index = -1 if self.isend else 0
-        return rhoM[index] if self.isrhoM else thetaM[index]
-
-    def __repr__(self):
-        return repr(self.flayer) + self._tag
+    This sets the total thickness, which is required to expected magnetism at the end
+    of the profile. This function needs to be called for samples that have FunctionalMagnetism
+    layers after the sample is built, and whenever the sample structure is changed.
+    """
+    for k, layer in enumerate(stack):
+        if isinstance(layer.magnetism, FunctionalMagnetism):
+            layer.magnetism.set_anchor(stack, k)

@@ -141,6 +141,8 @@ def load4(
 
     if filename.endswith(".ort") or filename.endswith(".orb"):
         entries = parse_orso(filename)
+        FWHM = False  # ORSO files specify sigma vs. FWHM and will be converted to sigma
+        # TODO: ORSO also specifies resolution type (normal vs. uniform vs. triangular etc.)
     else:
         json_header_encoding = True  # for .refl files, header values are json-encoded
         entries = parse_multi(filename, keysep=keysep, sep=sep, comment=comment)
@@ -254,7 +256,7 @@ def _data_as_probe(
             return override
         elif key in header:
             v = decoder(header[key])
-            return np.array(v)[index] if isinstance(v, list) else v
+            return np.array(v)[index] if hasattr(v, "__getitem__") else v
         else:
             return None
 
@@ -326,6 +328,6 @@ def _data_as_probe(
         qprobe_args = probe_args.copy()
         qprobe_args.pop("theta_offset")
         qprobe_args.pop("sample_broadening")
-        probe = QProbe(data_Q, data_dQ, data=(data_R, data_dR), **qprobe_args)
+        probe = QProbe(data_Q, data_dQ, R=data_R, dR=data_dR, **qprobe_args)
 
     return probe

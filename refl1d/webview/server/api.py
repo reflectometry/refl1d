@@ -2,7 +2,7 @@ import asyncio
 from copy import deepcopy
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 # import bumps.webview.server.api as bumps_api
 import numpy as np
@@ -34,6 +34,7 @@ from refl1d.probe.data_loaders.load4 import load4
 from refl1d.probe import PolarizedNeutronProbe, ProbeSet
 from .profile_uncertainty import show_errors
 from .profile_plot import plot_multiple_sld_profiles, ModelSpec
+from .scriptify import serialize_fitproblem as scriptify_fitproblem
 
 # state.problem.serializer = "dataclass"
 
@@ -86,7 +87,9 @@ async def get_profile_plots(model_specs: List[ModelSpec]):
 
 def get_single_probe_data(theory, probe, substrate=None, surface=None, polarization=""):
     fresnel_calculator = probe.fresnel(substrate, surface)
-    Q, FQ = probe.apply_beam(probe.calc_Q, fresnel_calculator(probe._calc_Q))
+    direction_multiplier = -1.0 if probe.back_reflectivity else 1.0
+    calc_Q = probe.calc_Q
+    Q, FQ = probe.apply_beam(calc_Q, fresnel_calculator(calc_Q * direction_multiplier))
     Q, R = theory
     output: Dict[str, Union[str, np.ndarray]]
     assert isinstance(FQ, np.ndarray)
@@ -101,11 +104,11 @@ def get_single_probe_data(theory, probe, substrate=None, surface=None, polarizat
             dR=probe.dR,
             theory=R,
             fresnel=FQ,
-            background=probe.background.value,
-            intensity=probe.intensity.value,
         )
     else:
         output = dict(Q=probe.Q, dQ=probe.dQ, theory=R, fresnel=FQ)
+    output["background"] = probe.background.value
+    output["intensity"] = probe.intensity.value
     output["polarization"] = polarization
     output["label"] = probe.label()
     return output
@@ -149,6 +152,7 @@ def _get_profile_uncertainty_plot(
     npoints: int = 5000,
     random: bool = True,
     residuals: bool = False,
+    latest_timestamp: Optional[str] = None,
 ):
     if state.problem is None or state.problem.fitProblem is None:
         return None
@@ -184,6 +188,7 @@ async def get_profile_uncertainty_plot(
     npoints: int = 5000,
     random: bool = True,
     residuals: bool = False,
+    latest_timestamp: Optional[str] = None,
 ):
     result = await asyncio.to_thread(
         _get_profile_uncertainty_plot,
@@ -193,6 +198,7 @@ async def get_profile_uncertainty_plot(
         npoints=npoints,
         random=random,
         residuals=residuals,
+        latest_timestamp=latest_timestamp,
     )
     return result
 
@@ -218,3 +224,16 @@ async def load_probe_from_file(pathlist: List[str], filename: str, model_index: 
         state.shared.updated_model = now_string()
         state.shared.updated_parameters = now_string()
         await add_notification(content=f"from {filename} to model {model_index}", title="Data loaded:", timeout=2000)
+
+
+@register
+async def export_model_script(pathlist: List[str], filename: str):
+    path = Path(*pathlist)
+    fitProblem = state.problem.fitProblem if state.problem is not None else None
+    if fitProblem is None:
+        await log("Error: Can't export model if no problem defined")
+    else:
+        s = scriptify_fitproblem(fitProblem)
+        with open(path / filename, "w") as f:
+            f.write(s)
+        await add_notification(content=f"to {filename}", title="Model exported:", timeout=2000)

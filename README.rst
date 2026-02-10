@@ -23,7 +23,7 @@ Documentation is available at `<https://refl1d.readthedocs.io>`_. See
 `CHANGES.rst <https://github.com/reflectometry/refl1d/blob/master/CHANGES.rst>`_
 for details on recent changes. Information on the refl1d release process is in `release notes <release.md>`_.
 
-Use ``pip install refl1d wxpython`` to install in your python environment.
+Use ``pip install refl1d`` to install in your python environment.
 
 For the windows application, follow the installation instructions on the
 `latest release <https://github.com/reflectometry/refl1d/releases/latest>`_
@@ -39,7 +39,7 @@ Submit requests and pull requests to the project
    :alt: Build status
    :target: https://github.com/reflectometry/refl1d/actions
 
-.. |DOI| image:: https://zenodo.org/badge/1757015.svg
+.. |DOI| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.1249715.svg
    :alt: DOI tag
    :target: https://zenodo.org/doi/10.5281/zenodo.1249715
 

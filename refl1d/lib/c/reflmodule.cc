@@ -232,7 +232,14 @@ static PyMethodDef methods[] = {
       NULL,                /* m_clear */
       NULL,                /* m_free */
     };
-    return PyModule_Create(&moduledef);
+    PyObject *mod = PyModule_Create(&moduledef);
+
+#ifdef Py_GIL_DISABLED
+    // Release the GIL so that threaded versions can run independently.
+    PyUnstable_Module_SetGIL(mod, Py_MOD_GIL_NOT_USED);
+#endif
+
+	return mod;
   }
 
 #else /* PY_MAJOR_VERSION >= 3 */

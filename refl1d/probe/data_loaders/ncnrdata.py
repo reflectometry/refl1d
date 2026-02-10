@@ -16,7 +16,6 @@ for the purposes.
 Example loading data:
 
     >>> import numpy as np
-    >>> import pylab
     >>> from refl1d.names import Experiment, NCNR, air, gold, permalloy, sample_data, silicon
     >>> datafile = sample_data('chale207.refl')
     >>> instrument = NCNR.ANDR(Tlo=0.5, slits_at_Tlo=0.2, slits_below=0.1)
@@ -48,9 +47,10 @@ And for magnetic:
     >>> #M.simulate_data()
     >>> #M.plot()
     >>> #probe = instrument.simulate_magnetic(sample, T=np.linspace(0, 5, 51))
-    >>> #h = pylab.plot(probe.Q, probe.dQ)
-    >>> #h = pylab.ylabel('resolution (1-sigma)')
-    >>> #h = pylab.xlabel('Q (inv A)')
+    >>> #import matplotlib.pyplot as plt
+    >>> #h = plt.plot(probe.Q, probe.dQ)
+    >>> #h = plt.ylabel('resolution (1-sigma)')
+    >>> #h = plt.xlabel('Q (inv A)')
 
 See :mod:`instrument <refl1d.probe.instrument>` for details.
 """

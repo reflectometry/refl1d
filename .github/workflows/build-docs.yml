@@ -2,9 +2,9 @@
 name: Build sphinx docs and deploy to Pages
 
 on:
-  # Runs on pushes targeting the default branch
-  push:
-    branches: ["master"]
+  # Runs on publishing a new release
+  release:
+    types: [published]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -30,19 +30,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
       - name: Install Python dependencies
         run: |
           sudo apt-get install -y pandoc
-          python -m pip install .[dev,webview] build
+          python -m pip install .[dev] build
 
       - name: Build the docs
         run: |
@@ -51,7 +51,7 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           # Upload entire repository
           path: './doc/_build/html'

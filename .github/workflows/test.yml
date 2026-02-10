@@ -24,19 +24,19 @@ jobs:
           # pure python wheels
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
   
       - name: Set up Python ${{ matrix.config.py }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.config.py }}
 
       - name: Install the project
         run: |
-          uv sync --extra dev --extra webview --dev
+          uv sync --extra dev --dev
           uv build
 
       - name: Run tests

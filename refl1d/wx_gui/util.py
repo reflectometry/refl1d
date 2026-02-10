@@ -64,7 +64,7 @@ def twinx(ax=None):
     The ticks for ax2 will be placed on the right,
     and the ax2 instance is returned.  See examples/two_scales.py
 
-    Warning: This is a function to simulate the pylab.twinx in WX
+    Warning: This is a function to simulate matplotlib twinx in WX
     """
     if ax is None:
         return None

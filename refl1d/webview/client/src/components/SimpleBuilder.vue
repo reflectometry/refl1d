@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, shallowRef } from "vue";
 import type { ComputedRef } from "vue";
+import { fileBrowser } from "bumps-webview-client/src/app_state";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket";
 import { v4 as uuidv4 } from "uuid";
 import { dqIsFWHM } from "../app_state";
@@ -123,16 +124,15 @@ function generateQProbe(qmin: number = 0, qmax: number = 0.1, qsteps: number = 2
 }
 
 async function fetchModel() {
-  props.socket.asyncEmit("get_model", (payload: ArrayBuffer) => {
-    const json_bytes = new Uint8Array(payload);
+  props.socket.asyncEmit("get_model", (payload: string) => {
     console.debug({ payload });
 
-    if (json_bytes.length < 3) {
+    if (payload.length < 3) {
       // no model defined...
       modelJson.value = {};
       dictionaryLoaded.value = false;
     } else {
-      const jsonValue = JSON.parse(decoder.decode(json_bytes));
+      const jsonValue = JSON.parse(payload);
       modelJson.value = jsonValue;
       console.log("modelJson", modelJson.value);
       parametersById.value = jsonValue.references;
@@ -263,7 +263,23 @@ function setQProbe() {
   sendModel();
 }
 
-const decoder = new TextDecoder("utf-8");
+async function exportModelScript() {
+  if (fileBrowser.value) {
+    const settings = {
+      title: "Export Model Script to File",
+      callback: (pathlist: string[], filename: string) => {
+        props.socket.asyncEmit("export_model_script", pathlist, filename);
+      },
+      show_name_input: true,
+      name_input_label: "Filename",
+      require_name: true,
+      show_files: false,
+      chosenfile_in: "model.py",
+      search_patterns: [".py"],
+    };
+    fileBrowser.value.open(settings);
+  }
+}
 
 onMounted(() => {
   fetchModel();
@@ -467,6 +483,7 @@ function dragEnd() {
     <div class="row">
       <div class="col">
         <button class="btn btn-primary m-2" @click="newModel">New Model</button>
+        <button v-if="dictionaryLoaded" class="btn btn-secondary m-2" @click="exportModelScript">Export script</button>
       </div>
       <div v-if="dictionaryLoaded" class="col-auto">
         <button class="btn btn-secondary m-2" @click="sendModel()">Apply changes</button>
