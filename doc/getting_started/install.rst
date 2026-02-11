@@ -115,7 +115,7 @@ and other tools used in the development process.
 
 If you are not planning to develop the Vue TS webview client, you can now run the application with::
 
-    refl1d-webview --port 8080
+    refl1d --port 8080
 
 which will automatically open a browser window to the webview.
 
@@ -155,7 +155,7 @@ This starts the client and shows the URL to connect to in the terminal (typicall
 
 Now, you can start the Python webview server with::
 
-    refl1d-webview --headless --port 8080
+    refl1d --headless --port 8080
 
 and point the client to the server with the `?server=localhost:8080` query string, e.g.
 
