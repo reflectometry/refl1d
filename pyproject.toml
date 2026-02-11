@@ -20,7 +20,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Chemistry",
     "Topic :: Scientific/Engineering :: Physics",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "bumps==1.0.4b0",
     "matplotlib",
