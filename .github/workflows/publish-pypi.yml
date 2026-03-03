@@ -57,6 +57,9 @@ jobs:
 
       - name: Retrieve all artifacts
         uses: actions/download-artifact@v8
+        with:
+          name: artifacts        # Specify the name to avoid the extra subfolder
+          path: .
 
       - name: show files
         run: |
