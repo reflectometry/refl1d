@@ -5,7 +5,7 @@ import numpy as np
 if TYPE_CHECKING:
     import plotly.graph_objs as go
 
-from refl1d.uncertainty import _find_offset, align_profiles, form_quantiles
+from refl1d.uncertainty import align_profiles, form_quantiles
 from .colors import COLORS
 
 ErrorType = tuple[
@@ -47,16 +47,17 @@ def show_profiles(
 ) -> "go.Figure":
     profiles, slabs, _, _ = errors
     if align is not None:
+        # align_profiles always shifts so the alignment interface is at z=0
         profiles = align_profiles(profiles, slabs, align)
 
     contour_data = None
     if contours is not None:
-        contour_data = _profiles_contour(profiles, contours, npoints, fig=fig, row=row, col=col)
+        contour_data = _profiles_contour(profiles, contours, npoints, align=align, fig=fig, row=row, col=col)
     else:
-        _profiles_overplot(profiles, fig=fig, row=row, col=col)
+        _profiles_overplot(profiles, align=align, fig=fig, row=row, col=col)
 
     if align != "auto":
-        _profiles_draw_align_lines(profiles, slabs, align, fig=fig, row=row, col=col)
+        _profiles_draw_align_lines(fig=fig, row=row, col=col)
 
     return contour_data
 
@@ -77,7 +78,11 @@ def show_residuals(
 
 
 def _profiles_overplot(
-    profiles: dict[str, list[np.ndarray]], fig: "go.Figure", row: Optional[int] = None, col: Optional[int] = None
+    profiles: dict[str, list[np.ndarray]],
+    fig: "go.Figure",
+    align=None,
+    row: Optional[int] = None,
+    col: Optional[int] = None,
 ):
     has_magnetism = False
     for model_index, (model, group) in enumerate(profiles.items()):
@@ -99,7 +104,7 @@ def _profiles_overplot(
             _draw_overplot(
                 group, 4, name + " thetaM", fig=fig, color_index=color_index + 3, row=row, col=col, secondary_y=True
             )
-    _profile_labels(fig=fig, row=row, col=col, magnetic=has_magnetism)
+    _profile_labels(fig=fig, row=row, col=col, magnetic=has_magnetism, align=align)
 
 
 def _draw_overplot(
@@ -146,6 +151,7 @@ def _profiles_contour(
     contours: Optional[tuple[float]],
     npoints,
     fig: "go.Figure",
+    align=None,
     row: Optional[int] = None,
     col: Optional[int] = None,
 ):
@@ -208,7 +214,7 @@ def _profiles_contour(
                 secondary_y=True,
             )
 
-    _profile_labels(fig=fig, row=row, col=col, magnetic=has_magnetism)
+    _profile_labels(fig=fig, row=row, col=col, magnetic=has_magnetism, align=align)
     return contour_data
 
 
@@ -249,8 +255,15 @@ def _draw_contours(
     return named_contours
 
 
-def _profile_labels(fig: "go.Figure", row: Optional[int] = None, col: Optional[int] = None, magnetic: bool = False):
-    fig.update_xaxes(title_text="z (Å)", row=row, col=col, showline=True, zeroline=False)
+def _profile_labels(
+    fig: "go.Figure",
+    row: Optional[int] = None,
+    col: Optional[int] = None,
+    magnetic: bool = False,
+    align=None,
+):
+    xlabel = "relative z (Å)" if align is not None else "z (Å)"
+    fig.update_xaxes(title_text=xlabel, row=row, col=col, showline=True, zeroline=False)
     fig.update_yaxes(title_text="SLD (10⁻⁶/Å²)", row=row, col=col, showline=True, secondary_y=False, side="left")
     if magnetic:
         fig.update_yaxes(
@@ -329,12 +342,12 @@ def _residuals_labels(fig, row=None, col=None):
 
 
 def _profiles_draw_align_lines(
-    profiles, slabs, align, fig: "go.Figure", row: Optional[int] = None, col: Optional[int] = None
+    fig: "go.Figure",
+    row: Optional[int] = None,
+    col: Optional[int] = None,
 ):
-    for i, m in enumerate(profiles.keys()):
-        t1_offset = _find_offset(slabs[m][0], align) if align != "auto" else None
-        if t1_offset is not None:
-            fig.add_vline(x=t1_offset, line=dict(dash="dash"), row=row, col=col)
+    # Profiles have already been shifted so the alignment interface is at z=0
+    fig.add_vline(x=0, line=dict(dash="dash"), row=row, col=col)
 
 
 def _plot_quantiles(

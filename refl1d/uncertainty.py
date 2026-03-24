@@ -529,10 +529,9 @@ def _residuals_labels(axes=None):
 
 
 def _profiles_draw_align_lines(profiles, slabs, align, axes):
-    for i, m in enumerate(profiles.keys()):
-        t1_offset = _find_offset(slabs[m][0], align) if align != "auto" else None
-        if t1_offset is not None:
-            axes.axvline(x=t1_offset, color="grey", label=f"{m}:{i}")
+    # Profiles have already been shifted so the alignment interface is at z=0
+    if align != "auto":
+        axes.axvline(x=0, color="grey", linestyle="--")
 
 
 # ==== Helper functions =====
@@ -541,12 +540,20 @@ def _profiles_draw_align_lines(profiles, slabs, align, axes):
 def _align_profile_set(profiles, slabs, align):
     """
     Align all profiles to the first profile.
+
+    When *align* is not ``'auto'``, z coordinates are shifted so that the
+    alignment interface sits at z=0 (relative z).  When *align* is
+    ``'auto'`` the profiles are shifted to maximise cross-correlation with
+    the first profile but no additional origin shift is applied.
     """
     p1 = profiles[0]
     t1_offset = _find_offset(slabs[0], align) if align != "auto" else None
     offsets = [0]
     for p2, t2 in zip(profiles[1:], slabs[1:]):
         offsets.append(_align_profile_pair(p1[0], p1[1], t1_offset, p2[0], p2[1], t2, align))
+    # Shift every profile so the alignment interface lands at z=0
+    if t1_offset is not None:
+        offsets = [o - t1_offset for o in offsets]
     profiles = [tuple([group[0] + offset] + list(group[1:])) for offset, group in zip(offsets, profiles)]
     return profiles
 
