@@ -6,7 +6,7 @@ import sys
 import asyncio
 from pathlib import Path
 
-from bumps.webview.server import cli
+from bumps import cli
 
 from . import api  # uses side-effects to register refl1d functions
 from refl1d import __version__
@@ -14,7 +14,7 @@ from refl1d import __version__
 # Register the refl1d model loader
 # and the serialized model migrations
 from refl1d.bumps_interface import fitplugin
-from bumps.cli import install_plugin
+from bumps.cli_old import install_plugin
 
 install_plugin(fitplugin)
 
@@ -41,7 +41,7 @@ def start_refl1d_server():
     This returns an asyncio.Task object that should be awaited
     to ensure the server starts without exceptions.
     """
-    from bumps.webview.server import api
+    from bumps import api
     from bumps.webview.server.webserver import start_app
 
     api.state.app_name = "refl1d"
