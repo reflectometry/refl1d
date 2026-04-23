@@ -55,6 +55,8 @@ from periodictable import nsf, xsf
 from ..sample.material import Vacuum
 from ..sample.reflectivity import BASE_GUIDE_ANGLE, convolve
 from ..utils import asbytes
+from ..plotting.probe_data import ProbeData
+from .polarization import Polarization
 from . import fresnel
 from .resolution import QL2T, TL2Q, dQ_broadening, dTdL2dQ
 from .stitch import stitch
@@ -317,6 +319,32 @@ class BaseProbe:
         I = 1
         calculator = fresnel.Fresnel(rho=Srho * I, irho=Sirho * I, Vrho=Vrho * I, Virho=Virho * I)
         return calculator
+
+    def get_probe_data(self, theory, substrate=None, surface=None, polarization: Optional[Polarization] = None):
+        fresnel_calculator = self.fresnel(substrate, surface)
+        direction_multiplier = -1.0 if self.back_reflectivity else 1.0
+        calc_Q = self.calc_Q
+        Q, FQ = self.apply_beam(calc_Q, fresnel_calculator(calc_Q * direction_multiplier))
+        Q, R = theory
+        if len(Q) != len(self.Q):
+            # Saving interpolated data
+            fresnel = np.interp(Q, self.Q, FQ)
+        else:
+            fresnel = FQ
+
+        output = ProbeData(
+            Q=Q,
+            R=R,
+            dR=np.array(self.dR) if self.dR is not None else None,
+            dQ=np.array(self.dQ) if self.dQ is not None else None,
+            fresnel=fresnel,
+            polarization=polarization,
+            name=self.name,
+            background=float(self.background.value),
+            intensity=float(self.intensity.value),
+            label=self.label(),
+        )
+        return output
 
     def save(self, filename, theory, substrate=None, surface=None):
         """
@@ -1221,6 +1249,9 @@ class ProbeSet:
 
     fresnel.__doc__ = Probe.fresnel.__doc__
 
+    def get_probe_data(self, theory, substrate=None, surface=None):
+        return [p.get_probe_data(t, substrate, surface) for p, t in self.parts(theory)]
+
     def save(self, filename, theory, substrate=None, surface=None):
         for i, (p, th) in enumerate(self.parts(theory=theory)):
             p.save(filename + str(i + 1), th, substrate=substrate, surface=surface)
@@ -1536,7 +1567,6 @@ class PolarizedNeutronProbe:
     show_resolution = None  # Default to Probe.show_resolution when None
     substrate = surface = None
     polarized = True
-    _xs_names = ["mm", "mp", "pm", "pp"]
 
     def __init__(
         self,
@@ -1560,8 +1590,9 @@ class PolarizedNeutronProbe:
             self.pm = pm
             self.pp = pp
         else:
-            for index, xs_name in enumerate(self._xs_names):
-                setattr(self, xs_name, xs[index])
+            assert xs is not None, "xs or mm, mp, pm, pp must be specified"
+            for index, pol in enumerate(Polarization):
+                setattr(self, pol, xs[index])
 
         self._union_cache_key = None
         if name is None and self.mm is not None:
@@ -1581,11 +1612,11 @@ class PolarizedNeutronProbe:
 
     @property
     def xs(self) -> List[Union[NeutronProbe, None]]:
-        return [getattr(self, xs_name) for xs_name in self._xs_names]
+        return [getattr(self, pol.name) for pol in Polarization]
 
     def parameters(self):
         xs_pars = [(xsi.parameters() if xsi else None) for xsi in self.xs]
-        output = dict(zip(self._xs_names, xs_pars))
+        output = {pol.name: p for pol, p in zip(Polarization, xs_pars)}
         output["Aguide"] = self.Aguide
         output["H"] = self.H
         return output
@@ -1717,6 +1748,13 @@ class PolarizedNeutronProbe:
                 xsi.save(filename + suffix, xsi_th, substrate=substrate, surface=surface)
 
     save.__doc__ = Probe.save.__doc__
+
+    def get_probe_data(self, theory, substrate=None, surface=None):
+        output: list[ProbeData] = []
+        for xsi, xsi_th, polarization in zip(self.xs, theory, Polarization):
+            if xsi is not None:
+                output.append(xsi.get_probe_data(xsi_th, substrate, surface, polarization))
+        return output
 
     def plot(self, view=None, **kwargs):
         """
@@ -1931,8 +1969,9 @@ class PolarizedQProbe(PolarizedNeutronProbe):
             self.pm = pm
             self.pp = pp
         else:
-            for index, xs_name in enumerate(self._xs_names):
-                setattr(self, xs_name, xs[index])
+            assert xs is not None, "xs or mm, mp, pm, pp must be specified"
+            for index, pol in enumerate(Polarization):
+                setattr(self, pol, xs[index])
         self._check()
         self.name = name if name is not None else self.pp.name
         self.unique_L = None
