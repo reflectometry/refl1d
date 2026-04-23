@@ -30,7 +30,10 @@ from .sample.reflectivity import (
 from . import profile
 from .probe.probe import PolarizedNeutronProbe, Probe, QProbe, PolarizedQProbe
 from .sample import layers, material
+from .plotting import matplotlib as plot_mpl, plotly as plot_plotly
 from .utils import asbytes
+from .plotting.probe_data import ProbeData
+from .plotting.profile_data import ProfileData
 
 
 class WebviewPlotFunction(Protocol):
@@ -155,37 +158,70 @@ class ExperimentBase:
         # when dR changes, so maybe it belongs in probe.
         return 0.5 * np.sum(self.residuals() ** 2)  # + self._cache['nllf_scale']
 
-    def plot_reflectivity(self, show_resolution=False, view=None, plot_shift=None):
+    def get_profile_data(self) -> tuple[ProfileData, ProfileData]: ...
+
+    def get_probe_data(self):
         n = self.interpolation
         QR = self.reflectivity(interpolation=n)
-        self.probe.plot(
-            theory=QR,
-            substrate=self._substrate,
-            surface=self._surface,
-            view=view,
-            plot_shift=plot_shift,
-            interpolation=n,
-        )
+        assert self.probe is not None, "probe must be set to calculate reflectivity"
+        return self.probe.get_probe_data(QR, substrate=self._substrate, surface=self._surface)
 
-        if show_resolution:
-            import matplotlib.pyplot as plt
+    def plot_reflectivity(self, show_resolution=False, view="log", plot_shift=0, renderer="matplotlib"):
+        """
+        Plot the reflectivity for the model.
+        """
 
-            QR = self.reflectivity(resolution=False, interpolation=n)
-            if self.probe.polarized:
-                # Should be four pairs
-                for Q, R in QR:
-                    plt.plot(Q, R, ":g")
-            else:
-                Q, R = QR
-                plt.plot(Q, R, ":g")
+        probe_data = self.get_probe_data()
+        if renderer == "matplotlib":
+            return plot_mpl.plot(probe_data, view=view, plot_shift=plot_shift)
+        elif renderer == "plotly":
+            return plot_plotly.plot(probe_data, view=view, plot_shift=plot_shift)
+        else:
+            raise ValueError(f"Unknown renderer: {renderer}")
+        # self.probe.plot(
+        #     theory=QR,
+        #     substrate=self._substrate,
+        #     surface=self._surface,
+        #     view=view,
+        #     plot_shift=plot_shift,
+        #     interpolation=n,
+        # )
 
-    def plot(self, plot_shift=None, profile_shift=None, view=None):
-        import matplotlib.pyplot as plt
+        # if show_resolution:
+        #     import matplotlib.pyplot as plt
 
-        plt.subplot(211)
-        self.plot_reflectivity(plot_shift=plot_shift, view=view)
-        plt.subplot(212)
-        self.plot_profile(plot_shift=profile_shift)
+        #     QR = self.reflectivity(resolution=False, interpolation=n)
+        #     if self.probe.polarized:
+        #         # Should be four pairs
+        #         for Q, R in QR:
+        #             plt.plot(Q, R, ":g")
+        #     else:
+        #         Q, R = QR
+        #         plt.plot(Q, R, ":g")
+
+    def plot(self, plot_shift=0, profile_shift=0, view="log", renderer="matplotlib"):
+        probe_data = self.get_probe_data()
+        profile_data, step_profile_data = self.get_profile_data()
+        if renderer == "matplotlib":
+            return plot_mpl.plot(
+                probe_data,
+                profile_data,
+                step_profile_data,
+                plot_shift=plot_shift,
+                profile_shift=profile_shift,
+                view=view,
+            )
+        elif renderer == "plotly":
+            return plot_plotly.plot(
+                probe_data,
+                profile_data,
+                step_profile_data,
+                plot_shift=plot_shift,
+                profile_shift=profile_shift,
+                view=view,
+            )
+        else:
+            raise ValueError(f"Unknown renderer: {renderer}")
 
     def resynth_data(self):
         """Resynthesize data with noise from the uncertainty estimates."""
@@ -620,48 +656,37 @@ class Experiment(ExperimentBase):
             print("==== could not save staj file ====")
             traceback.print_exc()
 
-    def plot_profile(self, plot_shift=None):
-        import matplotlib.pyplot as plt
-        from bumps.plotutil import auto_shift
-
-        plot_shift = plot_shift if plot_shift is not None else Experiment.profile_shift
-        trans = auto_shift(plot_shift)
+    def get_profile_data(self):
         if self.ismagnetic:
             if not self.step_interfaces:
                 z, rho, irho, rhoM, thetaM = self.magnetic_step_profile()
-                # rhoM_net = rhoM*np.cos(np.radians(thetaM))
-                plt.plot(z, rho, ":g", transform=trans)
-                plt.plot(z, irho, ":b", transform=trans)
-                plt.plot(z, rhoM, ":r", transform=trans)
-                if (abs(thetaM - DEFAULT_THETA_M) > 1e-3).any():
-                    ax = plt.twinx()
-                    ax.plot(z, thetaM, ":k", transform=trans)
-                    plt.ylabel("magnetic angle (degrees)")
+                step_profile_data = ProfileData(z=z, rho=rho, irho=irho, rhoM=rhoM, thetaM=thetaM)
+            else:
+                step_profile_data = None
+
             z, rho, irho, rhoM, thetaM = self.magnetic_smooth_profile()
-            # rhoM_net = rhoM*np.cos(np.radians(thetaM))
-            handles = [
-                plt.plot(z, rho, "-g", transform=trans, label="rho")[0],
-                plt.plot(z, irho, "-b", transform=trans, label="irho")[0],
-                plt.plot(z, rhoM, "-r", transform=trans, label="rhoM")[0],
-            ]
-            if (abs(thetaM - DEFAULT_THETA_M) > 1e-3).any():
-                ax = plt.twinx()
-                h = ax.plot(z, thetaM, "-k", transform=trans, label="thetaM")
-                handles.append(h[0])
-                plt.ylabel("magnetic angle (degrees)")
-            plt.xlabel("depth (A)")
-            plt.ylabel("SLD (10^6 / A**2)")
-            labels = [h.get_label() for h in handles]
-            plt.legend(handles=handles, labels=labels)
+            smooth_profile_data = ProfileData(z=z, rho=rho, irho=irho, rhoM=rhoM, thetaM=thetaM)
         else:
             if not self.step_interfaces:
                 z, rho, irho = self.step_profile()
-                plt.plot(z, rho, ":g", z, irho, ":b", transform=trans)
+                step_profile_data = ProfileData(z=z, rho=rho, irho=irho)
+            else:
+                step_profile_data = None
+
             z, rho, irho = self.smooth_profile()
-            plt.plot(z, rho, "-g", z, irho, "-b", transform=trans)
-            plt.legend(["rho", "irho"])
-            plt.xlabel("depth (A)")
-            plt.ylabel("SLD (10^6 / A**2)")
+            smooth_profile_data = ProfileData(z=z, rho=rho, irho=irho)
+        return smooth_profile_data, step_profile_data
+
+    def plot_profile(self, plot_shift=None, renderer="matplotlib"):
+        plot_shift = plot_shift if plot_shift is not None else Experiment.profile_shift
+
+        profile_data, step_profile_data = self.get_profile_data()
+        if renderer == "matplotlib":
+            return plot_mpl.plot_profile(profile_data, step_profile_data, plot_shift=plot_shift)
+        elif renderer == "plotly":
+            return plot_plotly.plot_profile(profile_data, step_profile_data, plot_shift=plot_shift)
+        else:
+            raise ValueError
 
     def penalty(self):
         return self.sample.penalty()
