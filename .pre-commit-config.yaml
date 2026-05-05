@@ -11,7 +11,6 @@ repos:
       - id: biome-format
         name: biome-format
         files: \.(vue|js|ts|mjs|tsx|jsx|json)$
-        args: ["--config-path", "refl1d/webview/client/biome.json"]
         additional_dependencies: ["@biomejs/biome@2.4.13"]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
