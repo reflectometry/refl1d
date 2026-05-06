@@ -1,9 +1,7 @@
 import url from "url";
-import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
 import pluginVue from "eslint-plugin-vue";
 import { FlatCompat } from "@eslint/eslintrc";
 import js from "@eslint/js";
-import prettierConfig from "@vue/eslint-config-prettier";
 import vueTsEslintConfig from "@vue/eslint-config-typescript";
 
 const __dirname = url.fileURLToPath(new URL(".", import.meta.url));
@@ -15,11 +13,9 @@ const compat = new FlatCompat({
 
 export default [
   /** Extend recommended configs */
-  ...compat.extends("plugin:vue/vue3-recommended", "plugin:vuejs-accessibility/recommended", "prettier"),
+  ...compat.extends("plugin:vue/vue3-recommended", "plugin:vuejs-accessibility/recommended"),
   ...pluginVue.configs["flat/recommended"],
   ...vueTsEslintConfig(),
-  eslintPluginPrettierRecommended,
-  prettierConfig,
   /** Configuration */
   {
     languageOptions: {
@@ -39,13 +35,18 @@ export default [
         "error",
         { allowShortCircuit: true, allowTernary: true }, // Temporary fix for indirect dependency @typescript-eslint <= 8.15.0
       ],
-      "prettier/prettier": [
-        "warn",
-        {},
-        {
-          usePrettierrc: true,
-        },
-      ],
+
+      // --- Disable stylistic Vue rules that Biome handles ---
+      "vue/max-attributes-per-line": "off",
+      "vue/html-indent": "off",
+      "vue/html-closing-bracket-newline": "off",
+      "vue/html-self-closing": "off",
+      "vue/first-attribute-linebreak": "off",
+      "vue/html-closing-bracket-spacing": "off",
+      "vue/singleline-html-element-content-newline": "off",
+      "vue/multiline-html-element-content-newline": "off",
+      // ------------------------------------------------------
+
       "vuejs-accessibility/label-has-for": [
         "error",
         {
