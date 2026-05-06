@@ -205,14 +205,8 @@ function setParameterBounds(stack: Stack) {
     const value = p.slot.value;
     p.bounds = value === 0.0 ? [-0.1, 0.1] : [value * 0.5, value * 1.5];
     p.bounds.sort((a, b) => {
-      let c =
-        a === "-inf" ? Number.NEGATIVE_INFINITY
-        : a === "inf" ? Number.POSITIVE_INFINITY
-        : a;
-      let d =
-        b === "-inf" ? Number.NEGATIVE_INFINITY
-        : b === "inf" ? Number.POSITIVE_INFINITY
-        : b;
+      let c = a === "-inf" ? Number.NEGATIVE_INFINITY : a === "inf" ? Number.POSITIVE_INFINITY : a;
+      let d = b === "-inf" ? Number.NEGATIVE_INFINITY : b === "inf" ? Number.POSITIVE_INFINITY : b;
       return c - d;
     });
   };

@@ -66,3 +66,4 @@ test-files/
 # Unused lock files
 bun.lock
 uv.lock
+package-lock.json
