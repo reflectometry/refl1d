@@ -1,4 +1,5 @@
 import asyncio
+import os
 from copy import deepcopy
 from functools import lru_cache
 from pathlib import Path
@@ -237,3 +238,50 @@ async def export_model_script(pathlist: List[str], filename: str):
         with open(path / filename, "w") as f:
             f.write(s)
         await add_notification(content=f"to {filename}", title="Model exported:", timeout=2000)
+
+
+def _get_dirlisting_sync(pathlist: Optional[List[str]] = None):
+    """Directory listing that avoids per-subfolder glob (network drive safe)."""
+    subfolders = []
+    files = []
+    path = Path(state.base_path) if (pathlist is None or len(pathlist) == 0) else Path(*pathlist)
+    if not path.exists():
+        return {"error": f"Path does not exist: {path}"}
+
+    abs_path = path.absolute()
+    try:
+        entries = list(abs_path.iterdir())
+    except PermissionError:
+        return {"error": f"Permission denied: {abs_path}"}
+    except OSError as exc:
+        return {"error": f"Cannot read directory: {exc}"}
+
+    for p in entries:
+        try:
+            stat = p.stat()
+        except (OSError, PermissionError):
+            continue
+        mtime = stat.st_mtime
+        fileinfo = {"name": p.name, "modified": mtime}
+        if p.is_dir():
+            fileinfo["size"] = 0
+            subfolders.append(fileinfo)
+        else:
+            fileinfo["size"] = stat.st_size
+            files.append(fileinfo)
+
+    drives = os.listdrives() if hasattr(os, "listdrives") else []
+    return dict(drives=drives, pathlist=abs_path.parts, subfolders=subfolders, files=files)
+
+
+@register
+async def get_dirlisting(pathlist: Optional[List[str]] = None):
+    try:
+        result = await asyncio.wait_for(
+            asyncio.to_thread(_get_dirlisting_sync, pathlist),
+            timeout=10.0,
+        )
+    except asyncio.TimeoutError:
+        path_str = str(Path(*pathlist)) if pathlist else "(base)"
+        return {"error": f"Timed out reading {path_str} — network drive may be unreachable"}
+    return result
