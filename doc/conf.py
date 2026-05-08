@@ -37,11 +37,10 @@ print("\n".join(sys.path))
 print("== end path ==")
 
 # Register the refl1d model loader
-import bumps.cli
-
+from bumps.plugin import install_plugin
 from refl1d.bumps_interface import fitplugin
 
-bumps.cli.install_plugin(fitplugin)
+install_plugin(fitplugin)
 
 # -- General configuration -----------------------------------------------------
 

@@ -18,12 +18,12 @@ def setup_bumps():
     """
     Install the refl1d plugin into bumps, but don't run main.
     """
-    import bumps.cli
-
-    bumps.cli.set_mplconfig(appdatadir="Refl1D-" + __version__)
+    from bumps.plotutil import set_mplconfig
+    from bumps.plugin import install_plugin
     from .bumps_interface import fitplugin
 
-    bumps.cli.install_plugin(fitplugin)
+    set_mplconfig(appdatadir="Refl1D-" + __version__)
+    install_plugin(fitplugin)
 
 
 def cli():
@@ -39,9 +39,9 @@ def cli():
         del sys.argv[1]
         run_errors()
     else:
-        import bumps.cli
+        from bumps.gui.old_cli import main as old_main
 
-        bumps.cli.main()
+        old_main()
 
 
 def gui():

@@ -4,10 +4,10 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-# import bumps.webview.server.api as bumps_api
+# import bumps..api as bumps_api
 import numpy as np
 from bumps.errplot import error_points_from_state
-from bumps.webview.server.api import (
+from bumps.api import (
     add_notification,
     get_chisq,
     log,
