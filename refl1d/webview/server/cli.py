@@ -43,7 +43,6 @@ def start_refl1d_server():
     """
     from bumps.webview.webserver import start_app
 
-
     api.state.app_name = "refl1d"
     api.state.app_version = __version__
     api.state.client_path = CLIENT_PATH
