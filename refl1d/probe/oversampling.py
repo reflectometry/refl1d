@@ -123,7 +123,7 @@ def analyze_fitproblem(problem, tolerance=0.05, max_oversampling=201, seed=1, pl
 
 def main():
     import sys
-    from bumps.cli import load_model, load_best
+    from bumps.fitproblem import load_problem, load_pars
 
     parser = argparse.ArgumentParser(
         description="""
@@ -161,9 +161,9 @@ def main():
 
     opts = parser.parse_args(None if sys.argv[1:] else ["-h"])
 
-    problem = load_model(opts.modelfile[0], model_options=opts.modelopts)
+    problem = load_problem(opts.modelfile[0], model_options=opts.modelopts)
     if opts.pars:
-        load_best(problem, opts.pars)
+        load_pars(problem, opts.pars)
 
     analyze_fitproblem(problem, tolerance=opts.tolerance, max_oversampling=opts.max_oversampling, plot=opts.plot)
 

@@ -1,4 +1,4 @@
-from .cli import main
-
 if __name__ == "__main__":
-    main()
+    from bumps.cli import main as new_main
+
+    new_main()
