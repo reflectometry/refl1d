@@ -15,8 +15,8 @@ from refl1d.probe.probe import PolarizedNeutronProbe, NeutronProbe
 from refl1d.experiment import Experiment
 
 
-def build_multilayer(N=2, flat=False):
-    """Build a multilayer using Repeat structure."""
+def build_experiments(N=2):
+    """Build a multilayer."""
     Si = material.Material(formula="Si")
     Ni = material.Material(formula="Ni[58]")
     Si_ml = material.Material(formula="Si")
@@ -31,27 +31,23 @@ def build_multilayer(N=2, flat=False):
     )
     Si_layer = layers.Slab(material=Si_ml, thickness=100, interface=5)
 
+    Si_ml.density.range(0, 10)
+    Ni.density.range(0, 10)
     Ni_layer.thickness.range(50, 200)
     Ni_layer.interface.range(1, 20)
     Ni_layer.magnetism.rhoM.range(0, 5)
     Si_layer.thickness.range(50, 200)
     Si_layer.interface.range(1, 20)
 
-    if flat:
-        multilayer = (Ni_layer, Si_layer) * N
-    else:
-        multilayer = (Ni_layer | Si_layer) * N
-
     # Substrate and repeat
     Si_sub = layers.Slab(material=Si, thickness=0, interface=5)
 
-    return Si_sub | multilayer | air
-
-
-def build_experiments(N=2):
     # Build both samples
-    sample_repeat = build_multilayer(N, flat=False)
-    sample_flat = build_multilayer(N, flat=True)
+    ML_flat = (Ni_layer, Si_layer)*N
+    ML_repeat = (Ni_layer | Si_layer)*N
+    ML_repeat.interface = Si_layer.interface
+    sample_flat = Si_sub | ML_flat | air  # flat
+    sample_repeat = Si_sub | ML_repeat | air  # repeat
 
     # Create T and L arrays
     T = np.logspace(-3, 0, 50)
