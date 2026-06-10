@@ -9,6 +9,7 @@ Both should produce identical reflectivity and profiles when parameters are matc
 """
 
 import numpy as np
+from bumps.names import FitProblem
 from refl1d.sample import material, layers, magnetism
 from refl1d.probe.probe import PolarizedNeutronProbe, NeutronProbe
 from refl1d.experiment import Experiment
@@ -33,6 +34,7 @@ def build_multilayer(N=2, flat=False):
 
     Ni_layer.thickness.range(50, 200)
     Ni_layer.interface.range(1, 20)
+    Ni_layer.magnetism.rhoM.range(0, 5)
     Si_layer.thickness.range(50, 200)
     Si_layer.interface.range(1, 20)
 
@@ -176,6 +178,10 @@ def test_multilayer_equivalence(N=2):
     return True
 
 
+# Make it so that we can load the model into refl1d and interact with the parameters.
+# The problem symbol is ignored when testing.
+problem = FitProblem(build_experiments(N=4))
+
 if __name__ == "__main__":
     # Test for different repeat counts
     for N in [2, 3, 10]:
@@ -193,8 +199,3 @@ if __name__ == "__main__":
     print("✓ ALL TESTS PASSED FOR ALL N VALUES")
     print("=" * 70)
 
-else:
-    # Allow loading into refl1d
-    from bumps.names import FitProblem
-
-    problem = FitProblem(build_experiments(N=4))
