@@ -370,7 +370,7 @@ class Stack(Layer):
                 anchor = slabs.thickness() + magnetism.dead_below.value
                 s_below = (
                     np.nan
-                    if i == 0
+                    if len(slabs) == 0
                     else magnetism.interface_below.value
                     if magnetism.interface_below is not None
                     else slabs.surface_sigma
@@ -664,9 +664,21 @@ class Repeat(Layer):
         nr = self.repeat.value
         if nr <= 0:
             return
-        mark = len(slabs)
-        self.stack.render(probe, slabs)
-        slabs.repeat(mark, int(nr), interface=self.interface.value)
+
+        if self.ismagnetic:
+            # Dynamically loop during rendering so 'repeat' remains a fittable Parameter
+            for _ in range(int(nr)):
+                self.stack.render(probe, slabs)
+
+            # Manually apply the top interface to the final slab of the sequence,
+            # mimicking what slabs.repeat() would have done internally.
+            if len(slabs) > 0:
+                slabs._slabs[slabs._num_slabs - 1, 1] = self.interface.value
+        else:
+            # Keep the optimized vectorized array-tiling for non-magnetic stacks
+            mark = len(slabs)
+            self.stack.render(probe, slabs)
+            slabs.repeat(mark, int(nr), interface=self.interface.value)
 
     def __str__(self):
         return "(%s)x%d" % (str(self.stack), self.repeat.value)
