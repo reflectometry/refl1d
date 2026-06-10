@@ -43,8 +43,8 @@ def build_experiments(N=2):
     Si_sub = layers.Slab(material=Si, thickness=0, interface=5)
 
     # Build both samples
-    ML_flat = (Ni_layer, Si_layer)*N
-    ML_repeat = (Ni_layer | Si_layer)*N
+    ML_flat = (Ni_layer, Si_layer) * N
+    ML_repeat = (Ni_layer | Si_layer) * N
     ML_repeat.interface = Si_layer.interface
     sample_flat = Si_sub | ML_flat | air  # flat
     sample_repeat = Si_sub | ML_repeat | air  # repeat
