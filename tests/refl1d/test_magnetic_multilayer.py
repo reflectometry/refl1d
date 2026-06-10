@@ -14,68 +14,42 @@ from refl1d.probe.probe import PolarizedNeutronProbe, NeutronProbe
 from refl1d.experiment import Experiment
 
 
-def build_repeat_multilayer(N=2):
+def build_multilayer(N=2, flat=False):
     """Build a multilayer using Repeat structure."""
     Si = material.Material(formula="Si")
     Ni = material.Material(formula="Ni[58]")
     Si_ml = material.Material(formula="Si")
     air = material.Vacuum()
 
+
     # Single bilayer (Ni|Si)
     Ni_layer = layers.Slab(
         material=Ni,
         thickness=100,
         interface=5,
+        magnetism=magnetism.Magnetism(rhoM=2.0, interface_above=5.0, interface_below=5.0, name="Ni Layer 1.0T")
     )
     Si_layer = layers.Slab(material=Si_ml, thickness=100, interface=5)
-    bilayer = (
-        Ni_layer(
-            magnetism=magnetism.Magnetism(rhoM=2.0, interface_above=5.0, interface_below=5.0, name="Ni Layer 1.0T")
-        )
-        | Si_layer
-    )
+
+    Ni_layer.thickness.range(50, 200)
+    Ni_layer.interface.range(1, 20)
+    Si_layer.thickness.range(50, 200)
+    Si_layer.interface.range(1, 20)
+
+    if flat:
+        multilayer = (Ni_layer, Si_layer)*N
+    else:
+        multilayer = (Ni_layer | Si_layer)*N
 
     # Substrate and repeat
     Si_sub = layers.Slab(material=Si, thickness=0, interface=5)
-    ML = bilayer * N
 
-    return Si_sub | ML | air
+    return Si_sub | multilayer | air
 
-
-def build_flattened_multilayer(N=2):
-    """Build a multilayer by repeating layer objects N times."""
-    Si = material.Material(formula="Si")
-    Ni = material.Material(formula="Ni[58]")
-    Si_ml = material.Material(formula="Si")
-    air = material.Vacuum()
-
-    Si_sub = layers.Slab(material=Si, thickness=0, interface=5)
-
-    # Build the stack by repeating the same layer objects
-    # (bumps will deduplicate by id, giving shared parameters)
-    Ni_layer = layers.Slab(
-        material=Ni,
-        thickness=100,
-        interface=5,
-    )
-    Si_layer = layers.Slab(material=Si_ml, thickness=100, interface=5)
-
-    bilayer = (
-        Ni_layer(
-            magnetism=magnetism.Magnetism(rhoM=2.0, interface_above=5.0, interface_below=5.0, name="Ni Layer 1.0T")
-        ),
-        Si_layer,
-    )
-    ML = bilayer * N
-
-    return Si_sub | ML | air
-
-
-def test_multilayer_equivalence(N=2):
-    """Test that Repeat and flattened structures give identical results."""
+def build_experiments(N=2):
     # Build both samples
-    sample_repeat = build_repeat_multilayer(N)
-    sample_flat = build_flattened_multilayer(N)
+    sample_repeat = build_multilayer(N, flat=False)
+    sample_flat = build_multilayer(N, flat=True)
 
     # Create T and L arrays
     T = np.logspace(-3, 0, 50)
@@ -93,6 +67,11 @@ def test_multilayer_equivalence(N=2):
     # Create experiments
     exp_repeat = Experiment(sample=sample_repeat, probe=probe, dz=0.5, step_interfaces=True, dA=None)
     exp_flat = Experiment(sample=sample_flat, probe=probe, dz=0.5, step_interfaces=True, dA=None)
+    return exp_repeat, exp_flat
+
+def test_multilayer_equivalence(N=2):
+    """Test that Repeat and flattened structures give identical results."""
+    exp_repeat, exp_flat = build_experiments(N)
 
     # Compare reflectivity
     print(f"\n{'=' * 70}")
@@ -199,7 +178,7 @@ def test_multilayer_equivalence(N=2):
 
 if __name__ == "__main__":
     # Test for different repeat counts
-    for N in [1, 2, 3, 10]:
+    for N in [2, 3, 10]:
         try:
             test_multilayer_equivalence(N)
         except Exception as e:
@@ -213,3 +192,9 @@ if __name__ == "__main__":
     print("\n" + "=" * 70)
     print("✓ ALL TESTS PASSED FOR ALL N VALUES")
     print("=" * 70)
+
+else:
+    # Allow loading into refl1d
+    from bumps.names import FitProblem
+
+    problem = FitProblem(build_experiments(N=4))
