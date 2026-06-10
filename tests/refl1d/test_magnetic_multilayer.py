@@ -22,7 +22,8 @@ def build_experiments(N=2):
     Si_ml = material.Material(formula="Si")
     air = material.Vacuum()
 
-    # Single bilayer (Ni|Si)
+    # Substrate and bilayer layers
+    Si_sub = layers.Slab(material=Si, thickness=0, interface=5)
     Ni_layer = layers.Slab(
         material=Ni,
         thickness=100,
@@ -31,23 +32,27 @@ def build_experiments(N=2):
     )
     Si_layer = layers.Slab(material=Si_ml, thickness=100, interface=5)
 
+    # Enable sliders in webview
     Si_ml.density.range(0, 10)
     Ni.density.range(0, 10)
-    Ni_layer.thickness.range(50, 200)
-    Ni_layer.interface.range(1, 20)
     Ni_layer.magnetism.rhoM.range(0, 5)
+    Ni_layer.thickness.range(50, 200)
     Si_layer.thickness.range(50, 200)
+    Si_sub.interface.range(1, 20)
+    Ni_layer.interface.range(1, 20)
     Si_layer.interface.range(1, 20)
 
-    # Substrate and repeat
-    Si_sub = layers.Slab(material=Si, thickness=0, interface=5)
-
-    # Build both samples
-    ML_flat = (Ni_layer, Si_layer) * N
-    ML_repeat = (Ni_layer | Si_layer) * N
+    # Build both samples. Note the difference in handling on the interface
+    # between the multilayer and the next layer. For (Ni|Si)*N it creates
+    # a Repeat structure which uses Si.interface between the repeats and
+    # Repeat.interface at the end. With (Ni, Si)*N it creates (Ni, Si, ..., Ni, Si)
+    # so the interface between the repeats is the same as the interface at the end.
+    # Setting Repeat.interface = Si.interface makes the two systems equivalent.
+    ML_flat = (Ni_layer, Si_layer) * N  # (Ni, Si, Ni, Si, ...)
+    ML_repeat = (Ni_layer | Si_layer) * N  # Repeat((Ni|Si), N)
     ML_repeat.interface = Si_layer.interface
-    sample_flat = Si_sub | ML_flat | air  # flat
-    sample_repeat = Si_sub | ML_repeat | air  # repeat
+    sample_flat = Si_sub | ML_flat | air
+    sample_repeat = Si_sub | ML_repeat | air
 
     # Create T and L arrays
     T = np.logspace(-3, 0, 50)
@@ -178,6 +183,17 @@ def test_multilayer_equivalence(N=2):
 # Make it so that we can load the model into refl1d and interact with the parameters.
 # The problem symbol is ignored when testing.
 problem = FitProblem(build_experiments(N=4))
+
+# Compare execution times between the two methods
+if False:
+    from timeit import timeit
+
+    repeats = 20
+    number = 10
+    exp_repeat, exp_flat = build_experiments(N=repeats)
+    t1 = timeit("exp_repeat.update(); exp_repeat.reflectivity()", globals=globals(), number=number)
+    t2 = timeit("exp_flat.update(); exp_flat.reflectivity()", globals=globals(), number=number)
+    print(f"time for N={repeats}: repeat={t1 / number:.4f}s, flat={t2 / number:.4f}s")
 
 if __name__ == "__main__":
     # Test for different repeat counts
