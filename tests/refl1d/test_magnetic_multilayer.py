@@ -26,12 +26,6 @@ def build_repeat_multilayer(N=2):
         material=Ni,
         thickness=100,
         interface=5,
-        # magnetism=magnetism.Magnetism(
-        #     rhoM=2.0,
-        #     interface_above=5,
-        #     interface_below=5,
-        #     name="Ni",
-        # ),
     )
     Si_layer = layers.Slab(material=Si_ml, thickness=100, interface=5)
     bilayer = (
@@ -40,7 +34,6 @@ def build_repeat_multilayer(N=2):
         )
         | Si_layer
     )
-    # bilayer = Ni_layer | Si_layer
 
     # Substrate and repeat
     Si_sub = layers.Slab(material=Si, thickness=0, interface=5)
@@ -64,12 +57,6 @@ def build_flattened_multilayer(N=2):
         material=Ni,
         thickness=100,
         interface=5,
-        # magnetism=magnetism.Magnetism(
-        #     rhoM=2.0,
-        #     interface_above=5,
-        #     interface_below=5,
-        #     name="Ni",
-        # ),
     )
     Si_layer = layers.Slab(material=Si_ml, thickness=100, interface=5)
 
@@ -82,12 +69,6 @@ def build_flattened_multilayer(N=2):
     ML = bilayer * N
 
     return Si_sub | ML | air
-
-    # stack = Si_sub | ()
-    # for _ in range(N):
-    #     stack = stack | Ni_layer | Si_layer
-
-    # return stack | air
 
 
 def test_multilayer_equivalence(N=2):
