@@ -368,12 +368,15 @@ class Stack(Layer):
                 magnetism = layer.magnetism
                 # import sys; print >>sys.stderr, "magnetism", magnetism
                 anchor = slabs.thickness() + magnetism.dead_below.value
+                # Uniquely inherit the single specified roughness for this interface.
+                # If the user hasn't provided a separate magnetic roughness override,
+                # it defaults exactly to the nuclear roughness of the boundary below it.
                 s_below = (
-                    np.nan
-                    if i == 0
-                    else magnetism.interface_below.value
+                    magnetism.interface_below.value
                     if magnetism.interface_below is not None
                     else slabs.surface_sigma
+                    if len(slabs) > 0
+                    else 0.0
                 )
                 end_layer = i + magnetism.extent - 1
 

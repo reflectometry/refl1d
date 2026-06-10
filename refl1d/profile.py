@@ -138,28 +138,63 @@ class Microslabs(object):
         """
         Extend the model so that there are *count* versions of the slabs
         from *start* to the final slab.
-
-        This is equivalent to L.extend(L[start:]*(count-1)) for list L.
         """
-        # For now use the dumb implementation; a better implementation
-        # would remember the repeats and pre-calculate the matrix product
-        # for the repeating region, saving much work later.  This has
-        # to work in conjunction with interfaces and with magnetic profiles.
         repeats = count - 1
+        if repeats <= 0:
+            return
+
         end = len(self)
         length = end - start
-        fromidx = slice(start, end)
-        toidx = slice(end, end + repeats * length)
-        self._reserve(repeats * length)
-        self._slabs[toidx] = np.tile(self._slabs[fromidx], [repeats, 1])
-        self._slabs_rho[toidx] = np.tile(self._slabs_rho[fromidx], [repeats, 1, 1])
-        self._num_slabs += repeats * length
 
-        # Replace interface on the top
+        # 1. Properly calculate the new dimensions and reserve space
+        total_new_slabs = repeats * length
+        self._reserve(total_new_slabs)
+
+        fromidx = slice(start, end)
+        toidx = slice(end, end + total_new_slabs)
+
+        # 2. Tile the nuclear parameters safely matching its actual column structure
+        tiled_slabs = np.tile(self._slabs[fromidx, :2], [repeats, 1])
+        self._slabs[toidx] = tiled_slabs
+
+        # Tile the multi-probe rho vectors safely
+        self._slabs_rho[toidx] = np.tile(self._slabs_rho[fromidx], [repeats, 1, 1])
+
+        # Advance the counter
+        self._num_slabs += total_new_slabs
+
+        # 3. Replace interface on the new final top layer
         self._slabs[self._num_slabs - 1, 1] = interface
 
+        # 4. Correctly tile and shift the magnetic section blocks
         if self._magnetic_sections:
-            raise NotImplementedError("Repeated magnetic layers not implemented")
+            # Safely trace the true physical boundaries of every nuclear slab using absolute depths
+            structural_depths = np.cumsum(np.hstack(([0.0], self._slabs[:end, 0])))
+
+            region_start = structural_depths[start]
+            region_end = structural_depths[end]
+            period = region_end - region_start
+
+            tol = 1e-4
+            new_sections = []
+
+            for block, anchor, sigma in self._magnetic_sections:
+                block_width = np.sum(block[0])
+
+                # Keep the base magnetic section block
+                new_sections.append((block, anchor, sigma))
+
+                # Check if this section lives completely within the repeated nuclear boundaries
+                in_region = anchor >= region_start - tol and anchor + block_width <= region_end + tol
+
+                if in_region:
+                    # Duplicate the magnetic block matrices exactly for every tiled period step
+                    for r in range(1, repeats + 1):
+                        new_sections.append((block.copy(), anchor + (r * period), sigma))
+
+            # CRITICAL FOR THE BACKEND: Sort sequentially by anchor position
+            new_sections.sort(key=lambda s: s[1])
+            self._magnetic_sections = new_sections
 
     def _reserve(self, nadd):
         """
@@ -169,7 +204,7 @@ class Microslabs(object):
         if ns < self._num_slabs + nadd:
             new_ns = self._num_slabs + nadd + 50
             self._slabs = self._slabs.copy()
-            self._slabs.resize((new_ns, 4), refcheck=False)
+            self._slabs.resize((new_ns, 2), refcheck=False)
             self._slabs_rho = self._slabs_rho.copy()
             self._slabs_rho.resize((new_ns, nl, 2), refcheck=False)
 
@@ -546,14 +581,18 @@ class Microslabs(object):
         #   thetaM=(thetaM_below+thetaM_above)/2 in the gaps.
         # * Result is:
         #   slices = [(thickness, rhoM, thetaM), (thickness, rhoM, thetaM), ...]
-        # * Initialize slices with the magnetism of the substrate, which will
-        #   be [thickness=0, rhoM=0, thetaM=first thetaM] unless substrate
-        #   magnetism has been specified
-        substrate_magnetism = isnan(sigmas[0][0])
-        if substrate_magnetism:
+        # * Initialize slices with the magnetism of the substrate.
+        # Modernized: Determine substrate magnetism context using the absolute physical
+        # coordinate anchor rather than a brittle floating-point 'nan' sentinel.
+        is_anchored_at_substrate = offsets[0] <= 1e-5
+
+        if is_anchored_at_substrate and np.any(blocks[0][1] > 1e-9):
+            # The first block starts at the substrate boundary AND has active magnetism
             slices = [[[], [], []]]
         else:
-            slices = [[[0], [0], [blocks[0][2, 0]]]]
+            # Baseline substrate is non-magnetic; prepend a zero-thickness padding slice
+            # to safely initialize the matrix calculation boundary conditions matching the orientation
+            slices = [[[0.0], [0.0], [blocks[0][2, 0]]]]
         interfaces = []
         pos = 0
         for i, B in enumerate(blocks):
@@ -574,7 +613,7 @@ class Microslabs(object):
                 B[0, 0] += w
                 anchor -= w
                 if i == 0:
-                    if not substrate_magnetism:
+                    if not is_anchored_at_substrate:
                         interfaces.append(sigmas[0][0])
                 else:
                     # Use interface_above between blocks which are connected,
