@@ -21,13 +21,12 @@ def build_multilayer(N=2, flat=False):
     Si_ml = material.Material(formula="Si")
     air = material.Vacuum()
 
-
     # Single bilayer (Ni|Si)
     Ni_layer = layers.Slab(
         material=Ni,
         thickness=100,
         interface=5,
-        magnetism=magnetism.Magnetism(rhoM=2.0, interface_above=5.0, interface_below=5.0, name="Ni Layer 1.0T")
+        magnetism=magnetism.Magnetism(rhoM=2.0, interface_above=5.0, interface_below=5.0, name="Ni Layer 1.0T"),
     )
     Si_layer = layers.Slab(material=Si_ml, thickness=100, interface=5)
 
@@ -37,14 +36,15 @@ def build_multilayer(N=2, flat=False):
     Si_layer.interface.range(1, 20)
 
     if flat:
-        multilayer = (Ni_layer, Si_layer)*N
+        multilayer = (Ni_layer, Si_layer) * N
     else:
-        multilayer = (Ni_layer | Si_layer)*N
+        multilayer = (Ni_layer | Si_layer) * N
 
     # Substrate and repeat
     Si_sub = layers.Slab(material=Si, thickness=0, interface=5)
 
     return Si_sub | multilayer | air
+
 
 def build_experiments(N=2):
     # Build both samples
@@ -68,6 +68,7 @@ def build_experiments(N=2):
     exp_repeat = Experiment(sample=sample_repeat, probe=probe, dz=0.5, step_interfaces=True, dA=None)
     exp_flat = Experiment(sample=sample_flat, probe=probe, dz=0.5, step_interfaces=True, dA=None)
     return exp_repeat, exp_flat
+
 
 def test_multilayer_equivalence(N=2):
     """Test that Repeat and flattened structures give identical results."""
