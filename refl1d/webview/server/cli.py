@@ -6,15 +6,20 @@ import sys
 import asyncio
 from pathlib import Path
 
-from bumps import cli
-
 from . import api  # uses side-effects to register refl1d functions
 from refl1d import __version__
 
 # Register the refl1d model loader
 # and the serialized model migrations
 from refl1d.bumps_interface import fitplugin
-from bumps.plugin import install_plugin
+
+try:
+    from bumps.plugin import install_plugin
+    from bumps.cli import plugin_main
+except ImportError:
+    # CRUFT: bumps < 1.1
+    from bumps.cli import install_plugin
+    from bumps.webview.server.cli import plugin_main
 
 install_plugin(fitplugin)
 
@@ -32,7 +37,7 @@ def main():
         del sys.argv[1]
         run_errors()
     else:
-        cli.plugin_main(name="refl1d", client=CLIENT_PATH, version=__version__)
+        plugin_main(name="refl1d", client=CLIENT_PATH, version=__version__)
 
 
 def start_refl1d_server():

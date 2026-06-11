@@ -58,7 +58,7 @@ def test_scriptify_refl1d_model(temp_model_dir):
     original_cwd = os.getcwd()
     try:
         os.chdir(temp_model_dir)
-        reloaded_fit_problem = load_model(str(temp_script_path))
+        reloaded_fit_problem = load_problem(str(temp_script_path))
 
         # Compare key attributes of the original and reloaded fit problems
         assert len(list(fit_problem.models)) == len(list(reloaded_fit_problem.models))

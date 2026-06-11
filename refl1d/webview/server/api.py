@@ -7,6 +7,16 @@ from typing import Dict, List, Optional, Union
 # import bumps..api as bumps_api
 import numpy as np
 from bumps.errplot import error_points_from_state
+
+try:
+    import bumps.api
+except ImportError:
+    # CRUFT: bumps < 1.1; installs bumps.webview.server.api into bumps.api
+    import sys
+    import bumps.webview.server.api as api
+
+    sys.modules["bumps.api"] = api
+
 from bumps.api import (
     add_notification,
     get_chisq,
