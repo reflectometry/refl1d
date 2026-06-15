@@ -11,7 +11,7 @@ from bumps.errplot import error_points_from_state
 try:
     import bumps.api
 except ImportError:
-    # CRUFT: bumps < 1.1; installs bumps.webview.server.api into bumps.api
+    # CRUFT: bumps < 1.1; redirect bumps.api to bumps.webview.server.api
     import sys
     import bumps.webview.server.api as api
 

@@ -1,5 +1,11 @@
 """
-***Warning***: importing cli modifies the behaviour of bumps
+Refl1D entry points.
+
+*main()* starts bumps with the Refl1D plugin when *refl1d* is given on the command line.
+
+*start_refl1d_server()* starts bumps with the Refl1D plugin from jupyter notebooks.
+
+***Warning***: importing refl1d.webview.server modifies the behaviour of bumps
 """
 
 import sys
@@ -16,10 +22,12 @@ from refl1d.bumps_interface import fitplugin
 try:
     from bumps.plugin import install_plugin
     from bumps.cli import plugin_main
+    from bumps.webview.webserver import start_app
 except ImportError:
     # CRUFT: bumps < 1.1
     from bumps.cli import install_plugin
     from bumps.webview.server.cli import plugin_main
+    from bumps.webview.server.webserver import start_app
 
 install_plugin(fitplugin)
 
@@ -27,6 +35,9 @@ CLIENT_PATH = Path(__file__).parent.parent / "client"
 
 
 def main():
+    """
+    Run refl1d from the command line.
+    """
     if len(sys.argv) > 1 and sys.argv[1] == "align":
         # Command line tool to regenerate the profile uncertainty plot:
         #
@@ -46,8 +57,6 @@ def start_refl1d_server():
     This returns an asyncio.Task object that should be awaited
     to ensure the server starts without exceptions.
     """
-    from bumps.webview.webserver import start_app
-
     api.state.app_name = "refl1d"
     api.state.app_version = __version__
     api.state.client_path = CLIENT_PATH
