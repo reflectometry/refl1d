@@ -16,7 +16,7 @@ from bumps.fitproblem import FitProblem
 from ..experiment import Experiment
 from ..sample.materialdb import air, silicon
 from ..probe.data_loaders import ncnrdata as NCNR
-from ..uncertainty import calc_errors, show_errors
+from ..uncertainty import calc_errors_v2 as calc_errors, show_errors
 
 # List of modules that contain dataclasses for the saved json file format
 
