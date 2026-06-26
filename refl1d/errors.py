@@ -111,7 +111,12 @@ def run_errors(**kw):
 def _usage():
     print(run_errors.__doc__)
 
+# CRUFT: user scripts may be calling calc_errors, so don't change the interface
 def calc_errors(problem, points):
+    profile, slabs, Q, residuals, theory = calc_errors_v2(problem, points)
+    return profile, slabs, Q, residuals
+
+def calc_errors_v2(problem, points):
     """
     Align the sample profiles and compute the residual difference from the
     measured reflectivity for a set of points.
@@ -180,6 +185,7 @@ def calc_errors(problem, points):
     profiles = dict((m, []) for m in experiments)
     residuals = dict((m, []) for m in experiments)
     slabs = dict((m, []) for m in experiments)
+    theory = dict((m, []) for m in experiments)
     def record_point():
         problem.chisq_str() # Force reflectivity recalculation
         for m in experiments:
@@ -187,6 +193,9 @@ def calc_errors(problem, points):
             residuals[m].append(D+0)
             slabs_i = [L.thickness.value for L in m.sample[1:-1]]
             slabs[m].append(np.array(slabs_i))
+            QR = m.reflectivity()
+            theory_i = np.hstack([Rk for _, Rk in QR]) if m.probe.polarized else QR[1]
+            theory[m].append(theory_i)
             if m.ismagnetic:
                 z, rho, irho, rhoM, thetaM = m.magnetic_smooth_profile()
                 profiles[m].append((z+0, rho+0, irho+0, rhoM+0, thetaM+0))
@@ -200,7 +209,7 @@ def calc_errors(problem, points):
 
     # Turn residuals into arrays
     residuals = dict((k, np.asarray(v).T) for k, v in residuals.items())
-    return profiles, slabs, Q, residuals
+    return profiles, slabs, Q, residuals, theory
 
 def align_profiles(profiles, slabs, align):
     """
@@ -240,10 +249,13 @@ def show_errors(errors, contours=CONTOURS, npoints=200,
     """
     import matplotlib.pyplot as plt
 
-    if plots == 0: # Don't create plots, just save the data
+    if save: # Don't create plots, just save the data
         _save_profile_data(errors, contours=contours, npoints=npoints,
                            align=align, save=save)
         _save_residual_data(errors, contours=contours, save=save)
+        _save_theory_contour(errors, contours=contours, save=save)
+    if plots == 0:
+        ...  # Contours saved but no plotting
     elif plots == 1: # Subplots for profiles/residuals
         plt.subplot(211)
         show_profiles(errors, contours=contours, npoints=npoints, align=align)
@@ -260,7 +272,7 @@ def show_errors(errors, contours=CONTOURS, npoints=200,
         if save:
             plt.savefig(save+"-err2.png")
     else: # Multiple plots
-        profiles, slabs, Q, residuals = errors
+        profiles, slabs, Q, residuals = errors[:4]
         fignum = 1
         for m in profiles.keys():
             plt.figure()
@@ -278,7 +290,7 @@ def show_errors(errors, contours=CONTOURS, npoints=200,
             fignum += 1
 
 def show_profiles(errors, align, contours, npoints):
-    profiles, slabs, _, _ = errors
+    profiles, slabs = errors[:2]
     if align is not None:
         profiles = align_profiles(profiles, slabs, align)
 
@@ -289,7 +301,7 @@ def show_profiles(errors, align, contours, npoints):
 
 
 def show_residuals(errors, contours):
-    _, _, Q, residuals = errors
+    Q, residuals = errors[2:4]
 
     if False and contours:
         _residuals_contour(Q, residuals, contours=contours)
@@ -298,7 +310,7 @@ def show_residuals(errors, contours):
 
 
 def _save_profile_data(errors, align, contours, npoints, save):
-    profiles, slabs, _, _ = errors
+    profiles, slabs = errors[:2]
     if align is not None:
         profiles = align_profiles(profiles, slabs, align)
     k = 1
@@ -335,7 +347,7 @@ def _build_profile_matrix(group, index, zp, contours):
     return data, columns
 
 def _save_residual_data(errors, contours, save):
-    _, _, Q, residuals = errors
+    Q, residuals = errors[2:4]
     k = 1
     for title, x, r in sorted((m.name, Q[m], v) for m, v in residuals.items()):
         q, qval = form_quantiles(r.T, contours)
@@ -343,6 +355,21 @@ def _save_residual_data(errors, contours, save):
         data = np.vstack((x, r[:, 0], np.reshape(qval, (-1, qval.shape[2]))))
         columns = ["q", "best"] + list("%g%%"%v for v in 100*q.flatten())
         _write_file(save+"_resid_contour%d.dat"%k, data, title, columns)
+        k += 1
+
+def _save_theory_contour(errors, contours, save):
+    # Do nothing for old calc_errors output, which doesn't have theory curves
+    if len(errors) < 5:
+        return
+
+    Q, theory = errors[2], errors[4]
+    k = 1
+    for title, x, r in sorted((m.name, Q[m], v) for m, v in theory.items()):
+        p, q = form_quantiles(r.T, contours)
+        # TODO: R is in best; should have column for dR as well.
+        data = np.vstack((x, r[:, 0], np.reshape(q, (-1, q.shape[2]))))
+        columns = ["q", "best"] + list("%g%%"%v for v in 100*p.flatten())
+        _write_file(save+"_refl_contour%d.dat"%k, data, title, columns)
         k += 1
 
 def _write_file(path, data, title, columns):

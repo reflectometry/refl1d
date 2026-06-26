@@ -11,7 +11,7 @@ __all__ = ["data_view", "model_view", "new_model", "calc_errors", "show_errors"]
 import numpy as np
 
 from . import names as refl
-from .errors import calc_errors, show_errors
+from .errors import calc_errors_v2 as calc_errors, show_errors
 
 # These are names used by the driver
 def data_view():
