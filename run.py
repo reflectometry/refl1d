@@ -11,6 +11,8 @@ import sys
 from os.path import abspath, join as joinpath, dirname
 import traceback
 import warnings
+import numpy as np
+np.NaN = np.nan
 
 # From mgab at https://stackoverflow.com/a/22376126/6195051
 def warn_with_traceback(message, category, filename, lineno, file=None, line=None):

@@ -209,6 +209,7 @@ def calc_errors_v2(problem, points):
 
     # Turn residuals into arrays
     residuals = dict((k, np.asarray(v).T) for k, v in residuals.items())
+    theory = dict((k, np.asarray(v).T) for k, v in theory.items())
     return profiles, slabs, Q, residuals, theory
 
 def align_profiles(profiles, slabs, align):
