@@ -4,9 +4,10 @@ import os
 from refl1d.probe.resolution import QT2L
 from pathlib import Path
 
+
 # TODO: See if we can wrap np.geomspace to give the same behaviour as below?
-# Currently, np.geomspace does not allow for a step size to be defined, 
-# only the number of points. 
+# Currently, np.geomspace does not allow for a step size to be defined,
+# only the number of points.
 # This is not ideal for TOF data where we want to define a step size in dQ/Q.
 def logstep(start, stop, step, base=10.0):
     """
@@ -16,19 +17,17 @@ def logstep(start, stop, step, base=10.0):
     logrange = [start]
     point = start
     while point < stop:
-        point = point+base**(np.log10(step*point)/np.log10(base))
-        
+        point = point + base ** (np.log10(step * point) / np.log10(base))
+
         logrange.append(point)
-    
+
     return np.array(logrange)
 
 
-def TOF_loader(T=0.25, dQoQ=0.02, 
-               Q_sim_range=(0.005, 0.2),
-               filename=None, skiprows=1, **kw):
+def TOF_loader(T=0.25, dQoQ=0.02, Q_sim_range=(0.005, 0.2), filename=None, skiprows=1, **kw):
     """
     Loads and creates NeutronProbe objects for TOF stitched datasets
-    I.e. from multiple angles. In the case of ISIS NR instruments we 
+    I.e. from multiple angles. In the case of ISIS NR instruments we
     typically have a constant dq/q resolution which the data is binned to at
     the end of the reduction.
 
@@ -48,7 +47,7 @@ def TOF_loader(T=0.25, dQoQ=0.02,
             Q, R, dR, dQo = data
         else:
             Q, R, dR = data
-            dQo = (Q*dQoQ)
+            dQo = Q * dQoQ
         data_in = (R, dR)
     else:
         Q = logstep(Q_sim_range[0], Q_sim_range[1], dQoQ, base=dQoQ)
@@ -58,20 +57,20 @@ def TOF_loader(T=0.25, dQoQ=0.02,
     # Converting the dq/q resolution into a dq value for each Q point
     # dQ = FWHM2sigma(dQo)
     # Since we take dL/L = 0, dQ/Q = dT/T, so dT = T * dQoQ
-    dT = T *dQoQ
+    dT = T * dQoQ
     # print(f"dT = {dT}")
 
     probe_out = NeutronProbe(
-        T=T, 
+        T=T,
         dT=dT,
-        L=L, 
-        dL=0, 
+        L=L,
+        dL=0,
         data=data_in,
         # For standard TOF measurements resolution is assumed to be normal (gaussian)
         #  For measurements with many wavelengths and many angles (say cw measurements)
         #  then a uniform resolution can be used instead.
-        resolution='normal',
-        **kw 
+        resolution="normal",
+        **kw,
     )
 
     return probe_out
@@ -87,9 +86,9 @@ def load_probe_polref(filename, angle, dQoQ, name=None, path=None, pol_mode=None
         name = filename
     if path is None:
         path = os.getcwd()
-    
-    filepath = Path(path)/filename
-    
+
+    filepath = Path(path) / filename
+
     if (pol_mode != "pnr") and (pol_mode != "pa"):
         probe = TOF_loader(T=angle, dQoQ=dQoQ, filename=f"{filepath}.dat", name=name, **kw)
 
@@ -105,15 +104,14 @@ def load_probe_polref(filename, angle, dQoQ, name=None, path=None, pol_mode=None
 
     else:
         if pol_mode == "pa":
-            files = dict(data_mm=f"{filepath}_dd.dat",
-                         data_mp=f"{filepath}_du.dat",
-                         data_pm=f"{filepath}_ud.dat",
-                         data_pp=f"{filepath}_uu.dat")
+            files = dict(
+                data_mm=f"{filepath}_dd.dat",
+                data_mp=f"{filepath}_du.dat",
+                data_pm=f"{filepath}_ud.dat",
+                data_pp=f"{filepath}_uu.dat",
+            )
         else:
-            files = dict(data_mm=f"{filepath}_d.dat",
-                         data_mp=None,
-                         data_pm=None,
-                         data_pp=f"{filepath}_u.dat")
+            files = dict(data_mm=f"{filepath}_d.dat", data_mp=None, data_pm=None, data_pp=f"{filepath}_u.dat")
 
         cross_sections = []
         for data in files.values():
@@ -146,5 +144,5 @@ def load_probe_polref(filename, angle, dQoQ, name=None, path=None, pol_mode=None
 
     return probe
 
-# TODO: Add simulation wrapper based on the loader above for simulating POLREF data.
 
+# TODO: Add simulation wrapper based on the loader above for simulating POLREF data.
