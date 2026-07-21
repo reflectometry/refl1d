@@ -3,14 +3,20 @@ from refl1d.probe.data_loaders.polref_legacy_data_loader import load_probe_polre
 
 dQoQ = 0.01
 theta = 0.25
-probe = load_probe_polref(filename="Ni58",
-                          angle=0.25, dQoQ=0.01, name="Ni58",
-                          pol_mode="pnr",
-                          intensity=1.0, background=1e-7, back_reflectivity=False)
+probe = load_probe_polref(
+    filename="Ni58",
+    angle=0.25,
+    dQoQ=0.01,
+    name="Ni58",
+    pol_mode="pnr",
+    intensity=1.0,
+    background=1e-7,
+    back_reflectivity=False,
+)
 
 probe.pp.intensity.range(1e-1, 10)
 probe.pp.background.range(1e-9, 1e-3)
-probe.pp.sample_broadening.range(-(dQoQ*theta), 0.03)
+probe.pp.sample_broadening.range(-(dQoQ * theta), 0.03)
 
 # Set materials/SLDs
 Si = Material(formula="Si")
@@ -22,10 +28,11 @@ Ni_layer = Slab(material=Ni, thickness=1200, interface=5)
 
 # Sample construction/Stack
 
-sample = (Si_sub
-          | Ni_layer(magnetism=Magnetism(rhoM=2.0, interface_above=5, interface_below=5, name="Ni Layer Sample 1"))
-          | air
-          )
+sample = (
+    Si_sub
+    | Ni_layer(magnetism=Magnetism(rhoM=2.0, interface_above=5, interface_below=5, name="Ni Layer Sample 1"))
+    | air
+)
 
 
 # Fit params
@@ -60,5 +67,3 @@ step = False
 experiment = Experiment(probe=probe, sample=sample, dz=zed, step_interfaces=step, auto_tag=True)
 
 problem = FitProblem(experiment)
-
-
