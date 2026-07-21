@@ -24,9 +24,7 @@ def logstep(start, stop, step, base=10.0):
     return np.array(logrange)
 
 
-def TOF_loader(T=0.25, dQoQ=0.02, 
-               Q_sim_range=(0.005, 0.2),
-               filename=None, name=None, skiprows=1, **kw):
+def TOF_loader(T=0.25, dQoQ=0.02, Q_sim_range=(0.005, 0.2), filename=None, name=None, skiprows=1, **kw):
     """
     Loads and creates NeutronProbe objects for TOF stitched datasets
     I.e. from multiple angles. In the case of ISIS NR instruments we
