@@ -25,7 +25,7 @@ def logstep(start, stop, step, base=10.0):
 
 def TOF_loader(T=0.25, dQoQ=0.02, 
                Q_sim_range=(0.005, 0.2),
-               filename=None, skiprows=1, **kw):
+               filename=None, name=None, skiprows=1, **kw):
     """
     Loads and creates NeutronProbe objects for TOF stitched datasets
     I.e. from multiple angles. In the case of ISIS NR instruments we 
@@ -62,6 +62,7 @@ def TOF_loader(T=0.25, dQoQ=0.02,
     # print(f"dT = {dT}")
 
     probe_out = NeutronProbe(
+        name=name,
         T=T, 
         dT=dT,
         L=L, 
@@ -92,11 +93,6 @@ def load_probe_polref(filename, angle, dQoQ, name=None, path=None, pol_mode=None
     
     if (pol_mode != "pnr") and (pol_mode != "pa"):
         probe = TOF_loader(T=angle, dQoQ=dQoQ, filename=f"{filepath}.dat", name=name, **kw)
-
-        probe.intensity.name = f"intensity {name}"
-        probe.background.name = f"background {name}"
-        probe.sample_broadening.name = f"sample_broadening {name}"
-        probe.theta_offset.name = f"theta_offset {name}"
 
         probe.intensity.tags = ["inst", "nuisance"]
         probe.background.tags = ["inst", "nuisance"]
