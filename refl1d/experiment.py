@@ -406,7 +406,7 @@ class Experiment(ExperimentBase):
         interpolation=0,
         constraints=None,
         version: Optional[str] = None,
-        auto_tag=False,
+        auto_tag=True,
     ):
         # Note: smoothness ignored
         self.sample = sample
@@ -432,8 +432,11 @@ class Experiment(ExperimentBase):
         self.constraints = constraints
         self.version = __version__ if version is None else version
         if auto_tag:
-            tag_all(self.probe.parameters(), "probe")
-            tag_all(self.sample.parameters(), "sample")
+            probe_parameters = self.probe.parameters()
+            tag_all(probe_parameters, "instrument")
+            tag_all(probe_parameters, "nuisance")
+            if self.sample is not None:
+                tag_all(self.sample.parameters(), "sample")
         self._webview_plots = {}
 
     @property
