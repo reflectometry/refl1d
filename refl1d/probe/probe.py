@@ -1297,11 +1297,14 @@ class ProbeSet:
         with an explicit parameter in an individual segment if that
         parameter is independent.
         """
-        intensity = Parameter.default(intensity, name="intensity")
-        background = Parameter.default(background, name="background", limits=[0, None])
-        back_absorption = Parameter.default(back_absorption, name="back_absorption", limits=[0, 1])
-        theta_offset = Parameter.default(theta_offset, name="theta_offset")
-        sample_broadening = Parameter.default(sample_broadening, name="sample_broadening", limits=[None, None])
+        qualifier = f" {self.name}" if self.name else ""
+        intensity = Parameter.default(intensity, name=f"intensity{qualifier}")
+        background = Parameter.default(background, name=f"background{qualifier}", limits=[0, None])
+        back_absorption = Parameter.default(back_absorption, name=f"back_absorption{qualifier}", limits=[0, 1])
+        theta_offset = Parameter.default(theta_offset, name=f"theta_offset{qualifier}")
+        sample_broadening = Parameter.default(
+            sample_broadening, name=f"sample_broadening{qualifier}", limits=[None, None]
+        )
         for p in self.probes:
             p.intensity = intensity
             p.background = background
@@ -1630,11 +1633,14 @@ class PolarizedNeutronProbe:
         with an explicit parameter in an individual cross section if that
         parameter is independent.
         """
-        intensity = Parameter.default(intensity, name="intensity")
-        background = Parameter.default(background, name="background", limits=[0, None])
-        back_absorption = Parameter.default(back_absorption, name="back_absorption", limits=[0, 1])
-        theta_offset = Parameter.default(theta_offset, name="theta_offset")
-        sample_broadening = Parameter.default(sample_broadening, name="sample_broadening", limits=[None, None])
+        qualifier = f" {self.name}" if self.name else ""
+        intensity = Parameter.default(intensity, name="intensity" + qualifier)
+        background = Parameter.default(background, name="background" + qualifier, limits=[0, None])
+        back_absorption = Parameter.default(back_absorption, name="back_absorption" + qualifier, limits=[0, 1])
+        theta_offset = Parameter.default(theta_offset, name="theta_offset" + qualifier)
+        sample_broadening = Parameter.default(
+            sample_broadening, name="sample_broadening" + qualifier, limits=[None, None]
+        )
         for x in self.xs:
             if x is not None:
                 x.intensity = intensity
