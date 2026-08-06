@@ -1287,7 +1287,9 @@ class ProbeSet:
                 yield p, (Q[offset : offset + n], R[offset : offset + n])
                 offset += n
 
-    def shared_beam(self, intensity=1, background=0, back_absorption=1, theta_offset=0, sample_broadening=0):
+    def shared_beam(
+        self, intensity=None, background=None, back_absorption=None, theta_offset=None, sample_broadening=None
+    ):
         """
         Share beam parameters across all segments.
 
@@ -1297,6 +1299,18 @@ class ProbeSet:
         with an explicit parameter in an individual segment if that
         parameter is independent.
         """
+        default_probe = self.probes[0]
+        if intensity is None:
+            intensity = default_probe.intensity
+        if background is None:
+            background = default_probe.background
+        if back_absorption is None:
+            back_absorption = default_probe.back_absorption
+        if theta_offset is None:
+            theta_offset = default_probe.theta_offset
+        if sample_broadening is None:
+            sample_broadening = default_probe.sample_broadening
+
         qualifier = f" {self.name}" if self.name else ""
         intensity = Parameter.default(intensity, name=f"intensity{qualifier}")
         background = Parameter.default(background, name=f"background{qualifier}", limits=[0, None])
@@ -1623,7 +1637,9 @@ class PolarizedNeutronProbe:
         else:
             raise ValueError("Cannot mix front and back reflectivity measurements")
 
-    def shared_beam(self, intensity=1, background=0, back_absorption=1, theta_offset=0, sample_broadening=0):
+    def shared_beam(
+        self, intensity=None, background=None, back_absorption=None, theta_offset=None, sample_broadening=None
+    ):
         """
         Share beam parameters across all four cross sections.
 
@@ -1633,6 +1649,20 @@ class PolarizedNeutronProbe:
         with an explicit parameter in an individual cross section if that
         parameter is independent.
         """
+        # Default parameters to the first non-empty cross section
+        # Note: this may be a non-spinflip channel if the mm cross section is missing.
+        default_probe = next(x for x in self.xs if x is not None)
+        if intensity is None:
+            intensity = default_probe.intensity
+        if background is None:
+            background = default_probe.background
+        if back_absorption is None:
+            back_absorption = default_probe.back_absorption
+        if theta_offset is None:
+            theta_offset = default_probe.theta_offset
+        if sample_broadening is None:
+            sample_broadening = default_probe.sample_broadening
+
         qualifier = f" {self.name}" if self.name else ""
         intensity = Parameter.default(intensity, name="intensity" + qualifier)
         background = Parameter.default(background, name="background" + qualifier, limits=[0, None])
