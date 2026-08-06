@@ -105,6 +105,7 @@ class Vacuum(Scatterer):
 
     def __init__(self, *args, **kw):
         self.name = "Vacuum"
+        self.density = 0.0
 
     def parameters(self):
         return []
@@ -651,7 +652,7 @@ class Mixture(Scatterer):
         if (fraction < 0).any():
             return nan
         volume = self._volume(fraction)
-        density = np.array([m.density() for m in [self.base] + self.material])
+        density = np.array([float(m.density) for m in [self.base] + self.material])
         return np.sum(volume * density)
 
     density = property(_density, doc=_density.__doc__)
