@@ -37,11 +37,14 @@ print("\n".join(sys.path))
 print("== end path ==")
 
 # Register the refl1d model loader
-import bumps.cli
-
+try:
+    from bumps.plugin import install_plugin
+except ImportError:
+    # CRUFT: bumps < 1.1
+    from bumps.cli import install_plugin
 from refl1d.bumps_interface import fitplugin
 
-bumps.cli.install_plugin(fitplugin)
+install_plugin(fitplugin)
 
 # -- General configuration -----------------------------------------------------
 
