@@ -179,7 +179,7 @@ class FreeInterface(Layer):
 
     def parameters(self):
         return {
-            "interface": self.interface.parameters(),
+            "interface": self.interface,
             "below": self.below.parameters(),
             "above": self.above.parameters(),
             "dz": self.dz,
