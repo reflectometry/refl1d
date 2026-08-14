@@ -2,7 +2,7 @@ import os
 import numpy
 import pylab
 import bumps.fitters as fit
-from bumps.cli import load_model
+from bumps.fitproblem import load_problem
 
 SEED = 1
 
@@ -43,7 +43,7 @@ def example_dir():
 def plot_model(filename):
     # import sys; print >>sys.stderr, "in plot with",filename, example_dir()
     numpy.random.seed(SEED)
-    p = load_model(os.path.join(example_dir(), filename))
+    p = load_problem(os.path.join(example_dir(), filename))
     p.plot()
     pylab.show()
 
@@ -51,7 +51,7 @@ def plot_model(filename):
 def fit_model(filename):
     # import sys; print >>sys.stderr, "in plot with",filename, example_dir()
     numpy.random.seed(SEED)
-    p = load_model(os.path.join(example_dir(), filename))
+    p = load_problem(os.path.join(example_dir(), filename))
     # x.fx = fit.RLFit(p).solve(steps=1000, burn=99)
     # x,fx = fit.DEFit(p).solve(steps=200, pop=10)
     # x,fx = fit.PTFit(p).solve(steps=100,burn=400)

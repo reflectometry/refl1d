@@ -3,7 +3,7 @@ from pathlib import Path
 import shutil
 
 import pytest
-from bumps.cli import load_model
+from bumps.fitproblem import load_problem
 from refl1d.webview.server.scriptify import serialize_fitproblem
 
 
@@ -40,7 +40,7 @@ def test_scriptify_refl1d_model(temp_model_dir):
     """Test that a refl1d model can be scriptified and re-loaded."""
     # Load the example model
     model_path = Path(__file__).parent.parent.parent / "doc" / "examples" / "xray" / "model.py"
-    fit_problem = load_model(str(model_path))
+    fit_problem = load_problem(str(model_path))
 
     # Scriptify the fit problem
     script = serialize_fitproblem(fit_problem)
@@ -58,7 +58,7 @@ def test_scriptify_refl1d_model(temp_model_dir):
     original_cwd = os.getcwd()
     try:
         os.chdir(temp_model_dir)
-        reloaded_fit_problem = load_model(str(temp_script_path))
+        reloaded_fit_problem = load_problem(str(temp_script_path))
 
         # Compare key attributes of the original and reloaded fit problems
         assert len(list(fit_problem.models)) == len(list(reloaded_fit_problem.models))
