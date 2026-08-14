@@ -432,9 +432,7 @@ class Experiment(ExperimentBase):
         self.constraints = constraints
         self.version = __version__ if version is None else version
         if auto_tag:
-            probe_parameters = self.probe.parameters()
-            tag_all(probe_parameters, "instrument")
-            tag_all(probe_parameters, "nuisance")
+            tag_all(self.probe.parameters(), "instrument")
             if self.sample is not None:
                 tag_all(self.sample.parameters(), "sample")
         self._webview_plots = {}
