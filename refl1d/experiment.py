@@ -18,7 +18,7 @@ import numpy as np
 from bumps import parameter
 from bumps.dream.state import MCMCDraw
 from bumps.fitproblem import Fitness, FitProblem
-from bumps.parameter import Parameter, tag_all
+from bumps.parameter import Parameter, unique  # CRUFT: should import tag_all instead of unique
 from refl1d.probe import ProbeSet
 
 from . import __version__
@@ -31,6 +31,13 @@ from . import profile
 from .probe.probe import PolarizedNeutronProbe, Probe, QProbe, PolarizedQProbe
 from .sample import layers, material
 from .utils import asbytes
+
+
+# CRUFT: tag_all is broken for bumps < 1.0.6
+# We could do a version check, but the function is simple enough to reimplement
+def tag_all(pars, tag):
+    for p in unique(pars):
+        p.add_tag(tag)
 
 
 class WebviewPlotFunction(Protocol):
