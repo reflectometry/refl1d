@@ -37,7 +37,8 @@ from .utils import asbytes
 # We could do a version check, but the function is simple enough to reimplement
 def tag_all(pars, tag):
     for p in unique(pars):
-        p.add_tag(tag)
+        if hasattr(p, "add_tag"):
+            p.add_tag(tag)
 
 
 class WebviewPlotFunction(Protocol):
