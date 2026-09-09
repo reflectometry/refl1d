@@ -161,7 +161,7 @@ def main():
 
     opts = parser.parse_args(None if sys.argv[1:] else ["-h"])
 
-    problem = load_problem(opts.modelfile[0], model_options=opts.modelopts)
+    problem = load_problem(opts.modelfile[0], args=opts.modelopts)
     if opts.pars:
         load_pars(problem, opts.pars)
 
