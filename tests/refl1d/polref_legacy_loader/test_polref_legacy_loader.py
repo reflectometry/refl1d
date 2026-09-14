@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from pathlib import Path
-from refl1d.names import NeutronProbe, PolarizedNeutronProbe
+from refl1d.names import NeutronProbe, PolarizedNeutronProbe, silicon, air, Experiment
 from refl1d.probe.data_loaders.polref_legacy_data_loader import logstep, TOF_loader, load_probe_polref
 
 
@@ -74,7 +74,13 @@ def test_load_probe_polref_standard(tmp_path):
     assert isinstance(probe, NeutronProbe)
     assert probe.name == filename
     assert "intensity test_standard" in probe.intensity.name
-    assert "inst" in probe.intensity.tags
+
+    # Tagging happens when sample and probe are added to the experiment.
+    sample = Experiment(sample=silicon | air, probe=probe)
+    assert "instrument" in probe.intensity.tags
+    # Make sure that only one copy of the tag is added.
+    sample = Experiment(sample=silicon | air, probe=probe)
+    assert probe.intensity.tags == ["instrument"]
 
 
 def test_load_probe_polref_pnr(tmp_path):

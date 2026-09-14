@@ -90,53 +90,28 @@ def load_probe_polref(filename, angle, dQoQ, name=None, path=None, pol_mode=None
 
     filepath = Path(path) / filename
 
-    if (pol_mode != "pnr") and (pol_mode != "pa"):
-        probe = TOF_loader(T=angle, dQoQ=dQoQ, filename=f"{filepath}.dat", name=name, **kw)
+    # Load parts
+    if pol_mode == "pa":  # Fully polarized: --, -+, +-, ++
+        parts = ["_dd", "_du", "_ud", "_uu"]
+    elif pol_mode == "pnr":  # Half_polarized: --, ++
+        parts = ["_d", "_u"]
+    else:  # Unpolarized
+        parts = [""]
+    data = [TOF_loader(T=angle, dQoQ=dQoQ, filename=f"{filepath}{part}.dat", name=name, **kw) for part in parts]
 
-        probe.intensity.tags = ["inst", "nuisance"]
-        probe.background.tags = ["inst", "nuisance"]
-        probe.sample_broadening.tags = ["inst", "nuisance"]
-        probe.theta_offset.tags = ["inst", "nuisance"]
+    # Unpolarized: return first and only part
+    if len(parts) == 1:
+        return data[0]
 
+    # Polarized: sort parts into cross sections and return polarized probe
+    if len(parts) == 2:
+        cross_sections = [data[0], None, None, data[1]]
     else:
-        if pol_mode == "pa":
-            files = dict(
-                data_mm=f"{filepath}_dd.dat",
-                data_mp=f"{filepath}_du.dat",
-                data_pm=f"{filepath}_ud.dat",
-                data_pp=f"{filepath}_uu.dat",
-            )
-        else:
-            files = dict(data_mm=f"{filepath}_d.dat", data_mp=None, data_pm=None, data_pp=f"{filepath}_u.dat")
-
-        cross_sections = []
-        for data in files.values():
-            if data is None:
-                cross_sections.append(None)
-            else:
-                cross_sections.append(TOF_loader(T=angle, dQoQ=dQoQ, filename=data, name=name, **kw))
-        if field is None:
-            field = 0.0
-
-        probe = PolarizedNeutronProbe(cross_sections, Aguide=270, H=field, name=name)
-
-        for xs in (probe.mm, probe.mp, probe.pm, probe.pp):
-            if xs is not None:
-                xs.name = name
-                xs.intensity = probe.pp.intensity
-                xs.sample_broadening = probe.pp.sample_broadening
-                xs.theta_offset = probe.pp.theta_offset
-                xs.background = probe.pp.background
-
-        probe.pp.intensity.name = f"intensity {name}"
-        probe.pp.background.name = f"background {name}"
-        probe.pp.sample_broadening.name = f"sample_broadening {name}"
-        probe.pp.theta_offset.name = f"theta_offset {name}"
-
-        probe.pp.intensity.tags = ["inst", "nuisance"]
-        probe.pp.background.tags = ["inst", "nuisance"]
-        probe.pp.sample_broadening.tags = ["inst", "nuisance"]
-        probe.pp.theta_offset.tags = ["inst", "nuisance"]
+        cross_sections = data
+    if field is None:
+        field = 0.0
+    probe = PolarizedNeutronProbe(cross_sections, Aguide=270, H=field, name=name)
+    probe.shared_beam()
 
     return probe
 
