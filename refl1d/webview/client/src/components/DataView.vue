@@ -52,6 +52,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
   }
   let theory_traces: Trace[] = [];
   let data_traces: Trace[] = [];
+  let shapes: Partial<Plotly.Shape>[] = [];
   let residuals_traces: Trace[] = [];
   let yaxis_label: string = "Reflectivity";
   const xaxis_label: string = "Q (Å<sup>-1</sup>)";
@@ -270,6 +271,18 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           });
 
           theory_traces.push({ x: pp.Q, y: TSA, mode: "lines", name: label + " theory", line: { width: 2, color } });
+          if (local_offset > 0) {
+            shapes.push({
+              type: "line",
+              xref: "x domain",
+              yref: "y",
+              x0: 0,
+              x1: 1,
+              y0: local_offset,
+              y1: local_offset,
+              line: { color, width: 1, dash: "dot" },
+            });
+          }
 
           if (pp.R !== undefined && mm.R !== undefined) {
             const Rm = interp(pp.Q, mm.Q, mm.R);
@@ -330,7 +343,7 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
     }
   }
   data_traces.push(...residuals_traces);
-  return { theory_traces, data_traces, xaxis_label, yaxis_label };
+  return { theory_traces, data_traces, shapes, xaxis_label, yaxis_label };
 }
 
 async function fetch_and_draw() {
@@ -358,13 +371,14 @@ async function change_plot_type() {
 }
 
 async function draw_plot() {
-  const { theory_traces, data_traces, xaxis_label, yaxis_label } = generate_new_traces(
+  const { theory_traces, data_traces, shapes, xaxis_label, yaxis_label } = generate_new_traces(
     plot_data.value,
     reflectivity_type.value,
     show_residuals.value
   );
   const layout: Partial<Plotly.Layout> = {
     uirevision: reflectivity_type.value,
+    shapes,
     xaxis: {
       title: {
         text: xaxis_label,
