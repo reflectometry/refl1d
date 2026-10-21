@@ -205,14 +205,11 @@ def orso_material_converter(material: ORSOMaterial):
                 formula=component, number_density=number_density * 1e21
             )  # convert to 1/cm³
             parts.extend([cmaterial, fraction * 100])  # convert to percentage for Mixture
-        # Mixture is expecting a list [base, M2, F2, M3, F3, ...]
-        # but ORSO Composit does not have a base material,
-        # so we will set that to vacuum with fraction 0.0 (implicitly)
-        # as the other fractions add up to 1.0
-        return Mixture(
-            base=Vacuum(),
-            parts=parts,
-        )
+        # Mixture is expecting a list [base, M2, F2, M3, F3, ...] but ORSO Composit
+        # does not have a base material (all fractions add to 1.0). When fitting
+        # composition fraction, the base material is adapts to make up 100% allowing
+        # the other fractions to vary. Assume the base is the first material.
+        return Mixture(base=parts[0], parts=parts[2:])
     elif material.mass_density is not None:
         return BulkDensityMaterial(formula=material.formula, density=material.mass_density.as_unit("g/cm^3"))
     elif material.number_density is not None:
