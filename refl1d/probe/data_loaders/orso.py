@@ -1,14 +1,20 @@
+from pathlib import Path
+
 import numpy as np
-from orsopy.fileio.orso import load_nexus, load_orso
+import yaml
+
 import orsopy.fileio.model_language as orsopy_model
-from orsopy.fileio.model_language import Layer as ORSOLayer, SampleModel as ORSOSample, Material as ORSOMaterial
+from orsopy.fileio.data_source import Sample as ORSOSample
+from orsopy.fileio.model_language import Material as ORSOMaterial
+from orsopy.fileio.orso import load_nexus, load_orso
 from orsopy.utils.resolver_slddb import ResolverSLDDB
-from refl1d.sample.layers import Stack, Slab
-from refl1d.sample.material import Compound, Mixture, BulkDensityMaterial, NumberDensityMaterial, SLD, Vacuum
+
 from refl1d.probe.resolution import FWHM2sigma
+from refl1d.sample.layers import Stack, Slab
+from refl1d.sample.material import Mixture, BulkDensityMaterial, NumberDensityMaterial, SLD, Vacuum
 
 
-def parse_orso(filename):
+def load_orso_data(filename):
     """
     Load an ORSO text (.ort) or binary (.orb) file containing one or more datasets
 
@@ -70,7 +76,7 @@ def parse_orso(filename):
 
             Notes
             -----
-            This function requires the instrument setting `orso_name` to have a "magnitue" and "error" attribute.
+            This function requires the instrument setting `orso_name` to have a "magnitude" and "error" attribute.
             """
             column_index = next(
                 (i for i, c in enumerate(columns) if getattr(c, "physical_quantity", None) == orso_name),
@@ -118,6 +124,14 @@ def parse_orso(filename):
 
         entries_out.append((header_out, np.array(data).T))
     return entries_out
+
+
+def load_orso_sample(sample_file: Path | str, name=None):
+    sample_file = Path(sample_file)
+    substacks = yaml.safe_load(sample_file.read_text())
+    orso_sample = ORSOSample(name=name or sample_file.stem, model=substacks)
+    refl1d_sample = orso_samplemodel_converter(orso_sample.model)
+    return refl1d_sample
 
 
 def orso_samplemodel_converter(model: orsopy_model.SampleModel):

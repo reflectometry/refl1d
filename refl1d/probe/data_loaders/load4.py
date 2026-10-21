@@ -17,7 +17,7 @@ from refl1d.probe import (
 from refl1d.probe.resolution import QL2T, QT2L, FWHM2sigma, dQdL2dT, dQdT2dLoL, sigma2FWHM
 from refl1d.sample.reflectivity import BASE_GUIDE_ANGLE
 
-from .orso import parse_orso
+from .orso import load_orso_data
 
 
 def load4(
@@ -140,7 +140,7 @@ def load4(
     json_header_encoding = False
 
     if filename.endswith(".ort") or filename.endswith(".orb"):
-        entries = parse_orso(filename)
+        entries = load_orso_data(filename)
         FWHM = False  # ORSO files specify sigma vs. FWHM and will be converted to sigma
         # TODO: ORSO also specifies resolution type (normal vs. uniform vs. triangular etc.)
     else:
