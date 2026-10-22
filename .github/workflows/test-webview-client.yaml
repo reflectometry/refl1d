@@ -12,10 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Checkout bumps source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: bumps/bumps
           sparse-checkout: "bumps/webview/client"
@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
@@ -75,10 +75,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Checkout bumps source
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: bumps/bumps
           sparse-checkout: "bumps/webview/client"
@@ -106,7 +106,7 @@ jobs:
 #     runs-on: ubuntu-latest
 #     steps:
 #       - name: Checkout code
-#         uses: actions/checkout@v6
+#         uses: actions/checkout@v7
 
 #       - name: Set up Bun
 #         uses: oven-sh/setup-bun@v2
@@ -122,7 +122,7 @@ jobs:
 #     runs-on: ubuntu-latest
 #     steps:
 #       - name: Checkout code
-#         uses: actions/checkout@v6
+#         uses: actions/checkout@v7
 
 #       - name: Set up Bun
 #         uses: oven-sh/setup-bun@v2
