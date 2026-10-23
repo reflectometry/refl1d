@@ -152,10 +152,10 @@ class SLD(Scatterer):
     rho: Parameter
     irho: Parameter
 
-    def __init__(self, name="SLD", rho: Union[float, Parameter] = 0, irho=0):
-        self.name = name
-        self.rho = Parameter.default(rho, name=name + " rho")
-        self.irho = Parameter.default(irho, name=name + " irho")
+    def __init__(self, name=None, rho: Union[float, Parameter] = 0, irho=0):
+        self.name = name or "SLD"
+        self.rho = Parameter.default(rho, name=self.name + " rho")
+        self.irho = Parameter.default(irho, name=self.name + " irho")
 
     def parameters(self):
         return {"rho": self.rho, "irho": self.irho}
@@ -280,7 +280,12 @@ class BulkDensityMaterial(BaseMaterial):
             # Density starts at zero if density is unknown
             density = self._formula.density or 0.0
         self.density = Parameter.default(density, name=self.name + " density", limits=(0, inf))
-        self.bulk_density = self.density
+
+    # Assignment to bulk_density will be ignored, so converted it to a property
+    # CRUFT: bulk_density is an alias for density.
+    @property
+    def bulk_density(self):
+        return self.density
 
     def parameters(self):
         return dict(density=self.density)
