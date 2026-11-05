@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/// <reference types="@types/uuid"/>
 import { onMounted, ref } from "vue";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket";
 import { configWithSVGDownloadButton } from "bumps-webview-client/src/plotly_extras";
@@ -37,7 +36,7 @@ onMounted(async () => {
 async function fetch_and_draw() {
   const specs = current_models.value.map(([model_index, sample_index]) => ({ model_index, sample_index }));
   const payload = (await props.socket.asyncEmit("get_profile_plots", specs)) as {
-    data: Partial<Plotly.PlotData>[];
+    data: Partial<Plotly.Data>[];
     layout: Partial<Plotly.Layout>;
   };
   const plotdata = { ...payload };

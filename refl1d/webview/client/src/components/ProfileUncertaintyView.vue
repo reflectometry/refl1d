@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/// <reference types="@types/uuid"/>
 import { ref, shallowRef } from "vue";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket";
 import { configWithSVGDownloadButton } from "bumps-webview-client/src/plotly_extras";
@@ -27,7 +26,7 @@ const props = defineProps<{
 setupDrawLoop("updated_uncertainty", props.socket, fetch_and_draw, title);
 
 type PlotData = {
-  data: Partial<Plotly.PlotData>[];
+  data: Partial<Plotly.Data>[];
   layout: Partial<Plotly.Layout>;
 };
 
