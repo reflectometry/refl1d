@@ -18,7 +18,7 @@ import type {
 } from "../model";
 
 // const title = "Builder";
-// @ts-ignore: intentionally infinite type recursion
+// @ts-expect-error: intentionally infinite type recursion
 const modelJson = shallowRef<json>({});
 const showInstructions = ref(false);
 const showEditQRange = ref(false);
@@ -37,7 +37,7 @@ const props = defineProps<{
 }>();
 
 const sortedLayers: ComputedRef<Slab[]> = computed(() => {
-  return modelJson.value["object"]["models"][activeModel.value]["sample"]["layers"];
+  return modelJson.value.object.models[activeModel.value].sample.layers;
 });
 
 props.socket.on("updated_parameters", fetchModel);
@@ -227,9 +227,9 @@ function setParameterBounds(stack: Stack) {
 }
 
 async function sendModel(is_new: boolean = false, name: string | null = null) {
-  for (const model of modelJson.value["object"]["models"]) {
-    setParameterNames(model["sample"]);
-    setParameterBounds(model["sample"]);
+  for (const model of modelJson.value.object.models) {
+    setParameterNames(model.sample);
+    setParameterBounds(model.sample);
   }
   const json_model = JSON.stringify(modelJson.value);
   await props.socket.asyncEmit("set_serialized_problem", json_model, is_new, name);
@@ -248,7 +248,7 @@ function addLayer(after_index: number = -1) {
 }
 
 function setQProbe() {
-  modelJson.value["object"]["models"][activeModel.value]["probe"] = generateQProbe(
+  modelJson.value.object.models[activeModel.value].probe = generateQProbe(
     editQmin.value,
     editQmax.value,
     editQsteps.value,
@@ -290,7 +290,7 @@ function dragStart(index: number, event: DragEvent) {
   event.dataTransfer.setData("text/plain", `${index}`);
 }
 
-function dragOver(index: number, event: DragEvent) {
+function dragOver(_index: number, event: DragEvent) {
   event.preventDefault();
 }
 
@@ -338,7 +338,9 @@ function dragEnd() {
     <div class="container mt-4">
       <div class="row justify-content-end">
         <div class="col">
-          <button class="btn btn-primary m-2" @click="showEditQRange = !showEditQRange">Edit Q-range</button>
+          <button type="button" class="btn btn-primary m-2" @click="showEditQRange = !showEditQRange">
+            Edit Q-range
+          </button>
         </div>
         <div class="col-auto align-self-center">
           <div class="form-check form-switch m-2">
@@ -348,17 +350,11 @@ function dragEnd() {
               class="form-check-input"
               type="checkbox"
               @click="sendModel()"
-            />
+            >
             <label class="form-check-label" for="showImaginary_input">Show imaginary SLD</label>
           </div>
           <div class="form-check form-switch m-2">
-            <input
-              id="dqIsFWHM_input"
-              v-model="dqIsFWHM"
-              class="form-check-input"
-              type="checkbox"
-              @click="sendModel()"
-            />
+            <input id="dqIsFWHM_input" v-model="dqIsFWHM" class="form-check-input" type="checkbox" @click="sendModel()">
             <label class="form-check-label" for="dqIsFWHM_input">Resolution as FWHM</label>
           </div>
         </div>
@@ -366,18 +362,18 @@ function dragEnd() {
       <div v-if="showEditQRange" class="row mb-2">
         <div class="col">
           <label for="qmin">Q min (Å<sup>-1</sup>)</label>
-          <input id="qmin" v-model="editQmin" class="form-control" type="number" step="0.01" />
+          <input id="qmin" v-model="editQmin" class="form-control" type="number" step="0.01">
         </div>
         <div class="col">
           <label for="qmax">Q max (Å<sup>-1</sup>)</label>
-          <input id="qmax" v-model="editQmax" class="form-control" type="number" step="0.01" />
+          <input id="qmax" v-model="editQmax" class="form-control" type="number" step="0.01">
         </div>
         <div class="col">
           <label for="qsteps">Q steps</label>
-          <input id="qsteps" v-model="editQsteps" class="form-control" type="number" step="1" />
+          <input id="qsteps" v-model="editQsteps" class="form-control" type="number" step="1">
         </div>
         <div class="col-auto align-self-end">
-          <button class="btn btn-secondary mx-2" @click="setQProbe">Apply new Q</button>
+          <button type="button" class="btn btn-secondary mx-2" @click="setQProbe">Apply new Q</button>
         </div>
       </div>
       <table v-if="dictionaryLoaded" id="sortable" class="table table-sm">
@@ -427,7 +423,7 @@ function dragEnd() {
                 class="form-control"
                 type="number"
                 step="5"
-              />
+              >
             </td>
             <td>
               <label for="layer-rho" class="visually-hidden">>Layer Rho</label>
@@ -438,7 +434,7 @@ function dragEnd() {
                 class="form-control"
                 type="number"
                 step="0.01"
-              />
+              >
             </td>
             <td v-if="showImaginary">
               <label for="layer-irho" class="visually-hidden">>Layer iRho</label>
@@ -449,7 +445,7 @@ function dragEnd() {
                 class="form-control"
                 type="number"
                 step="0.01"
-              />
+              >
             </td>
             <td>
               <label for="layer-interface" class="visually-hidden">>Layer Interface</label>
@@ -460,11 +456,18 @@ function dragEnd() {
                 class="form-control"
                 type="number"
                 step="1"
-              />
+              >
             </td>
-            <td><button class="btn btn-danger btn-sm" @click="deleteLayer(key)">Delete</button></td>
             <td>
-              <button class="btn btn-success btn-sm add-layer-after" title="add layer here" @click="addLayer(key + 1)">
+              <button type="button" class="btn btn-danger btn-sm" @click="deleteLayer(key)">Delete</button>
+            </td>
+            <td>
+              <button
+                type="button"
+                class="btn btn-success btn-sm add-layer-after"
+                title="add layer here"
+                @click="addLayer(key + 1)"
+              >
                 +
               </button>
             </td>
@@ -476,17 +479,21 @@ function dragEnd() {
 
     <div class="row">
       <div class="col">
-        <button class="btn btn-primary m-2" @click="newModel">New Model</button>
-        <button v-if="dictionaryLoaded" class="btn btn-secondary m-2" @click="exportModelScript">Export script</button>
+        <button type="button" class="btn btn-primary m-2" @click="newModel">New Model</button>
+        <button type="button" v-if="dictionaryLoaded" class="btn btn-secondary m-2" @click="exportModelScript">
+          Export script
+        </button>
       </div>
       <div v-if="dictionaryLoaded" class="col-auto">
-        <button class="btn btn-secondary m-2" @click="sendModel()">Apply changes</button>
+        <button type="button" class="btn btn-secondary m-2" @click="sendModel()">Apply changes</button>
       </div>
       <div v-if="dictionaryLoaded" class="col-auto">
         <div class="input-group m-2">
-          <button class="btn btn-success btn-sm" @click="addLayer(insertIndex)">Add layer at index:</button>
+          <button type="button" class="btn btn-success btn-sm" @click="addLayer(insertIndex)">
+            Add layer at index:
+          </button>
           <label for="insert-index" class="visually-hidden">Insert index</label>
-          <input id="insert-index" v-model="insertIndex" class="form-control me-4 insert-index" type="number" />
+          <input id="insert-index" v-model="insertIndex" class="form-control me-4 insert-index" type="number">
         </div>
       </div>
     </div>
