@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/// <reference types="@types/plotly.js" />
 import { ref, shallowRef } from "vue";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket";
 import { configWithSVGDownloadButton } from "bumps-webview-client/src/plotly_extras";
@@ -31,7 +30,7 @@ type ReflectivityPlot = ReflectivityPlotEnum[number];
 const reflectivity_type = ref<ReflectivityPlot>("Reflectivity");
 
 const MARKER_OPACITY = 0.5;
-type Trace = Partial<Plotly.PlotData>;
+type Trace = Partial<Plotly.Data>;
 type PolarizationString = "" | "--" | "-+" | "+-" | "++" | "unpolarized";
 type ModelData = {
   label: string;
