@@ -4,7 +4,7 @@ module.exports = async ({ github, context, glob }) => {
   const fs = require("fs");
   const path = require("path");
   const { owner, repo } = context.repo;
-  const sid_release = await github.rest.repos.getReleaseByTag({
+  let sid_release = await github.rest.repos.getReleaseByTag({
     owner,
     repo,
     tag: "sid",
@@ -20,14 +20,14 @@ module.exports = async ({ github, context, glob }) => {
   // delete existing release assets (if needed) and upload new ones:
   const globber = await glob.create(SEARCH_PATTERN ?? "*", { followSymbolicLinks: false });
   const full_paths = await globber.glob();
-  for (const full_path of full_paths) {
+  for (let full_path of full_paths) {
     const fn = path.basename(full_path);
     const stats = fs.statSync(full_path);
     if (!stats.isFile()) {
       continue;
     }
     console.log("updating: ", fn, full_path);
-    const asset_id = (sid_release.data.assets.find((a) => a.name == fn) ?? {}).id;
+    let asset_id = (sid_release.data.assets.find((a) => a.name == fn) ?? {}).id;
     if (asset_id) {
       await github.rest.repos.deleteReleaseAsset({
         owner,
