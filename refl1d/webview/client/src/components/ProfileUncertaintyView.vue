@@ -168,15 +168,8 @@ async function disableAutoAlign() {
           :disabled="autoAlign"
           @change="fetch_and_draw()"
         />
-        <!-- eslint-disable
-           vuejs-accessibility/no-static-element-interactions, 
-           vuejs-accessibility/click-events-have-key-events
-        -->
+        <!-- biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents: mouse-only overlay that disables auto-align; the input underneath is keyboard accessible -->
         <span v-if="autoAlign" class="position-absolute top-0 start-0 w-100 h-100" @click="disableAutoAlign"></span>
-        <!-- eslint-enable
-           vuejs-accessibility/no-static-element-interactions, 
-           vuejs-accessibility/click-events-have-key-events
-        -->
       </div>
       <div class="col-md-3 align-middle">
         <label class="form-label" for="n-shown">Sample size</label>
