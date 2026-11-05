@@ -7,7 +7,6 @@ import * as Plotly from "plotly.js/lib/core";
 
 const title = "Profile Uncertainty";
 const plotDiv = ref<HTMLDivElement>();
-const hiddenDownload = ref<HTMLAnchorElement>();
 const align = ref(0);
 const autoAlign = ref(true);
 const show_residuals = ref(false);
@@ -72,12 +71,18 @@ function get_csv_data() {
     lines[i + 1] = values.map((v) => v[i].toPrecision(6)).join(",");
     //keys.map(k => data[k][i].toPrecision(6)).join(',');
   }
-  return "data:text/csv;charset=utf-8," + encodeURIComponent(lines.join("\n"));
+  return `data:text/csv;charset=utf-8,${encodeURIComponent(lines.join("\n"))}`;
 }
 
 async function download_csv() {
-  const a = hiddenDownload.value as HTMLAnchorElement;
-  a.href = get_csv_data();
+  const href = get_csv_data();
+  if (!href) {
+    return;
+  }
+  const a = document.createElement("a");
+  a.href = href;
+  a.download = "contours.csv";
+  a.type = "text/csv";
   a.click();
 }
 
@@ -129,8 +134,6 @@ async function disableAutoAlign() {
 
 <template>
   <div class="container d-flex flex-grow-1 flex-column">
-    <!-- <details open>
-      <summary>Settings</summary> -->
     <div class="row g-3">
       <div class="col-md-3 align-middle text-end">
         <div>
@@ -141,7 +144,7 @@ async function disableAutoAlign() {
             class="form-check-input"
             type="checkbox"
             @change="fetch_and_draw()"
-          />
+          >
         </div>
         <div>
           <label class="form-check-label pe-2" for="show_residuals">Show residuals</label>
@@ -151,11 +154,11 @@ async function disableAutoAlign() {
             class="form-check-input"
             type="checkbox"
             @change="fetch_and_draw()"
-          />
+          >
         </div>
         <div>
           <label class="form-check-label pe-2" for="randomize">Random draw</label>
-          <input id="randomize" v-model="random" class="form-check-input" type="checkbox" @change="fetch_and_draw()" />
+          <input id="randomize" v-model="random" class="form-check-input" type="checkbox" @change="fetch_and_draw()">
         </div>
       </div>
       <div class="col-md-3 align-middle position-relative">
@@ -167,31 +170,22 @@ async function disableAutoAlign() {
           type="number"
           :disabled="autoAlign"
           @change="fetch_and_draw()"
-        />
-        <!-- eslint-disable
-           vuejs-accessibility/no-static-element-interactions, 
-           vuejs-accessibility/click-events-have-key-events
-        -->
+        >
+        <!-- biome-ignore lint/a11y/noStaticElementInteractions lint/a11y/useKeyWithClickEvents: mouse-only overlay that disables auto-align; the input underneath is keyboard accessible -->
         <span v-if="autoAlign" class="position-absolute top-0 start-0 w-100 h-100" @click="disableAutoAlign"></span>
-        <!-- eslint-enable
-           vuejs-accessibility/no-static-element-interactions, 
-           vuejs-accessibility/click-events-have-key-events
-        -->
       </div>
       <div class="col-md-3 align-middle">
         <label class="form-label" for="n-shown">Sample size</label>
-        <input id="n-shown" v-model="nshown" class="form-control" type="number" @change="fetch_and_draw()" />
+        <input id="n-shown" v-model="nshown" class="form-control" type="number" @change="fetch_and_draw()">
       </div>
       <div class="col-md-3 align-middle">
         <label class="form-label" for="n-points">z steps</label>
-        <input id="n-points" v-model="npoints" class="form-control" type="number" @change="fetch_and_draw()" />
+        <input id="n-points" v-model="npoints" class="form-control" type="number" @change="fetch_and_draw()">
       </div>
     </div>
     <div>
-      <button class="btn btn-primary btn-sm" @click="download_csv">Download CSV</button>
-      <a ref="hiddenDownload" class="hidden" download="contours.csv" type="text/csv">Download CSV</a>
+      <button type="button" class="btn btn-primary btn-sm" @click="download_csv">Download CSV</button>
     </div>
-    <!-- </details> -->
     <div class="flex-grow-1 position-relative">
       <div ref="plotDiv" class="w-100 h-100 plot-div"></div>
       <div
@@ -218,9 +212,6 @@ async function disableAutoAlign() {
 <style scoped>
 svg {
   width: 100%;
-}
-.hidden {
-  display: none;
 }
 span.spinner-border {
   width: 3rem;

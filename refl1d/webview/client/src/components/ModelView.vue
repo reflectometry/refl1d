@@ -72,7 +72,7 @@ function requestRedraw() {
   <div class="container d-flex flex-grow-1 flex-column">
     <div class="form-check">
       <label class="form-check-label pe-2" for="multiple">Show Multiple</label>
-      <input id="multiple" v-model="show_multiple" class="form-check-input" type="checkbox" @change="toggle_multiple" />
+      <input id="multiple" v-model="show_multiple" class="form-check-input" type="checkbox" @change="toggle_multiple">
     </div>
     <label for="model" class="form-label"> Models:</label>
     <select v-if="show_multiple" id="model" v-model="current_models" multiple @change="requestRedraw">

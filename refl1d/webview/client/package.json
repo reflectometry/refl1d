@@ -13,9 +13,9 @@
     "build_prod": "vite build --emptyOutDir -m production",
     "preview": "vite preview --port 4173",
     "format": "biome format --write src",
-    "lint": "eslint src --fix",
+    "lint": "biome lint --write src",
     "test:format": "biome format src/",
-    "test:lint": "eslint src",
+    "test:lint": "biome lint src",
     "test:types": "vue-tsc --noEmit --skipLibCheck -p tsconfig.json --composite false"
   },
   "dependencies": {
@@ -35,11 +35,7 @@
     "@tsconfig/node-lts": "^24.0.1",
     "@types/node": "^26.6.6",
     "@vitejs/plugin-vue": "^6.0.10",
-    "@vue/eslint-config-typescript": "^14.9.0",
     "@vue/tsconfig": "^0.9.1",
-    "eslint": "^10.14.0",
-    "eslint-plugin-vue": "^10.12.0",
-    "eslint-plugin-vuejs-accessibility": "^2.6.3",
     "typescript": "^6.0.3",
     "vite": "^8.3.6",
     "vite-svg-loader": "5.1.3",

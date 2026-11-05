@@ -15,7 +15,7 @@ export type BoundsValue = number | "-inf" | "inf";
 
 export interface SerializedModel {
   references: { [key: string]: Parameter };
-  object: any;
+  object: unknown;
   $schema: "bumps-draft-02";
 }
 
