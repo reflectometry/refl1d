@@ -1,3 +1,4 @@
+import { fileURLToPath, URL } from "node:url";
 import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vite";
 import svgLoader from "vite-svg-loader";
@@ -7,6 +8,9 @@ export default defineConfig({
   plugins: [vue(), svgLoader()],
   base: "",
   resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
     // When bumps-webview-client is linked from a bumps checkout (bun/npm link), its imports
     // would otherwise resolve to that checkout's own node_modules, bundling a second copy.
     // bumps patches asyncEmit onto socket.io's Socket class, and shares reactive state

@@ -35,12 +35,17 @@ test("Profile panel draws the SLD profile", async ({ page }) => {
   await expect(right.locator(".scatterlayer .trace").first()).toBeVisible();
 });
 
-test("Builder lists the layers of the loaded model", async ({ page }) => {
+test("Builder creates an editable model from an unsupported loaded model", async ({ page }) => {
   const { right } = panes(page);
   await right.getByRole("tab", { name: "Builder", exact: true }).click();
+  await expect(right.getByText("Unsupported model")).toBeVisible();
+  page.once("dialog", (dialog) => dialog.accept());
+  await right.getByRole("button", { name: "New Model" }).click();
+
   const names = right.locator("tbody tr textarea");
-  await expect(names).toHaveCount(3);
-  await expect(names.nth(1)).toHaveValue("Ni");
+  await expect(names).toHaveCount(2);
+  await expect(names.nth(0)).toHaveValue("Si");
+  await expect(names.nth(1)).toHaveValue("Vacuum");
 });
 
 for (const title of ["Reflectivity", "Summary", "Profile", "Log", "History", "Convergence", "Model", "Parameters"]) {
