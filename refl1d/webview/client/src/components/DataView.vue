@@ -506,7 +506,7 @@ function interp(x: number[], xp: number[], fp: number[]): number[] {
       <div class="col">
         <div class="row">
           <div class="col-auto">
-            <label for="plot_offset" class="col-form-label">Plot mode:</label>
+            <label for="plot_mode" class="col-form-label">Plot mode:</label>
           </div>
           <div class="col">
             <select id="plot_mode" v-model="reflectivity_type" class="w-100 my-2" @change="change_plot_type">
