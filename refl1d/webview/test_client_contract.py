@@ -17,16 +17,11 @@ import pytest
 
 CLIENT_SRC = Path(__file__).parent / "client" / "src"
 
-# Client files that nothing imports, so their event names don't matter.
-UNUSED_FILES = {
-    "ModelViewPlotly.vue",  # older Profile panel; calls get_profile_data, which the server no longer has
-}
-
 
 def _client_names(pattern):
     if not CLIENT_SRC.exists():
         pytest.skip("webview client source not available")
-    sources = (p for p in CLIENT_SRC.rglob("*") if p.suffix in {".ts", ".vue", ".js"} and p.name not in UNUSED_FILES)
+    sources = (p for p in CLIENT_SRC.rglob("*") if p.suffix in {".ts", ".vue", ".js"})
     text = "\n".join(p.read_text(encoding="utf-8") for p in sources)
     return set(re.findall(pattern, text))
 
@@ -37,8 +32,10 @@ def test_client_calls_exist_on_server():
         from bumps.webview import webserver  # noqa: F401 -- registers the bumps handlers
     except ImportError:
         # CRUFT: bumps < 1.1
-        from bumps.webview.server import api
-        from bumps.webview.server import webserver  # noqa: F401
+        from bumps.webview.server import (
+            api,
+            webserver,  # noqa: F401
+        )
     from refl1d.webview.server import api as refl1d_api  # noqa: F401 -- registers the refl1d handlers
 
     called = _client_names(r"""asyncEmit\(\s*["'`](\w+)["'`]""")
