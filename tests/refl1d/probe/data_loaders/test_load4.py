@@ -10,8 +10,7 @@ import pytest
 
 # refl1d imports
 from refl1d import probe
-from refl1d.probe.data_loaders.load4 import parse_orso, load4, sigma2FWHM, FWHM2sigma
-
+from refl1d.probe.data_loaders.load4 import load_orso_data, load4, sigma2FWHM, FWHM2sigma
 
 OrsoFiles = namedtuple("OrsoFiles", ["ort", "orb"])
 ArrayTOrsoFiles = namedtuple("ArrayTOrsoFiles", ["scalar_dT", "array_dT"])
@@ -164,7 +163,7 @@ def theta_column_orso_files(tmp_path):
 
 
 def test_parse_orso(orsofiles):
-    ortset = parse_orso(orsofiles.ort)
+    ortset = load_orso_data(orsofiles.ort)
 
     # Check the length of the sets
     assert len(ortset) == 1
@@ -190,7 +189,7 @@ def test_parse_orso(orsofiles):
     assert data.shape == (4, 17)
 
     # Check that parse_orso returns the same data for both ort and orb files
-    orbset = parse_orso(orsofiles.orb)
+    orbset = load_orso_data(orsofiles.orb)
     header_other, data_other = orbset[0]
     assert header == header_other
     assert np.allclose(data, data_other)

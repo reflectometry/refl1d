@@ -28,7 +28,13 @@ dependencies = [
     "numpy",
     "periodictable",
     "scipy",
-    "orsopy"
+
+    "orsopy",
+    "pint", # orsopy dependency
+    "h5py>=3.1.0", # orsopy dependency (for nexus files)
+    # "PyCifRW", # orsopy optional dependency (for cif file materials)
+    # "jsonschema", # orsopy optional dependency (for file validation)
+    # "pyyaml>=5.4.1", # orsopy listed dependency
 ]
 
 [project.optional-dependencies]
