@@ -478,7 +478,7 @@ function dragEnd() {
           </tr>
         </tbody>
       </table>
-      <div v-else-if="dictionaryLoaded" class="card bg-danger">
+      <div v-else-if="dictionaryLoaded" class="card text-bg-danger">
         <div class="card-body">
           <h5 class="card-title">Unsupported model</h5>
           <p class="card-text">
