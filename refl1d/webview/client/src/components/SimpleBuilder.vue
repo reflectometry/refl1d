@@ -11,8 +11,6 @@ import type { BoundsValue, Magnetism, QProbe, Repeat, SLD, Slab, Stack } from "@
 // const title = "Builder";
 // @ts-expect-error: intentionally infinite type recursion
 const modelJson = shallowRef<json>({});
-// Only used by the commented-out reactive instructions collapse in the template
-// const showInstructions = ref(false);
 const showEditQRange = ref(false);
 const editQmin = ref(0);
 const editQmax = ref(0.1);
@@ -327,28 +325,6 @@ function dragEnd() {
     <div class="container m-2">
       <div class="card">
         <div class="card-body">
-          <!-- Reactive collapse (re-runs the component render on every toggle)
-          <h5 class="card-title d-inline-block px-2 my-0 align-middle">Simple Slab Model Builder</h5>
-          <button type="button"
-            class="btn btn-primary"
-            type="button"
-            aria-expanded="false"
-            aria-controls="builderInstructions"
-            @click="showInstructions = !showInstructions"
-          >
-            Instructions
-          </button>
-
-          <div id="builderInstructions" class="card-text collapse" :class="{ show: showInstructions }">
-            <br><ul>
-              <li>Click the "Add layer" button to add a new layer.</li>
-              <li>Drag and drop the rows to change the order of the layers.</li>
-              <li>You can toggle the imaginary SLD by clicking the checkbox below.</li>
-            </ul>
-          </div>
-          -->
-
-          <!-- Native <details> (toggled by the browser, no reactive state) -->
           <details id="builderInstructions" class="card-text">
             <summary class="instructions-summary">
               <h5 class="card-title d-inline-block px-2 my-0 align-middle">Simple Slab Model Builder</h5>
