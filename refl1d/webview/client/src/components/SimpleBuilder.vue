@@ -1,26 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, shallowRef } from "vue";
-import type { ComputedRef } from "vue";
 import { fileBrowser } from "bumps-webview-client/src/app_state";
 import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket";
+import type { Parameter, ParameterLike, SerializedModel } from "bumps-webview-client/src/model";
 import { v4 as uuidv4 } from "uuid";
-import { dqIsFWHM } from "../app_state";
-import type {
-  BoundsValue,
-  Magnetism,
-  Parameter,
-  ParameterLike,
-  QProbe,
-  SerializedModel,
-  Slab,
-  SLD,
-  Stack,
-} from "../model";
+import type { ComputedRef } from "vue";
+import { computed, onMounted, ref, shallowRef } from "vue";
+import { dqIsFWHM } from "@/app_state";
+import type { BoundsValue, Magnetism, QProbe, Repeat, SLD, Slab, Stack } from "@/model";
 
 // const title = "Builder";
-// @ts-ignore: intentionally infinite type recursion
+// @ts-expect-error: intentionally infinite type recursion
 const modelJson = shallowRef<json>({});
-const showInstructions = ref(false);
 const showEditQRange = ref(false);
 const editQmin = ref(0);
 const editQmax = ref(0.1);
@@ -37,7 +27,25 @@ const props = defineProps<{
 }>();
 
 const sortedLayers: ComputedRef<Slab[]> = computed(() => {
-  return modelJson.value["object"]["models"][activeModel.value]["sample"]["layers"];
+  return modelJson.value.object.models[activeModel.value].sample.layers;
+});
+
+function isSimpleSlab(layer: Slab | Repeat): layer is Slab {
+  return (
+    layer?.__class__ === "refl1d.sample.layers.Slab" &&
+    (layer as Slab).material?.__class__ === "refl1d.sample.material.SLD"
+  );
+}
+
+// The builder can only edit stacks of plain slabs with SLD materials; models loaded
+// from scripts may contain repeats, formula-based materials, or other layer types.
+const isSimpleModel = computed(() => {
+  const models = modelJson.value?.object?.models;
+  return (
+    Array.isArray(models) &&
+    models.length > 0 &&
+    models.every((m) => Array.isArray(m?.sample?.layers) && m.sample.layers.every(isSimpleSlab))
+  );
 });
 
 props.socket.on("updated_parameters", fetchModel);
@@ -227,9 +235,12 @@ function setParameterBounds(stack: Stack) {
 }
 
 async function sendModel(is_new: boolean = false, name: string | null = null) {
-  for (const model of modelJson.value["object"]["models"]) {
-    setParameterNames(model["sample"]);
-    setParameterBounds(model["sample"]);
+  if (!isSimpleModel.value) {
+    return;
+  }
+  for (const model of modelJson.value.object.models) {
+    setParameterNames(model.sample);
+    setParameterBounds(model.sample);
   }
   const json_model = JSON.stringify(modelJson.value);
   await props.socket.asyncEmit("set_serialized_problem", json_model, is_new, name);
@@ -248,7 +259,7 @@ function addLayer(after_index: number = -1) {
 }
 
 function setQProbe() {
-  modelJson.value["object"]["models"][activeModel.value]["probe"] = generateQProbe(
+  modelJson.value.object.models[activeModel.value].probe = generateQProbe(
     editQmin.value,
     editQmax.value,
     editQsteps.value,
@@ -290,7 +301,7 @@ function dragStart(index: number, event: DragEvent) {
   event.dataTransfer.setData("text/plain", `${index}`);
 }
 
-function dragOver(index: number, event: DragEvent) {
+function dragOver(_index: number, event: DragEvent) {
   event.preventDefault();
 }
 
@@ -314,31 +325,26 @@ function dragEnd() {
     <div class="container m-2">
       <div class="card">
         <div class="card-body">
-          <h5 class="card-title d-inline-block px-2 my-0 align-middle">Simple Slab Model Builder</h5>
-          <button
-            class="btn btn-primary"
-            type="button"
-            aria-expanded="false"
-            aria-controls="builderInstructions"
-            @click="showInstructions = !showInstructions"
-          >
-            Instructions
-          </button>
-
-          <div id="builderInstructions" class="card-text collapse" :class="{ show: showInstructions }">
-            <ul>
+          <details id="builderInstructions" class="card-text">
+            <summary class="instructions-summary">
+              <h5 class="card-title d-inline-block px-2 my-0 align-middle">Simple Slab Model Builder</h5>
+              <span class="btn btn-primary">Instructions</span>
+            </summary>
+            <ul class="mt-3">
               <li>Click the "Add layer" button to add a new layer.</li>
               <li>Drag and drop the rows to change the order of the layers.</li>
               <li>You can toggle the imaginary SLD by clicking the checkbox below.</li>
             </ul>
-          </div>
+          </details>
         </div>
       </div>
     </div>
     <div class="container mt-4">
       <div class="row justify-content-end">
         <div class="col">
-          <button class="btn btn-primary m-2" @click="showEditQRange = !showEditQRange">Edit Q-range</button>
+          <button type="button" class="btn btn-primary m-2" @click="showEditQRange = !showEditQRange">
+            Edit Q-range
+          </button>
         </div>
         <div class="col-auto align-self-center">
           <div class="form-check form-switch m-2">
@@ -348,17 +354,11 @@ function dragEnd() {
               class="form-check-input"
               type="checkbox"
               @click="sendModel()"
-            />
+            >
             <label class="form-check-label" for="showImaginary_input">Show imaginary SLD</label>
           </div>
           <div class="form-check form-switch m-2">
-            <input
-              id="dqIsFWHM_input"
-              v-model="dqIsFWHM"
-              class="form-check-input"
-              type="checkbox"
-              @click="sendModel()"
-            />
+            <input id="dqIsFWHM_input" v-model="dqIsFWHM" class="form-check-input" type="checkbox" @click="sendModel()">
             <label class="form-check-label" for="dqIsFWHM_input">Resolution as FWHM</label>
           </div>
         </div>
@@ -366,21 +366,21 @@ function dragEnd() {
       <div v-if="showEditQRange" class="row mb-2">
         <div class="col">
           <label for="qmin">Q min (Å<sup>-1</sup>)</label>
-          <input id="qmin" v-model="editQmin" class="form-control" type="number" step="0.01" />
+          <input id="qmin" v-model="editQmin" class="form-control" type="number" step="0.01">
         </div>
         <div class="col">
           <label for="qmax">Q max (Å<sup>-1</sup>)</label>
-          <input id="qmax" v-model="editQmax" class="form-control" type="number" step="0.01" />
+          <input id="qmax" v-model="editQmax" class="form-control" type="number" step="0.01">
         </div>
         <div class="col">
           <label for="qsteps">Q steps</label>
-          <input id="qsteps" v-model="editQsteps" class="form-control" type="number" step="1" />
+          <input id="qsteps" v-model="editQsteps" class="form-control" type="number" step="1">
         </div>
         <div class="col-auto align-self-end">
-          <button class="btn btn-secondary mx-2" @click="setQProbe">Apply new Q</button>
+          <button type="button" class="btn btn-secondary mx-2" @click="setQProbe">Apply new Q</button>
         </div>
       </div>
-      <table v-if="dictionaryLoaded" id="sortable" class="table table-sm">
+      <table v-if="dictionaryLoaded && isSimpleModel" id="sortable" class="table table-sm">
         <thead class="border-bottom py-1 sticky-top text-white bg-secondary">
           <tr>
             <th></th>
@@ -427,7 +427,7 @@ function dragEnd() {
                 class="form-control"
                 type="number"
                 step="5"
-              />
+              >
             </td>
             <td>
               <label for="layer-rho" class="visually-hidden">>Layer Rho</label>
@@ -438,7 +438,7 @@ function dragEnd() {
                 class="form-control"
                 type="number"
                 step="0.01"
-              />
+              >
             </td>
             <td v-if="showImaginary">
               <label for="layer-irho" class="visually-hidden">>Layer iRho</label>
@@ -449,7 +449,7 @@ function dragEnd() {
                 class="form-control"
                 type="number"
                 step="0.01"
-              />
+              >
             </td>
             <td>
               <label for="layer-interface" class="visually-hidden">>Layer Interface</label>
@@ -460,33 +460,53 @@ function dragEnd() {
                 class="form-control"
                 type="number"
                 step="1"
-              />
+              >
             </td>
-            <td><button class="btn btn-danger btn-sm" @click="deleteLayer(key)">Delete</button></td>
             <td>
-              <button class="btn btn-success btn-sm add-layer-after" title="add layer here" @click="addLayer(key + 1)">
+              <button type="button" class="btn btn-danger btn-sm" @click="deleteLayer(key)">Delete</button>
+            </td>
+            <td>
+              <button
+                type="button"
+                class="btn btn-success btn-sm add-layer-after"
+                title="add layer here"
+                @click="addLayer(key + 1)"
+              >
                 +
               </button>
             </td>
           </tr>
         </tbody>
       </table>
+      <div v-else-if="dictionaryLoaded" class="card text-bg-danger">
+        <div class="card-body">
+          <h5 class="card-title">Unsupported model</h5>
+          <p class="card-text">
+            The loaded model contains layers or materials the simple builder can't edit (for example repeats or
+            formula-based materials). Click "New Model" to start a new slab model.
+          </p>
+        </div>
+      </div>
       <p v-else>Load data to start building a model</p>
     </div>
 
     <div class="row">
       <div class="col">
-        <button class="btn btn-primary m-2" @click="newModel">New Model</button>
-        <button v-if="dictionaryLoaded" class="btn btn-secondary m-2" @click="exportModelScript">Export script</button>
+        <button type="button" class="btn btn-primary m-2" @click="newModel">New Model</button>
+        <button type="button" v-if="dictionaryLoaded" class="btn btn-secondary m-2" @click="exportModelScript">
+          Export script
+        </button>
       </div>
-      <div v-if="dictionaryLoaded" class="col-auto">
-        <button class="btn btn-secondary m-2" @click="sendModel()">Apply changes</button>
+      <div v-if="dictionaryLoaded && isSimpleModel" class="col-auto">
+        <button type="button" class="btn btn-secondary m-2" @click="sendModel()">Apply changes</button>
       </div>
-      <div v-if="dictionaryLoaded" class="col-auto">
+      <div v-if="dictionaryLoaded && isSimpleModel" class="col-auto">
         <div class="input-group m-2">
-          <button class="btn btn-success btn-sm" @click="addLayer(insertIndex)">Add layer at index:</button>
+          <button type="button" class="btn btn-success btn-sm" @click="addLayer(insertIndex)">
+            Add layer at index:
+          </button>
           <label for="insert-index" class="visually-hidden">Insert index</label>
-          <input id="insert-index" v-model="insertIndex" class="form-control me-4 insert-index" type="number" />
+          <input id="insert-index" v-model="insertIndex" class="form-control me-4 insert-index" type="number">
         </div>
       </div>
     </div>
@@ -514,7 +534,6 @@ svg {
 .draggable {
   cursor: move;
 }
-
 textarea.name {
   overflow-x: auto;
   white-space: nowrap;

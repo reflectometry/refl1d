@@ -9,6 +9,8 @@
 **/__pycache__/
 **/node_modules/
 /refl1d/webview/client/dist/
+/refl1d/webview/client/test-results/
+/refl1d/webview/client/playwright-report/
 *.swp
 *.so
 *.bak

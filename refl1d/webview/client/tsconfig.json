@@ -1,11 +1,9 @@
 {
   "extends": ["@tsconfig/node-lts/tsconfig.json", "@vue/tsconfig/tsconfig.json"],
   "include": ["src/**/*"],
-  "exclude": ["node_modules/", "bumps/**/*", "src/components/ModelViewPlotly.vue"],
+  "exclude": ["node_modules/", "bumps/**/*"],
   "compilerOptions": {
     "noErrorTruncation": true,
-    // "composite": true,
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     },
@@ -14,7 +12,8 @@
     "esModuleInterop": true,
     "moduleResolution": "Bundler",
     "target": "ES6",
-    "types": ["node"]
+    "types": ["node"],
+    "typeRoots": ["node_modules/@types", "src/types.d.ts"]
     // "allowJs": true
   }
 }
