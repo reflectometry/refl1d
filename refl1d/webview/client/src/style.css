@@ -7,3 +7,8 @@ body,
 .flex-column {
   min-height: 0;
 }
+
+/* Warning background for cards - white text on yellow bg is difficult to read */
+.bg-warning {
+  color: #000;
+}

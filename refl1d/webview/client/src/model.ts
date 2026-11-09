@@ -3,48 +3,14 @@
  * match the Python model serialization format, and must therefore be snake_case
  */
 
+import type { NumpyArray, ParameterLike } from "bumps-webview-client/src/model";
+
 export interface Reference {
   id: string;
   __class__: "Reference";
 }
 
 export type BoundsValue = number | "-inf" | "inf";
-
-/* Bumps models */
-// Are these necessary? Imported from bumps?
-
-export interface SerializedModel {
-  references: { [key: string]: Parameter };
-  object: unknown;
-  $schema: "bumps-draft-02";
-}
-
-export interface NumpyArray {
-  values: number[];
-  dtype: string;
-  __class__: "bumps.util.NumpyArray";
-}
-
-export interface Variable {
-  value: number;
-  __class__: "bumps.parameter.Variable";
-}
-
-export interface Parameter {
-  id: string;
-  name: string;
-  fixed: boolean;
-  slot: Variable;
-  limits: (number | "-inf" | "inf")[];
-  bounds: (number | "-inf" | "inf")[] | null;
-  tags: string[];
-  __class__: "bumps.parameter.Parameter";
-}
-
-export interface ParameterLike {
-  id: string;
-  __class__: "bumps.parameter.Parameter" | "Reference";
-}
 
 /* Sample models */
 
