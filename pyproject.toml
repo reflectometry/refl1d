@@ -22,7 +22,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "bumps==1.0.5rc2",
+    "bumps==1.1.0rc0",
     "matplotlib",
     "numba",
     "numpy",
