@@ -13,6 +13,7 @@ ErrorType = tuple[
     dict[str, np.ndarray],  # slabs
     dict[str, np.ndarray],  # Q
     dict[str, np.ndarray],  # residuals
+    dict[str, np.ndarray],  # theory
 ]
 
 CONTOURS = (68, 95)
@@ -45,7 +46,7 @@ def show_profiles(
     row: Optional[int] = None,
     col: Optional[int] = None,
 ) -> "go.Figure":
-    profiles, slabs, _, _ = errors
+    profiles, slabs = errors[:2]
     if align is not None:
         # align_profiles always shifts so the alignment interface is at z=0
         profiles = align_profiles(profiles, slabs, align)
@@ -69,7 +70,7 @@ def show_residuals(
     row: Optional[int] = None,
     col: Optional[int] = None,
 ):
-    _, _, Q, residuals = errors
+    Q, residuals = errors[2:4]
 
     if contours is not None:
         _residuals_contour(Q, residuals, contours, fig, row, col)
