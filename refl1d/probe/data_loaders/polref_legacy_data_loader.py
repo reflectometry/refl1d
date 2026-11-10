@@ -90,6 +90,9 @@ def load_probe_polref(filename, angle, dQoQ, name=None, path=None, pol_mode=None
 
     filepath = Path(path) / filename
 
+    # Pop out Aguide argument from the **kw
+    aguide = kw.pop("Aguide", 270.0)
+
     # Load parts
     if pol_mode == "pa":  # Fully polarized: --, -+, +-, ++
         parts = ["_dd", "_du", "_ud", "_uu"]
@@ -110,7 +113,7 @@ def load_probe_polref(filename, angle, dQoQ, name=None, path=None, pol_mode=None
         cross_sections = data
     if field is None:
         field = 0.0
-    probe = PolarizedNeutronProbe(cross_sections, Aguide=270, H=field, name=name)
+    probe = PolarizedNeutronProbe(cross_sections, Aguide=aguide, H=field, name=name)
     probe.shared_beam()
 
     return probe
