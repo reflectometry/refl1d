@@ -1,4 +1,4 @@
-from refl1d.names import PolarizedNeutronProbe, NeutronProbe
+from refl1d.probe import PolarizedNeutronProbe, NeutronProbe
 import numpy as np
 import os
 from refl1d.probe.resolution import QT2L
