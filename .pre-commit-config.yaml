@@ -3,7 +3,7 @@ default_language_version:
 
 repos:
   - repo: https://github.com/biomejs/pre-commit
-    rev: 06008757591e48d61d4ecb1966371119451fbd0c # v2.6.5 (tag pins @biomejs/biome to the same version)
+    rev: v2.6.7
     hooks:
       - id: biome-format
         files: \.(vue|js|ts|mjs|tsx|jsx|json)$
