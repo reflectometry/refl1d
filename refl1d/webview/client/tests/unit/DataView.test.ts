@@ -145,3 +145,38 @@ test("Plot offset separates the cross-sections", async () => {
     expect(y).toBeCloseTo(2);
   });
 });
+
+test.each([true, false])("Spin Asymmetry residuals ignore plot offsets (corrections=%s)", async (corrections) => {
+  const first = POLARIZED[0].map((section) => ({ ...section, label: "first" }));
+  const second = POLARIZED[0].map((section) => ({ ...section, label: "second", intensity: 2, background: 0.1 }));
+  await setup([first, second]);
+  await selectPlot("Spin Asymmetry");
+  await check("show_residuals", true);
+  if (!corrections) await check("apply_corrections", false);
+
+  const original = lastPlot();
+  const residuals = [...original.trace("second residuals").y];
+  // Corrected SA: data=3/4, theory=2/3, variance=0.048828125.
+  // Uncorrected SA: data=3/5, theory=1/2, variance=0.0272.
+  const expected = corrections ? (0.75 - 2 / 3) / Math.sqrt(0.048828125) : 0.1 / Math.sqrt(0.0272);
+  residuals.forEach((value) => {
+    expect(value).toBeCloseTo(expected);
+  });
+
+  for (const offset of [0.7, 0.3, 0]) {
+    vi.mocked(Plotly.react).mockClear();
+    await wrapper!.get("#plot_offset_control").setValue(String(offset));
+    await vi.waitFor(() => expect(Plotly.react).toHaveBeenCalled());
+    const shifted = lastPlot();
+    // The offset still moves the displayed curves, with error bars unchanged.
+    for (const kind of ["theory", "data"]) {
+      shifted.trace(`second ${kind}`).y.forEach((value, i) => {
+        expect(value).toBeCloseTo(original.trace(`second ${kind}`).y[i] + offset);
+      });
+      expect(shifted.trace(`first ${kind}`).y).toEqual(original.trace(`first ${kind}`).y);
+    }
+    expect(shifted.trace("second data").error_y).toEqual(original.trace("second data").error_y);
+    expect(shifted.trace("first residuals").y).toEqual(original.trace("first residuals").y);
+    expect(shifted.trace("second residuals").y).toEqual(residuals);
+  }
+});

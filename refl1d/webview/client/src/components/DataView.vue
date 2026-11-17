@@ -266,10 +266,17 @@ function generate_new_traces(model_data: ModelData[][], view: ReflectivityPlot, 
           const TSA = Tm.map((_, i) => {
             const p_corr = (pp.theory[i] - pp_background_offset) / pp_intensity_scale;
             const m_corr = (mm.theory[i] - mm_background_offset) / mm_intensity_scale;
-            return (p_corr - m_corr) / (p_corr + m_corr) + local_offset;
+            return (p_corr - m_corr) / (p_corr + m_corr);
           });
+          const TSA_offset = TSA.map((v) => v + local_offset);
 
-          theory_traces.push({ x: pp.Q, y: TSA, mode: "lines", name: `${label} theory`, line: { width: 2, color } });
+          theory_traces.push({
+            x: pp.Q,
+            y: TSA_offset,
+            mode: "lines",
+            name: `${label} theory`,
+            line: { width: 2, color },
+          });
           if (local_offset > 0) {
             shapes.push({
               type: "line",
