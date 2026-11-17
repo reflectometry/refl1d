@@ -133,6 +133,50 @@ test("Spin Asymmetry combines ++ and -- on a fixed linear axis", async () => {
   expect(wrapper!.get<HTMLInputElement>("#log_y").element.checked).toBe(false);
 });
 
+const spinGrids = [
+  { name: "aligned", Q: [0.01, 0.02, 0.03], theory: [0.15, 0.25, 0.35] },
+  { name: "shifted", Q: [0.005, 0.025, 0.045], theory: [0.1, 0.3, 0.5] },
+  { name: "shorter", Q: [0.005, 0.045], theory: [0.1, 0.5] },
+  { name: "longer", Q: [0.005, 0.015, 0.025, 0.035, 0.045], theory: [0.1, 0.2, 0.3, 0.4, 0.5] },
+];
+
+test.each(spinGrids.flatMap((grid) => [true, false].map((corrections) => ({ ...grid, corrections }))))(
+  "Spin Asymmetry aligns the $name -- grid (corrections=$corrections)",
+  async ({ Q, theory, corrections }) => {
+    const pp = xs("++", [1.7, 1.7, 1.7], [1.7, 1.7, 1.7], { intensity: 3, background: 0.2 });
+    const measured = theory.map((r) => 2 * r + 0.1);
+    const mm = xs("--", measured, measured, {
+      Q,
+      dQ: Q.map(() => 0.001),
+      dR: Q.map(() => 0.1),
+      fresnel: Q.map(() => 2),
+      intensity: 2,
+      background: 0.1,
+    });
+    await setup([[pp, mm]]);
+    await selectPlot("Spin Asymmetry");
+    await check("show_residuals", true);
+    if (!corrections) await check("apply_corrections", false);
+
+    // Every grid samples the same linear -- signal: [0.15, 0.25, 0.35]
+    // at the ++ Q values, or [0.4, 0.6, 0.8] before beam corrections.
+    const expected = corrections ? [7 / 13, 1 / 3, 3 / 17] : [13 / 21, 11 / 23, 9 / 25];
+    const { trace } = lastPlot();
+    for (const kind of ["theory", "data"]) {
+      const plotted = trace(`film ${kind}`);
+      expect(plotted.x).toEqual(pp.Q);
+      expect(plotted.y).toHaveLength(expected.length);
+      expected.forEach((value, i) => {
+        expect(plotted.y[i]).toBeCloseTo(value, 10);
+      });
+    }
+    // Measured data equal the theory on each channel's own grid.
+    trace("film residuals").y.forEach((value) => {
+      expect(value).toBeCloseTo(0, 10);
+    });
+  }
+);
+
 test("Plot offset separates the cross-sections", async () => {
   await setup(POLARIZED);
   vi.mocked(Plotly.react).mockClear();
