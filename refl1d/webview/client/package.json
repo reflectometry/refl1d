@@ -14,7 +14,7 @@
     "preview": "vite preview --port 4173",
     "format": "biome format --write src",
     "lint": "biome lint --write src",
-    "test:format": "biome format src/",
+    "test:format": "biome format src",
     "test:lint": "biome lint src",
     "test:types": "vue-tsc --noEmit --skipLibCheck -p tsconfig.json --composite false",
     "test:unit": "vitest run",
