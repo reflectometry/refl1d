@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Union
 # import bumps..api as bumps_api
 import numpy as np
 from bumps.errplot import error_points_from_state
+from bumps.parameter import ValueProtocol
 
 try:
     import bumps.api
@@ -213,8 +214,28 @@ async def get_profile_uncertainty_plot(
     return result
 
 
+def _preserve_probe_parameters(previous, replacement):
+    """Keep common fit parameter objects while replacing the measured data."""
+    old_parameters = previous.parameters()
+    new_parameters = replacement.parameters()
+    if not isinstance(old_parameters, dict) or not isinstance(new_parameters, dict):
+        # A ProbeSet has a list of members without a matching identity in load4 data.
+        return
+    for name, new_value in new_parameters.items():
+        old_value = old_parameters.get(name)
+        if isinstance(old_value, ValueProtocol) and isinstance(new_value, ValueProtocol):
+            setattr(replacement, name, old_value)
+
+    if isinstance(previous, PolarizedNeutronProbe) and isinstance(replacement, PolarizedNeutronProbe):
+        # Both probes expose the cross sections in --, -+, +-, ++ order.
+        for old_channel, new_channel in zip(previous.xs, replacement.xs, strict=True):
+            if old_channel is not None and new_channel is not None:
+                _preserve_probe_parameters(old_channel, new_channel)
+
+
 @register
 async def load_probe_from_file(pathlist: List[str], filename: str, model_index: int = 0, fwhm: bool = True):
+    """Replace measurement data, keeping common fit parameters and their links."""
     path = Path(*pathlist)
     fitProblem = state.problem.fitProblem if state.problem is not None else None
     if fitProblem is None:
@@ -227,6 +248,9 @@ async def load_probe_from_file(pathlist: List[str], filename: str, model_index: 
             return
         model: Experiment = models[model_index]
         probe = load4(str(path / filename), FWHM=fwhm)
+        previous = getattr(model, "probe", None)
+        if previous is not None:
+            _preserve_probe_parameters(previous, probe)
         model.probe = probe
         fitProblem.model_reset()
         fitProblem.model_update()
