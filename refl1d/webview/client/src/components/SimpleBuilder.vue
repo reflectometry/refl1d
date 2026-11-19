@@ -4,7 +4,7 @@ import type { AsyncSocket } from "bumps-webview-client/src/asyncSocket";
 import type { Parameter, ParameterLike, SerializedModel } from "bumps-webview-client/src/model";
 import { v4 as uuidv4 } from "uuid";
 import type { ComputedRef } from "vue";
-import { computed, onMounted, ref, shallowRef } from "vue";
+import { computed, onMounted, ref, shallowRef, triggerRef } from "vue";
 import { dqIsFWHM } from "@/app_state";
 import type { BoundsValue, Magnetism, QProbe, Repeat, SLD, Slab, Stack } from "@/model";
 
@@ -46,6 +46,11 @@ const isSimpleModel = computed(() => {
     models.length > 0 &&
     models.every((m) => Array.isArray(m?.sample?.layers) && m.sample.layers.every(isSimpleSlab))
   );
+});
+
+const directionProbe = computed<Pick<QProbe, "back_reflectivity"> | undefined>(() => {
+  const probe = modelJson.value?.object?.models?.[activeModel.value]?.probe;
+  return isSimpleModel.value && typeof probe?.back_reflectivity === "boolean" ? probe : undefined;
 });
 
 props.socket.on("updated_parameters", fetchModel);
@@ -242,8 +247,20 @@ async function sendModel(is_new: boolean = false, name: string | null = null) {
     setParameterNames(model.sample);
     setParameterBounds(model.sample);
   }
-  const json_model = JSON.stringify(modelJson.value);
-  await props.socket.asyncEmit("set_serialized_problem", json_model, is_new, name);
+  await sendSerializedModel(is_new, name);
+}
+
+async function sendSerializedModel(isNew: boolean = false, name: string | null = null) {
+  await props.socket.asyncEmit("set_serialized_problem", JSON.stringify(modelJson.value), isNew, name);
+}
+
+async function setBackReflectivity(event: Event) {
+  const probe = directionProbe.value;
+  if (!probe) {
+    return;
+  }
+  probe.back_reflectivity = (event.target as HTMLInputElement).checked;
+  await sendSerializedModel();
 }
 
 // Adding and deleting layers
@@ -259,12 +276,10 @@ function addLayer(after_index: number = -1) {
 }
 
 function setQProbe() {
-  modelJson.value.object.models[activeModel.value].probe = generateQProbe(
-    editQmin.value,
-    editQmax.value,
-    editQsteps.value,
-    0.0001
-  );
+  const probe = generateQProbe(editQmin.value, editQmax.value, editQsteps.value, 0.0001);
+  probe.back_reflectivity = directionProbe.value?.back_reflectivity ?? false;
+  modelJson.value.object.models[activeModel.value].probe = probe;
+  triggerRef(modelJson);
   sendModel();
 }
 
@@ -360,6 +375,16 @@ function dragEnd() {
           <div class="form-check form-switch m-2">
             <input id="dqIsFWHM_input" v-model="dqIsFWHM" class="form-check-input" type="checkbox" @click="sendModel()">
             <label class="form-check-label" for="dqIsFWHM_input">Resolution as FWHM</label>
+          </div>
+          <div v-if="directionProbe" class="form-check form-switch m-2">
+            <input
+              id="back_reflectivity_input"
+              :checked="directionProbe.back_reflectivity"
+              class="form-check-input"
+              type="checkbox"
+              @change="setBackReflectivity"
+            >
+            <label class="form-check-label" for="back_reflectivity_input">Back reflectivity</label>
           </div>
         </div>
       </div>
