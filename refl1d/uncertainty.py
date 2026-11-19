@@ -73,7 +73,7 @@ def run_errors(**kw):
     """
 
     load = {"model": None, "store": None, "nshown": 50, "random": True}
-    show = {"align": "auto", "plots": 2, "contours": CONTOURS, "npoints": 400, "save": None}
+    show = {"align": "auto", "plots": 2, "contours": CONTOURS, "npoints": None, "save": None}
 
     for k, v in kw.items():
         if k in load:
@@ -263,7 +263,7 @@ def align_profiles(profiles, slabs, align):
     return dict((m, _align_profile_set(profiles[m], slabs[m], align)) for m in profiles.keys())
 
 
-def show_errors(errors, contours=CONTOURS, npoints=200, align="auto", plots=1, save=None, fig=None):
+def show_errors(errors, contours=CONTOURS, npoints=None, align="auto", plots=1, save=None, fig=None):
     """
     Plot the aligned profiles and the distribution of the residuals for
     profiles and residuals returned from calc_errors.
@@ -273,10 +273,9 @@ def show_errors(errors, contours=CONTOURS, npoints=200, align="auto", plots=1, s
     given levels, otherwise just overplot sample lines.
     *contours* defaults to [68, 95, 100].
 
-    *npoints* is the number of points to use when generating the
-    profile contour.  Since the z values for the various lines do not
-    correspond, the contour generator interpolates the entire profile
-    range with linear spacing using this number of points.
+    By default, the profile contours use the z coordinates of the best
+    profile, extended to cover all aligned profiles. Set *npoints* to
+    use a fixed number of evenly spaced points instead.
 
     *align* is the interface number plus fractional distance within
     the layer following the interface.  For example, use 0 for the
@@ -359,6 +358,23 @@ def show_residuals(errors, contours, axes=None):
         _residuals_overplot(Q, residuals, axes=axes)
 
 
+def _profile_contour_grid(group, npoints):
+    """Use the best profile's z grid with extra points across the sample range."""
+    best = group[0][0]
+    lower = min(profile[0][0] for profile in group)
+    upper = max(profile[0][-1] for profile in group)
+    if npoints is not None:
+        return np.linspace(lower, upper, npoints)
+    if len(best) < 2:
+        return np.unique([lower, *best, upper])
+
+    left_steps = int(np.ceil((best[0] - lower) / (best[1] - best[0])))
+    right_steps = int(np.ceil((upper - best[-1]) / (best[-1] - best[-2])))
+    left = np.linspace(lower, best[0], left_steps + 1)[:-1]
+    right = np.linspace(best[-1], upper, right_steps + 1)[1:]
+    return np.concatenate((left, best, right))
+
+
 def _save_profile_contour(errors, align, contours, npoints, save):
     profiles, slabs = errors[:2]
     if align is not None:
@@ -367,9 +383,7 @@ def _save_profile_contour(errors, align, contours, npoints, save):
     for title, _, group in sorted(
         ((m.name, m.index, group) for m, group in profiles.items()), key=lambda x: (x[0], x[1])
     ):
-        # Find limits of all profiles
-        z = np.hstack([line[0] for line in group])
-        zp = np.linspace(np.min(z), np.max(z), npoints)
+        zp = _profile_contour_grid(group, npoints)
 
         absorbing = any((L[2] != 1e-4).any() for L in group)
         magnetic = len(group[0]) > 3
@@ -477,14 +491,12 @@ def _draw_overplot(group, index, label, axes=None):
     axes.plot(L[0], L[index], "-", label=label, color=dark(color))
 
 
-def _profiles_contour(profiles, contours=CONTOURS, npoints=200, axes=None):
+def _profiles_contour(profiles, contours=CONTOURS, npoints=None, axes=None):
     for model, group in profiles.items():
         name = model.name if model.name is not None else "model"
         absorbing = any((L[2] > 1e-4).any() for L in group)
         magnetic = len(group[0]) > 3
-        # Find limits of all profiles
-        z = np.hstack([line[0] for line in group])
-        zp = np.linspace(np.min(z), np.max(z), npoints)
+        zp = _profile_contour_grid(group, npoints)
         # Note: Use 3 colours per dataset for consistency
         _draw_contours(group, 1, name + " rho", zp, contours, axes=axes)
         if absorbing:

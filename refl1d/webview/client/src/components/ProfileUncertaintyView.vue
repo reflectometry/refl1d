@@ -11,7 +11,7 @@ const align = ref(0);
 const autoAlign = ref(true);
 const show_residuals = ref(false);
 const nshown = ref(50);
-const npoints = ref(200);
+const npoints = ref<number | "">("");
 const random = ref(true);
 // don't use the one from setupDrawLoop because we are calling
 // fetch_and_draw locally:
@@ -64,12 +64,11 @@ function get_csv_data() {
       });
     });
   }
-  const n = values[0].length;
+  const n = Math.max(...values.map((column) => column.length));
   const lines = new Array(n + 1);
   lines[0] = headers.join(",");
   for (let i = 0; i < n; i++) {
-    lines[i + 1] = values.map((v) => v[i].toPrecision(6)).join(",");
-    //keys.map(k => data[k][i].toPrecision(6)).join(',');
+    lines[i + 1] = values.map((column) => column[i]?.toPrecision(6) ?? "").join(",");
   }
   return `data:text/csv;charset=utf-8,${encodeURIComponent(lines.join("\n"))}`;
 }
@@ -101,7 +100,7 @@ async function fetch_and_draw(new_timestamp?: string) {
     autoAlign.value,
     align.value,
     nshown.value,
-    npoints.value,
+    npoints.value === "" ? null : npoints.value,
     random.value,
     show_residuals.value,
     latest_timestamp.value
@@ -180,7 +179,14 @@ async function disableAutoAlign() {
       </div>
       <div class="col-md-3 align-middle">
         <label class="form-label" for="n-points">z steps</label>
-        <input id="n-points" v-model="npoints" class="form-control" type="number" @change="fetch_and_draw()">
+        <input
+          id="n-points"
+          v-model="npoints"
+          class="form-control"
+          type="number"
+          placeholder="Best-fit grid"
+          @change="fetch_and_draw()"
+        >
       </div>
     </div>
     <div>
