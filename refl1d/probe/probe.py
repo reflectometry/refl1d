@@ -1748,11 +1748,58 @@ class PolarizedNeutronProbe:
         ]
 
     def save(self, filename, theory, substrate=None, surface=None):
+        """Save each cross section and, when measured, the spin asymmetry.
+
+        The measured export's ``-SA.dat`` file reports Q, spin asymmetry and its standard
+        uncertainty for the measured ++ and -- channels. When their Q grids
+        differ, the -- data are interpolated to ++ Q within the overlap.
+        Uncertainties assume independent measurements.
+        """
+        measured_non_spin_flip = 0
         for xsi, xsi_th, suffix in zip(self.xs, theory, ("A", "B", "C", "D")):
             if xsi is not None:
                 xsi.save(filename + suffix, xsi_th, substrate=substrate, surface=surface)
+                # Probe.save only includes measurements when their length matches theory.
+                if suffix in ("A", "D") and len(xsi_th[0]) == len(xsi.Q):
+                    measured_non_spin_flip += 1
+        if measured_non_spin_flip == 2:
+            self._save_spin_asymmetry(filename)
 
-    save.__doc__ = Probe.save.__doc__
+    def _save_spin_asymmetry(self, filename):
+        pp, mm = self.pp, self.mm
+        if pp is None or mm is None or any(value is None for value in (pp.R, pp.dR, mm.R, mm.dR)):
+            return
+        q, qm = pp.Q, mm.Q
+        if not q.size or not qm.size:
+            return
+        rp, drp, rm, drm = (np.asarray(value) for value in (pp.R, pp.dR, mm.R, mm.dR))
+        if not np.array_equal(q, qm):
+            order = np.argsort(qm, kind="stable")
+            qm, rm, drm = qm[order], rm[order], drm[order]
+            overlap = (qm[0] <= q) & (q <= qm[-1])
+            q, rp, drp = q[overlap], rp[overlap], drp[overlap]
+            if not q.size:
+                return
+            rm = np.interp(q, qm, rm)
+            # Each interpolated value is a weighted sum of independent measurements.
+            left = np.searchsorted(qm, q, side="right") - 1
+            right = np.minimum(left + 1, qm.size - 1)
+            weight = np.divide(
+                q - qm[left], qm[right] - qm[left], out=np.zeros_like(q, dtype=float), where=left != right
+            )
+            drm = np.hypot((1 - weight) * drm[left], weight * drm[right])
+
+        with np.errstate(divide="ignore", invalid="ignore"):
+            sa, dsa = _spin_asymmetry_values(rp, rm, drp, drm)
+        undefined = rp + rm == 0
+        sa[undefined] = dsa[undefined] = np.nan
+        path = os.path.splitext(filename)[0] + "-SA.dat"
+        np.savetxt(
+            path,
+            np.column_stack((q, sa, dsa)),
+            fmt="%20.15g",
+            header="Q (1/A)                   SA                  dSA",
+        )
 
     def plot(self, view=None, **kwargs):
         """
@@ -1885,19 +1932,25 @@ def spin_asymmetry(Qp, Rp, dRp, Qm, Rm, dRm):
 
     .. math::
 
-        \Delta S_A^2 = \frac{4(R_{++}^2\Delta R_{--}^2+R_{--}^2\Delta R_{++})}
+        \Delta S_A^2 = \frac{4(R_{++}^2\Delta R_{--}^2+R_{--}^2\Delta R_{++}^2)}
                             {(R_{++} + R_{--})^4}
 
     """
     Rm = np.interp(Qp, Qm, Rm)
-    v = (Rp - Rm) / (Rp + Rm)
     if dRp is not None:
         dRm = np.interp(Qp, Qm, dRm)
+    v, dv = _spin_asymmetry_values(Rp, Rm, dRp, dRm)
+    return Qp, v, dv
+
+
+def _spin_asymmetry_values(Rp, Rm, dRp, dRm):
+    v = (Rp - Rm) / (Rp + Rm)
+    if dRp is not None:
         dvsq = 4 * ((Rp * dRm) ** 2 + (Rm * dRp) ** 2) / (Rp + Rm) ** 4
         dvsq[dvsq < 0] = 0
-        return Qp, v, sqrt(dvsq)
+        return v, sqrt(dvsq)
     else:
-        return Qp, v, None
+        return v, None
 
 
 def _interpolate_Q(Q, dQ, n):
