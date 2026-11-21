@@ -198,3 +198,46 @@ test("Fetches the model again when parameters change on the server", async () =>
   socket.serverEmit("updated_parameters");
   expect(emitted(socket, "get_model")).toHaveLength(2);
 });
+
+test.each([
+  ["refl1d.probe.probe.QProbe", false],
+  ["refl1d.probe.probe.NeutronProbe", true],
+])("Changes probe direction without modifying the sample (%s)", async (probeClass, initial) => {
+  const model = JSON.parse(serializedModel());
+  const probe = { __class__: probeClass, back_reflectivity: initial };
+  model.object.models[0].probe = probe;
+  const { socket } = await setup(JSON.stringify(model));
+  const input = wrapper!.get<HTMLInputElement>("#back_reflectivity_input");
+
+  expect(input.element.checked).toBe(initial);
+  await input.setValue(!initial);
+
+  const sent = lastSent(socket);
+  expect(sent.model.object.models[0].probe).toEqual({ ...probe, back_reflectivity: !initial });
+  expect(sent.model.object.models[0].sample).toEqual(model.object.models[0].sample);
+  expect(sent.model.references).toEqual(model.references);
+  expect(sent.isNew).toBe(false);
+});
+
+test("Keeps back reflectivity when replacing the synthetic Q range", async () => {
+  const model = JSON.parse(serializedModel());
+  model.object.models[0].probe = { __class__: "refl1d.probe.probe.QProbe", back_reflectivity: true };
+  const { socket } = await setup(JSON.stringify(model));
+
+  await button("Edit Q-range").trigger("click");
+  await button("Apply new Q").trigger("click");
+
+  expect(lastSent(socket).model.object.models[0].probe.back_reflectivity).toBe(true);
+});
+
+test("Does not offer a direction switch for a probe with per-channel settings", async () => {
+  const model = JSON.parse(serializedModel());
+  model.object.models[0].probe = {
+    __class__: "refl1d.probe.probe.PolarizedQProbe",
+    mm: { back_reflectivity: true },
+    pp: { back_reflectivity: true },
+  };
+  await setup(JSON.stringify(model));
+
+  expect(wrapper!.find("#back_reflectivity_input").exists()).toBe(false);
+});
