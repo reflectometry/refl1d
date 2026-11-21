@@ -290,6 +290,9 @@ def show_errors(errors, contours=CONTOURS, npoints=200, align="auto", plots=1, s
     *save* is the basename of the plot to save.  This should usually
     be "<store>/<model>".  The program will add '-err#.png' where '#'
     is the number of the plot.
+
+    *fig* is an optional figure for the combined plot. When saving a combined
+    plot without *fig*, the plot is drawn in a new figure.
     """
     import matplotlib.pyplot as plt
 
@@ -303,14 +306,17 @@ def show_errors(errors, contours=CONTOURS, npoints=200, align="auto", plots=1, s
     if plots == 0:
         ...  # Contours saved but no plotting
     elif plots == 1:  # Subplots for profiles/residuals
+        new_export_figure = fig is None and bool(save)
         if fig is None:
-            fig = plt.gcf()
+            fig = plt.figure() if new_export_figure else plt.gcf()
         ax_profiles = fig.add_subplot(211)
         show_profiles(errors, contours=contours, npoints=npoints, align=align, axes=ax_profiles)
         ax_residuals = fig.add_subplot(212)
         show_residuals(errors, contours=contours, axes=ax_residuals)
         if save:
-            plt.savefig(save + "-err.png")
+            if new_export_figure:
+                fig.tight_layout()
+            fig.savefig(save + "-err.png")
     elif plots == 2:  # Separate plots for profiles/residuals
         show_profiles(errors, contours=contours, npoints=npoints, align=align)
         if save:
