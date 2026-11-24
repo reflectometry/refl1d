@@ -3,7 +3,7 @@ default_language_version:
 
 repos:
   - repo: https://github.com/biomejs/pre-commit
-    rev: v2.6.7
+    rev: v2.6.8
     hooks:
       - id: biome-format
         files: \.(vue|js|ts|mjs|tsx|jsx|json)$
@@ -20,7 +20,7 @@ repos:
       # - id: end-of-file-fixer
       # - id: trailing-whitespace
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: ef6cf06c079dd6b299dfc720b0f14400c9d168e1 # frozen: v0.17.5
+    rev: 9026c9127e153371d7a78dfcb0c45ae2046a3d10  # frozen: v0.17.6
     hooks:
       # - id: ruff
       #   args: [--fix, --exit-non-zero-on-fix]
