@@ -45,7 +45,7 @@ async function setup(payload: unknown = PAYLOAD) {
 test("Requests the plot with the default settings and draws it", async () => {
   const { socket } = await setup();
   // autoAlign, align, nshown, npoints, random, show_residuals, timestamp
-  expect(emitted(socket, "get_profile_uncertainty_plot")).toEqual([[true, 0, 50, 200, true, false, TIMESTAMP]]);
+  expect(emitted(socket, "get_profile_uncertainty_plot")).toEqual([[true, 0, 50, null, true, false, TIMESTAMP]]);
   const [, data, layout] = vi.mocked(Plotly.react).mock.lastCall as unknown[];
   expect(data).toEqual(PAYLOAD.fig.data);
   expect(layout).toEqual(PAYLOAD.fig.layout);
@@ -71,6 +71,34 @@ test("Download CSV does nothing before there are contours", async () => {
   await setup({ ...PAYLOAD, contour_data: {} });
   await wrapper!.get("button.btn-primary").trigger("click");
   expect(downloads).toEqual([]);
+});
+
+test("Download CSV keeps all rows for models with different grid lengths", async () => {
+  await setup({
+    ...PAYLOAD,
+    contour_data: {
+      M1: PAYLOAD.contour_data.M1,
+      M2: { z: [0, 1, 2], data: { rho: { "68%": [2, 3, 4] } } },
+    },
+  });
+  await wrapper!.get("button.btn-primary").trigger("click");
+  expect(downloads).toHaveLength(1);
+  const csv = decodeURIComponent(downloads[0]!.href.split(",", 2)[1]!);
+  expect(csv.split("\n")).toEqual([
+    `"M1 z","M1 rho 68%","M1 rho 95%","M2 z","M2 rho 68%"`,
+    "0.00000,1.00000,0.500000,0.00000,2.00000",
+    "1.50000,2.00000,2.50000,1.00000,3.00000",
+    ",,,2.00000,4.00000",
+  ]);
+});
+
+test("A numeric z-steps value requests a fixed grid and clearing it restores the automatic grid", async () => {
+  const { socket } = await setup();
+  const field = wrapper!.get<HTMLInputElement>("#n-points");
+  await field.setValue(75);
+  await vi.waitFor(() => expect(emitted(socket, "get_profile_uncertainty_plot")[1]?.[3]).toBe(75));
+  await field.setValue("");
+  await vi.waitFor(() => expect(emitted(socket, "get_profile_uncertainty_plot")[2]?.[3]).toBeNull());
 });
 
 test("Clicking the alignment input turns off auto-align and redraws", async () => {

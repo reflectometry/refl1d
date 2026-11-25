@@ -5,7 +5,7 @@ import numpy as np
 if TYPE_CHECKING:
     import plotly.graph_objs as go
 
-from refl1d.uncertainty import align_profiles, form_quantiles
+from refl1d.uncertainty import _profile_contour_grid, align_profiles, form_quantiles
 from .colors import COLORS
 
 ErrorType = tuple[
@@ -23,7 +23,7 @@ def get_color(index: int):
     return COLORS[index % len(COLORS)]
 
 
-def show_errors(errors: ErrorType, npoints: int, align: bool, residuals: bool = True):
+def show_errors(errors: ErrorType, npoints: int | None, align: bool, residuals: bool = True):
     from plotly.subplots import make_subplots
 
     specs = (
@@ -41,7 +41,7 @@ def show_profiles(
     errors: ErrorType,
     align: bool,
     contours: Optional[tuple[float]],
-    npoints: int,
+    npoints: int | None,
     fig: "go.Figure",
     row: Optional[int] = None,
     col: Optional[int] = None,
@@ -165,9 +165,7 @@ def _profiles_contour(
         contour_data[name] = {}
         absorbing = any((L[2] > 1e-4).any() for L in group)
         magnetic = len(group[0]) > 3
-        # Find limits of all profiles
-        z = np.hstack([line[0] for line in group])
-        zp = np.linspace(np.min(z), np.max(z), npoints)
+        zp = _profile_contour_grid(group, npoints)
         contour_data[name]["z"] = zp
         contour_data[name]["data"] = {}
         # Note: Use 4 colours per dataset for consistency
