@@ -26,6 +26,7 @@ from .probe.data_loaders import ncnrdata as NCNR
 from .probe.data_loaders import snsdata as SNS
 from .probe.data_loaders.polref_legacy_data_loader import load_probe_polref
 from .probe.data_loaders.load4 import load4
+from .probe.data_loaders.orso import load_orso_sample
 from .probe.data_loaders.stajconvert import load_mlayer, save_mlayer
 from .probe.instrument import Monochromatic, Pulsed
 from .probe import (

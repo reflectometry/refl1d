@@ -1,0 +1,38 @@
+stack: substrate | film | water
+sub_stacks:
+  substrate:
+    sequence:
+    - material: Si
+      roughness: 2
+    - material: SiO2
+      thickness: 5
+      roughness: 3
+  film:
+    repetitions: 5
+    stack: head_group 4 | tail | tail | head_group 4
+layers:
+  tail:
+    material: tailstuff
+    thickness: 22.
+materials:
+  head_group:
+    sld: 0.2E-06
+  tailstuff:
+    formula: CH2
+    mass_density: 1.2
+  SiO2:
+    formula: SiO2
+    mass_density: 2.5
+  Si:
+    formula: Si
+    mass_density: 2.33
+composits:
+  water:
+    composition:
+      H2O: 0.3
+      D2O: 0.7
+globals:
+  roughness: {magnitude: 5, unit: angstrom}
+  length_unit: angstrom
+  mass_density_unit: g/cm^3
+  sld_unit: 1/angstrom^2
