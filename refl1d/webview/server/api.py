@@ -62,6 +62,10 @@ async def get_plot_data(view: str = "linear"):
     for model in fitProblem.models:
         assert isinstance(model, ExperimentBase)
         theory = model.reflectivity()
+        if theory is None:
+            # Incomplete model (fewer than two layers); nothing to plot yet.
+            # Return None so the client clears the current plot.
+            return None
         probe = model.probe
         probe_data = get_probe_data(theory, probe, model._substrate, model._surface)
         plotdata.append(probe_data)
@@ -79,10 +83,16 @@ async def create_profile_plots(model_specs: List[ModelSpec]):
         for sample_index, part in enumerate(getattr(model, "parts", [model])):
             spec = dict(model_index=model_index, sample_index=sample_index)
             if spec in model_specs:
+                # Skip incomplete models (fewer than two layers); they have no
+                # reflectivity profile to render.
+                if not getattr(part, "is_complete", True):
+                    continue
                 plot_item = dict(model=part, spec=spec, color_index=color_index)
                 plot_items.append(plot_item)
             color_index += 1
 
+    if not plot_items:
+        return None
     fig = plot_multiple_sld_profiles(plot_items)
     return fig
 
@@ -90,6 +100,8 @@ async def create_profile_plots(model_specs: List[ModelSpec]):
 @register
 async def get_profile_plots(model_specs: List[ModelSpec]):
     fig = await create_profile_plots(model_specs)
+    if fig is None:
+        return None
     output = to_json_compatible_dict(fig.to_dict())
     del fig
     return output

@@ -123,7 +123,10 @@ class ExperimentBase:
             # compare against so that we can profile simulation code, and
             # so that simulation smoke tests are run more thoroughly.
             QR = self.reflectivity()
-            if (self.probe.polarized and all(x is None or x.R is None for x in self.probe.xs)) or (
+            if QR is None:
+                # Incomplete sample (fewer than two layers); no residuals.
+                resid = np.zeros(0)
+            elif (self.probe.polarized and all(x is None or x.R is None for x in self.probe.xs)) or (
                 not self.probe.polarized and self.probe.R is None
             ):
                 resid = np.zeros(0)
@@ -140,6 +143,8 @@ class ExperimentBase:
         return self._cache["residuals"]
 
     def numpoints(self):
+        if self.probe is None:
+            return 0
         if self.probe.polarized:
             return sum(len(xs.Q) for xs in self.probe.xs if xs is not None)
         else:
@@ -418,13 +423,25 @@ class Experiment(ExperimentBase):
     ):
         # Note: smoothness ignored
         self.sample = sample
-        self._substrate = self.sample[0].material
-        self._surface = self.sample[-1].material
+        # A model with fewer than two layers cannot be rendered: the first layer
+        # is the substrate and the last is the surface.  The webview builder
+        # needs to be able to represent this intermediate state while the user
+        # is rebuilding a model, so leave the substrate/surface unset and let
+        # the rendering paths report that the model is incomplete.
+        if sample is None or len(sample) == 0:
+            self._substrate = None
+            self._surface = None
+        else:
+            self._substrate = sample[0].material
+            self._surface = sample[-1].material
         self.probe = ProbeSet(probe) if isinstance(probe, Sequence) else probe
         self.roughness_limit = roughness_limit
         if dz is None:
-            dz = nice((2 * pi / probe.Q.max()) / 10)
-            dz = min(dz, 5.0)
+            if self.probe is not None:
+                dz = nice((2 * pi / self.probe.Q.max()) / 10)
+                dz = min(dz, 5.0)
+            else:
+                dz = 1.0
         self.dz = dz
         self.dA = dA
         self.step_interfaces = step_interfaces
@@ -434,13 +451,21 @@ class Experiment(ExperimentBase):
         # num_slabs = len(probe.unique_L) if probe.unique_L is not None else 1
         num_slabs = 1
         self._slabs = profile.Microslabs(num_slabs, dz=dz)
-        self._probe_cache = material.ProbeCache(probe)
+        self._probe_cache = material.ProbeCache(self.probe)
         self._cache = {}  # Cache calculated profiles/reflectivities
-        self.name = name if name is not None else probe.name
+        if name is not None:
+            self.name = name
+        elif self.probe is not None:
+            self.name = self.probe.name
+        elif self.sample is not None:
+            self.name = self.sample.name
+        else:
+            self.name = "experiment"
         self.constraints = constraints
         self.version = __version__ if version is None else version
         if auto_tag:
-            tag_all(self.probe.parameters(), "instrument")
+            if self.probe is not None:
+                tag_all(self.probe.parameters(), "instrument")
             if self.sample is not None:
                 tag_all(self.sample.parameters(), "sample")
         self._webview_plots = {}
@@ -465,11 +490,28 @@ class Experiment(ExperimentBase):
         key = "rendered", self.step_interfaces, self.dA
         if key not in self._cache:
             self._slabs.clear()
-            self.sample.render(self._probe_cache, self._slabs)
-            self._slabs.finalize(step_interfaces=self.step_interfaces, dA=self.dA)
+            if self.sample is not None:
+                self.sample.render(self._probe_cache, self._slabs)
+            # Reflectivity rendering requires at least two slabs so that the
+            # substrate and surface surround can be set.  A webview builder may
+            # send an incomplete sample (zero or one layer) while the user is
+            # rebuilding it; leave the slabs un-finalized and let callers report
+            # that the model is not yet renderable.
+            if len(self._slabs.w) >= 2:
+                self._slabs.finalize(step_interfaces=self.step_interfaces, dA=self.dA)
             # roughness_limit=self.roughness_limit)
             self._cache[key] = True
         return self._slabs
+
+    @property
+    def is_complete(self):
+        """
+        True if the sample renders to at least two slabs.
+
+        A reflectivity model needs a substrate and a surface, so a sample with
+        zero or one layer is an incomplete model that cannot yet be rendered.
+        """
+        return len(self._render_slabs().w) >= 2
 
     def _reflamp(self):
         # calc_q = self.probe.calc_Q
@@ -477,6 +519,10 @@ class Experiment(ExperimentBase):
         key = "calc_r"
         if key not in self._cache:
             slabs = self._render_slabs()
+            if len(slabs.w) < 2:
+                # Incomplete sample (fewer than two slabs); cannot render.
+                self._cache[key] = None
+                return None
             w = slabs.w
             rho, irho = slabs.rho, slabs.irho
             sigma = slabs.sigma
@@ -526,7 +572,11 @@ class Experiment(ExperimentBase):
         """
         key = ("amplitude", resolution, interpolation)
         if key not in self._cache:
-            calc_q, calc_r = self._reflamp()
+            calc = self._reflamp()
+            if calc is None:
+                self._cache[key] = None
+                return None
+            calc_q, calc_r = calc
             res = self.probe.apply_beam(calc_q, calc_r, resolution=resolution, interpolation=interpolation)
             self._cache[key] = res
         return self._cache[key]
@@ -536,10 +586,17 @@ class Experiment(ExperimentBase):
         Calculate predicted reflectivity.
 
         If *resolution* is true include resolution effects.
+
+        Returns ``None`` if the sample is incomplete (fewer than two layers)
+        and therefore cannot be rendered.
         """
         key = ("reflectivity", resolution, interpolation)
         if key not in self._cache:
-            calc_q, calc_r = self._reflamp()
+            calc = self._reflamp()
+            if calc is None:
+                self._cache[key] = None
+                return None
+            calc_q, calc_r = calc
             calc_R = _amplitude_to_magnitude(calc_r, ismagnetic=self.ismagnetic, polarized=self.probe.polarized)
             res = self.probe.apply_beam(calc_q, calc_R, resolution=resolution, interpolation=interpolation)
             self._cache[key] = res
@@ -550,11 +607,17 @@ class Experiment(ExperimentBase):
         Return the scattering potential for the sample.
 
         If *dz* is not given, use *dz* = 0.1 A.
+
+        Returns ``None`` if the sample is incomplete (fewer than two layers)
+        and therefore cannot be rendered.
         """
         if self.step_interfaces:
             return self.step_profile()
         key = "smooth_profile", dz
         if key not in self._cache:
+            if not self.is_complete:
+                self._cache[key] = None
+                return None
             slabs = self._render_slabs()
             prof = slabs.smooth_profile(dz=dz)
             self._cache[key] = prof
@@ -564,9 +627,15 @@ class Experiment(ExperimentBase):
         """
         Return the step scattering potential for the sample, ignoring
         interfaces.
+
+        Returns ``None`` if the sample is incomplete (fewer than two layers)
+        and therefore cannot be rendered.
         """
         key = "step_profile"
         if key not in self._cache:
+            if not self.is_complete:
+                self._cache[key] = None
+                return None
             slabs = self._render_slabs()
             prof = slabs.step_profile()
             self._cache[key] = prof
@@ -579,16 +648,27 @@ class Experiment(ExperimentBase):
 
         .. Note::
              Roughness is for the top of the layer.
+
+        Returns ``None`` if the sample is incomplete (fewer than two layers)
+        and therefore cannot be rendered.
         """
+        if not self.is_complete:
+            return None
         slabs = self._render_slabs()
         return (slabs.w, np.hstack((slabs.sigma, 0)), slabs.rho[0], slabs.irho[0])
 
     def magnetic_smooth_profile(self, dz=0.1):
         """
         Return the nuclear and magnetic scattering potential for the sample.
+
+        Returns ``None`` if the sample is incomplete (fewer than two layers)
+        and therefore cannot be rendered.
         """
         key = "magnetic_smooth_profile", "{:.6f}".format(dz)
         if key not in self._cache:
+            if not self.is_complete:
+                self._cache[key] = None
+                return None
             slabs = self._render_slabs()
             prof = slabs.magnetic_smooth_profile(dz=dz)
             self._cache[key] = prof
@@ -597,15 +677,23 @@ class Experiment(ExperimentBase):
     def magnetic_step_profile(self):
         """
         Return the nuclear and magnetic scattering potential for the sample.
+
+        Returns ``None`` if the sample is incomplete (fewer than two layers)
+        and therefore cannot be rendered.
         """
         key = "magnetic_step_profile"
         if key not in self._cache:
+            if not self.is_complete:
+                self._cache[key] = None
+                return None
             slabs = self._render_slabs()
             prof = slabs.magnetic_step_profile()
             self._cache[key] = prof
         return self._cache[key]
 
     def magnetic_slabs(self):
+        if not self.is_complete:
+            return None
         slabs = self._render_slabs()
         return (slabs.w, np.hstack((slabs.sigma, 0)), slabs.rho[0], slabs.irho[0], slabs.rhoM, slabs.thetaM)
 
