@@ -327,7 +327,9 @@ class Stack(Layer):
         return sum(L.penalty() for L in self._layers)
 
     def _calculate_thickness(self):
-        return sum(L.thickness.value for L in self._layers)
+        # Return a float: an empty stack yields sum([]) == 0 (an int), which
+        # would make the Calculation slot return a non-float from __float__.
+        return float(sum(L.thickness.value for L in self._layers))
 
     def _set_thickness(self):
         desc = """sum of the thickness of the component layers in the stack"""

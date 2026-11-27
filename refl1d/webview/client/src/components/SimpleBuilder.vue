@@ -48,6 +48,14 @@ const isSimpleModel = computed(() => {
   );
 });
 
+// A reflectivity model needs at least a substrate and a surface, i.e. two layers.
+// The builder still lets the user delete layers down to zero so they can rebuild
+// from the ground up; the server simply has nothing to plot until two layers exist.
+const isIncompleteModel = computed(() => {
+  const layers = modelJson.value?.object?.models?.[activeModel.value]?.sample?.layers;
+  return Array.isArray(layers) && layers.length < 2;
+});
+
 props.socket.on("updated_parameters", fetchModel);
 props.socket.on("model_loaded", fetchModel);
 
@@ -380,104 +388,110 @@ function dragEnd() {
           <button type="button" class="btn btn-secondary mx-2" @click="setQProbe">Apply new Q</button>
         </div>
       </div>
-      <table v-if="dictionaryLoaded && isSimpleModel" id="sortable" class="table table-sm">
-        <thead class="border-bottom py-1 sticky-top text-white bg-secondary">
-          <tr>
-            <th></th>
-            <th>Layer</th>
-            <th>Thickness</th>
-            <th>Rho</th>
-            <th v-if="showImaginary">iRho</th>
-            <th>Interface</th>
-            <th></th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(layer, key) in sortedLayers" :key="key" class="align-middle" @blur.capture="sendModel()">
-            <td
-              draggable="true"
-              class="draggable"
-              @dragstart="dragStart(key, $event)"
-              @dragover="dragOver(key, $event)"
-              @drop="drop(key)"
-              @dragend="dragEnd"
-            >
-              <span width="10px" class="badge bg-secondary">:</span>
-            </td>
-            <td>
-              <textarea
-                id="layer-name"
-                v-model="layer.material.name"
-                class="form-control name"
-                rows="1"
-                cols="40"
-                type="text"
-                :title="layer.material.name"
+      <template v-if="dictionaryLoaded && isSimpleModel">
+        <table id="sortable" class="table table-sm">
+          <thead class="border-bottom py-1 sticky-top text-white bg-secondary">
+            <tr>
+              <th></th>
+              <th>Layer</th>
+              <th>Thickness</th>
+              <th>Rho</th>
+              <th v-if="showImaginary">iRho</th>
+              <th>Interface</th>
+              <th></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(layer, key) in sortedLayers" :key="key" class="align-middle" @blur.capture="sendModel()">
+              <td
+                draggable="true"
+                class="draggable"
+                @dragstart="dragStart(key, $event)"
+                @dragover="dragOver(key, $event)"
+                @drop="drop(key)"
+                @dragend="dragEnd"
               >
+                <span width="10px" class="badge bg-secondary">:</span>
+              </td>
+              <td>
+                <textarea
+                  id="layer-name"
+                  v-model="layer.material.name"
+                  class="form-control name"
+                  rows="1"
+                  cols="40"
+                  type="text"
+                  :title="layer.material.name"
+                >
                 <label for="layer-name">Layer Name</label>
               </textarea>
-            </td>
-            <td>
-              <label for="layer-thickness" class="visually-hidden">>Layer Thickness</label>
-              <input
-                v-if="getSlot(layer.thickness) !== null"
-                id="layer-thickness"
-                v-model="getSlot(layer.thickness).value"
-                class="form-control"
-                type="number"
-                step="5"
-              >
-            </td>
-            <td>
-              <label for="layer-rho" class="visually-hidden">>Layer Rho</label>
-              <input
-                v-if="getSlot(layer.material.rho) !== null"
-                id="layer-rho"
-                v-model="getSlot(layer.material.rho).value"
-                class="form-control"
-                type="number"
-                step="0.01"
-              >
-            </td>
-            <td v-if="showImaginary">
-              <label for="layer-irho" class="visually-hidden">>Layer iRho</label>
-              <input
-                v-if="getSlot(layer.material.irho) !== null"
-                id="layer-irho"
-                v-model="getSlot(layer.material.irho).value"
-                class="form-control"
-                type="number"
-                step="0.01"
-              >
-            </td>
-            <td>
-              <label for="layer-interface" class="visually-hidden">>Layer Interface</label>
-              <input
-                v-if="getSlot(layer.interface) !== null"
-                id="layer-interface"
-                v-model="getSlot(layer.interface).value"
-                class="form-control"
-                type="number"
-                step="1"
-              >
-            </td>
-            <td>
-              <button type="button" class="btn btn-danger btn-sm" @click="deleteLayer(key)">Delete</button>
-            </td>
-            <td>
-              <button
-                type="button"
-                class="btn btn-success btn-sm add-layer-after"
-                title="add layer here"
-                @click="addLayer(key + 1)"
-              >
-                +
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              </td>
+              <td>
+                <label for="layer-thickness" class="visually-hidden">>Layer Thickness</label>
+                <input
+                  v-if="getSlot(layer.thickness) !== null"
+                  id="layer-thickness"
+                  v-model="getSlot(layer.thickness).value"
+                  class="form-control"
+                  type="number"
+                  step="5"
+                >
+              </td>
+              <td>
+                <label for="layer-rho" class="visually-hidden">>Layer Rho</label>
+                <input
+                  v-if="getSlot(layer.material.rho) !== null"
+                  id="layer-rho"
+                  v-model="getSlot(layer.material.rho).value"
+                  class="form-control"
+                  type="number"
+                  step="0.01"
+                >
+              </td>
+              <td v-if="showImaginary">
+                <label for="layer-irho" class="visually-hidden">>Layer iRho</label>
+                <input
+                  v-if="getSlot(layer.material.irho) !== null"
+                  id="layer-irho"
+                  v-model="getSlot(layer.material.irho).value"
+                  class="form-control"
+                  type="number"
+                  step="0.01"
+                >
+              </td>
+              <td>
+                <label for="layer-interface" class="visually-hidden">>Layer Interface</label>
+                <input
+                  v-if="getSlot(layer.interface) !== null"
+                  id="layer-interface"
+                  v-model="getSlot(layer.interface).value"
+                  class="form-control"
+                  type="number"
+                  step="1"
+                >
+              </td>
+              <td>
+                <button type="button" class="btn btn-danger btn-sm" @click="deleteLayer(key)">Delete</button>
+              </td>
+              <td>
+                <button
+                  type="button"
+                  class="btn btn-success btn-sm add-layer-after"
+                  title="add layer here"
+                  @click="addLayer(key + 1)"
+                >
+                  +
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p v-if="isIncompleteModel" class="text-warning m-2">
+          Add at least two layers (a substrate and a surface) to compute a reflectivity profile. The server will plot
+          nothing until the sample is complete.
+        </p>
+      </template>
       <div v-else-if="dictionaryLoaded" class="card text-bg-danger">
         <div class="card-body">
           <h5 class="card-title">Unsupported model</h5>

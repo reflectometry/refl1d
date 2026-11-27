@@ -38,7 +38,16 @@ async function fetch_and_draw() {
   const payload = (await props.socket.asyncEmit("get_profile_plots", specs)) as {
     data: Partial<Plotly.Data>[];
     layout: Partial<Plotly.Layout>;
-  };
+  } | null;
+  if (plot_div.value === undefined) {
+    return;
+  }
+  // The server returns null when the selected models are incomplete (fewer than
+  // two layers), in which case there is no profile to draw; clear the plot.
+  if (payload == null) {
+    await Plotly.purge(plot_div.value as HTMLDivElement);
+    return;
+  }
   const plotdata = { ...payload };
   const { data, layout } = plotdata;
   const config: Partial<Plotly.Config> = {
@@ -48,9 +57,6 @@ async function fetch_and_draw() {
     },
     ...configWithSVGDownloadButton,
   };
-  if (plot_div.value === undefined) {
-    return;
-  }
   await Plotly.react(plot_div.value as HTMLDivElement, [...data], layout, config);
 }
 
