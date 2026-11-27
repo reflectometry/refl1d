@@ -180,9 +180,10 @@ class ExperimentBase:
 
             QR = self.reflectivity(resolution=False, interpolation=n)
             if self.probe.polarized:
-                # Should be four pairs
-                for Q, R in QR:
-                    plt.plot(Q, R, ":g")
+                # Should be four pairs (some cross sections may be None)
+                for QRk in QR:
+                    if QRk is not None:
+                        plt.plot(QRk[0], QRk[1], ":g")
             else:
                 Q, R = QR
                 plt.plot(Q, R, ":g")
