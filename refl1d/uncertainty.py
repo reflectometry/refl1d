@@ -222,7 +222,7 @@ def _eval_point(problem, p):
         slabs.append(np.array(slabs_i))
         # Reflectivity curves (Q,R) – only need R, shared Q per model
         QR = m.reflectivity()
-        theory_i = np.hstack([Rk for Qk, Rk in QR]) if m.probe.polarized else QR[1]
+        theory_i = np.hstack([QRk[1] for QRk in QR if QRk is not None]) if m.probe.polarized else QR[1]
         theory.append(theory_i)
         # Profiles
         if m.ismagnetic:
